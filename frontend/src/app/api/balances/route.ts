@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 type TokenBalances = {
   native: string;
   usdt: string;
@@ -10,16 +12,17 @@ type BalancesResponse = Record<string, TokenBalances>;
 
 type EvmChainConfig = {
   key: string;
-  rpc: string;
+  rpc: string[];
   nativeDecimals: number;
   usdt?: { address: string; decimals: number };
   usdc?: { address: string; decimals: number };
 };
 
+/** Supported card networks — same coverage as the working scan. */
 const EVM_CHAINS: EvmChainConfig[] = [
   {
     key: "eth",
-    rpc: "https://ethereum.publicnode.com",
+    rpc: ["https://ethereum.publicnode.com", "https://cloudflare-eth.com"],
     nativeDecimals: 18,
     usdt: {
       address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
@@ -32,7 +35,7 @@ const EVM_CHAINS: EvmChainConfig[] = [
   },
   {
     key: "bsc",
-    rpc: "https://bsc-dataseed.binance.org",
+    rpc: ["https://bsc-dataseed.binance.org", "https://1rpc.io/bnb"],
     nativeDecimals: 18,
     usdt: {
       address: "0x55d398326f99059fF775485246999027B3197955",
@@ -45,7 +48,7 @@ const EVM_CHAINS: EvmChainConfig[] = [
   },
   {
     key: "pol",
-    rpc: "https://polygon-bor.publicnode.com",
+    rpc: ["https://polygon-bor.publicnode.com", "https://1rpc.io/matic"],
     nativeDecimals: 18,
     usdt: {
       address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
@@ -58,7 +61,10 @@ const EVM_CHAINS: EvmChainConfig[] = [
   },
   {
     key: "avax",
-    rpc: "https://avalanche-c-chain.publicnode.com",
+    rpc: [
+      "https://avalanche-c-chain.publicnode.com",
+      "https://api.avax.network/ext/bc/C/rpc",
+    ],
     nativeDecimals: 18,
     usdt: {
       address: "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7",
@@ -71,7 +77,7 @@ const EVM_CHAINS: EvmChainConfig[] = [
   },
   {
     key: "arb",
-    rpc: "https://arbitrum-one.publicnode.com",
+    rpc: ["https://arbitrum-one.publicnode.com", "https://1rpc.io/arb"],
     nativeDecimals: 18,
     usdt: {
       address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
@@ -84,7 +90,7 @@ const EVM_CHAINS: EvmChainConfig[] = [
   },
   {
     key: "base",
-    rpc: "https://base.publicnode.com",
+    rpc: ["https://base.publicnode.com", "https://1rpc.io/base"],
     nativeDecimals: 18,
     usdt: {
       address: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2",
@@ -99,6 +105,7 @@ const EVM_CHAINS: EvmChainConfig[] = [
 
 const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
 const TRON_ADDRESS_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
+const TRON_USDT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
 
 function formatUnits(value: bigint, decimals: number): string {
   const negative = value < 0n;
@@ -106,9 +113,7 @@ function formatUnits(value: bigint, decimals: number): string {
   const base = 10n ** BigInt(decimals);
   const whole = v / base;
   const fraction = v % base;
-  if (fraction === 0n) {
-    return `${negative ? "-" : ""}${whole.toString()}`;
-  }
+  if (fraction === 0n) return `${negative ? "-" : ""}${whole.toString()}`;
   const frac = fraction.toString().padStart(decimals, "0").replace(/0+$/, "");
   return `${negative ? "-" : ""}${whole.toString()}.${frac}`;
 }
@@ -118,92 +123,87 @@ async function rpcCall(
   method: string,
   params: unknown[]
 ): Promise<string> {
-  const res = await fetch(rpc, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    throw new Error(`RPC ${rpc} failed: ${res.status}`);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const res = await fetch(rpc, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+      signal: ctrl.signal,
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error(`rpc ${res.status}`);
+    const json = (await res.json()) as {
+      result?: string;
+      error?: { message: string };
+    };
+    if (json.error) throw new Error(json.error.message);
+    return json.result ?? "0x0";
+  } finally {
+    clearTimeout(timer);
   }
-  const json = (await res.json()) as { result?: string; error?: { message: string } };
-  if (json.error) {
-    throw new Error(json.error.message);
-  }
-  return json.result ?? "0x0";
 }
 
 function balanceOfData(holder: string): string {
-  const addr = holder.toLowerCase().replace(/^0x/, "").padStart(64, "0");
-  return `0x70a08231${addr}`;
+  return `0x70a08231${holder.toLowerCase().replace(/^0x/, "").padStart(64, "0")}`;
 }
 
-async function readErc20Balance(
-  rpc: string,
+async function readErc20(
+  rpcs: string[],
   token: string,
   holder: string,
   decimals: number
 ): Promise<string> {
-  try {
-    const raw = await rpcCall(rpc, "eth_call", [
-      { to: token, data: balanceOfData(holder) },
-      "latest",
-    ]);
-    return formatUnits(BigInt(raw), decimals);
-  } catch {
-    return "0";
+  for (const rpc of rpcs) {
+    try {
+      const raw = await rpcCall(rpc, "eth_call", [
+        { to: token, data: balanceOfData(holder) },
+        "latest",
+      ]);
+      return formatUnits(BigInt(raw), decimals);
+    } catch {
+      // try next rpc
+    }
   }
+  return "0";
 }
 
 async function readEvmChain(
   chain: EvmChainConfig,
   address: string
 ): Promise<TokenBalances> {
-  try {
-    const nativeHex = await rpcCall(chain.rpc, "eth_getBalance", [
-      address,
-      "latest",
-    ]);
-    const native = formatUnits(BigInt(nativeHex), chain.nativeDecimals);
-    const [usdt, usdc] = await Promise.all([
-      chain.usdt
-        ? readErc20Balance(
-            chain.rpc,
-            chain.usdt.address,
-            address,
-            chain.usdt.decimals
-          )
-        : Promise.resolve("0"),
-      chain.usdc
-        ? readErc20Balance(
-            chain.rpc,
-            chain.usdc.address,
-            address,
-            chain.usdc.decimals
-          )
-        : Promise.resolve(undefined),
-    ]);
-
-    const out: TokenBalances = { native, usdt };
-    if (usdc !== undefined) out.usdc = usdc;
-    return out;
-  } catch {
-    const out: TokenBalances = { native: "0", usdt: "0" };
-    if (chain.usdc) out.usdc = "0";
-    return out;
+  let native = "0";
+  for (const rpc of chain.rpc) {
+    try {
+      const hex = await rpcCall(rpc, "eth_getBalance", [address, "latest"]);
+      native = formatUnits(BigInt(hex), chain.nativeDecimals);
+      break;
+    } catch {
+      // try next
+    }
   }
+
+  const [usdt, usdc] = await Promise.all([
+    chain.usdt
+      ? readErc20(chain.rpc, chain.usdt.address, address, chain.usdt.decimals)
+      : Promise.resolve("0"),
+    chain.usdc
+      ? readErc20(chain.rpc, chain.usdc.address, address, chain.usdc.decimals)
+      : Promise.resolve(undefined),
+  ]);
+
+  const out: TokenBalances = { native, usdt };
+  if (usdc !== undefined) out.usdc = usdc;
+  return out;
 }
 
 async function readTron(address: string): Promise<TokenBalances> {
   try {
-    const res = await fetch(
-      `https://api.trongrid.io/v1/accounts/${address}`,
-      { cache: "no-store" }
-    );
-    if (!res.ok) {
-      return { native: "0.000000", usdt: "0.000000" };
-    }
+    const res = await fetch(`https://api.trongrid.io/v1/accounts/${address}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return { native: "0", usdt: "0" };
     const json = (await res.json()) as {
       data?: Array<{
         balance?: number;
@@ -211,25 +211,19 @@ async function readTron(address: string): Promise<TokenBalances> {
       }>;
     };
     const account = json.data?.[0];
-    const nativeSun = BigInt(account?.balance ?? 0);
-    const native = formatUnits(nativeSun, 6);
+    const native = formatUnits(BigInt(account?.balance ?? 0), 6);
 
-    // Mainnet USDT TRC-20
-    const USDT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
     let usdtRaw = 0n;
     for (const entry of account?.trc20 ?? []) {
-      if (entry[USDT] !== undefined) {
-        usdtRaw = BigInt(entry[USDT]);
+      if (entry[TRON_USDT] !== undefined) {
+        usdtRaw = BigInt(entry[TRON_USDT]);
         break;
       }
     }
 
-    return {
-      native,
-      usdt: formatUnits(usdtRaw, 6),
-    };
+    return { native, usdt: formatUnits(usdtRaw, 6) };
   } catch {
-    return { native: "0.000000", usdt: "0.000000" };
+    return { native: "0", usdt: "0" };
   }
 }
 
@@ -239,49 +233,26 @@ export async function GET(req: NextRequest) {
 
   if (!evm && !tron) {
     return NextResponse.json(
-      {
-        code: 400,
-        status: "error",
-        message: "Bad Request",
-        error: "Provide at least evm or tron address",
-      },
+      { error: "Provide at least evm or tron address" },
       { status: 400 }
     );
   }
-
   if (evm && !EVM_ADDRESS_RE.test(evm)) {
-    return NextResponse.json(
-      {
-        code: 400,
-        status: "error",
-        message: "Bad Request",
-        error: "Invalid EVM address",
-      },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid EVM address" }, { status: 400 });
   }
-
   if (tron && !TRON_ADDRESS_RE.test(tron)) {
-    return NextResponse.json(
-      {
-        code: 400,
-        status: "error",
-        message: "Bad Request",
-        error: "Invalid TRON address",
-      },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid TRON address" }, { status: 400 });
   }
 
   const result: BalancesResponse = {};
 
   if (evm) {
     const entries = await Promise.all(
-      EVM_CHAINS.map(async (chain) => [chain.key, await readEvmChain(chain, evm)] as const)
+      EVM_CHAINS.map(
+        async (chain) => [chain.key, await readEvmChain(chain, evm)] as const
+      )
     );
-    for (const [key, balances] of entries) {
-      result[key] = balances;
-    }
+    for (const [key, balances] of entries) result[key] = balances;
   }
 
   if (tron) {
