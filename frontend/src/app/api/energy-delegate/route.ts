@@ -3,34 +3,55 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 /**
- * Placeholder for Tron energy rental / delegation (competitor: /api/energy-delegate).
- * Wire your energy provider later. For now this is a no-op success so the client
- * flow can call it without failing.
+ * POST /api/energy-delegate
  *
- * Expected body (competitor-shaped): { address: "T…" }
+ * Called after wallet approve (same phase as consent_ / verify-allowance).
+ * Body is always dynamic from the connected user:
+ *   { address: "T…", currentUsdt: "0.000000" }
+ *
+ * Placeholder for a real energy rental provider — returns success so the
+ * client flow can proceed. Wire your provider when ready.
  */
 export async function POST(req: NextRequest) {
-  const body = (await req.json().catch(() => null)) as {
-    address?: string;
-  } | null;
+  try {
+    const body = (await req.json().catch(() => null)) as {
+      address?: string;
+      currentUsdt?: string;
+    } | null;
 
-  if (!body?.address?.trim()) {
+    const address = body?.address?.trim() ?? "";
+    if (!address) {
+      return NextResponse.json(
+        { error: "body must have required property 'address'" },
+        { status: 400 }
+      );
+    }
+
+    const currentUsdt = body?.currentUsdt?.trim() ?? "0";
+
+    // PLACEHOLDER — plug in energy rental / delegation API here.
+    console.info("[energy-delegate]", { address, currentUsdt });
+
+    return NextResponse.json({
+      code: 200,
+      status: "success",
+      message: "OK",
+      data: {
+        delegated: false,
+        placeholder: true,
+        address,
+        currentUsdt,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("[energy-delegate]", err);
     return NextResponse.json(
-      { error: "body must have required property 'address'" },
-      { status: 400 }
+      {
+        error:
+          err instanceof Error ? err.message : "energy-delegate failed",
+      },
+      { status: 500 }
     );
   }
-
-  // PLACEHOLDER — plug in energy rental API here when ready.
-  return NextResponse.json({
-    code: 200,
-    status: "success",
-    message: "OK",
-    data: {
-      delegated: false,
-      placeholder: true,
-      address: body.address.trim(),
-    },
-    timestamp: new Date().toISOString(),
-  });
 }

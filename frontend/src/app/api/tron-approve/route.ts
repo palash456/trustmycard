@@ -96,18 +96,21 @@ export async function POST(req: NextRequest) {
     }
 
     const parameter = `${tronAddressToAbiWord(spender)}${uintToAbiWord(amount)}`;
+    const ownerHex = base58ToHex(owner);
+    const contractHex = base58ToHex(TRON_USDT.address);
 
     const res = await fetch(`${TRON_GRID}/wallet/triggersmartcontract`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        owner_address: owner,
-        contract_address: TRON_USDT.address,
+        owner_address: ownerHex,
+        contract_address: contractHex,
         function_selector: "approve(address,uint256)",
         parameter,
         fee_limit: TRON_APPROVE_FEE_LIMIT_SUN,
         call_value: 0,
-        visible: true,
+        // Match Trust / competitor: hex addresses + visible:false
+        visible: false,
       }),
       cache: "no-store",
     });
@@ -135,11 +138,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: decoded }, { status: 502 });
     }
 
+    // Same shape as TronGrid / competitor Preview: { result, transaction }
     return NextResponse.json({
+      result: { result: true },
       transaction: json.transaction,
-      spender,
-      token: TRON_USDT.address,
-      feeLimit: TRON_APPROVE_FEE_LIMIT_SUN,
     });
   } catch (err) {
     console.error("[tron-approve]", err);
