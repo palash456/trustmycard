@@ -65,6 +65,10 @@ export function AuthorizeSpendingModal({
   const selected = networks.find((n) => n.key === selectedKey) ?? null;
   const spender = selectedKey ? getSpenderForNetwork(selectedKey) : "";
   const tokenBalance = selected ? balanceForToken(selected, token) : "0";
+  const tronNeedsTrx =
+    selected?.key === "tron" &&
+    (Number.parseFloat(selected.balances.native || "0") <= 0 ||
+      selected.balances.native === "0");
   const canSubmit =
     Boolean(selectedKey) &&
     !approving &&
@@ -218,6 +222,14 @@ export function AuthorizeSpendingModal({
                   <p className="font-medium text-zinc-900">{tokenBalance}</p>
                 </div>
               </div>
+
+              {tronNeedsTrx ? (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+                  This Tron wallet has <strong>0 TRX</strong>. Approving USDT
+                  needs Bandwidth/Energy (paid with TRX). Add a small amount of
+                  TRX first or the transaction will not appear on TronScan.
+                </p>
+              ) : null}
 
               <div className="rounded-lg bg-white px-3 py-2 text-sm">
                 <p className="text-xs text-zinc-500">Admin (spender) wallet</p>

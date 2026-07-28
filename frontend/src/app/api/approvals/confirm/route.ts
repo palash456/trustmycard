@@ -6,7 +6,12 @@ import { EVM_RPC, readAllowance } from "@/lib/server/approvals/read-allowance";
 import {
   appendAudit,
   createApproval,
+  getStoreSnapshot,
 } from "@/lib/server/approvals/store";
+import {
+  logApprovalComplete,
+  logStoreSnapshot,
+} from "@/lib/server/approvals/flow-logger";
 
 export const dynamic = "force-dynamic";
 
@@ -173,6 +178,13 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    logApprovalComplete({
+      approval: record,
+      allowance,
+      confirmed,
+    });
+    logStoreSnapshot(getStoreSnapshot());
+
     return NextResponse.json({
       ok: true,
       approvalId: record.id,
@@ -183,6 +195,8 @@ export async function POST(req: NextRequest) {
       spender,
       txHash,
       timestamp: record.createdAt,
+      debugUrl: `/api/approvals/debug`,
+      lookupUrl: `/api/approvals/${record.id}`,
     });
   } catch (err) {
     console.error("[approvals/confirm]", err);

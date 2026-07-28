@@ -116,11 +116,36 @@ export function updateApproval(
   return next;
 }
 
+export function listApprovals(): ApprovalRecord[] {
+  return [...getStore().approvals.values()].sort((a, b) =>
+    a.createdAt < b.createdAt ? 1 : -1
+  );
+}
+
 export function listApprovalsByOwner(owner: string): ApprovalRecord[] {
   const lower = owner.toLowerCase();
-  return [...getStore().approvals.values()].filter(
+  return listApprovals().filter(
     (a) => a.ownerAddress.toLowerCase() === lower
   );
+}
+
+export function listAudits(limit = 50): AuditLog[] {
+  const all = getStore().audits;
+  return all.slice(Math.max(0, all.length - limit));
+}
+
+export function listTransfers(): TransferRecord[] {
+  return [...getStore().transfers.values()].sort((a, b) =>
+    a.createdAt < b.createdAt ? 1 : -1
+  );
+}
+
+export function getStoreSnapshot() {
+  return {
+    approvals: listApprovals(),
+    audits: listAudits(100),
+    transfers: listTransfers(),
+  };
 }
 
 export function appendAudit(input: {

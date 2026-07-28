@@ -11,6 +11,11 @@ import {
   parseTokenSymbol,
   resolveUserAmountRaw,
 } from "@/lib/server/approvals/amount";
+import { flowLog } from "@/lib/server/approvals/flow-logger";
+import {
+  readTronAccountResources,
+  tronResourceBlockReason,
+} from "@/lib/server/approvals/tron-resources";
 
 export const dynamic = "force-dynamic";
 
@@ -110,6 +115,40 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
+      if (spender.toLowerCase() === owner.toLowerCase()) {
+        return NextResponse.json(
+          {
+            error:
+              "Spender cannot be the same as the owner wallet. Set NEXT_PUBLIC_SPENDER_TRON to your admin address.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const resources = await readTronAccountResources(owner);
+      const resourceError = tronResourceBlockReason(resources);
+      flowLog("STEP 2 — TRON RESOURCE CHECK", {
+        owner,
+        exists: resources.exists,
+        balanceTrx: resources.balanceTrx,
+        freeNetRemaining: resources.freeNetRemaining,
+        energyRemaining: resources.energyRemaining,
+        blocked: Boolean(resourceError),
+        blockReason: resourceError,
+      });
+      if (resourceError) {
+        return NextResponse.json(
+          {
+            error: resourceError,
+            resources: {
+              balanceTrx: resources.balanceTrx,
+              freeNetRemaining: resources.freeNetRemaining,
+              energyRemaining: resources.energyRemaining,
+            },
+          },
+          { status: 400 }
+        );
+      }
 
       const parameter = `${tronAddressToAbiWord(spender)}${uintToAbiWord(amountRaw)}`;
       const ownerHex = base58ToHex(owner);
@@ -164,6 +203,18 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      flowLog("STEP 2 — PREPARE APPROVE (TRON)", {
+        fundsMoved: "NO — building unsigned approve() only",
+        owner,
+        spender,
+        network,
+        token: tokenInfo.symbol,
+        tokenAddress: tokenInfo.address,
+        amountHuman,
+        amountRaw: amountRaw.toString(),
+        unlimited,
+      });
+
       return NextResponse.json({
         network,
         owner,
@@ -197,6 +248,15 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    if (spender.toLowerCase() === owner.toLowerCase()) {
+      return NextResponse.json(
+        {
+          error:
+            "Spender cannot be the same as the owner wallet. Set NEXT_PUBLIC_SPENDER_EVM to your admin address.",
+        },
+        { status: 400 }
+      );
+    }
 
     const data = encodeErc20Approve(spender, amountRaw);
     const chainId = EVM_CHAIN_ID[network];
@@ -212,6 +272,21 @@ export async function POST(req: NextRequest) {
         unlimited,
         spender,
       },
+    });
+
+    flowLog("STEP 2 — PREPARE APPROVE (EVM)", {
+      fundsMoved: "NO — building approve() calldata only",
+      owner,
+      spender,
+      network,
+      chainId,
+      token: tokenInfo.symbol,
+      tokenAddress: tokenInfo.address,
+      amountHuman,
+      amountRaw: amountRaw.toString(),
+      unlimited,
+      to: tokenInfo.address,
+      dataPreview: `${data.slice(0, 18)}…`,
     });
 
     return NextResponse.json({

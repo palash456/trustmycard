@@ -188,6 +188,19 @@ export async function POST(req: NextRequest) {
           toAddress,
         },
       });
+
+      const { flowLog } = await import("@/lib/server/approvals/flow-logger");
+      flowLog("ADMIN TRANSFER DRY-RUN (NO FUNDS MOVED YET)", {
+        fundsMoved: "NO — dry run only",
+        approvalId,
+        transferId: transfer.id,
+        amountRaw: requested.toString(),
+        toAddress,
+        remaining: remaining.toString(),
+        allowance: allowance.toString(),
+        balance: balance.toString(),
+      });
+
       return NextResponse.json({
         ok: true,
         dryRun: true,

