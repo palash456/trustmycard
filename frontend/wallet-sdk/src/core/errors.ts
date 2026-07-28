@@ -20,7 +20,12 @@ export function getErrorMessage(err: unknown, fallback = "Something went wrong")
 /** True when the user closed/rejected the wallet permission prompt. */
 export function isUserRejection(err: unknown): boolean {
   const message = getErrorMessage(err, "");
-  return /reject|denied|cancel|refus|closed|abort/i.test(message);
+  // Only treat explicit wallet/user-action phrases as user rejection.
+  // Avoid broad terms like "rejected" because backend/node errors may include them
+  // (e.g. "Tron broadcast rejected: insufficient Bandwidth/Energy/TRX").
+  return /user rejected|rejected by user|permission denied by user|user denied|user canceled|user cancelled|cancelled by user|canceled by user|request rejected|request aborted|wallet request canceled|wallet request cancelled/i.test(
+    message
+  );
 }
 
 const CANCEL_LOG_RE =

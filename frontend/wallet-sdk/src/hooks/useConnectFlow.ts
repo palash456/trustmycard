@@ -73,6 +73,12 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const [unlimited, setUnlimited] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
+  const parsePositiveAmount = useCallback((value: string): number | null => {
+    const n = Number.parseFloat(value);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    return n;
+  }, []);
+
   const resetAuthorizeForm = useCallback(() => {
     setToken("USDT");
     setAmountHuman("");
@@ -299,6 +305,13 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       setError("Enter a maximum amount, or explicitly opt into unlimited");
       return;
     }
+    if (!unlimited) {
+      const amount = parsePositiveAmount(amountHuman.trim());
+      if (amount == null) {
+        setError("Enter a valid amount greater than 0");
+        return;
+      }
+    }
 
     const gaps = configGaps(spendersRef.current, networkKey);
     if (gaps.length > 0) {
@@ -318,6 +331,41 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           : "No EVM address in this WalletConnect session"
       );
       return;
+    }
+
+    const selectedNetwork = networks.find((n) => n.key === networkKey) ?? null;
+    if (!selectedNetwork) {
+      setError("Selected network data is unavailable. Re-scan your wallet.");
+      return;
+    }
+
+    if (networkKey === "tron") {
+      const trxBalance = Number.parseFloat(selectedNetwork.balances.native || "0");
+      if (!Number.isFinite(trxBalance) || trxBalance <= 0) {
+        setError(
+          "This Tron wallet has 0 TRX. Add a small TRX balance for network fee, then try again."
+        );
+        return;
+      }
+    }
+
+    if (!unlimited) {
+      const entered = parsePositiveAmount(amountHuman.trim());
+      const tokenBalance =
+        token === "USDC"
+          ? Number.parseFloat(selectedNetwork.balances.usdc ?? "0")
+          : Number.parseFloat(selectedNetwork.balances.usdt ?? "0");
+      if (
+        entered != null &&
+        Number.isFinite(tokenBalance) &&
+        tokenBalance >= 0 &&
+        entered > tokenBalance
+      ) {
+        setError(
+          `Insufficient ${token} balance on ${selectedNetwork.name}. Available: ${tokenBalance}`
+        );
+        return;
+      }
     }
 
     approvingLockRef.current = true;
@@ -529,6 +577,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     }
   }, [
     amountHuman,
+    networks,
+    parsePositiveAmount,
     selectedKey,
     setStatus,
     termsAccepted,
