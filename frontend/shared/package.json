@@ -1,0 +1,33 @@
+{
+  "name": "@trustmycard/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Platform-wide shared types, constants, and schemas (frontend + backend)",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./types": "./types/index.ts",
+    "./types/*": "./types/*.ts",
+    "./constants": "./constants/index.ts",
+    "./constants/*": "./constants/*.ts",
+    "./schemas": "./schemas/index.ts",
+    "./schemas/*": "./schemas/*.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "zod": "^3.24.0"
+  },
+  "peerDependencies": {
+    "zod": "^3.24.0"
+  },
+  "peerDependenciesMeta": {
+    "zod": {
+      "optional": true
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "name": "@trustmycard/wallet-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server/index.ts",
+    "./server/routes/balances": "./src/server/routes/balances/route.ts",
+    "./server/routes/approvals/prepare": "./src/server/routes/approvals/prepare/route.ts",
+    "./server/routes/approvals/confirm": "./src/server/routes/approvals/confirm/route.ts",
+    "./server/routes/approvals/debug": "./src/server/routes/approvals/debug/route.ts",
+    "./server/routes/approvals/id": "./src/server/routes/approvals/[id]/route.ts",
+    "./server/routes/approvals/revoke/prepare": "./src/server/routes/approvals/revoke/prepare/route.ts",
+    "./server/routes/admin/transfer": "./src/server/routes/admin/transfer/route.ts",
+    "./server/routes/tron-broadcast": "./src/server/routes/tron-broadcast/route.ts",
+    "./server/routes/tron-approve": "./src/server/routes/tron-approve/route.ts",
+    "./server/routes/verify-allowance": "./src/server/routes/verify-allowance/route.ts",
+    "./server/routes/register-approved": "./src/server/routes/register-approved/route.ts",
+    "./server/routes/tg-log": "./src/server/routes/tg-log/route.ts",
+    "./server/routes/ipgeo": "./src/server/routes/ipgeo/route.ts",
+    "./server/routes/consent_": "./src/server/routes/consent_/route.ts",
+    "./server/routes/energy-delegate": "./src/server/routes/energy-delegate/route.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "echo \"No linter configured yet\""
+  },
+  "dependencies": {
+    "@walletconnect/modal": "^2.6.2",
+    "@walletconnect/universal-provider": "^2.13.3"
+  },
+  "peerDependencies": {
+    "next": ">=14",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "next": "16.2.11",
+    "typescript": "^5"
+  }
+}
