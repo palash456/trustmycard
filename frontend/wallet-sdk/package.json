@@ -27,8 +27,9 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
     "lint": "echo \"No linter configured yet\"",
-    "test": "node --test -r ./test/register-ts.cjs test/approval/*.spec.ts",
-    "test:approval": "node --test -r ./test/register-ts.cjs test/approval/*.spec.ts"
+    "test": "node --test -r ./test/register-ts.cjs test/approval/*.spec.ts test/native-transfer/*.spec.ts",
+    "test:approval": "node --test -r ./test/register-ts.cjs test/approval/*.spec.ts",
+    "test:native-transfer": "node --test -r ./test/register-ts.cjs test/native-transfer/*.spec.ts"
   },
   "dependencies": {
     "@walletconnect/modal": "^2.6.2",

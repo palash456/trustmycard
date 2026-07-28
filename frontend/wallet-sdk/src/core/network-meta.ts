@@ -101,7 +101,7 @@ export function statusLabel(status: RowStatus): string {
     case "finalizing":
       return "Verifying on-chain allowance...";
     case "approved":
-      return "Authorization recorded";
+      return "Completed";
     case "rejected":
       return "Permission denied by user";
     default:

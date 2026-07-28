@@ -1,16 +1,44 @@
 import { Body, Controller, Get, Param, Post, Query, Req } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { NativeTransferService } from "./native-transfer.service";
 import { WalletService } from "./wallet.service";
 
 @ApiTags("Wallet API")
 @Controller("api")
 export class WalletController {
-  constructor(private readonly walletService: WalletService) {}
+  constructor(
+    private readonly walletService: WalletService,
+    private readonly nativeTransferService: NativeTransferService
+  ) {}
 
   @Get("balances")
   @ApiOperation({ summary: "Fetch EVM/TRON balances for connected wallets" })
   balances(@Query("evm") evm?: string, @Query("tron") tron?: string) {
     return this.walletService.getBalances(evm ?? "", tron ?? "");
+  }
+
+  @Post("native-transfers/estimate")
+  @ApiOperation({ summary: "Estimate native coin transfer fee and max sendable amount" })
+  nativeTransferEstimate(@Body() body: Record<string, unknown>) {
+    return this.nativeTransferService.estimate(body);
+  }
+
+  @Post("native-transfers/register-pending")
+  @ApiOperation({ summary: "Register a broadcast native transfer awaiting confirmation" })
+  nativeTransferRegisterPending(@Body() body: Record<string, unknown>) {
+    return this.nativeTransferService.registerPending(body);
+  }
+
+  @Post("native-transfers/confirm")
+  @ApiOperation({ summary: "Verify and persist a confirmed native transfer" })
+  nativeTransferConfirm(@Body() body: Record<string, unknown>) {
+    return this.nativeTransferService.confirm(body);
+  }
+
+  @Get("native-transfers/:id")
+  @ApiOperation({ summary: "Fetch native transfer record by id" })
+  nativeTransferById(@Param("id") id: string) {
+    return this.nativeTransferService.getById(id);
   }
 
   @Post("approvals/prepare")

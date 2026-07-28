@@ -47,9 +47,12 @@ export type RowStatus =
 
 export type TokenSymbol = "USDT" | "USDC";
 
+/** Selectable asset on a network card — native coin or stablecoin. */
+export type AssetSymbol = "NATIVE" | TokenSymbol;
+
 export type AuthorizeDraft = {
   networkKey: string;
-  token: TokenSymbol;
+  asset: AssetSymbol;
   amountHuman: string;
   unlimited: boolean;
   termsAccepted: boolean;

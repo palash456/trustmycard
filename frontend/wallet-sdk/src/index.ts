@@ -14,10 +14,28 @@ export type {
   NetworkRow,
   RowStatus,
   ApprovalStatus,
+  AssetSymbol,
 } from "./types";
 
 export type { ConnectFlowProps } from "./types/connect-flow-props";
 
+export {
+  assetsForNetwork,
+  isNativeAsset,
+  nativeAssetLabel,
+} from "./core/chain-tokens";
+
+export {
+  NativeTransferOrchestrator,
+  NativeTransferStageName,
+  createBrowserNativeTransferOrchestrator,
+  createHttpNativeTransferApiClient,
+} from "./native-transfer";
+export type {
+  NativeTransferRequest,
+  NativeTransferEstimate,
+  NativeTransferResult,
+} from "./native-transfer";
 export {
   ApprovalOrchestrator,
   ApprovalStageName,

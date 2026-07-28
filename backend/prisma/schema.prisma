@@ -121,6 +121,35 @@ model TgLogEvent {
 }
 
 /// Idempotent fee/resource sponsorship (TRON energy/bandwidth; EVM gas later).
+/// User-initiated native coin transfer (ETH, TRX, BNB, etc.) — no allowance/collector.
+model NativeTransfer {
+  id                 String         @id @default(cuid())
+  ownerAddress       String
+  toAddress          String
+  network            String
+  assetSymbol        String
+  amountRaw          String         @default("0")
+  amountHuman        String         @default("0")
+  expectedAmountRaw  String?
+  evmNonce           String?
+  feeRaw             String?
+  feeHuman           String?
+  txHash             String         @unique
+  blockNumber        Int?
+  status             TransferStatus @default(pending)
+  errorMessage       String?
+  termsVersion       String?
+  reconcileAttempts  Int            @default(0)
+  lastReconcileAt    DateTime?
+  confirmedAt        DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@index([ownerAddress, network, status])
+  @@index([network, status, createdAt])
+  @@index([status, lastReconcileAt])
+}
+
 model ResourceSponsorship {
   id           String   @id @default(cuid())
   network      String

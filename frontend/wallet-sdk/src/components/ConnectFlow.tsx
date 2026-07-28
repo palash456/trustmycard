@@ -16,13 +16,17 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
     networks,
     selectedKey,
     rowStatus,
-    token,
+    asset,
     amountHuman,
     unlimited,
     termsAccepted,
+    nativeEstimate,
+    nativeEstimateLoading,
+    nativeEstimateError,
+    onRetryNativeEstimate,
     openWalletConnect,
     onSelectNetwork,
-    onTokenChange,
+    onAssetChange,
     onAmountChange,
     onUnlimitedChange,
     onTermsChange,
@@ -51,13 +55,17 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
           selectedKey={selectedKey}
           approving={approving}
           error={error}
-          token={token}
+          asset={asset}
           amountHuman={amountHuman}
           unlimited={unlimited}
           termsAccepted={termsAccepted}
+          nativeEstimate={nativeEstimate}
+          nativeEstimateLoading={nativeEstimateLoading}
+          nativeEstimateError={nativeEstimateError}
+          onRetryNativeEstimate={() => void onRetryNativeEstimate()}
           onClose={closeResultsModal}
           onSelectNetwork={onSelectNetwork}
-          onTokenChange={onTokenChange}
+          onAssetChange={onAssetChange}
           onAmountChange={onAmountChange}
           onUnlimitedChange={onUnlimitedChange}
           onTermsChange={onTermsChange}

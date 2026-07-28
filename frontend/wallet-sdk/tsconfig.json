@@ -13,7 +13,11 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "isolatedModules": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@trustmycard/shared/*": ["../shared/*"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

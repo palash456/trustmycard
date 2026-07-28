@@ -14,7 +14,11 @@
     "strict": true,
     "types": ["node"],
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@trustmycard/shared/*": ["../frontend/shared/*"]
+    }
   },
   "include": ["src/**/*", "prisma/seed.ts"],
   "exclude": ["node_modules", "dist", "test", "**/*.spec.ts"]

@@ -4,8 +4,9 @@ import {
   type EvmChainKey,
   type TokenSymbol,
 } from "../../core/chain-tokens";
+import { EVM_RPC, TRON_GRID_URL } from "../../core/native-chains";
 
-const TRON_GRID = "https://api.trongrid.io";
+const TRON_GRID = TRON_GRID_URL;
 
 const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
@@ -33,15 +34,6 @@ function tronAddressToAbiWord(base58: string): string {
   const body = hex.startsWith("41") ? hex.slice(2) : hex.slice(-40);
   return body.padStart(64, "0");
 }
-
-const EVM_RPC: Partial<Record<EvmChainKey, string>> = {
-  eth: "https://ethereum.publicnode.com",
-  bsc: "https://bsc-dataseed.binance.org",
-  pol: "https://polygon-bor.publicnode.com",
-  avax: "https://api.avax.network/ext/bc/C/rpc",
-  arb: "https://arb1.arbitrum.io/rpc",
-  base: "https://mainnet.base.org",
-};
 
 export type AllowanceResult = {
   ok: true;
@@ -151,4 +143,4 @@ export async function readAllowance(args: {
   return verifyEvm(args.network, args.owner, args.spender, args.token);
 }
 
-export { EVM_RPC };
+export { EVM_RPC } from "../../core/native-chains";

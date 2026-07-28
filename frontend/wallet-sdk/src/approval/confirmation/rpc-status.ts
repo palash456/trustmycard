@@ -1,4 +1,4 @@
-import { EVM_RPC } from "../../server/approvals/read-allowance";
+import { EVM_RPC } from "../../core/native-chains";
 import { isEvmChainKey, type EvmChainKey } from "../../core/chain-tokens";
 import {
   TransactionConfirmationStatus,

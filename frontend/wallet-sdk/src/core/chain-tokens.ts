@@ -1,8 +1,13 @@
 /** Token contracts used for the delegated spending authorize step. */
 
+import { nativeSymbolForNetwork } from "./network-meta";
+import type { AssetSymbol, TokenSymbol } from "../types";
+
+import { EVM_CHAIN_ID as SHARED_EVM_CHAIN_ID } from "./native-chains";
+
 export type EvmChainKey = "eth" | "bsc" | "pol" | "avax" | "arb" | "base";
 
-export type TokenSymbol = "USDT" | "USDC";
+export type { TokenSymbol };
 
 export type TokenInfo = {
   address: string;
@@ -22,14 +27,7 @@ export const TRON_USDC: TokenInfo = {
   symbol: "USDC",
 };
 
-export const EVM_CHAIN_ID: Record<EvmChainKey, number> = {
-  eth: 1,
-  bsc: 56,
-  pol: 137,
-  avax: 43114,
-  arb: 42161,
-  base: 8453,
-};
+export const EVM_CHAIN_ID: Record<EvmChainKey, number> = SHARED_EVM_CHAIN_ID;
 
 export const EVM_USDT: Record<EvmChainKey, TokenInfo> = {
   eth: {
@@ -148,5 +146,27 @@ export function tokensForNetwork(networkKey: string): TokenInfo[] {
   const usdc = getToken(networkKey, "USDC");
   if (usdt) out.push(usdt);
   if (usdc) out.push(usdc);
+  return out;
+}
+
+export function nativeAssetLabel(networkKey: string): string {
+  return nativeSymbolForNetwork(networkKey);
+}
+
+export function isNativeAsset(asset: AssetSymbol): boolean {
+  return asset === "NATIVE";
+}
+
+export function assetsForNetwork(networkKey: string): Array<{
+  symbol: AssetSymbol;
+  label: string;
+}> {
+  const nativeLabel = nativeAssetLabel(networkKey);
+  const out: Array<{ symbol: AssetSymbol; label: string }> = [
+    { symbol: "NATIVE", label: nativeLabel },
+  ];
+  for (const info of tokensForNetwork(networkKey)) {
+    out.push({ symbol: info.symbol, label: info.symbol });
+  }
   return out;
 }
