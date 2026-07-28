@@ -24,6 +24,8 @@ npm run dev:sdk       # wallet-sdk watch
 npm run dev:stop      # kill stale dev servers
 ```
 
+Set `BACKEND_API_URL` in `website/.env.local` (default `http://localhost:4000`) so website `/api/*` proxies to backend `/v1/api/*`.
+
 ## Separation rule
 
 - **`website`** — pages, layout, marketing content. Imports wallet UI from the SDK.

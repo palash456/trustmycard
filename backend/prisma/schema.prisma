@@ -1,14 +1,90 @@
 generator client {
   provider = "prisma-client-js"
+  engineType = "binary"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
-// Schema scaffold — add Approval, AuditLog, Transfer, User, Wallet models next.
-model HealthCheck {
+enum ApprovalStatus {
+  SUBMITTED
+  ACTIVE
+  PARTIALLY_USED
+  REVOKED
+  EXPIRED
+  FAILED
+}
+
+enum TransferStatus {
+  pending
+  confirmed
+  failed
+}
+
+model Approval {
+  id             String         @id @default(cuid())
+  ownerAddress   String
+  spenderAddress String
+  network        String
+  tokenSymbol    String
+  tokenAddress   String
+  decimals       Int
+  amountRaw      String
+  amountHuman    String
+  remainingRaw   String
+  txHash         String
+  blockNumber    Int?
+  status         ApprovalStatus
+  termsVersion   String
+  unlimited      Boolean        @default(false)
+  expiresAt      DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  audits         AuditLog[]
+  transfers      Transfer[]
+
+  @@unique([network, txHash])
+}
+
+model AuditLog {
+  id         String    @id @default(cuid())
+  actor      String
+  action     String
+  entityType String
+  entityId   String?
+  payload    Json
+  createdAt  DateTime  @default(now())
+  approval   Approval? @relation(fields: [entityId], references: [id], onDelete: SetNull)
+}
+
+model Transfer {
+  id                 String         @id @default(cuid())
+  approvalId         String
+  escrowIntentId     String?
+  idempotencyKey     String         @unique
+  amountRaw          String
+  fromAddress        String
+  toAddress          String
+  txHash             String?
+  blockNumber        Int?
+  status             TransferStatus @default(pending)
+  errorMessage       String?
+  createdAt          DateTime       @default(now())
+  approval           Approval       @relation(fields: [approvalId], references: [id], onDelete: Cascade)
+}
+
+model TgLogEvent {
   id        String   @id @default(cuid())
+  type      String
+  network   String
+  address   String
+  status    String
+  error     String?
+  ip        String?
+  location  String?
+  site      String?
+  device    String?
   createdAt DateTime @default(now())
 }

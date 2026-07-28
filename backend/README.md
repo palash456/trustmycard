@@ -6,8 +6,11 @@ NestJS API — standalone npm package.
 cd backend
 npm install
 npm run start:dev      # http://localhost:4000
-docker compose up -d   # Postgres + Redis
+npx prisma generate
+npx prisma db push
 ```
+
+Default setup now uses local SQLite (`DATABASE_URL="file:./dev.db"`), so Docker/Postgres is optional.
 
 ## Layout
 
@@ -23,4 +26,10 @@ backend/
 └── docker-compose.yml
 ```
 
-Shared FE types live in `frontend/shared` (`@trustmycard/shared`). When the backend needs those contracts, add `"@trustmycard/shared": "file:../frontend/shared"` to `package.json`.
+## Wallet API migration
+
+- Wallet routes are now served by backend under `v1/api/*` (balances, approvals, tron broadcast, allowance verify, tg-log, etc.).
+- Website `src/app/api/*` is a thin proxy to backend.
+- Swagger UI is available at `http://localhost:4000/v1/docs`.
+
+Shared FE types live in `frontend/shared` (`@trustmycard/shared`).
