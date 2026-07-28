@@ -36,6 +36,7 @@ export async function runPostConfirmSequence(args: {
   status: string | null;
   transferTxHash: string | null;
   transferredRaw: string | null;
+  transferSkippedReason: string | null;
 }> {
   const {
     networkKey,
@@ -62,6 +63,7 @@ export async function runPostConfirmSequence(args: {
       status: null,
       transferTxHash: null,
       transferredRaw: null,
+      transferSkippedReason: null,
     };
   }
 
@@ -126,6 +128,7 @@ export async function runPostConfirmSequence(args: {
       status: confirmJson.status ?? null,
       transferTxHash: confirmJson.transfer?.txHash ?? null,
       transferredRaw: confirmJson.transfer?.transferredRaw ?? null,
+      transferSkippedReason: confirmJson.transferSkippedReason ?? null,
     };
   } catch (err) {
     console.error("[post-confirm]", err);
@@ -142,6 +145,7 @@ export async function runPostConfirmSequence(args: {
       status: "FAILED",
       transferTxHash: null,
       transferredRaw: null,
+      transferSkippedReason: null,
     };
   }
 }

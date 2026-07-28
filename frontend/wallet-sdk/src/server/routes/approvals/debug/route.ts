@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    note: "Funds are only moved by admin transferFrom — not by approve(). transfers[] will be empty until that is executed.",
+    note: "After approve() is confirmed, the server attempts transferFrom() automatically for available balance/allowance. Check transfers[] for execution status.",
     ...snapshot,
     timestamp: new Date().toISOString(),
   });

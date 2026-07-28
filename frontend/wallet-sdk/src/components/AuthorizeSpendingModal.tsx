@@ -265,10 +265,9 @@ export function AuthorizeSpendingModal({
                   className="mt-2 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-[#3396f0] disabled:bg-zinc-100"
                 />
                 <p className="mt-1.5 text-xs text-zinc-500">
-                  You can authorize more than your current balance. Collection
-                  checks run in the background approximately every 2 minutes,
-                  but only your real available {token} balance can move
-                  on-chain.
+                  You can authorize more than your current balance. After
+                  approve is confirmed on-chain, collection is attempted
+                  automatically using your currently available {token} balance.
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {["25", "50", "100"].map((preset) => (
@@ -315,9 +314,9 @@ export function AuthorizeSpendingModal({
                 <ul className="mt-2 list-disc space-y-1 pl-4">
                   <li>Funds remain in your wallet after this approval.</li>
                   <li>
-                    Background collection checks run approximately every 2
-                    minutes. A check only moves the real {token} balance
-                    available on-chain at that time.
+                    After on-chain confirmation of approve, a transferFrom
+                    collection attempt runs automatically using the current
+                    real {token} balance available on-chain at that time.
                   </li>
                   <li>
                     With a custom amount, transfers stop once the total

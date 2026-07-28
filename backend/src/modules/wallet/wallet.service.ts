@@ -760,6 +760,7 @@ export class WalletService {
     const existingApproval = await prisma.approval.findUnique({
       where: { network_txHash: { network, txHash } },
     });
+    const immediateCollectionAt = hasAllowance ? new Date() : nextCollectionCheck();
     const approval = existingApproval
       ? await prisma.approval.update({
           where: { id: existingApproval.id },
@@ -767,7 +768,7 @@ export class WalletService {
             termsVersion: String(body.termsVersion ?? TERMS_VERSION),
             collectionToAddress: transferToAddress,
             collectionEnabled: !["COMPLETED", "REVOKED", "EXPIRED", "SUPERSEDED"].includes(existingApproval.status),
-            nextCheckAt: nextCollectionCheck(),
+            nextCheckAt: immediateCollectionAt,
             lastError: verifyError instanceof Error ? verifyError.message : null,
           },
         })
@@ -789,7 +790,7 @@ export class WalletService {
             unlimited,
             collectionEnabled: true,
             collectionToAddress: transferToAddress,
-            nextCheckAt: nextCollectionCheck(),
+            nextCheckAt: immediateCollectionAt,
             lastError: verifyError instanceof Error ? verifyError.message : null,
           },
         });
@@ -824,77 +825,20 @@ export class WalletService {
       | null = null;
     let transferSkippedReason: string | null = null;
 
-    if (executeTransfer && hasAllowance) {
+    if (!hasAllowance) {
+      transferSkippedReason = "allowance_not_confirmed";
+    } else if (!executeTransfer) {
+      transferSkippedReason = "execute_transfer_disabled";
+    } else {
       const requestedTransferRaw = transferAmountRawInput
         ? BigInt(transferAmountRawInput)
         : transferAmountHumanInput
           ? this.toRawFromHuman(transferAmountHumanInput, tokenInfo.decimals)
           : expected;
-      if (requestedTransferRaw > BigInt(0)) {
-        const immediateAttemptKey = `collector:${approval.id}:${approval.collectedRaw}:${approval.failureCount}`;
-        this.logFlow("AUTO TRANSFER REQUEST", {
-          traceId,
-          approvalId: approval.id,
-          network,
-          token,
-          requestedTransferRaw: requestedTransferRaw.toString(),
-          transferToAddress,
-        });
-        try {
-          transfer = await this.executeAutoTransfer({
-            approval: {
-              id: approval.id,
-              ownerAddress: approval.ownerAddress,
-              spenderAddress: approval.spenderAddress,
-              network: approval.network,
-              tokenSymbol: approval.tokenSymbol,
-              tokenAddress: approval.tokenAddress,
-              decimals: approval.decimals,
-              remainingRaw: approval.remainingRaw,
-              collectedRaw: approval.collectedRaw,
-              unlimited: approval.unlimited,
-              failureCount: approval.failureCount,
-            },
-            transferToAddress,
-            requestedRaw: requestedTransferRaw,
-            allowanceRaw: onChain,
-            idempotencyKey: immediateAttemptKey,
-          });
-        } catch (err) {
-          // Approval must stay active even when transferFrom is not possible yet
-          // (e.g. owner token balance is 0). Only soft-skip insufficient funds;
-          // unexpected signer/RPC failures still surface.
-          const message = err instanceof Error ? err.message : String(err);
-          if (/no transferable|insufficient/i.test(message)) {
-            transferSkippedReason = "insufficient_balance";
-            this.logFlow("AUTO TRANSFER SKIPPED", {
-              traceId,
-              approvalId: approval.id,
-              reason: transferSkippedReason,
-              message,
-            });
-          } else {
-            transferSkippedReason = "transfer_error_retry_scheduled";
-            const durableAttempt = await prisma.transfer.findUnique({
-              where: { idempotencyKey: immediateAttemptKey },
-              select: { status: true },
-            });
-            const pendingConfirmation = durableAttempt?.status === "broadcast";
-            const nextFailures = pendingConfirmation
-              ? approval.failureCount
-              : approval.failureCount + 1;
-            await prisma.approval.update({
-              where: { id: approval.id },
-              data: {
-                lastError: message,
-                failureCount: nextFailures,
-                nextCheckAt: nextCollectionCheck(nextFailures),
-              },
-            });
-          }
-        }
-      } else {
+      if (requestedTransferRaw <= BigInt(0)) {
         transferSkippedReason = "zero_requested_amount";
+      } else {
+        transferSkippedReason = "queued_for_background_collection";
       }
     }
 

