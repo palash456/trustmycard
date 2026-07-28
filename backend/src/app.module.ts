@@ -11,6 +11,7 @@ import { AuditModule } from "./modules/audit/audit.module";
 import { CustodyModule } from "./modules/custody/custody.module";
 import { BlockchainModule } from "./modules/blockchain/blockchain.module";
 import { WalletModule } from "./modules/wallet/wallet.module";
+import { ResourcesModule } from "./modules/resources/resources.module";
 import { JobsModule } from "./jobs/jobs.module";
 
 @Module({
@@ -26,6 +27,7 @@ import { JobsModule } from "./jobs/jobs.module";
     AuditModule,
     CustodyModule,
     BlockchainModule,
+    ResourcesModule,
     WalletModule,
     JobsModule,
   ],

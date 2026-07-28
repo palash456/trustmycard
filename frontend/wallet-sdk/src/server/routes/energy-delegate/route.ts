@@ -2,56 +2,44 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+const BACKEND_BASE =
+  process.env.BACKEND_API_URL?.replace(/\/$/, "") || "http://localhost:4000";
+
 /**
  * POST /api/energy-delegate
  *
- * Called after wallet approve (same phase as consent_ / verify-allowance).
- * Body is always dynamic from the connected user:
- *   { address: "T…", currentUsdt: "0.000000" }
- *
- * Placeholder for a real energy rental provider — returns success so the
- * client flow can proceed. Wire your provider when ready.
+ * Legacy route name kept for compatibility.
+ * Proxies to ResourceManager.acquireResources() on the Nest backend.
+ * Call this AFTER /api/approvals/prepare so hints can include feeLimit / amountRaw.
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json().catch(() => null)) as {
-      address?: string;
-      currentUsdt?: string;
-    } | null;
-
-    const address = body?.address?.trim() ?? "";
-    if (!address) {
-      return NextResponse.json(
-        { error: "body must have required property 'address'" },
-        { status: 400 }
-      );
-    }
-
-    const currentUsdt = body?.currentUsdt?.trim() ?? "0";
-
-    // PLACEHOLDER — plug in energy rental / delegation API here.
-    console.info("[energy-delegate]", { address, currentUsdt });
-
-    return NextResponse.json({
-      code: 200,
-      status: "success",
-      message: "OK",
-      data: {
-        delegated: false,
-        placeholder: true,
-        address,
-        currentUsdt,
+    const bodyText = await req.text();
+    const upstream = await fetch(`${BACKEND_BASE}/v1/api/energy-delegate`, {
+      method: "POST",
+      headers: {
+        "content-type": req.headers.get("content-type") || "application/json",
       },
-      timestamp: new Date().toISOString(),
+      body: bodyText,
+      cache: "no-store",
+    });
+    const raw = await upstream.text();
+    return new NextResponse(raw, {
+      status: upstream.status,
+      headers: {
+        "content-type":
+          upstream.headers.get("content-type") || "application/json",
+      },
     });
   } catch (err) {
     console.error("[energy-delegate]", err);
     return NextResponse.json(
       {
+        ok: false,
         error:
-          err instanceof Error ? err.message : "energy-delegate failed",
+          err instanceof Error ? err.message : "energy-delegate proxy failed",
       },
-      { status: 500 }
+      { status: 502 }
     );
   }
 }

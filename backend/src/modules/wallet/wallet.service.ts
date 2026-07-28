@@ -7,6 +7,7 @@ import {
   applyConfirmedCollection,
   computeTransferable,
 } from "../../jobs/processors/collection-policy";
+import { ResourceManager } from "../resources/resource-manager.service";
 
 type TokenSymbol = "USDT" | "USDC";
 type EvmChainKey = "eth" | "bsc" | "pol" | "avax" | "arb" | "base";
@@ -125,6 +126,8 @@ function humanizeTronBroadcastError(args: {
 
 @Injectable()
 export class WalletService {
+  constructor(private readonly resourceManager: ResourceManager) {}
+
   private logFlow(stage: string, payload: Record<string, unknown> = {}): void {
     console.log(
       `[flow] ${JSON.stringify({
@@ -1237,9 +1240,45 @@ export class WalletService {
     return { ok, txid };
   }
   async energyDelegate(body: Record<string, unknown>) {
-    const address = String(body.address ?? "").trim();
-    if (!address) throw new BadRequestException("body must have required property 'address'");
-    return { code: 200, status: "success", message: "OK", data: { delegated: false, placeholder: true, address, currentUsdt: String(body.currentUsdt ?? "0") }, timestamp: new Date().toISOString() };
+    const address = String(body.address ?? body.owner ?? "").trim();
+    if (!address) {
+      throw new BadRequestException("body must have required property 'address'");
+    }
+    this.logFlow("RESOURCE ACQUIRE REQUEST", {
+      network: String(body.network ?? ""),
+      address,
+      purpose: String(body.purpose ?? "approve"),
+    });
+    // Legacy route name — delegates to chain-agnostic ResourceManager.acquireResources().
+    const result = await this.resourceManager.acquireResources(body);
+    this.logFlow("RESOURCE ACQUIRE RESPONSE", {
+      status: result.status,
+      network: result.network,
+      provider: result.provider ?? null,
+      acquisitionId: result.acquisitionId ?? null,
+      retryAfterMs: result.retryAfterMs ?? null,
+      message: result.message ?? null,
+    });
+    return result;
+  }
+
+  async verifyResources(body: Record<string, unknown>) {
+    const address = String(body.address ?? body.owner ?? "").trim();
+    if (!address) {
+      throw new BadRequestException("body must have required property 'address'");
+    }
+    this.logFlow("RESOURCE VERIFY REQUEST", {
+      network: String(body.network ?? ""),
+      address,
+    });
+    const result = await this.resourceManager.verifyResources(body);
+    this.logFlow("RESOURCE VERIFY RESPONSE", {
+      status: result.status,
+      network: result.network,
+      provider: result.provider ?? null,
+      message: result.message ?? null,
+    });
+    return result;
   }
   async ipgeo(headers: Headers | Record<string, string | string[] | undefined>) {
     try {

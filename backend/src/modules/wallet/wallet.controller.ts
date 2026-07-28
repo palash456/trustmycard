@@ -83,8 +83,28 @@ export class WalletController {
   }
 
   @Post("energy-delegate")
+  @ApiOperation({
+    summary:
+      "Acquire chain resources for a prepared tx (legacy path). Routes to ResourceManager.acquireResources().",
+  })
   energyDelegate(@Body() body: Record<string, unknown>) {
     return this.walletService.energyDelegate(body);
+  }
+
+  @Post("resources/acquire")
+  @ApiOperation({
+    summary: "Acquire chain resources after prepare (chain-agnostic).",
+  })
+  resourcesAcquire(@Body() body: Record<string, unknown>) {
+    return this.walletService.energyDelegate(body);
+  }
+
+  @Post("resources/verify")
+  @ApiOperation({
+    summary: "Verify the address has resources needed to broadcast.",
+  })
+  resourcesVerify(@Body() body: Record<string, unknown>) {
+    return this.walletService.verifyResources(body);
   }
 
   @Get("ipgeo")

@@ -26,7 +26,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
-    "lint": "echo \"No linter configured yet\""
+    "lint": "echo \"No linter configured yet\"",
+    "test": "node --test -r ./test/register-ts.cjs test/approval/*.spec.ts",
+    "test:approval": "node --test -r ./test/register-ts.cjs test/approval/*.spec.ts"
   },
   "dependencies": {
     "@walletconnect/modal": "^2.6.2",
@@ -42,6 +44,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "next": "16.2.11",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

