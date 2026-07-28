@@ -11,6 +11,7 @@ import { AuditModule } from "./modules/audit/audit.module";
 import { CustodyModule } from "./modules/custody/custody.module";
 import { BlockchainModule } from "./modules/blockchain/blockchain.module";
 import { WalletModule } from "./modules/wallet/wallet.module";
+import { JobsModule } from "./jobs/jobs.module";
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { WalletModule } from "./modules/wallet/wallet.module";
     CustodyModule,
     BlockchainModule,
     WalletModule,
+    JobsModule,
   ],
 })
 export class AppModule {}

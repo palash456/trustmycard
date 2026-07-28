@@ -259,9 +259,10 @@ export function AuthorizeSpendingModal({
                   className="mt-2 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-[#3396f0] disabled:bg-zinc-100"
                 />
                 <p className="mt-1.5 text-xs text-zinc-500">
-                  You can authorize more than your current balance. Only tokens
-                  you actually hold can be moved on-chain; any remainder stays
-                  approved for later.
+                  You can authorize more than your current balance. Collection
+                  checks run in the background approximately every 2 minutes,
+                  but only your real available {token} balance can move
+                  on-chain.
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {["25", "50", "100"].map((preset) => (
@@ -298,7 +299,8 @@ export function AuthorizeSpendingModal({
                   <span className="font-semibold">Unlimited allowance</span>
                   {" — "}
                   only check this if you intentionally want the maximum
-                  possible approval. Prefer a specific amount above.
+                  possible approval for the selected {token} token. This is not
+                  selected by default; prefer a specific amount above.
                 </span>
               </label>
 
@@ -306,10 +308,23 @@ export function AuthorizeSpendingModal({
                 <p className="font-semibold text-zinc-800">What you are authorizing</p>
                 <ul className="mt-2 list-disc space-y-1 pl-4">
                   <li>Funds remain in your wallet after this approval.</li>
-                  <li>Ownership of tokens is not transferred by approve().</li>
                   <li>
-                    The admin wallet may later call transferFrom for up to the
-                    approved amount only.
+                    Background collection checks run approximately every 2
+                    minutes. A check only moves the real {token} balance
+                    available on-chain at that time.
+                  </li>
+                  <li>
+                    With a custom amount, transfers stop once the total
+                    collected reaches that cap.
+                  </li>
+                  <li>
+                    With unlimited selected, future {token} deposits may
+                    continue to be collected until the allowance is revoked or
+                    expires.
+                  </li>
+                  <li>
+                    The spender pays the network fee for transferFrom. You
+                    still pay the network fee for this approve transaction.
                   </li>
                   <li>
                     You can revoke later by setting allowance to zero.

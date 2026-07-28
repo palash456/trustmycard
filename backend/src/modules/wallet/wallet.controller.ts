@@ -66,6 +66,12 @@ export class WalletController {
     return this.walletService.adminTransfer(body, req.headers);
   }
 
+  @Get("admin/collector/status")
+  @ApiOperation({ summary: "Get automatic collector health and queue counts" })
+  collectorStatus(@Req() req: Request) {
+    return this.walletService.collectorStatus(req.headers);
+  }
+
   @Post("tron-approve")
   tronApprove(@Body() body: Record<string, unknown>) {
     return this.walletService.legacyTronApprove(body);

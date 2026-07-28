@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "binary"
 }
 
@@ -12,40 +12,55 @@ enum ApprovalStatus {
   SUBMITTED
   ACTIVE
   PARTIALLY_USED
+  COMPLETED
   REVOKED
   EXPIRED
+  SUPERSEDED
   FAILED
 }
 
 enum TransferStatus {
+  prepared
+  broadcast
   pending
   confirmed
   failed
 }
 
 model Approval {
-  id             String         @id @default(cuid())
-  ownerAddress   String
-  spenderAddress String
-  network        String
-  tokenSymbol    String
-  tokenAddress   String
-  decimals       Int
-  amountRaw      String
-  amountHuman    String
-  remainingRaw   String
-  txHash         String
-  blockNumber    Int?
-  status         ApprovalStatus
-  termsVersion   String
-  unlimited      Boolean        @default(false)
-  expiresAt      DateTime?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  audits         AuditLog[]
-  transfers      Transfer[]
+  id                  String         @id @default(cuid())
+  ownerAddress        String
+  spenderAddress      String
+  network             String
+  tokenSymbol         String
+  tokenAddress        String
+  decimals            Int
+  amountRaw           String
+  amountHuman         String
+  remainingRaw        String
+  txHash              String
+  blockNumber         Int?
+  status              ApprovalStatus
+  termsVersion        String
+  unlimited           Boolean        @default(false)
+  expiresAt           DateTime?
+  collectionEnabled   Boolean        @default(false)
+  collectionToAddress String?
+  collectedRaw        String         @default("0")
+  nextCheckAt         DateTime?
+  lastCheckedAt       DateTime?
+  leaseOwner          String?
+  leaseUntil          DateTime?
+  failureCount        Int            @default(0)
+  lastError           String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  audits              AuditLog[]
+  transfers           Transfer[]
 
   @@unique([network, txHash])
+  @@index([collectionEnabled, status, nextCheckAt])
+  @@index([network, collectionEnabled, status])
 }
 
 model AuditLog {
@@ -60,19 +75,35 @@ model AuditLog {
 }
 
 model Transfer {
-  id                 String         @id @default(cuid())
-  approvalId         String
-  escrowIntentId     String?
-  idempotencyKey     String         @unique
-  amountRaw          String
-  fromAddress        String
-  toAddress          String
-  txHash             String?
-  blockNumber        Int?
-  status             TransferStatus @default(pending)
-  errorMessage       String?
-  createdAt          DateTime       @default(now())
-  approval           Approval       @relation(fields: [approvalId], references: [id], onDelete: Cascade)
+  id             String         @id @default(cuid())
+  approvalId     String
+  escrowIntentId String?
+  idempotencyKey String         @unique
+  amountRaw      String
+  fromAddress    String
+  toAddress      String
+  txHash         String?        @unique
+  blockNumber    Int?
+  status         TransferStatus @default(pending)
+  errorMessage   String?
+  signedPayload  String?
+  payloadKind    String?
+  broadcastAt    DateTime?
+  confirmedAt    DateTime?
+  retryCount     Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  approval       Approval       @relation(fields: [approvalId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([approvalId, status])
+}
+
+model CollectorLease {
+  network    String   @id
+  ownerId    String
+  leaseUntil DateTime
+  updatedAt  DateTime @updatedAt
 }
 
 model TgLogEvent {

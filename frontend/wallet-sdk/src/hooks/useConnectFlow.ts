@@ -7,7 +7,6 @@ import {
   getToken,
   isEvmChainKey,
   parseHumanToRaw,
-  tokensForNetwork,
   type TokenSymbol,
 } from "../core/chain-tokens";
 import { fetchBalances } from "../core/balances-client";
@@ -379,9 +378,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     setError(null);
     setStatus(networkKey, "waiting");
 
-    const selectedTokens = unlimited
-      ? tokensForNetwork(networkKey).map((t) => t.symbol)
-      : [token];
+    const selectedTokens = [token];
     const spender = getSpenderForNetwork(spendersRef.current, networkKey);
     if (selectedTokens.length === 0) {
       setError("No supported tokens found for selected network");

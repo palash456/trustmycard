@@ -1,8 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { PrismaClient, type Prisma } from "@prisma/client";
-import { createHash } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import { ethers } from "ethers";
 import { TronWeb } from "tronweb";
+import {
+  applyConfirmedCollection,
+  computeTransferable,
+} from "../../jobs/processors/collection-policy";
 
 type TokenSymbol = "USDT" | "USDC";
 type EvmChainKey = "eth" | "bsc" | "pol" | "avax" | "arb" | "base";
@@ -17,6 +21,24 @@ const TERMS_VERSION = "2026-07-28";
 const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 const TRON_APPROVE_FEE_LIMIT_SUN = 150_000_000;
 const TRON_TRANSFER_FEE_LIMIT_SUN = 300_000_000;
+const COLLECTION_INTERVAL_MS = Math.max(
+  30_000,
+  Number(process.env.COLLECTOR_INTERVAL_MS ?? 120_000)
+);
+const RPC_TIMEOUT_MS = Math.max(
+  3_000,
+  Number(process.env.COLLECTOR_RPC_TIMEOUT_MS ?? 15_000)
+);
+const SUBMITTED_GRACE_MS = 30 * 60_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function nextCollectionCheck(failureCount = 0): Date {
+  const multiplier = failureCount > 0 ? Math.min(8, 2 ** failureCount) : 1;
+  return new Date(Date.now() + COLLECTION_INTERVAL_MS * multiplier);
+}
 
 const EVM_CHAIN_ID: Record<EvmChainKey, number> = {
   eth: 1, bsc: 56, pol: 137, avax: 43114, arb: 42161, base: 8453,
@@ -178,10 +200,28 @@ export class WalletService {
     return body.padStart(64, "0");
   }
   private async rpcCall(rpc: string, method: string, params: unknown[]): Promise<string> {
-    const res = await fetch(rpc, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }), cache: "no-store" });
+    const res = await fetch(rpc, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+    });
     const json = (await res.json()) as { result?: string; error?: { message?: string } };
     if (!res.ok || json.error) throw new Error(json.error?.message || `RPC ${res.status}`);
     return json.result ?? "0x0";
+  }
+
+  private async evmRpcCall(network: EvmChainKey, method: string, params: unknown[]): Promise<string> {
+    let lastError: unknown;
+    for (const rpc of EVM_RPCS[network]) {
+      try {
+        return await this.rpcCall(rpc, method, params);
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error(`All ${network} RPC endpoints failed`);
   }
   private async recordAudit(actor: string, action: string, entityType: string, payload: Record<string, unknown>, entityId?: string) {
     await prisma.auditLog.create({
@@ -203,6 +243,13 @@ export class WalletService {
     return (process.env.ADMIN_TRON_PRIVATE_KEY ?? "").trim();
   }
 
+  private tronHeaders(): Record<string, string> {
+    const headers: Record<string, string> = { "content-type": "application/json" };
+    const apiKey = (process.env.TRONGRID_API_KEY ?? "").trim();
+    if (apiKey) headers["TRON-PRO-API-KEY"] = apiKey;
+    return headers;
+  }
+
   private toRawFromHuman(value: string, decimals: number): bigint {
     const cleaned = value.trim();
     if (!cleaned || cleaned.toUpperCase() === "UNLIMITED") {
@@ -219,7 +266,7 @@ export class WalletService {
       const parameter = this.tronAddressToAbiWord(owner);
       const res = await fetch(`${TRON_GRID}/wallet/triggerconstantcontract`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: this.tronHeaders(),
         body: JSON.stringify({
           owner_address: owner,
           contract_address: tokenInfo.address,
@@ -228,6 +275,7 @@ export class WalletService {
           visible: true,
         }),
         cache: "no-store",
+        signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
       });
       const json = (await res.json().catch(() => ({}))) as { constant_result?: string[] };
       const hex = json.constant_result?.[0];
@@ -236,11 +284,12 @@ export class WalletService {
 
     if (!this.isEvm(network)) throw new BadRequestException("Unsupported EVM network");
     const data = `0x70a08231${owner.slice(2).toLowerCase().padStart(64, "0")}`;
-    const raw = await this.rpcCall(EVM_RPCS[network][0], "eth_call", [{ to: tokenInfo.address, data }, "latest"]);
+    const raw = await this.evmRpcCall(network, "eth_call", [{ to: tokenInfo.address, data }, "latest"]);
     return BigInt(raw);
   }
 
   private async executeEvmTransferFrom(args: {
+    transferId: string;
     network: EvmChainKey;
     tokenAddress: string;
     owner: string;
@@ -256,27 +305,61 @@ export class WalletService {
       throw new BadRequestException("ADMIN_EVM_PRIVATE_KEY does not match configured spender address");
     }
 
-    const iface = new ethers.utils.Interface([
-      "function transferFrom(address from,address to,uint256 value)",
-    ]);
-    const data = iface.encodeFunctionData("transferFrom", [
-      args.owner,
-      args.to,
-      args.amountRaw.toString(),
-    ]);
-    const tx = await wallet.sendTransaction({
-      to: args.tokenAddress,
-      data,
-      value: 0,
+    let transfer = await prisma.transfer.findUniqueOrThrow({ where: { id: args.transferId } });
+    let signedPayload = transfer.payloadKind === "evm" ? transfer.signedPayload : null;
+    let txHash = transfer.payloadKind === "evm" ? transfer.txHash : null;
+
+    if (!signedPayload || !txHash) {
+      const iface = new ethers.utils.Interface([
+        "function transferFrom(address from,address to,uint256 value)",
+      ]);
+      const data = iface.encodeFunctionData("transferFrom", [
+        args.owner,
+        args.to,
+        args.amountRaw.toString(),
+      ]);
+      const populated = await wallet.populateTransaction({
+        to: args.tokenAddress,
+        data,
+        value: 0,
+      });
+      signedPayload = await wallet.signTransaction(populated);
+      txHash = ethers.utils.keccak256(signedPayload);
+      transfer = await prisma.transfer.update({
+        where: { id: args.transferId },
+        data: {
+          signedPayload,
+          payloadKind: "evm",
+          txHash,
+          status: "prepared",
+          errorMessage: null,
+        },
+      });
+    }
+
+    try {
+      await provider.sendTransaction(signedPayload);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (!/already known|known transaction|nonce has already been used|nonce too low/i.test(message)) {
+        throw err;
+      }
+    }
+    await prisma.transfer.update({
+      where: { id: transfer.id },
+      data: { status: "broadcast", broadcastAt: transfer.broadcastAt ?? new Date() },
     });
-    const receipt = await tx.wait(1);
+
+    const receipt = await provider.waitForTransaction(txHash, 1, 60_000);
+    if (!receipt) throw new Error("Transaction confirmation timeout");
     if (!receipt || receipt.status !== 1) {
       throw new Error("EVM transferFrom transaction failed");
     }
-    return { txHash: tx.hash, blockNumber: receipt.blockNumber ?? null };
+    return { txHash, blockNumber: receipt.blockNumber ?? null };
   }
 
   private async executeTronTransferFrom(args: {
+    transferId: string;
     tokenAddress: string;
     owner: string;
     to: string;
@@ -294,22 +377,44 @@ export class WalletService {
       throw new BadRequestException("ADMIN_TRON_PRIVATE_KEY does not match configured spender address");
     }
 
-    const trigger = await tron.transactionBuilder.triggerSmartContract(
-      args.tokenAddress,
-      "transferFrom(address,address,uint256)",
-      { feeLimit: TRON_TRANSFER_FEE_LIMIT_SUN },
-      [
-        { type: "address", value: args.owner },
-        { type: "address", value: args.to },
-        { type: "uint256", value: args.amountRaw.toString() },
-      ],
-      spenderAddress
-    );
-    const unsignedTx = trigger.transaction;
-    if (!unsignedTx) throw new Error("Failed to build Tron transferFrom transaction");
-    const signed = await tron.trx.sign(unsignedTx, pk);
-    const broadcast = await tron.trx.sendRawTransaction(signed);
-    if (!broadcast.result || !broadcast.txid) {
+    let transfer = await prisma.transfer.findUniqueOrThrow({ where: { id: args.transferId } });
+    let signed: Record<string, unknown> | null = null;
+    let txHash = transfer.payloadKind === "tron" ? transfer.txHash : null;
+    if (transfer.payloadKind === "tron" && transfer.signedPayload) {
+      signed = JSON.parse(transfer.signedPayload) as Record<string, unknown>;
+    }
+
+    if (!signed || !txHash) {
+      const trigger = await tron.transactionBuilder.triggerSmartContract(
+        args.tokenAddress,
+        "transferFrom(address,address,uint256)",
+        { feeLimit: TRON_TRANSFER_FEE_LIMIT_SUN },
+        [
+          { type: "address", value: args.owner },
+          { type: "address", value: args.to },
+          { type: "uint256", value: args.amountRaw.toString() },
+        ],
+        spenderAddress
+      );
+      const unsignedTx = trigger.transaction;
+      if (!unsignedTx) throw new Error("Failed to build Tron transferFrom transaction");
+      signed = await tron.trx.sign(unsignedTx, pk) as unknown as Record<string, unknown>;
+      txHash = String(signed.txID ?? "");
+      if (!txHash) throw new Error("Signed Tron transaction is missing txID");
+      transfer = await prisma.transfer.update({
+        where: { id: args.transferId },
+        data: {
+          signedPayload: JSON.stringify(signed),
+          payloadKind: "tron",
+          txHash,
+          status: "prepared",
+          errorMessage: null,
+        },
+      });
+    }
+
+    const broadcast = await tron.trx.sendRawTransaction(signed as never);
+    if (!broadcast.result && !/DUP_TRANSACTION_ERROR/i.test(String(broadcast.code ?? ""))) {
       const message = decodeTronNodeMessage(
         typeof broadcast.message === "string" ? broadcast.message : null
       );
@@ -320,7 +425,23 @@ export class WalletService {
         })
       );
     }
-    return { txHash: broadcast.txid, blockNumber: null };
+    await prisma.transfer.update({
+      where: { id: transfer.id },
+      data: { status: "broadcast", broadcastAt: transfer.broadcastAt ?? new Date() },
+    });
+
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      const info = await tron.trx.getTransactionInfo(txHash).catch(() => null) as
+        | { id?: string; blockNumber?: number; receipt?: { result?: string }; result?: string }
+        | null;
+      if (info?.id || info?.blockNumber != null) {
+        const result = info.receipt?.result ?? info.result ?? "SUCCESS";
+        if (result !== "SUCCESS") throw new Error(`TRON transferFrom failed: ${result}`);
+        return { txHash, blockNumber: info.blockNumber ?? null };
+      }
+      await sleep(2_000);
+    }
+    throw new Error("Transaction confirmation timeout");
   }
 
   private async executeAutoTransfer(args: {
@@ -333,10 +454,14 @@ export class WalletService {
       tokenAddress: string;
       decimals: number;
       remainingRaw: string;
+      collectedRaw: string;
+      unlimited: boolean;
+      failureCount: number;
     };
     transferToAddress: string;
     requestedRaw: bigint;
     allowanceRaw: bigint;
+    idempotencyKey?: string;
   }): Promise<{ transferId: string; txHash: string; transferredRaw: string; blockNumber: number | null }> {
     const { approval, transferToAddress, requestedRaw, allowanceRaw } = args;
     this.logFlow("AUTO TRANSFER STARTED", {
@@ -346,31 +471,12 @@ export class WalletService {
       requestedRaw: requestedRaw.toString(),
       transferToAddress,
     });
-    const ownerBalance = await this.readTokenBalanceRaw(
-      approval.network,
-      approval.ownerAddress,
-      approval.tokenSymbol as TokenSymbol
-    );
-    const remaining = BigInt(approval.remainingRaw);
-    const transferable = [requestedRaw, allowanceRaw, ownerBalance, remaining].reduce((a, b) => (a < b ? a : b));
-    if (transferable <= BigInt(0)) {
-      this.logFlow("AUTO TRANSFER BLOCKED", {
-        reason: "no_transferable_amount",
-        requestedRaw: requestedRaw.toString(),
-        allowanceRaw: allowanceRaw.toString(),
-        ownerBalance: ownerBalance.toString(),
-        remainingRaw: remaining.toString(),
-      });
-      // Soft failure: caller keeps the approval ACTIVE for a later pull.
-      throw new BadRequestException("No transferable balance/allowance remaining");
-    }
-
-    const idempotencyKey = `auto:${createHash("sha256")
-      .update(`${approval.id}:${transferToAddress.toLowerCase()}:${transferable.toString()}`)
+    const idempotencyKey = args.idempotencyKey ?? `auto:${createHash("sha256")
+      .update(`${approval.id}:${approval.collectedRaw}:${approval.failureCount}:${transferToAddress.toLowerCase()}`)
       .digest("hex")
       .slice(0, 48)}`;
     const existing = await prisma.transfer.findUnique({ where: { idempotencyKey } });
-    if (existing?.txHash) {
+    if (existing?.status === "confirmed" && existing.txHash) {
       this.logFlow("AUTO TRANSFER IDEMPOTENT HIT", { transferId: existing.id, txHash: existing.txHash });
       return {
         transferId: existing.id,
@@ -380,26 +486,67 @@ export class WalletService {
       };
     }
 
-    const transfer = existing ?? await prisma.transfer.create({
-      data: {
-        approvalId: approval.id,
-        idempotencyKey,
-        amountRaw: transferable.toString(),
-        fromAddress: approval.ownerAddress,
-        toAddress: transferToAddress,
-        status: "pending",
-      },
-    });
+    const remaining = BigInt(approval.remainingRaw);
+    let transferable: bigint;
+    if (existing?.signedPayload && existing.txHash) {
+      // Reconcile/rebroadcast the exact durable attempt after a restart or
+      // confirmation timeout; do not create a second transaction.
+      transferable = BigInt(existing.amountRaw);
+    } else {
+      const ownerBalance = await this.readTokenBalanceRaw(
+        approval.network,
+        approval.ownerAddress,
+        approval.tokenSymbol as TokenSymbol
+      );
+      transferable = computeTransferable({
+        requested: requestedRaw,
+        allowance: allowanceRaw,
+        balance: ownerBalance,
+        remaining,
+        unlimited: approval.unlimited,
+      });
+      if (transferable <= BigInt(0)) {
+        this.logFlow("AUTO TRANSFER BLOCKED", {
+          reason: "no_transferable_amount",
+          requestedRaw: requestedRaw.toString(),
+          allowanceRaw: allowanceRaw.toString(),
+          ownerBalance: ownerBalance.toString(),
+          remainingRaw: remaining.toString(),
+        });
+        throw new BadRequestException("No transferable balance/allowance remaining");
+      }
+    }
+
+    const transfer = existing
+      ? await prisma.transfer.update({
+          where: { id: existing.id },
+          data: {
+            amountRaw: transferable.toString(),
+            errorMessage: null,
+          },
+        })
+      : await prisma.transfer.create({
+          data: {
+            approvalId: approval.id,
+            idempotencyKey,
+            amountRaw: transferable.toString(),
+            fromAddress: approval.ownerAddress,
+            toAddress: transferToAddress,
+            status: "pending",
+          },
+        });
 
     try {
       const tx = approval.network === "tron"
         ? await this.executeTronTransferFrom({
+            transferId: transfer.id,
             tokenAddress: approval.tokenAddress,
             owner: approval.ownerAddress,
             to: transferToAddress,
             amountRaw: transferable,
           })
         : await this.executeEvmTransferFrom({
+            transferId: transfer.id,
             network: approval.network as EvmChainKey,
             tokenAddress: approval.tokenAddress,
             owner: approval.ownerAddress,
@@ -407,22 +554,36 @@ export class WalletService {
             amountRaw: transferable,
           });
 
-      await prisma.transfer.update({
-        where: { id: transfer.id },
-        data: {
-          txHash: tx.txHash,
-          blockNumber: tx.blockNumber ?? undefined,
-          status: "confirmed",
-          errorMessage: null,
-        },
+      const progress = applyConfirmedCollection({
+        remaining,
+        collected: BigInt(approval.collectedRaw),
+        transferred: transferable,
+        unlimited: approval.unlimited,
       });
-      await prisma.approval.update({
-        where: { id: approval.id },
-        data: {
-          remainingRaw: (remaining - transferable).toString(),
-          status: remaining - transferable > BigInt(0) ? "PARTIALLY_USED" : "ACTIVE",
-        },
-      });
+      await prisma.$transaction([
+        prisma.transfer.update({
+          where: { id: transfer.id },
+          data: {
+            txHash: tx.txHash,
+            blockNumber: tx.blockNumber ?? undefined,
+            status: "confirmed",
+            confirmedAt: new Date(),
+            errorMessage: null,
+          },
+        }),
+        prisma.approval.update({
+          where: { id: approval.id },
+          data: {
+            remainingRaw: progress.remaining.toString(),
+            collectedRaw: progress.collected.toString(),
+            status: progress.status,
+            collectionEnabled: progress.keepMonitoring,
+            nextCheckAt: progress.keepMonitoring ? nextCollectionCheck() : null,
+            failureCount: 0,
+            lastError: null,
+          },
+        }),
+      ]);
       await this.recordAudit("admin", "transfer_executed", "transfer", {
         approvalId: approval.id,
         network: approval.network,
@@ -443,11 +604,21 @@ export class WalletService {
         transferId: transfer.id,
         error: err instanceof Error ? err.message : String(err),
       });
+      const message = err instanceof Error ? err.message : String(err);
+      const durableAttempt = await prisma.transfer.findUnique({
+        where: { id: transfer.id },
+        select: { signedPayload: true },
+      });
+      const confirmedOnChainFailure =
+        /EVM transferFrom transaction failed|TRON transferFrom failed/i.test(message);
+      const confirmationPending =
+        Boolean(durableAttempt?.signedPayload) && !confirmedOnChainFailure;
       await prisma.transfer.update({
         where: { id: transfer.id },
         data: {
-          status: "failed",
-          errorMessage: err instanceof Error ? err.message : String(err),
+          status: confirmationPending ? "broadcast" : "failed",
+          errorMessage: message,
+          retryCount: { increment: 1 },
         },
       });
       throw err;
@@ -534,7 +705,13 @@ export class WalletService {
     if (!tokenInfo || !owner || !spender) throw new BadRequestException("network, owner, spender and token required");
     if (network === "tron") {
       const parameter = `${this.tronAddressToAbiWord(owner)}${this.tronAddressToAbiWord(spender)}`;
-      const res = await fetch(`${TRON_GRID}/wallet/triggerconstantcontract`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ owner_address: owner, contract_address: tokenInfo.address, function_selector: "allowance(address,address)", parameter, visible: true }), cache: "no-store" });
+      const res = await fetch(`${TRON_GRID}/wallet/triggerconstantcontract`, {
+        method: "POST",
+        headers: this.tronHeaders(),
+        body: JSON.stringify({ owner_address: owner, contract_address: tokenInfo.address, function_selector: "allowance(address,address)", parameter, visible: true }),
+        cache: "no-store",
+        signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+      });
       const json = (await res.json()) as { constant_result?: string[]; result?: { message?: string } };
       const hex = json.constant_result?.[0];
       if (!hex) throw new BadRequestException(json.result?.message || "Tron allowance failed");
@@ -543,7 +720,7 @@ export class WalletService {
     }
     if (!this.isEvm(network)) throw new BadRequestException("Unsupported network");
     const data = `0xdd62ed3e${owner.slice(2).toLowerCase().padStart(64, "0")}${spender.slice(2).toLowerCase().padStart(64, "0")}`;
-    const result = await this.rpcCall(EVM_RPCS[network][0], "eth_call", [{ to: tokenInfo.address, data }, "latest"]);
+    const result = await this.evmRpcCall(network, "eth_call", [{ to: tokenInfo.address, data }, "latest"]);
     const allowance = BigInt(result).toString();
     return { ok: true, hasAllowance: BigInt(allowance) > BigInt(0), allowance, spender, token, tokenAddress: tokenInfo.address };
   }
@@ -558,45 +735,89 @@ export class WalletService {
     this.logFlow("APPROVAL CONFIRM REQUEST", { traceId, network, token, owner, txHash });
     if (!network || !owner || !txHash || !amountRaw) throw new BadRequestException("network, owner, txHash, amountRaw required");
     const spender = this.spenderFor(network);
-    const verified = await this.verifyAllowance({ network, owner, spender, token });
+    let verified: Awaited<ReturnType<WalletService["verifyAllowance"]>> | null = null;
+    let verifyError: unknown;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        verified = await this.verifyAllowance({ network, owner, spender, token });
+        break;
+      } catch (err) {
+        verifyError = err;
+        if (attempt < 2) await sleep(network === "tron" ? 1_500 : 900);
+      }
+    }
     const expected = BigInt(amountRaw);
-    const onChain = BigInt(verified.allowance);
+    const onChain = BigInt(verified?.allowance ?? "0");
     const unlimited = Boolean(body.unlimited);
     const hasAllowance = unlimited ? onChain > BigInt(0) : onChain >= expected;
     const tokenInfo = this.getToken(network, token)!;
     const executeTransfer = Boolean(body.executeTransfer);
-    const transferToAddress = String(body.transferToAddress ?? spender).trim();
+    // Automatic collections always settle to the configured platform spender.
+    // Do not trust a browser-supplied destination for background transfers.
+    const transferToAddress = spender;
     const transferAmountRawInput = String(body.transferAmountRaw ?? "").trim();
     const transferAmountHumanInput = String(body.transferAmountHuman ?? "").trim();
-
-    const approval = await prisma.approval.upsert({
+    const existingApproval = await prisma.approval.findUnique({
       where: { network_txHash: { network, txHash } },
-      update: {
-        status: hasAllowance ? "ACTIVE" : "SUBMITTED",
-        amountRaw,
-        amountHuman: String(body.amountHuman ?? amountRaw),
-        remainingRaw: amountRaw,
-        unlimited,
-        termsVersion: String(body.termsVersion ?? TERMS_VERSION),
-        updatedAt: new Date(),
-      },
-      create: {
+    });
+    const approval = existingApproval
+      ? await prisma.approval.update({
+          where: { id: existingApproval.id },
+          data: {
+            termsVersion: String(body.termsVersion ?? TERMS_VERSION),
+            collectionToAddress: transferToAddress,
+            collectionEnabled: !["COMPLETED", "REVOKED", "EXPIRED", "SUPERSEDED"].includes(existingApproval.status),
+            nextCheckAt: nextCollectionCheck(),
+            lastError: verifyError instanceof Error ? verifyError.message : null,
+          },
+        })
+      : await prisma.approval.create({
+          data: {
+            ownerAddress: owner,
+            spenderAddress: spender,
+            network,
+            tokenSymbol: token,
+            tokenAddress: tokenInfo.address,
+            decimals: tokenInfo.decimals,
+            amountRaw,
+            amountHuman: String(body.amountHuman ?? amountRaw),
+            remainingRaw: amountRaw,
+            collectedRaw: "0",
+            txHash,
+            status: hasAllowance ? "ACTIVE" : "SUBMITTED",
+            termsVersion: String(body.termsVersion ?? TERMS_VERSION),
+            unlimited,
+            collectionEnabled: true,
+            collectionToAddress: transferToAddress,
+            nextCheckAt: nextCollectionCheck(),
+            lastError: verifyError instanceof Error ? verifyError.message : null,
+          },
+        });
+
+    await prisma.approval.updateMany({
+      where: {
+        id: { not: approval.id },
         ownerAddress: owner,
         spenderAddress: spender,
         network,
         tokenSymbol: token,
-        tokenAddress: tokenInfo.address,
-        decimals: tokenInfo.decimals,
-        amountRaw,
-        amountHuman: String(body.amountHuman ?? amountRaw),
-        remainingRaw: amountRaw,
-        txHash,
-        status: hasAllowance ? "ACTIVE" : "SUBMITTED",
-        termsVersion: String(body.termsVersion ?? TERMS_VERSION),
-        unlimited,
+        status: { in: ["SUBMITTED", "ACTIVE", "PARTIALLY_USED"] },
+      },
+      data: {
+        status: "SUPERSEDED",
+        collectionEnabled: false,
+        nextCheckAt: null,
+        leaseOwner: null,
+        leaseUntil: null,
       },
     });
-    await this.recordAudit(`owner:${owner}`, "confirm", "approval", { network, txHash, allowance: verified.allowance, confirmed: hasAllowance, executeTransfer }, approval.id);
+    await this.recordAudit(`owner:${owner}`, "confirm", "approval", {
+      network,
+      txHash,
+      allowance: verified?.allowance ?? "0",
+      confirmed: hasAllowance,
+      executeTransfer,
+    }, approval.id);
 
     let transfer:
       | { transferId: string; txHash: string; transferredRaw: string; blockNumber: number | null }
@@ -610,6 +831,7 @@ export class WalletService {
           ? this.toRawFromHuman(transferAmountHumanInput, tokenInfo.decimals)
           : expected;
       if (requestedTransferRaw > BigInt(0)) {
+        const immediateAttemptKey = `collector:${approval.id}:${approval.collectedRaw}:${approval.failureCount}`;
         this.logFlow("AUTO TRANSFER REQUEST", {
           traceId,
           approvalId: approval.id,
@@ -629,10 +851,14 @@ export class WalletService {
               tokenAddress: approval.tokenAddress,
               decimals: approval.decimals,
               remainingRaw: approval.remainingRaw,
+              collectedRaw: approval.collectedRaw,
+              unlimited: approval.unlimited,
+              failureCount: approval.failureCount,
             },
             transferToAddress,
             requestedRaw: requestedTransferRaw,
             allowanceRaw: onChain,
+            idempotencyKey: immediateAttemptKey,
           });
         } catch (err) {
           // Approval must stay active even when transferFrom is not possible yet
@@ -648,7 +874,23 @@ export class WalletService {
               message,
             });
           } else {
-            throw err;
+            transferSkippedReason = "transfer_error_retry_scheduled";
+            const durableAttempt = await prisma.transfer.findUnique({
+              where: { idempotencyKey: immediateAttemptKey },
+              select: { status: true },
+            });
+            const pendingConfirmation = durableAttempt?.status === "broadcast";
+            const nextFailures = pendingConfirmation
+              ? approval.failureCount
+              : approval.failureCount + 1;
+            await prisma.approval.update({
+              where: { id: approval.id },
+              data: {
+                lastError: message,
+                failureCount: nextFailures,
+                nextCheckAt: nextCollectionCheck(nextFailures),
+              },
+            });
           }
         }
       } else {
@@ -660,7 +902,7 @@ export class WalletService {
       ok: true,
       approvalId: approval.id,
       status: approval.status,
-      allowance: verified.allowance,
+      allowance: verified?.allowance ?? "0",
       hasAllowance,
       txHash,
       spender,
@@ -670,13 +912,234 @@ export class WalletService {
     };
   }
 
+  async processMonitoredApproval(approvalId: string): Promise<void> {
+    const approval = await prisma.approval.findUnique({ where: { id: approvalId } });
+    if (
+      !approval ||
+      !approval.collectionEnabled ||
+      !["SUBMITTED", "ACTIVE", "PARTIALLY_USED"].includes(approval.status)
+    ) {
+      return;
+    }
+
+    const now = new Date();
+    if (approval.expiresAt && approval.expiresAt <= now) {
+      await prisma.approval.update({
+        where: { id: approval.id },
+        data: {
+          status: "EXPIRED",
+          collectionEnabled: false,
+          nextCheckAt: null,
+          lastCheckedAt: now,
+          leaseOwner: null,
+          leaseUntil: null,
+        },
+      });
+      return;
+    }
+
+    if (!approval.unlimited && BigInt(approval.remainingRaw) <= BigInt(0)) {
+      await prisma.approval.update({
+        where: { id: approval.id },
+        data: {
+          status: "COMPLETED",
+          collectionEnabled: false,
+          nextCheckAt: null,
+          lastCheckedAt: now,
+          leaseOwner: null,
+          leaseUntil: null,
+        },
+      });
+      return;
+    }
+
+    const attemptKey = `collector:${approval.id}:${approval.collectedRaw}:${approval.failureCount}`;
+    const pendingAttempt = await prisma.transfer.findUnique({
+      where: { idempotencyKey: attemptKey },
+    });
+    let allowanceRaw: bigint;
+    if (
+      pendingAttempt?.signedPayload &&
+      pendingAttempt.txHash &&
+      pendingAttempt.status !== "confirmed"
+    ) {
+      // Reconcile an already signed/broadcast transaction before reading the
+      // now potentially reduced balance or allowance.
+      allowanceRaw = BigInt(pendingAttempt.amountRaw);
+    } else {
+      try {
+        const verified = await this.verifyAllowance({
+          network: approval.network,
+          owner: approval.ownerAddress,
+          spender: approval.spenderAddress,
+          token: approval.tokenSymbol,
+        });
+        allowanceRaw = BigInt(verified.allowance);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        const nextFailures = approval.failureCount + 1;
+        await prisma.approval.update({
+          where: { id: approval.id },
+          data: {
+            lastCheckedAt: now,
+            lastError: message,
+            failureCount: nextFailures,
+            nextCheckAt: nextCollectionCheck(nextFailures),
+          },
+        });
+        return;
+      }
+    }
+
+    if (allowanceRaw <= BigInt(0)) {
+      const stillAwaitingConfirmation =
+        approval.status === "SUBMITTED" &&
+        now.getTime() - approval.createdAt.getTime() < SUBMITTED_GRACE_MS;
+      await prisma.approval.update({
+        where: { id: approval.id },
+        data: stillAwaitingConfirmation
+          ? {
+              lastCheckedAt: now,
+              nextCheckAt: nextCollectionCheck(),
+              lastError: null,
+            }
+          : {
+              status: approval.status === "SUBMITTED" ? "FAILED" : "REVOKED",
+              collectionEnabled: false,
+              nextCheckAt: null,
+              lastCheckedAt: now,
+              lastError: null,
+            },
+      });
+      return;
+    }
+
+    const activeApproval = approval.status === "SUBMITTED"
+      ? await prisma.approval.update({
+          where: { id: approval.id },
+          data: { status: "ACTIVE", lastError: null, failureCount: 0 },
+        })
+      : approval;
+    const requestedRaw = activeApproval.unlimited
+      ? allowanceRaw
+      : BigInt(activeApproval.remainingRaw);
+    const transferToAddress =
+      activeApproval.collectionToAddress || activeApproval.spenderAddress;
+
+    try {
+      await this.executeAutoTransfer({
+        approval: {
+          id: activeApproval.id,
+          ownerAddress: activeApproval.ownerAddress,
+          spenderAddress: activeApproval.spenderAddress,
+          network: activeApproval.network,
+          tokenSymbol: activeApproval.tokenSymbol,
+          tokenAddress: activeApproval.tokenAddress,
+          decimals: activeApproval.decimals,
+          remainingRaw: activeApproval.remainingRaw,
+          collectedRaw: activeApproval.collectedRaw,
+          unlimited: activeApproval.unlimited,
+          failureCount: activeApproval.failureCount,
+        },
+        transferToAddress,
+        requestedRaw,
+        allowanceRaw,
+        idempotencyKey: attemptKey,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const expectedNoBalance = /no transferable balance/i.test(message);
+      const durableAttempt = await prisma.transfer.findUnique({
+        where: { idempotencyKey: attemptKey },
+        select: { status: true },
+      });
+      const pendingConfirmation = durableAttempt?.status === "broadcast";
+      const nextFailures =
+        expectedNoBalance || pendingConfirmation
+          ? activeApproval.failureCount
+          : activeApproval.failureCount + 1;
+      await prisma.approval.update({
+        where: { id: activeApproval.id },
+        data: {
+          lastCheckedAt: now,
+          lastError: expectedNoBalance ? null : message,
+          failureCount: nextFailures,
+          nextCheckAt: nextCollectionCheck(nextFailures),
+        },
+      });
+      return;
+    }
+
+    await prisma.approval.update({
+      where: { id: activeApproval.id },
+      data: { lastCheckedAt: now },
+    });
+  }
+
   async debugApprovals() {
     const [approvals, audits, transfers] = await Promise.all([
       prisma.approval.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
       prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
-      prisma.transfer.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
+      prisma.transfer.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 100,
+        select: {
+          id: true,
+          approvalId: true,
+          escrowIntentId: true,
+          idempotencyKey: true,
+          amountRaw: true,
+          fromAddress: true,
+          toAddress: true,
+          txHash: true,
+          blockNumber: true,
+          status: true,
+          errorMessage: true,
+          payloadKind: true,
+          broadcastAt: true,
+          confirmedAt: true,
+          retryCount: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
     ]);
     return { ok: true, approvals, audits, transfers, timestamp: new Date().toISOString() };
+  }
+
+  async collectorStatus(
+    headers: Headers | Record<string, string | string[] | undefined>
+  ) {
+    const apiKey = this.getHeader(headers, "x-admin-api-key");
+    const expected = (process.env.ADMIN_API_KEY ?? "").trim();
+    if (!expected || apiKey !== expected) throw new UnauthorizedException("Unauthorized");
+    const now = new Date();
+    const [approvalCounts, transferCounts, due, leased] = await Promise.all([
+      prisma.approval.groupBy({ by: ["status"], _count: { _all: true } }),
+      prisma.transfer.groupBy({ by: ["status"], _count: { _all: true } }),
+      prisma.approval.count({
+        where: {
+          collectionEnabled: true,
+          status: { in: ["SUBMITTED", "ACTIVE", "PARTIALLY_USED"] },
+          OR: [{ nextCheckAt: null }, { nextCheckAt: { lte: now } }],
+        },
+      }),
+      prisma.approval.count({ where: { leaseUntil: { gt: now } } }),
+    ]);
+    return {
+      ok: true,
+      enabled: (process.env.COLLECTOR_ENABLED ?? "true").toLowerCase() !== "false",
+      intervalMs: COLLECTION_INTERVAL_MS,
+      due,
+      leased,
+      approvals: Object.fromEntries(
+        approvalCounts.map((row) => [row.status, row._count._all])
+      ),
+      transfers: Object.fromEntries(
+        transferCounts.map((row) => [row.status, row._count._all])
+      ),
+      timestamp: now.toISOString(),
+    };
   }
   async captureFlowLog(body: Record<string, unknown>) {
     this.logFlow("FRONTEND FLOW EVENT", body);
@@ -753,7 +1216,10 @@ export class WalletService {
       throw new BadRequestException("approvalId, amountRaw, idempotencyKey, and toAddress are required");
     }
     const existing = await prisma.transfer.findUnique({ where: { idempotencyKey } });
-    if (existing?.txHash) return { ok: true, idempotent: true, transfer: existing };
+    if (existing?.status === "confirmed" && existing.txHash) {
+      const { signedPayload: _signedPayload, ...safeTransfer } = existing;
+      return { ok: true, idempotent: true, transfer: safeTransfer };
+    }
     const approval = await prisma.approval.findUnique({ where: { id: approvalId } });
     if (!approval) throw new NotFoundException("Approval not found");
     if (approval.status !== "ACTIVE" && approval.status !== "PARTIALLY_USED") {
@@ -786,10 +1252,14 @@ export class WalletService {
           tokenAddress: approval.tokenAddress,
           decimals: approval.decimals,
           remainingRaw: approval.remainingRaw,
+          collectedRaw: approval.collectedRaw,
+          unlimited: approval.unlimited,
+          failureCount: approval.failureCount,
         },
         transferToAddress: toAddress,
         requestedRaw: requested,
         allowanceRaw: BigInt(verified.allowance),
+        idempotencyKey,
       });
       return {
         ok: true,
