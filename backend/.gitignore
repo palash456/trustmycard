@@ -20,9 +20,5 @@ Thumbs.db
 .vscode/
 *.swp
 
-# Prisma local DB
-prisma/*.db
-prisma/*.db-journal
-
 # Coverage
 coverage/

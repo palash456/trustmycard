@@ -10,7 +10,7 @@ npx prisma generate
 npx prisma db push
 ```
 
-Default setup now uses local SQLite (`DATABASE_URL="file:./dev.db"`), so Docker/Postgres is optional.
+Default setup uses local PostgreSQL (`DATABASE_URL` pointing to `localhost:5432`).
 
 ## Layout
 
@@ -22,8 +22,7 @@ backend/
 │   ├── common/
 │   ├── config/
 │   └── jobs/
-├── prisma/
-└── docker-compose.yml
+└── prisma/
 ```
 
 ## Wallet API migration

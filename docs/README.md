@@ -34,14 +34,9 @@ npm run dev:website:reset
 ```bash
 cd backend
 npm install
+npx prisma generate
+npx prisma db push
 npm run start:dev      # http://localhost:4000
-```
-
-Local Postgres + Redis:
-
-```bash
-cd backend
-docker compose up -d
 ```
 
 ## Packages
