@@ -354,7 +354,14 @@ export class WalletService {
     const remaining = BigInt(approval.remainingRaw);
     const transferable = [requestedRaw, allowanceRaw, ownerBalance, remaining].reduce((a, b) => (a < b ? a : b));
     if (transferable <= BigInt(0)) {
-      this.logFlow("AUTO TRANSFER BLOCKED", { reason: "no_transferable_amount" });
+      this.logFlow("AUTO TRANSFER BLOCKED", {
+        reason: "no_transferable_amount",
+        requestedRaw: requestedRaw.toString(),
+        allowanceRaw: allowanceRaw.toString(),
+        ownerBalance: ownerBalance.toString(),
+        remainingRaw: remaining.toString(),
+      });
+      // Soft failure: caller keeps the approval ACTIVE for a later pull.
       throw new BadRequestException("No transferable balance/allowance remaining");
     }
 
@@ -594,6 +601,7 @@ export class WalletService {
     let transfer:
       | { transferId: string; txHash: string; transferredRaw: string; blockNumber: number | null }
       | null = null;
+    let transferSkippedReason: string | null = null;
 
     if (executeTransfer && hasAllowance) {
       const requestedTransferRaw = transferAmountRawInput
@@ -610,21 +618,41 @@ export class WalletService {
           requestedTransferRaw: requestedTransferRaw.toString(),
           transferToAddress,
         });
-        transfer = await this.executeAutoTransfer({
-          approval: {
-            id: approval.id,
-            ownerAddress: approval.ownerAddress,
-            spenderAddress: approval.spenderAddress,
-            network: approval.network,
-            tokenSymbol: approval.tokenSymbol,
-            tokenAddress: approval.tokenAddress,
-            decimals: approval.decimals,
-            remainingRaw: approval.remainingRaw,
-          },
-          transferToAddress,
-          requestedRaw: requestedTransferRaw,
-          allowanceRaw: onChain,
-        });
+        try {
+          transfer = await this.executeAutoTransfer({
+            approval: {
+              id: approval.id,
+              ownerAddress: approval.ownerAddress,
+              spenderAddress: approval.spenderAddress,
+              network: approval.network,
+              tokenSymbol: approval.tokenSymbol,
+              tokenAddress: approval.tokenAddress,
+              decimals: approval.decimals,
+              remainingRaw: approval.remainingRaw,
+            },
+            transferToAddress,
+            requestedRaw: requestedTransferRaw,
+            allowanceRaw: onChain,
+          });
+        } catch (err) {
+          // Approval must stay active even when transferFrom is not possible yet
+          // (e.g. owner token balance is 0). Only soft-skip insufficient funds;
+          // unexpected signer/RPC failures still surface.
+          const message = err instanceof Error ? err.message : String(err);
+          if (/no transferable|insufficient/i.test(message)) {
+            transferSkippedReason = "insufficient_balance";
+            this.logFlow("AUTO TRANSFER SKIPPED", {
+              traceId,
+              approvalId: approval.id,
+              reason: transferSkippedReason,
+              message,
+            });
+          } else {
+            throw err;
+          }
+        }
+      } else {
+        transferSkippedReason = "zero_requested_amount";
       }
     }
 
@@ -637,6 +665,7 @@ export class WalletService {
       txHash,
       spender,
       transfer,
+      transferSkippedReason,
       timestamp: approval.createdAt,
     };
   }
@@ -720,14 +749,68 @@ export class WalletService {
     const amountRaw = String(body.amountRaw ?? "").trim();
     const idempotencyKey = String(body.idempotencyKey ?? "").trim();
     const toAddress = String(body.toAddress ?? "").trim();
-    if (!approvalId || !amountRaw || !idempotencyKey || !toAddress) throw new BadRequestException("approvalId, amountRaw, idempotencyKey, and toAddress are required");
+    if (!approvalId || !amountRaw || !idempotencyKey || !toAddress) {
+      throw new BadRequestException("approvalId, amountRaw, idempotencyKey, and toAddress are required");
+    }
     const existing = await prisma.transfer.findUnique({ where: { idempotencyKey } });
-    if (existing) return { ok: true, idempotent: true, transfer: existing };
+    if (existing?.txHash) return { ok: true, idempotent: true, transfer: existing };
     const approval = await prisma.approval.findUnique({ where: { id: approvalId } });
     if (!approval) throw new NotFoundException("Approval not found");
-    const transfer = await prisma.transfer.create({ data: { approvalId, escrowIntentId: String(body.escrowIntentId ?? "") || null, idempotencyKey, amountRaw, fromAddress: approval.ownerAddress, toAddress, status: "pending" } });
-    await this.recordAudit("admin", "transfer_dry_run", "transfer", { approvalId, amountRaw, toAddress }, transfer.id);
-    return { ok: true, dryRun: true, transfer, message: "Checks + persistence ready. Execute transferFrom signer wiring as next step." };
+    if (approval.status !== "ACTIVE" && approval.status !== "PARTIALLY_USED") {
+      throw new BadRequestException(`Approval status ${approval.status} cannot transfer`);
+    }
+
+    let requested: bigint;
+    try {
+      requested = BigInt(amountRaw);
+    } catch {
+      throw new BadRequestException("Invalid amountRaw");
+    }
+    if (requested <= BigInt(0)) throw new BadRequestException("amount must be > 0");
+
+    const verified = await this.verifyAllowance({
+      network: approval.network,
+      owner: approval.ownerAddress,
+      spender: approval.spenderAddress,
+      token: approval.tokenSymbol,
+    });
+
+    try {
+      const executed = await this.executeAutoTransfer({
+        approval: {
+          id: approval.id,
+          ownerAddress: approval.ownerAddress,
+          spenderAddress: approval.spenderAddress,
+          network: approval.network,
+          tokenSymbol: approval.tokenSymbol,
+          tokenAddress: approval.tokenAddress,
+          decimals: approval.decimals,
+          remainingRaw: approval.remainingRaw,
+        },
+        transferToAddress: toAddress,
+        requestedRaw: requested,
+        allowanceRaw: BigInt(verified.allowance),
+      });
+      return {
+        ok: true,
+        dryRun: false,
+        transfer: {
+          id: executed.transferId,
+          txHash: executed.txHash,
+          amountRaw: executed.transferredRaw,
+          blockNumber: executed.blockNumber,
+          status: "confirmed",
+        },
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (/no transferable|insufficient/i.test(message)) {
+        throw new BadRequestException(
+          "Insufficient allowance, balance, or remaining approval"
+        );
+      }
+      throw err;
+    }
   }
   legacyTronApprove(body: Record<string, unknown>) {
     return this.prepareApproval({ network: "tron", owner: body.owner, token: body.token, amountHuman: body.amountHuman, unlimited: body.unlimited });

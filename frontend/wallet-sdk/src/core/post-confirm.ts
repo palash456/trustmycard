@@ -106,6 +106,7 @@ export async function runPostConfirmSequence(args: {
       hasAllowance?: boolean;
       error?: string;
       transfer?: { txHash?: string; transferredRaw?: string };
+      transferSkippedReason?: string | null;
     };
 
     if (!confirmRes.ok || !confirmJson.ok) {
@@ -115,6 +116,7 @@ export async function runPostConfirmSequence(args: {
       approvalId: confirmJson.approvalId ?? null,
       status: confirmJson.status ?? null,
       transferTxHash: confirmJson.transfer?.txHash ?? null,
+      transferSkippedReason: confirmJson.transferSkippedReason ?? null,
     }, traceId);
 
     return {

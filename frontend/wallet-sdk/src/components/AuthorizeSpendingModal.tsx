@@ -258,6 +258,11 @@ export function AuthorizeSpendingModal({
                   onChange={(e) => onAmountChange(e.target.value)}
                   className="mt-2 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-[#3396f0] disabled:bg-zinc-100"
                 />
+                <p className="mt-1.5 text-xs text-zinc-500">
+                  You can authorize more than your current balance. Only tokens
+                  you actually hold can be moved on-chain; any remainder stays
+                  approved for later.
+                </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {["25", "50", "100"].map((preset) => (
                     <button
