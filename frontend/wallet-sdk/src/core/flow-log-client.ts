@@ -1,13 +1,19 @@
 /** Send structured flow events to the server terminal (`npm run dev`). */
 export async function postFlowLog(
   step: string,
-  detail: Record<string, unknown> = {}
+  detail: Record<string, unknown> = {},
+  traceId?: string
 ): Promise<void> {
   try {
     await fetch("/api/approvals/debug", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ step, ...detail }),
+      body: JSON.stringify({
+        traceId: traceId ?? "n/a",
+        ts: new Date().toISOString(),
+        step,
+        ...detail,
+      }),
       cache: "no-store",
     });
   } catch {

