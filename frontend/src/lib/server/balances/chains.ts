@@ -86,3 +86,4 @@ export const EVM_CHAINS: EvmChainConfig[] = [
 ];
 
 export const TRON_USDT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
+export const TRON_USDC = "TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8";

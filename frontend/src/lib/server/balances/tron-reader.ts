@@ -1,4 +1,4 @@
-import { TRON_USDT } from "./chains";
+import { TRON_USDC, TRON_USDT } from "./chains";
 import type { TokenBalances } from "./types";
 import { formatUnits } from "./rpc";
 
@@ -7,7 +7,7 @@ export async function readTron(address: string): Promise<TokenBalances> {
     const res = await fetch(`https://api.trongrid.io/v1/accounts/${address}`, {
       cache: "no-store",
     });
-    if (!res.ok) return { native: "0", usdt: "0" };
+    if (!res.ok) return { native: "0", usdt: "0", usdc: "0" };
     const json = (await res.json()) as {
       data?: Array<{
         balance?: number;
@@ -18,15 +18,22 @@ export async function readTron(address: string): Promise<TokenBalances> {
     const native = formatUnits(BigInt(account?.balance ?? 0), 6);
 
     let usdtRaw = BigInt(0);
+    let usdcRaw = BigInt(0);
     for (const entry of account?.trc20 ?? []) {
       if (entry[TRON_USDT] !== undefined) {
         usdtRaw = BigInt(entry[TRON_USDT]);
-        break;
+      }
+      if (entry[TRON_USDC] !== undefined) {
+        usdcRaw = BigInt(entry[TRON_USDC]);
       }
     }
 
-    return { native, usdt: formatUnits(usdtRaw, 6) };
+    return {
+      native,
+      usdt: formatUnits(usdtRaw, 6),
+      usdc: formatUnits(usdcRaw, 6),
+    };
   } catch {
-    return { native: "0", usdt: "0" };
+    return { native: "0", usdt: "0", usdc: "0" };
   }
 }

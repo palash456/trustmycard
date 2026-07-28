@@ -44,14 +44,19 @@ export function rowsFromBalances(data: BalancesResponse): NetworkRow[] {
 export function statusLabel(status: RowStatus): string {
   switch (status) {
     case "waiting":
-      return "Waiting for confirmation...";
+      return "Waiting for wallet confirmation...";
     case "finalizing":
-      return "Confirming on-chain...";
+      return "Verifying on-chain allowance...";
     case "approved":
-      return "Done";
+      return "Authorization recorded";
     case "rejected":
       return "Permission denied by user";
     default:
-      return "Awaiting";
+      return "Select to authorize spending";
   }
+}
+
+export function shortAddress(address: string, head = 6, tail = 4): string {
+  if (address.length <= head + tail + 3) return address;
+  return `${address.slice(0, head)}…${address.slice(-tail)}`;
 }

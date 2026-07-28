@@ -1,21 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   TRON_APPROVE_FEE_LIMIT_SUN,
-  getAllowancePolicy,
   getSpenderTron,
 } from "@/lib/approve-config";
 import {
-  MAX_UINT256,
-  TRON_USDT,
-  parseHumanToRaw,
-} from "@/lib/chain-tokens";
+  parseTokenSymbol,
+  resolveUserAmountRaw,
+} from "@/lib/server/approvals/amount";
 
 export const dynamic = "force-dynamic";
 
 const TRON_ADDRESS_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
 const TRON_GRID = "https://api.trongrid.io";
 
-/** Minimal base58check → hex (41… / 20-byte body) for ABI encoding. */
 const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 function base58ToHex(base58: string): string {
@@ -27,21 +24,18 @@ function base58ToHex(base58: string): string {
   }
   let hex = num.toString(16);
   if (hex.length % 2) hex = `0${hex}`;
-  // preserve leading zeros from leading '1's in base58
   let leading = 0;
   for (const ch of base58) {
     if (ch === "1") leading += 1;
     else break;
   }
   hex = `${"00".repeat(leading)}${hex}`;
-  // drop 4-byte checksum
   if (hex.length < 8) throw new Error("Address too short");
   return hex.slice(0, -8);
 }
 
 function tronAddressToAbiWord(base58: string): string {
   const hex = base58ToHex(base58);
-  // Tron addresses are 21 bytes (0x41 + 20). ABI address uses the 20-byte payload.
   const body = hex.startsWith("41") ? hex.slice(2) : hex.slice(-40);
   return body.padStart(64, "0");
 }
@@ -50,25 +44,28 @@ function uintToAbiWord(value: bigint): string {
   return value.toString(16).padStart(64, "0");
 }
 
-function resolveAmountRaw(): bigint {
-  const policy = getAllowancePolicy();
-  if (policy.mode === "unset") {
-    throw new Error("NEXT_PUBLIC_APPROVE_AMOUNT_USDT is not set");
-  }
-  if (policy.mode === "max") {
-    return BigInt(MAX_UINT256);
-  }
-  return parseHumanToRaw(policy.humanAmount, TRON_USDT.decimals);
-}
-
+/**
+ * POST /api/tron-approve
+ *
+ * Legacy Tron prepare endpoint. Prefer POST /api/approvals/prepare.
+ * Body: { owner, amountHuman?, unlimited?, token? }
+ */
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as { owner?: string };
+    const body = (await req.json()) as {
+      owner?: string;
+      amountHuman?: string;
+      unlimited?: boolean;
+      token?: string;
+    };
     const owner = body.owner?.trim() ?? "";
     const spender = getSpenderTron();
 
     if (!TRON_ADDRESS_RE.test(owner)) {
-      return NextResponse.json({ error: "Invalid Tron owner address" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid Tron owner address" },
+        { status: 400 }
+      );
     }
     if (!spender || !TRON_ADDRESS_RE.test(spender)) {
       return NextResponse.json(
@@ -80,24 +77,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let amount: bigint;
+    let resolved: ReturnType<typeof resolveUserAmountRaw>;
     try {
-      amount = resolveAmountRaw();
+      const token = parseTokenSymbol(body.token ?? "USDT");
+      resolved = resolveUserAmountRaw({
+        network: "tron",
+        token,
+        amountHuman: body.amountHuman,
+        unlimited: Boolean(body.unlimited),
+      });
     } catch (err) {
       return NextResponse.json(
         {
           error:
             err instanceof Error
               ? err.message
-              : "Allowance policy not configured",
+              : "Provide amountHuman or set unlimited: true",
         },
         { status: 400 }
       );
     }
 
-    const parameter = `${tronAddressToAbiWord(spender)}${uintToAbiWord(amount)}`;
+    const { tokenInfo, amountRaw } = resolved;
+    const parameter = `${tronAddressToAbiWord(spender)}${uintToAbiWord(amountRaw)}`;
     const ownerHex = base58ToHex(owner);
-    const contractHex = base58ToHex(TRON_USDT.address);
+    const contractHex = base58ToHex(tokenInfo.address);
 
     const res = await fetch(`${TRON_GRID}/wallet/triggersmartcontract`, {
       method: "POST",
@@ -109,7 +113,6 @@ export async function POST(req: NextRequest) {
         parameter,
         fee_limit: TRON_APPROVE_FEE_LIMIT_SUN,
         call_value: 0,
-        // Match Trust / competitor: hex addresses + visible:false
         visible: false,
       }),
       cache: "no-store",
@@ -126,7 +129,6 @@ export async function POST(req: NextRequest) {
         json.result?.message ||
         json.Error ||
         `TronGrid triggersmartcontract failed (${res.status})`;
-      // message may be hex-encoded ascii
       let decoded = msg;
       try {
         if (/^[0-9a-fA-F]+$/.test(msg) && msg.length % 2 === 0) {
@@ -138,15 +140,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: decoded }, { status: 502 });
     }
 
-    // Same shape as TronGrid / competitor Preview: { result, transaction }
     return NextResponse.json({
       result: { result: true },
       transaction: json.transaction,
+      spender,
+      amountRaw: amountRaw.toString(),
+      token: tokenInfo.symbol,
+      tokenAddress: tokenInfo.address,
     });
   } catch (err) {
     console.error("[tron-approve]", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to build approve tx" },
+      {
+        error:
+          err instanceof Error ? err.message : "Failed to build approve tx",
+      },
       { status: 500 }
     );
   }

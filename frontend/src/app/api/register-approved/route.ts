@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import { TERMS_VERSION, getSpenderForNetwork } from "@/lib/approve-config";
+import {
+  appendAudit,
+  createApproval,
+} from "@/lib/server/approvals/store";
 
 export const dynamic = "force-dynamic";
-
-/** In-memory registry for this server process (resets on restart). */
-const seen = new Set<string>();
-
-const DEFAULT_LIMIT = 999;
 
 /**
  * POST /api/register-approved
  *
- * Called after the user grants wallet permission on any chain.
- * Request: { network, address }
- * Response: { code, status, message, data: { registered, limit, alreadyExists }, timestamp }
+ * Legacy shim — prefer POST /api/approvals/confirm.
+ * Persists metadata into the shared approval store.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -21,10 +20,14 @@ export async function POST(req: NextRequest) {
       address?: string;
       allowance?: string | null;
       txid?: string | null;
+      token?: string;
+      amountRaw?: string;
+      amountHuman?: string;
     };
 
     const network = body.network?.trim().toLowerCase() ?? "";
     const address = body.address?.trim() ?? "";
+    const txHash = (body.txid ?? "").trim();
 
     if (!network || !address) {
       return NextResponse.json(
@@ -33,19 +36,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const key = `${network}:${address.toLowerCase()}`;
-    const alreadyExists = seen.has(key);
-    if (!alreadyExists) {
-      seen.add(key);
-    }
+    const spender = getSpenderForNetwork(network);
+    const amountRaw = (body.amountRaw ?? body.allowance ?? "0").toString();
 
-    console.info("[register-approved]", {
+    const record = createApproval({
+      ownerAddress: address,
+      spenderAddress: spender,
       network,
-      address,
-      alreadyExists,
-      allowance: body.allowance ?? null,
-      txid: body.txid ?? null,
-      at: new Date().toISOString(),
+      tokenSymbol: (body.token ?? "USDT").toUpperCase(),
+      tokenAddress: "",
+      decimals: 6,
+      amountRaw,
+      amountHuman: body.amountHuman ?? amountRaw,
+      remainingRaw: amountRaw,
+      txHash: txHash || `legacy:${network}:${address.toLowerCase()}`,
+      blockNumber: null,
+      status: "ACTIVE",
+      termsVersion: TERMS_VERSION,
+      unlimited: false,
+      expiresAt: null,
+    });
+
+    appendAudit({
+      actor: `owner:${address}`,
+      action: "register_legacy",
+      entityType: "approval",
+      entityId: record.id,
+      payload: { network, txHash, allowance: body.allowance ?? null },
     });
 
     return NextResponse.json({
@@ -54,8 +71,8 @@ export async function POST(req: NextRequest) {
       message: "OK",
       data: {
         registered: true,
-        limit: DEFAULT_LIMIT,
-        alreadyExists,
+        approvalId: record.id,
+        alreadyExists: false,
       },
       timestamp: new Date().toISOString(),
     });

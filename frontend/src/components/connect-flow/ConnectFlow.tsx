@@ -1,7 +1,7 @@
 "use client";
 
+import { AuthorizeSpendingModal } from "@/components/connect-flow/AuthorizeSpendingModal";
 import { ConnectButton } from "@/components/connect-flow/ConnectButton";
-import { NetworkSetupModal } from "@/components/connect-flow/NetworkSetupModal";
 import { useConnectFlow } from "@/hooks/useConnectFlow";
 
 export default function ConnectFlow() {
@@ -14,9 +14,17 @@ export default function ConnectFlow() {
     networks,
     selectedKey,
     rowStatus,
+    token,
+    amountHuman,
+    unlimited,
+    termsAccepted,
     openWalletConnect,
     onSelectNetwork,
-    onContinue,
+    onTokenChange,
+    onAmountChange,
+    onUnlimitedChange,
+    onTermsChange,
+    onAuthorize,
     closeResultsModal,
   } = useConnectFlow();
 
@@ -31,15 +39,23 @@ export default function ConnectFlow() {
       />
 
       {showResults && networks.length > 0 ? (
-        <NetworkSetupModal
+        <AuthorizeSpendingModal
           networks={networks}
           rowStatus={rowStatus}
           selectedKey={selectedKey}
           approving={approving}
           error={error}
+          token={token}
+          amountHuman={amountHuman}
+          unlimited={unlimited}
+          termsAccepted={termsAccepted}
           onClose={closeResultsModal}
           onSelectNetwork={onSelectNetwork}
-          onContinue={onContinue}
+          onTokenChange={onTokenChange}
+          onAmountChange={onAmountChange}
+          onUnlimitedChange={onUnlimitedChange}
+          onTermsChange={onTermsChange}
+          onAuthorize={onAuthorize}
         />
       ) : null}
     </>

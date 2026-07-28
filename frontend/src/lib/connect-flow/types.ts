@@ -44,3 +44,24 @@ export type RowStatus =
   | "finalizing"
   | "approved"
   | "rejected";
+
+export type TokenSymbol = "USDT" | "USDC";
+
+export type AuthorizeDraft = {
+  networkKey: string;
+  token: TokenSymbol;
+  amountHuman: string;
+  unlimited: boolean;
+  termsAccepted: boolean;
+};
+
+export type ApprovalStatus =
+  | "DRAFT"
+  | "PENDING_SIGNATURE"
+  | "SUBMITTED"
+  | "ACTIVE"
+  | "PARTIALLY_USED"
+  | "EXHAUSTED"
+  | "REVOKED"
+  | "EXPIRED"
+  | "FAILED";
