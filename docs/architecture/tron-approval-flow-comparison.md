@@ -1,5 +1,7 @@
 # TRON Approval Flow — Competitor vs Trust My Card
 
+> **See also:** [Three-way comparison (Competitor vs TMC Old vs TMC Current)](./approval-flow-three-way-comparison.md) — covers the full evolution including ApprovalOrchestrator, ResourceManager, and production hardening.
+
 **Date:** 2026-07-29 (HAR-validated)  
 **Scope:** TRON (TRC-20) `approve()` pipeline after QR / wallet connect  
 **Competitor reference:** `trustfree.net.har` (50 entries, captured 2026-07-28T18:40–18:41Z)  
