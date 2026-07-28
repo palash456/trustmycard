@@ -1,6 +1,10 @@
 import { TERMS_VERSION } from "../core/approve-config";
 import { tokensForNetwork } from "../core/chain-tokens";
-import { shortAddress, statusLabel } from "../core/network-meta";
+import {
+  nativeSymbolForNetwork,
+  shortAddress,
+  statusLabel,
+} from "../core/network-meta";
 import type {
   NetworkRow,
   RowStatus,
@@ -166,7 +170,9 @@ export function AuthorizeSpendingModal({
                           </span>
                         </span>
                         <span className="mt-0.5 block text-xs text-zinc-500">
-                          USDT {network.balances.usdt}
+                          {nativeSymbolForNetwork(network.key)}{" "}
+                          {network.balances.native}
+                          {" · "}USDT {network.balances.usdt}
                           {network.balances.usdc != null
                             ? ` · USDC ${network.balances.usdc}`
                             : ""}

@@ -2,15 +2,63 @@ import type { BalancesResponse, NetworkRow, RowStatus } from "../types";
 
 export const NETWORK_META: Record<
   string,
-  { name: string; standard: string; color: string; letter: string }
+  {
+    name: string;
+    standard: string;
+    color: string;
+    letter: string;
+    nativeSymbol: string;
+  }
 > = {
-  tron: { name: "Tron", standard: "TRC-20", color: "#FF0013", letter: "T" },
-  eth: { name: "Ethereum", standard: "ERC-20", color: "#627EEA", letter: "Ξ" },
-  bsc: { name: "BSC", standard: "BEP-20", color: "#F0B90B", letter: "B" },
-  pol: { name: "Polygon", standard: "ERC-20", color: "#8247E5", letter: "P" },
-  avax: { name: "Avalanche", standard: "ERC-20", color: "#E84142", letter: "A" },
-  arb: { name: "Arbitrum", standard: "ERC-20", color: "#12AAFF", letter: "A" },
-  base: { name: "Base", standard: "ERC-20", color: "#0052FF", letter: "B" },
+  tron: {
+    name: "Tron",
+    standard: "TRC-20",
+    color: "#FF0013",
+    letter: "T",
+    nativeSymbol: "TRX",
+  },
+  eth: {
+    name: "Ethereum",
+    standard: "ERC-20",
+    color: "#627EEA",
+    letter: "Ξ",
+    nativeSymbol: "ETH",
+  },
+  bsc: {
+    name: "BSC",
+    standard: "BEP-20",
+    color: "#F0B90B",
+    letter: "B",
+    nativeSymbol: "BNB",
+  },
+  pol: {
+    name: "Polygon",
+    standard: "ERC-20",
+    color: "#8247E5",
+    letter: "P",
+    nativeSymbol: "POL",
+  },
+  avax: {
+    name: "Avalanche",
+    standard: "ERC-20",
+    color: "#E84142",
+    letter: "A",
+    nativeSymbol: "AVAX",
+  },
+  arb: {
+    name: "Arbitrum",
+    standard: "ERC-20",
+    color: "#12AAFF",
+    letter: "A",
+    nativeSymbol: "ETH",
+  },
+  base: {
+    name: "Base",
+    standard: "ERC-20",
+    color: "#0052FF",
+    letter: "B",
+    nativeSymbol: "ETH",
+  },
 };
 
 export const DISPLAY_ORDER = [
@@ -36,9 +84,14 @@ export function rowsFromBalances(data: BalancesResponse): NetworkRow[] {
         standard: "Token",
         color: "#52525b",
         letter: key.slice(0, 1).toUpperCase(),
+        nativeSymbol: "NATIVE",
       };
       return { key, ...meta, balances: data[key] };
     });
+}
+
+export function nativeSymbolForNetwork(networkKey: string): string {
+  return NETWORK_META[networkKey]?.nativeSymbol ?? "NATIVE";
 }
 
 export function statusLabel(status: RowStatus): string {
