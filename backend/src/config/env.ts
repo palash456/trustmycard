@@ -1,4 +1,16 @@
-// Environment validation (Zod) - fail-fast on boot.
-// Populate schema when wiring real config.
+import { config } from "dotenv";
+import { existsSync } from "fs";
+import { resolve } from "path";
 
-export {};
+/**
+ * Load backend env files before Prisma / Nest bootstrap.
+ * Matches local dev convention: `.env` base, `.env.local` overrides.
+ */
+const root = process.cwd();
+
+for (const name of [".env", ".env.local"]) {
+  const path = resolve(root, name);
+  if (existsSync(path)) {
+    config({ path, override: name === ".env.local" });
+  }
+}
