@@ -138,7 +138,11 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
             <CompactMetric
               label="Top pending wallet"
               value={data.revenue.extremes.highestPendingUser?.human ?? "—"}
-              hint={data.revenue.extremes.highestPendingUser?.address.slice(0, 16)}
+              hint={
+                data.revenue.extremes.highestPendingUser
+                  ? `${data.revenue.extremes.highestPendingUser.network.toUpperCase()} ${data.revenue.extremes.highestPendingUser.tokenSymbol}`
+                  : undefined
+              }
             />
             <CompactMetric
               label="Collections / user"

@@ -325,6 +325,7 @@ export class AnalyticsService {
           remainingRaw: true,
           decimals: true,
           ownerAddress: true,
+          unlimited: true,
         },
       }),
       prisma.transfer.findMany({
@@ -343,6 +344,7 @@ export class AnalyticsService {
           tokenSymbol: true,
           remainingRaw: true,
           decimals: true,
+          unlimited: true,
         },
       }),
       prisma.transfer.findMany({
@@ -365,6 +367,7 @@ export class AnalyticsService {
           tokenSymbol: true,
           remainingRaw: true,
           decimals: true,
+          unlimited: true,
         },
       }),
       prisma.transfer.findFirst({
@@ -404,6 +407,7 @@ export class AnalyticsService {
         FROM "Approval"
         WHERE "collectionEnabled" = true
           AND status IN ('SUBMITTED', 'ACTIVE', 'PARTIALLY_USED')
+          AND unlimited = false
         GROUP BY "ownerAddress", network, "tokenSymbol", decimals
         ORDER BY SUM("remainingRaw"::numeric) DESC
         LIMIT 1
@@ -427,6 +431,7 @@ export class AnalyticsService {
         tokenSymbol: r.tokenSymbol,
         raw: r.remainingRaw,
         decimals: r.decimals,
+        unlimited: r.unlimited,
       }))
     );
 
@@ -442,6 +447,7 @@ export class AnalyticsService {
         tokenSymbol: r.tokenSymbol,
         raw: r.remainingRaw,
         decimals: r.decimals,
+        unlimited: r.unlimited,
       })),
     ]);
 
@@ -457,6 +463,7 @@ export class AnalyticsService {
         tokenSymbol: r.tokenSymbol,
         raw: r.remainingRaw,
         decimals: r.decimals,
+        unlimited: r.unlimited,
       })),
     ]);
 
@@ -466,6 +473,7 @@ export class AnalyticsService {
         tokenSymbol: p.tokenSymbol,
         raw: p.raw,
         decimals: p.decimals,
+        unlimited: p.unlimited,
       })),
       ...recoverableFailedRows.map((r) => ({
         network: r.approval.network,
@@ -478,6 +486,7 @@ export class AnalyticsService {
         tokenSymbol: r.tokenSymbol,
         raw: r.remainingRaw,
         decimals: r.decimals,
+        unlimited: r.unlimited,
       })),
     ]);
 
@@ -493,6 +502,7 @@ export class AnalyticsService {
         tokenSymbol: p.tokenSymbol,
         raw: p.raw,
         decimals: p.decimals,
+        unlimited: p.unlimited,
       })),
     ]);
 
@@ -500,6 +510,46 @@ export class AnalyticsService {
 
     const topUser = topUserCollected[0];
     const topPending = topUserPending[0];
+    let highestPendingUser: {
+      address: string;
+      amountRaw: string;
+      human: string;
+      network: string;
+      tokenSymbol: string;
+    } | null = null;
+
+    if (topPending) {
+      highestPendingUser = {
+        address: topPending.owner,
+        amountRaw: topPending.total_raw,
+        human: formatRawAmount(topPending.total_raw, topPending.decimals),
+        network: topPending.network,
+        tokenSymbol: topPending.token_symbol,
+      };
+    } else {
+      const unlimitedPending = await prisma.approval.findFirst({
+        where: {
+          collectionEnabled: true,
+          status: { in: ACTIVE_APPROVAL_STATUSES },
+          unlimited: true,
+        },
+        select: {
+          ownerAddress: true,
+          network: true,
+          tokenSymbol: true,
+        },
+        orderBy: { updatedAt: "desc" },
+      });
+      if (unlimitedPending) {
+        highestPendingUser = {
+          address: unlimitedPending.ownerAddress,
+          amountRaw: "0",
+          human: "Unlimited",
+          network: unlimitedPending.network,
+          tokenSymbol: unlimitedPending.tokenSymbol,
+        };
+      }
+    }
 
     return {
       platformVolume: {
@@ -550,15 +600,7 @@ export class AnalyticsService {
               tokenSymbol: topUser.token_symbol,
             }
           : null,
-        highestPendingUser: topPending
-          ? {
-              address: topPending.owner,
-              amountRaw: topPending.total_raw,
-              human: formatRawAmount(topPending.total_raw, topPending.decimals),
-              network: topPending.network,
-              tokenSymbol: topPending.token_symbol,
-            }
-          : null,
+        highestPendingUser,
       },
       confirmedTransferCount: confirmedCount,
       periodConfirmedCount: periodCollected.reduce(
@@ -1260,7 +1302,7 @@ export class AnalyticsService {
             collectionEnabled: true,
             status: { in: ACTIVE_APPROVAL_STATUSES },
           },
-          select: { tokenSymbol: true, remainingRaw: true, decimals: true, network: true },
+          select: { tokenSymbol: true, remainingRaw: true, decimals: true, network: true, unlimited: true },
         }),
         prisma.transfer.findMany({
           where: { status: "failed", approval: { network } },
@@ -1289,6 +1331,7 @@ export class AnalyticsService {
           tokenSymbol: p.tokenSymbol,
           raw: p.remainingRaw,
           decimals: p.decimals,
+          unlimited: p.unlimited,
         }))
       );
       const failedAgg = aggregateByNetworkToken(
@@ -1420,7 +1463,7 @@ export class AnalyticsService {
           collectionEnabled: true,
           status: { in: ACTIVE_APPROVAL_STATUSES },
         },
-        select: { remainingRaw: true, decimals: true, network: true, tokenSymbol: true },
+        select: { remainingRaw: true, decimals: true, network: true, tokenSymbol: true, unlimited: true },
       }),
       prisma.transfer.count({ where: { approval: { tokenSymbol } } }),
     ]);
@@ -1441,6 +1484,7 @@ export class AnalyticsService {
         tokenSymbol: p.tokenSymbol,
         raw: p.remainingRaw,
         decimals: p.decimals,
+        unlimited: p.unlimited,
       }))
     );
 
@@ -1877,6 +1921,7 @@ export class AnalyticsService {
         FROM "Approval"
         WHERE "collectionEnabled" = true
           AND status IN ('SUBMITTED', 'ACTIVE', 'PARTIALLY_USED')
+          AND unlimited = false
         GROUP BY "ownerAddress", network, "tokenSymbol", decimals
         ORDER BY SUM("remainingRaw"::numeric) DESC LIMIT 10
       `,

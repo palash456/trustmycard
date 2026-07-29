@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { sanitizeMetricText } from "@/lib/analytics-format";
 
 export function CompactMetric({
   label,
@@ -20,21 +21,34 @@ export function CompactMetric({
     danger: "border-destructive/20 bg-destructive/5",
   }[accent ?? "default"];
 
+  const displayValue = sanitizeMetricText(value);
+  const displayHint = hint ? sanitizeMetricText(hint) : undefined;
+  const isLong = displayValue.length > 14;
+
   return (
     <div
       className={cn(
-        "rounded-md border border-border/60 bg-muted/10 px-2.5 py-2",
+        "min-w-0 overflow-hidden rounded-md border border-border/60 bg-muted/10 px-2.5 py-2",
         accentClass,
         className
       )}
     >
-      <p className="text-[10px] font-medium text-muted-foreground">{label}</p>
-      <p className="mt-0.5 text-base font-semibold tabular-nums leading-tight text-foreground">
-        {value}
+      <p className="truncate text-[10px] font-medium text-muted-foreground">{label}</p>
+      <p
+        className={cn(
+          "mt-0.5 truncate font-semibold tabular-nums leading-tight text-foreground",
+          isLong ? "text-xs" : "text-sm"
+        )}
+        title={String(value)}
+      >
+        {displayValue}
       </p>
-      {hint ? (
-        <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground">
-          {hint}
+      {displayHint ? (
+        <p
+          className="mt-0.5 truncate text-[10px] leading-snug text-muted-foreground"
+          title={hint}
+        >
+          {displayHint}
         </p>
       ) : null}
     </div>
@@ -62,8 +76,8 @@ export function AssetCard({
           </span>
         ) : null}
       </div>
-      <p className="mt-1.5 text-lg font-semibold tabular-nums tracking-tight">{value}</p>
-      {sub ? <p className="mt-0.5 text-[10px] text-muted-foreground">{sub}</p> : null}
+      <p className="mt-1.5 truncate text-base font-semibold tabular-nums tracking-tight">{value}</p>
+      {sub ? <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{sub}</p> : null}
     </div>
   );
 }

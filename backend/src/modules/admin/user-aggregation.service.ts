@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { ApprovalStatus, PrismaClient, TransferStatus } from "@prisma/client";
-import { formatRawAmount } from "../../common/utils/amount-format";
+import { formatRawAmount, isUnlimitedRaw } from "../../common/utils/amount-format";
 import {
   paginatedResponse,
   parsePagination,
@@ -45,6 +45,7 @@ type CollectableItem = {
   tokenSymbol: string;
   remainingRaw: string;
   decimals: number;
+  remainingHuman?: string;
 };
 
 type CollectedTotal = {
@@ -667,19 +668,40 @@ export class UserAggregationService {
       tokenSymbol: string;
       remainingRaw: string;
       decimals: number;
+      unlimited?: boolean;
     }>
   ): CollectableItem[] {
     const active = approvals.filter((a) =>
       ACTIVE_APPROVAL_STATUSES.includes(a.status)
     );
-    const map = new Map<string, CollectableItem>();
+    const map = new Map<string, CollectableItem & { unlimitedCount?: number }>();
     for (const a of active) {
       const key = `${a.network}:${a.tokenSymbol}`;
       const existing = map.get(key);
+      const isUnlimited = Boolean(a.unlimited) || isUnlimitedRaw(a.remainingRaw);
+
+      if (isUnlimited) {
+        if (existing) {
+          existing.unlimitedCount = (existing.unlimitedCount ?? 0) + 1;
+          existing.remainingHuman = "Unlimited";
+        } else {
+          map.set(key, {
+            network: a.network,
+            tokenSymbol: a.tokenSymbol,
+            remainingRaw: "0",
+            decimals: a.decimals,
+            remainingHuman: "Unlimited",
+            unlimitedCount: 1,
+          });
+        }
+        continue;
+      }
+
       if (existing) {
         const sum =
           BigInt(existing.remainingRaw) + BigInt(a.remainingRaw || "0");
         existing.remainingRaw = sum.toString();
+        existing.remainingHuman = formatRawAmount(sum.toString(), a.decimals);
       } else {
         map.set(key, {
           network: a.network,
@@ -691,7 +713,9 @@ export class UserAggregationService {
     }
     return [...map.values()].map((item) => ({
       ...item,
-      remainingHuman: formatRawAmount(item.remainingRaw, item.decimals),
+      remainingHuman:
+        item.remainingHuman ??
+        formatRawAmount(item.remainingRaw, item.decimals),
     }));
   }
 

@@ -60,15 +60,20 @@ export function aggregateStablecoinAssets(
 function formatHumanFromRaw(raw: string, decimals: number): string {
   try {
     const value = BigInt(raw || "0");
+    if (value >= BigInt("115792089237316195423570985008687907853269984665640564039457584007913129639935")) {
+      return "Unlimited";
+    }
     if (value === BigInt(0)) return "0";
     const divisor = BigInt(10) ** BigInt(decimals);
     const whole = value / divisor;
     const frac = value % divisor;
     if (frac === BigInt(0)) return whole.toLocaleString();
     const fracStr = frac.toString().padStart(decimals, "0").replace(/0+$/, "");
-    return `${whole.toLocaleString()}.${fracStr}`;
+    const formatted = `${whole.toLocaleString()}.${fracStr}`;
+    return formatted.length > 18 ? `${formatted.slice(0, 15)}…` : formatted;
   } catch {
-    return raw;
+    const text = String(raw ?? "");
+    return text.length > 18 ? `${text.slice(0, 15)}…` : text;
   }
 }
 

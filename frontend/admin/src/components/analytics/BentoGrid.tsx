@@ -83,7 +83,7 @@ export function BentoCell({
 /** Dense KPI strip — equal-height compact tiles. */
 export function BentoMetrics({ children }: { children: React.ReactNode }) {
   return (
-    <div className="col-span-12 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6">
+    <div className="col-span-12 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6 [&>*]:min-w-0">
       {children}
     </div>
   );
