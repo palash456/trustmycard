@@ -9,7 +9,7 @@ export function ApprovalsListChart({
 }) {
   if (items.length === 0) return null;
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-3 md:grid-cols-2">
       <ListStatusMiniChart title="Status breakdown" data={countByField(items, "status")} />
       <ListStatusMiniChart title="Network breakdown" data={countByField(items, "network")} />
     </div>
@@ -28,7 +28,7 @@ export function TransfersListChart({
     byNetwork[key] = (byNetwork[key] ?? 0) + 1;
   }
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-3 md:grid-cols-2">
       <ListStatusMiniChart title="Status breakdown" data={countByField(items, "status")} />
       <ListStatusMiniChart title="Network breakdown" data={byNetwork} />
     </div>
@@ -42,7 +42,7 @@ export function EventsListChart({
 }) {
   if (items.length === 0) return null;
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-3 md:grid-cols-2">
       <ListStatusMiniChart title="Event type breakdown" data={countByField(items, "type")} />
       <ListStatusMiniChart title="Outcome breakdown" data={countByField(items, "status")} />
     </div>

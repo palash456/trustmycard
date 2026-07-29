@@ -7,6 +7,7 @@ import {
   ArrowLeftRight,
   CheckCircle2,
   Coins,
+  BarChart3,
   LayoutDashboard,
   ScrollText,
   Server,
@@ -37,6 +38,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/approvals", label: "Approvals", icon: CheckCircle2 },
   { href: "/transfers", label: "Transfers", icon: ArrowLeftRight },
   { href: "/native-transfers", label: "Native", icon: Coins },

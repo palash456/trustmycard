@@ -68,12 +68,17 @@ export function StatusDonutChart({
   description,
   data,
   className,
+  compact = false,
+  bento = false,
 }: {
   title: string;
   description?: string;
   data: Record<string, number>;
   className?: string;
+  compact?: boolean;
+  bento?: boolean;
 }) {
+  const mode = bento ? "bento" : compact ? "compact" : "default";
   const chartTheme = useChartTheme();
   const rows = toChartData(data);
   const total = rows.reduce((sum, row) => sum + row.value, 0);
@@ -85,17 +90,58 @@ export function StatusDonutChart({
   }));
 
   return (
-    <Card className={cn("border-border/80 bg-card shadow-none", className)}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">{title}</CardTitle>
-        {description ? <CardDescription>{description}</CardDescription> : null}
+    <Card
+      className={cn(
+        "border-border/60 bg-card shadow-none",
+        mode === "bento" && "flex h-full min-h-0 flex-col",
+        className
+      )}
+    >
+      <CardHeader
+        className={cn(
+          mode === "bento" ? "shrink-0 space-y-0 px-4 pb-0 pt-4" : "pb-2",
+          mode === "compact" && "py-3"
+        )}
+      >
+        <CardTitle
+          className={cn(
+            mode === "bento" && "text-[11px] font-medium text-muted-foreground",
+            mode === "compact" && "text-sm font-semibold",
+            mode === "default" && "text-base"
+          )}
+        >
+          {title}
+        </CardTitle>
+        {description && mode !== "bento" ? (
+          <CardDescription className={mode === "compact" ? "text-xs" : undefined}>
+            {description}
+          </CardDescription>
+        ) : null}
       </CardHeader>
-      <CardContent>
+      <CardContent
+        className={cn(
+          mode === "bento" && "flex min-h-0 flex-1 flex-col justify-center px-4 pb-4 pt-3",
+          mode === "compact" && "pb-3 pt-0"
+        )}
+      >
         {rows.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">No data</p>
+          <p className="py-6 text-center text-xs text-muted-foreground">No data</p>
         ) : (
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-            <div className="relative mx-auto h-[240px] w-full min-w-0 lg:max-w-[240px]">
+          <div
+            className={cn(
+              "flex flex-col gap-3",
+              mode === "default" && "lg:flex-row lg:items-center",
+              mode === "bento" && "items-center"
+            )}
+          >
+            <div
+              className={cn(
+                "relative mx-auto w-full min-w-0",
+                mode === "bento" && "h-[128px] max-w-[128px]",
+                mode === "compact" && "h-[160px] max-w-[160px]",
+                mode === "default" && "h-[240px] lg:max-w-[240px]"
+              )}
+            >
               <ResponsivePie
                 data={pieData}
                 theme={chartTheme}
@@ -120,14 +166,22 @@ export function StatusDonutChart({
                 )}
               />
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <p className="text-2xl font-bold tabular-nums text-foreground">
+                <p
+                  className={cn(
+                    "font-semibold tabular-nums text-foreground",
+                    mode === "bento" ? "text-base" : mode === "compact" ? "text-lg" : "text-2xl"
+                  )}
+                >
                   {total.toLocaleString()}
                 </p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Total
-                </p>
+                {mode !== "bento" ? (
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Total
+                  </p>
+                ) : null}
               </div>
             </div>
+            {mode === "default" ? (
             <ul className="min-w-0 flex-1 space-y-2">
               {rows.map((row, i) => (
                 <li
@@ -147,6 +201,27 @@ export function StatusDonutChart({
                 </li>
               ))}
             </ul>
+            ) : (
+              <ul
+                className={cn(
+                  "flex w-full flex-wrap justify-center gap-x-4 gap-y-1.5",
+                  mode === "bento" ? "max-w-sm" : "max-w-xs"
+                )}
+              >
+                {rows.map((row, i) => (
+                  <li key={row.name} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <span
+                      className="size-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: colorFor(row.name, i) }}
+                    />
+                    <span className="truncate">{row.name}</span>
+                    <span className="tabular-nums font-medium text-foreground">
+                      {row.value.toLocaleString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
       </CardContent>
@@ -161,6 +236,7 @@ export function StatusBarChart({
   className,
   layout = "horizontal",
   compact = false,
+  bento = false,
 }: {
   title: string;
   description?: string;
@@ -168,7 +244,9 @@ export function StatusBarChart({
   className?: string;
   layout?: "horizontal" | "vertical";
   compact?: boolean;
+  bento?: boolean;
 }) {
+  const mode = bento ? "bento" : compact ? "compact" : "default";
   const chartTheme = useChartTheme();
   const rows = toChartData(data);
   const barData = rows.map((row, i) => ({
@@ -178,18 +256,50 @@ export function StatusBarChart({
   }));
 
   return (
-    <Card className={cn("border-border/80 bg-card shadow-none", className)}>
-      <CardHeader className="pb-2">
-        <CardTitle className={cn("text-base", compact && "text-sm font-medium")}>
+    <Card
+      className={cn(
+        "border-border/60 bg-card shadow-none",
+        mode === "bento" && "flex h-full min-h-0 flex-col",
+        className
+      )}
+    >
+      <CardHeader
+        className={cn(
+          mode === "bento" ? "shrink-0 space-y-0 px-4 pb-0 pt-4" : "pb-2",
+          mode === "compact" && "py-3"
+        )}
+      >
+        <CardTitle
+          className={cn(
+            mode === "bento" && "text-[11px] font-medium text-muted-foreground",
+            mode === "compact" && "text-sm font-medium",
+            mode === "default" && "text-base"
+          )}
+        >
           {title}
         </CardTitle>
-        {description ? <CardDescription>{description}</CardDescription> : null}
+        {description && mode !== "bento" ? (
+          <CardDescription className={mode === "compact" ? "text-xs" : undefined}>
+            {description}
+          </CardDescription>
+        ) : null}
       </CardHeader>
-      <CardContent>
+      <CardContent
+        className={cn(mode === "bento" && "flex min-h-0 flex-1 flex-col px-4 pb-4 pt-3")}
+      >
         {rows.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">No data</p>
         ) : (
-          <div className={cn("w-full min-w-0", layout === "horizontal" ? "h-[280px]" : "h-[220px]")}>
+          <div
+            className={cn(
+              "w-full min-w-0",
+              mode === "bento" && "h-full min-h-[160px] flex-1",
+              mode === "compact" &&
+                (layout === "horizontal" ? "h-[200px]" : "h-[180px]"),
+              mode === "default" &&
+                (layout === "horizontal" ? "h-[280px]" : "h-[220px]")
+            )}
+          >
             <ResponsiveBar
               data={barData}
               keys={["value"]}
@@ -267,7 +377,7 @@ export function ListStatusMiniChart({
       data={data}
       layout="vertical"
       compact
-      className="mb-6"
+      className="mb-0"
     />
   );
 }

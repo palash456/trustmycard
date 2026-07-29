@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { FilterForm } from "@/components/FilterForm";
+import { PageFilters } from "@/components/FilterForm";
+import { ListPageLayout } from "@/components/ListPageLayout";
+import { ListTableCard } from "@/components/ListTableCard";
 import { PageHeader } from "@/components/PageHeader";
+import { PageRefreshButton } from "@/components/PageRefreshButton";
+import { PageToolbar } from "@/components/PageToolbar";
 import { Pagination } from "@/components/Pagination";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -35,6 +38,16 @@ type ListResponse = {
   totalPages: number;
 };
 
+const FILTER_FIELDS = [
+  { name: "network", label: "Network", placeholder: "e.g. tron" },
+  { name: "owner", label: "Owner", placeholder: "Wallet address" },
+  {
+    name: "status",
+    label: "Status",
+    options: ["pending", "confirmed", "failed"],
+  },
+] as const;
+
 export default async function NativeTransfersPage({
   searchParams,
 }: {
@@ -53,53 +66,50 @@ export default async function NativeTransfersPage({
     data = await adminGetData<ListResponse>(`/admin/native-transfers${query}`);
   } catch (err) {
     return (
-      <div className="space-y-4">
+      <ListPageLayout>
         <PageHeader
           title="Native transfers"
           tip="User-signed native coin transfers (ETH, TRX, BNB, …) registered after broadcast. Pending rows can be reconciled manually from the detail page."
         />
         <ErrorAlert message={err instanceof Error ? err.message : "Failed to load"} />
-      </div>
+      </ListPageLayout>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <ListPageLayout>
       <PageHeader
-          title="Native transfers"
-          tip="User-signed native coin transfers (ETH, TRX, BNB, …) registered after broadcast. Pending rows can be reconciled manually from the detail page."
-        />
+        title="Native transfers"
+        tip="User-signed native coin transfers (ETH, TRX, BNB, …) registered after broadcast. Pending rows can be reconciled manually from the detail page."
+      >
+        <PageToolbar>
+          <PageRefreshButton />
+          <PageFilters action="/native-transfers" values={sp} fields={[...FILTER_FIELDS]} />
+        </PageToolbar>
+      </PageHeader>
 
-      <FilterForm
-        action="/native-transfers"
-        values={sp}
-        fields={[
-          { name: "network", label: "Network" },
-          { name: "owner", label: "Owner" },
-          {
-            name: "status",
-            label: "Status",
-            options: ["pending", "confirmed", "failed"],
-          },
-        ]}
-      />
-
-      <Card className="shadow-sm">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
+      <ListTableCard>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Network</TableHead>
+              <TableHead>Asset</TableHead>
+              <TableHead>Owner</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Reconcile</TableHead>
+              <TableHead>Created</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.items.length === 0 ? (
               <TableRow>
-                <TableHead>Network</TableHead>
-                <TableHead>Asset</TableHead>
-                <TableHead>Owner</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Reconcile</TableHead>
-                <TableHead>Created</TableHead>
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  No native transfers found
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.items.map((row) => (
+            ) : (
+              data.items.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell className="font-medium uppercase">{row.network}</TableCell>
                   <TableCell>{row.assetSymbol}</TableCell>
@@ -120,11 +130,11 @@ export default async function NativeTransfersPage({
                     </Link>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </ListTableCard>
 
       <Pagination
         page={data.page}
@@ -132,6 +142,6 @@ export default async function NativeTransfersPage({
         basePath="/native-transfers"
         query={sp}
       />
-    </div>
+    </ListPageLayout>
   );
 }

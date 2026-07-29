@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { TransfersListChart } from "@/components/charts/ListPageCharts";
-import { FilterForm } from "@/components/FilterForm";
+import { PageFilters } from "@/components/FilterForm";
+import { ListPageLayout } from "@/components/ListPageLayout";
+import { ListTableCard } from "@/components/ListTableCard";
 import { PageHeader } from "@/components/PageHeader";
+import { PageRefreshButton } from "@/components/PageRefreshButton";
+import { PageToolbar } from "@/components/PageToolbar";
 import { Pagination } from "@/components/Pagination";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -40,6 +43,16 @@ type ListResponse = {
   totalPages: number;
 };
 
+const FILTER_FIELDS = [
+  { name: "network", label: "Network", placeholder: "e.g. eth" },
+  { name: "owner", label: "Owner", placeholder: "Wallet address" },
+  {
+    name: "status",
+    label: "Status",
+    options: ["prepared", "broadcast", "pending", "confirmed", "failed"],
+  },
+] as const;
+
 export default async function TransfersPage({
   searchParams,
 }: {
@@ -58,58 +71,53 @@ export default async function TransfersPage({
     data = await adminGetData<ListResponse>(`/admin/transfers${query}`);
   } catch (err) {
     return (
-      <div className="space-y-4">
+      <ListPageLayout>
         <PageHeader
           title="Token transfers"
           tip="Token transferFrom executions pulled by the collector or admin. Each row links to the parent approval and on-chain tx when available."
         />
         <ErrorAlert message={err instanceof Error ? err.message : "Failed to load"} />
-      </div>
+      </ListPageLayout>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <ListPageLayout>
       <PageHeader
-          title="Token transfers"
-          tip="Token transferFrom executions pulled by the collector or admin. Each row links to the parent approval and on-chain tx when available."
-        />
-
-      <FilterForm
-        action="/transfers"
-        values={sp}
-        fields={[
-          { name: "network", label: "Network" },
-          { name: "owner", label: "Owner" },
-          {
-            name: "status",
-            label: "Status",
-            options: ["prepared", "broadcast", "pending", "confirmed", "failed"],
-          },
-        ]}
-      />
+        title="Token transfers"
+        tip="Token transferFrom executions pulled by the collector or admin. Each row links to the parent approval and on-chain tx when available."
+      >
+        <PageToolbar>
+          <PageRefreshButton />
+          <PageFilters action="/transfers" values={sp} fields={[...FILTER_FIELDS]} />
+        </PageToolbar>
+      </PageHeader>
 
       <TransfersListChart items={data.items} />
 
-      <Card className="shadow-sm">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
+      <ListTableCard>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Network</TableHead>
+              <TableHead>Token</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Tx</TableHead>
+              <TableHead>Created</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.items.length === 0 ? (
               <TableRow>
-                <TableHead>Network</TableHead>
-                <TableHead>Token</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Tx</TableHead>
-                <TableHead>Created</TableHead>
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  No transfers found
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.items.map((row) => (
+            ) : (
+              data.items.map((row) => (
                 <TableRow key={row.id}>
-                  <TableCell className="font-medium uppercase">
-                    {row.approval.network}
-                  </TableCell>
+                  <TableCell className="font-medium uppercase">{row.approval.network}</TableCell>
                   <TableCell>{row.approval.tokenSymbol}</TableCell>
                   <TableCell className="font-mono text-xs">{row.amountRaw}</TableCell>
                   <TableCell>
@@ -127,11 +135,11 @@ export default async function TransfersPage({
                     </Link>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </ListTableCard>
 
       <Pagination
         page={data.page}
@@ -139,6 +147,6 @@ export default async function TransfersPage({
         basePath="/transfers"
         query={sp}
       />
-    </div>
+    </ListPageLayout>
   );
 }

@@ -31,7 +31,7 @@ export function Pagination({
   const btn = buttonVariants({ variant: "outline", size: "sm" });
 
   return (
-    <div className="flex items-center justify-between gap-4 pt-4">
+    <div className="flex items-center justify-between gap-4 pt-3">
       <p className="text-sm text-muted-foreground">
         Page {page} of {totalPages}
       </p>

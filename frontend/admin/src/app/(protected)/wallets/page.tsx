@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { FilterForm } from "@/components/FilterForm";
+import { PageFilters } from "@/components/FilterForm";
+import { ListPageLayout } from "@/components/ListPageLayout";
+import { ListTableCard } from "@/components/ListTableCard";
 import { PageHeader } from "@/components/PageHeader";
+import { PageRefreshButton } from "@/components/PageRefreshButton";
+import { PageToolbar } from "@/components/PageToolbar";
 import { Pagination } from "@/components/Pagination";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -30,6 +33,10 @@ type ListResponse = {
   totalPages: number;
 };
 
+const FILTER_FIELDS = [
+  { name: "search", label: "Address search", placeholder: "Full or partial address" },
+] as const;
+
 export default async function WalletsPage({
   searchParams,
 }: {
@@ -46,52 +53,50 @@ export default async function WalletsPage({
     data = await adminGetData<ListResponse>(`/admin/wallets${query}`);
   } catch (err) {
     return (
-      <div className="space-y-4">
+      <ListPageLayout>
         <PageHeader
           title="Wallets"
           tip="Distinct owner addresses seen across approvals, native transfers, and flow events — not login accounts. Open an address for a full activity timeline."
         />
         <ErrorAlert message={err instanceof Error ? err.message : "Failed to load"} />
-      </div>
+      </ListPageLayout>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <ListPageLayout>
       <PageHeader
-          title="Wallets"
-          tip="Distinct owner addresses seen across approvals, native transfers, and flow events — not login accounts. Open an address for a full activity timeline."
-          description="Wallet addresses with activity — not login accounts"
-        />
+        title="Wallets"
+        description="Wallet addresses with activity — not login accounts"
+        tip="Distinct owner addresses seen across approvals, native transfers, and flow events — not login accounts. Open an address for a full activity timeline."
+      >
+        <PageToolbar>
+          <PageRefreshButton />
+          <PageFilters action="/wallets" values={sp} fields={[...FILTER_FIELDS]} />
+        </PageToolbar>
+      </PageHeader>
 
-      <FilterForm
-        action="/wallets"
-        values={sp}
-        fields={[{ name: "search", label: "Address search" }]}
-      />
-
-      <Card className="shadow-sm">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
+      <ListTableCard>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Address</TableHead>
+              <TableHead>Approvals</TableHead>
+              <TableHead>Native</TableHead>
+              <TableHead>Events</TableHead>
+              <TableHead>Last seen</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.items.length === 0 ? (
               <TableRow>
-                <TableHead>Address</TableHead>
-                <TableHead>Approvals</TableHead>
-                <TableHead>Native</TableHead>
-                <TableHead>Events</TableHead>
-                <TableHead>Last seen</TableHead>
+                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                  No wallets match your search
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.items.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                    No wallets match your search
-                  </TableCell>
-                </TableRow>
-              ) : (
-                data.items.map((row) => (
-                  <TableRow key={row.address}>
+            ) : (
+              data.items.map((row) => (
+                <TableRow key={row.address}>
                   <TableCell className="font-mono text-xs">
                     <Link
                       href={`/wallets/${encodeURIComponent(row.address)}`}
@@ -103,16 +108,13 @@ export default async function WalletsPage({
                   <TableCell className="tabular-nums">{row.approvalCount}</TableCell>
                   <TableCell className="tabular-nums">{row.nativeTransferCount}</TableCell>
                   <TableCell className="tabular-nums">{row.eventCount}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDate(row.lastSeen)}
-                  </TableCell>
+                  <TableCell className="text-muted-foreground">{formatDate(row.lastSeen)}</TableCell>
                 </TableRow>
               ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            )}
+          </TableBody>
+        </Table>
+      </ListTableCard>
 
       <Pagination
         page={data.page}
@@ -120,6 +122,6 @@ export default async function WalletsPage({
         basePath="/wallets"
         query={sp}
       />
-    </div>
+    </ListPageLayout>
   );
 }

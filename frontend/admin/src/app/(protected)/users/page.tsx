@@ -2,13 +2,16 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { FilterForm } from "@/components/FilterForm";
+import { PageFilters } from "@/components/FilterForm";
+import { ListPageLayout } from "@/components/ListPageLayout";
+import { ListTableCard } from "@/components/ListTableCard";
 import { PageHeader } from "@/components/PageHeader";
+import { PageRefreshButton } from "@/components/PageRefreshButton";
+import { PageToolbar } from "@/components/PageToolbar";
 import { Pagination } from "@/components/Pagination";
 import { StatusBadge } from "@/components/StatusBadge";
 import { UserHealthBadge } from "@/components/UserHealthBadge";
 import { WorkflowStageBadge } from "@/components/WorkflowStageBadge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -45,6 +48,55 @@ function formatCollected(
     .join(", ");
 }
 
+const FILTER_FIELDS = [
+  { name: "search", label: "Address search", placeholder: "Full or partial address" },
+  { name: "network", label: "Network", placeholder: "e.g. eth" },
+  {
+    name: "workflowStage",
+    label: "Workflow",
+    options: [
+      "idle",
+      "connected",
+      "approving",
+      "approved",
+      "collecting",
+      "completed",
+      "native_pending",
+      "failed",
+    ],
+  },
+  {
+    name: "healthStatus",
+    label: "Health",
+    options: ["healthy", "warning", "error", "idle"],
+  },
+  {
+    name: "approvalStatus",
+    label: "Approval status",
+    options: [
+      "SUBMITTED",
+      "ACTIVE",
+      "PARTIALLY_USED",
+      "COMPLETED",
+      "REVOKED",
+      "EXPIRED",
+      "FAILED",
+    ],
+  },
+  { name: "hasError", label: "Has error", options: ["true"] },
+  {
+    name: "sort",
+    label: "Sort",
+    options: [
+      "lastActivity:desc",
+      "lastActivity:asc",
+      "firstSeen:desc",
+      "approvalCount:desc",
+      "transferCount:desc",
+    ],
+  },
+] as const;
+
 export default async function UsersPage({
   searchParams,
 }: {
@@ -68,219 +120,157 @@ export default async function UsersPage({
     data = await adminGetData<UserListResponse>(`/admin/users${query}`);
   } catch (err) {
     return (
-      <div className="space-y-4">
+      <ListPageLayout>
         <PageHeader
           title="Users"
           tip="Each wallet address is treated as a user. This view aggregates the full transaction lifecycle — approvals, collections, native transfers, events, and errors — in one place."
         />
         <ErrorAlert message={err instanceof Error ? err.message : "Failed to load"} />
-      </div>
+      </ListPageLayout>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <ListPageLayout>
       <PageHeader
         title="Users"
-        tip="Each wallet address is treated as a user. This view aggregates the full transaction lifecycle — approvals, collections, native transfers, events, and errors — in one place."
         description="Wallet-centric operational view across the full lifecycle"
-      />
+        tip="Each wallet address is treated as a user. This view aggregates the full transaction lifecycle — approvals, collections, native transfers, events, and errors — in one place."
+      >
+        <PageToolbar>
+          <PageRefreshButton />
+          <PageFilters action="/users" values={sp} fields={[...FILTER_FIELDS]} />
+        </PageToolbar>
+      </PageHeader>
 
-      <FilterForm
-        action="/users"
-        values={sp}
-        fields={[
-          { name: "search", label: "Address search" },
-          { name: "network", label: "Network" },
-          {
-            name: "workflowStage",
-            label: "Workflow",
-            options: [
-              "idle",
-              "connected",
-              "approving",
-              "approved",
-              "collecting",
-              "completed",
-              "native_pending",
-              "failed",
-            ],
-          },
-          {
-            name: "healthStatus",
-            label: "Health",
-            options: ["healthy", "warning", "error", "idle"],
-          },
-          {
-            name: "approvalStatus",
-            label: "Approval status",
-            options: [
-              "SUBMITTED",
-              "ACTIVE",
-              "PARTIALLY_USED",
-              "COMPLETED",
-              "REVOKED",
-              "EXPIRED",
-              "FAILED",
-            ],
-          },
-          { name: "hasError", label: "Has error", options: ["true"] },
-          {
-            name: "sort",
-            label: "Sort",
-            options: [
-              "lastActivity:desc",
-              "lastActivity:asc",
-              "firstSeen:desc",
-              "approvalCount:desc",
-              "transferCount:desc",
-            ],
-          },
-        ]}
-      />
-
-      <Card className="shadow-sm">
-        <CardContent className="overflow-x-auto p-0">
-          <Table>
-            <TableHeader>
+      <ListTableCard>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Address</TableHead>
+              <TableHead>First seen</TableHead>
+              <TableHead>Last activity</TableHead>
+              <TableHead>Workflow</TableHead>
+              <TableHead>Health</TableHead>
+              <TableHead>Active chain</TableHead>
+              <TableHead>Approved chains</TableHead>
+              <TableHead>Approval</TableHead>
+              <TableHead>Collection</TableHead>
+              <TableHead>Transfer</TableHead>
+              <TableHead>Native</TableHead>
+              <TableHead>Reconcile</TableHead>
+              <TableHead>Collectable</TableHead>
+              <TableHead>Lifetime collected</TableHead>
+              <TableHead>Counts</TableHead>
+              <TableHead>Latest error</TableHead>
+              <TableHead>Explorer</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.items.length === 0 ? (
               <TableRow>
-                <TableHead>Address</TableHead>
-                <TableHead>First seen</TableHead>
-                <TableHead>Last activity</TableHead>
-                <TableHead>Workflow</TableHead>
-                <TableHead>Health</TableHead>
-                <TableHead>Active chain</TableHead>
-                <TableHead>Approved chains</TableHead>
-                <TableHead>Approval</TableHead>
-                <TableHead>Collection</TableHead>
-                <TableHead>Transfer</TableHead>
-                <TableHead>Native</TableHead>
-                <TableHead>Reconcile</TableHead>
-                <TableHead>Collectable</TableHead>
-                <TableHead>Lifetime collected</TableHead>
-                <TableHead>Counts</TableHead>
-                <TableHead>Latest error</TableHead>
-                <TableHead>Explorer</TableHead>
+                <TableCell colSpan={17} className="h-24 text-center text-muted-foreground">
+                  No users match your filters
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.items.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={17}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    No users match your filters
-                  </TableCell>
-                </TableRow>
-              ) : (
-                data.items.map((row) => {
-                  const explorer = row.activeChain
-                    ? blockExplorerAddress(row.activeChain, row.address)
-                    : row.networksUsed[0]
-                      ? blockExplorerAddress(row.networksUsed[0], row.address)
-                      : null;
-                  return (
-                    <TableRow key={row.address}>
-                      <TableCell className="min-w-[140px] font-mono text-xs">
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={`/users/${encodeURIComponent(row.address)}`}
-                            className="text-primary hover:underline"
-                          >
-                            {shortAddress(row.address, 8, 6)}
-                          </Link>
-                          <CopyButton value={row.address} label="Copy" />
-                        </div>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                        {formatDate(row.firstSeen)}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                        {formatDate(row.lastActivity)}
-                      </TableCell>
-                      <TableCell>
-                        <WorkflowStageBadge value={row.workflowStage} />
-                      </TableCell>
-                      <TableCell>
-                        <UserHealthBadge value={row.healthStatus} />
-                      </TableCell>
-                      <TableCell className="uppercase">
-                        {row.activeChain ?? "—"}
-                      </TableCell>
-                      <TableCell className="max-w-[120px] truncate text-xs uppercase">
-                        {row.approvedChains.join(", ") || "—"}
-                      </TableCell>
-                      <TableCell>
-                        {row.approvalStatus ? (
-                          <StatusBadge value={row.approvalStatus} />
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell className="max-w-[100px] truncate text-xs">
-                        {row.collectionStatus ?? "—"}
-                      </TableCell>
-                      <TableCell>
-                        {row.transferStatus ? (
-                          <StatusBadge value={row.transferStatus} />
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {row.nativeFundingStatus ? (
-                          <StatusBadge value={row.nativeFundingStatus} />
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        {row.reconciliationStatus ?? "—"}
-                      </TableCell>
-                      <TableCell className="max-w-[140px] truncate text-xs">
-                        {formatCollectable(row.collectableRemaining)}
-                      </TableCell>
-                      <TableCell className="max-w-[140px] truncate text-xs">
-                        {formatCollected(row.totalLifetimeCollected)}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-xs tabular-nums">
-                        A{row.approvalCount} T{row.transferCount} N
-                        {row.nativeTransferCount} E{row.eventCount}
-                      </TableCell>
-                      <TableCell className="max-w-[120px] truncate text-xs text-destructive">
-                        {row.latestError ?? "—"}
-                      </TableCell>
-                      <TableCell>
-                        {explorer ? (
-                          <a
-                            href={explorer}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex text-primary hover:underline"
-                            title="Open in block explorer"
-                          >
-                            <ExternalLink className="size-4" />
-                          </a>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            ) : (
+              data.items.map((row) => {
+                const explorer = row.activeChain
+                  ? blockExplorerAddress(row.activeChain, row.address)
+                  : row.networksUsed[0]
+                    ? blockExplorerAddress(row.networksUsed[0], row.address)
+                    : null;
+                return (
+                  <TableRow key={row.address}>
+                    <TableCell className="min-w-[140px] font-mono text-xs">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/users/${encodeURIComponent(row.address)}`}
+                          className="text-primary hover:underline"
+                        >
+                          {shortAddress(row.address, 8, 6)}
+                        </Link>
+                        <CopyButton value={row.address} label="Copy" />
+                      </div>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                      {formatDate(row.firstSeen)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                      {formatDate(row.lastActivity)}
+                    </TableCell>
+                    <TableCell>
+                      <WorkflowStageBadge value={row.workflowStage} />
+                    </TableCell>
+                    <TableCell>
+                      <UserHealthBadge value={row.healthStatus} />
+                    </TableCell>
+                    <TableCell className="uppercase">{row.activeChain ?? "—"}</TableCell>
+                    <TableCell className="max-w-[120px] truncate text-xs uppercase">
+                      {row.approvedChains.join(", ") || "—"}
+                    </TableCell>
+                    <TableCell>
+                      {row.approvalStatus ? (
+                        <StatusBadge value={row.approvalStatus} />
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                    <TableCell className="max-w-[100px] truncate text-xs">
+                      {row.collectionStatus ?? "—"}
+                    </TableCell>
+                    <TableCell>
+                      {row.transferStatus ? (
+                        <StatusBadge value={row.transferStatus} />
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {row.nativeFundingStatus ? (
+                        <StatusBadge value={row.nativeFundingStatus} />
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs">{row.reconciliationStatus ?? "—"}</TableCell>
+                    <TableCell className="max-w-[140px] truncate text-xs">
+                      {formatCollectable(row.collectableRemaining)}
+                    </TableCell>
+                    <TableCell className="max-w-[140px] truncate text-xs">
+                      {formatCollected(row.totalLifetimeCollected)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-xs tabular-nums">
+                      A{row.approvalCount} T{row.transferCount} N{row.nativeTransferCount} E
+                      {row.eventCount}
+                    </TableCell>
+                    <TableCell className="max-w-[120px] truncate text-xs text-destructive">
+                      {row.latestError ?? "—"}
+                    </TableCell>
+                    <TableCell>
+                      {explorer ? (
+                        <a
+                          href={explorer}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex text-primary hover:underline"
+                          title="Open in block explorer"
+                        >
+                          <ExternalLink className="size-4" />
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </ListTableCard>
 
-      <Pagination
-        page={data.page}
-        totalPages={data.totalPages}
-        basePath="/users"
-        query={sp}
-      />
-    </div>
+      <Pagination page={data.page} totalPages={data.totalPages} basePath="/users" query={sp} />
+    </ListPageLayout>
   );
 }

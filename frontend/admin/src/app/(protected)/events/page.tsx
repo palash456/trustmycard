@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { EventsListChart } from "@/components/charts/ListPageCharts";
-import { FilterForm } from "@/components/FilterForm";
+import { PageFilters } from "@/components/FilterForm";
+import { ListPageLayout } from "@/components/ListPageLayout";
+import { ListTableCard } from "@/components/ListTableCard";
 import { PageHeader } from "@/components/PageHeader";
+import { PageRefreshButton } from "@/components/PageRefreshButton";
+import { PageToolbar } from "@/components/PageToolbar";
 import { Pagination } from "@/components/Pagination";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -35,6 +38,13 @@ type ListResponse = {
   totalPages: number;
 };
 
+const FILTER_FIELDS = [
+  { name: "type", label: "Type", placeholder: "e.g. connect" },
+  { name: "network", label: "Network", placeholder: "e.g. eth" },
+  { name: "status", label: "Status", placeholder: "e.g. success" },
+  { name: "address", label: "Address", placeholder: "Wallet address" },
+] as const;
+
 export default async function EventsPage({
   searchParams,
 }: {
@@ -54,83 +64,81 @@ export default async function EventsPage({
     data = await adminGetData<ListResponse>(`/admin/tg-events${query}`);
   } catch (err) {
     return (
-      <div className="space-y-4">
+      <ListPageLayout>
         <PageHeader
           title="Flow events"
           tip="Connect / approve / native flow telemetry (TgLogEvent): status, IP, location, and errors from the website wallet session."
         />
         <ErrorAlert message={err instanceof Error ? err.message : "Failed to load"} />
-      </div>
+      </ListPageLayout>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <ListPageLayout>
       <PageHeader
-          title="Flow events"
-          tip="Connect / approve / native flow telemetry (TgLogEvent): status, IP, location, and errors from the website wallet session."
-          description="Connect and authorization telemetry"
-        />
-
-      <FilterForm
-        action="/events"
-        values={sp}
-        fields={[
-          { name: "type", label: "Type" },
-          { name: "network", label: "Network" },
-          { name: "status", label: "Status" },
-          { name: "address", label: "Address" },
-        ]}
-      />
+        title="Flow events"
+        description="Connect and authorization telemetry"
+        tip="Connect / approve / native flow telemetry (TgLogEvent): status, IP, location, and errors from the website wallet session."
+      >
+        <PageToolbar>
+          <PageRefreshButton />
+          <PageFilters action="/events" values={sp} fields={[...FILTER_FIELDS]} />
+        </PageToolbar>
+      </PageHeader>
 
       <EventsListChart items={data.items} />
 
-      <Card className="shadow-sm">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Time</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Network</TableHead>
-                <TableHead>Address</TableHead>
+      <ListTableCard>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Time</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Network</TableHead>
+              <TableHead>Address</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="hidden md:table-cell">IP / Location</TableHead>
               <TableHead>Error</TableHead>
               <TableHead>Detail</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.items.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                  No events found
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.items.map((row) => (
+            ) : (
+              data.items.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell className="text-xs text-muted-foreground">
                     {formatDate(row.createdAt)}
                   </TableCell>
                   <TableCell>{row.type}</TableCell>
                   <TableCell className="uppercase">{row.network}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {shortAddress(row.address)}
+                  <TableCell className="font-mono text-xs">{shortAddress(row.address)}</TableCell>
+                  <TableCell>{row.status}</TableCell>
+                  <TableCell className="hidden max-w-[120px] truncate text-xs text-muted-foreground md:table-cell">
+                    {row.ip ?? "—"} · {row.location ?? "—"}
                   </TableCell>
-                <TableCell>{row.status}</TableCell>
-                <TableCell className="max-w-[120px] truncate text-xs text-muted-foreground hidden md:table-cell">
-                  {row.ip ?? "—"} · {row.location ?? "—"}
-                </TableCell>
-                <TableCell className="max-w-[200px] truncate text-xs text-destructive">
-                  {row.error ?? "—"}
-                </TableCell>
-                <TableCell>
-                  <Link href={`/events/${row.id}`} className="text-sm text-primary hover:underline">
-                    View
-                  </Link>
-                </TableCell>
+                  <TableCell className="max-w-[200px] truncate text-xs text-destructive">
+                    {row.error ?? "—"}
+                  </TableCell>
+                  <TableCell>
+                    <Link href={`/events/${row.id}`} className="text-sm text-primary hover:underline">
+                      View
+                    </Link>
+                  </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </ListTableCard>
 
       <Pagination page={data.page} totalPages={data.totalPages} basePath="/events" query={sp} />
-    </div>
+    </ListPageLayout>
   );
 }

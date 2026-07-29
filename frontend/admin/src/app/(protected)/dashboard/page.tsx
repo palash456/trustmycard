@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { ErrorAlert } from "@/components/ErrorAlert";
 import { DashboardCharts } from "@/components/charts/DashboardCharts";
+import { ErrorAlert } from "@/components/ErrorAlert";
+import { ListPageLayout } from "@/components/ListPageLayout";
 import { PageHeader } from "@/components/PageHeader";
+import { PageRefreshButton } from "@/components/PageRefreshButton";
+import { PageToolbar } from "@/components/PageToolbar";
 import { StatCard } from "@/components/StatCard";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -49,26 +52,30 @@ export default async function DashboardPage() {
     data = await adminGetData<Dashboard>("/admin/dashboard");
   } catch (err) {
     return (
-      <div className="space-y-4">
+      <ListPageLayout>
         <PageHeader
           title="Dashboard"
           tip="High-level health of the collector pipeline: due approvals, status histograms, native pending/failed counts, and recent errors so you can spot stuck work quickly."
           description="Collector and pipeline overview"
         />
         <ErrorAlert message={err instanceof Error ? err.message : "Failed to load dashboard"} />
-      </div>
+      </ListPageLayout>
     );
   }
 
   const c = data.collector;
 
   return (
-    <div className="space-y-6">
+    <ListPageLayout className="space-y-6">
       <PageHeader
-          title="Dashboard"
-          tip="High-level health of the collector pipeline: due approvals, status histograms, native pending/failed counts, and recent errors so you can spot stuck work quickly."
-          description="Collector and transfer pipeline overview"
-        />
+        title="Dashboard"
+        tip="High-level health of the collector pipeline: due approvals, status histograms, native pending/failed counts, and recent errors so you can spot stuck work quickly."
+        description="Collector and transfer pipeline overview"
+      >
+        <PageToolbar>
+          <PageRefreshButton />
+        </PageToolbar>
+      </PageHeader>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
@@ -94,7 +101,7 @@ export default async function DashboardPage() {
         nativeTransfers={data.nativeTransfers}
       />
 
-      <Card className="shadow-sm">
+      <Card className="border-border/60 shadow-none">
         <CardHeader>
           <CardTitle className="text-base">Recent failures</CardTitle>
           <CardDescription>Approvals and native transfers with errors</CardDescription>
@@ -157,6 +164,6 @@ export default async function DashboardPage() {
           <ArrowRight className="size-4" />
         </Link>
       </div>
-    </div>
+    </ListPageLayout>
   );
 }

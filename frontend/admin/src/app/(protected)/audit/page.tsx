@@ -1,6 +1,10 @@
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { FilterForm } from "@/components/FilterForm";
+import { PageFilters } from "@/components/FilterForm";
+import { ListEmptyState } from "@/components/ListEmptyState";
+import { ListPageLayout } from "@/components/ListPageLayout";
 import { PageHeader } from "@/components/PageHeader";
+import { PageRefreshButton } from "@/components/PageRefreshButton";
+import { PageToolbar } from "@/components/PageToolbar";
 import { Pagination } from "@/components/Pagination";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
@@ -23,6 +27,12 @@ type ListResponse = {
   totalPages: number;
 };
 
+const FILTER_FIELDS = [
+  { name: "action", label: "Action", placeholder: "e.g. settings.update" },
+  { name: "entityType", label: "Entity type", placeholder: "e.g. Approval" },
+  { name: "actor", label: "Actor", placeholder: "Actor id or email" },
+] as const;
+
 export default async function AuditPage({
   searchParams,
 }: {
@@ -41,60 +51,53 @@ export default async function AuditPage({
     data = await adminGetData<ListResponse>(`/admin/audit-logs${query}`);
   } catch (err) {
     return (
-      <div className="space-y-4">
+      <ListPageLayout>
         <PageHeader
           title="Audit log"
           tip="Immutable-style trail of system and admin actions (confirm, transfer, settings updates). Expand payload JSON for the exact change."
         />
         <ErrorAlert message={err instanceof Error ? err.message : "Failed to load"} />
-      </div>
+      </ListPageLayout>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <ListPageLayout>
       <PageHeader
-          title="Audit log"
-          tip="Immutable-style trail of system and admin actions (confirm, transfer, settings updates). Expand payload JSON for the exact change."
-        />
-
-      <FilterForm
-        action="/audit"
-        values={sp}
-        fields={[
-          { name: "action", label: "Action" },
-          { name: "entityType", label: "Entity type" },
-          { name: "actor", label: "Actor" },
-        ]}
-      />
+        title="Audit log"
+        tip="Immutable-style trail of system and admin actions (confirm, transfer, settings updates). Expand payload JSON for the exact change."
+      >
+        <PageToolbar>
+          <PageRefreshButton />
+          <PageFilters action="/audit" values={sp} fields={[...FILTER_FIELDS]} />
+        </PageToolbar>
+      </PageHeader>
 
       <div className="space-y-3">
         {data.items.length === 0 ? (
-          <Card className="shadow-sm">
-            <CardContent className="py-10 text-center text-sm text-muted-foreground">
-              No audit entries found
+          <Card className="border-border/60 shadow-none">
+            <CardContent className="p-0">
+              <ListEmptyState message="No audit entries found" />
             </CardContent>
           </Card>
         ) : (
           data.items.map((row) => (
-            <Card key={row.id} className="shadow-sm">
-              <CardHeader className="pb-2">
+            <Card key={row.id} className="border-border/60 shadow-none">
+              <CardHeader className="space-y-1 px-4 py-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <CardTitle className="text-sm font-medium">{row.action}</CardTitle>
                   <span className="text-muted-foreground">·</span>
                   <span className="text-sm text-muted-foreground">{row.entityType}</span>
                   {row.entityId ? (
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {row.entityId}
-                    </span>
+                    <span className="font-mono text-xs text-muted-foreground">{row.entityId}</span>
                   ) : null}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {formatDate(row.createdAt)} · Actor: {row.actor}
                 </p>
               </CardHeader>
-              <CardContent>
-                <pre className="max-h-48 overflow-auto rounded-md border bg-muted/30 p-3 font-mono text-xs text-muted-foreground">
+              <CardContent className="px-4 pb-4 pt-0">
+                <pre className="max-h-48 overflow-auto rounded-md border border-border/60 bg-muted/20 p-3 font-mono text-xs text-muted-foreground">
                   {JSON.stringify(row.payload, null, 2)}
                 </pre>
               </CardContent>
@@ -104,6 +107,6 @@ export default async function AuditPage({
       </div>
 
       <Pagination page={data.page} totalPages={data.totalPages} basePath="/audit" query={sp} />
-    </div>
+    </ListPageLayout>
   );
 }

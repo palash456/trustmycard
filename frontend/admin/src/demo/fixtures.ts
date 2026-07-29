@@ -1,5 +1,7 @@
 /** Demo fixtures — ~1 month of fictional app usage across all admin pages. */
 
+import { buildDemoActivity, buildDemoAnalytics } from "./analytics-fixture";
+
 function daysAgo(n: number, hour = 12): string {
   const d = new Date();
   d.setDate(d.getDate() - n);
@@ -557,6 +559,25 @@ export function getDemoFixture<T>(path: string): T {
   }
 
   if (demoFixtures[base]) return demoFixtures[base] as T;
+
+  if (base === "/admin/analytics") {
+    return buildDemoAnalytics(params, {
+      approvals,
+      transfers,
+      nativeTransfers,
+      users,
+      events,
+    }) as T;
+  }
+
+  if (base === "/admin/analytics/activity") {
+    return buildDemoActivity({
+      approvals,
+      transfers,
+      nativeTransfers,
+      events,
+    }) as T;
+  }
 
   const ap = base.match(/\/admin\/approvals\/([^/]+)$/);
   if (ap) {

@@ -15,6 +15,7 @@ import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
 import { AdminOpsService } from "./admin-ops.service";
 import { AdminService } from "./admin.service";
 import { AdminStreamService } from "./admin-stream.service";
+import { AnalyticsService } from "./analytics.service";
 import { UserAggregationService } from "./user-aggregation.service";
 
 @ApiTags("Admin")
@@ -26,8 +27,21 @@ export class AdminController {
     private readonly adminService: AdminService,
     private readonly adminOps: AdminOpsService,
     private readonly streamService: AdminStreamService,
-    private readonly userAggregation: UserAggregationService
+    private readonly userAggregation: UserAggregationService,
+    private readonly analytics: AnalyticsService
   ) {}
+
+  @Get("analytics")
+  @ApiOperation({ summary: "Platform analytics dashboard aggregates" })
+  getAnalytics(@Query() query: Record<string, string>) {
+    return this.analytics.getAnalytics(query);
+  }
+
+  @Get("analytics/activity")
+  @ApiOperation({ summary: "Recent platform activity feed" })
+  getAnalyticsActivity(@Query("limit") limit?: string) {
+    return this.analytics.getActivity(limit);
+  }
 
   @Get("dashboard")
   @ApiOperation({ summary: "Admin dashboard aggregates" })

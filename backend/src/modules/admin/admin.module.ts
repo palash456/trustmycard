@@ -6,6 +6,7 @@ import { AdminDevOpsService } from "./admin-devops.service";
 import { AdminOpsService } from "./admin-ops.service";
 import { AdminService } from "./admin.service";
 import { AdminStreamService } from "./admin-stream.service";
+import { AnalyticsService } from "./analytics.service";
 import { UserAggregationService } from "./user-aggregation.service";
 import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
 
@@ -18,6 +19,7 @@ import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
     AdminStreamService,
     AdminDevOpsService,
     UserAggregationService,
+    AnalyticsService,
     AdminApiKeyGuard,
   ],
 })

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { ApprovalStatus, PrismaClient, TransferStatus } from "@prisma/client";
+import { formatRawAmount } from "../../common/utils/amount-format";
 import {
   paginatedResponse,
   parsePagination,
@@ -52,21 +53,6 @@ type CollectedTotal = {
   collectedRaw: string;
   decimals: number;
 };
-
-function formatRawAmount(raw: string, decimals: number): string {
-  try {
-    const value = BigInt(raw || "0");
-    if (value === BigInt(0)) return "0";
-    const divisor = BigInt(10) ** BigInt(decimals);
-    const whole = value / divisor;
-    const frac = value % divisor;
-    if (frac === BigInt(0)) return whole.toString();
-    const fracStr = frac.toString().padStart(decimals, "0").replace(/0+$/, "");
-    return `${whole}.${fracStr}`;
-  } catch {
-    return raw;
-  }
-}
 
 function detectAddressType(address: string): "evm" | "tron" | "unknown" {
   if (EVM_ADDRESS_RE.test(address)) return "evm";
