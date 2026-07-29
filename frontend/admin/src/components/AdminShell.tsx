@@ -122,12 +122,12 @@ function SidebarBrand() {
   const collapsed = state === "collapsed";
 
   return (
-    <div className={cn("px-2 py-2", collapsed && "px-1")}>
+    <div className={cn("flex h-full w-full items-center", collapsed ? "justify-center px-1" : "px-2")}>
       <Link
         href="/dashboard"
-        className="flex items-center rounded-md px-1 py-1 outline-none ring-sidebar-ring focus-visible:ring-2"
+        className="flex items-center rounded-md px-1 outline-none ring-sidebar-ring focus-visible:ring-2"
       >
-        <BrandWordmark size="md" collapsed={collapsed} />
+        <BrandWordmark size="sm" collapsed={collapsed} />
       </Link>
     </div>
   );
@@ -147,7 +147,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     <TooltipProvider>
       <SidebarProvider>
         <Sidebar collapsible="icon" variant="inset">
-          <SidebarHeader className="border-b border-sidebar-border pb-2">
+          <SidebarHeader className="h-14 shrink-0 flex-row items-center gap-0 border-b border-sidebar-border p-0">
             <SidebarBrand />
           </SidebarHeader>
 
@@ -184,7 +184,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <SidebarRail />
         </Sidebar>
 
-        <SidebarInset className="bg-background">
+        <SidebarInset className="min-w-0 overflow-x-hidden bg-background">
           <header className="flex h-14 shrink-0 items-center gap-4 border-b border-border bg-card/80 px-4 backdrop-blur-sm">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="h-full sm:block"/>
@@ -195,7 +195,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </div>
             <HeaderControls onLogout={() => void logout()} />
           </header>
-          <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">{children}</div>
+          <div className="flex min-w-0 flex-1 flex-col gap-4 overflow-x-hidden p-4 md:p-6">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

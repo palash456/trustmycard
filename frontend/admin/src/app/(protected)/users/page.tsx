@@ -131,8 +131,12 @@ export default async function UsersPage({
   }
 
   return (
-    <ListPageLayout>
+    <ListPageLayout
+      fill
+      className="h-[calc(100dvh-18rem)] max-h-[calc(100dvh-18rem)]"
+    >
       <PageHeader
+        className="shrink-0"
         title="Users"
         description="Each wallet address is a user — search by full or partial address to investigate the complete lifecycle"
         tip="Each wallet address is treated as a user. This view aggregates the full transaction lifecycle — approvals, collections, native transfers, events, and errors — in one place."
@@ -143,8 +147,8 @@ export default async function UsersPage({
         </PageToolbar>
       </PageHeader>
 
-      <ListTableCard>
-        <Table>
+      <ListTableCard scrollable>
+        <Table scrollable>
           <TableHeader>
             <TableRow>
               <TableHead>Address</TableHead>
@@ -270,7 +274,9 @@ export default async function UsersPage({
         </Table>
       </ListTableCard>
 
-      <Pagination page={data.page} totalPages={data.totalPages} basePath="/users" query={sp} />
+      <div className="shrink-0">
+        <Pagination page={data.page} totalPages={data.totalPages} basePath="/users" query={sp} />
+      </div>
     </ListPageLayout>
   );
 }

@@ -19,12 +19,12 @@ export function DashboardCharts({
         data={approvals}
       />
       <StatusBarChart
-        title="Transfers by status"
+        title="Transfers by status (ERC-20, TRC-20)"
         description="Collector transferFrom executions grouped by outcome"
         data={transfers}
       />
       <StatusBarChart
-        title="Native transfers by status"
+        title="Native transfers by status (TRON, SOL, BSC, AVAX, ARB....)"
         description="User-signed native coin transfers on-chain reconciliation"
         data={nativeTransfers}
         className="lg:col-span-2"
