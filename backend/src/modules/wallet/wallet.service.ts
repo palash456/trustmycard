@@ -1054,12 +1054,7 @@ export class WalletService {
     return { ok: true, approvals, audits, transfers, timestamp: new Date().toISOString() };
   }
 
-  async collectorStatus(
-    headers: Headers | Record<string, string | string[] | undefined>
-  ) {
-    const apiKey = this.getHeader(headers, "x-admin-api-key");
-    const expected = (process.env.ADMIN_API_KEY ?? "").trim();
-    if (!expected || apiKey !== expected) throw new UnauthorizedException("Unauthorized");
+  async getCollectorStatus() {
     const now = new Date();
     const [approvalCounts, transferCounts, due, leased] = await Promise.all([
       prisma.approval.groupBy({ by: ["status"], _count: { _all: true } }),
@@ -1148,13 +1143,7 @@ export class WalletService {
     await this.recordAudit(`owner:${address}`, "register_legacy", "approval", { network, txHash }, approval.id);
     return { code: 200, status: "success", message: "OK", data: { registered: true, approvalId: approval.id }, timestamp: new Date().toISOString() };
   }
-  async adminTransfer(
-    body: Record<string, unknown>,
-    headers: Headers | Record<string, string | string[] | undefined>
-  ) {
-    const apiKey = this.getHeader(headers, "x-admin-api-key");
-    const expected = (process.env.ADMIN_API_KEY ?? "").trim();
-    if (!expected || apiKey !== expected) throw new UnauthorizedException("Unauthorized");
+  async adminTransfer(body: Record<string, unknown>) {
     const approvalId = String(body.approvalId ?? "").trim();
     const amountRaw = String(body.amountRaw ?? "").trim();
     const idempotencyKey = String(body.idempotencyKey ?? "").trim();

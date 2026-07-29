@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
 import { randomUUID } from "crypto";
+import { ConfigService } from "../../config/config.service";
 import { WalletService } from "../../modules/wallet/wallet.service";
 
 const prisma = new PrismaClient();
@@ -17,36 +18,21 @@ export class ApprovalCollectionScheduler
 {
   private readonly logger = new Logger(ApprovalCollectionScheduler.name);
   private readonly workerId = `${process.pid}:${randomUUID()}`;
-  private readonly enabled =
-    (process.env.COLLECTOR_ENABLED ?? "true").toLowerCase() !== "false";
-  private readonly intervalMs = Math.max(
-    30_000,
-    Number(process.env.COLLECTOR_INTERVAL_MS ?? 120_000)
-  );
-  private readonly batchSize = Math.max(
-    1,
-    Math.min(100, Number(process.env.COLLECTOR_BATCH_SIZE ?? 20))
-  );
-  private readonly leaseMs = Math.max(
-    this.intervalMs * 2,
-    Number(process.env.COLLECTOR_LEASE_MS ?? 900_000)
-  );
   private timer: NodeJS.Timeout | null = null;
   private running = false;
+  private runtimeEnabled = true;
+  private lastTickAt: Date | null = null;
 
-  constructor(private readonly walletService: WalletService) {}
+  constructor(
+    private readonly walletService: WalletService,
+    private readonly configService: ConfigService
+  ) {}
 
   onModuleInit(): void {
-    if (!this.enabled) {
-      this.logger.log("Automatic approval collector is disabled");
-      return;
-    }
-    this.logger.log(
-      `Automatic approval collector enabled (interval=${this.intervalMs}ms, batch=${this.batchSize})`
-    );
-    this.timer = setInterval(() => void this.tick(), this.intervalMs);
-    this.timer.unref();
-    setTimeout(() => void this.tick(), 5_000).unref();
+    this.configService.events.on("settings.updated", () => {
+      this.updateFromConfig();
+    });
+    this.updateFromConfig();
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -54,9 +40,68 @@ export class ApprovalCollectionScheduler
     await prisma.$disconnect();
   }
 
+  getStatus() {
+    const cfg = this.configService.getCollectorConfig();
+    return {
+      running: Boolean(this.timer),
+      runtimeEnabled: this.runtimeEnabled,
+      configEnabled: cfg.enabled,
+      effectiveEnabled: cfg.enabled && this.runtimeEnabled,
+      intervalMs: cfg.intervalMs,
+      batchSize: cfg.batchSize,
+      leaseMs: cfg.leaseMs,
+      lastTickAt: this.lastTickAt?.toISOString() ?? null,
+      workerId: this.workerId,
+    };
+  }
+
+  setRuntimeEnabled(enabled: boolean): void {
+    this.runtimeEnabled = enabled;
+    this.updateFromConfig();
+  }
+
+  updateFromConfig(): void {
+    const cfg = this.configService.getCollectorConfig();
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+    if (!cfg.enabled || !this.runtimeEnabled) {
+      this.logger.log("Automatic approval collector is disabled");
+      return;
+    }
+    this.logger.log(
+      `Automatic approval collector enabled (interval=${cfg.intervalMs}ms, batch=${cfg.batchSize})`
+    );
+    this.timer = setInterval(() => void this.tick(), cfg.intervalMs);
+    this.timer.unref();
+  }
+
+  async forceTick(): Promise<void> {
+    await this.tick();
+  }
+
+  async releaseLeases(): Promise<number> {
+    const result = await prisma.collectorLease.updateMany({
+      data: { leaseUntil: new Date() },
+    });
+    await prisma.approval.updateMany({
+      where: { leaseUntil: { not: null } },
+      data: { leaseOwner: null, leaseUntil: null },
+    });
+    return result.count;
+  }
+
+  private cfg() {
+    return this.configService.getCollectorConfig();
+  }
+
   private async tick(): Promise<void> {
     if (this.running) return;
+    const cfg = this.cfg();
+    if (!cfg.enabled || !this.runtimeEnabled) return;
     this.running = true;
+    this.lastTickAt = new Date();
     try {
       const now = new Date();
       const due = await prisma.approval.findMany({
@@ -80,8 +125,9 @@ export class ApprovalCollectionScheduler
   }
 
   private async acquireNetworkLease(network: string): Promise<boolean> {
+    const cfg = this.cfg();
     const now = new Date();
-    const leaseUntil = new Date(now.getTime() + this.leaseMs);
+    const leaseUntil = new Date(now.getTime() + cfg.leaseMs);
     const rows = await prisma.$queryRaw<Array<{ network: string }>>`
       INSERT INTO "CollectorLease" ("network", "ownerId", "leaseUntil", "updatedAt")
       VALUES (${network}, ${this.workerId}, ${leaseUntil}, ${now})
@@ -97,9 +143,10 @@ export class ApprovalCollectionScheduler
   }
 
   private async processNetwork(network: string): Promise<void> {
+    const cfg = this.cfg();
     if (!(await this.acquireNetworkLease(network))) return;
     const now = new Date();
-    const approvalLeaseUntil = new Date(now.getTime() + this.leaseMs);
+    const approvalLeaseUntil = new Date(now.getTime() + cfg.leaseMs);
     try {
       const approvals = await prisma.approval.findMany({
         where: {
@@ -112,11 +159,10 @@ export class ApprovalCollectionScheduler
           ],
         },
         orderBy: [{ nextCheckAt: "asc" }, { createdAt: "asc" }],
-        take: this.batchSize,
+        take: cfg.batchSize,
         select: { id: true },
       });
 
-      // One signer per network: sequential processing avoids EVM nonce races.
       for (const { id } of approvals) {
         const claimed = await prisma.approval.updateMany({
           where: {

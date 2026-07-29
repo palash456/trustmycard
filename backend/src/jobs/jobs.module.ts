@@ -6,5 +6,6 @@ import { NativeTransferReconciliationScheduler } from "./schedulers/native-trans
 @Module({
   imports: [WalletModule],
   providers: [ApprovalCollectionScheduler, NativeTransferReconciliationScheduler],
+  exports: [ApprovalCollectionScheduler, NativeTransferReconciliationScheduler],
 })
 export class JobsModule {}

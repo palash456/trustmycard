@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Post, Query, Req } from "@nestjs/common";
-import { ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from "@nestjs/common";
+import { ApiBody, ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
 import { NativeTransferService } from "./native-transfer.service";
 import { WalletService } from "./wallet.service";
 
@@ -54,7 +55,9 @@ export class WalletController {
   }
 
   @Get("approvals/debug")
-  @ApiOperation({ summary: "Debug approvals/audits/transfers snapshot" })
+  @UseGuards(AdminApiKeyGuard)
+  @ApiSecurity("adminApiKey")
+  @ApiOperation({ summary: "Debug approvals/audits/transfers snapshot (admin only)" })
   approvalsDebug() {
     return this.walletService.debugApprovals();
   }
@@ -87,17 +90,6 @@ export class WalletController {
   @Post("register-approved")
   registerApproved(@Body() body: Record<string, unknown>) {
     return this.walletService.registerApproved(body);
-  }
-
-  @Post("admin/transfer")
-  adminTransfer(@Body() body: Record<string, unknown>, @Req() req: Request) {
-    return this.walletService.adminTransfer(body, req.headers);
-  }
-
-  @Get("admin/collector/status")
-  @ApiOperation({ summary: "Get automatic collector health and queue counts" })
-  collectorStatus(@Req() req: Request) {
-    return this.walletService.collectorStatus(req.headers);
   }
 
   @Post("tron-approve")

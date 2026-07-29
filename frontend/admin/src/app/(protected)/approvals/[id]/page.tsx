@@ -1,0 +1,185 @@
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
+import { ApprovalControls } from "@/components/ApprovalControls";
+import { ManualTransferForm } from "@/components/ManualTransferForm";
+import { DetailList, DetailRow } from "@/components/DetailList";
+import { StatusBadge } from "@/components/StatusBadge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { adminGetData } from "@/lib/admin-data";
+import { blockExplorerTx, formatDate, shortAddress } from "@/lib/format";
+
+type Detail = {
+  item: {
+    id: string;
+    ownerAddress: string;
+    spenderAddress: string;
+    network: string;
+    tokenSymbol: string;
+    status: string;
+    amountHuman: string;
+    remainingRaw: string;
+    collectedRaw: string;
+    unlimited: boolean;
+    collectionEnabled: boolean;
+    collectionToAddress: string | null;
+    nextCheckAt: string | null;
+    lastError: string | null;
+    failureCount: number;
+    decimals: number;
+    txHash: string;
+    createdAt: string;
+  };
+  transfers: Array<{
+    id: string;
+    amountRaw: string;
+    status: string;
+    txHash: string | null;
+    createdAt: string;
+  }>;
+  audits: Array<{
+    id: string;
+    action: string;
+    actor: string;
+    createdAt: string;
+  }>;
+};
+
+export default async function ApprovalDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  let data: Detail;
+  try {
+    data = await adminGetData<Detail>(`/admin/approvals/${id}`);
+  } catch (err) {
+    return (
+      <p className="text-destructive">
+        {err instanceof Error ? err.message : "Not found"}
+      </p>
+    );
+  }
+
+  const a = data.item;
+  const explorer = blockExplorerTx(a.network, a.txHash);
+
+  return (
+    <div className="space-y-6">
+      <Button variant="ghost" size="sm" className="-ml-2 w-fit" render={<Link href="/approvals" />}>
+        <ChevronLeft className="size-4" />
+        Back to approvals
+      </Button>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {a.network.toUpperCase()} {a.tokenSymbol}
+        </h1>
+        <StatusBadge value={a.status} />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-base">Approval details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DetailList>
+              <DetailRow label="Owner">
+                <span className="font-mono text-xs">{a.ownerAddress}</span>
+              </DetailRow>
+              <DetailRow label="Spender">
+                <span className="font-mono text-xs">{a.spenderAddress}</span>
+              </DetailRow>
+              <DetailRow label="Amount">{a.amountHuman}</DetailRow>
+              <DetailRow label="Collected / remaining">
+                {a.collectedRaw} / {a.remainingRaw}
+              </DetailRow>
+              <DetailRow label="Collection">
+                {a.collectionEnabled ? "Enabled" : "Disabled"}
+              </DetailRow>
+              <DetailRow label="Next check">{formatDate(a.nextCheckAt)}</DetailRow>
+              {a.lastError ? (
+                <DetailRow label="Last error">
+                  <span className="text-destructive">{a.lastError}</span>
+                </DetailRow>
+              ) : null}
+              <DetailRow label="Approve tx">
+                {explorer ? (
+                  <a
+                    href={explorer}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    {shortAddress(a.txHash, 10, 8)}
+                  </a>
+                ) : (
+                  shortAddress(a.txHash, 10, 8)
+                )}
+              </DetailRow>
+            </DetailList>
+          </CardContent>
+        </Card>
+
+        {(a.status === "ACTIVE" || a.status === "PARTIALLY_USED") && (
+          <ManualTransferForm
+            approvalId={a.id}
+            defaultToAddress={a.collectionToAddress || a.spenderAddress}
+            decimals={a.decimals}
+          />
+        )}
+      </div>
+
+      <ApprovalControls
+        approvalId={a.id}
+        collectionEnabled={a.collectionEnabled}
+        collectionToAddress={a.collectionToAddress}
+      />
+
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-base">Transfers</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data.transfers.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No transfers yet</p>
+          ) : (
+            <ul className="divide-y">
+              {data.transfers.map((t) => (
+                <li
+                  key={t.id}
+                  className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
+                >
+                  <Link href={`/transfers/${t.id}`} className="text-primary hover:underline">
+                    {t.amountRaw} raw
+                  </Link>
+                  <StatusBadge value={t.status} />
+                  <span className="text-xs text-muted-foreground">
+                    {formatDate(t.createdAt)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-base">Audit trail</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2 text-sm text-muted-foreground">
+            {data.audits.map((log) => (
+              <li key={log.id}>
+                {formatDate(log.createdAt)} · {log.action} · {log.actor}
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

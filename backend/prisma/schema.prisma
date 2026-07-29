@@ -169,3 +169,11 @@ model ResourceSponsorship {
   @@index([expiresAt])
   @@index([network, address, status])
 }
+
+model AppSettings {
+  key       String   @id
+  value     Json
+  category  String
+  updatedAt DateTime @updatedAt
+  updatedBy String   @default("admin")
+}

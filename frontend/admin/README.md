@@ -1,17 +1,63 @@
 # @trustmycard/admin
 
-Admin dashboard for Trust My Card.
+Internal operations console for Trust My Card: collector control, approvals, transfers, native flows, wallets, audit, events, and runtime settings.
 
-## Structure
+Built with **Next.js**, **Tailwind CSS 4**, **shadcn/ui**, and **next-themes** (light/dark).
 
-```text
-admin/
-├── dashboard/
-├── users/
-├── wallets/
-├── transfers/
-├── approvals/
-└── analytics/
+Runs on **port 3002** and talks to the Nest backend only.
+
+## Setup
+
+```bash
+cp .env.example .env.local
 ```
 
-Scaffold only — implement Next.js (or preferred framework) when ready.
+| Variable | Purpose |
+|----------|---------|
+| `BACKEND_API_URL` | Nest base URL (default `http://localhost:4000`) |
+| `ADMIN_API_KEY` | Must match backend `ADMIN_API_KEY`; server-side proxy only |
+| `ADMIN_SESSION_SECRET` | Signs httpOnly `admin_session` cookie |
+| `ADMIN_PANEL_PASSWORD` | Login screen password |
+
+Backend: set `ADMIN_API_KEY`; optional `ADMIN_DEV_OPS=true` (non-production) for restart buttons on `/system`.
+
+## Development
+
+```bash
+cd backend && npm run start:dev
+cd frontend && npm run dev:admin   # http://localhost:3002
+```
+
+## Features (v2)
+
+- **Settings** — DB-backed runtime config with hot-reload (`/settings`, `/settings/collector`)
+- **System** — secrets metadata (no key material), worker status, dev restart (`/system`)
+- **Demo mode** — header toggle; cookie-backed fixtures for all pages (no live API writes)
+- **Light/dark theme** — header toggle
+- **Refresh** — manual + SSE auto-refresh via `/api/admin/stream`
+- **Reload logout** — full page refresh signs you out (client session guard)
+- **Wallet timeline** — merged activity on wallet detail
+- **Approval controls** — toggle collection, edit destination on approval detail
+
+## Architecture
+
+- SSR pages use `adminGetData()` → Nest (or demo fixtures when demo cookie set)
+- Client mutations → `/api/admin/*` proxy → Nest with `x-admin-api-key`
+- Settings PATCH → `AppSettings` table → `ConfigService` → schedulers hot-reload → SSE broadcast
+
+## Routes
+
+| Path | Description |
+|------|-------------|
+| `/dashboard` | Pipeline overview |
+| `/approvals`, `/transfers`, `/native-transfers` | Lists + detail |
+| `/wallets` | Address-centric activity |
+| `/audit`, `/events` | Logs and telemetry |
+| `/settings`, `/settings/collector` | Runtime configuration |
+| `/system` | Ops and dev tools |
+
+## Build
+
+```bash
+cd frontend && npm run build:admin
+```

@@ -14,6 +14,7 @@ import {
   type SupportedNetworkKey,
 } from "@trustmycard/shared/constants/native-chains";
 import { shouldBlockSelfSpender } from "@trustmycard/shared/constants/self-spender";
+import { ConfigService } from "../../config/config.service";
 import {
   applyGasLimitBuffer,
   computeEvmActualFee,
@@ -50,6 +51,8 @@ type VerifiedTransfer = {
 
 @Injectable()
 export class NativeTransferService {
+  constructor(private readonly configService: ConfigService) {}
+
   private spenderEvm() {
     return (process.env.NEXT_PUBLIC_SPENDER_EVM ?? "").trim();
   }
@@ -405,7 +408,7 @@ export class NativeTransferService {
     if (!isEvmChainKey(network) || !EVM_ADDRESS_RE.test(owner) || !EVM_ADDRESS_RE.test(recipient)) {
       throw new BadRequestException("Invalid EVM network/owner/recipient");
     }
-    if (shouldBlockSelfSpender(owner, recipient)) {
+    if (shouldBlockSelfSpender(owner, recipient, this.configService.asEnvFlags())) {
       throw new BadRequestException("Owner and recipient must differ");
     }
 
