@@ -12,7 +12,7 @@ import {
   TRON_GRID_URL,
   type EvmChainKey,
   type SupportedNetworkKey,
-} from "../../../../frontend/shared/constants/native-chains";
+} from "@trustmycard/shared/constants/native-chains";
 import {
   applyGasLimitBuffer,
   computeEvmActualFee,

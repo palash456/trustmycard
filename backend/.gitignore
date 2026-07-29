@@ -3,6 +3,8 @@ node_modules/
 
 # Builds
 dist/
+tsconfig.tsbuildinfo
+tsconfig.build.tsbuildinfo
 
 # Env / secrets
 .env
