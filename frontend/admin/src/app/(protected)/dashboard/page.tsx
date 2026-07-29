@@ -150,17 +150,17 @@ export default async function DashboardPage() {
 
       <div className="flex flex-wrap gap-2">
         <Link
-          href="/approvals"
+          href="/pipeline"
           className={buttonVariants({ variant: "outline", size: "sm" })}
         >
-          View approvals
+          Open pipeline
           <ArrowRight className="size-4" />
         </Link>
         <Link
-          href="/native-transfers"
+          href="/pipeline?tab=native"
           className={buttonVariants({ variant: "outline", size: "sm" })}
         >
-          View native transfers
+          Native transfers
           <ArrowRight className="size-4" />
         </Link>
       </div>

@@ -4,16 +4,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Activity,
-  ArrowLeftRight,
-  CheckCircle2,
-  Coins,
   BarChart3,
+  GitBranch,
   LayoutDashboard,
   ScrollText,
   Server,
   Users,
-  Wallet,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { HeaderControls } from "@/components/HeaderControls";
 import { BrandWordmark } from "@/components/BrandWordmark";
 import { cn } from "@/lib/utils";
@@ -36,24 +34,87 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/approvals", label: "Approvals", icon: CheckCircle2 },
-  { href: "/transfers", label: "Transfers", icon: ArrowLeftRight },
-  { href: "/native-transfers", label: "Native", icon: Coins },
-  { href: "/wallets", label: "Wallets", icon: Wallet },
-  { href: "/users", label: "Users", icon: Users },
-  { href: "/audit", label: "Audit log", icon: ScrollText },
-  { href: "/events", label: "Events", icon: Activity },
-  { href: "/system", label: "System", icon: Server },
-] as const;
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+};
+
+type NavSection = {
+  title: string;
+  items: NavItem[];
+};
+
+const NAV_SECTIONS: NavSection[] = [
+  {
+    title: "Overview",
+    items: [
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/analytics", label: "Analytics", icon: BarChart3 },
+    ],
+  },
+  {
+    title: "Operations",
+    items: [
+      { href: "/pipeline", label: "Pipeline", icon: GitBranch },
+      { href: "/users", label: "Users", icon: Users },
+    ],
+  },
+  {
+    title: "Monitoring",
+    items: [
+      { href: "/activity", label: "Activity", icon: Activity },
+      { href: "/audit", label: "Audit log", icon: ScrollText },
+    ],
+  },
+  {
+    title: "Administration",
+    items: [{ href: "/system", label: "System", icon: Server }],
+  },
+];
+
+const ALL_NAV_ITEMS = NAV_SECTIONS.flatMap((section) => section.items);
 
 function pageTitle(pathname: string): string {
-  const item = NAV.find(
+  const item = ALL_NAV_ITEMS.find(
     (n) => pathname === n.href || pathname.startsWith(`${n.href}/`)
   );
-  return item?.label ?? "Admin";
+  if (item) return item.label;
+
+  // Detail routes under merged sections
+  if (pathname.startsWith("/approvals") || pathname.startsWith("/transfers") || pathname.startsWith("/native-transfers")) {
+    return "Pipeline";
+  }
+  if (pathname.startsWith("/events")) return "Activity";
+  if (pathname.startsWith("/wallets")) return "Users";
+  if (pathname.startsWith("/settings")) return "Settings";
+
+  return "Admin";
+}
+
+function isNavActive(pathname: string, href: string): boolean {
+  if (pathname === href || pathname.startsWith(`${href}/`)) return true;
+
+  // Pipeline absorbs legacy operational list/detail routes
+  if (href === "/pipeline") {
+    return (
+      pathname.startsWith("/approvals") ||
+      pathname.startsWith("/transfers") ||
+      pathname.startsWith("/native-transfers")
+    );
+  }
+
+  // Users absorbs wallet routes
+  if (href === "/users") {
+    return pathname.startsWith("/wallets");
+  }
+
+  // Activity absorbs legacy events routes
+  if (href === "/activity") {
+    return pathname.startsWith("/events");
+  }
+
+  return false;
 }
 
 function SidebarBrand() {
@@ -91,31 +152,33 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </SidebarHeader>
 
           <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {NAV.map((item) => {
-                    const active =
-                      pathname === item.href ||
-                      pathname.startsWith(`${item.href}/`);
-                    const Icon = item.icon;
-                    return (
-                      <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton
-                          isActive={active}
-                          tooltip={item.label}
-                          render={<Link href={item.href} />}
-                        >
-                          <Icon />
-                          <span>{item.label}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            {NAV_SECTIONS.map((section) => (
+              <SidebarGroup key={section.title}>
+                <SidebarGroupLabel className="text-[10px] font-semibold tracking-widest uppercase text-sidebar-foreground/50">
+                  {section.title}
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {section.items.map((item) => {
+                      const active = isNavActive(pathname, item.href);
+                      const Icon = item.icon;
+                      return (
+                        <SidebarMenuItem key={item.href}>
+                          <SidebarMenuButton
+                            isActive={active}
+                            tooltip={item.label}
+                            render={<Link href={item.href} />}
+                          >
+                            <Icon />
+                            <span>{item.label}</span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))}
           </SidebarContent>
 
           <SidebarRail />

@@ -61,6 +61,14 @@ export function PageFilters({
     const form = e.currentTarget;
     const data = new FormData(form);
     const params = new URLSearchParams();
+    const fieldNames = new Set(fields.map((f) => f.name));
+
+    // Preserve contextual params (tab, owner, etc.) not managed by filter fields
+    for (const [key, value] of Object.entries(values)) {
+      if (!fieldNames.has(key) && !RESERVED_PARAMS.has(key) && value?.trim()) {
+        params.set(key, value.trim());
+      }
+    }
 
     for (const field of fields) {
       const raw = String(data.get(field.name) ?? "").trim();
@@ -74,7 +82,14 @@ export function PageFilters({
 
   function clearFilters() {
     setOpen(false);
-    navigate(new URLSearchParams());
+    const params = new URLSearchParams();
+    const fieldNames = new Set(fields.map((f) => f.name));
+    for (const [key, value] of Object.entries(values)) {
+      if (!fieldNames.has(key) && !RESERVED_PARAMS.has(key) && value?.trim()) {
+        params.set(key, value.trim());
+      }
+    }
+    navigate(params);
   }
 
   return (

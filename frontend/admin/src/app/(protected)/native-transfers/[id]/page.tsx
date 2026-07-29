@@ -49,10 +49,10 @@ export default async function NativeTransferDetailPage({
         variant="ghost"
         size="sm"
         className="-ml-2 w-fit"
-        render={<Link href="/native-transfers" />}
+        render={<Link href="/pipeline?tab=native" />}
       >
         <ChevronLeft className="size-4" />
-        Back to native transfers
+        Back to pipeline
       </Button>
 
       <div className="flex flex-wrap items-center gap-3">

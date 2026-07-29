@@ -23,7 +23,7 @@ type Detail = {
   };
 };
 
-export default async function EventDetailPage({
+export default async function ActivityDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -31,7 +31,7 @@ export default async function EventDetailPage({
   const { id } = await params;
   const data = await adminGetData<Detail>(`/admin/tg-events/${id}`).catch(() => null);
   if (!data) {
-    return <p className="text-destructive">Event not found</p>;
+    return <p className="text-destructive">Activity event not found</p>;
   }
 
   const e = data.item;
@@ -43,7 +43,7 @@ export default async function EventDetailPage({
         Back to activity
       </Button>
 
-      <h1 className="text-2xl font-semibold tracking-tight">Flow event</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Activity event</h1>
 
       <Card className="max-w-3xl shadow-sm">
         <CardHeader>

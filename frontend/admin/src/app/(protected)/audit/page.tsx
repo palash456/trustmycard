@@ -54,7 +54,8 @@ export default async function AuditPage({
       <ListPageLayout>
         <PageHeader
           title="Audit log"
-          tip="Immutable-style trail of system and admin actions (confirm, transfer, settings updates). Expand payload JSON for the exact change."
+          description="Administrator actions and immutable system changes"
+          tip="Dedicated trail of admin and system mutations (settings updates, manual transfers, collector toggles). For user flow telemetry, use Activity instead."
         />
         <ErrorAlert message={err instanceof Error ? err.message : "Failed to load"} />
       </ListPageLayout>
@@ -65,7 +66,8 @@ export default async function AuditPage({
     <ListPageLayout>
       <PageHeader
         title="Audit log"
-        tip="Immutable-style trail of system and admin actions (confirm, transfer, settings updates). Expand payload JSON for the exact change."
+        description="Administrator actions and immutable system changes"
+        tip="Dedicated trail of admin and system mutations (settings updates, manual transfers, collector toggles). For user flow telemetry, use Activity instead."
       >
         <PageToolbar>
           <PageRefreshButton />

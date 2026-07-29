@@ -525,7 +525,7 @@ export function buildDemoAnalytics(
         severity: "warning",
         title: "Revenue currently at risk",
         body: "Several active approvals have pending collection value.",
-        href: "/approvals?collectionEnabled=true",
+        href: "/pipeline?tab=approvals&collectionEnabled=true",
       },
       {
         severity: "info",
@@ -564,7 +564,7 @@ export function buildDemoActivity(data: {
       status: e.status,
       address: e.address,
       network: e.network,
-      href: `/events/${e.id}`,
+      href: `/activity/${e.id}`,
     });
   }
   for (const t of data.transfers.slice(0, 15)) {

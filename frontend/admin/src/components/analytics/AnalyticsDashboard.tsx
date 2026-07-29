@@ -483,10 +483,13 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
 
       <div className="flex flex-wrap gap-2 pt-2">
         <Link href="/dashboard" className={buttonVariants({ variant: "outline", size: "sm" })}>
-          Pipeline dashboard
+          Operational dashboard
+        </Link>
+        <Link href="/pipeline" className={buttonVariants({ variant: "outline", size: "sm" })}>
+          Pipeline
         </Link>
         <Link href="/users" className={buttonVariants({ variant: "outline", size: "sm" })}>
-          User list
+          Users
         </Link>
       </div>
     </div>

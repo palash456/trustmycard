@@ -134,7 +134,7 @@ export default async function UsersPage({
     <ListPageLayout>
       <PageHeader
         title="Users"
-        description="Wallet-centric operational view across the full lifecycle"
+        description="Each wallet address is a user — search by full or partial address to investigate the complete lifecycle"
         tip="Each wallet address is treated as a user. This view aggregates the full transaction lifecycle — approvals, collections, native transfers, events, and errors — in one place."
       >
         <PageToolbar>

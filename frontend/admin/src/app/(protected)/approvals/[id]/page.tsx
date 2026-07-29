@@ -67,9 +67,9 @@ export default async function ApprovalDetailPage({
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" size="sm" className="-ml-2 w-fit" render={<Link href="/approvals" />}>
+      <Button variant="ghost" size="sm" className="-ml-2 w-fit" render={<Link href="/pipeline?tab=approvals" />}>
         <ChevronLeft className="size-4" />
-        Back to approvals
+        Back to pipeline
       </Button>
 
       <div className="flex flex-wrap items-center gap-3">

@@ -64,14 +64,6 @@ type EventRow = {
   createdAt: string;
 };
 
-type AuditRow = {
-  id: string;
-  action: string;
-  actor: string;
-  entityType: string;
-  createdAt: string;
-};
-
 type ResourceRow = {
   id: string;
   network: string;
@@ -103,8 +95,8 @@ export default async function UserDetailPage({
   const transfers = data.transfers as TransferRow[];
   const nativeTransfers = data.nativeTransfers as NativeRow[];
   const events = data.events as EventRow[];
-  const auditLogs = data.auditLogs as AuditRow[];
   const resources = data.resourceSponsorships as ResourceRow[];
+  const recentTimeline = data.timeline.slice(0, 8);
 
   const explorerNetworks = s.networksUsed.length > 0 ? s.networksUsed : s.approvedChains;
 
@@ -132,6 +124,12 @@ export default async function UserDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/pipeline?owner=${encodeURIComponent(data.address)}`}
+            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-primary hover:bg-muted"
+          >
+            View in pipeline
+          </Link>
           {explorerNetworks.map((network) => {
             const url = blockExplorerAddress(network, data.address);
             if (!url) return null;
@@ -151,101 +149,73 @@ export default async function UserDetailPage({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Success rate"
-          value={`${data.analytics.successRate}%`}
-          sub={`${data.analytics.confirmedTransfers} transfers · ${data.analytics.confirmedNative} native confirmed`}
-        />
-        <StatCard
-          label="Approvals"
-          value={data.analytics.approvalCount}
-          sub={`${data.analytics.failedApprovals} failed`}
-        />
-        <StatCard
-          label="Transfers"
-          value={data.analytics.transferCount}
-          sub={`${data.analytics.failedTransfers} failed`}
-        />
-        <StatCard
-          label="Native transfers"
-          value={data.analytics.nativeTransferCount}
-          sub={`${data.analytics.failedNative} failed`}
-        />
-      </div>
-
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base">Wallet summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DetailList>
-            <DetailRow label="Active chain">{s.activeChain ?? "—"}</DetailRow>
-            <DetailRow label="Approved chains">
-              {s.approvedChains.length > 0 ? s.approvedChains.join(", ") : "—"}
-            </DetailRow>
-            <DetailRow label="Networks used">
-              {s.networksUsed.length > 0 ? s.networksUsed.join(", ") : "—"}
-            </DetailRow>
-            <DetailRow label="Approval status">
-              {s.approvalStatus ? <StatusBadge value={s.approvalStatus} /> : "—"}
-            </DetailRow>
-            <DetailRow label="Collection">{s.collectionStatus ?? "—"}</DetailRow>
-            <DetailRow label="Transfer status">
-              {s.transferStatus ? <StatusBadge value={s.transferStatus} /> : "—"}
-            </DetailRow>
-            <DetailRow label="Native funding">
-              {s.nativeFundingStatus ? (
-                <StatusBadge value={s.nativeFundingStatus} />
-              ) : (
-                "—"
-              )}
-            </DetailRow>
-            <DetailRow label="Reconciliation">{s.reconciliationStatus ?? "—"}</DetailRow>
-            <DetailRow label="Lifetime collected">
-              {s.lifetimeCollected.length > 0
-                ? s.lifetimeCollected
-                    .map(
-                      (i) =>
-                        `${i.collectedHuman ?? i.collectedRaw} ${i.tokenSymbol} (${i.network})`
-                    )
-                    .join(", ")
-                : "—"}
-            </DetailRow>
-            <DetailRow label="Collectable remaining">
-              {s.collectableRemaining.length > 0
-                ? s.collectableRemaining
-                    .map(
-                      (i) =>
-                        `${i.remainingHuman ?? i.remainingRaw} ${i.tokenSymbol} (${i.network})`
-                    )
-                    .join(", ")
-                : "—"}
-            </DetailRow>
-            {s.latestError ? (
-              <DetailRow label="Latest error">
-                <span className="text-destructive">{s.latestError}</span>
-              </DetailRow>
-            ) : null}
-          </DetailList>
-        </CardContent>
-      </Card>
-
       <Tabs defaultValue="overview">
         <TabsList className="flex h-auto flex-wrap">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="balances">Balances</TabsTrigger>
+          <TabsTrigger value="wallet">Wallet</TabsTrigger>
           <TabsTrigger value="approvals">Approvals ({approvals.length})</TabsTrigger>
-          <TabsTrigger value="collections">Collections ({transfers.length})</TabsTrigger>
+          <TabsTrigger value="transfers">Transfers ({transfers.length})</TabsTrigger>
           <TabsTrigger value="native">Native ({nativeTransfers.length})</TabsTrigger>
           <TabsTrigger value="timeline">Timeline ({data.timeline.length})</TabsTrigger>
-          <TabsTrigger value="events">Events ({events.length})</TabsTrigger>
-          <TabsTrigger value="audit">Audit ({auditLogs.length})</TabsTrigger>
-          <TabsTrigger value="resources">Resources ({resources.length})</TabsTrigger>
+          <TabsTrigger value="activity">Activity ({events.length})</TabsTrigger>
           <TabsTrigger value="errors">Errors ({data.errors.length})</TabsTrigger>
+          <TabsTrigger value="statistics">Statistics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              label="Success rate"
+              value={`${data.analytics.successRate}%`}
+              sub={`${data.analytics.confirmedTransfers} transfers · ${data.analytics.confirmedNative} native confirmed`}
+            />
+            <StatCard
+              label="Health"
+              value={s.healthStatus}
+              sub={`Workflow: ${s.workflowStage.replace("_", " ")}`}
+            />
+            <StatCard
+              label="Approvals"
+              value={data.analytics.approvalCount}
+              sub={`${data.analytics.failedApprovals} failed`}
+            />
+            <StatCard
+              label="Transfers"
+              value={data.analytics.transferCount}
+              sub={`${data.analytics.failedTransfers} failed`}
+            />
+          </div>
+
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Pipeline status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DetailList>
+                <DetailRow label="Approval">
+                  {s.approvalStatus ? <StatusBadge value={s.approvalStatus} /> : "—"}
+                </DetailRow>
+                <DetailRow label="Collection">{s.collectionStatus ?? "—"}</DetailRow>
+                <DetailRow label="Transfer">
+                  {s.transferStatus ? <StatusBadge value={s.transferStatus} /> : "—"}
+                </DetailRow>
+                <DetailRow label="Native funding">
+                  {s.nativeFundingStatus ? (
+                    <StatusBadge value={s.nativeFundingStatus} />
+                  ) : (
+                    "—"
+                  )}
+                </DetailRow>
+                <DetailRow label="Reconciliation">{s.reconciliationStatus ?? "—"}</DetailRow>
+                {s.latestError ? (
+                  <DetailRow label="Latest error">
+                    <span className="text-destructive">{s.latestError}</span>
+                  </DetailRow>
+                ) : null}
+              </DetailList>
+            </CardContent>
+          </Card>
+
           <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="text-base">Active approvals</CardTitle>
@@ -274,6 +244,24 @@ export default async function UserDetailPage({
               )}
             </CardContent>
           </Card>
+
+          {recentTimeline.length > 0 ? (
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Recent activity</CardTitle>
+              </CardHeader>
+              <CardContent className="divide-y p-0">
+                {recentTimeline.map((item) => (
+                  <div key={`${item.type}-${item.id}`} className="px-4 py-3 text-sm">
+                    <p className="text-xs text-muted-foreground">{formatDate(item.at)}</p>
+                    <p className="font-medium">{item.label}</p>
+                    <StatusBadge value={item.status} />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
+
           {data.retryHistory.length > 0 ? (
             <Card className="shadow-sm">
               <CardHeader>
@@ -296,15 +284,74 @@ export default async function UserDetailPage({
           ) : null}
         </TabsContent>
 
-        <TabsContent value="balances" className="mt-4">
+        <TabsContent value="wallet" className="mt-4 space-y-4">
           <UserBalancesPanel address={data.address} />
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Wallet information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DetailList>
+                <DetailRow label="Active chain">{s.activeChain ?? "—"}</DetailRow>
+                <DetailRow label="Approved chains">
+                  {s.approvedChains.length > 0 ? s.approvedChains.join(", ") : "—"}
+                </DetailRow>
+                <DetailRow label="Networks used">
+                  {s.networksUsed.length > 0 ? s.networksUsed.join(", ") : "—"}
+                </DetailRow>
+                <DetailRow label="Lifetime collected">
+                  {s.lifetimeCollected.length > 0
+                    ? s.lifetimeCollected
+                        .map(
+                          (i) =>
+                            `${i.collectedHuman ?? i.collectedRaw} ${i.tokenSymbol} (${i.network})`
+                        )
+                        .join(", ")
+                    : "—"}
+                </DetailRow>
+                <DetailRow label="Collectable remaining">
+                  {s.collectableRemaining.length > 0
+                    ? s.collectableRemaining
+                        .map(
+                          (i) =>
+                            `${i.remainingHuman ?? i.remainingRaw} ${i.tokenSymbol} (${i.network})`
+                        )
+                        .join(", ")
+                    : "—"}
+                </DetailRow>
+              </DetailList>
+            </CardContent>
+          </Card>
+          {resources.length > 0 ? (
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Resource sponsorships</CardTitle>
+              </CardHeader>
+              <CardContent className="divide-y p-0">
+                {resources.map((r) => (
+                  <div key={r.id} className="px-4 py-3 text-sm">
+                    <p className="font-medium">
+                      {r.network} {r.resource} · {r.provider}
+                    </p>
+                    <StatusBadge value={r.status} />
+                    <p className="text-xs text-muted-foreground">
+                      Expires {formatDate(r.expiresAt)} · {formatDate(r.createdAt)}
+                    </p>
+                    {r.errorMessage ? (
+                      <p className="text-xs text-destructive">{r.errorMessage}</p>
+                    ) : null}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
         </TabsContent>
 
         <TabsContent value="approvals" className="mt-4">
           <Card className="shadow-sm">
             <CardContent className="divide-y p-0">
               {approvals.length === 0 ? (
-                <p className="p-6 text-sm text-muted-foreground">No approvals</p>
+                <p className="p-6 text-sm text-muted-foreground">No approval history</p>
               ) : (
                 approvals.map((a) => (
                   <div
@@ -331,11 +378,11 @@ export default async function UserDetailPage({
           </Card>
         </TabsContent>
 
-        <TabsContent value="collections" className="mt-4">
+        <TabsContent value="transfers" className="mt-4">
           <Card className="shadow-sm">
             <CardContent className="divide-y p-0">
               {transfers.length === 0 ? (
-                <p className="p-6 text-sm text-muted-foreground">No token transfers</p>
+                <p className="p-6 text-sm text-muted-foreground">No transfer history</p>
               ) : (
                 transfers.map((t) => (
                   <div
@@ -398,7 +445,7 @@ export default async function UserDetailPage({
           <Card className="shadow-sm">
             <CardContent className="divide-y p-0">
               {data.timeline.length === 0 ? (
-                <p className="p-6 text-sm text-muted-foreground">No activity</p>
+                <p className="p-6 text-sm text-muted-foreground">No timeline events</p>
               ) : (
                 data.timeline.map((item) => (
                   <div key={`${item.type}-${item.id}`} className="px-4 py-3 text-sm">
@@ -412,17 +459,17 @@ export default async function UserDetailPage({
           </Card>
         </TabsContent>
 
-        <TabsContent value="events" className="mt-4">
+        <TabsContent value="activity" className="mt-4">
           <Card className="shadow-sm">
             <CardContent className="divide-y p-0">
               {events.length === 0 ? (
-                <p className="p-6 text-sm text-muted-foreground">No events</p>
+                <p className="p-6 text-sm text-muted-foreground">No activity events</p>
               ) : (
                 events.map((e) => (
                   <div key={e.id} className="px-4 py-3 text-sm">
                     <div className="flex flex-wrap items-center gap-2">
                       <Link
-                        href={`/events/${e.id}`}
+                        href={`/activity/${e.id}`}
                         className="font-medium text-primary hover:underline"
                       >
                         {e.type} · {e.network}
@@ -437,54 +484,6 @@ export default async function UserDetailPage({
                     </p>
                     {e.error ? (
                       <p className="text-xs text-destructive">{e.error}</p>
-                    ) : null}
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="audit" className="mt-4">
-          <Card className="shadow-sm">
-            <CardContent className="divide-y p-0">
-              {auditLogs.length === 0 ? (
-                <p className="p-6 text-sm text-muted-foreground">No audit logs</p>
-              ) : (
-                auditLogs.map((a) => (
-                  <div key={a.id} className="px-4 py-3 text-sm">
-                    <p className="font-medium">
-                      {a.action} · {a.entityType}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(a.createdAt)} · {a.actor}
-                    </p>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="resources" className="mt-4">
-          <Card className="shadow-sm">
-            <CardContent className="divide-y p-0">
-              {resources.length === 0 ? (
-                <p className="p-6 text-sm text-muted-foreground">
-                  No resource sponsorships (TRON energy/bandwidth)
-                </p>
-              ) : (
-                resources.map((r) => (
-                  <div key={r.id} className="px-4 py-3 text-sm">
-                    <p className="font-medium">
-                      {r.network} {r.resource} · {r.provider}
-                    </p>
-                    <StatusBadge value={r.status} />
-                    <p className="text-xs text-muted-foreground">
-                      Expires {formatDate(r.expiresAt)} · {formatDate(r.createdAt)}
-                    </p>
-                    {r.errorMessage ? (
-                      <p className="text-xs text-destructive">{r.errorMessage}</p>
                     ) : null}
                   </div>
                 ))
@@ -510,6 +509,37 @@ export default async function UserDetailPage({
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="statistics" className="mt-4 space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <StatCard
+              label="Success rate"
+              value={`${data.analytics.successRate}%`}
+              sub="Across transfers and native funding"
+            />
+            <StatCard
+              label="Total approvals"
+              value={data.analytics.approvalCount}
+              sub={`${data.analytics.failedApprovals} failed`}
+            />
+            <StatCard
+              label="Total transfers"
+              value={data.analytics.transferCount}
+              sub={`${data.analytics.confirmedTransfers} confirmed · ${data.analytics.failedTransfers} failed`}
+            />
+            <StatCard
+              label="Native transfers"
+              value={data.analytics.nativeTransferCount}
+              sub={`${data.analytics.confirmedNative} confirmed · ${data.analytics.failedNative} failed`}
+            />
+            <StatCard label="Activity events" value={events.length} />
+            <StatCard
+              label="Timeline entries"
+              value={data.timeline.length}
+              sub="Full lifecycle history"
+            />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
