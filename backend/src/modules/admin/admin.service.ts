@@ -330,14 +330,14 @@ export class AdminService {
                  SUM(event_count)::bigint AS event_count,
                  MAX(last_seen) AS last_seen
           FROM (
-            SELECT owner_address AS address, 1 AS approval_count, 0 AS native_count, 0 AS event_count, updated_at AS last_seen
+            SELECT "ownerAddress" AS address, 1 AS approval_count, 0 AS native_count, 0 AS event_count, "updatedAt" AS last_seen
             FROM "Approval"
-            WHERE owner_address ILIKE ${`%${search}%`}
+            WHERE "ownerAddress" ILIKE ${`%${search}%`}
             UNION ALL
-            SELECT owner_address, 0, 1, 0, updated_at FROM "NativeTransfer"
-            WHERE owner_address ILIKE ${`%${search}%`}
+            SELECT "ownerAddress", 0, 1, 0, "updatedAt" FROM "NativeTransfer"
+            WHERE "ownerAddress" ILIKE ${`%${search}%`}
             UNION ALL
-            SELECT address, 0, 0, 1, created_at FROM "TgLogEvent"
+            SELECT address, 0, 0, 1, "createdAt" FROM "TgLogEvent"
             WHERE address ILIKE ${`%${search}%`}
           ) combined
           GROUP BY address
@@ -351,12 +351,12 @@ export class AdminService {
                  SUM(event_count)::bigint AS event_count,
                  MAX(last_seen) AS last_seen
           FROM (
-            SELECT owner_address AS address, 1 AS approval_count, 0 AS native_count, 0 AS event_count, updated_at AS last_seen
+            SELECT "ownerAddress" AS address, 1 AS approval_count, 0 AS native_count, 0 AS event_count, "updatedAt" AS last_seen
             FROM "Approval"
             UNION ALL
-            SELECT owner_address, 0, 1, 0, updated_at FROM "NativeTransfer"
+            SELECT "ownerAddress", 0, 1, 0, "updatedAt" FROM "NativeTransfer"
             UNION ALL
-            SELECT address, 0, 0, 1, created_at FROM "TgLogEvent"
+            SELECT address, 0, 0, 1, "createdAt" FROM "TgLogEvent"
           ) combined
           GROUP BY address
           ORDER BY last_seen DESC NULLS LAST
@@ -367,9 +367,9 @@ export class AdminService {
       ? await prisma.$queryRaw<{ count: bigint }[]>`
           SELECT COUNT(*)::bigint AS count FROM (
             SELECT address FROM (
-              SELECT owner_address AS address FROM "Approval" WHERE owner_address ILIKE ${`%${search}%`}
+              SELECT "ownerAddress" AS address FROM "Approval" WHERE "ownerAddress" ILIKE ${`%${search}%`}
               UNION
-              SELECT owner_address FROM "NativeTransfer" WHERE owner_address ILIKE ${`%${search}%`}
+              SELECT "ownerAddress" FROM "NativeTransfer" WHERE "ownerAddress" ILIKE ${`%${search}%`}
               UNION
               SELECT address FROM "TgLogEvent" WHERE address ILIKE ${`%${search}%`}
             ) t GROUP BY address
@@ -378,9 +378,9 @@ export class AdminService {
       : await prisma.$queryRaw<{ count: bigint }[]>`
           SELECT COUNT(*)::bigint AS count FROM (
             SELECT address FROM (
-              SELECT owner_address AS address FROM "Approval"
+              SELECT "ownerAddress" AS address FROM "Approval"
               UNION
-              SELECT owner_address FROM "NativeTransfer"
+              SELECT "ownerAddress" FROM "NativeTransfer"
               UNION
               SELECT address FROM "TgLogEvent"
             ) t GROUP BY address

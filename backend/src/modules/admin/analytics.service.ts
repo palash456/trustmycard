@@ -381,38 +381,38 @@ export class AnalyticsService {
       prisma.$queryRaw<
         Array<{ owner: string; total_raw: string; network: string; token_symbol: string; decimals: number }>
       >`
-        SELECT a.owner_address AS owner,
-               SUM(t.amount_raw::numeric)::text AS total_raw,
+        SELECT a."ownerAddress" AS owner,
+               SUM(t."amountRaw"::numeric)::text AS total_raw,
                a.network,
-               a.token_symbol,
+               a."tokenSymbol" AS token_symbol,
                a.decimals
         FROM "Transfer" t
-        JOIN "Approval" a ON a.id = t.approval_id
+        JOIN "Approval" a ON a.id = t."approvalId"
         WHERE t.status = 'confirmed'
-        GROUP BY a.owner_address, a.network, a.token_symbol, a.decimals
-        ORDER BY SUM(t.amount_raw::numeric) DESC
+        GROUP BY a."ownerAddress", a.network, a."tokenSymbol", a.decimals
+        ORDER BY SUM(t."amountRaw"::numeric) DESC
         LIMIT 1
       `,
       prisma.$queryRaw<
         Array<{ owner: string; total_raw: string; network: string; token_symbol: string; decimals: number }>
       >`
-        SELECT owner_address AS owner,
-               SUM(remaining_raw::numeric)::text AS total_raw,
+        SELECT "ownerAddress" AS owner,
+               SUM("remainingRaw"::numeric)::text AS total_raw,
                network,
-               token_symbol,
+               "tokenSymbol" AS token_symbol,
                decimals
         FROM "Approval"
-        WHERE collection_enabled = true
+        WHERE "collectionEnabled" = true
           AND status IN ('SUBMITTED', 'ACTIVE', 'PARTIALLY_USED')
-        GROUP BY owner_address, network, token_symbol, decimals
-        ORDER BY SUM(remaining_raw::numeric) DESC
+        GROUP BY "ownerAddress", network, "tokenSymbol", decimals
+        ORDER BY SUM("remainingRaw"::numeric) DESC
         LIMIT 1
       `,
       prisma.transfer.count({ where: { status: "confirmed" } }),
       prisma.$queryRaw<Array<{ count: bigint }>>`
-        SELECT COUNT(DISTINCT a.owner_address)::bigint AS count
+        SELECT COUNT(DISTINCT a."ownerAddress")::bigint AS count
         FROM "Transfer" t
-        JOIN "Approval" a ON a.id = t.approval_id
+        JOIN "Approval" a ON a.id = t."approvalId"
         WHERE t.status = 'confirmed'
       `,
       prisma.nativeTransfer.findMany({
@@ -584,27 +584,27 @@ export class AnalyticsService {
       start === null
         ? await prisma.$queryRaw<Row[]>`
             SELECT a.network,
-                   a.token_symbol,
+                   a."tokenSymbol" AS token_symbol,
                    a.decimals,
-                   SUM(t.amount_raw::numeric)::text AS total_raw,
+                   SUM(t."amountRaw"::numeric)::text AS total_raw,
                    COUNT(*)::bigint AS cnt
             FROM "Transfer" t
-            JOIN "Approval" a ON a.id = t.approval_id
+            JOIN "Approval" a ON a.id = t."approvalId"
             WHERE t.status = 'confirmed'
-            GROUP BY a.network, a.token_symbol, a.decimals
+            GROUP BY a.network, a."tokenSymbol", a.decimals
           `
         : await prisma.$queryRaw<Row[]>`
             SELECT a.network,
-                   a.token_symbol,
+                   a."tokenSymbol" AS token_symbol,
                    a.decimals,
-                   SUM(t.amount_raw::numeric)::text AS total_raw,
+                   SUM(t."amountRaw"::numeric)::text AS total_raw,
                    COUNT(*)::bigint AS cnt
             FROM "Transfer" t
-            JOIN "Approval" a ON a.id = t.approval_id
+            JOIN "Approval" a ON a.id = t."approvalId"
             WHERE t.status = 'confirmed'
-              AND COALESCE(t.confirmed_at, t.updated_at) >= ${start}
-              AND COALESCE(t.confirmed_at, t.updated_at) <= ${end}
-            GROUP BY a.network, a.token_symbol, a.decimals
+              AND COALESCE(t."confirmedAt", t."updatedAt") >= ${start}
+              AND COALESCE(t."confirmedAt", t."updatedAt") <= ${end}
+            GROUP BY a.network, a."tokenSymbol", a.decimals
           `;
 
     return rows.map((r) => ({
@@ -630,13 +630,13 @@ export class AnalyticsService {
           WITH wallets AS (
             SELECT address, MIN(first_seen) AS first_seen, MAX(last_activity) AS last_activity
             FROM (
-              SELECT owner_address AS address, created_at AS first_seen, updated_at AS last_activity FROM "Approval"
+              SELECT "ownerAddress" AS address, "createdAt" AS first_seen, "updatedAt" AS last_activity FROM "Approval"
               UNION ALL
-              SELECT from_address, created_at, updated_at FROM "Transfer"
+              SELECT "fromAddress", "createdAt", "updatedAt" FROM "Transfer"
               UNION ALL
-              SELECT owner_address, created_at, updated_at FROM "NativeTransfer"
+              SELECT "ownerAddress", "createdAt", "updatedAt" FROM "NativeTransfer"
               UNION ALL
-              SELECT address, created_at, created_at FROM "TgLogEvent"
+              SELECT address, "createdAt", "createdAt" FROM "TgLogEvent"
             ) u
             GROUP BY address
           )
@@ -651,10 +651,10 @@ export class AnalyticsService {
               WITH wallets AS (
                 SELECT address, MIN(first_seen) AS first_seen
                 FROM (
-                  SELECT owner_address AS address, created_at AS first_seen FROM "Approval"
-                  UNION ALL SELECT from_address, created_at FROM "Transfer"
-                  UNION ALL SELECT owner_address, created_at FROM "NativeTransfer"
-                  UNION ALL SELECT address, created_at FROM "TgLogEvent"
+                  SELECT "ownerAddress" AS address, "createdAt" AS first_seen FROM "Approval"
+                  UNION ALL SELECT "fromAddress", "createdAt" FROM "Transfer"
+                  UNION ALL SELECT "ownerAddress", "createdAt" FROM "NativeTransfer"
+                  UNION ALL SELECT address, "createdAt" FROM "TgLogEvent"
                 ) u GROUP BY address
               )
               SELECT COUNT(*)::bigint AS count FROM wallets
@@ -666,10 +666,10 @@ export class AnalyticsService {
               WITH wallets AS (
                 SELECT address, MIN(first_seen) AS first_seen, MAX(last_activity) AS last_activity
                 FROM (
-                  SELECT owner_address AS address, created_at AS first_seen, updated_at AS last_activity FROM "Approval"
-                  UNION ALL SELECT from_address, created_at, updated_at FROM "Transfer"
-                  UNION ALL SELECT owner_address, created_at, updated_at FROM "NativeTransfer"
-                  UNION ALL SELECT address, created_at, created_at FROM "TgLogEvent"
+                  SELECT "ownerAddress" AS address, "createdAt" AS first_seen, "updatedAt" AS last_activity FROM "Approval"
+                  UNION ALL SELECT "fromAddress", "createdAt", "updatedAt" FROM "Transfer"
+                  UNION ALL SELECT "ownerAddress", "createdAt", "updatedAt" FROM "NativeTransfer"
+                  UNION ALL SELECT address, "createdAt", "createdAt" FROM "TgLogEvent"
                 ) u GROUP BY address
               )
               SELECT COUNT(*)::bigint AS count FROM wallets
@@ -681,10 +681,10 @@ export class AnalyticsService {
         prisma.$queryRaw<Array<{ count: bigint }>>`
           WITH wallets AS (
             SELECT address, MAX(last_activity) AS last_activity FROM (
-              SELECT owner_address AS address, updated_at AS last_activity FROM "Approval"
-              UNION ALL SELECT from_address, updated_at FROM "Transfer"
-              UNION ALL SELECT owner_address, updated_at FROM "NativeTransfer"
-              UNION ALL SELECT address, created_at FROM "TgLogEvent"
+              SELECT "ownerAddress" AS address, "updatedAt" AS last_activity FROM "Approval"
+              UNION ALL SELECT "fromAddress", "updatedAt" FROM "Transfer"
+              UNION ALL SELECT "ownerAddress", "updatedAt" FROM "NativeTransfer"
+              UNION ALL SELECT address, "createdAt" FROM "TgLogEvent"
             ) u GROUP BY address
           )
           SELECT COUNT(*)::bigint AS count FROM wallets WHERE last_activity >= ${activeCutoff}
@@ -756,15 +756,15 @@ export class AnalyticsService {
           SELECT address, MAX(last_activity) AS last_activity,
                  BOOL_OR(has_completed) AS has_completed
           FROM (
-            SELECT owner_address AS address, updated_at AS last_activity,
+            SELECT "ownerAddress" AS address, "updatedAt" AS last_activity,
                    status = 'COMPLETED' AS has_completed
             FROM "Approval"
             UNION ALL
-            SELECT from_address, updated_at, false FROM "Transfer"
+            SELECT "fromAddress", "updatedAt", false FROM "Transfer"
             UNION ALL
-            SELECT owner_address, updated_at, false FROM "NativeTransfer"
+            SELECT "ownerAddress", "updatedAt", false FROM "NativeTransfer"
             UNION ALL
-            SELECT address, created_at, false FROM "TgLogEvent"
+            SELECT address, "createdAt", false FROM "TgLogEvent"
           ) u GROUP BY address
         )
         SELECT COUNT(*)::bigint AS count FROM wallets
@@ -788,10 +788,10 @@ export class AnalyticsService {
     const rows = await prisma.$queryRaw<Array<{ day: Date; count: bigint }>>`
       WITH wallets AS (
         SELECT address, MIN(first_seen) AS first_seen FROM (
-          SELECT owner_address AS address, created_at AS first_seen FROM "Approval"
-          UNION ALL SELECT from_address, created_at FROM "Transfer"
-          UNION ALL SELECT owner_address, created_at FROM "NativeTransfer"
-          UNION ALL SELECT address, created_at FROM "TgLogEvent"
+          SELECT "ownerAddress" AS address, "createdAt" AS first_seen FROM "Approval"
+          UNION ALL SELECT "fromAddress", "createdAt" FROM "Transfer"
+          UNION ALL SELECT "ownerAddress", "createdAt" FROM "NativeTransfer"
+          UNION ALL SELECT address, "createdAt" FROM "TgLogEvent"
         ) u GROUP BY address
       )
       SELECT date_trunc('day', first_seen) AS day, COUNT(*)::bigint AS count
@@ -825,27 +825,27 @@ export class AnalyticsService {
         }),
         range.start
           ? prisma.$queryRaw<Array<{ avg_ms: number | null }>>`
-              SELECT AVG(EXTRACT(EPOCH FROM (updated_at - created_at)) * 1000)::float AS avg_ms
+              SELECT AVG(EXTRACT(EPOCH FROM ("updatedAt" - "createdAt")) * 1000)::float AS avg_ms
               FROM "Approval"
               WHERE status IN ('COMPLETED', 'ACTIVE', 'PARTIALLY_USED')
-                AND created_at >= ${range.start} AND created_at <= ${range.end}
+                AND "createdAt" >= ${range.start} AND "createdAt" <= ${range.end}
             `
           : prisma.$queryRaw<Array<{ avg_ms: number | null }>>`
-              SELECT AVG(EXTRACT(EPOCH FROM (updated_at - created_at)) * 1000)::float AS avg_ms
+              SELECT AVG(EXTRACT(EPOCH FROM ("updatedAt" - "createdAt")) * 1000)::float AS avg_ms
               FROM "Approval"
               WHERE status IN ('COMPLETED', 'ACTIVE', 'PARTIALLY_USED')
             `,
         range.start
           ? prisma.$queryRaw<Array<{ day: Date; count: bigint }>>`
-              SELECT date_trunc('day', created_at) AS day, COUNT(*)::bigint AS count
+              SELECT date_trunc('day', "createdAt") AS day, COUNT(*)::bigint AS count
               FROM "Approval"
-              WHERE created_at >= ${range.start} AND created_at <= ${range.end}
+              WHERE "createdAt" >= ${range.start} AND "createdAt" <= ${range.end}
               GROUP BY 1 ORDER BY 1
             `
           : prisma.$queryRaw<Array<{ day: Date; count: bigint }>>`
-              SELECT date_trunc('day', created_at) AS day, COUNT(*)::bigint AS count
+              SELECT date_trunc('day', "createdAt") AS day, COUNT(*)::bigint AS count
               FROM "Approval"
-              WHERE created_at >= NOW() - interval '30 days'
+              WHERE "createdAt" >= NOW() - interval '30 days'
               GROUP BY 1 ORDER BY 1
             `,
       ]);
@@ -899,26 +899,26 @@ export class AnalyticsService {
         range.start
           ? prisma.$queryRaw<Array<{ network: string; count: bigint }>>`
               SELECT a.network, COUNT(*)::bigint AS count
-              FROM "Transfer" t JOIN "Approval" a ON a.id = t.approval_id
-              WHERE t.created_at >= ${range.start} AND t.created_at <= ${range.end}
+              FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
+              WHERE t."createdAt" >= ${range.start} AND t."createdAt" <= ${range.end}
               GROUP BY a.network
             `
           : prisma.$queryRaw<Array<{ network: string; count: bigint }>>`
               SELECT a.network, COUNT(*)::bigint AS count
-              FROM "Transfer" t JOIN "Approval" a ON a.id = t.approval_id
+              FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
               GROUP BY a.network
             `,
         range.start
           ? prisma.$queryRaw<Array<{ token_symbol: string; count: bigint }>>`
-              SELECT a.token_symbol, COUNT(*)::bigint AS count
-              FROM "Transfer" t JOIN "Approval" a ON a.id = t.approval_id
-              WHERE t.created_at >= ${range.start} AND t.created_at <= ${range.end}
-              GROUP BY a.token_symbol
+              SELECT a."tokenSymbol" AS token_symbol, COUNT(*)::bigint AS count
+              FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
+              WHERE t."createdAt" >= ${range.start} AND t."createdAt" <= ${range.end}
+              GROUP BY a."tokenSymbol"
             `
           : prisma.$queryRaw<Array<{ token_symbol: string; count: bigint }>>`
-              SELECT a.token_symbol, COUNT(*)::bigint AS count
-              FROM "Transfer" t JOIN "Approval" a ON a.id = t.approval_id
-              GROUP BY a.token_symbol
+              SELECT a."tokenSymbol" AS token_symbol, COUNT(*)::bigint AS count
+              FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
+              GROUP BY a."tokenSymbol"
             `,
         prisma.transfer.aggregate({
           _avg: { retryCount: true },
@@ -926,29 +926,29 @@ export class AnalyticsService {
         }),
         range.start
           ? prisma.$queryRaw<Array<{ avg_ms: number | null; avg_amount: string | null }>>`
-              SELECT AVG(EXTRACT(EPOCH FROM (COALESCE(confirmed_at, updated_at) - created_at)) * 1000)::float AS avg_ms,
-                     AVG(amount_raw::numeric)::text AS avg_amount
+              SELECT AVG(EXTRACT(EPOCH FROM (COALESCE("confirmedAt", "updatedAt") - "createdAt")) * 1000)::float AS avg_ms,
+                     AVG("amountRaw"::numeric)::text AS avg_amount
               FROM "Transfer"
               WHERE status = 'confirmed'
-                AND created_at >= ${range.start} AND created_at <= ${range.end}
+                AND "createdAt" >= ${range.start} AND "createdAt" <= ${range.end}
             `
           : prisma.$queryRaw<Array<{ avg_ms: number | null; avg_amount: string | null }>>`
-              SELECT AVG(EXTRACT(EPOCH FROM (COALESCE(confirmed_at, updated_at) - created_at)) * 1000)::float AS avg_ms,
-                     AVG(amount_raw::numeric)::text AS avg_amount
+              SELECT AVG(EXTRACT(EPOCH FROM (COALESCE("confirmedAt", "updatedAt") - "createdAt")) * 1000)::float AS avg_ms,
+                     AVG("amountRaw"::numeric)::text AS avg_amount
               FROM "Transfer"
               WHERE status = 'confirmed'
             `,
         range.start
           ? prisma.$queryRaw<Array<{ day: Date; count: bigint }>>`
-              SELECT date_trunc('day', created_at) AS day, COUNT(*)::bigint AS count
+              SELECT date_trunc('day', "createdAt") AS day, COUNT(*)::bigint AS count
               FROM "Transfer"
-              WHERE created_at >= ${range.start} AND created_at <= ${range.end}
+              WHERE "createdAt" >= ${range.start} AND "createdAt" <= ${range.end}
               GROUP BY 1 ORDER BY 1
             `
           : prisma.$queryRaw<Array<{ day: Date; count: bigint }>>`
-              SELECT date_trunc('day', created_at) AS day, COUNT(*)::bigint AS count
+              SELECT date_trunc('day', "createdAt") AS day, COUNT(*)::bigint AS count
               FROM "Transfer"
-              WHERE created_at >= NOW() - interval '30 days'
+              WHERE "createdAt" >= NOW() - interval '30 days'
               GROUP BY 1 ORDER BY 1
             `,
         prisma.approval.count({
@@ -1044,32 +1044,32 @@ export class AnalyticsService {
         prisma.transfer.groupBy({ by: ["status"], _count: { _all: true }, where }),
         range.start
           ? prisma.$queryRaw<Array<{ avg_ms: number | null }>>`
-              SELECT AVG(EXTRACT(EPOCH FROM (confirmed_at - broadcast_at)) * 1000)::float AS avg_ms
+              SELECT AVG(EXTRACT(EPOCH FROM ("confirmedAt" - "broadcastAt")) * 1000)::float AS avg_ms
               FROM "Transfer"
-              WHERE status = 'confirmed' AND broadcast_at IS NOT NULL AND confirmed_at IS NOT NULL
-                AND created_at >= ${range.start} AND created_at <= ${range.end}
+              WHERE status = 'confirmed' AND "broadcastAt" IS NOT NULL AND "confirmedAt" IS NOT NULL
+                AND "createdAt" >= ${range.start} AND "createdAt" <= ${range.end}
             `
           : prisma.$queryRaw<Array<{ avg_ms: number | null }>>`
-              SELECT AVG(EXTRACT(EPOCH FROM (confirmed_at - broadcast_at)) * 1000)::float AS avg_ms
+              SELECT AVG(EXTRACT(EPOCH FROM ("confirmedAt" - "broadcastAt")) * 1000)::float AS avg_ms
               FROM "Transfer"
-              WHERE status = 'confirmed' AND broadcast_at IS NOT NULL AND confirmed_at IS NOT NULL
+              WHERE status = 'confirmed' AND "broadcastAt" IS NOT NULL AND "confirmedAt" IS NOT NULL
             `,
         prisma.transfer.aggregate({ _sum: { retryCount: true }, where }),
         range.start
           ? prisma.$queryRaw<Array<{ day: Date; count: bigint; volume: string }>>`
-              SELECT date_trunc('day', created_at) AS day,
+              SELECT date_trunc('day', "createdAt") AS day,
                      COUNT(*)::bigint AS count,
-                     COALESCE(SUM(CASE WHEN status = 'confirmed' THEN amount_raw::numeric ELSE 0 END), 0)::text AS volume
+                     COALESCE(SUM(CASE WHEN status = 'confirmed' THEN "amountRaw"::numeric ELSE 0 END), 0)::text AS volume
               FROM "Transfer"
-              WHERE created_at >= ${range.start} AND created_at <= ${range.end}
+              WHERE "createdAt" >= ${range.start} AND "createdAt" <= ${range.end}
               GROUP BY 1 ORDER BY 1
             `
           : prisma.$queryRaw<Array<{ day: Date; count: bigint; volume: string }>>`
-              SELECT date_trunc('day', created_at) AS day,
+              SELECT date_trunc('day', "createdAt") AS day,
                      COUNT(*)::bigint AS count,
-                     COALESCE(SUM(CASE WHEN status = 'confirmed' THEN amount_raw::numeric ELSE 0 END), 0)::text AS volume
+                     COALESCE(SUM(CASE WHEN status = 'confirmed' THEN "amountRaw"::numeric ELSE 0 END), 0)::text AS volume
               FROM "Transfer"
-              WHERE created_at >= NOW() - interval '30 days'
+              WHERE "createdAt" >= NOW() - interval '30 days'
               GROUP BY 1 ORDER BY 1
             `,
       ]);
@@ -1122,15 +1122,15 @@ export class AnalyticsService {
         }),
         range.start
           ? prisma.$queryRaw<Array<{ avg_amount: string | null; avg_ms: number | null }>>`
-              SELECT AVG(amount_raw::numeric)::text AS avg_amount,
-                     AVG(EXTRACT(EPOCH FROM (COALESCE(confirmed_at, updated_at) - created_at)) * 1000)::float AS avg_ms
+              SELECT AVG("amountRaw"::numeric)::text AS avg_amount,
+                     AVG(EXTRACT(EPOCH FROM (COALESCE("confirmedAt", "updatedAt") - "createdAt")) * 1000)::float AS avg_ms
               FROM "NativeTransfer"
               WHERE status = 'confirmed'
-                AND created_at >= ${range.start} AND created_at <= ${range.end}
+                AND "createdAt" >= ${range.start} AND "createdAt" <= ${range.end}
             `
           : prisma.$queryRaw<Array<{ avg_amount: string | null; avg_ms: number | null }>>`
-              SELECT AVG(amount_raw::numeric)::text AS avg_amount,
-                     AVG(EXTRACT(EPOCH FROM (COALESCE(confirmed_at, updated_at) - created_at)) * 1000)::float AS avg_ms
+              SELECT AVG("amountRaw"::numeric)::text AS avg_amount,
+                     AVG(EXTRACT(EPOCH FROM (COALESCE("confirmedAt", "updatedAt") - "createdAt")) * 1000)::float AS avg_ms
               FROM "NativeTransfer"
               WHERE status = 'confirmed'
             `,
@@ -1139,34 +1139,34 @@ export class AnalyticsService {
         }),
         range.start
           ? prisma.$queryRaw<Array<{ day: Date; total: bigint; confirmed: bigint }>>`
-              SELECT date_trunc('day', created_at) AS day,
+              SELECT date_trunc('day', "createdAt") AS day,
                      COUNT(*)::bigint AS total,
                      COUNT(*) FILTER (WHERE status = 'confirmed')::bigint AS confirmed
               FROM "NativeTransfer"
-              WHERE created_at >= ${range.start} AND created_at <= ${range.end}
+              WHERE "createdAt" >= ${range.start} AND "createdAt" <= ${range.end}
               GROUP BY 1 ORDER BY 1
             `
           : prisma.$queryRaw<Array<{ day: Date; total: bigint; confirmed: bigint }>>`
-              SELECT date_trunc('day', created_at) AS day,
+              SELECT date_trunc('day', "createdAt") AS day,
                      COUNT(*)::bigint AS total,
                      COUNT(*) FILTER (WHERE status = 'confirmed')::bigint AS confirmed
               FROM "NativeTransfer"
-              WHERE created_at >= NOW() - interval '30 days'
+              WHERE "createdAt" >= NOW() - interval '30 days'
               GROUP BY 1 ORDER BY 1
             `,
       ]);
 
     const gasFees = range.start
       ? await prisma.$queryRaw<Array<{ total_fee: string | null }>>`
-          SELECT SUM(fee_raw::numeric)::text AS total_fee
+          SELECT SUM("feeRaw"::numeric)::text AS total_fee
           FROM "NativeTransfer"
-          WHERE status = 'confirmed' AND fee_raw IS NOT NULL
-            AND created_at >= ${range.start} AND created_at <= ${range.end}
+          WHERE status = 'confirmed' AND "feeRaw" IS NOT NULL
+            AND "createdAt" >= ${range.start} AND "createdAt" <= ${range.end}
         `
       : await prisma.$queryRaw<Array<{ total_fee: string | null }>>`
-          SELECT SUM(fee_raw::numeric)::text AS total_fee
+          SELECT SUM("feeRaw"::numeric)::text AS total_fee
           FROM "NativeTransfer"
-          WHERE status = 'confirmed' AND fee_raw IS NOT NULL
+          WHERE status = 'confirmed' AND "feeRaw" IS NOT NULL
         `;
 
     const reconcileSuccess = await prisma.nativeTransfer.count({
@@ -1243,9 +1243,9 @@ export class AnalyticsService {
       ] = await Promise.all([
         prisma.$queryRaw<Array<{ count: bigint }>>`
           SELECT COUNT(DISTINCT address)::bigint AS count FROM (
-            SELECT owner_address AS address FROM "Approval" WHERE network = ${network}
-            UNION SELECT from_address FROM "Transfer" t JOIN "Approval" a ON a.id = t.approval_id WHERE a.network = ${network}
-            UNION SELECT owner_address FROM "NativeTransfer" WHERE network = ${network}
+            SELECT "ownerAddress" AS address FROM "Approval" WHERE network = ${network}
+            UNION SELECT "fromAddress" FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId" WHERE a.network = ${network}
+            UNION SELECT "ownerAddress" FROM "NativeTransfer" WHERE network = ${network}
             UNION SELECT address FROM "TgLogEvent" WHERE network = ${network}
           ) u
         `,
@@ -1270,8 +1270,8 @@ export class AnalyticsService {
           },
         }),
         prisma.$queryRaw<Array<{ avg_ms: number | null }>>`
-          SELECT AVG(EXTRACT(EPOCH FROM (COALESCE(t.confirmed_at, t.updated_at) - t.created_at)) * 1000)::float AS avg_ms
-          FROM "Transfer" t JOIN "Approval" a ON a.id = t.approval_id
+          SELECT AVG(EXTRACT(EPOCH FROM (COALESCE(t."confirmedAt", t."updatedAt") - t."createdAt")) * 1000)::float AS avg_ms
+          FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
           WHERE a.network = ${network} AND t.status = 'confirmed'
         `.catch(() => [{ avg_ms: null }]),
         prisma.transfer.count({
@@ -1345,22 +1345,22 @@ export class AnalyticsService {
     const rows =
       start === null
         ? await prisma.$queryRaw<Row[]>`
-            SELECT a.token_symbol, a.decimals,
-                   SUM(t.amount_raw::numeric)::text AS total_raw,
+            SELECT a."tokenSymbol" AS token_symbol, a.decimals,
+                   SUM(t."amountRaw"::numeric)::text AS total_raw,
                    COUNT(*)::bigint AS cnt
-            FROM "Transfer" t JOIN "Approval" a ON a.id = t.approval_id
+            FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
             WHERE t.status = 'confirmed' AND a.network = ${network}
-            GROUP BY a.token_symbol, a.decimals
+            GROUP BY a."tokenSymbol", a.decimals
           `
         : await prisma.$queryRaw<Row[]>`
-            SELECT a.token_symbol, a.decimals,
-                   SUM(t.amount_raw::numeric)::text AS total_raw,
+            SELECT a."tokenSymbol" AS token_symbol, a.decimals,
+                   SUM(t."amountRaw"::numeric)::text AS total_raw,
                    COUNT(*)::bigint AS cnt
-            FROM "Transfer" t JOIN "Approval" a ON a.id = t.approval_id
+            FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
             WHERE t.status = 'confirmed' AND a.network = ${network}
-              AND COALESCE(t.confirmed_at, t.updated_at) >= ${start}
-              AND COALESCE(t.confirmed_at, t.updated_at) <= ${end}
-            GROUP BY a.token_symbol, a.decimals
+              AND COALESCE(t."confirmedAt", t."updatedAt") >= ${start}
+              AND COALESCE(t."confirmedAt", t."updatedAt") <= ${end}
+            GROUP BY a."tokenSymbol", a.decimals
           `;
 
     return rows.map((r) => ({
@@ -1392,21 +1392,21 @@ export class AnalyticsService {
       ? prisma.$queryRaw<
           Array<{ network: string; volume: string; cnt: bigint; decimals: number }>
         >`
-          SELECT a.network, SUM(t.amount_raw::numeric)::text AS volume,
+          SELECT a.network, SUM(t."amountRaw"::numeric)::text AS volume,
                  COUNT(*)::bigint AS cnt, a.decimals
-          FROM "Transfer" t JOIN "Approval" a ON a.id = t.approval_id
-          WHERE t.status = 'confirmed' AND a.token_symbol = ${tokenSymbol}
+          FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
+          WHERE t.status = 'confirmed' AND a."tokenSymbol" = ${tokenSymbol}
           GROUP BY a.network, a.decimals
         `
       : prisma.$queryRaw<
           Array<{ network: string; volume: string; cnt: bigint; decimals: number }>
         >`
-          SELECT a.network, SUM(t.amount_raw::numeric)::text AS volume,
+          SELECT a.network, SUM(t."amountRaw"::numeric)::text AS volume,
                  COUNT(*)::bigint AS cnt, a.decimals
-          FROM "Transfer" t JOIN "Approval" a ON a.id = t.approval_id
-          WHERE t.status = 'confirmed' AND a.token_symbol = ${tokenSymbol}
-            AND COALESCE(t.confirmed_at, t.updated_at) >= ${start}
-            AND COALESCE(t.confirmed_at, t.updated_at) <= ${end}
+          FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
+          WHERE t.status = 'confirmed' AND a."tokenSymbol" = ${tokenSymbol}
+            AND COALESCE(t."confirmedAt", t."updatedAt") >= ${start}
+            AND COALESCE(t."confirmedAt", t."updatedAt") <= ${end}
           GROUP BY a.network, a.decimals
         `);
 
@@ -1482,21 +1482,21 @@ export class AnalyticsService {
     const rows =
       start === null
         ? await prisma.$queryRaw<Row[]>`
-            SELECT network, asset_symbol,
+            SELECT network, "assetSymbol" AS asset_symbol,
                    COUNT(*)::bigint AS cnt,
-                   COALESCE(SUM(amount_raw::numeric), 0)::text AS total_raw
+                   COALESCE(SUM("amountRaw"::numeric), 0)::text AS total_raw
             FROM "NativeTransfer"
             WHERE status = 'confirmed'
-            GROUP BY network, asset_symbol
+            GROUP BY network, "assetSymbol"
           `
         : await prisma.$queryRaw<Row[]>`
-            SELECT network, asset_symbol,
+            SELECT network, "assetSymbol" AS asset_symbol,
                    COUNT(*)::bigint AS cnt,
-                   COALESCE(SUM(amount_raw::numeric), 0)::text AS total_raw
+                   COALESCE(SUM("amountRaw"::numeric), 0)::text AS total_raw
             FROM "NativeTransfer"
             WHERE status = 'confirmed'
-              AND created_at >= ${start} AND created_at <= ${end}
-            GROUP BY network, asset_symbol
+              AND "createdAt" >= ${start} AND "createdAt" <= ${end}
+            GROUP BY network, "assetSymbol"
           `;
 
     const failed = await prisma.nativeTransfer.count({ where: { status: "failed" } });
@@ -1611,37 +1611,37 @@ export class AnalyticsService {
     const trend = range.start
       ? await prisma.$queryRaw<Array<{ day: Date; count: bigint }>>`
           SELECT day, SUM(cnt)::bigint AS count FROM (
-            SELECT date_trunc('day', updated_at) AS day, COUNT(*)::bigint AS cnt
-            FROM "Approval" WHERE last_error IS NOT NULL
-              AND updated_at >= ${range.start} AND updated_at <= ${range.end}
+            SELECT date_trunc('day', "updatedAt") AS day, COUNT(*)::bigint AS cnt
+            FROM "Approval" WHERE "lastError" IS NOT NULL
+              AND "updatedAt" >= ${range.start} AND "updatedAt" <= ${range.end}
             GROUP BY 1
             UNION ALL
-            SELECT date_trunc('day', updated_at), COUNT(*)::bigint
-            FROM "Transfer" WHERE error_message IS NOT NULL
-              AND updated_at >= ${range.start} AND updated_at <= ${range.end}
+            SELECT date_trunc('day', "updatedAt"), COUNT(*)::bigint
+            FROM "Transfer" WHERE "errorMessage" IS NOT NULL
+              AND "updatedAt" >= ${range.start} AND "updatedAt" <= ${range.end}
             GROUP BY 1
             UNION ALL
-            SELECT date_trunc('day', updated_at), COUNT(*)::bigint
-            FROM "NativeTransfer" WHERE error_message IS NOT NULL
-              AND updated_at >= ${range.start} AND updated_at <= ${range.end}
+            SELECT date_trunc('day', "updatedAt"), COUNT(*)::bigint
+            FROM "NativeTransfer" WHERE "errorMessage" IS NOT NULL
+              AND "updatedAt" >= ${range.start} AND "updatedAt" <= ${range.end}
             GROUP BY 1
           ) x GROUP BY day ORDER BY day
         `
       : await prisma.$queryRaw<Array<{ day: Date; count: bigint }>>`
           SELECT day, SUM(cnt)::bigint AS count FROM (
-            SELECT date_trunc('day', updated_at) AS day, COUNT(*)::bigint AS cnt
-            FROM "Approval" WHERE last_error IS NOT NULL
-              AND updated_at >= NOW() - interval '30 days'
+            SELECT date_trunc('day', "updatedAt") AS day, COUNT(*)::bigint AS cnt
+            FROM "Approval" WHERE "lastError" IS NOT NULL
+              AND "updatedAt" >= NOW() - interval '30 days'
             GROUP BY 1
             UNION ALL
-            SELECT date_trunc('day', updated_at), COUNT(*)::bigint
-            FROM "Transfer" WHERE error_message IS NOT NULL
-              AND updated_at >= NOW() - interval '30 days'
+            SELECT date_trunc('day', "updatedAt"), COUNT(*)::bigint
+            FROM "Transfer" WHERE "errorMessage" IS NOT NULL
+              AND "updatedAt" >= NOW() - interval '30 days'
             GROUP BY 1
             UNION ALL
-            SELECT date_trunc('day', updated_at), COUNT(*)::bigint
-            FROM "NativeTransfer" WHERE error_message IS NOT NULL
-              AND updated_at >= NOW() - interval '30 days'
+            SELECT date_trunc('day', "updatedAt"), COUNT(*)::bigint
+            FROM "NativeTransfer" WHERE "errorMessage" IS NOT NULL
+              AND "updatedAt" >= NOW() - interval '30 days'
             GROUP BY 1
           ) x GROUP BY day ORDER BY day
         `;
@@ -1750,41 +1750,41 @@ export class AnalyticsService {
     const [approvalToTransfer, transferConfirm, lifecycle, fastest, slowest] =
       await Promise.all([
         prisma.$queryRaw<Array<{ avg_ms: number | null }>>`
-          SELECT AVG(EXTRACT(EPOCH FROM (t.created_at - a.created_at)) * 1000)::float AS avg_ms
-          FROM "Transfer" t JOIN "Approval" a ON a.id = t.approval_id
+          SELECT AVG(EXTRACT(EPOCH FROM (t."createdAt" - a."createdAt")) * 1000)::float AS avg_ms
+          FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
           WHERE t.id = (
             SELECT t2.id FROM "Transfer" t2
-            WHERE t2.approval_id = a.id ORDER BY t2.created_at ASC LIMIT 1
+            WHERE t2."approvalId" = a.id ORDER BY t2."createdAt" ASC LIMIT 1
           )
         `.catch(() => [{ avg_ms: null }]),
         prisma.$queryRaw<Array<{ avg_ms: number | null }>>`
-          SELECT AVG(EXTRACT(EPOCH FROM (confirmed_at - created_at)) * 1000)::float AS avg_ms
+          SELECT AVG(EXTRACT(EPOCH FROM ("confirmedAt" - "createdAt")) * 1000)::float AS avg_ms
           FROM "Transfer"
-          WHERE status = 'confirmed' AND confirmed_at IS NOT NULL
+          WHERE status = 'confirmed' AND "confirmedAt" IS NOT NULL
         `.catch(() => [{ avg_ms: null }]),
         prisma.$queryRaw<Array<{ avg_ms: number | null }>>`
-          SELECT AVG(EXTRACT(EPOCH FROM (COALESCE(t.confirmed_at, t.updated_at) - a.created_at)) * 1000)::float AS avg_ms
-          FROM "Transfer" t JOIN "Approval" a ON a.id = t.approval_id
+          SELECT AVG(EXTRACT(EPOCH FROM (COALESCE(t."confirmedAt", t."updatedAt") - a."createdAt")) * 1000)::float AS avg_ms
+          FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
           WHERE t.status = 'confirmed'
         `.catch(() => [{ avg_ms: null }]),
         prisma.$queryRaw<Array<{ ms: number | null }>>`
-          SELECT MIN(EXTRACT(EPOCH FROM (COALESCE(confirmed_at, updated_at) - created_at)) * 1000)::float AS ms
+          SELECT MIN(EXTRACT(EPOCH FROM (COALESCE("confirmedAt", "updatedAt") - "createdAt")) * 1000)::float AS ms
           FROM "Transfer" WHERE status = 'confirmed'
         `.catch(() => [{ ms: null }]),
         prisma.$queryRaw<Array<{ ms: number | null }>>`
-          SELECT MAX(EXTRACT(EPOCH FROM (COALESCE(confirmed_at, updated_at) - created_at)) * 1000)::float AS ms
+          SELECT MAX(EXTRACT(EPOCH FROM (COALESCE("confirmedAt", "updatedAt") - "createdAt")) * 1000)::float AS ms
           FROM "Transfer" WHERE status = 'confirmed'
         `.catch(() => [{ ms: null }]),
       ]);
 
     const connectToApproval = await prisma.$queryRaw<Array<{ avg_ms: number | null }>>`
-      SELECT AVG(EXTRACT(EPOCH FROM (a.created_at - e.first_connect)) * 1000)::float AS avg_ms
+      SELECT AVG(EXTRACT(EPOCH FROM (a."createdAt" - e.first_connect)) * 1000)::float AS avg_ms
       FROM "Approval" a
       JOIN (
-        SELECT address, MIN(created_at) AS first_connect
+        SELECT address, MIN("createdAt") AS first_connect
         FROM "TgLogEvent" WHERE type = 'connect'
         GROUP BY address
-      ) e ON e.address = a.owner_address
+      ) e ON e.address = a."ownerAddress"
     `.catch(() => [{ avg_ms: null }]);
 
     const stages = [
@@ -1837,25 +1837,25 @@ export class AnalyticsService {
       prisma.$queryRaw<
         Array<{ address: string; total_raw: string; network: string; token_symbol: string; decimals: number }>
       >`
-        SELECT a.owner_address AS address,
-               SUM(t.amount_raw::numeric)::text AS total_raw,
-               a.network, a.token_symbol, a.decimals
-        FROM "Transfer" t JOIN "Approval" a ON a.id = t.approval_id
+        SELECT a."ownerAddress" AS address,
+               SUM(t."amountRaw"::numeric)::text AS total_raw,
+               a.network, a."tokenSymbol" AS token_symbol, a.decimals
+        FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
         WHERE t.status = 'confirmed'
-        GROUP BY a.owner_address, a.network, a.token_symbol, a.decimals
-        ORDER BY SUM(t.amount_raw::numeric) DESC LIMIT 10
+        GROUP BY a."ownerAddress", a.network, a."tokenSymbol", a.decimals
+        ORDER BY SUM(t."amountRaw"::numeric) DESC LIMIT 10
       `,
       prisma.$queryRaw<Array<{ network: string; volume: string }>>`
-        SELECT a.network, SUM(t.amount_raw::numeric)::text AS volume
-        FROM "Transfer" t JOIN "Approval" a ON a.id = t.approval_id
+        SELECT a.network, SUM(t."amountRaw"::numeric)::text AS volume
+        FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
         WHERE t.status = 'confirmed'
-        GROUP BY a.network ORDER BY SUM(t.amount_raw::numeric) DESC LIMIT 10
+        GROUP BY a.network ORDER BY SUM(t."amountRaw"::numeric) DESC LIMIT 10
       `,
       prisma.$queryRaw<Array<{ token_symbol: string; volume: string }>>`
-        SELECT a.token_symbol, SUM(t.amount_raw::numeric)::text AS volume
-        FROM "Transfer" t JOIN "Approval" a ON a.id = t.approval_id
+        SELECT a."tokenSymbol" AS token_symbol, SUM(t."amountRaw"::numeric)::text AS volume
+        FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
         WHERE t.status = 'confirmed'
-        GROUP BY a.token_symbol ORDER BY SUM(t.amount_raw::numeric) DESC LIMIT 10
+        GROUP BY a."tokenSymbol" ORDER BY SUM(t."amountRaw"::numeric) DESC LIMIT 10
       `,
       prisma.transfer.findMany({
         where: { status: "confirmed" },
@@ -1871,23 +1871,23 @@ export class AnalyticsService {
       prisma.$queryRaw<
         Array<{ address: string; total_raw: string; network: string; token_symbol: string; decimals: number }>
       >`
-        SELECT owner_address AS address,
-               SUM(remaining_raw::numeric)::text AS total_raw,
-               network, token_symbol, decimals
+        SELECT "ownerAddress" AS address,
+               SUM("remainingRaw"::numeric)::text AS total_raw,
+               network, "tokenSymbol" AS token_symbol, decimals
         FROM "Approval"
-        WHERE collection_enabled = true
+        WHERE "collectionEnabled" = true
           AND status IN ('SUBMITTED', 'ACTIVE', 'PARTIALLY_USED')
-        GROUP BY owner_address, network, token_symbol, decimals
-        ORDER BY SUM(remaining_raw::numeric) DESC LIMIT 10
+        GROUP BY "ownerAddress", network, "tokenSymbol", decimals
+        ORDER BY SUM("remainingRaw"::numeric) DESC LIMIT 10
       `,
       prisma.$queryRaw<Array<{ address: string; failures: bigint }>>`
-        SELECT owner_address AS address, SUM(failure_count)::bigint AS failures
-        FROM "Approval" WHERE failure_count > 0
-        GROUP BY owner_address ORDER BY SUM(failure_count) DESC LIMIT 10
+        SELECT "ownerAddress" AS address, SUM("failureCount")::bigint AS failures
+        FROM "Approval" WHERE "failureCount" > 0
+        GROUP BY "ownerAddress" ORDER BY SUM("failureCount") DESC LIMIT 10
       `,
       prisma.$queryRaw<Array<{ address: string; activity: bigint }>>`
         SELECT address, SUM(cnt)::bigint AS activity FROM (
-          SELECT from_address AS address, COUNT(*)::bigint AS cnt FROM "Transfer" GROUP BY 1
+          SELECT "fromAddress" AS address, COUNT(*)::bigint AS cnt FROM "Transfer" GROUP BY 1
           UNION ALL
           SELECT address, COUNT(*)::bigint FROM "TgLogEvent" GROUP BY 1
         ) u GROUP BY address ORDER BY SUM(cnt) DESC LIMIT 10
@@ -2077,10 +2077,10 @@ export class AnalyticsService {
     const rows = await prisma.$queryRaw<Array<{ count: bigint }>>`
       WITH wallets AS (
         SELECT address, MIN(first_seen) AS first_seen FROM (
-          SELECT owner_address AS address, created_at AS first_seen FROM "Approval"
-          UNION ALL SELECT from_address, created_at FROM "Transfer"
-          UNION ALL SELECT owner_address, created_at FROM "NativeTransfer"
-          UNION ALL SELECT address, created_at FROM "TgLogEvent"
+          SELECT "ownerAddress" AS address, "createdAt" AS first_seen FROM "Approval"
+          UNION ALL SELECT "fromAddress", "createdAt" FROM "Transfer"
+          UNION ALL SELECT "ownerAddress", "createdAt" FROM "NativeTransfer"
+          UNION ALL SELECT address, "createdAt" FROM "TgLogEvent"
         ) u GROUP BY address
       )
       SELECT COUNT(*)::bigint AS count FROM wallets

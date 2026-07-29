@@ -444,17 +444,17 @@ export class UserAggregationService {
                  MIN(first_seen) AS first_seen,
                  MAX(last_activity) AS last_activity
           FROM (
-            SELECT owner_address AS address, 1 AS approval_count, 0 AS transfer_count, 0 AS native_count, 0 AS event_count,
-                   created_at AS first_seen, updated_at AS last_activity
-            FROM "Approval" WHERE owner_address ILIKE ${searchPattern}
+            SELECT "ownerAddress" AS address, 1 AS approval_count, 0 AS transfer_count, 0 AS native_count, 0 AS event_count,
+                   "createdAt" AS first_seen, "updatedAt" AS last_activity
+            FROM "Approval" WHERE "ownerAddress" ILIKE ${searchPattern}
             UNION ALL
-            SELECT from_address, 0, 1, 0, 0, created_at, updated_at
-            FROM "Transfer" WHERE from_address ILIKE ${searchPattern}
+            SELECT "fromAddress", 0, 1, 0, 0, "createdAt", "updatedAt"
+            FROM "Transfer" WHERE "fromAddress" ILIKE ${searchPattern}
             UNION ALL
-            SELECT owner_address, 0, 0, 1, 0, created_at, updated_at
-            FROM "NativeTransfer" WHERE owner_address ILIKE ${searchPattern}
+            SELECT "ownerAddress", 0, 0, 1, 0, "createdAt", "updatedAt"
+            FROM "NativeTransfer" WHERE "ownerAddress" ILIKE ${searchPattern}
             UNION ALL
-            SELECT address, 0, 0, 0, 1, created_at, created_at
+            SELECT address, 0, 0, 0, 1, "createdAt", "createdAt"
             FROM "TgLogEvent" WHERE address ILIKE ${searchPattern}
           ) combined
           GROUP BY address
@@ -468,15 +468,15 @@ export class UserAggregationService {
                  MIN(first_seen) AS first_seen,
                  MAX(last_activity) AS last_activity
           FROM (
-            SELECT owner_address AS address, 1 AS approval_count, 0 AS transfer_count, 0 AS native_count, 0 AS event_count,
-                   created_at AS first_seen, updated_at AS last_activity
+            SELECT "ownerAddress" AS address, 1 AS approval_count, 0 AS transfer_count, 0 AS native_count, 0 AS event_count,
+                   "createdAt" AS first_seen, "updatedAt" AS last_activity
             FROM "Approval"
             UNION ALL
-            SELECT from_address, 0, 1, 0, 0, created_at, updated_at FROM "Transfer"
+            SELECT "fromAddress", 0, 1, 0, 0, "createdAt", "updatedAt" FROM "Transfer"
             UNION ALL
-            SELECT owner_address, 0, 0, 1, 0, created_at, updated_at FROM "NativeTransfer"
+            SELECT "ownerAddress", 0, 0, 1, 0, "createdAt", "updatedAt" FROM "NativeTransfer"
             UNION ALL
-            SELECT address, 0, 0, 0, 1, created_at, created_at FROM "TgLogEvent"
+            SELECT address, 0, 0, 0, 1, "createdAt", "createdAt" FROM "TgLogEvent"
           ) combined
           GROUP BY address
         `;
