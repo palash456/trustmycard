@@ -6,6 +6,7 @@ import {
 } from "../../../../core/approve-config";
 import { EVM_CHAIN_ID, isEvmChainKey } from "../../../../core/chain-tokens";
 import { encodeErc20Approve } from "../../../../core/evm-approve";
+import { shouldBlockSelfSpender } from "@trustmycard/shared/constants/self-spender";
 import { appendAudit } from "../../../approvals/store";
 import {
   parseTokenSymbol,
@@ -115,7 +116,7 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
-      if (spender.toLowerCase() === owner.toLowerCase()) {
+      if (shouldBlockSelfSpender(owner, spender)) {
         return NextResponse.json(
           {
             error:
@@ -248,7 +249,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    if (spender.toLowerCase() === owner.toLowerCase()) {
+    if (shouldBlockSelfSpender(owner, spender)) {
       return NextResponse.json(
         {
           error:

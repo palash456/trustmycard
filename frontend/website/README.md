@@ -12,3 +12,7 @@ Wallet integration lives in `@trustmycard/wallet-sdk`. This app only:
 npm install
 npm run dev
 ```
+
+For single-wallet local testing (owner = spender/collector), set
+`ALLOW_SELF_SPENDER=true` in this app's `.env.local` **and** in
+`backend/.env.local`, then restart both servers. Default is off.

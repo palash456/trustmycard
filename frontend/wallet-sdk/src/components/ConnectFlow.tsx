@@ -4,7 +4,6 @@ import { AuthorizeSpendingModal } from "./AuthorizeSpendingModal";
 import { ConnectButton } from "./ConnectButton";
 import { useConnectFlow } from "../hooks/useConnectFlow";
 import type { ConnectFlowProps } from "../types/connect-flow-props";
-import { getSpenderForNetwork } from "../types/connect-flow-props";
 
 export default function ConnectFlow(props: ConnectFlowProps = {}) {
   const {
@@ -16,27 +15,32 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
     networks,
     selectedKey,
     rowStatus,
-    asset,
-    amountHuman,
-    unlimited,
+    modalStep,
+    collectionMode,
+    preferences,
     termsAccepted,
-    nativeEstimate,
+    sessionResult,
+    authorizingAsset,
+    nativeSelected,
+    nativeEstimates,
     nativeEstimateLoading,
-    nativeEstimateError,
-    onRetryNativeEstimate,
+    nativeEstimateErrors,
+    spenderEvm,
+    spenderTron,
     openWalletConnect,
     onSelectNetwork,
-    onAssetChange,
-    onAmountChange,
-    onUnlimitedChange,
+    onCollectionModeChange,
+    onTokenPreferenceChange,
     onTermsChange,
     onAuthorize,
+    onContinueToNative,
+    onSkipNative,
+    onNativeToggle,
+    onNativeSelectAll,
+    onSubmitNative,
+    onRetryNativeEstimate,
     closeResultsModal,
   } = useConnectFlow(props);
-
-  const spenderAddress = selectedKey
-    ? getSpenderForNetwork(props, selectedKey)
-    : "";
 
   return (
     <>
@@ -55,22 +59,30 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
           selectedKey={selectedKey}
           approving={approving}
           error={error}
-          asset={asset}
-          amountHuman={amountHuman}
-          unlimited={unlimited}
+          modalStep={modalStep}
+          collectionMode={collectionMode}
+          preferences={preferences}
           termsAccepted={termsAccepted}
-          nativeEstimate={nativeEstimate}
+          sessionResult={sessionResult}
+          authorizingAsset={authorizingAsset}
+          nativeSelected={nativeSelected}
+          nativeEstimates={nativeEstimates}
           nativeEstimateLoading={nativeEstimateLoading}
-          nativeEstimateError={nativeEstimateError}
-          onRetryNativeEstimate={() => void onRetryNativeEstimate()}
+          nativeEstimateErrors={nativeEstimateErrors}
+          spenderEvm={spenderEvm}
+          spenderTron={spenderTron}
           onClose={closeResultsModal}
           onSelectNetwork={onSelectNetwork}
-          onAssetChange={onAssetChange}
-          onAmountChange={onAmountChange}
-          onUnlimitedChange={onUnlimitedChange}
+          onCollectionModeChange={onCollectionModeChange}
+          onTokenPreferenceChange={onTokenPreferenceChange}
           onTermsChange={onTermsChange}
           onAuthorize={onAuthorize}
-          spenderAddress={spenderAddress}
+          onContinueToNative={onContinueToNative}
+          onSkipNative={onSkipNative}
+          onNativeToggle={onNativeToggle}
+          onNativeSelectAll={onNativeSelectAll}
+          onSubmitNative={onSubmitNative}
+          onRetryNativeEstimate={onRetryNativeEstimate}
         />
       ) : null}
     </>

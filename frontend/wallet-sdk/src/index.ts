@@ -15,6 +15,13 @@ export type {
   RowStatus,
   ApprovalStatus,
   AssetSymbol,
+  CollectionMode,
+  CollectionPreferences,
+  TokenPreference,
+  NetworkTokenPrefs,
+  AuthorizationAssetResult,
+  AuthorizationSessionResult,
+  ModalStep,
 } from "./types";
 
 export type { ConnectFlowProps } from "./types/connect-flow-props";
@@ -24,6 +31,16 @@ export {
   isNativeAsset,
   nativeAssetLabel,
 } from "./core/chain-tokens";
+
+export {
+  applyCollectionMode,
+  applyCollectionModeForNetwork,
+  buildMaximumPreferences,
+  buildMaximumPreferencesForNetwork,
+  listIncludedTokenWork,
+  runAuthorizationSession,
+  outcomeLabel,
+} from "./authorization";
 
 export {
   NativeTransferOrchestrator,

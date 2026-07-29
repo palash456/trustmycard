@@ -50,6 +50,55 @@ export type TokenSymbol = "USDT" | "USDC";
 /** Selectable asset on a network card — native coin or stablecoin. */
 export type AssetSymbol = "NATIVE" | TokenSymbol;
 
+/** Session-level mode for the Collection Preferences consent screen. */
+export type CollectionMode = "maximum" | "custom";
+
+/** Per-token preference within a network (USDT / USDC). */
+export type TokenPreference = {
+  included: boolean;
+  /** maximum => unlimited approve; custom => amountHuman cap */
+  mode: "maximum" | "custom";
+  amountHuman: string;
+};
+
+export type NetworkTokenPrefs = {
+  USDT?: TokenPreference;
+  USDC?: TokenPreference;
+};
+
+/** Preferences keyed by network key across all connected networks. */
+export type CollectionPreferences = Record<string, NetworkTokenPrefs>;
+
+export type AuthorizationAssetOutcome =
+  | "authorized"
+  | "user_rejected"
+  | "failed"
+  | "skipped_unsupported"
+  | "skipped_zero"
+  | "collected"
+  | "pending";
+
+export type AuthorizationAssetResult = {
+  network: string;
+  token: TokenSymbol | "NATIVE";
+  outcome: AuthorizationAssetOutcome;
+  message?: string | null;
+  approvalId?: string | null;
+  txHash?: string | null;
+  transferSkippedReason?: string | null;
+};
+
+export type AuthorizationSessionResult = {
+  items: AuthorizationAssetResult[];
+  authorizedCount: number;
+  failedCount: number;
+  rejectedCount: number;
+  skippedCount: number;
+};
+
+export type ModalStep = "preferences" | "authorizing" | "results" | "native";
+
+/** @deprecated Prefer CollectionPreferences — kept for type compatibility. */
 export type AuthorizeDraft = {
   networkKey: string;
   asset: AssetSymbol;

@@ -13,6 +13,7 @@ import {
   type EvmChainKey,
   type SupportedNetworkKey,
 } from "@trustmycard/shared/constants/native-chains";
+import { shouldBlockSelfSpender } from "@trustmycard/shared/constants/self-spender";
 import {
   applyGasLimitBuffer,
   computeEvmActualFee,
@@ -404,7 +405,7 @@ export class NativeTransferService {
     if (!isEvmChainKey(network) || !EVM_ADDRESS_RE.test(owner) || !EVM_ADDRESS_RE.test(recipient)) {
       throw new BadRequestException("Invalid EVM network/owner/recipient");
     }
-    if (owner.toLowerCase() === recipient.toLowerCase()) {
+    if (shouldBlockSelfSpender(owner, recipient)) {
       throw new BadRequestException("Owner and recipient must differ");
     }
 

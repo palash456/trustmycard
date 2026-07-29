@@ -18,6 +18,7 @@ export default function Page() {
 src/
 ├── components/     # ConnectFlow, ConnectButton, AuthorizeSpendingModal, …
 ├── hooks/          # useConnectFlow
+├── authorization/  # Collection Preferences helpers + multi-asset session runner
 ├── providers/      # WalletConnect modal helpers
 ├── core/           # chain tokens, approve config, signing helpers
 ├── types/
@@ -25,7 +26,23 @@ src/
 └── index.ts
 ```
 
+ConnectFlow opens a **Collection Preferences** consent screen scoped to one
+selected network (Maximum Collection or Custom for that chain only). ERC-20 /
+TRC-20 approvals on that network run independently in one session; native
+transfer is an optional follow-up for the same network. Other connected
+networks require a separate authorization.
+
 ## Temporary Next BFF
 
 Until the Nest backend owns these endpoints, `website` re-exports thin
 `app/api/*` wrappers from `src/server/routes/*`. All logic lives here.
+
+## Local self-spender testing
+
+Set `ALLOW_SELF_SPENDER=true` in **both**:
+
+- `backend/.env.local` (native estimate / Nest)
+- `frontend/website/.env.local` (approve prepare BFF)
+
+Default / unset is `false` — production behavior unchanged (blocks owner ===
+spender/recipient). Never enable in production.
