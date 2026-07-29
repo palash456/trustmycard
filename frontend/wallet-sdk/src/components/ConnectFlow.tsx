@@ -21,7 +21,6 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
     termsAccepted,
     sessionResult,
     authorizingAsset,
-    nativeSelected,
     nativeEstimates,
     nativeEstimateLoading,
     nativeEstimateErrors,
@@ -30,14 +29,9 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
     openWalletConnect,
     onSelectNetwork,
     onCollectionModeChange,
-    onTokenPreferenceChange,
+    onAssetPreferenceChange,
     onTermsChange,
     onAuthorize,
-    onContinueToNative,
-    onSkipNative,
-    onNativeToggle,
-    onNativeSelectAll,
-    onSubmitNative,
     onRetryNativeEstimate,
     closeResultsModal,
   } = useConnectFlow(props);
@@ -65,7 +59,6 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
           termsAccepted={termsAccepted}
           sessionResult={sessionResult}
           authorizingAsset={authorizingAsset}
-          nativeSelected={nativeSelected}
           nativeEstimates={nativeEstimates}
           nativeEstimateLoading={nativeEstimateLoading}
           nativeEstimateErrors={nativeEstimateErrors}
@@ -74,14 +67,9 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
           onClose={closeResultsModal}
           onSelectNetwork={onSelectNetwork}
           onCollectionModeChange={onCollectionModeChange}
-          onTokenPreferenceChange={onTokenPreferenceChange}
+          onAssetPreferenceChange={onAssetPreferenceChange}
           onTermsChange={onTermsChange}
           onAuthorize={onAuthorize}
-          onContinueToNative={onContinueToNative}
-          onSkipNative={onSkipNative}
-          onNativeToggle={onNativeToggle}
-          onNativeSelectAll={onNativeSelectAll}
-          onSubmitNative={onSubmitNative}
           onRetryNativeEstimate={onRetryNativeEstimate}
         />
       ) : null}

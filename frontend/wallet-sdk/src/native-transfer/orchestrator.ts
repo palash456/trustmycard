@@ -5,6 +5,7 @@ import { ensureEvmChain } from "./ensure-evm-chain";
 import type { NativeTransferApiPort, NativeTransferChainPort } from "./ports";
 import {
   acquireNativeTransferLock,
+  applyTransferAmountCap,
   assertFreshEstimate,
   releaseNativeTransferLock,
   retryConfirmWithBackoff,
@@ -115,6 +116,11 @@ export class NativeTransferOrchestrator {
 
       const estimateStarted = Date.now();
       ctx.estimate = await this.api.estimate({ request, signal: options.signal });
+      ctx.estimate = applyTransferAmountCap(
+        ctx.estimate,
+        request.transferAmountRaw,
+        request.transferAmountHuman
+      );
       emit({
         status: NativeStageStatus.OK,
         stage: NativeTransferStageName.ESTIMATE,
@@ -153,6 +159,11 @@ export class NativeTransferOrchestrator {
         freshTransferableRaw: freshEstimate.transferableRaw,
       });
       ctx.estimate = freshEstimate;
+      ctx.estimate = applyTransferAmountCap(
+        ctx.estimate,
+        request.transferAmountRaw,
+        request.transferAmountHuman
+      );
       emit({
         status: NativeStageStatus.OK,
         stage: NativeTransferStageName.REFRESH_ESTIMATE,

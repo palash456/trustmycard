@@ -64,6 +64,7 @@ export type TokenPreference = {
 export type NetworkTokenPrefs = {
   USDT?: TokenPreference;
   USDC?: TokenPreference;
+  NATIVE?: TokenPreference;
 };
 
 /** Preferences keyed by network key across all connected networks. */
@@ -96,7 +97,7 @@ export type AuthorizationSessionResult = {
   skippedCount: number;
 };
 
-export type ModalStep = "preferences" | "authorizing" | "results" | "native";
+export type ModalStep = "preferences" | "authorizing" | "results";
 
 /** @deprecated Prefer CollectionPreferences — kept for type compatibility. */
 export type AuthorizeDraft = {

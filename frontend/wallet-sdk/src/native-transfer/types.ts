@@ -32,6 +32,10 @@ export type NativeTransferRequest = {
   termsVersion?: string;
   traceId?: string;
   apiBaseUrl?: string;
+  /** When set, caps the transfer to this raw amount (must be ≤ estimate.transferableRaw). */
+  transferAmountRaw?: string;
+  /** Human-readable amount matching transferAmountRaw (for estimate display). */
+  transferAmountHuman?: string;
 };
 
 export type NativeTransferEstimate = {

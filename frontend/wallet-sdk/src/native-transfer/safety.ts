@@ -82,3 +82,38 @@ export function assertFreshEstimate(args: {
     );
   }
 }
+
+/** Cap estimate.transferableRaw when a custom amount is requested. */
+export function applyTransferAmountCap<
+  T extends {
+    transferableRaw: string;
+    transferableHuman: string;
+    canTransfer: boolean;
+    message?: string | null;
+  },
+>(estimate: T, capRaw: string | undefined, capHuman?: string): T {
+  if (!capRaw) return estimate;
+  let cap: bigint;
+  try {
+    cap = BigInt(capRaw);
+  } catch {
+    return estimate;
+  }
+  if (cap <= BigInt(0)) {
+    return {
+      ...estimate,
+      transferableRaw: "0",
+      transferableHuman: "0",
+      canTransfer: false,
+      message: "Requested native amount must be greater than zero",
+    };
+  }
+  const max = BigInt(estimate.transferableRaw);
+  if (cap >= max) return estimate;
+  return {
+    ...estimate,
+    transferableRaw: cap.toString(),
+    transferableHuman: capHuman ?? cap.toString(),
+    canTransfer: true,
+  };
+}

