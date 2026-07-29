@@ -185,9 +185,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </Sidebar>
 
         <SidebarInset className="bg-background">
-          <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card/80 px-4 backdrop-blur-sm">
+          <header className="flex h-14 shrink-0 items-center gap-4 border-b border-border bg-card/80 px-4 backdrop-blur-sm">
             <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 hidden h-4! sm:block" />
+            <Separator orientation="vertical" className="h-full sm:block"/>
             <div className="flex min-w-0 flex-1 items-center">
               <p className="truncate text-sm font-semibold tracking-tight text-foreground">
                 {pageTitle(pathname)}
