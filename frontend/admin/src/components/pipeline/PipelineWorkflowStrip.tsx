@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pipelineUserPath } from "@/lib/pipeline-paths";
 import { ArrowDown, CheckCircle2, Coins, ArrowLeftRight } from "lucide-react";
 import { WorkflowStageBadge } from "@/components/WorkflowStageBadge";
 import { UserHealthBadge } from "@/components/UserHealthBadge";
@@ -61,10 +62,10 @@ export function PipelineWorkflowStrip({
             <WorkflowStageBadge value={userContext.workflowStage} />
             <UserHealthBadge value={userContext.healthStatus} />
             <Link
-              href={`/users/${encodeURIComponent(userContext.address)}`}
+              href={pipelineUserPath(userContext.address)}
               className="text-xs text-primary hover:underline"
             >
-              Open user profile →
+              Open pipeline view →
             </Link>
           </div>
         ) : owner ? (

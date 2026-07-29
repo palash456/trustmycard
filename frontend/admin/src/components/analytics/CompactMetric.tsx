@@ -28,7 +28,7 @@ export function CompactMetric({
   return (
     <div
       className={cn(
-        "min-w-0 overflow-hidden rounded-md border border-border/60 bg-muted/10 px-2.5 py-2",
+        "min-w-0 overflow-hidden rounded-lg bg-card px-2.5 py-2 shadow-sm ring-1 ring-black/[0.04] transition-shadow duration-150 hover:shadow-md dark:shadow-none dark:ring-foreground/10",
         accentClass,
         className
       )}
@@ -67,7 +67,7 @@ export function AssetCard({
   sub?: string;
 }) {
   return (
-    <div className="flex h-full flex-col justify-between rounded-md border border-border/60 bg-card/80 px-2.5 py-2">
+    <div className="flex h-full flex-col justify-between rounded-lg bg-muted/30 px-2.5 py-2 ring-1 ring-black/[0.03] dark:ring-foreground/10">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[10px] font-medium text-muted-foreground">{label}</span>
         {share > 0 ? (

@@ -15,11 +15,13 @@ export function BentoSection({
   className?: string;
 }) {
   return (
-    <section id={id} className={cn("scroll-mt-14 space-y-3", className)}>
-      <header className="space-y-0.5">
-        <h2 className="text-[13px] font-semibold tracking-tight text-foreground">{title}</h2>
+    <section id={id} className={cn("scroll-mt-14 space-y-4", className)}>
+      <header className="space-y-1">
+        <h2 className="font-brand text-base font-semibold tracking-tight text-foreground">
+          {title}
+        </h2>
         {description ? (
-          <p className="max-w-2xl text-[11px] leading-relaxed text-muted-foreground">
+          <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground">
             {description}
           </p>
         ) : null}
@@ -105,13 +107,13 @@ export function BentoPanel({
   return (
     <div
       className={cn(
-        "flex h-full min-h-0 flex-col rounded-lg border border-border/60 bg-card/80",
+        "flex h-full min-h-0 flex-col rounded-xl bg-card shadow-sm ring-1 ring-black/[0.04] dark:shadow-none dark:ring-foreground/10",
         pad,
         className
       )}
     >
       {title ? (
-        <p className="mb-2 shrink-0 text-[11px] font-medium text-muted-foreground">
+        <p className="mb-2 shrink-0 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
           {title}
         </p>
       ) : null}

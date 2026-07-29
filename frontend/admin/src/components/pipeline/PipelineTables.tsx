@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pipelineUserPath } from "@/lib/pipeline-paths";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
   Table,
@@ -80,7 +81,7 @@ export function ApprovalsTable({ items }: { items: ApprovalRow[] }) {
               <TableCell>{row.tokenSymbol}</TableCell>
               <TableCell className="font-mono text-xs">
                 <Link
-                  href={`/users/${encodeURIComponent(row.ownerAddress)}`}
+                  href={pipelineUserPath(row.ownerAddress)}
                   className="text-primary hover:underline"
                 >
                   {shortAddress(row.ownerAddress)}
@@ -139,7 +140,7 @@ export function TransfersTable({ items }: { items: TransferRow[] }) {
               <TableCell>{row.approval.tokenSymbol}</TableCell>
               <TableCell className="font-mono text-xs">
                 <Link
-                  href={`/users/${encodeURIComponent(row.approval.ownerAddress)}`}
+                  href={pipelineUserPath(row.approval.ownerAddress)}
                   className="text-primary hover:underline"
                 >
                   {shortAddress(row.approval.ownerAddress)}
@@ -196,7 +197,7 @@ export function NativeTransfersTable({ items }: { items: NativeRow[] }) {
               <TableCell>{row.assetSymbol}</TableCell>
               <TableCell className="font-mono text-xs">
                 <Link
-                  href={`/users/${encodeURIComponent(row.ownerAddress)}`}
+                  href={pipelineUserPath(row.ownerAddress)}
                   className="text-primary hover:underline"
                 >
                   {shortAddress(row.ownerAddress)}

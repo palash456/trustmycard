@@ -9,7 +9,7 @@ export function PageHeader({
   className,
 }: {
   title: string;
-  description?: string;
+  description?: React.ReactNode;
   tip?: string;
   children?: React.ReactNode;
   className?: string;
@@ -21,13 +21,17 @@ export function PageHeader({
         className
       )}
     >
-      <div className="min-w-0 space-y-0.5">
+      <div className="min-w-0 space-y-1">
         <div className="flex items-center gap-2">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">{title}</h1>
+          <h1 className="font-brand text-2xl font-semibold tracking-tight text-foreground">
+            {title}
+          </h1>
           {tip ? <InfoTip text={tip} /> : null}
         </div>
         {description ? (
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <div className="max-w-2xl space-y-1 text-sm leading-relaxed text-muted-foreground">
+            {description}
+          </div>
         ) : null}
       </div>
       {children ? <div className="shrink-0">{children}</div> : null}

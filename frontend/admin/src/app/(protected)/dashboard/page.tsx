@@ -101,16 +101,16 @@ export default async function DashboardPage() {
         nativeTransfers={data.nativeTransfers}
       />
 
-      <Card className="border-border/60 shadow-none">
+      <Card className="border-0">
         <CardHeader>
-          <CardTitle className="text-base">Recent failures</CardTitle>
+          <CardTitle className="font-brand text-base">Recent failures</CardTitle>
           <CardDescription>Approvals and native transfers with errors</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {data.recentFailures.approvals.map((a) => (
             <div
               key={a.id}
-              className="rounded-lg border bg-muted/30 p-4 text-sm"
+              className="rounded-lg bg-muted/35 px-4 py-3 text-sm ring-1 ring-black/[0.03]"
             >
               <Link
                 href={`/approvals/${a.id}`}
@@ -127,7 +127,7 @@ export default async function DashboardPage() {
           {data.recentFailures.nativeTransfers.map((n) => (
             <div
               key={n.id}
-              className="rounded-lg border bg-muted/30 p-4 text-sm"
+              className="rounded-lg bg-muted/35 px-4 py-3 text-sm ring-1 ring-black/[0.03]"
             >
               <Link
                 href={`/native-transfers/${n.id}`}

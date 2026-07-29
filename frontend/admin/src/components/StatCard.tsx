@@ -17,14 +17,23 @@ export function StatCard({
   const trendUp = trend && trend.value > 0;
   const trendDown = trend && trend.value < 0;
   return (
-    <Card className={cn("border-border/80 bg-card shadow-none", className)}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+    <Card
+      className={cn(
+        "relative overflow-hidden border-0 bg-card transition-shadow duration-200 hover:shadow-md",
+        className
+      )}
+    >
+      <div
+        className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/80 via-primary/40 to-transparent"
+        aria-hidden
+      />
+      <CardHeader className="pb-1 pt-4">
+        <CardTitle className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
           {label}
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <p className="text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+      <CardContent className="pb-4">
+        <p className="font-brand text-3xl font-semibold tracking-tight tabular-nums text-foreground">
           {value}
         </p>
         {sub ? <p className="mt-1 text-xs font-medium text-muted-foreground">{sub}</p> : null}

@@ -48,10 +48,10 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
       <Badge
         variant="outline"
         className={cn(
-          "font-medium",
+          "rounded-full px-2.5 py-0.5 text-xs font-medium shadow-sm",
           demo
-            ? "border-amber-700/50 bg-amber-100 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300"
-            : "border-emerald-700/50 bg-emerald-50 text-emerald-900 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-400"
+            ? "border-amber-600/30 bg-amber-50 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300"
+            : "border-emerald-600/30 bg-emerald-50 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-400"
         )}
       >
         <span

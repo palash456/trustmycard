@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { adminGetData } from "@/lib/admin-data";
 import { blockExplorerAddress, formatDate } from "@/lib/format";
+import { pipelineUserPath } from "@/lib/pipeline-paths";
 import type { UserDetail } from "@/types/users";
 
 type ApprovalRow = {
@@ -125,10 +126,10 @@ export default async function UserDetailPage({
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href={`/pipeline?owner=${encodeURIComponent(data.address)}`}
+            href={pipelineUserPath(data.address)}
             className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-primary hover:bg-muted"
           >
-            View in pipeline
+            View pipeline funnel
           </Link>
           {explorerNetworks.map((network) => {
             const url = blockExplorerAddress(network, data.address);

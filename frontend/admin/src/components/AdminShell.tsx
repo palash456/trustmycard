@@ -146,15 +146,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
       <SidebarProvider>
-        <Sidebar collapsible="icon" variant="inset">
-          <SidebarHeader className="h-14 shrink-0 flex-row items-center gap-0 border-b border-sidebar-border p-0">
+        <Sidebar collapsible="icon" variant="inset" className="border-sidebar-border/80">
+          <SidebarHeader className="h-14 shrink-0 flex-row items-center gap-0 border-b border-sidebar-border/70 p-0">
             <SidebarBrand />
           </SidebarHeader>
 
-          <SidebarContent>
+          <SidebarContent className="gap-1 px-1">
             {NAV_SECTIONS.map((section) => (
               <SidebarGroup key={section.title}>
-                <SidebarGroupLabel className="text-[10px] font-semibold tracking-widest uppercase text-sidebar-foreground/50">
+                <SidebarGroupLabel className="px-3 text-[10px] font-semibold tracking-[0.14em] uppercase text-sidebar-foreground/45">
                   {section.title}
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -167,6 +167,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                           <SidebarMenuButton
                             isActive={active}
                             tooltip={item.label}
+                            className="rounded-lg transition-colors duration-150"
                             render={<Link href={item.href} />}
                           >
                             <Icon />
@@ -184,18 +185,20 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <SidebarRail />
         </Sidebar>
 
-        <SidebarInset className="min-w-0 overflow-x-hidden bg-background">
-          <header className="flex h-14 shrink-0 items-center gap-4 border-b border-border bg-card/80 px-4 backdrop-blur-sm">
+        <SidebarInset className="app-canvas min-w-0 overflow-x-hidden md:shadow-[var(--surface-shadow-lg)]">
+          <header className="glass-header flex h-14 shrink-0 items-center gap-4 px-4 md:px-6">
             <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="h-full sm:block"/>
-            <div className="flex min-w-0 flex-1 items-center">
-              <p className="truncate text-sm font-semibold tracking-tight text-foreground">
+            <Separator orientation="vertical" className="hidden h-5 sm:block" />
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <p className="font-brand truncate text-[15px] font-semibold tracking-tight text-foreground">
                 {pageTitle(pathname)}
               </p>
             </div>
             <HeaderControls onLogout={() => void logout()} />
           </header>
-          <div className="flex min-w-0 flex-1 flex-col gap-4 overflow-x-hidden p-4 md:p-6">{children}</div>
+          <div className="flex min-w-0 flex-1 flex-col gap-5 overflow-x-hidden p-4 md:p-6 lg:p-8">
+            {children}
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>
