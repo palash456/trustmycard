@@ -15,6 +15,7 @@ import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
 import { AdminOpsService } from "./admin-ops.service";
 import { AdminService } from "./admin.service";
 import { AdminStreamService } from "./admin-stream.service";
+import { UserAggregationService } from "./user-aggregation.service";
 
 @ApiTags("Admin")
 @ApiSecurity("adminApiKey")
@@ -24,7 +25,8 @@ export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly adminOps: AdminOpsService,
-    private readonly streamService: AdminStreamService
+    private readonly streamService: AdminStreamService,
+    private readonly userAggregation: UserAggregationService
   ) {}
 
   @Get("dashboard")
@@ -158,6 +160,24 @@ export class AdminController {
   @ApiOperation({ summary: "Wallet detail — all activity for an address" })
   getWallet(@Param("address") address: string) {
     return this.adminService.getWallet(decodeURIComponent(address));
+  }
+
+  @Get("users")
+  @ApiOperation({ summary: "List users (wallet addresses) with lifecycle summaries" })
+  listUsers(@Query() query: Record<string, string>) {
+    return this.userAggregation.listUsers(query);
+  }
+
+  @Get("users/:address/balances")
+  @ApiOperation({ summary: "Live on-chain balances for a user address" })
+  getUserBalances(@Param("address") address: string) {
+    return this.userAggregation.getUserBalances(decodeURIComponent(address));
+  }
+
+  @Get("users/:address")
+  @ApiOperation({ summary: "User detail — complete operational dashboard for a wallet" })
+  getUser(@Param("address") address: string) {
+    return this.userAggregation.getUserDetail(decodeURIComponent(address));
   }
 
   @Post("transfer")

@@ -1,3 +1,7 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,10 +23,29 @@ export function FilterForm({
   fields: Array<{ name: string; label: string; options?: string[] }>;
   values: Record<string, string | undefined>;
 }) {
+  const router = useRouter();
+
+  function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    const params = new URLSearchParams();
+
+    for (const field of fields) {
+      const raw = String(data.get(field.name) ?? "").trim();
+      if (raw) params.set(field.name, raw);
+    }
+
+    params.set("page", "1");
+    const qs = params.toString();
+    router.push(qs ? `${action}?${qs}` : action);
+    router.refresh();
+  }
+
   return (
     <Card className="mb-6 shadow-sm">
       <CardContent className="pt-6">
-        <form method="get" action={action} className="flex flex-wrap items-end gap-4">
+        <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-4">
           {fields.map((field) => (
             <div key={field.name} className="grid min-w-[140px] gap-2">
               <Label htmlFor={field.name} className="text-xs text-muted-foreground">
@@ -56,7 +79,7 @@ export function FilterForm({
             <Button type="submit" variant="secondary" className="h-9">
               Apply filters
             </Button>
-            <InfoTip text="Submits these fields as URL query params and reloads the list from the server (or demo fixtures). Empty fields mean “All”." />
+            <InfoTip text="Updates URL query params and reloads the list. Empty fields are omitted. Resets to page 1." />
           </div>
         </form>
       </CardContent>

@@ -8,10 +8,9 @@ import {
   CheckCircle2,
   Coins,
   LayoutDashboard,
-  LogOut,
   ScrollText,
-  Settings,
   Server,
+  Users,
   Wallet,
 } from "lucide-react";
 import { HeaderControls } from "@/components/HeaderControls";
@@ -20,7 +19,6 @@ import { cn } from "@/lib/utils";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -31,7 +29,6 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarRail,
-  SidebarSeparator,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -44,9 +41,9 @@ const NAV = [
   { href: "/transfers", label: "Transfers", icon: ArrowLeftRight },
   { href: "/native-transfers", label: "Native", icon: Coins },
   { href: "/wallets", label: "Wallets", icon: Wallet },
+  { href: "/users", label: "Users", icon: Users },
   { href: "/audit", label: "Audit log", icon: ScrollText },
   { href: "/events", label: "Events", icon: Activity },
-  { href: "/settings", label: "Settings", icon: Settings },
   { href: "/system", label: "System", icon: Server },
 ] as const;
 
@@ -119,17 +116,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </SidebarGroup>
           </SidebarContent>
 
-          <SidebarFooter>
-            <SidebarSeparator />
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Sign out" onClick={() => void logout()}>
-                  <LogOut />
-                  <span>Sign out</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarFooter>
           <SidebarRail />
         </Sidebar>
 
@@ -142,7 +128,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 {pageTitle(pathname)}
               </p>
             </div>
-            <HeaderControls />
+            <HeaderControls onLogout={() => void logout()} />
           </header>
           <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">{children}</div>
         </SidebarInset>

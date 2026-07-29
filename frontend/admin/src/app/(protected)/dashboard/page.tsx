@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { DashboardCharts } from "@/components/charts/DashboardCharts";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
-import { StatusBadge } from "@/components/StatusBadge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -88,34 +88,11 @@ export default async function DashboardPage() {
         <StatCard label="Failed native" value={data.nativeTransfers.failed ?? 0} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base">Approvals by status</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {Object.entries(c.approvals).map(([status, count]) => (
-              <div key={status} className="flex items-center justify-between text-sm">
-                <StatusBadge value={status} />
-                <span className="font-medium tabular-nums">{count}</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base">Transfers by status</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {Object.entries(c.transfers).map(([status, count]) => (
-              <div key={status} className="flex items-center justify-between text-sm">
-                <StatusBadge value={status} />
-                <span className="font-medium tabular-nums">{count}</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
+      <DashboardCharts
+        approvals={c.approvals}
+        transfers={c.transfers}
+        nativeTransfers={data.nativeTransfers}
+      />
 
       <Card className="shadow-sm">
         <CardHeader>
@@ -165,14 +142,20 @@ export default async function DashboardPage() {
       </Card>
 
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" render={<Link href="/approvals" />}>
+        <Link
+          href="/approvals"
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
           View approvals
           <ArrowRight className="size-4" />
-        </Button>
-        <Button variant="outline" size="sm" render={<Link href="/native-transfers" />}>
+        </Link>
+        <Link
+          href="/native-transfers"
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
           View native transfers
           <ArrowRight className="size-4" />
-        </Button>
+        </Link>
       </div>
     </div>
   );

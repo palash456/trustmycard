@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { EventsListChart } from "@/components/charts/ListPageCharts";
 import { FilterForm } from "@/components/FilterForm";
 import { PageHeader } from "@/components/PageHeader";
 import { Pagination } from "@/components/Pagination";
@@ -81,6 +82,8 @@ export default async function EventsPage({
           { name: "address", label: "Address" },
         ]}
       />
+
+      <EventsListChart items={data.items} />
 
       <Card className="shadow-sm">
         <CardContent className="p-0">

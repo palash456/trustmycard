@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { TransfersListChart } from "@/components/charts/ListPageCharts";
 import { FilterForm } from "@/components/FilterForm";
 import { PageHeader } from "@/components/PageHeader";
 import { Pagination } from "@/components/Pagination";
@@ -87,6 +88,8 @@ export default async function TransfersPage({
           },
         ]}
       />
+
+      <TransfersListChart items={data.items} />
 
       <Card className="shadow-sm">
         <CardContent className="p-0">

@@ -41,7 +41,8 @@ export async function middleware(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const login = new URL("/login", req.url);
-    login.searchParams.set("next", pathname);
+    const nextPath = `${pathname}${req.nextUrl.search}`;
+    login.searchParams.set("next", nextPath);
     return NextResponse.redirect(login);
   }
 

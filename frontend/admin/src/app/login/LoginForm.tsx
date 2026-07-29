@@ -2,7 +2,6 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { markLoginSession } from "@/components/SessionGuard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +26,6 @@ export function LoginForm() {
       });
       const json = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(json.error || "Login failed");
-      markLoginSession();
       const next = searchParams.get("next") || "/dashboard";
       router.push(next);
       router.refresh();

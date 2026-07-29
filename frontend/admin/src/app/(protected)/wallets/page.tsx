@@ -83,8 +83,15 @@ export default async function WalletsPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.items.map((row) => (
-                <TableRow key={row.address}>
+              {data.items.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    No wallets match your search
+                  </TableCell>
+                </TableRow>
+              ) : (
+                data.items.map((row) => (
+                  <TableRow key={row.address}>
                   <TableCell className="font-mono text-xs">
                     <Link
                       href={`/wallets/${encodeURIComponent(row.address)}`}
@@ -100,7 +107,8 @@ export default async function WalletsPage({
                     {formatDate(row.lastSeen)}
                   </TableCell>
                 </TableRow>
-              ))}
+              ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
