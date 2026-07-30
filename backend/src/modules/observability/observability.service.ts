@@ -8,6 +8,11 @@ import {
   type SessionTimeline,
 } from "@trustmycard/shared/observability";
 import { errorForLog } from "../../common/utils/error-message";
+import {
+  paginatedResponse,
+  parsePagination,
+  parseSort,
+} from "../../common/utils/pagination";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 
 const prisma = new PrismaClient();
@@ -31,8 +36,12 @@ export type ObservabilitySearchQuery = {
   status?: string;
   errorCode?: string;
   kind?: string;
+  level?: string;
+  search?: string;
   from?: string;
   to?: string;
+  page?: string;
+  sort?: string;
   limit?: number;
   offset?: number;
 };
@@ -63,10 +72,26 @@ export class ObservabilityService {
   }
 
   async persistLog(event: Partial<LogEvent> & { kind?: ObservabilityEventKind }): Promise<void> {
+    const errorMessage =
+      ("errorMessage" in event && typeof event.errorMessage === "string"
+        ? event.errorMessage
+        : undefined) ??
+      (event.error ? errorForLog(event.error) ?? undefined : undefined);
+
     await prisma.observabilityEvent.create({
       data: this.toCreateInput({
         kind: (event.kind ?? "log") as ObservabilityEventKind,
         ...event,
+        errorMessage,
+        payload: {
+          error: event.error,
+          context: event.context,
+          sampling: event.sampling,
+          retryCount: event.retryCount,
+          rpcEndpoint: event.rpcEndpoint,
+          apiEndpoint: event.apiEndpoint,
+          level: event.level,
+        },
       }),
     });
   }
@@ -127,31 +152,7 @@ export class ObservabilityService {
   }
 
   async search(query: ObservabilitySearchQuery) {
-    const where: Prisma.ObservabilityEventWhereInput = {};
-    if (query.walletAddress) where.walletAddress = query.walletAddress;
-    if (query.chain) where.chain = query.chain;
-    if (query.network) where.network = query.network;
-    if (query.sessionId) where.sessionId = query.sessionId;
-    if (query.eventId) where.eventId = query.eventId;
-    if (query.parentEventId) where.parentEventId = query.parentEventId;
-    if (query.correlationId) where.correlationId = query.correlationId;
-    if (query.traceId) where.traceId = query.traceId;
-    if (query.requestId) where.requestId = query.requestId;
-    if (query.txHash) where.txHash = query.txHash;
-    if (query.token) where.token = query.token;
-    if (query.asset) where.asset = query.asset;
-    if (query.module) where.module = query.module;
-    if (query.operation) where.operation = query.operation;
-    if (query.stage) where.stage = query.stage;
-    if (query.status) where.status = query.status;
-    if (query.errorCode) where.errorCode = query.errorCode;
-    if (query.kind) where.kind = query.kind;
-    if (query.from || query.to) {
-      where.ts = {};
-      if (query.from) where.ts.gte = new Date(query.from);
-      if (query.to) where.ts.lte = new Date(query.to);
-    }
-
+    const where = this.buildWhere(query);
     const limit = Math.min(query.limit ?? 100, 500);
     const offset = query.offset ?? 0;
 
@@ -166,6 +167,104 @@ export class ObservabilityService {
     ]);
 
     return { items, total, limit, offset };
+  }
+
+  async searchAdmin(query: Record<string, string | undefined>) {
+    const params = parsePagination(query);
+    const where = this.buildWhere({
+      walletAddress: query.walletAddress,
+      chain: query.chain,
+      network: query.network,
+      sessionId: query.sessionId,
+      eventId: query.eventId,
+      parentEventId: query.parentEventId,
+      correlationId: query.correlationId,
+      traceId: query.traceId,
+      requestId: query.requestId,
+      txHash: query.txHash,
+      token: query.token,
+      asset: query.asset,
+      module: query.module,
+      operation: query.operation,
+      stage: query.stage,
+      status: query.status,
+      errorCode: query.errorCode,
+      kind: query.kind ?? (query.tab === "timelines" ? "timeline" : query.tab === "structured" ? "log" : undefined),
+      level: query.level,
+      search: query.search,
+      from: query.from,
+      to: query.to,
+    });
+
+    const orderBy = parseSort(query.sort, ["ts"], "ts");
+
+    const [items, total] = await Promise.all([
+      prisma.observabilityEvent.findMany({
+        where,
+        orderBy,
+        skip: params.skip,
+        take: params.limit,
+      }),
+      prisma.observabilityEvent.count({ where }),
+    ]);
+
+    return paginatedResponse(items, total, params);
+  }
+
+  private buildWhere(query: ObservabilitySearchQuery): Prisma.ObservabilityEventWhereInput {
+    const where: Prisma.ObservabilityEventWhereInput = {};
+
+    const contains = (
+      field: keyof Prisma.ObservabilityEventWhereInput,
+      value?: string
+    ) => {
+      if (!value?.trim()) return;
+      (where as Record<string, unknown>)[field] = {
+        contains: value.trim(),
+        mode: "insensitive",
+      };
+    };
+
+    contains("walletAddress", query.walletAddress);
+    contains("sessionId", query.sessionId);
+    contains("correlationId", query.correlationId);
+    contains("traceId", query.traceId);
+    contains("requestId", query.requestId);
+    contains("txHash", query.txHash);
+    contains("eventId", query.eventId);
+    contains("parentEventId", query.parentEventId);
+    if (query.chain) where.chain = query.chain;
+    if (query.network) where.network = query.network;
+    if (query.token) where.token = query.token;
+    if (query.asset) where.asset = query.asset;
+    if (query.module) where.module = { contains: query.module, mode: "insensitive" };
+    if (query.operation) where.operation = { contains: query.operation, mode: "insensitive" };
+    if (query.stage) where.stage = { contains: query.stage, mode: "insensitive" };
+    if (query.status) where.status = query.status;
+    if (query.errorCode) where.errorCode = query.errorCode;
+    if (query.kind) where.kind = query.kind;
+    if (query.level) where.level = query.level;
+
+    if (query.search?.trim()) {
+      const s = query.search.trim();
+      where.OR = [
+        { message: { contains: s, mode: "insensitive" } },
+        { errorMessage: { contains: s, mode: "insensitive" } },
+        { module: { contains: s, mode: "insensitive" } },
+        { operation: { contains: s, mode: "insensitive" } },
+        { stage: { contains: s, mode: "insensitive" } },
+        { walletAddress: { contains: s, mode: "insensitive" } },
+        { txHash: { contains: s, mode: "insensitive" } },
+      ];
+    }
+
+    if (query.from || query.to) {
+      where.ts = {};
+      if (query.from) where.ts.gte = new Date(query.from);
+      if (query.to) where.ts.lte = new Date(query.to);
+    }
+
+    return where;
   }
 
   async getSessionTimeline(sessionId: string) {

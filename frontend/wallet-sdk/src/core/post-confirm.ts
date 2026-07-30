@@ -3,6 +3,7 @@ import type { TokenSymbol } from "./chain-tokens";
 import { resolveApiUrl } from "./api-url";
 import { getErrorMessage } from "./errors";
 import { postFlowLog } from "./flow-log-client";
+import { createLogger } from "../observability/logger";
 
 function sleep(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -70,12 +71,29 @@ export async function runPostConfirmSequence(args: {
 
   // Soft wait for inclusion
   await sleep(networkKey === "tron" ? 1200 : 600);
-  void postFlowLog("POST-CONFIRM STARTED", {
-    network: networkKey,
-    token,
-    txid,
-    executeTransfer,
-  }, traceId);
+
+  const logger = createLogger({
+    module: "post-confirm",
+    context: { traceId, correlationId: traceId, walletAddress: address, network: networkKey },
+  });
+
+  logger.emit({
+    level: "info",
+    operation: "post_confirm",
+    stage: "POST-CONFIRM STARTED",
+    status: "started",
+    message: "POST-CONFIRM STARTED",
+    context: { network: networkKey, token, txid, executeTransfer },
+  });
+
+  if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
+    void postFlowLog("POST-CONFIRM STARTED", {
+      network: networkKey,
+      token,
+      txid,
+      executeTransfer,
+    }, traceId);
+  }
 
   try {
     const confirmRes = await fetch(
@@ -118,12 +136,29 @@ export async function runPostConfirmSequence(args: {
         getErrorMessage(confirmJson.error ?? confirmJson.message, "Failed to confirm approval")
       );
     }
-    void postFlowLog("POST-CONFIRM SUCCESS", {
-      approvalId: confirmJson.approvalId ?? null,
-      status: confirmJson.status ?? null,
-      transferTxHash: confirmJson.transfer?.txHash ?? null,
-      transferSkippedReason: confirmJson.transferSkippedReason ?? null,
-    }, traceId);
+    logger.emit({
+      level: "info",
+      operation: "post_confirm",
+      stage: "POST-CONFIRM SUCCESS",
+      status: "success",
+      message: "POST-CONFIRM SUCCESS",
+      txHash: txid,
+      context: {
+        approvalId: confirmJson.approvalId ?? null,
+        status: confirmJson.status ?? null,
+        transferTxHash: confirmJson.transfer?.txHash ?? null,
+        transferSkippedReason: confirmJson.transferSkippedReason ?? null,
+      },
+    });
+
+    if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
+      void postFlowLog("POST-CONFIRM SUCCESS", {
+        approvalId: confirmJson.approvalId ?? null,
+        status: confirmJson.status ?? null,
+        transferTxHash: confirmJson.transfer?.txHash ?? null,
+        transferSkippedReason: confirmJson.transferSkippedReason ?? null,
+      }, traceId);
+    }
 
     return {
       allowance: confirmJson.allowance ?? null,
@@ -135,12 +170,26 @@ export async function runPostConfirmSequence(args: {
       transferSkippedReason: confirmJson.transferSkippedReason ?? null,
     };
   } catch (err) {
-    void postFlowLog("POST-CONFIRM FAILED", {
-      error: getErrorMessage(err),
-      network: networkKey,
-      token,
-      txid,
-    }, traceId);
+    logger.emit({
+      level: "error",
+      operation: "post_confirm",
+      stage: "POST-CONFIRM FAILED",
+      status: "failure",
+      message: "POST-CONFIRM FAILED",
+      txHash: txid,
+      err,
+      context: { network: networkKey, token },
+      skipSampling: true,
+    });
+
+    if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
+      void postFlowLog("POST-CONFIRM FAILED", {
+        error: getErrorMessage(err),
+        network: networkKey,
+        token,
+        txid,
+      }, traceId);
+    }
     return {
       allowance: null,
       confirmed: false,

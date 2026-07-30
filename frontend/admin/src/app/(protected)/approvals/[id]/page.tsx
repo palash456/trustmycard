@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
 import { ApprovalControls } from "@/components/ApprovalControls";
 import { ManualTransferForm } from "@/components/ManualTransferForm";
 import { DetailList, DetailRow } from "@/components/DetailList";
@@ -42,6 +43,7 @@ type Detail = {
     action: string;
     actor: string;
     createdAt: string;
+    payload?: unknown;
   }>;
 };
 
@@ -132,6 +134,13 @@ export default async function ApprovalDetailPage({
         )}
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        <ViewLogsLink
+          params={{ walletAddress: a.ownerAddress, txHash: a.txHash }}
+          label="View structured logs"
+        />
+      </div>
+
       <ApprovalControls
         approvalId={a.id}
         collectionEnabled={a.collectionEnabled}
@@ -171,10 +180,17 @@ export default async function ApprovalDetailPage({
           <CardTitle className="text-base">Audit trail</CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-2 text-sm text-muted-foreground">
+          <ul className="space-y-3 text-sm text-muted-foreground">
             {data.audits.map((log) => (
-              <li key={log.id}>
-                {formatDate(log.createdAt)} · {log.action} · {log.actor}
+              <li key={log.id} className="rounded-md border border-border/60 p-3">
+                <p>
+                  {formatDate(log.createdAt)} · {log.action} · {log.actor}
+                </p>
+                {log.payload ? (
+                  <pre className="mt-2 max-h-32 overflow-auto rounded bg-muted/20 p-2 font-mono text-xs">
+                    {JSON.stringify(log.payload, null, 2)}
+                  </pre>
+                ) : null}
               </li>
             ))}
           </ul>

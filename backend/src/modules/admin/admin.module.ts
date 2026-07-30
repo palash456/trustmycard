@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { JobsModule } from "../../jobs/jobs.module";
+import { ObservabilityModule } from "../observability/observability.module";
 import { WalletModule } from "../wallet/wallet.module";
 import { AdminController } from "./admin.controller";
 import { AdminDevOpsService } from "./admin-devops.service";
@@ -11,7 +12,7 @@ import { UserAggregationService } from "./user-aggregation.service";
 import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
 
 @Module({
-  imports: [WalletModule, JobsModule],
+  imports: [WalletModule, JobsModule, ObservabilityModule],
   controllers: [AdminController],
   providers: [
     AdminService,

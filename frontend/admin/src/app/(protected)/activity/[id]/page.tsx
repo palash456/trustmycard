@@ -4,6 +4,7 @@ import { CopyButton } from "@/components/CopyButton";
 import { DetailList, DetailRow } from "@/components/DetailList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
 import { adminGetData } from "@/lib/admin-data";
 import { formatDate } from "@/lib/format";
 
@@ -74,6 +75,9 @@ export default async function ActivityDetailPage({
           >
             Open user profile →
           </Link>
+          <div className="mt-3">
+            <ViewLogsLink params={{ walletAddress: e.address }} label="Related structured logs" />
+          </div>
         </CardContent>
       </Card>
     </div>

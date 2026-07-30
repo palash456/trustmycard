@@ -1,4 +1,5 @@
 import { postFlowLog } from "../../core/flow-log-client";
+import { createLogger } from "../../observability/logger";
 import type { ApprovalContext } from "../types";
 import type { ApprovalLogger } from "../types";
 import { buildApprovalLogContext, compactLogDetail } from "./context";
@@ -31,8 +32,34 @@ export function createStructuredApprovalLogger(
       ...(detail ?? {}),
     });
     options.base[level](event, merged);
-    if (forward && ctx) {
-      void postFlowLog(event, merged, ctx.request.traceId);
+
+    if (ctx) {
+      const logLevel = level === "error" ? "error" : level === "warn" ? "warn" : "info";
+      const isFailure = level === "error";
+      createLogger({
+        module: "approval",
+        context: {
+          traceId: ctx.request.traceId,
+          correlationId: ctx.request.traceId,
+          sessionId: ctx.request.traceId,
+          walletAddress: ctx.request.owner,
+          network: ctx.request.network,
+        },
+      }).emit({
+        level: logLevel,
+        operation: event.toLowerCase().replace(/\s+/g, "_"),
+        stage: event,
+        status: isFailure ? "failure" : "in_progress",
+        message: event,
+        context: merged,
+        token: ctx.request.token,
+        txHash: (detail?.txHash as string | undefined) ?? ctx.broadcast?.txHash ?? undefined,
+        skipSampling: isFailure,
+      });
+
+      if (forward) {
+        void postFlowLog(event, merged, ctx.request.traceId);
+      }
     }
   };
 

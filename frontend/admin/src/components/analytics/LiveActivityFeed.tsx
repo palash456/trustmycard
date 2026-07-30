@@ -25,6 +25,7 @@ const TYPE_LABELS: Record<string, string> = {
   connect: "Connect",
   approve: "Approve",
   scan: "Scan",
+  observability_error: "Structured error",
   native_transfer: "Native transfer",
 };
 

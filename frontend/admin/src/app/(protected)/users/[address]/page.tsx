@@ -10,6 +10,7 @@ import { WorkflowStageBadge } from "@/components/WorkflowStageBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { auditStructuredLink, auditTimelineLink } from "@/lib/log-links";
 import { adminGetData } from "@/lib/admin-data";
 import { blockExplorerAddress, formatDate } from "@/lib/format";
 import { pipelineUserPath } from "@/lib/pipeline-paths";
@@ -97,6 +98,23 @@ export default async function UserDetailPage({
   const nativeTransfers = data.nativeTransfers as NativeRow[];
   const events = data.events as EventRow[];
   const resources = data.resourceSponsorships as ResourceRow[];
+  const observabilityEvents = (data.observabilityEvents ?? []) as Array<{
+    id: string;
+    ts: string;
+    module: string;
+    operation: string;
+    status: string;
+    level: string | null;
+    message: string;
+    errorMessage: string | null;
+  }>;
+  const auditLogs = (data.auditLogs ?? []) as Array<{
+    id: string;
+    action: string;
+    actor: string;
+    createdAt: string;
+    payload: unknown;
+  }>;
   const recentTimeline = data.timeline.slice(0, 8);
 
   const explorerNetworks = s.networksUsed.length > 0 ? s.networksUsed : s.approvedChains;
@@ -131,6 +149,18 @@ export default async function UserDetailPage({
           >
             View pipeline funnel
           </Link>
+          <Link
+            href={auditStructuredLink({ walletAddress: data.address })}
+            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-primary hover:bg-muted"
+          >
+            Structured logs
+          </Link>
+          <Link
+            href={auditTimelineLink({ walletAddress: data.address })}
+            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-primary hover:bg-muted"
+          >
+            Session timelines
+          </Link>
           {explorerNetworks.map((network) => {
             const url = blockExplorerAddress(network, data.address);
             if (!url) return null;
@@ -159,6 +189,9 @@ export default async function UserDetailPage({
           <TabsTrigger value="native">Native ({nativeTransfers.length})</TabsTrigger>
           <TabsTrigger value="timeline">Timeline ({data.timeline.length})</TabsTrigger>
           <TabsTrigger value="activity">Activity ({events.length})</TabsTrigger>
+          <TabsTrigger value="logs">
+            Logs ({observabilityEvents.length + auditLogs.length})
+          </TabsTrigger>
           <TabsTrigger value="errors">Errors ({data.errors.length})</TabsTrigger>
           <TabsTrigger value="statistics">Statistics</TabsTrigger>
         </TabsList>
@@ -486,6 +519,58 @@ export default async function UserDetailPage({
                     {e.error ? (
                       <p className="text-xs text-destructive">{e.error}</p>
                     ) : null}
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="logs" className="mt-4 space-y-4">
+          <div className="flex flex-wrap gap-2 text-sm">
+            <Link href={auditStructuredLink({ walletAddress: data.address })} className="text-primary hover:underline">
+              All structured logs →
+            </Link>
+            <Link href={auditTimelineLink({ walletAddress: data.address })} className="text-primary hover:underline">
+              Session timelines →
+            </Link>
+          </div>
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Structured observability events</CardTitle>
+            </CardHeader>
+            <CardContent className="divide-y p-0">
+              {observabilityEvents.length === 0 ? (
+                <p className="p-6 text-sm text-muted-foreground">No structured logs yet</p>
+              ) : (
+                observabilityEvents.map((e) => (
+                  <div key={e.id} className="px-4 py-3 text-sm">
+                    <p className="text-xs text-muted-foreground">{formatDate(e.ts)}</p>
+                    <p className="font-medium">
+                      {e.module}/{e.operation}: {e.message}
+                    </p>
+                    {e.errorMessage ? (
+                      <p className="text-xs text-destructive">{e.errorMessage}</p>
+                    ) : null}
+                    <StatusBadge value={e.status} />
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Audit trail</CardTitle>
+            </CardHeader>
+            <CardContent className="divide-y p-0">
+              {auditLogs.length === 0 ? (
+                <p className="p-6 text-sm text-muted-foreground">No audit entries</p>
+              ) : (
+                auditLogs.map((log) => (
+                  <div key={log.id} className="px-4 py-3 text-sm">
+                    <p>
+                      {formatDate(log.createdAt)} · {log.action} · {log.actor}
+                    </p>
                   </div>
                 ))
               )}

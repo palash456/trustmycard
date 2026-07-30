@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -10,8 +11,10 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { globalMetrics } from "@trustmycard/shared/observability";
 import { Observable } from "rxjs";
 import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
+import { ObservabilityService } from "../observability/observability.service";
 import { AdminOpsService } from "./admin-ops.service";
 import { AdminService } from "./admin.service";
 import { AdminStreamService } from "./admin-stream.service";
@@ -28,7 +31,8 @@ export class AdminController {
     private readonly adminOps: AdminOpsService,
     private readonly streamService: AdminStreamService,
     private readonly userAggregation: UserAggregationService,
-    private readonly analytics: AnalyticsService
+    private readonly analytics: AnalyticsService,
+    private readonly observability: ObservabilityService
   ) {}
 
   @Get("analytics")
@@ -150,6 +154,26 @@ export class AdminController {
   @ApiOperation({ summary: "List audit logs (paginated)" })
   listAuditLogs(@Query() query: Record<string, string>) {
     return this.adminService.listAuditLogs(query);
+  }
+
+  @Get("observability/events")
+  @ApiOperation({ summary: "Search observability events (paginated)" })
+  searchObservabilityEvents(@Query() query: Record<string, string>) {
+    return this.observability.searchAdmin(query);
+  }
+
+  @Get("sessions/:sessionId/timeline")
+  @ApiOperation({ summary: "Session authorization timeline" })
+  async getSessionTimeline(@Param("sessionId") sessionId: string) {
+    const timeline = await this.observability.getSessionTimeline(sessionId);
+    if (!timeline) throw new NotFoundException(`No timeline for session ${sessionId}`);
+    return timeline;
+  }
+
+  @Get("metrics")
+  @ApiOperation({ summary: "In-process metrics snapshot" })
+  getMetrics() {
+    return globalMetrics.snapshot();
   }
 
   @Get("tg-events")

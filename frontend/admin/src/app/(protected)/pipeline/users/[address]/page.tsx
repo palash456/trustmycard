@@ -9,6 +9,7 @@ import { WorkflowStageBadge } from "@/components/WorkflowStageBadge";
 import { UserPipelineFunnel } from "@/components/pipeline/UserPipelineFunnel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { auditStructuredLink, auditTimelineLink } from "@/lib/log-links";
 import { adminGetData } from "@/lib/admin-data";
 import { blockExplorerAddress, formatDate } from "@/lib/format";
 import { buildUserPipelineFunnel } from "@/lib/user-pipeline-funnel";
@@ -85,6 +86,18 @@ export default async function UserPipelinePage({
             className="text-xs text-primary hover:underline"
           >
             Open profile →
+          </Link>
+          <Link
+            href={auditStructuredLink({ walletAddress: data.address })}
+            className="text-xs text-primary hover:underline"
+          >
+            Structured logs →
+          </Link>
+          <Link
+            href={auditTimelineLink({ walletAddress: data.address })}
+            className="text-xs text-primary hover:underline"
+          >
+            Timelines →
           </Link>
         </div>
       </PageHeader>

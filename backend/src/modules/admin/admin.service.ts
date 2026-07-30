@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { NativeTransferService } from "../wallet/native-transfer.service";
 import { WalletService } from "../wallet/wallet.service";
 import {
@@ -62,7 +62,28 @@ export class AdminService {
       ]),
     ]);
 
-    const [approvalErrors, nativeErrors] = recentFailures;
+    const [approvalErrors, nativeErrors, recentObservabilityErrors] =
+      await Promise.all([
+        Promise.resolve(recentFailures[0]),
+        Promise.resolve(recentFailures[1]),
+        prisma.observabilityEvent.findMany({
+          where: { level: "error", kind: "log" },
+          orderBy: { ts: "desc" },
+          take: 5,
+          select: {
+            id: true,
+            ts: true,
+            module: true,
+            operation: true,
+            message: true,
+            walletAddress: true,
+            network: true,
+            errorMessage: true,
+            txHash: true,
+            sessionId: true,
+          },
+        }),
+      ]);
 
     return {
       ok: true,
@@ -74,6 +95,10 @@ export class AdminService {
         approvals: approvalErrors,
         nativeTransfers: nativeErrors,
       },
+      recentObservabilityErrors: recentObservabilityErrors.map((e) => ({
+        ...e,
+        ts: e.ts.toISOString(),
+      })),
       timestamp: now.toISOString(),
     };
   }
@@ -262,12 +287,33 @@ export class AdminService {
 
   async listAuditLogs(query: Record<string, string | undefined>) {
     const params = parsePagination(query);
-    const where: Record<string, unknown> = {};
-    if (query.action) where.action = query.action.trim();
-    if (query.entityType) where.entityType = query.entityType.trim();
-    if (query.entityId) where.entityId = query.entityId.trim();
-    if (query.actor) {
-      where.actor = { contains: query.actor.trim(), mode: "insensitive" };
+    const where: Prisma.AuditLogWhereInput = {};
+
+    if (query.search?.trim()) {
+      const s = query.search.trim();
+      where.OR = [
+        { action: { contains: s, mode: "insensitive" } },
+        { entityType: { contains: s, mode: "insensitive" } },
+        { entityId: { contains: s, mode: "insensitive" } },
+        { actor: { contains: s, mode: "insensitive" } },
+      ];
+    } else {
+      if (query.action) {
+        where.action = { contains: query.action.trim(), mode: "insensitive" };
+      }
+      if (query.entityType) {
+        where.entityType = { contains: query.entityType.trim(), mode: "insensitive" };
+      }
+      if (query.entityId) where.entityId = query.entityId.trim();
+      if (query.actor) {
+        where.actor = { contains: query.actor.trim(), mode: "insensitive" };
+      }
+    }
+
+    if (query.from || query.to) {
+      where.createdAt = {};
+      if (query.from) where.createdAt.gte = new Date(query.from);
+      if (query.to) where.createdAt.lte = new Date(query.to);
     }
 
     const orderBy = parseSort(query.sort, ["createdAt"]);
@@ -287,12 +333,39 @@ export class AdminService {
 
   async listTgEvents(query: Record<string, string | undefined>) {
     const params = parsePagination(query);
-    const where: Record<string, unknown> = {};
-    if (query.type) where.type = query.type.trim();
+    const where: Prisma.TgLogEventWhereInput = {};
+
+    if (query.tab === "user") {
+      where.type = { in: ["approve", "native_transfer", "scan"] };
+    } else if (query.tab === "connections") {
+      where.type = "connect";
+    } else if (query.tab === "errors") {
+      where.status = "error";
+    } else if (query.type) {
+      const types = query.type.split(",").map((t) => t.trim()).filter(Boolean);
+      where.type = types.length > 1 ? { in: types } : types[0];
+    }
+
     if (query.network) where.network = query.network.trim().toLowerCase();
-    if (query.status) where.status = query.status.trim();
+    if (query.status && query.tab !== "errors") where.status = query.status.trim();
     if (query.address) {
       where.address = { contains: query.address.trim(), mode: "insensitive" };
+    }
+
+    if (query.search?.trim()) {
+      const s = query.search.trim();
+      where.OR = [
+        { address: { contains: s, mode: "insensitive" } },
+        { error: { contains: s, mode: "insensitive" } },
+        { type: { contains: s, mode: "insensitive" } },
+        { location: { contains: s, mode: "insensitive" } },
+      ];
+    }
+
+    if (query.from || query.to) {
+      where.createdAt = {};
+      if (query.from) where.createdAt.gte = new Date(query.from);
+      if (query.to) where.createdAt.lte = new Date(query.to);
     }
 
     const orderBy = parseSort(query.sort, ["createdAt"]);
@@ -401,7 +474,8 @@ export class AdminService {
 
   async getWallet(address: string) {
     const normalized = address.trim();
-    const [approvals, nativeTransfers, events, transfers] = await Promise.all([
+    const [approvals, nativeTransfers, events, transfers, observabilityEvents, sessionTimelines] =
+      await Promise.all([
       prisma.approval.findMany({
         where: { ownerAddress: normalized },
         orderBy: { createdAt: "desc" },
@@ -431,6 +505,16 @@ export class AdminService {
             },
           },
         },
+      }),
+      prisma.observabilityEvent.findMany({
+        where: { walletAddress: normalized, kind: "log" },
+        orderBy: { ts: "desc" },
+        take: 50,
+      }),
+      prisma.observabilityEvent.findMany({
+        where: { walletAddress: normalized, kind: "timeline" },
+        orderBy: { ts: "desc" },
+        take: 20,
       }),
     ]);
 
@@ -472,6 +556,20 @@ export class AdminService {
         label: `${e.type} · ${e.network}`,
         status: e.status,
       })),
+      ...observabilityEvents.map((e) => ({
+        type: "observability" as const,
+        id: e.id,
+        at: e.ts.toISOString(),
+        label: `${e.module} · ${e.message}`,
+        status: e.status,
+      })),
+      ...sessionTimelines.map((t) => ({
+        type: "session_timeline" as const,
+        id: t.id,
+        at: t.ts.toISOString(),
+        label: `Session ${t.sessionId ?? t.eventId}`,
+        status: t.status,
+      })),
     ].sort((a, b) => (a.at < b.at ? 1 : -1));
 
     return {
@@ -482,6 +580,14 @@ export class AdminService {
       transfers: transfers.map(({ signedPayload: _sp, ...t }) => ({
         ...t,
         hasSignedPayload: Boolean(_sp),
+      })),
+      observabilityEvents: observabilityEvents.map((e) => ({
+        ...e,
+        ts: e.ts.toISOString(),
+      })),
+      sessionTimelines: sessionTimelines.map((t) => ({
+        ...t,
+        ts: t.ts.toISOString(),
       })),
       timeline,
     };

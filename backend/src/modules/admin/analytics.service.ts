@@ -153,7 +153,7 @@ export class AnalyticsService {
 
   async getActivity(limitParam?: string) {
     const limit = Math.min(Math.max(Number(limitParam ?? 50) || 50, 1), 100);
-    const [approvals, transfers, nativeTransfers, events] = await Promise.all([
+    const [approvals, transfers, nativeTransfers, events, obsErrors] = await Promise.all([
       prisma.approval.findMany({
         orderBy: { updatedAt: "desc" },
         take: limit,
@@ -202,6 +202,21 @@ export class AnalyticsService {
           address: true,
           status: true,
           createdAt: true,
+        },
+      }),
+      prisma.observabilityEvent.findMany({
+        where: { level: "error", kind: "log" },
+        orderBy: { ts: "desc" },
+        take: limit,
+        select: {
+          id: true,
+          module: true,
+          operation: true,
+          message: true,
+          walletAddress: true,
+          network: true,
+          status: true,
+          ts: true,
         },
       }),
     ]);
@@ -275,7 +290,19 @@ export class AnalyticsService {
         status: e.status,
         address: e.address,
         network: e.network,
-        href: `/events/${e.id}`,
+        href: `/activity/${e.id}`,
+      });
+    }
+    for (const o of obsErrors) {
+      items.push({
+        type: "observability_error",
+        id: o.id,
+        at: o.ts.toISOString(),
+        label: `${o.module} · ${o.message}`,
+        status: o.status,
+        address: o.walletAddress ?? "",
+        network: o.network ?? "",
+        href: `/audit?tab=structured&search=${encodeURIComponent(o.message)}`,
       });
     }
 

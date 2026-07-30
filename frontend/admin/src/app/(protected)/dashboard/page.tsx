@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
 import { DashboardCharts } from "@/components/charts/DashboardCharts";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { ListPageLayout } from "@/components/ListPageLayout";
@@ -44,6 +45,18 @@ type Dashboard = {
       errorMessage: string | null;
     }>;
   };
+  recentObservabilityErrors?: Array<{
+    id: string;
+    ts: string;
+    module: string;
+    operation: string;
+    message: string;
+    walletAddress: string | null;
+    network: string | null;
+    errorMessage: string | null;
+    txHash: string | null;
+    sessionId: string | null;
+  }>;
 };
 
 export default async function DashboardPage() {
@@ -148,6 +161,40 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
+      {(data.recentObservabilityErrors?.length ?? 0) > 0 ? (
+        <Card className="border-0">
+          <CardHeader>
+            <CardTitle className="font-brand text-base">Recent structured errors</CardTitle>
+            <CardDescription>Latest observability events at error level</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {data.recentObservabilityErrors?.map((e) => (
+              <div
+                key={e.id}
+                className="rounded-lg bg-muted/35 px-4 py-3 text-sm ring-1 ring-black/[0.03]"
+              >
+                <p className="font-medium">
+                  {e.module} · {e.operation}
+                </p>
+                <p className="mt-1 text-destructive">{e.errorMessage ?? e.message}</p>
+                {e.walletAddress ? (
+                  <p className="mt-1 font-mono text-xs text-muted-foreground">{e.walletAddress}</p>
+                ) : null}
+                <div className="mt-2">
+                  <ViewLogsLink
+                    params={{
+                      walletAddress: e.walletAddress ?? undefined,
+                      txHash: e.txHash ?? undefined,
+                      search: e.message,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="flex flex-wrap gap-2">
         <Link
           href="/pipeline"
@@ -161,6 +208,13 @@ export default async function DashboardPage() {
           className={buttonVariants({ variant: "outline", size: "sm" })}
         >
           Native transfers
+          <ArrowRight className="size-4" />
+        </Link>
+        <Link
+          href="/audit?tab=structured&level=error"
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
+          Structured error logs
           <ArrowRight className="size-4" />
         </Link>
       </div>

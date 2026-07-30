@@ -1,18 +1,11 @@
 import {
   Body,
   Controller,
-  Get,
   HttpCode,
-  NotFoundException,
-  Param,
   Post,
-  Query,
 } from "@nestjs/common";
 import type { LogEvent, SessionTimeline } from "@trustmycard/shared/observability";
-import {
-  ObservabilityService,
-  type ObservabilitySearchQuery,
-} from "./observability.service";
+import { ObservabilityService } from "./observability.service";
 
 @Controller()
 export class ObservabilityController {
@@ -48,17 +41,5 @@ export class ObservabilityController {
     }
 
     return { ok: true, accepted, kind: "log" };
-  }
-
-  @Get("admin/observability/events")
-  search(@Query() query: ObservabilitySearchQuery) {
-    return this.observability.search(query);
-  }
-
-  @Get("admin/sessions/:sessionId/timeline")
-  async sessionTimeline(@Param("sessionId") sessionId: string) {
-    const timeline = await this.observability.getSessionTimeline(sessionId);
-    if (!timeline) throw new NotFoundException(`No timeline for session ${sessionId}`);
-    return timeline;
   }
 }

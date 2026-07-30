@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
 import { DetailList, DetailRow } from "@/components/DetailList";
 import { ReconcileButton } from "@/components/ReconcileButton";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -106,6 +107,11 @@ export default async function NativeTransferDetailPage({
           </DetailList>
         </CardContent>
       </Card>
+
+      <ViewLogsLink
+        params={{ walletAddress: n.ownerAddress, txHash: n.txHash }}
+        label="View related structured logs"
+      />
     </div>
   );
 }

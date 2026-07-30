@@ -292,6 +292,20 @@ export const demoFixtures: Record<string, unknown> = {
       },
     },
     nativeTransfers: { pending: 14, confirmed: 68, failed: 8 },
+    recentObservabilityErrors: [
+      {
+        id: "obs-1",
+        ts: now,
+        module: "connect",
+        operation: "approval_session",
+        message: "APPROVAL SESSION FAILED",
+        walletAddress: users[0]?.address ?? "0xdemo",
+        network: "eth",
+        errorMessage: "User rejected transaction",
+        txHash: null,
+        sessionId: "auth-demo-1",
+      },
+    ],
     recentFailures: {
       approvals: approvals
         .filter((a) => a.lastError)
@@ -433,6 +447,17 @@ export const demoFixtures: Record<string, unknown> = {
     total: events.length,
     page: 1,
     totalPages: Math.ceil(events.length / 25),
+  },
+
+  "/admin/metrics": {
+    counters: {
+      "observability.persist.failed": 0,
+      "collector.ticks.total": 142,
+      "logs.sampled.suppressed": 88,
+    },
+    histograms: {},
+    gauges: {},
+    capturedAt: now,
   },
 };
 
@@ -577,6 +602,71 @@ export function getDemoFixture<T>(path: string): T {
       nativeTransfers,
       events,
     }) as T;
+  }
+
+  if (base === "/admin/observability/events") {
+    const tab = params.get("tab");
+    const kind = tab === "timelines" ? "timeline" : "log";
+    const demoEvents = [
+      {
+        id: "obs-demo-1",
+        kind,
+        ts: now,
+        eventId: "evt-1",
+        sessionId: "auth-demo-1",
+        traceId: "flow-demo-1",
+        correlationId: "flow-demo-1",
+        walletAddress: users[0]?.address ?? "0xdemo",
+        network: "eth",
+        module: kind === "timeline" ? "authorization" : "connect",
+        operation: kind === "timeline" ? "session_timeline" : "scan",
+        stage: kind === "timeline" ? "COMPLETED" : "SCAN STARTED",
+        status: kind === "timeline" ? "success" : "in_progress",
+        level: "info",
+        message: kind === "timeline" ? "Authorization session success" : "Wallet scan started",
+        errorMessage: null,
+        durationMs: kind === "timeline" ? 12400 : null,
+        payload: null,
+      },
+    ];
+    return {
+      items: demoEvents,
+      total: demoEvents.length,
+      page: 1,
+      limit: 25,
+      totalPages: 1,
+    } as T;
+  }
+
+  const sessionTimeline = base.match(/\/admin\/sessions\/([^/]+)\/timeline$/);
+  if (sessionTimeline) {
+    return {
+      sessionId: decodeURIComponent(sessionTimeline[1]),
+      walletAddress: users[0]?.address ?? "0xdemo",
+      network: "eth",
+      startedAt: now,
+      completedAt: now,
+      outcome: "success",
+      totalDurationMs: 12400,
+      events: [
+        {
+          eventId: "n1",
+          stage: "AUTHORIZATION_STARTED",
+          status: "started",
+          ts: now,
+          message: "Session started",
+        },
+        {
+          eventId: "n2",
+          parentEventId: "n1",
+          stage: "SIGN",
+          status: "success",
+          ts: now,
+          durationMs: 3200,
+          message: "Signed approval",
+        },
+      ],
+    } as T;
   }
 
   const ap = base.match(/\/admin\/approvals\/([^/]+)$/);

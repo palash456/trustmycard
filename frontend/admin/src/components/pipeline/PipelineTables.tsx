@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
 import { pipelineUserPath } from "@/lib/pipeline-paths";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
@@ -96,13 +97,14 @@ export function ApprovalsTable({ items }: { items: ApprovalRow[] }) {
               <TableCell className="text-xs text-muted-foreground">
                 {formatDate(row.nextCheckAt)}
               </TableCell>
-              <TableCell>
+              <TableCell className="space-y-1">
                 <Link
                   href={`/approvals/${row.id}`}
-                  className="text-sm text-primary hover:underline"
+                  className="block text-sm text-primary hover:underline"
                 >
                   {formatDate(row.createdAt)}
                 </Link>
+                <ViewLogsLink params={{ walletAddress: row.ownerAddress }} />
               </TableCell>
             </TableRow>
           ))
@@ -153,13 +155,19 @@ export function TransfersTable({ items }: { items: TransferRow[] }) {
               <TableCell className="font-mono text-xs text-muted-foreground">
                 {row.txHash ? shortAddress(row.txHash) : "—"}
               </TableCell>
-              <TableCell>
+              <TableCell className="space-y-1">
                 <Link
                   href={`/transfers/${row.id}`}
-                  className="text-sm text-primary hover:underline"
+                  className="block text-sm text-primary hover:underline"
                 >
                   {formatDate(row.createdAt)}
                 </Link>
+                <ViewLogsLink
+                  params={{
+                    walletAddress: row.approval.ownerAddress,
+                    txHash: row.txHash ?? undefined,
+                  }}
+                />
               </TableCell>
             </TableRow>
           ))
@@ -208,13 +216,16 @@ export function NativeTransfersTable({ items }: { items: NativeRow[] }) {
                 <StatusBadge value={row.status} />
               </TableCell>
               <TableCell className="tabular-nums">{row.reconcileAttempts}</TableCell>
-              <TableCell>
+              <TableCell className="space-y-1">
                 <Link
                   href={`/native-transfers/${row.id}`}
-                  className="text-sm text-primary hover:underline"
+                  className="block text-sm text-primary hover:underline"
                 >
                   {formatDate(row.createdAt)}
                 </Link>
+                <ViewLogsLink
+                  params={{ walletAddress: row.ownerAddress, txHash: row.txHash }}
+                />
               </TableCell>
             </TableRow>
           ))

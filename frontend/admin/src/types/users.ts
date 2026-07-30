@@ -79,6 +79,8 @@ export type UserDetail = {
   nativeTransfers: Array<Record<string, unknown>>;
   events: Array<Record<string, unknown>>;
   auditLogs: Array<Record<string, unknown>>;
+  observabilityEvents?: Array<Record<string, unknown>>;
+  sessionTimelines?: Array<Record<string, unknown>>;
   resourceSponsorships: Array<Record<string, unknown>>;
   errors: Array<{ id: string; source: string; message: string; at: string }>;
   retryHistory: Array<{

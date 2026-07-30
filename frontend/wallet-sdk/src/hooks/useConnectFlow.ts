@@ -8,7 +8,7 @@ import {
   projectId,
   WC_CONNECT_NAMESPACES,
 } from "../core/constants";
-import { postFlowLog } from "../core/flow-log-client";
+import { createConnectLogStep } from "../observability/connect-logger";
 import { rowsFromBalances } from "../core/network-meta";
 import { createBrowserApprovalOrchestrator } from "../approval/create-browser-orchestrator";
 import { ApprovalStageName, StageStatus } from "../approval/types";
@@ -104,7 +104,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const logStep = useCallback(
     (step: string, detail: Record<string, unknown> = {}) => {
       const traceId = traceIdRef.current || "n/a";
-      void postFlowLog(step, detail, traceId);
+      createConnectLogStep(traceId)(step, detail);
     },
     []
   );

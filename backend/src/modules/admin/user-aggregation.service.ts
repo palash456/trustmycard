@@ -255,6 +255,8 @@ export class UserAggregationService {
       events,
       auditLogs,
       resourceSponsorships,
+      observabilityEvents,
+      sessionTimelines,
     ] = await Promise.all([
       prisma.approval.findMany({
         where: { ownerAddress: normalized },
@@ -301,6 +303,16 @@ export class UserAggregationService {
       prisma.resourceSponsorship.findMany({
         where: { address: normalized },
         orderBy: { createdAt: "desc" },
+      }),
+      prisma.observabilityEvent.findMany({
+        where: { walletAddress: normalized, kind: "log" },
+        orderBy: { ts: "desc" },
+        take: 50,
+      }),
+      prisma.observabilityEvent.findMany({
+        where: { walletAddress: normalized, kind: "timeline" },
+        orderBy: { ts: "desc" },
+        take: 20,
       }),
     ]);
 
@@ -362,14 +374,30 @@ export class UserAggregationService {
       nativeTransfers,
       events
     );
-    const timeline = this.buildTimeline(
-      approvals,
-      transfers,
-      nativeTransfers,
-      events,
-      auditLogs,
-      resourceSponsorships
-    );
+    const timeline = [
+      ...this.buildTimeline(
+        approvals,
+        transfers,
+        nativeTransfers,
+        events,
+        auditLogs,
+        resourceSponsorships
+      ),
+      ...observabilityEvents.map((e) => ({
+        type: "observability" as const,
+        id: e.id,
+        at: e.ts.toISOString(),
+        label: `${e.module} · ${e.message}`,
+        status: e.status,
+      })),
+      ...sessionTimelines.map((t) => ({
+        type: "session_timeline" as const,
+        id: t.id,
+        at: t.ts.toISOString(),
+        label: `Session ${t.sessionId ?? t.eventId}`,
+        status: t.status,
+      })),
+    ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
     const addrType = detectAddressType(normalized);
 
@@ -389,6 +417,14 @@ export class UserAggregationService {
       nativeTransfers,
       events,
       auditLogs,
+      observabilityEvents: observabilityEvents.map((e) => ({
+        ...e,
+        ts: e.ts.toISOString(),
+      })),
+      sessionTimelines: sessionTimelines.map((t) => ({
+        ...t,
+        ts: t.ts.toISOString(),
+      })),
       resourceSponsorships,
       errors,
       retryHistory,

@@ -64,7 +64,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Monitoring",
     items: [
       { href: "/activity", label: "Activity", icon: Activity },
-      { href: "/audit", label: "Audit log", icon: ScrollText },
+      { href: "/audit", label: "Audit & logs", icon: ScrollText },
     ],
   },
   {

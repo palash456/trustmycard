@@ -95,10 +95,13 @@ Automatic redaction via `redactContext()` for keys matching sensitive patterns.
 ## API endpoints
 
 - `POST /v1/client-logs` — browser log + timeline ingestion
-- `GET /v1/admin/observability/events` — searchable event query
-- `GET /v1/admin/sessions/:sessionId/timeline` — session journey
-- `GET /v1/admin/metrics` — metrics snapshot
-- `GET /v1/admin/metrics/prometheus` — Prometheus text format
+- `GET /v1/api/admin/audit-logs` — admin audit log search
+- `GET /v1/api/admin/observability/events` — searchable observability events
+- `GET /v1/api/admin/sessions/:sessionId/timeline` — session journey
+- `GET /v1/api/admin/metrics` — metrics snapshot
+- `GET /v1/admin/metrics/prometheus` — Prometheus text format (unguarded infra endpoint)
+
+Admin UI deep links: see [admin-observability-migration.md](./admin-observability-migration.md).
 
 ## CI guardrail
 
