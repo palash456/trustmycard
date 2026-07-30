@@ -450,14 +450,14 @@ export const demoFixtures: Record<string, unknown> = {
   },
 
   "/admin/metrics": {
-    counters: {
-      "observability.persist.failed": 0,
-      "collector.ticks.total": 142,
-      "logs.sampled.suppressed": 88,
-    },
-    histograms: {},
-    gauges: {},
-    capturedAt: now,
+    ts: now,
+    counters: [
+      { name: "observability.persist.failed", labels: {}, value: 0 },
+      { name: "collector.ticks.total", labels: {}, value: 142 },
+      { name: "logs.sampled.suppressed", labels: {}, value: 88 },
+    ],
+    histograms: [],
+    gauges: [],
   },
 };
 

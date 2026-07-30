@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useOptionalPageRefresh } from "@/components/RefreshProvider";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminStream } from "@/hooks/use-admin-stream";
 import {
   Card,
@@ -31,11 +33,14 @@ const TYPE_LABELS: Record<string, string> = {
 
 export function LiveActivityFeed({ className }: { className?: string }) {
   const [items, setItems] = useState<AnalyticsActivityItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { connected } = useAdminStream(true);
+  const pageRefresh = useOptionalPageRefresh();
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
+      setLoading(true);
       const res = await fetch("/api/admin/analytics/activity?limit=50");
       if (!res.ok) throw new Error(`Failed to load activity (${res.status})`);
       const data = (await res.json()) as { items: AnalyticsActivityItem[] };
@@ -43,14 +48,16 @@ export function LiveActivityFeed({ className }: { className?: string }) {
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load activity");
+    } finally {
+      setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     load();
     const id = setInterval(load, 30_000);
     return () => clearInterval(id);
-  }, []);
+  }, [load, pageRefresh?.refreshGeneration]);
 
   return (
     <Card className={cn("flex h-full min-h-0 flex-col border-border/60 shadow-none", className)}>
@@ -61,7 +68,16 @@ export function LiveActivityFeed({ className }: { className?: string }) {
         </p>
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-3">
-        {error ? (
+        {loading ? (
+          <ul className="space-y-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <li key={i} className="rounded-md border border-border/50 px-2 py-2">
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="mt-2 h-3 w-full" />
+              </li>
+            ))}
+          </ul>
+        ) : error ? (
           <p className="text-xs text-destructive">{error}</p>
         ) : items.length === 0 ? (
           <p className="text-xs text-muted-foreground">No recent activity</p>

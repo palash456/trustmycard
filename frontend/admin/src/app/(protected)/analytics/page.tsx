@@ -44,8 +44,8 @@ export default async function AnalyticsPage({
     <ListPageLayout>
       <PageHeader
         title="Analytics"
-        description="Executive dashboard"
-        tip="Revenue is collected stablecoin value per asset and chain — not USD-normalized. Use the date range filter to scope time-series metrics."
+        description="Revenue, users, and operational performance"
+        tip="Start with the executive snapshot for health and revenue. Use the date range filter to scope time-series metrics."
       >
         <PageToolbar>
           <PageRefreshButton />

@@ -5,6 +5,8 @@ import { DetailList, DetailRow } from "@/components/DetailList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
+import { ActivityErrorCell, formatActivityError } from "@/components/activity/ActivityErrorCell";
+import { ActivityStatusChip } from "@/components/activity/ActivityStatusChip";
 import { adminGetData } from "@/lib/admin-data";
 import { formatDate } from "@/lib/format";
 
@@ -15,7 +17,7 @@ type Detail = {
     network: string;
     address: string;
     status: string;
-    error: string | null;
+    error: unknown;
     ip: string | null;
     location: string | null;
     site: string | null;
@@ -53,7 +55,9 @@ export default async function ActivityDetailPage({
         <CardContent>
           <DetailList>
             <DetailRow label="Network">{e.network.toUpperCase()}</DetailRow>
-            <DetailRow label="Status">{e.status}</DetailRow>
+            <DetailRow label="Status">
+              <ActivityStatusChip status={e.status} />
+            </DetailRow>
             <DetailRow label="Address">
               <span className="font-mono text-xs">{e.address}</span>
               <CopyButton value={e.address} />
@@ -63,9 +67,9 @@ export default async function ActivityDetailPage({
             <DetailRow label="Site">{e.site ?? "—"}</DetailRow>
             <DetailRow label="Device">{e.device ?? "—"}</DetailRow>
             <DetailRow label="Time">{formatDate(e.createdAt)}</DetailRow>
-            {e.error ? (
+            {formatActivityError(e.error, e.status) ? (
               <DetailRow label="Error">
-                <span className="text-destructive">{e.error}</span>
+                <ActivityErrorCell error={e.error} status={e.status} />
               </DetailRow>
             ) : null}
           </DetailList>

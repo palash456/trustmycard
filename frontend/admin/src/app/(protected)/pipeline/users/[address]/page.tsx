@@ -3,6 +3,8 @@ import { ChevronLeft, ExternalLink } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
 import { ListPageLayout } from "@/components/ListPageLayout";
 import { PageHeader } from "@/components/PageHeader";
+import { PageRefreshButton } from "@/components/PageRefreshButton";
+import { PageToolbar } from "@/components/PageToolbar";
 import { PipelineLifecycleDashboard } from "@/components/pipeline/PipelineLifecycleDashboard";
 import { PipelineLiveRefresh } from "@/components/pipeline/PipelineLiveRefresh";
 import { UserHealthBadge } from "@/components/UserHealthBadge";
@@ -63,8 +65,12 @@ export default async function UserPipelinePage({
           </>
         }
       >
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex flex-col items-end gap-3">
+          <PageToolbar>
+            <PageRefreshButton />
+          </PageToolbar>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
             <WorkflowStageBadge value={summary.workflowStage} />
             <UserHealthBadge value={summary.healthStatus} />
             {summary.isComplete ? (
@@ -110,6 +116,7 @@ export default async function UserPipelinePage({
           >
             Timelines →
           </Link>
+          </div>
         </div>
       </PageHeader>
 

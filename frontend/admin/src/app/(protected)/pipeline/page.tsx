@@ -7,12 +7,11 @@ import { PageHeader } from "@/components/PageHeader";
 import { PageRefreshButton } from "@/components/PageRefreshButton";
 import { PageToolbar } from "@/components/PageToolbar";
 import { Pagination } from "@/components/Pagination";
-import { StatCard } from "@/components/StatCard";
 import {
-  PipelineSearch,
   PipelineTabsNav,
   type PipelineTab,
 } from "@/components/pipeline/PipelineControls";
+import { PipelineOverviewSection } from "@/components/pipeline/PipelineOverviewSection";
 import { PipelineWorkflowStrip } from "@/components/pipeline/PipelineWorkflowStrip";
 import {
   ApprovalsTable,
@@ -86,22 +85,6 @@ const NATIVE_FILTER_FIELDS = [
 function parseTab(value: string | undefined): PipelineTab {
   if (value === "transfers" || value === "native") return value;
   return "approvals";
-}
-
-function activeApprovalsCount(approvals: Record<string, number>): number {
-  return (
-    (approvals.ACTIVE ?? 0) +
-    (approvals.SUBMITTED ?? 0) +
-    (approvals.PARTIALLY_USED ?? 0)
-  );
-}
-
-function pendingTransfersCount(transfers: Record<string, number>): number {
-  return (
-    (transfers.prepared ?? 0) +
-    (transfers.broadcast ?? 0) +
-    (transfers.pending ?? 0)
-  );
 }
 
 export default async function PipelinePage({
@@ -207,8 +190,8 @@ export default async function PipelinePage({
     <ListPageLayout className="space-y-4">
       <PageHeader
         title="Pipeline"
-        description="End-to-end transaction lifecycle — approvals, collections, and native funding"
-        tip="Investigate the complete operational workflow from one place. Search by wallet address to trace approval → transfer → native funding without switching pages."
+        description="End-to-end lifecycle — approvals, collections, and native funding"
+        tip="Use the overview metrics and wallet search to trace a user. Tabs switch between approvals, token transfers, and native funding lists."
       >
         <PageToolbar>
           <PageRefreshButton />
@@ -216,34 +199,14 @@ export default async function PipelinePage({
         </PageToolbar>
       </PageHeader>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Active approvals"
-          value={activeApprovalsCount(c.approvals)}
-          sub={`${c.due} due for collection`}
-        />
-        <StatCard
-          label="Pending transfers"
-          value={pendingTransfersCount(c.transfers)}
-          sub={`${listData && tab === "transfers" ? listData.total : "—"} matching filters`}
-        />
-        <StatCard
-          label="Pending native"
-          value={dashboard!.nativeTransfers.pending ?? 0}
-          sub={`${dashboard!.nativeTransfers.failed ?? 0} failed`}
-        />
-        <StatCard
-          label="Collector"
-          value={c.enabled ? "Running" : "Stopped"}
-          sub={c.enabled ? "Auto-collection enabled" : "Manual mode"}
-        />
-      </div>
-
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
-        <div className="min-w-0 flex-1">
-          <PipelineSearch owner={owner} tab={tab} query={pipelineQuery} />
-        </div>
-      </div>
+      <PipelineOverviewSection
+        collector={c}
+        nativeTransfers={dashboard!.nativeTransfers}
+        tab={tab}
+        listTotal={listData?.total ?? 0}
+        owner={owner}
+        pipelineQuery={pipelineQuery}
+      />
 
       <PipelineWorkflowStrip
         owner={owner}

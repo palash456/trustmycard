@@ -14,6 +14,7 @@ import {
   BentoSection,
 } from "@/components/analytics/BentoGrid";
 import { AssetCard, CompactMetric } from "@/components/analytics/CompactMetric";
+import { AnalyticsExecutiveSummary } from "@/components/analytics/AnalyticsExecutiveSummary";
 import { InsightsPanel } from "@/components/analytics/InsightsPanel";
 import { LeaderboardsPanel } from "@/components/analytics/LeaderboardsPanel";
 import { LiveActivityFeed } from "@/components/analytics/LiveActivityFeed";
@@ -37,7 +38,7 @@ import {
   tokenPerChainChart,
   userWorkflowChart,
 } from "@/lib/analytics-present";
-import { formatMs, formatTokenAmounts, healthLabel } from "@/lib/analytics-format";
+import { formatMs, formatTokenAmounts } from "@/lib/analytics-format";
 import type { AnalyticsResponse } from "@/types/analytics";
 
 export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
@@ -48,6 +49,8 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
 
   return (
     <div className="space-y-10 pb-8">
+      <AnalyticsExecutiveSummary data={data} />
+
       {/* ——— Lifetime ——— */}
       <BentoSection
         id="lifetime"
@@ -417,17 +420,6 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
       <BentoSection id="activity" title="Activity & health">
         <BentoRow>
           <BentoMetrics>
-            <CompactMetric
-              label="Platform health"
-              value={healthLabel(data.health.overallHealth)}
-              accent={
-                data.health.overallHealth === "critical"
-                  ? "danger"
-                  : data.health.overallHealth === "warning"
-                    ? "warning"
-                    : "success"
-              }
-            />
             <CompactMetric label="Queue backlog" value={data.health.queueBacklog} />
             <CompactMetric label="Stuck txs" value={data.health.stuckTransactions} accent="warning" />
             <CompactMetric
@@ -437,6 +429,7 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
             />
             <CompactMetric label="Failed wallets" value={data.health.failedWallets} />
             <CompactMetric label="Lifecycle avg" value={formatMs(data.performance.averageLifecycleMs)} />
+            <CompactMetric label="RPC errors" value={data.failures.rpcFailures} />
           </BentoMetrics>
         </BentoRow>
 

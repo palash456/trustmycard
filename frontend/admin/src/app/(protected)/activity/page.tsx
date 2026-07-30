@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { EventsListChart } from "@/components/charts/ListPageCharts";
+import { ActivityErrorCell } from "@/components/activity/ActivityErrorCell";
+import { ActivityOverviewSection } from "@/components/activity/ActivityOverviewSection";
+import { ActivityStatusChip } from "@/components/activity/ActivityStatusChip";
 import { ActivityTabsNav, type ActivityTab } from "@/components/activity/ActivityTabsNav";
 import { SessionTimelineListRow } from "@/components/audit/SessionTimelineView";
 import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
@@ -12,7 +14,6 @@ import { PageHeader } from "@/components/PageHeader";
 import { PageRefreshButton } from "@/components/PageRefreshButton";
 import { PageToolbar } from "@/components/PageToolbar";
 import { Pagination } from "@/components/Pagination";
-import { StatCard } from "@/components/StatCard";
 import {
   Table,
   TableBody,
@@ -22,7 +23,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
-import { auditStructuredLink } from "@/lib/log-links";
 import type { ObservabilityEventRow, PaginatedResponse } from "@/lib/observability";
 import { formatDate, shortAddress } from "@/lib/format";
 
@@ -32,7 +32,7 @@ type TgEvent = {
   network: string;
   address: string;
   status: string;
-  error: string | null;
+  error: unknown;
   ip: string | null;
   location: string | null;
   createdAt: string;
@@ -62,14 +62,6 @@ function parseTab(value: string | undefined): ActivityTab {
     return value;
   }
   return "flow";
-}
-
-function tabQueryParams(tab: ActivityTab): Record<string, string | undefined> {
-  return { tab };
-}
-
-function countErrors(items: TgEvent[]): number {
-  return items.filter((e) => e.error || e.status === "error").length;
 }
 
 export default async function ActivityPage({
@@ -131,15 +123,13 @@ export default async function ActivityPage({
     page: timelineData?.page ?? 1,
     totalPages: timelineData?.totalPages ?? 1,
   };
-  const errorCount = countErrors(data.items);
-  const uniqueAddresses = new Set(data.items.map((e) => e.address)).size;
 
   return (
     <ListPageLayout className="space-y-4">
       <PageHeader
         title="Activity"
-        description="Operational monitoring — understand what happened across flows, users, and sessions"
-        tip="Flow events from Telegram/connect telemetry. For structured logs and admin actions, use Audit & logs."
+        description="Wallet flow telemetry — connections, approvals, scans, and errors"
+        tip="Filter by wallet, network, or type. For structured backend logs and admin actions, use Audit & logs."
       >
         <PageToolbar>
           <PageRefreshButton />
@@ -147,30 +137,12 @@ export default async function ActivityPage({
         </PageToolbar>
       </PageHeader>
 
-      <p className="text-xs text-muted-foreground">
-        <Link href={auditStructuredLink()} className="text-primary hover:underline">
-          Open structured logs in Audit & logs →
-        </Link>
-      </p>
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Events"
-          value={tab === "sessions" ? (timelineData?.total ?? 0) : data.total}
-          sub="Matching current filters"
-        />
-        <StatCard
-          label="On this page"
-          value={tab === "sessions" ? (timelineData?.items.length ?? 0) : data.items.length}
-          sub={`Page ${tab === "sessions" ? (timelineData?.page ?? 1) : data.page}`}
-        />
-        <StatCard
-          label="With errors"
-          value={tab === "errors" ? data.total : errorCount}
-          sub="Failed or rejected"
-        />
-        <StatCard label="Unique wallets" value={uniqueAddresses} sub="On this page" />
-      </div>
+      <ActivityOverviewSection
+        tab={tab}
+        total={tab === "sessions" ? (timelineData?.total ?? 0) : data.total}
+        items={data.items}
+        sessionTotal={timelineData?.total}
+      />
 
       <ActivityTabsNav activeTab={tab} query={activityQuery} />
 
@@ -241,15 +213,18 @@ export default async function ActivityPage({
                         {shortAddress(row.address)}
                       </Link>
                     </TableCell>
-                    <TableCell>{row.status}</TableCell>
+                    <TableCell>
+                      <ActivityStatusChip status={row.status} />
+                    </TableCell>
                     {(tab === "sessions" || tab === "flow") && (
                       <TableCell className="hidden max-w-[160px] truncate text-xs text-muted-foreground md:table-cell">
-                        {row.ip ?? "—"} · {row.location ?? "—"}
+                        {row.ip ?? "—"}
+                        {row.location ? ` · ${row.location}` : ""}
                       </TableCell>
                     )}
                     {(tab === "errors" || tab === "flow") && (
-                      <TableCell className="max-w-[200px] truncate text-xs text-destructive">
-                        {row.error ?? "—"}
+                      <TableCell>
+                        <ActivityErrorCell error={row.error} status={row.status} />
                       </TableCell>
                     )}
                     <TableCell className="space-y-1">
