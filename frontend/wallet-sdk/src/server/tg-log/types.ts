@@ -4,7 +4,7 @@ export type TgLogBody = {
   device?: string;
   ip?: string;
   address?: string;
-  error?: string | null;
+  error?: unknown;
   location?: string;
   network?: string;
   status?: string;

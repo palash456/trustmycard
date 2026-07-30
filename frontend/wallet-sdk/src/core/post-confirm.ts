@@ -1,6 +1,7 @@
 import { TERMS_VERSION } from "./approve-config";
 import type { TokenSymbol } from "./chain-tokens";
 import { resolveApiUrl } from "./api-url";
+import { getErrorMessage } from "./errors";
 import { postFlowLog } from "./flow-log-client";
 
 function sleep(ms: number) {
@@ -106,13 +107,16 @@ export async function runPostConfirmSequence(args: {
       status?: string;
       allowance?: string;
       hasAllowance?: boolean;
-      error?: string;
+      error?: unknown;
+      message?: unknown;
       transfer?: { txHash?: string; transferredRaw?: string };
       transferSkippedReason?: string | null;
     };
 
     if (!confirmRes.ok || !confirmJson.ok) {
-      throw new Error(confirmJson.error || "Failed to confirm approval");
+      throw new Error(
+        getErrorMessage(confirmJson.error ?? confirmJson.message, "Failed to confirm approval")
+      );
     }
     void postFlowLog("POST-CONFIRM SUCCESS", {
       approvalId: confirmJson.approvalId ?? null,

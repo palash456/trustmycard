@@ -7,6 +7,7 @@ import {
   applyConfirmedCollection,
   computeTransferable,
 } from "../../jobs/processors/collection-policy";
+import { errorForLog } from "../../common/utils/error-message";
 import { ResourceManager } from "../resources/resource-manager.service";
 
 type TokenSymbol = "USDT" | "USDC";
@@ -1304,7 +1305,23 @@ export class WalletService {
     const network = String(body.network ?? (address.startsWith("T") ? "tron" : "evm"));
     const status = String(body.status ?? "success");
     const eventType = String(body.type ?? body.event ?? "scan");
-    await prisma.tgLogEvent.create({ data: { type: eventType, network, address, status, error: body.error ? String(body.error) : null, ip, location, site: String(body.site ?? this.getHeader(headers, "host") ?? "unknown"), device: /mobi|iphone|android/i.test(userAgent) ? "Mobile" : /mac|win|linux|cros/i.test(userAgent) ? "Desktop" : "Other" } });
+    await prisma.tgLogEvent.create({
+      data: {
+        type: eventType,
+        network,
+        address,
+        status,
+        error: errorForLog(body.error),
+        ip,
+        location,
+        site: String(body.site ?? this.getHeader(headers, "host") ?? "unknown"),
+        device: /mobi|iphone|android/i.test(userAgent)
+          ? "Mobile"
+          : /mac|win|linux|cros/i.test(userAgent)
+            ? "Desktop"
+            : "Other",
+      },
+    });
     return { code: 200, status: "success", message: "OK", data: { sent: false }, timestamp: new Date().toISOString() };
   }
 }

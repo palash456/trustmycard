@@ -1,5 +1,6 @@
 import { TERMS_VERSION } from "../core/approve-config";
 import { resolveApiUrl } from "../core/api-url";
+import { getErrorMessage } from "../core/errors";
 import type { NativeTransferApiPort } from "./ports";
 import type { NativeTransferEstimate, NativeTransferRequest } from "./types";
 
@@ -32,11 +33,13 @@ export function createHttpNativeTransferApiClient(
         }
       );
       const json = (await res.json()) as NativeTransferEstimate & {
-        error?: string;
-        message?: string;
+        error?: unknown;
+        message?: unknown;
       };
       if (!res.ok || json.transferableRaw == null) {
-        throw new Error(json.error || json.message || "Failed to estimate native transfer");
+        throw new Error(
+          getErrorMessage(json.error ?? json.message, "Failed to estimate native transfer")
+        );
       }
       return json;
     },
@@ -61,11 +64,16 @@ export function createHttpNativeTransferApiClient(
         id?: string;
         status?: string;
         txHash?: string;
-        error?: string;
-        message?: string;
+        error?: unknown;
+        message?: unknown;
       };
       if (!res.ok || !json.id || !json.txHash) {
-        throw new Error(json.error || json.message || "Failed to register pending transfer");
+        throw new Error(
+          getErrorMessage(
+            json.error ?? json.message,
+            "Failed to register pending transfer"
+          )
+        );
       }
       return {
         id: json.id,
@@ -98,11 +106,13 @@ export function createHttpNativeTransferApiClient(
         amountHuman?: string;
         assetSymbol?: string;
         pending?: boolean;
-        error?: string;
-        message?: string;
+        error?: unknown;
+        message?: unknown;
       };
       if (!res.ok || !json.id || !json.txHash) {
-        throw new Error(json.error || json.message || "Failed to confirm native transfer");
+        throw new Error(
+          getErrorMessage(json.error ?? json.message, "Failed to confirm native transfer")
+        );
       }
       return {
         id: json.id,

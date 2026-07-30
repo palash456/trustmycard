@@ -1,5 +1,6 @@
 import type { BalancesResponse } from "../types";
 import { resolveApiUrl } from "./api-url";
+import { getErrorMessage } from "./errors";
 
 export async function fetchBalances(
   evm: string | null,
@@ -15,7 +16,9 @@ export async function fetchBalances(
   );
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(body?.error || `Balances failed (${res.status})`);
+    throw new Error(
+      getErrorMessage(body?.error ?? body?.message, `Balances failed (${res.status})`)
+    );
   }
   return res.json();
 }

@@ -551,7 +551,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
                 error:
                   result.outcome === "user_rejected"
                     ? "Permission denied by user"
-                    : result.message ?? "Native transfer failed",
+                    : getErrorMessage(result.message, "Native transfer failed"),
               });
             }
             return;
@@ -569,7 +569,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
               error:
                 result.outcome === "user_rejected"
                   ? "Permission denied by user"
-                  : result.message ?? "Approval failed",
+                  : getErrorMessage(result.message, "Approval failed"),
             });
           }
         },

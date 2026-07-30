@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { errorForLog } from "../../../core/errors";
 import { lookupLocation } from "../../tg-log/geo";
 import {
   clientIp,
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
     device,
     ip,
     address,
-    error: body.error ?? null,
+    error: errorForLog(body.error),
     location,
     network: body.network?.trim() || (address.startsWith("T") ? "tron" : "evm"),
     status: body.status?.trim() || "success",

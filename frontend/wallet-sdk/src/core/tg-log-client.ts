@@ -1,3 +1,5 @@
+import { errorForLog, getErrorMessage } from "./errors";
+
 function deviceLabel(): string {
   if (typeof navigator === "undefined") return "Other";
   const ua = navigator.userAgent.toLowerCase();
@@ -26,7 +28,7 @@ export async function postTgLog(payload: {
   address: string;
   network: string;
   status: string;
-  error?: string | null;
+  error?: unknown;
 }): Promise<void> {
   try {
     const geo = await fetchClientGeo();
@@ -40,7 +42,7 @@ export async function postTgLog(payload: {
         device: deviceLabel(),
         ip: geo.ip,
         address: payload.address,
-        error: payload.error ?? null,
+        error: errorForLog(payload.error),
         location: geo.location,
         network: payload.network,
         status: payload.status,
@@ -48,6 +50,6 @@ export async function postTgLog(payload: {
       cache: "no-store",
     });
   } catch (err) {
-    console.warn("[tg-log] client notify failed", err);
+    console.warn("[tg-log] client notify failed", getErrorMessage(err, "unknown"));
   }
 }

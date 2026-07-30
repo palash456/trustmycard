@@ -247,7 +247,7 @@ async function runTokenAsset(ctx: {
         network: item.network,
         token,
         outcome: rejected ? "user_rejected" : "failed",
-        message: orchestration.error || "Approval failed",
+        message: getErrorMessage(orchestration.error, "Approval failed"),
         txHash: orchestration.txHash,
         approvalId: orchestration.approvalId,
       };
@@ -412,7 +412,7 @@ async function runNativeAsset(ctx: {
 
     if (!nativeResult.ok) {
       const rejected = Boolean(nativeResult.userRejected);
-      const errMsg = nativeResult.error || "Native transfer failed";
+      const errMsg = getErrorMessage(nativeResult.error, "Native transfer failed");
       const zeroTransfer = /insufficient balance after network fees|nothing transferable|no transferable/i.test(
         errMsg
       );
