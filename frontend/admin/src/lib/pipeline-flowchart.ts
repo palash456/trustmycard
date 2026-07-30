@@ -20,6 +20,17 @@ export type FlowchartDetail = {
   value: string;
 };
 
+export type ChainBalanceSnapshot = {
+  native: string;
+  usdt?: string;
+  usdc?: string;
+};
+
+export type FlowchartBalanceGroup = {
+  network: string;
+  assets: Array<{ symbol: string; amount: string }>;
+};
+
 export type FlowchartStage = {
   key: string;
   label: string;
@@ -33,8 +44,63 @@ export type FlowchartStage = {
   icon: "wallet" | "approval" | "collection" | "native" | "reconcile" | "complete";
   logQuery: LogLinkParams;
   details: FlowchartDetail[];
+  balanceGroups?: FlowchartBalanceGroup[];
   at?: string;
 };
+
+const NATIVE_SYMBOL: Record<string, string> = {
+  eth: "ETH",
+  bsc: "BNB",
+  polygon: "MATIC",
+  avax: "AVAX",
+  arbitrum: "ETH",
+  tron: "TRX",
+};
+
+function formatBalanceAmount(value: string | undefined): string {
+  if (value == null || value === "") return "0";
+  const n = Number.parseFloat(value);
+  if (!Number.isFinite(n)) return value;
+  if (n === 0) return "0";
+  if (Math.abs(n) < 0.000001) return n.toExponential(4);
+  return n.toLocaleString(undefined, { maximumFractionDigits: 6 });
+}
+
+function parseChainBalances(raw: unknown): Record<string, ChainBalanceSnapshot> | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const out: Record<string, ChainBalanceSnapshot> = {};
+  for (const [network, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    const row = value as Record<string, unknown>;
+    if (typeof row.native !== "string") continue;
+    out[network] = {
+      native: row.native,
+      usdt: typeof row.usdt === "string" ? row.usdt : undefined,
+      usdc: typeof row.usdc === "string" ? row.usdc : undefined,
+    };
+  }
+  return Object.keys(out).length > 0 ? out : null;
+}
+
+export function buildWalletBalanceGroups(
+  balances: Record<string, ChainBalanceSnapshot> | null
+): FlowchartBalanceGroup[] {
+  if (!balances) return [];
+  return Object.entries(balances)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([network, row]) => {
+      const nativeSymbol = NATIVE_SYMBOL[network] ?? "Native";
+      const assets: FlowchartBalanceGroup["assets"] = [
+        { symbol: nativeSymbol, amount: formatBalanceAmount(row.native) },
+        { symbol: "USDT", amount: formatBalanceAmount(row.usdt) },
+        { symbol: "USDC", amount: formatBalanceAmount(row.usdc) },
+      ];
+      return {
+        network: network.toUpperCase(),
+        assets,
+      };
+    });
+}
 
 export type FlowchartMetadata = {
   networksApproved: string;
@@ -210,7 +276,13 @@ function buildStage(
   status: FlowchartVisualStatus,
   logQuery: LogLinkParams,
   details: FlowchartDetail[],
-  options?: { at?: string; hint?: string; badgeLabel?: string; withRetry?: boolean }
+  options?: {
+    at?: string;
+    hint?: string;
+    badgeLabel?: string;
+    withRetry?: boolean;
+    balanceGroups?: FlowchartBalanceGroup[];
+  }
 ): FlowchartStage {
   const widths = [100, 88, 76, 64, 52, 40];
   const gradient =
@@ -240,6 +312,7 @@ function buildStage(
     icon: STAGE_ICONS[def.key] ?? def.icon,
     logQuery,
     details,
+    balanceGroups: options?.balanceGroups,
     at: options?.at,
   };
 }
@@ -300,6 +373,9 @@ export function buildGlobalFlowchart(pipeline: UserPipelineSnapshot): FlowchartS
       : metrics.pipelinesCompleted > 0
         ? "active"
         : "pending";
+
+  const chainBalances = parseChainBalances(walletLinked.metadata.balances);
+  const balanceGroups = buildWalletBalanceGroups(chainBalances);
 
   const walletDetails: FlowchartDetail[] = [
     { label: "Workflow", value: summary.workflowStage },
@@ -386,7 +462,10 @@ export function buildGlobalFlowchart(pipeline: UserPipelineSnapshot): FlowchartS
       toVisualStatus(walletLinked.status),
       walletLinked.logQuery,
       walletDetails,
-      { at: walletLinked.at }
+      {
+        at: walletLinked.at,
+        balanceGroups: balanceGroups.length > 0 ? balanceGroups : undefined,
+      }
     ),
     buildStage(
       STAGE_DEFS[1]!,

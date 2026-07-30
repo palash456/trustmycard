@@ -158,8 +158,8 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-5">
-        <div className="xl:col-span-3">
+      <div className="grid gap-6 xl:grid-cols-12">
+        <div className="xl:col-span-8">
           <DashboardCharts
             approvals={c.approvals}
             transfers={c.transfers}
@@ -167,7 +167,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
           />
         </div>
 
-        <Card className="border-0 xl:col-span-2">
+        <Card className="border-0 xl:col-span-4">
           <CardHeader>
             <CardTitle className="font-brand text-base">Collector & queue</CardTitle>
             <CardDescription>Live pipeline workload and automation state</CardDescription>

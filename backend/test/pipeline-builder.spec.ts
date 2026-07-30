@@ -184,3 +184,34 @@ test("pipeline builder only includes detected assets with activity", async () =>
   assert.equal(snapshot.summary.workflowStage, "approved");
   assert.equal(snapshot.summary.isComplete, false);
 });
+
+test("pipeline builder includes full chain balances on wallet linked stage", async () => {
+  const detail = {
+    address: "0xabc",
+    summary: {
+      eventCount: 2,
+      networksUsed: ["eth", "tron"],
+      workflowStage: "connected",
+      healthStatus: "healthy",
+      firstSeen: new Date("2026-01-01T00:00:00Z"),
+      lastActivity: new Date("2026-01-02T00:00:00Z"),
+      approvedChains: [],
+    },
+    balancesHint: { evmAddress: "0xabc", tronAddress: null },
+    approvalHistory: [],
+    transfers: [],
+    nativeTransfers: [],
+    events: [{ createdAt: new Date("2026-01-01T00:00:00Z") }],
+  };
+
+  const balances = {
+    eth: { native: "1.25", usdt: "100.5", usdc: "0" },
+    tron: { native: "42", usdt: "250", usdc: "10" },
+  };
+
+  const builder = new PipelineBuilderService(mockAggregation(detail, balances));
+  const snapshot = await builder.buildPipeline("0xabc");
+
+  assert.deepEqual(snapshot.walletLinked.metadata.balanceNetworks, ["eth", "tron"]);
+  assert.deepEqual(snapshot.walletLinked.metadata.balances, balances);
+});

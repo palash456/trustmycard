@@ -187,6 +187,7 @@ export class PipelineBuilderService {
         evmAddress: detail.balancesHint.evmAddress,
         tronAddress: detail.balancesHint.tronAddress,
         balanceNetworks: Object.keys(balances),
+        balances,
       },
       logQuery: {
         walletAddress,

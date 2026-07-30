@@ -1,6 +1,7 @@
 /** Demo fixtures — ~1 month of fictional app usage across all admin pages. */
 
 import { buildDemoActivity, buildDemoAnalytics } from "./analytics-fixture";
+import { buildDemoPipelineSnapshot, demoBalances } from "./pipeline-fixture";
 
 function daysAgo(n: number, hour = 12): string {
   const d = new Date();
@@ -108,7 +109,14 @@ function buildEvents() {
     network: NETWORKS[i % NETWORKS.length],
     address: OWNERS[i % OWNERS.length],
     status: i % 9 === 0 ? "error" : "success",
-    error: i % 9 === 0 ? "User rejected signature" : null,
+    error:
+      i % 9 === 0
+        ? i % 18 === 0
+          ? { message: "User rejected signature", code: "ACTION_REJECTED" }
+          : i % 27 === 0
+            ? { error: { message: "RPC timeout", reason: "ETIMEDOUT" } }
+            : "User rejected signature"
+        : null,
     ip: `203.0.${(i % 200) + 1}.${(i % 250) + 1}`,
     location: ["Singapore, SG", "Berlin, DE", "Austin, US", "Lagos, NG", "Tokyo, JP"][
       i % 5
@@ -195,8 +203,9 @@ function buildUsers() {
           .map((a) => a.network)
       ),
     ];
-    const workflowStage = WORKFLOW_STAGES[i % WORKFLOW_STAGES.length];
-    const healthStatus = HEALTH_STATUSES[i % HEALTH_STATUSES.length];
+    const workflowStage =
+      i === 0 ? "collecting" : WORKFLOW_STAGES[i % WORKFLOW_STAGES.length];
+    const healthStatus = i === 0 ? "healthy" : HEALTH_STATUSES[i % HEALTH_STATUSES.length];
     const collectableRemaining =
       latestApproval &&
       (latestApproval.status === "ACTIVE" || latestApproval.status === "PARTIALLY_USED")
@@ -289,6 +298,7 @@ export const demoFixtures: Record<string, unknown> = {
         pending: 9,
         failed: 11,
         broadcast: 12,
+        prepared: 6,
       },
     },
     nativeTransfers: { pending: 14, confirmed: 68, failed: 8 },
@@ -304,6 +314,30 @@ export const demoFixtures: Record<string, unknown> = {
         errorMessage: "User rejected transaction",
         txHash: null,
         sessionId: "auth-demo-1",
+      },
+      {
+        id: "obs-2",
+        ts: daysAgo(0, 10),
+        module: "wallet-service",
+        operation: "transfer.reconcile",
+        message: "Transfer reconcile failed",
+        walletAddress: users[2]?.address ?? users[0]?.address,
+        network: "bsc",
+        errorMessage: "Receipt not found after 120 attempts",
+        txHash: txHash(42, "rc"),
+        sessionId: null,
+      },
+      {
+        id: "obs-3",
+        ts: daysAgo(1, 14),
+        module: "observability",
+        operation: "persist",
+        message: "Failed to persist observability event",
+        walletAddress: null,
+        network: null,
+        errorMessage: "Database connection timeout",
+        txHash: null,
+        sessionId: null,
       },
     ],
     recentFailures: {
@@ -452,12 +486,39 @@ export const demoFixtures: Record<string, unknown> = {
   "/admin/metrics": {
     ts: now,
     counters: [
-      { name: "observability.persist.failed", labels: {}, value: 0 },
-      { name: "collector.ticks.total", labels: {}, value: 142 },
-      { name: "logs.sampled.suppressed", labels: {}, value: 88 },
+      { name: "observability.persist.failed", labels: {}, value: 2 },
+      { name: "collector.ticks.total", labels: {}, value: 1420 },
+      { name: "logs.sampled.suppressed", labels: {}, value: 880 },
+      { name: "transfer.confirmed", labels: { network: "eth" }, value: 84 },
+      { name: "transfer.confirmed", labels: { network: "bsc" }, value: 62 },
+      { name: "transfer.failed", labels: { network: "pol" }, value: 3 },
+      { name: "native.reconcile.attempts", labels: {}, value: 256 },
     ],
-    histograms: [],
-    gauges: [],
+    histograms: [
+      {
+        name: "transfer.duration_ms",
+        labels: { network: "eth" },
+        count: 84,
+        sum: 420000,
+        min: 1200,
+        max: 45000,
+        avg: 5000,
+      },
+      {
+        name: "approval.prepare_ms",
+        labels: {},
+        count: 120,
+        sum: 96000,
+        min: 200,
+        max: 8000,
+        avg: 800,
+      },
+    ],
+    gauges: [
+      { name: "collector.queue.due", labels: {}, value: 17 },
+      { name: "collector.queue.leased", labels: {}, value: 3 },
+      { name: "sse.connections", labels: {}, value: 2 },
+    ],
   },
 };
 
@@ -545,18 +606,28 @@ export function getDemoFixture<T>(path: string): T {
           if (actor && !includes(row.actor, actor.trim())) return false;
           return true;
         });
-      case "/admin/tg-events":
-        return (all as typeof events).filter((row) => {
+      case "/admin/tg-events": {
+        let rows = all as typeof events;
+        const tab = params.get("tab");
+        if (tab === "user") {
+          rows = rows.filter((row) => ["approve", "native_transfer", "scan"].includes(row.type));
+        } else if (tab === "connections") {
+          rows = rows.filter((row) => row.type === "connect");
+        } else if (tab === "errors") {
+          rows = rows.filter((row) => row.status === "error");
+        }
+        return rows.filter((row) => {
           const type = params.get("type");
           const network = params.get("network");
           const status = params.get("status");
           const address = params.get("address");
           if (type && row.type !== type.trim()) return false;
           if (network && row.network !== network.trim().toLowerCase()) return false;
-          if (status && row.status !== status.trim()) return false;
+          if (status && tab !== "errors" && row.status !== status.trim()) return false;
           if (address && !includes(row.address, address.trim())) return false;
           return true;
         });
+      }
       default:
         return all;
     }
@@ -628,14 +699,64 @@ export function getDemoFixture<T>(path: string): T {
         durationMs: kind === "timeline" ? 12400 : null,
         payload: null,
       },
+      {
+        id: "obs-demo-2",
+        kind,
+        ts: daysAgo(1, 11),
+        eventId: "evt-2",
+        sessionId: "auth-demo-2",
+        traceId: "flow-demo-2",
+        correlationId: "flow-demo-2",
+        walletAddress: users[2]?.address ?? users[0]?.address,
+        network: "bsc",
+        module: kind === "timeline" ? "authorization" : "wallet-service",
+        operation: kind === "timeline" ? "session_timeline" : "transfer.reconcile",
+        stage: kind === "timeline" ? "FAILED" : "ERROR",
+        status: kind === "timeline" ? "failed" : "error",
+        level: "error",
+        message: kind === "timeline" ? "Session failed at sign step" : "Transfer reconcile error",
+        errorMessage: "User rejected transaction",
+        durationMs: kind === "timeline" ? 8200 : 450,
+        payload: null,
+      },
+      {
+        id: "obs-demo-3",
+        kind,
+        ts: daysAgo(2, 9),
+        eventId: "evt-3",
+        sessionId: "auth-demo-3",
+        traceId: "flow-demo-3",
+        correlationId: "flow-demo-3",
+        walletAddress: users[5]?.address ?? users[0]?.address,
+        network: "tron",
+        module: kind === "timeline" ? "authorization" : "connect",
+        operation: kind === "timeline" ? "session_timeline" : "approve",
+        stage: kind === "timeline" ? "COMPLETED" : "APPROVAL CONFIRMED",
+        status: "success",
+        level: "info",
+        message: kind === "timeline" ? "Tron approval session complete" : "Approval confirmed",
+        errorMessage: null,
+        durationMs: kind === "timeline" ? 18600 : null,
+        payload: null,
+      },
     ];
+    const walletFilter = params.get("walletAddress")?.trim().toLowerCase();
+    const filtered = walletFilter
+      ? demoEvents.filter((e) => e.walletAddress?.toLowerCase().includes(walletFilter))
+      : demoEvents;
     return {
-      items: demoEvents,
-      total: demoEvents.length,
+      items: filtered,
+      total: filtered.length,
       page: 1,
       limit: 25,
       totalPages: 1,
     } as T;
+  }
+
+  const userPipeline = base.match(/\/admin\/users\/([^/]+)\/pipeline$/);
+  if (userPipeline) {
+    const address = decodeURIComponent(userPipeline[1]);
+    return buildDemoPipelineSnapshot(address, users) as T;
   }
 
   const sessionTimeline = base.match(/\/admin\/sessions\/([^/]+)\/timeline$/);
@@ -773,16 +894,7 @@ export function getDemoFixture<T>(path: string): T {
   const userBalances = base.match(/\/admin\/users\/([^/]+)\/balances$/);
   if (userBalances) {
     const address = decodeURIComponent(userBalances[1]);
-    const isTron = address.startsWith("T");
-    return {
-      ...(isTron
-        ? { tron: { native: "450.2", usdt: "200.00", usdc: "15.00" } }
-        : {
-            eth: { native: "0.042", usdt: "125.50", usdc: "0" },
-            bsc: { native: "0.18", usdt: "340.00", usdc: "50.25" },
-            pol: { native: "12.5", usdt: "89.00", usdc: "0" },
-          }),
-    } as T;
+    return demoBalances(address) as T;
   }
 
   const usr = base.match(/\/admin\/users\/([^/]+)$/);

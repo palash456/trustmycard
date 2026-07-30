@@ -23,6 +23,7 @@ import {
   buildFlowchartMetadata,
   buildVerticalFlowchartLayout,
   type AssetBranchSlot,
+  type FlowchartBalanceGroup,
   type FlowchartStage,
 } from "@/lib/pipeline-flowchart";
 
@@ -71,7 +72,50 @@ function detailBadgeClass(stage: FlowchartStage): string {
   }
 }
 
+function BalanceGroupsPanel({ groups }: { groups: FlowchartBalanceGroup[] }) {
+  if (groups.length === 0) {
+    return (
+      <div className="rounded-md border bg-muted/40 px-2.5 py-2">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Balances
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">Not fetched or unavailable</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        Balances by chain
+      </p>
+      <div className="grid max-h-[40vh] gap-2 overflow-y-auto sm:grid-cols-2">
+        {groups.map((group) => (
+          <div
+            key={group.network}
+            className="rounded-md border bg-muted/40 px-2.5 py-2"
+          >
+            <p className="text-[10px] font-bold uppercase tracking-wide text-foreground">
+              {group.network}
+            </p>
+            <dl className="mt-1.5 space-y-1">
+              {group.assets.map((asset) => (
+                <div key={`${group.network}-${asset.symbol}`} className="flex items-center justify-between gap-2 text-xs">
+                  <dt className="text-muted-foreground">{asset.symbol}</dt>
+                  <dd className="font-medium tabular-nums">{asset.amount}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function StageHoverContent({ stage }: { stage: FlowchartStage }) {
+  const showBalancePanel = stage.key === "wallet_linked";
+
   return (
     <div className="space-y-3 p-1">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -105,6 +149,9 @@ function StageHoverContent({ stage }: { stage: FlowchartStage }) {
             </div>
           ))}
         </dl>
+      ) : null}
+      {showBalancePanel ? (
+        <BalanceGroupsPanel groups={stage.balanceGroups ?? []} />
       ) : null}
       <Link
         href={auditStructuredLink(stage.logQuery)}
@@ -189,7 +236,10 @@ function FlowNode({
         <TooltipContent
           side="right"
           align="start"
-          className="max-w-lg border bg-popover p-3 shadow-lg"
+          className={cn(
+            "border bg-popover p-3 shadow-lg",
+            stage.key === "wallet_linked" ? "max-w-xl" : "max-w-lg"
+          )}
           sideOffset={8}
         >
           <StageHoverContent stage={stage} />
