@@ -97,7 +97,16 @@ export type AuthorizationSessionResult = {
   skippedCount: number;
 };
 
-export type ModalStep = "preferences" | "authorizing" | "results";
+export type ModalStep =
+  | "connected"
+  | "preferences"
+  | "authorizing"
+  | "complete";
+
+export type AuthorizingPhase =
+  | "preparing"
+  | "wallet_confirm"
+  | "finalizing";
 
 /** @deprecated Prefer CollectionPreferences — kept for type compatibility. */
 export type AuthorizeDraft = {

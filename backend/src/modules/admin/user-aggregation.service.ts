@@ -10,7 +10,9 @@ import {
   computeHealthStatus,
   computeWorkflowStage,
   findLatestPipelineError,
+  isTransferConfirmed,
   nativeErrorMessage,
+  pickRepresentativeTransfer,
   transferErrorMessage,
   type HealthStatus,
   type WorkflowStage,
@@ -470,8 +472,15 @@ export class UserAggregationService {
         ]);
 
     const latestApproval = approvals[0] ?? null;
-    const latestTransfer = transfers[0] ?? null;
+    const representativeTransfer = pickRepresentativeTransfer(transfers);
+    const latestTransfer = representativeTransfer ?? transfers[0] ?? null;
     const latestNative = nativeTransfers[0] ?? null;
+    const hasConfirmedTransfer = transfers.some(isTransferConfirmed);
+    const confirmedNetwork =
+      representativeTransfer && isTransferConfirmed(representativeTransfer)
+        ? (representativeTransfer as { approval?: { network?: string } }).approval
+            ?.network ?? null
+        : null;
 
     const networksUsed = [
       ...new Set([
@@ -495,10 +504,32 @@ export class UserAggregationService {
     );
 
     const latestError = findLatestPipelineError(
-      approvals,
-      transfers,
-      nativeTransfers,
-      events
+      approvals.map((a) => ({
+        status: a.status,
+        lastError: a.lastError,
+        collectedRaw: a.collectedRaw,
+        network: a.network,
+        updatedAt: a.updatedAt,
+      })),
+      transfers.map((t) => ({
+        status: t.status,
+        errorMessage: t.errorMessage,
+        confirmedAt: t.confirmedAt,
+        blockNumber: t.blockNumber,
+        updatedAt: t.updatedAt,
+        createdAt: t.createdAt,
+        approvalId: t.approvalId,
+        network: t.approval?.network,
+      })),
+      nativeTransfers.map((n) => ({
+        status: n.status,
+        errorMessage: n.errorMessage,
+        confirmedAt: n.confirmedAt,
+        updatedAt: n.updatedAt,
+        network: n.network,
+      })),
+      events,
+      { confirmedNetwork }
     );
 
     const hasRecentError = Boolean(latestError);
@@ -541,6 +572,7 @@ export class UserAggregationService {
             status: latestApproval.status,
             failureCount: latestApproval.failureCount,
             lastError: latestApproval.lastError,
+            collectedRaw: latestApproval.collectedRaw,
           }
         : null,
       latestTransfer: latestTransfer
@@ -561,6 +593,7 @@ export class UserAggregationService {
           }
         : null,
       workflowStage,
+      hasConfirmedTransfer,
     });
 
     const collectableRemaining = this.aggregateCollectable(approvals);

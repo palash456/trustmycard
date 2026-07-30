@@ -5,6 +5,7 @@ import {
   computeWorkflowStage,
   findLatestPipelineError,
   isTransferConfirmed,
+  pickRepresentativeTransfer,
 } from "../src/modules/admin/user-pipeline-workflow";
 
 test("confirmed transfer with stale errorMessage does not force failed workflow", () => {
@@ -117,4 +118,64 @@ test("failed transfer still marks workflow failed when error is active", () => {
     hasRecentError,
   });
   assert.equal(stage, "failed");
+});
+
+test("confirmed transfer on avax ignores stale bsc collector errors", () => {
+  const at = new Date("2026-07-30T16:21:12Z");
+  const confirmed = {
+    status: "confirmed" as const,
+    errorMessage: null,
+    confirmedAt: at,
+    blockNumber: 123,
+    updatedAt: at,
+    createdAt: at,
+    approvalId: "avax-usdt",
+    network: "avax",
+  };
+  const failedBsc = {
+    status: "failed" as const,
+    errorMessage: "cannot estimate gas",
+    confirmedAt: null,
+    blockNumber: null,
+    updatedAt: new Date("2026-07-30T18:00:07Z"),
+    createdAt: new Date("2026-07-30T18:00:07Z"),
+    approvalId: "bsc-usdc",
+    network: "bsc",
+  };
+  const approvals = [
+    {
+      status: "ACTIVE" as const,
+      lastError: "cannot estimate gas",
+      collectedRaw: "0",
+      network: "bsc",
+      updatedAt: new Date("2026-07-30T18:00:07Z"),
+    },
+    {
+      status: "ACTIVE" as const,
+      lastError: null,
+      collectedRaw: "1958147",
+      network: "avax",
+      updatedAt: at,
+    },
+  ];
+  const latestError = findLatestPipelineError(
+    approvals,
+    [failedBsc, confirmed],
+    [],
+    [],
+    { confirmedNetwork: "avax" }
+  );
+  assert.equal(latestError, null);
+
+  const rep = pickRepresentativeTransfer([failedBsc, confirmed]);
+  assert.equal(rep?.status, "confirmed");
+
+  const health = computeHealthStatus({
+    latestApproval: { ...approvals[1]!, failureCount: 0 },
+    latestTransfer: rep,
+    latestNative: null,
+    workflowStage: "completed",
+    hasConfirmedTransfer: true,
+  });
+  assert.equal(health, "healthy");
 });

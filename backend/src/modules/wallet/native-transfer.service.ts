@@ -305,7 +305,7 @@ export class NativeTransferService {
         ),
       ]);
       maxPriorityFeePerGas = parseHexBigInt(priorityHex);
-      if (maxPriorityFeePerGas === BigInt(0)) {
+      if (maxPriorityFeePerGas < BigInt(1_000_000_000)) {
         maxPriorityFeePerGas = BigInt(1_500_000_000);
       }
       const baseFee = parseHexBigInt(latestBlock?.baseFeePerGas);

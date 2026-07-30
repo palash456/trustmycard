@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { formatPipelineErrorMessage } from "@/lib/format-pipeline-error";
 import { ChevronLeft, ExternalLink } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
 import { DetailList, DetailRow } from "@/components/DetailList";
@@ -234,7 +234,9 @@ export default async function UserDetailPage({
                 <DetailRow label="Reconciliation">{s.reconciliationStatus ?? "—"}</DetailRow>
                 {s.latestError ? (
                   <DetailRow label="Latest error">
-                    <span className="text-destructive">{s.latestError}</span>
+                    <span className="text-destructive">
+                      {formatPipelineErrorMessage(s.latestError)}
+                    </span>
                   </DetailRow>
                 ) : null}
               </DetailList>

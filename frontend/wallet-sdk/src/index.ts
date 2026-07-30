@@ -21,6 +21,7 @@ export type {
   NetworkTokenPrefs,
   AuthorizationAssetResult,
   AuthorizationSessionResult,
+  AuthorizingPhase,
   ModalStep,
 } from "./types";
 

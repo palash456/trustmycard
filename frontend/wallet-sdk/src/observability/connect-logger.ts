@@ -10,6 +10,8 @@ export function createConnectLogStep(traceId: string) {
   return (step: string, detail: Record<string, unknown> = {}) => {
     const isFailure = /FAILED|ERROR|REJECTED/i.test(step);
     const isSuccess = /SUCCESS|COMPLETE/i.test(step);
+    const isNativeSoftFailure =
+      isFailure && /NATIVE|native_transfer/i.test(step) && !/SESSION FAILED/i.test(step);
     logger
       .child({
         walletAddress:
@@ -19,13 +21,13 @@ export function createConnectLogStep(traceId: string) {
         sessionId: detail.sessionId as string | undefined,
       })
       .emit({
-        level: isFailure ? "error" : "info",
+        level: isFailure ? (isNativeSoftFailure ? "warn" : "error") : "info",
         operation: step.toLowerCase().replace(/\s+/g, "_"),
         stage: step,
         status: isFailure ? "failure" : isSuccess ? "success" : "in_progress",
         message: step,
         context: detail,
-        skipSampling: isFailure,
+        skipSampling: isFailure && !isNativeSoftFailure,
       });
 
     if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {

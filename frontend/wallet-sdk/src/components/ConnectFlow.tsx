@@ -14,6 +14,8 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
     busy,
     approving,
     showResults,
+    walletConnected,
+    linkedAddressLabel,
     error,
     networks,
     selectedKey,
@@ -22,11 +24,14 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
     preferences,
     sessionResult,
     authorizingAsset,
+    authorizingPhase,
+    authorizingProgress,
     nativeEstimates,
     spenderEvm,
     spenderTron,
     openWalletConnect,
     onSelectNetwork,
+    continueFromConnected,
     onAuthorize,
     closeResultsModal,
   } = useConnectFlow(props);
@@ -36,8 +41,10 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
       <ConnectButton
         ready={ready}
         busy={busy}
+        walletConnected={walletConnected}
         error={error}
         showResults={showResults}
+        linkedAddressLabel={linkedAddressLabel}
         onConnect={() => void openWalletConnect()}
       />
 
@@ -52,11 +59,15 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
           preferences={preferences}
           sessionResult={sessionResult}
           authorizingAsset={authorizingAsset}
+          authorizingPhase={authorizingPhase}
+          authorizingProgress={authorizingProgress}
+          linkedAddressLabel={linkedAddressLabel}
           nativeEstimates={nativeEstimates}
           spenderEvm={spenderEvm}
           spenderTron={spenderTron}
           onClose={closeResultsModal}
           onSelectNetwork={onSelectNetwork}
+          onContinueFromConnected={continueFromConnected}
           onAuthorize={onAuthorize}
         />
       ) : null}

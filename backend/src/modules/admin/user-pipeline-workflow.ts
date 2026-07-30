@@ -24,6 +24,8 @@ type TransferLike = {
 type ApprovalLike = {
   status: ApprovalStatus;
   lastError?: string | null;
+  collectedRaw?: string | null;
+  network?: string;
   updatedAt?: Date;
 };
 
@@ -32,6 +34,17 @@ type NativeLike = {
   errorMessage?: string | null;
   confirmedAt?: Date | null;
   updatedAt?: Date;
+  network?: string;
+};
+
+type TransferWithApproval = TransferLike & {
+  approvalId?: string;
+  network?: string;
+};
+
+type PipelineErrorOptions = {
+  /** When set, ignore stale collector errors from other networks after a confirmed payment. */
+  confirmedNetwork?: string | null;
 };
 
 type EventLike = {
@@ -89,21 +102,64 @@ export function nativeErrorMessage(native: NativeLike | null): string | null {
 export function approvalErrorMessage(approval: ApprovalLike | null): string | null {
   if (!approval?.lastError) return null;
   if (approval.status === "COMPLETED") return null;
+  if (approval.status === "SUPERSEDED" || approval.status === "REVOKED") return null;
+  if (approval.collectedRaw && BigInt(approval.collectedRaw) > BigInt(0)) return null;
   return approval.lastError;
+}
+
+/** Prefer the latest confirmed transfer for health/workflow when collector retries failed. */
+export function pickRepresentativeTransfer<T extends TransferLike>(
+  transfers: T[]
+): T | null {
+  if (transfers.length === 0) return null;
+  const confirmed = transfers.filter(isTransferConfirmed);
+  if (confirmed.length > 0) {
+    return confirmed.sort(
+      (a, b) =>
+        (b.updatedAt?.getTime() ?? b.confirmedAt?.getTime() ?? 0) -
+        (a.updatedAt?.getTime() ?? a.confirmedAt?.getTime() ?? 0)
+    )[0]!;
+  }
+  return transfers[0] ?? null;
+}
+
+function isSupersededFailedTransfer(
+  transfer: TransferWithApproval,
+  transfers: TransferWithApproval[]
+): boolean {
+  if (transfer.status !== "failed" || !transfer.approvalId) return false;
+  return transfers.some(
+    (other) =>
+      other.approvalId === transfer.approvalId &&
+      other !== transfer &&
+      isTransferConfirmed(other)
+  );
 }
 
 export function findLatestPipelineError(
   approvals: ApprovalLike[],
-  transfers: TransferLike[],
+  transfers: TransferWithApproval[],
   nativeTransfers: NativeLike[],
-  events: EventLike[]
+  events: EventLike[],
+  options?: PipelineErrorOptions
 ): string | null {
+  const confirmedNetwork = options?.confirmedNetwork ?? null;
   const candidates: Array<{ at: Date; message: string }> = [];
   for (const a of approvals) {
+    if (
+      confirmedNetwork &&
+      a.network &&
+      a.network !== confirmedNetwork &&
+      !(a.collectedRaw && BigInt(a.collectedRaw) > BigInt(0))
+    ) {
+      continue;
+    }
     const message = approvalErrorMessage(a);
     if (message && a.updatedAt) candidates.push({ at: a.updatedAt, message });
   }
   for (const t of transfers) {
+    if (isSupersededFailedTransfer(t, transfers)) continue;
+    if (confirmedNetwork && t.network && t.network !== confirmedNetwork) continue;
     const message = transferErrorMessage(t);
     if (message && t.updatedAt) candidates.push({ at: t.updatedAt, message });
   }
@@ -215,27 +271,45 @@ export function computeHealthStatus(args: {
     status: ApprovalStatus;
     failureCount: number;
     lastError: string | null;
+    collectedRaw?: string | null;
   } | null;
   latestTransfer: TransferLike | null;
   latestNative: NativeLike | null;
   workflowStage: WorkflowStage;
+  hasConfirmedTransfer?: boolean;
 }): HealthStatus {
-  const { latestApproval, latestTransfer, latestNative, workflowStage } = args;
+  const { latestApproval, latestTransfer, latestNative, workflowStage, hasConfirmedTransfer } =
+    args;
 
   const transferErr = transferErrorMessage(latestTransfer);
   const nativeErr = nativeErrorMessage(latestNative);
   const approvalErr = approvalErrorMessage(latestApproval);
 
+  const blockingApprovalErr = approvalErr && !hasConfirmedTransfer ? approvalErr : null;
+  const blockingTransferErr =
+    transferErr && !(hasConfirmedTransfer && latestTransfer?.status === "failed")
+      ? transferErr
+      : null;
+
   if (
     latestApproval?.status === "FAILED" ||
-    latestTransfer?.status === "failed" ||
-    latestNative?.status === "failed" ||
-    ((latestApproval?.failureCount ?? 0) > 0 && latestApproval?.status !== "COMPLETED") ||
-    approvalErr ||
-    transferErr ||
-    nativeErr
+    (latestTransfer?.status === "failed" && !hasConfirmedTransfer) ||
+    (latestNative?.status === "failed" && !hasConfirmedTransfer) ||
+    ((latestApproval?.failureCount ?? 0) > 0 &&
+      latestApproval?.status !== "COMPLETED" &&
+      blockingApprovalErr) ||
+    blockingApprovalErr ||
+    blockingTransferErr ||
+    (nativeErr && !hasConfirmedTransfer)
   ) {
     return "error";
+  }
+
+  if (
+    hasConfirmedTransfer &&
+    (approvalErr || latestTransfer?.status === "failed" || nativeErr)
+  ) {
+    return "warning";
   }
 
   if (workflowStage === "failed") return "error";

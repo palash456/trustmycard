@@ -43,9 +43,11 @@ import {
 } from "../authorization/preferences";
 import { runAuthorizationSession } from "../authorization/session";
 import { parseHumanToRaw } from "../core/chain-tokens";
+import { shortAddress } from "../core/network-meta";
 import type {
   AssetSymbol,
   AuthorizationSessionResult,
+  AuthorizingPhase,
   CollectionPreferences,
   LinkedAccounts,
   ModalStep,
@@ -75,7 +77,12 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const [networks, setNetworks] = useState<NetworkRow[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [rowStatus, setRowStatus] = useState<Record<string, RowStatus>>({});
-  const [modalStep, setModalStep] = useState<ModalStep>("preferences");
+  const [modalStep, setModalStep] = useState<ModalStep>("connected");
+  const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccounts>({
+    evm: null,
+    tron: null,
+  });
+  const [walletConnected, setWalletConnected] = useState(false);
   const [preferences, setPreferences] = useState<CollectionPreferences>({});
   const [sessionResult, setSessionResult] =
     useState<AuthorizationSessionResult | null>(null);
@@ -83,6 +90,12 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     network: string;
     asset: AssetSymbol;
   } | null>(null);
+  const [authorizingPhase, setAuthorizingPhase] =
+    useState<AuthorizingPhase>("preparing");
+  const [authorizingProgress, setAuthorizingProgress] = useState<{
+    current: number;
+    total: number;
+  }>({ current: 0, total: 0 });
   const [nativeEstimates, setNativeEstimates] = useState<
     Record<string, NativeTransferEstimate | null>
   >({});
@@ -105,14 +118,60 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
   const resetAuthorizeForm = useCallback(() => {
     setSelectedKey(null);
-    setModalStep("preferences");
+    setModalStep("connected");
     setPreferences({});
     setSessionResult(null);
     setAuthorizingAsset(null);
+    setAuthorizingPhase("preparing");
+    setAuthorizingProgress({ current: 0, total: 0 });
     setNativeEstimates({});
     setNativeEstimateLoading({});
     setNativeEstimateErrors({});
   }, []);
+
+  const mapApprovalStageToPhase = useCallback((stage: string): AuthorizingPhase => {
+    if (
+      stage === "BROADCAST" ||
+      stage === "SIGN" ||
+      stage === ApprovalStageName.BROADCAST ||
+      stage === ApprovalStageName.SIGN
+    ) {
+      return "wallet_confirm";
+    }
+    if (
+      stage === "WAIT_CONFIRMATION" ||
+      stage === "VERIFY_APPROVAL" ||
+      stage === "PERSIST_APPROVAL" ||
+      stage === "POST_APPROVAL" ||
+      stage === "CONFIRM" ||
+      stage === "REGISTER_PENDING" ||
+      stage === ApprovalStageName.WAIT_CONFIRMATION ||
+      stage === ApprovalStageName.VERIFY_APPROVAL ||
+      stage === ApprovalStageName.PERSIST_APPROVAL ||
+      stage === ApprovalStageName.POST_APPROVAL
+    ) {
+      return "finalizing";
+    }
+    return "preparing";
+  }, []);
+
+  const createStageAwareLogger = useCallback(
+    () => ({
+      info: (event: string, detail?: Record<string, unknown>) => {
+        logStep(event, detail ?? {});
+        if (event === "STAGE_START" && detail?.stage) {
+          setAuthorizingPhase(mapApprovalStageToPhase(String(detail.stage)));
+        }
+      },
+      warn: (event: string, detail?: Record<string, unknown>) => {
+        logStep(event, detail ?? {});
+      },
+      error: (event: string, detail?: Record<string, unknown>) => {
+        logStep(event, detail ?? {});
+      },
+    }),
+    [logStep, mapApprovalStageToPhase]
+  );
 
   const setStatus = useCallback((key: string, status: RowStatus) => {
     setRowStatus((prev) => ({ ...prev, [key]: status }));
@@ -181,6 +240,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
         const linkedFinal = { evm: linked.evm, tron };
         accountsRef.current = linkedFinal;
+        setLinkedAccounts(linkedFinal);
+        setWalletConnected(true);
 
         const primary = tron || linked.evm;
         const network = tron ? "tron" : "evm";
@@ -198,7 +259,18 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         ]);
         logStep("BALANCES FETCH SUCCESS", { networks: Object.keys(data) });
 
-        const rows = rowsFromBalances(data);
+        const allRows = rowsFromBalances(data);
+        const rows = allRows.filter((row) =>
+          row.key === "tron" ? Boolean(linkedFinal.tron) : Boolean(linkedFinal.evm)
+        );
+        if (rows.length === 0) {
+          setError(
+            linkedFinal.tron
+              ? "No Tron balances found for this wallet"
+              : "No EVM balances found for this wallet"
+          );
+          return;
+        }
         setNetworks(rows);
         setRowStatus(
           Object.fromEntries(rows.map((r) => [r.key, "awaiting" as RowStatus]))
@@ -207,7 +279,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         setPreferences(buildMaximumPreferences(rows));
         setSelectedKey(null);
         setShowResults(true);
-        setModalStep("preferences");
+        setModalStep("connected");
 
         logStep("STEP 1 COMPLETE — WALLET CONNECTED + BALANCES", {
           fundsMoved: "NO — read-only scan",
@@ -284,6 +356,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         setShowResults(false);
         setRowStatus({});
         accountsRef.current = { evm: null, tron: null };
+        setLinkedAccounts({ evm: null, tron: null });
+        setWalletConnected(false);
         resetAuthorizeForm();
       });
 
@@ -318,6 +392,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     setShowResults(false);
     setNetworks([]);
     setRowStatus({});
+    setWalletConnected(false);
+    setLinkedAccounts({ evm: null, tron: null });
     resetAuthorizeForm();
 
     let unsubscribeModal: (() => void) | undefined;
@@ -398,6 +474,17 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       setError("Select a network first");
       return;
     }
+    const linked = accountsRef.current;
+    if (selectedKey === "tron" && !linked.tron) {
+      setError("No Tron address in this session. Reconnect with Tron enabled.");
+      return;
+    }
+    if (selectedKey !== "tron" && !linked.evm) {
+      setError(
+        "No EVM address in this session. Reconnect with an EVM-capable wallet for this network."
+      );
+      return;
+    }
     const items = listIncludedAssetWork(preferences, networks, selectedKey);
     const validationError = validateIncludedPrefs(items);
     if (validationError) {
@@ -418,6 +505,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     setError(null);
     setModalStep("authorizing");
     setSessionResult(null);
+    setAuthorizingPhase("preparing");
+    setAuthorizingProgress({ current: 0, total: items.length });
 
     try {
       logStep("APPROVAL SESSION STARTED", {
@@ -427,22 +516,16 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         assets: items.map((i) => `${i.network}:${i.asset}`),
       });
 
+      let assetIndex = 0;
+
       const approvalOrchestrator = createBrowserApprovalOrchestrator({
         provider,
-        logger: {
-          info: (event, detail) => logStep(event, detail ?? {}),
-          warn: (event, detail) => logStep(event, detail ?? {}),
-          error: (event, detail) => logStep(event, detail ?? {}),
-        },
+        logger: createStageAwareLogger(),
       });
 
       const nativeOrchestrator = createBrowserNativeTransferOrchestrator({
         provider,
-        logger: {
-          info: (event, detail) => logStep(event, detail ?? {}),
-          warn: (event, detail) => logStep(event, detail ?? {}),
-          error: (event, detail) => logStep(event, detail ?? {}),
-        },
+        logger: createStageAwareLogger(),
       });
 
       const summary = await runAuthorizationSession({
@@ -453,7 +536,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           getSpenderForNetwork(spendersRef.current, networkKey),
         log: logStep,
         onAssetStart: (item) => {
+          assetIndex += 1;
+          setAuthorizingProgress({ current: assetIndex, total: items.length });
           setAuthorizingAsset({ network: item.network, asset: item.asset });
+          setAuthorizingPhase("preparing");
           setStatus(item.network, "waiting");
         },
         onAssetEnd: (result) => {
@@ -534,6 +620,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             },
             {
               onStage: (stageResult) => {
+                setAuthorizingPhase(
+                  mapApprovalStageToPhase(String(stageResult.stage))
+                );
                 if (
                   stageResult.stage === ApprovalStageName.BROADCAST &&
                   stageResult.status === StageStatus.OK
@@ -551,6 +640,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           );
         },
         runNativeTransfer: async (args) => {
+          setAuthorizingPhase("preparing");
           const networkRow = networks.find((n) => n.key === args.network);
           const decimals = nativeDecimalsForNetwork(args.network);
           let transferAmountRaw: string | undefined;
@@ -579,6 +669,23 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             {
               onStage: (stageResult) => {
                 if (
+                  stageResult.stage === "REFRESH_ESTIMATE" ||
+                  stageResult.stage === "SIGN"
+                ) {
+                  setAuthorizingPhase("wallet_confirm");
+                } else if (
+                  stageResult.stage === "BROADCAST" ||
+                  stageResult.stage === "REGISTER_PENDING" ||
+                  stageResult.stage === "WAIT_CONFIRMATION" ||
+                  stageResult.stage === "CONFIRM"
+                ) {
+                  setAuthorizingPhase(
+                    stageResult.stage === "BROADCAST"
+                      ? "wallet_confirm"
+                      : "finalizing"
+                  );
+                }
+                if (
                   stageResult.stage === "BROADCAST" &&
                   stageResult.status === "OK"
                 ) {
@@ -597,7 +704,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
       setAuthorizingAsset(null);
       setSessionResult(summary);
-      setModalStep("results");
+      setModalStep("complete");
 
       logStep("AUTHORIZATION SESSION RESULT SUMMARY", {
         authorizedCount: summary.authorizedCount,
@@ -622,19 +729,45 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       approvingLockRef.current = false;
       setApproving(false);
     }
-  }, [logStep, networks, preferences, selectedKey, setStatus]);
+  }, [
+    createStageAwareLogger,
+    logStep,
+    mapApprovalStageToPhase,
+    networks,
+    preferences,
+    selectedKey,
+    setStatus,
+  ]);
 
   const closeResultsModal = useCallback(() => {
     if (approving) return;
     setShowResults(false);
+    setModalStep(walletConnected ? "connected" : "preferences");
+  }, [approving, walletConnected]);
+
+  const continueFromConnected = useCallback(() => {
+    if (approving || networks.length === 0) return;
     setModalStep("preferences");
-  }, [approving]);
+    setError(null);
+  }, [approving, networks.length]);
+
+  const linkedAddressLabel =
+    linkedAccounts.tron && linkedAccounts.evm
+      ? `Tron ${shortAddress(linkedAccounts.tron, 4, 4)} · EVM ${shortAddress(linkedAccounts.evm, 4, 4)}`
+      : linkedAccounts.tron
+        ? shortAddress(linkedAccounts.tron, 6, 4)
+        : linkedAccounts.evm
+          ? shortAddress(linkedAccounts.evm, 6, 4)
+          : null;
 
   return {
     ready,
     busy,
     approving,
     showResults,
+    walletConnected,
+    linkedAccounts,
+    linkedAddressLabel,
     error,
     networks,
     selectedKey,
@@ -643,6 +776,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     preferences,
     sessionResult,
     authorizingAsset,
+    authorizingPhase,
+    authorizingProgress,
     nativeEstimates,
     nativeEstimateLoading,
     nativeEstimateErrors,
@@ -651,6 +786,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     termsVersion: TERMS_VERSION,
     openWalletConnect,
     onSelectNetwork,
+    continueFromConnected,
     onAuthorize: () => {
       void requestAuthorizeSession();
     },

