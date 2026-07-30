@@ -15,6 +15,7 @@ import {
   type HealthStatus,
   type WorkflowStage,
 } from "./user-pipeline-workflow";
+import { ActivityFeedService } from "./activity-feed.service";
 
 export type { HealthStatus, WorkflowStage } from "./user-pipeline-workflow";
 
@@ -74,7 +75,10 @@ function computeReconciliationStatus(
 
 @Injectable()
 export class UserAggregationService {
-  constructor(private readonly walletService: WalletService) {}
+  constructor(
+    private readonly walletService: WalletService,
+    private readonly activityFeed: ActivityFeedService
+  ) {}
 
   async listUsers(query: Record<string, string | undefined>) {
     const params = parsePagination(query);
@@ -194,14 +198,14 @@ export class UserAggregationService {
         orderBy: { createdAt: "desc" },
       }),
       prisma.observabilityEvent.findMany({
-        where: { walletAddress: normalized, kind: "log" },
+        where: { walletAddress: normalized },
         orderBy: { ts: "desc" },
-        take: 50,
+        take: 500,
       }),
       prisma.observabilityEvent.findMany({
         where: { walletAddress: normalized, kind: "timeline" },
         orderBy: { ts: "desc" },
-        take: 20,
+        take: 50,
       }),
     ]);
 
@@ -209,10 +213,18 @@ export class UserAggregationService {
       approvals.length === 0 &&
       transfers.length === 0 &&
       nativeTransfers.length === 0 &&
-      events.length === 0
+      events.length === 0 &&
+      observabilityEvents.length === 0
     ) {
       throw new NotFoundException("User not found");
     }
+
+    const activityFeedResult = await this.activityFeed.list({
+      address: normalized,
+      tab: "all",
+      limit: "200",
+      page: "1",
+    });
 
     const base: AddressBase = {
       address: normalized,
@@ -225,12 +237,14 @@ export class UserAggregationService {
         ...transfers.map((t) => t.createdAt),
         ...nativeTransfers.map((n) => n.createdAt),
         ...events.map((e) => e.createdAt),
+        ...observabilityEvents.map((e) => e.ts),
       ]),
       lastActivity: this.maxDate([
         ...approvals.map((a) => a.updatedAt),
         ...transfers.map((t) => t.updatedAt),
         ...nativeTransfers.map((n) => n.updatedAt),
         ...events.map((e) => e.createdAt),
+        ...observabilityEvents.map((e) => e.ts),
       ]),
     };
 
@@ -250,7 +264,8 @@ export class UserAggregationService {
       approvals,
       transfers,
       nativeTransfers,
-      events
+      events,
+      observabilityEvents
     );
     const retryHistory = this.buildRetryHistory(
       approvals,
@@ -263,30 +278,18 @@ export class UserAggregationService {
       nativeTransfers,
       events
     );
-    const timeline = [
-      ...this.buildTimeline(
-        approvals,
-        transfers,
-        nativeTransfers,
-        events,
-        auditLogs,
-        resourceSponsorships
-      ),
-      ...observabilityEvents.map((e) => ({
-        type: "observability" as const,
-        id: e.id,
-        at: e.ts.toISOString(),
-        label: `${e.module} · ${e.message}`,
-        status: e.status,
-      })),
-      ...sessionTimelines.map((t) => ({
-        type: "session_timeline" as const,
-        id: t.id,
-        at: t.ts.toISOString(),
-        label: `Session ${t.sessionId ?? t.eventId}`,
-        status: t.status,
-      })),
-    ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+    const timeline = activityFeedResult.items.map((item) => ({
+      type: item.source,
+      id: item.id,
+      at: item.at,
+      label: item.label,
+      status: item.status,
+      source: item.source,
+      step: item.step,
+      error: item.error,
+      network: item.network,
+      sessionId: item.sessionId,
+    }));
 
     const addrType = detectAddressType(normalized);
 
@@ -314,6 +317,8 @@ export class UserAggregationService {
         ...t,
         ts: t.ts.toISOString(),
       })),
+      activityFeed: activityFeedResult.items,
+      activityFeedTotal: activityFeedResult.total,
       resourceSponsorships,
       errors,
       retryHistory,
@@ -792,7 +797,16 @@ export class UserAggregationService {
       error: string | null;
       createdAt: Date;
       type: string;
-    }>
+    }>,
+    observabilityEvents: Array<{
+      id: string;
+      errorMessage: string | null;
+      status: string;
+      ts: Date;
+      module: string;
+      message: string;
+      stage: string | null;
+    }> = []
   ) {
     const errors: Array<{
       id: string;
@@ -839,6 +853,21 @@ export class UserAggregationService {
           source: `event:${e.type}`,
           message: e.error,
           at: e.createdAt.toISOString(),
+        });
+      }
+    }
+    for (const o of observabilityEvents) {
+      if (
+        o.errorMessage ||
+        o.status === "error" ||
+        o.status === "failed" ||
+        o.status === "failure"
+      ) {
+        errors.push({
+          id: o.id,
+          source: `observability:${o.module}${o.stage ? `/${o.stage}` : ""}`,
+          message: o.errorMessage ?? o.message,
+          at: o.ts.toISOString(),
         });
       }
     }

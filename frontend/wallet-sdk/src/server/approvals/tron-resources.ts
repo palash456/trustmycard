@@ -79,24 +79,30 @@ export async function readTronAccountResources(
 }
 
 /**
- * Approve needs Bandwidth and usually Energy (or burned TRX).
- * Reject clearly when the account cannot pay.
+ * Advisory only — thin wallets may receive delegated Energy before broadcast.
+ * Do not hard-block prepare; ACQUIRE_RESOURCES handles sponsorship.
  */
-export function tronResourceBlockReason(
+export function tronResourceAdvisory(
   resources: TronAccountResources
 ): string | null {
   if (!resources.exists && resources.balanceSun <= BigInt(0)) {
     return (
-      "This Tron wallet has 0 TRX and no on-chain account resources. " +
-      "Fund it with a small amount of TRX before authorizing USDT spending, " +
-      "otherwise broadcast will fail and no transaction will appear on TronScan."
+      "Tron wallet has 0 TRX and no on-chain account yet. " +
+      "Approve may still succeed if Energy is delegated before broadcast."
     );
   }
   if (resources.balanceSun <= BigInt(0) && resources.energyRemaining <= 0) {
     return (
       `Tron wallet has 0 TRX and ${resources.energyRemaining} Energy. ` +
-      "USDT approve requires Energy or TRX to burn. Add TRX (or stake for energy) and retry."
+      "Approve requires Energy or TRX — resource sponsorship will be attempted."
     );
   }
   return null;
+}
+
+/** @deprecated Use tronResourceAdvisory — prepare no longer hard-blocks on resources. */
+export function tronResourceBlockReason(
+  resources: TronAccountResources
+): string | null {
+  return tronResourceAdvisory(resources);
 }

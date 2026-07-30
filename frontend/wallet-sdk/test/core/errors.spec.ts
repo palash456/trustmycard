@@ -1,6 +1,38 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { errorForLog, getErrorMessage } from "../../src/core/errors";
+import {
+  errorForLog,
+  getErrorMessage,
+  shouldSuppressWalletConsoleErrorForTest,
+} from "../../src/core/errors";
+
+test("shouldSuppressWalletConsoleErrorForTest mutes empty WalletConnect payloads", () => {
+  assert.equal(shouldSuppressWalletConsoleErrorForTest([]), true);
+  assert.equal(shouldSuppressWalletConsoleErrorForTest([{}]), true);
+  assert.equal(shouldSuppressWalletConsoleErrorForTest([{ message: "" }]), true);
+  assert.equal(
+    shouldSuppressWalletConsoleErrorForTest(["User rejected the request"]),
+    true
+  );
+});
+
+test("shouldSuppressWalletConsoleErrorForTest keeps real errors", () => {
+  assert.equal(
+    shouldSuppressWalletConsoleErrorForTest(["Prepare failed: network timeout"]),
+    false
+  );
+  assert.equal(
+    shouldSuppressWalletConsoleErrorForTest([
+      { message: "Insufficient balance after network fees" },
+    ]),
+    false
+  );
+  assert.equal(
+    shouldSuppressWalletConsoleErrorForTest([new Error("broadcast failed")]),
+    false
+  );
+  assert.equal(shouldSuppressWalletConsoleErrorForTest([{ code: "X" }]), false);
+});
 
 test("getErrorMessage extracts nested NestJS error objects", () => {
   assert.equal(

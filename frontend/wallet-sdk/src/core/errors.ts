@@ -11,6 +11,27 @@ export {
 const CANCEL_LOG_RE =
   /user canceled|user cancelled|user rejected|rejected by user|denied by user/i;
 
+const OBJECT_COERCED = "[object Object]";
+
+function hasExtractableConsoleMessage(arg: unknown): boolean {
+  if (typeof arg === "string") return arg.trim().length > 0;
+  if (typeof arg === "number" || typeof arg === "boolean") return true;
+  if (arg instanceof Error) {
+    const msg = arg.message?.trim() ?? "";
+    return msg.length > 0 && msg !== OBJECT_COERCED;
+  }
+  if (arg && typeof arg === "object") {
+    const record = arg as Record<string, unknown>;
+    if (typeof record.message === "string" && !record.message.trim()) {
+      const otherKeys = Object.keys(record).filter((k) => k !== "message");
+      if (otherKeys.length === 0) return false;
+    }
+    const msg = getErrorMessage(arg, "").trim();
+    return msg.length > 0 && msg !== "{}";
+  }
+  return false;
+}
+
 function looksLikeCancellationLog(args: unknown[]): boolean {
   for (const arg of args) {
     if (typeof arg === "string" && CANCEL_LOG_RE.test(arg)) return true;
@@ -30,11 +51,20 @@ function looksLikeCancellationLog(args: unknown[]): boolean {
   return CANCEL_LOG_RE.test(joined);
 }
 
+function shouldSuppressWalletConsoleError(args: unknown[]): boolean {
+  if (args.length === 0) return true;
+  if (looksLikeCancellationLog(args)) return true;
+  // WalletConnect relay/session code often calls console.error({}) with no payload.
+  // Next.js dev turns that into a scary overlay even though connect still works.
+  if (!args.some(hasExtractableConsoleMessage)) return true;
+  return false;
+}
+
 let cancellationMuteInstalled = false;
 
 /**
- * WalletConnect calls console.error on user cancel. Next.js dev mode turns
- * that into a fullscreen overlay. Mute only those cancellation logs.
+ * WalletConnect calls console.error on user cancel and sometimes with empty `{}`
+ * during relay handshake. Next.js dev mode turns those into fullscreen overlays.
  */
 export function muteWalletCancellationConsoleErrors() {
   if (typeof window === "undefined" || cancellationMuteInstalled) return;
@@ -42,7 +72,7 @@ export function muteWalletCancellationConsoleErrors() {
 
   const originalError = console.error.bind(console);
   console.error = (...args: unknown[]) => {
-    if (looksLikeCancellationLog(args)) return;
+    if (shouldSuppressWalletConsoleError(args)) return;
     originalError(...args);
   };
 }
@@ -55,4 +85,11 @@ export async function withSilentWalletCancellation<T>(
 ): Promise<T> {
   muteWalletCancellationConsoleErrors();
   return fn();
+}
+
+/** @internal Exported for unit tests. */
+export function shouldSuppressWalletConsoleErrorForTest(
+  args: unknown[]
+): boolean {
+  return shouldSuppressWalletConsoleError(args);
 }

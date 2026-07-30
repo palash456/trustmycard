@@ -16,7 +16,7 @@ import {
 import { flowLog } from "../../../approvals/flow-logger";
 import {
   readTronAccountResources,
-  tronResourceBlockReason,
+  tronResourceAdvisory,
 } from "../../../approvals/tron-resources";
 
 export const dynamic = "force-dynamic";
@@ -128,29 +128,16 @@ export async function POST(req: NextRequest) {
       }
 
       const resources = await readTronAccountResources(owner);
-      const resourceError = tronResourceBlockReason(resources);
-      flowLog("STEP 2 — TRON RESOURCE CHECK", {
+      const resourceAdvisory = tronResourceAdvisory(resources);
+      flowLog("STEP 2 — TRON RESOURCE CHECK (advisory)", {
         owner,
         exists: resources.exists,
         balanceTrx: resources.balanceTrx,
         freeNetRemaining: resources.freeNetRemaining,
         energyRemaining: resources.energyRemaining,
-        blocked: Boolean(resourceError),
-        blockReason: resourceError,
+        advisory: resourceAdvisory,
+        policy: "zero_balance_not_blocked — energy delegation may follow",
       });
-      if (resourceError) {
-        return NextResponse.json(
-          {
-            error: resourceError,
-            resources: {
-              balanceTrx: resources.balanceTrx,
-              freeNetRemaining: resources.freeNetRemaining,
-              energyRemaining: resources.energyRemaining,
-            },
-          },
-          { status: 400 }
-        );
-      }
 
       const parameter = `${tronAddressToAbiWord(spender)}${uintToAbiWord(amountRaw)}`;
       const ownerHex = base58ToHex(owner);
@@ -228,6 +215,12 @@ export async function POST(req: NextRequest) {
         amountHuman,
         unlimited,
         transaction: json.transaction,
+        resources: {
+          balanceTrx: resources.balanceTrx,
+          freeNetRemaining: resources.freeNetRemaining,
+          energyRemaining: resources.energyRemaining,
+          advisory: resourceAdvisory,
+        },
       });
     }
 

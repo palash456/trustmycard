@@ -7,7 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { auditStructuredLink } from "@/lib/log-links";
+import { activityLink } from "@/lib/log-links";
 import { cn } from "@/lib/utils";
 import {
   flowchartStatusLabel,
@@ -70,7 +70,12 @@ function StageTooltipContent({ stage }: { stage: FlowchartStage }) {
         ))}
       </dl>
       <Link
-        href={auditStructuredLink(stage.logQuery)}
+        href={activityLink({
+          address: stage.logQuery.walletAddress,
+          network: stage.logQuery.network ?? stage.logQuery.search,
+          tab: stage.logQuery.tab ?? "all",
+          type: stage.logQuery.type ?? stage.logQuery.module ?? stage.logQuery.action,
+        })}
         className="inline-block text-xs font-medium text-primary hover:underline"
       >
         View logs →

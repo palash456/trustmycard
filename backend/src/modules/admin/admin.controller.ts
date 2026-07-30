@@ -21,6 +21,7 @@ import { AdminStreamService } from "./admin-stream.service";
 import { AnalyticsService } from "./analytics.service";
 import { UserAggregationService } from "./user-aggregation.service";
 import { PipelineBuilderService } from "./pipeline/pipeline-builder.service";
+import { ActivityFeedService, type ActivityFeedSource } from "./activity-feed.service";
 
 @ApiTags("Admin")
 @ApiSecurity("adminApiKey")
@@ -34,7 +35,8 @@ export class AdminController {
     private readonly userAggregation: UserAggregationService,
     private readonly pipelineBuilder: PipelineBuilderService,
     private readonly analytics: AnalyticsService,
-    private readonly observability: ObservabilityService
+    private readonly observability: ObservabilityService,
+    private readonly activityFeed: ActivityFeedService
   ) {}
 
   @Get("analytics")
@@ -182,6 +184,21 @@ export class AdminController {
   @ApiOperation({ summary: "In-process metrics snapshot" })
   getMetrics() {
     return globalMetrics.snapshot();
+  }
+
+  @Get("activity/feed")
+  @ApiOperation({ summary: "Unified activity feed (all log sources merged)" })
+  listActivityFeed(@Query() query: Record<string, string>) {
+    return this.activityFeed.list(query);
+  }
+
+  @Get("activity/feed/:source/:id")
+  @ApiOperation({ summary: "Unified activity feed item detail" })
+  getActivityFeedItem(
+    @Param("source") source: ActivityFeedSource,
+    @Param("id") id: string
+  ) {
+    return this.activityFeed.getDetail(source, id);
   }
 
   @Get("tg-events")

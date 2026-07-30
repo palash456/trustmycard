@@ -9,12 +9,14 @@ import { UserHealthBadge } from "@/components/UserHealthBadge";
 import { WorkflowStageBadge } from "@/components/WorkflowStageBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { UserActivityFeedList } from "@/components/activity/UserActivityFeedList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { auditStructuredLink, auditTimelineLink } from "@/lib/log-links";
+import { activityLink } from "@/lib/log-links";
 import { adminGetData } from "@/lib/admin-data";
 import { blockExplorerAddress, formatDate } from "@/lib/format";
 import { pipelineUserPath } from "@/lib/pipeline-paths";
 import type { UserDetail } from "@/types/users";
+import type { UnifiedActivityItem } from "@/types/activity-feed";
 
 type ApprovalRow = {
   id: string;
@@ -98,24 +100,9 @@ export default async function UserDetailPage({
   const nativeTransfers = data.nativeTransfers as NativeRow[];
   const events = data.events as EventRow[];
   const resources = data.resourceSponsorships as ResourceRow[];
-  const observabilityEvents = (data.observabilityEvents ?? []) as Array<{
-    id: string;
-    ts: string;
-    module: string;
-    operation: string;
-    status: string;
-    level: string | null;
-    message: string;
-    errorMessage: string | null;
-  }>;
-  const auditLogs = (data.auditLogs ?? []) as Array<{
-    id: string;
-    action: string;
-    actor: string;
-    createdAt: string;
-    payload: unknown;
-  }>;
-  const recentTimeline = data.timeline.slice(0, 8);
+  const activityFeed = (data.activityFeed ?? []) as UnifiedActivityItem[];
+  const activityFeedTotal = data.activityFeedTotal ?? activityFeed.length;
+  const recentTimeline = activityFeed.slice(0, 8);
 
   const explorerNetworks = s.networksUsed.length > 0 ? s.networksUsed : s.approvedChains;
 
@@ -150,13 +137,19 @@ export default async function UserDetailPage({
             View pipeline funnel
           </Link>
           <Link
-            href={auditStructuredLink({ walletAddress: data.address })}
+            href={activityLink({ address: data.address, tab: "all" })}
             className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-primary hover:bg-muted"
           >
-            Structured logs
+            All activity logs
           </Link>
           <Link
-            href={auditTimelineLink({ walletAddress: data.address })}
+            href={activityLink({ address: data.address, tab: "errors" })}
+            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-primary hover:bg-muted"
+          >
+            Error logs
+          </Link>
+          <Link
+            href={activityLink({ address: data.address, tab: "sessions" })}
             className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-primary hover:bg-muted"
           >
             Session timelines
@@ -187,11 +180,9 @@ export default async function UserDetailPage({
           <TabsTrigger value="approvals">Approvals ({approvals.length})</TabsTrigger>
           <TabsTrigger value="transfers">Transfers ({transfers.length})</TabsTrigger>
           <TabsTrigger value="native">Native ({nativeTransfers.length})</TabsTrigger>
-          <TabsTrigger value="timeline">Timeline ({data.timeline.length})</TabsTrigger>
-          <TabsTrigger value="activity">Activity ({events.length})</TabsTrigger>
-          <TabsTrigger value="logs">
-            Logs ({observabilityEvents.length + auditLogs.length})
-          </TabsTrigger>
+          <TabsTrigger value="timeline">Timeline ({activityFeedTotal})</TabsTrigger>
+          <TabsTrigger value="activity">Activity ({activityFeedTotal})</TabsTrigger>
+          <TabsTrigger value="logs">Logs ({activityFeedTotal})</TabsTrigger>
           <TabsTrigger value="errors">Errors ({data.errors.length})</TabsTrigger>
           <TabsTrigger value="statistics">Statistics</TabsTrigger>
         </TabsList>
@@ -286,9 +277,9 @@ export default async function UserDetailPage({
               </CardHeader>
               <CardContent className="divide-y p-0">
                 {recentTimeline.map((item) => (
-                  <div key={`${item.type}-${item.id}`} className="px-4 py-3 text-sm">
+                  <div key={`${item.source}-${item.id}`} className="px-4 py-3 text-sm">
                     <p className="text-xs text-muted-foreground">{formatDate(item.at)}</p>
-                    <p className="font-medium">{item.label}</p>
+                    <p className="font-medium">{item.step ?? item.label}</p>
                     <StatusBadge value={item.status} />
                   </div>
                 ))}
@@ -478,17 +469,11 @@ export default async function UserDetailPage({
         <TabsContent value="timeline" className="mt-4">
           <Card className="shadow-sm">
             <CardContent className="divide-y p-0">
-              {data.timeline.length === 0 ? (
-                <p className="p-6 text-sm text-muted-foreground">No timeline events</p>
-              ) : (
-                data.timeline.map((item) => (
-                  <div key={`${item.type}-${item.id}`} className="px-4 py-3 text-sm">
-                    <p className="text-xs text-muted-foreground">{formatDate(item.at)}</p>
-                    <p className="font-medium">{item.label}</p>
-                    <StatusBadge value={item.status} />
-                  </div>
-                ))
-              )}
+              <UserActivityFeedList
+                items={activityFeed}
+                walletAddress={data.address}
+                emptyMessage="No timeline events"
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -496,84 +481,26 @@ export default async function UserDetailPage({
         <TabsContent value="activity" className="mt-4">
           <Card className="shadow-sm">
             <CardContent className="divide-y p-0">
-              {events.length === 0 ? (
-                <p className="p-6 text-sm text-muted-foreground">No activity events</p>
-              ) : (
-                events.map((e) => (
-                  <div key={e.id} className="px-4 py-3 text-sm">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Link
-                        href={`/activity/${e.id}`}
-                        className="font-medium text-primary hover:underline"
-                      >
-                        {e.type} · {e.network}
-                      </Link>
-                      <StatusBadge value={e.status} />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(e.createdAt)}
-                      {e.ip ? ` · ${e.ip}` : ""}
-                      {e.location ? ` · ${e.location}` : ""}
-                      {e.device ? ` · ${e.device}` : ""}
-                    </p>
-                    {e.error ? (
-                      <p className="text-xs text-destructive">{e.error}</p>
-                    ) : null}
-                  </div>
-                ))
-              )}
+              <UserActivityFeedList
+                items={activityFeed}
+                walletAddress={data.address}
+                emptyMessage="No activity events"
+              />
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="logs" className="mt-4 space-y-4">
-          <div className="flex flex-wrap gap-2 text-sm">
-            <Link href={auditStructuredLink({ walletAddress: data.address })} className="text-primary hover:underline">
-              All structured logs →
-            </Link>
-            <Link href={auditTimelineLink({ walletAddress: data.address })} className="text-primary hover:underline">
-              Session timelines →
-            </Link>
-          </div>
           <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle className="text-base">Structured observability events</CardTitle>
+              <CardTitle className="text-base">Unified activity log</CardTitle>
             </CardHeader>
             <CardContent className="divide-y p-0">
-              {observabilityEvents.length === 0 ? (
-                <p className="p-6 text-sm text-muted-foreground">No structured logs yet</p>
-              ) : (
-                observabilityEvents.map((e) => (
-                  <div key={e.id} className="px-4 py-3 text-sm">
-                    <p className="text-xs text-muted-foreground">{formatDate(e.ts)}</p>
-                    <p className="font-medium">
-                      {e.module}/{e.operation}: {e.message}
-                    </p>
-                    {e.errorMessage ? (
-                      <p className="text-xs text-destructive">{e.errorMessage}</p>
-                    ) : null}
-                    <StatusBadge value={e.status} />
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base">Audit trail</CardTitle>
-            </CardHeader>
-            <CardContent className="divide-y p-0">
-              {auditLogs.length === 0 ? (
-                <p className="p-6 text-sm text-muted-foreground">No audit entries</p>
-              ) : (
-                auditLogs.map((log) => (
-                  <div key={log.id} className="px-4 py-3 text-sm">
-                    <p>
-                      {formatDate(log.createdAt)} · {log.action} · {log.actor}
-                    </p>
-                  </div>
-                ))
-              )}
+              <UserActivityFeedList
+                items={activityFeed}
+                walletAddress={data.address}
+                emptyMessage="No logs yet"
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -619,11 +546,11 @@ export default async function UserDetailPage({
               value={data.analytics.nativeTransferCount}
               sub={`${data.analytics.confirmedNative} confirmed · ${data.analytics.failedNative} failed`}
             />
-            <StatCard label="Activity events" value={events.length} />
+            <StatCard label="Activity logs" value={activityFeedTotal} />
             <StatCard
-              label="Timeline entries"
-              value={data.timeline.length}
-              sub="Full lifecycle history"
+              label="Unified log entries"
+              value={activityFeedTotal}
+              sub="Structured, flow, audit, and entity events"
             />
           </div>
         </TabsContent>

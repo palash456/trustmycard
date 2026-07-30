@@ -35,6 +35,10 @@ export type LogLinkParams = {
   action?: string;
   search?: string;
   entityType?: string;
+  tab?: string;
+  type?: string;
+  sessionId?: string;
+  network?: string;
 };
 
 export type PipelineStage = {

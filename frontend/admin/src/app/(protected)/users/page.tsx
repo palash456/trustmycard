@@ -150,7 +150,7 @@ export default async function UsersPage({
       <ListTableCard scrollable>
         <Table scrollable>
           <TableHeader>
-            <TableRow>
+            <TableRow className="hover:bg-transparent [&_[data-slot=table-head]]:h-auto [&_[data-slot=table-head]]:py-3">
               <TableHead>Address</TableHead>
               <TableHead>First seen</TableHead>
               <TableHead>Last activity</TableHead>
@@ -185,7 +185,7 @@ export default async function UsersPage({
                     ? blockExplorerAddress(row.networksUsed[0], row.address)
                     : null;
                 return (
-                  <TableRow key={row.address}>
+                  <TableRow key={row.address} className="[&_[data-slot=table-cell]]:py-5">
                     <TableCell className="min-w-[140px] font-mono text-xs">
                       <div className="flex items-center gap-2">
                         <Link
@@ -248,8 +248,12 @@ export default async function UsersPage({
                       A{row.approvalCount} T{row.transferCount} N{row.nativeTransferCount} E
                       {row.eventCount}
                     </TableCell>
-                    <TableCell className="max-w-[120px] truncate text-xs text-destructive">
-                      {row.latestError ?? "—"}
+                    <TableCell className="max-w-[120px] text-xs text-muted-foreground">
+                      {row.latestError ? (
+                        <span className="truncate text-destructive">{row.latestError}</span>
+                      ) : (
+                        "No error"
+                      )}
                     </TableCell>
                     <TableCell>
                       {explorer ? (

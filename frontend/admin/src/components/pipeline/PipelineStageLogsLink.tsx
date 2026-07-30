@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auditStructuredLink } from "@/lib/log-links";
+import { activityLink } from "@/lib/log-links";
 import type { LogLinkParams } from "@/types/pipeline";
 
 export function PipelineStageLogsLink({
@@ -11,7 +11,13 @@ export function PipelineStageLogsLink({
 }) {
   return (
     <Link
-      href={auditStructuredLink(logQuery)}
+      href={activityLink({
+        address: logQuery.walletAddress,
+        network: logQuery.network ?? logQuery.search,
+        tab: logQuery.tab ?? "all",
+        type: logQuery.type ?? logQuery.module ?? logQuery.action,
+        search: logQuery.txHash ?? logQuery.sessionId,
+      })}
       className={className ?? "text-xs text-primary hover:underline"}
     >
       View logs

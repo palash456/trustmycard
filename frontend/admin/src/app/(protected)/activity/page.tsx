@@ -1,11 +1,11 @@
-import Link from "next/link";
-import { EventsListChart } from "@/components/charts/ListPageCharts";
-import { ActivityErrorCell } from "@/components/activity/ActivityErrorCell";
+import { ActivityFeedRow } from "@/components/activity/ActivityFeedRow";
+import {
+  ACTIVITY_COL,
+  ACTIVITY_HEAD_CELL,
+} from "@/components/activity/activity-table-columns";
 import { ActivityOverviewSection } from "@/components/activity/ActivityOverviewSection";
-import { ActivityStatusChip } from "@/components/activity/ActivityStatusChip";
+import { ActivityQuickFilters } from "@/components/activity/ActivityQuickFilters";
 import { ActivityTabsNav, type ActivityTab } from "@/components/activity/ActivityTabsNav";
-import { SessionTimelineListRow } from "@/components/audit/SessionTimelineView";
-import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { PageFilters } from "@/components/FilterForm";
 import { ListPageLayout } from "@/components/ListPageLayout";
@@ -22,47 +22,48 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
-import type { ObservabilityEventRow, PaginatedResponse } from "@/lib/observability";
-import { formatDate, shortAddress } from "@/lib/format";
-
-type TgEvent = {
-  id: string;
-  type: string;
-  network: string;
-  address: string;
-  status: string;
-  error: unknown;
-  ip: string | null;
-  location: string | null;
-  createdAt: string;
-};
-
-type ListResponse = {
-  items: TgEvent[];
-  total: number;
-  page: number;
-  totalPages: number;
-};
+import type { ActivityFeedResponse } from "@/types/activity-feed";
 
 const FILTER_FIELDS = [
-  { name: "network", label: "Network", placeholder: "e.g. eth" },
-  { name: "address", label: "Address", placeholder: "Wallet address" },
-  { name: "type", label: "Type", placeholder: "connect, approve, scan" },
-  { name: "status", label: "Status", placeholder: "success, error" },
+  {
+    name: "network",
+    label: "Network",
+    options: ["eth", "bsc", "pol", "arb", "base", "tron"],
+  },
+  { name: "address", label: "Wallet", placeholder: "Wallet address" },
+  { name: "type", label: "Step", placeholder: "scan, approve, PREPARE" },
+  {
+    name: "status",
+    label: "Status",
+    options: ["success", "in_progress", "error", "failed", "failure", "rejected"],
+  },
+  { name: "search", label: "Search", placeholder: "Message or tx hash" },
 ] as const;
+
+function headClass(column: keyof typeof ACTIVITY_COL, extra?: string) {
+  return cn(ACTIVITY_HEAD_CELL, ACTIVITY_COL[column], extra);
+}
 
 function parseTab(value: string | undefined): ActivityTab {
   if (
+    value === "connections" ||
+    value === "flow" ||
     value === "user" ||
     value === "errors" ||
-    value === "sessions" ||
-    value === "connections"
+    value === "sessions"
   ) {
     return value;
   }
-  return "flow";
+  return "all";
 }
+
+/** Sum of fixed column widths — keeps header/body aligned while scrolling. */
+const TABLE_MIN_WIDTH = Object.values(ACTIVITY_COL).reduce((sum, col) => {
+  const match = col.match(/w-\[(\d+)px\]/);
+  return sum + (match ? Number(match[1]) : 0);
+}, 0);
 
 export default async function ActivityPage({
   searchParams,
@@ -71,35 +72,25 @@ export default async function ActivityPage({
 }) {
   const sp = await searchParams;
   const tab = parseTab(sp.tab);
+  const activityQuery = { ...sp, tab: tab === "all" ? undefined : tab };
 
-  const activityQuery = { ...sp, tab: tab === "flow" ? undefined : tab };
-
-  const commonQuery = buildQuery({
+  const feedQuery = buildQuery({
     page: sp.page ?? "1",
+    tab: tab === "all" ? undefined : tab,
     network: sp.network,
     address: sp.address,
     type: sp.type,
     status: sp.status,
-    tab: tab === "flow" ? undefined : tab,
+    search: sp.search,
   });
 
-  let tgData: ListResponse | null = null;
-  let timelineData: PaginatedResponse<ObservabilityEventRow> | null = null;
+  let feedData: ActivityFeedResponse | null = null;
   let error: string | null = null;
 
   try {
-    if (tab === "sessions") {
-      timelineData = await adminGetData<PaginatedResponse<ObservabilityEventRow>>(
-        `/admin/observability/events${buildQuery({
-          page: sp.page ?? "1",
-          tab: "timelines",
-          walletAddress: sp.address,
-          network: sp.network,
-        })}`
-      );
-    } else {
-      tgData = await adminGetData<ListResponse>(`/admin/tg-events${commonQuery}`);
-    }
+    feedData = await adminGetData<ActivityFeedResponse>(
+      `/admin/activity/feed${feedQuery}`
+    );
   } catch (err) {
     error = err instanceof Error ? err.message : "Failed to load";
   }
@@ -109,27 +100,31 @@ export default async function ActivityPage({
       <ListPageLayout>
         <PageHeader
           title="Activity"
-          description="Operational monitoring — understand what happened across flows, users, and sessions"
-          tip="User and system telemetry from the wallet flow. For structured logs and admin actions, use Audit & logs."
+          description="Real wallet journeys from QR scan through payment"
         />
         <ErrorAlert message={error} />
       </ListPageLayout>
     );
   }
 
-  const data = tgData ?? {
+  const data = feedData ?? {
     items: [],
-    total: timelineData?.total ?? 0,
-    page: timelineData?.page ?? 1,
-    totalPages: timelineData?.totalPages ?? 1,
+    total: 0,
+    page: 1,
+    totalPages: 1,
+    limit: 25,
   };
+
+  const showErrorCol = tab === "errors" || tab === "all" || tab === "flow";
+  const tableMinWidth = showErrorCol
+    ? TABLE_MIN_WIDTH
+    : TABLE_MIN_WIDTH - 220;
 
   return (
     <ListPageLayout className="space-y-4">
       <PageHeader
         title="Activity"
-        description="Wallet flow telemetry — connections, approvals, scans, and errors"
-        tip="Filter by wallet, network, or type. For structured backend logs and admin actions, use Audit & logs."
+        description="Real user journeys only — connect, scan, authorize, and pay. Internal and test logs live under Audit."
       >
         <PageToolbar>
           <PageRefreshButton />
@@ -137,118 +132,54 @@ export default async function ActivityPage({
         </PageToolbar>
       </PageHeader>
 
-      <ActivityOverviewSection
-        tab={tab}
-        total={tab === "sessions" ? (timelineData?.total ?? 0) : data.total}
-        items={data.items}
-        sessionTotal={timelineData?.total}
-      />
+      <ActivityOverviewSection tab={tab} total={data.total} items={data.items} />
 
       <ActivityTabsNav activeTab={tab} query={activityQuery} />
 
-      {tab === "flow" && tgData ? <EventsListChart items={tgData.items} /> : null}
+      <ActivityQuickFilters query={activityQuery} />
 
-      {tab === "sessions" && timelineData ? (
-        <div className="space-y-2">
-          {timelineData.items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No session timelines found</p>
-          ) : (
-            timelineData.items.map((row) => (
-              <SessionTimelineListRow
-                key={row.id}
-                sessionId={row.sessionId}
-                walletAddress={row.walletAddress}
-                network={row.network}
-                status={row.status}
-                message={row.message}
-                ts={row.ts}
-                durationMs={row.durationMs}
-              />
-            ))
-          )}
-          <Pagination
-            page={timelineData.page}
-            totalPages={timelineData.totalPages}
-            basePath="/activity"
-            query={activityQuery}
-          />
-        </div>
-      ) : (
-        <ListTableCard>
-          <Table>
-            <TableHeader>
+      <ListTableCard>
+        <Table className="w-full table-fixed" style={{ minWidth: tableMinWidth }}>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className={headClass("time")}>Time</TableHead>
+              <TableHead className={headClass("wallet")}>Wallet</TableHead>
+              <TableHead className={headClass("network")}>Network</TableHead>
+              <TableHead className={headClass("step")}>Step</TableHead>
+              <TableHead className={headClass("status")}>Status</TableHead>
+              <TableHead className={headClass("details")}>Details</TableHead>
+              {showErrorCol ? (
+                <TableHead className={headClass("error")}>Error</TableHead>
+              ) : null}
+              <TableHead className={headClass("action", "text-right")}>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.items.length === 0 ? (
               <TableRow>
-                <TableHead>Time</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Network</TableHead>
-                <TableHead>Address</TableHead>
-                <TableHead>Status</TableHead>
-                {(tab === "sessions" || tab === "flow") && (
-                  <TableHead className="hidden md:table-cell">Context</TableHead>
-                )}
-                {(tab === "errors" || tab === "flow") && <TableHead>Error</TableHead>}
-                <TableHead>Actions</TableHead>
+                <TableCell
+                  colSpan={showErrorCol ? 8 : 7}
+                  className="h-24 px-5 text-center text-muted-foreground"
+                >
+                  No user journey activity found
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.items.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                    No activity found
-                  </TableCell>
+            ) : (
+              data.items.map((row) => (
+                <TableRow key={`${row.source}-${row.id}`}>
+                  <ActivityFeedRow row={row} showError={showErrorCol} />
                 </TableRow>
-              ) : (
-                data.items.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {formatDate(row.createdAt)}
-                    </TableCell>
-                    <TableCell>{row.type}</TableCell>
-                    <TableCell className="uppercase">{row.network}</TableCell>
-                    <TableCell className="font-mono text-xs">
-                      <Link
-                        href={`/users/${encodeURIComponent(row.address)}`}
-                        className="text-primary hover:underline"
-                      >
-                        {shortAddress(row.address)}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <ActivityStatusChip status={row.status} />
-                    </TableCell>
-                    {(tab === "sessions" || tab === "flow") && (
-                      <TableCell className="hidden max-w-[160px] truncate text-xs text-muted-foreground md:table-cell">
-                        {row.ip ?? "—"}
-                        {row.location ? ` · ${row.location}` : ""}
-                      </TableCell>
-                    )}
-                    {(tab === "errors" || tab === "flow") && (
-                      <TableCell>
-                        <ActivityErrorCell error={row.error} status={row.status} />
-                      </TableCell>
-                    )}
-                    <TableCell className="space-y-1">
-                      <Link
-                        href={`/activity/${row.id}`}
-                        className="block text-sm text-primary hover:underline"
-                      >
-                        View
-                      </Link>
-                      <ViewLogsLink params={{ walletAddress: row.address }} />
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-          <Pagination
-            page={data.page}
-            totalPages={data.totalPages}
-            basePath="/activity"
-            query={activityQuery}
-          />
-        </ListTableCard>
-      )}
+              ))
+            )}
+          </TableBody>
+        </Table>
+        <Pagination
+          page={data.page}
+          totalPages={data.totalPages}
+          basePath="/activity"
+          query={activityQuery}
+        />
+      </ListTableCard>
     </ListPageLayout>
   );
 }

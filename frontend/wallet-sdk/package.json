@@ -21,13 +21,18 @@
     "./server/routes/tg-log": "./src/server/routes/tg-log/route.ts",
     "./server/routes/ipgeo": "./src/server/routes/ipgeo/route.ts",
     "./server/routes/consent_": "./src/server/routes/consent_/route.ts",
-    "./server/routes/energy-delegate": "./src/server/routes/energy-delegate/route.ts"
+    "./server/routes/energy-delegate": "./src/server/routes/energy-delegate/route.ts",
+    "./server/routes/client-logs": "./src/server/routes/client-logs/route.ts",
+    "./server/routes/native-transfers/estimate": "./src/server/routes/native-transfers/estimate/route.ts",
+    "./server/routes/native-transfers/register-pending": "./src/server/routes/native-transfers/register-pending/route.ts",
+    "./server/routes/native-transfers/confirm": "./src/server/routes/native-transfers/confirm/route.ts",
+    "./server/routes/resources/verify": "./src/server/routes/resources/verify/route.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
     "lint": "echo \"No linter configured yet\"",
-    "test": "node --test -r ./test/register-ts.cjs test/approval/*.spec.ts test/native-transfer/*.spec.ts test/authorization/*.spec.ts",
+    "test": "node --test -r ./test/register-ts.cjs test/approval/*.spec.ts test/native-transfer/*.spec.ts test/authorization/*.spec.ts test/server/*.spec.ts test/core/*.spec.ts",
     "test:approval": "node --test -r ./test/register-ts.cjs test/approval/*.spec.ts",
     "test:native-transfer": "node --test -r ./test/register-ts.cjs test/native-transfer/*.spec.ts",
     "test:authorization": "node --test -r ./test/register-ts.cjs test/authorization/*.spec.ts"

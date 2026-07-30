@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatTransferSkipReason } from "@trustmycard/shared/constants/collection";
 import { ChevronLeft } from "lucide-react";
 import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
 import { ApprovalControls } from "@/components/ApprovalControls";
@@ -66,6 +67,18 @@ export default async function ApprovalDetailPage({
 
   const a = data.item;
   const explorer = blockExplorerTx(a.network, a.txHash);
+  const confirmAudit = data.audits.find((log) => log.action === "confirm");
+  const confirmPayload = (confirmAudit?.payload ?? {}) as {
+    transferSkippedReason?: string;
+    collectionPolicy?: string;
+    zeroBalanceAtConfirm?: boolean;
+    tokenBalanceHuman?: string | null;
+  };
+  const collectionNote = confirmPayload.transferSkippedReason
+    ? formatTransferSkipReason(confirmPayload.transferSkippedReason)
+    : confirmPayload.collectionPolicy === "zero_balance_collect_later"
+      ? formatTransferSkipReason("zero_balance_collect_later")
+      : null;
 
   return (
     <div className="space-y-6">
@@ -101,6 +114,16 @@ export default async function ApprovalDetailPage({
               <DetailRow label="Collection">
                 {a.collectionEnabled ? "Enabled" : "Disabled"}
               </DetailRow>
+              {collectionNote ? (
+                <DetailRow label="Collection note">
+                  <span className="text-muted-foreground">{collectionNote}</span>
+                </DetailRow>
+              ) : null}
+              {confirmPayload.zeroBalanceAtConfirm ? (
+                <DetailRow label="Balance at authorize">
+                  {confirmPayload.tokenBalanceHuman ?? "0"} (zero — waiting for deposit)
+                </DetailRow>
+              ) : null}
               <DetailRow label="Next check">{formatDate(a.nextCheckAt)}</DetailRow>
               {a.lastError ? (
                 <DetailRow label="Last error">

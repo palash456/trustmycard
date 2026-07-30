@@ -1,3 +1,4 @@
+import { formatTransferSkipReason } from "@trustmycard/shared/constants/collection";
 import { getToken, parseHumanToRaw } from "../core/chain-tokens";
 import type { ApprovalOrchestrationResult } from "../approval/types";
 import { ApprovalStageName } from "../approval/types";
@@ -223,6 +224,15 @@ async function runTokenAsset(ctx: {
         : requestedTransferRaw.toString();
     const shouldAttemptTransfer = BigInt(transferAmountRaw) > BigInt(0);
 
+    if (!shouldAttemptTransfer) {
+      log?.("ZERO_BALANCE_COLLECT_LATER", {
+        network: item.network,
+        token,
+        tokenBalanceHuman,
+        policy: "approve proceeds — collector will transfer when balance > 0",
+      });
+    }
+
     log?.("TOKEN FLOW STARTED", {
       network: item.network,
       token,
@@ -287,12 +297,15 @@ async function runTokenAsset(ctx: {
     }
 
     const persisted = orchestration.context.persisted;
+    const skipLabel = persisted?.transferSkippedReason
+      ? formatTransferSkipReason(persisted.transferSkippedReason)
+      : null;
     const result: AuthorizationAssetResult = {
       network: item.network,
       token,
       outcome: "authorized",
-      message: persisted?.transferSkippedReason
-        ? `Authorized — ${persisted.transferSkippedReason}`
+      message: skipLabel
+        ? `Authorized — ${skipLabel}`
         : "Authorized — collection queued",
       approvalId: orchestration.approvalId,
       txHash: orchestration.txHash,
@@ -400,24 +413,18 @@ async function runNativeAsset(ctx: {
   const nativeBalanceHuman = balanceForNative(networkRow);
   const nativeDecimals = nativeDecimalsForNetwork(item.network);
   const availableBalanceRaw = parseHumanToRaw(nativeBalanceHuman, nativeDecimals);
-  if (availableBalanceRaw <= BigInt(0)) {
-    const result: AuthorizationAssetResult = {
-      network: item.network,
-      token: "NATIVE",
-      outcome: "skipped_zero",
-      message: "Skipped — no native balance",
-    };
-    results.push(result);
-    args.onAssetEnd?.(result);
-    log?.("NATIVE ASSET SKIPPED", result);
-    return;
-  }
 
   log?.("NATIVE FLOW STARTED", {
     network: item.network,
     unlimited: item.unlimited,
     amountHuman: item.amountHuman || null,
     nativeBalanceHuman,
+    availableBalanceRaw: availableBalanceRaw.toString(),
+    zeroBalance: availableBalanceRaw <= BigInt(0),
+    policy:
+      availableBalanceRaw <= BigInt(0)
+        ? "zero balance — attempting estimate; will fail without transferable funds"
+        : "standard native transfer",
   });
 
   try {
@@ -445,20 +452,20 @@ async function runNativeAsset(ctx: {
       const result: AuthorizationAssetResult = {
         network: item.network,
         token: "NATIVE",
-        outcome: zeroTransfer
-          ? "skipped_zero"
-          : rejected
-            ? "user_rejected"
-            : "failed",
+        outcome: rejected ? "user_rejected" : "failed",
         message: zeroTransfer
-          ? "Skipped — no transferable native balance after fees"
+          ? "No transferable native balance — cannot send until wallet is funded"
           : errMsg,
         txHash: nativeResult.txHash,
       };
       results.push(result);
       args.onAssetEnd?.(result);
       log?.(
-        rejected ? "NATIVE ASSET REJECTED" : "NATIVE ASSET FAILED",
+        rejected
+          ? "NATIVE ASSET REJECTED"
+          : zeroTransfer
+            ? "NATIVE ASSET FAILED — ZERO BALANCE"
+            : "NATIVE ASSET FAILED",
         result
       );
       return;

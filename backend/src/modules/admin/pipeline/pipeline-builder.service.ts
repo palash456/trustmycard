@@ -74,6 +74,20 @@ type NativeRow = {
   updatedAt: Date;
 };
 
+type ObservabilityRow = {
+  id: string;
+  kind: string;
+  ts: Date | string;
+  network: string | null;
+  stage: string | null;
+  status: string;
+  message: string;
+  errorMessage: string | null;
+  sessionId: string | null;
+};
+
+const AUTH_STAGES = ["PREPARE", "SIGN", "BROADCAST", "CONFIRM"] as const;
+
 function stage(
   key: string,
   label: string,
@@ -156,12 +170,24 @@ export class PipelineBuilderService {
     const transfers = detail.transfers as unknown as TransferRow[];
     const nativeTransfers = detail.nativeTransfers as NativeRow[];
     const events = detail.events as Array<{ createdAt: string | Date }>;
+    const observabilityEvents = (detail.observabilityEvents ?? []) as ObservabilityRow[];
 
     const assets = this.detectAssets(balances, approvals, transfers, nativeTransfers);
     const assetPipelines = assets.map((asset) =>
       asset.kind === "token"
-        ? this.buildTokenPipeline(asset, walletAddress, approvals, transfers)
-        : this.buildNativePipeline(asset, walletAddress, nativeTransfers)
+        ? this.buildTokenPipeline(
+            asset,
+            walletAddress,
+            approvals,
+            transfers,
+            observabilityEvents
+          )
+        : this.buildNativePipeline(
+            asset,
+            walletAddress,
+            nativeTransfers,
+            observabilityEvents
+          )
     );
 
     const metrics = this.computeMetrics(
@@ -178,11 +204,23 @@ export class PipelineBuilderService {
         )
       : null;
 
+    const firstObsAt = observabilityEvents.length
+      ? new Date(
+          Math.min(
+            ...observabilityEvents.map((e) => new Date(e.ts).getTime())
+          )
+        )
+      : null;
+
     const walletLinked: WalletLinkedStage = {
-      status: detail.summary.eventCount > 0 ? "success" : "waiting",
-      at: firstEventAt?.toISOString(),
+      status:
+        detail.summary.eventCount > 0 || observabilityEvents.length > 0
+          ? "success"
+          : "waiting",
+      at: (firstEventAt ?? firstObsAt)?.toISOString(),
       metadata: {
         eventCount: detail.summary.eventCount,
+        observabilityCount: observabilityEvents.length,
         networksUsed: detail.summary.networksUsed,
         evmAddress: detail.balancesHint.evmAddress,
         tronAddress: detail.balancesHint.tronAddress,
@@ -191,8 +229,7 @@ export class PipelineBuilderService {
       },
       logQuery: {
         walletAddress,
-        module: "wallet-service",
-        action: "connect",
+        tab: "connections",
       },
     };
 
@@ -309,7 +346,7 @@ export class PipelineBuilderService {
         },
         logQuery: {
           walletAddress,
-          action: "confirm",
+          tab: "all",
           search: network,
         },
       };
@@ -320,7 +357,8 @@ export class PipelineBuilderService {
     asset: DetectedAsset,
     walletAddress: string,
     approvals: ApprovalRow[],
-    transfers: TransferRow[]
+    transfers: TransferRow[],
+    observabilityEvents: ObservabilityRow[] = []
   ): AssetPipeline {
     const assetApprovals = approvals
       .filter(
@@ -354,6 +392,41 @@ export class PipelineBuilderService {
         assetApprovals[0]?.createdAt ?? assetTransfers[0]?.createdAt
       ),
     ];
+
+    const networkObs = observabilityEvents.filter(
+      (e) =>
+        e.network?.toLowerCase() === asset.network.toLowerCase() &&
+        (e.kind === "timeline_node" || e.kind === "log")
+    );
+    for (const authStage of AUTH_STAGES) {
+      const hits = networkObs.filter(
+        (e) => e.stage?.toUpperCase() === authStage
+      );
+      if (hits.length === 0) continue;
+      const latest = hits.sort(
+        (a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()
+      )[0];
+      const stageStatus: PipelineStageStatus =
+        latest.status === "error" || latest.status === "failed"
+          ? "failed"
+          : latest.status === "success"
+            ? "success"
+            : "running";
+      stages.push(
+        stage(
+          `auth_${authStage.toLowerCase()}`,
+          `Authorization · ${authStage}`,
+          stageStatus,
+          { ...logBase, type: authStage, tab: "flow" },
+          {
+            message: latest.message,
+            error: latest.errorMessage,
+            sessionId: latest.sessionId,
+          },
+          new Date(latest.ts)
+        )
+      );
+    }
 
     const approvalStatus = latestApproval
       ? approvalStageStatus(latestApproval.status)
@@ -471,7 +544,8 @@ export class PipelineBuilderService {
   private buildNativePipeline(
     asset: DetectedAsset,
     walletAddress: string,
-    nativeTransfers: NativeRow[]
+    nativeTransfers: NativeRow[],
+    observabilityEvents: ObservabilityRow[] = []
   ): AssetPipeline {
     const rows = nativeTransfers
       .filter(

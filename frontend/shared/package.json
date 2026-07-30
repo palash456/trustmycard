@@ -42,7 +42,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
-    "test": "npm run build && node --test test/observability.spec.js"
+    "test": "npm run build && node --test test/observability.spec.js test/collection.spec.js"
   },
   "devDependencies": {
     "typescript": "^5",

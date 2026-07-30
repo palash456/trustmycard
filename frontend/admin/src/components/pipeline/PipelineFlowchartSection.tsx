@@ -15,7 +15,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { auditStructuredLink } from "@/lib/log-links";
+import { activityLink } from "@/lib/log-links";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { UserPipelineSnapshot } from "@/types/pipeline";
@@ -154,7 +154,12 @@ function StageHoverContent({ stage }: { stage: FlowchartStage }) {
         <BalanceGroupsPanel groups={stage.balanceGroups ?? []} />
       ) : null}
       <Link
-        href={auditStructuredLink(stage.logQuery)}
+        href={activityLink({
+          address: stage.logQuery.walletAddress,
+          network: stage.logQuery.network ?? stage.logQuery.search,
+          tab: stage.logQuery.tab ?? "all",
+          type: stage.logQuery.type ?? stage.logQuery.module ?? stage.logQuery.action,
+        })}
         className="inline-flex text-xs font-semibold text-primary hover:underline"
       >
         View full logs →

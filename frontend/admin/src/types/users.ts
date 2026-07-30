@@ -59,12 +59,19 @@ export type UserListResponse = {
   totalPages: number;
 };
 
+import type { UnifiedActivityItem } from "./activity-feed";
+
 export type UserTimelineItem = {
   type: string;
   id: string;
   at: string;
   label: string;
   status: string;
+  source?: string;
+  step?: string;
+  error?: string | null;
+  network?: string | null;
+  sessionId?: string | null;
 };
 
 export type UserDetail = {
@@ -103,6 +110,8 @@ export type UserDetail = {
     successRate: number;
   };
   timeline: UserTimelineItem[];
+  activityFeed?: UnifiedActivityItem[];
+  activityFeedTotal?: number;
   balancesHint: { evmAddress: string | null; tronAddress: string | null };
 };
 

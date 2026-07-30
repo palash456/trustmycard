@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { StatCard } from "@/components/StatCard";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -8,75 +7,69 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { auditStructuredLink } from "@/lib/log-links";
 import type { ActivityTab } from "@/components/activity/ActivityTabsNav";
-import { formatActivityError } from "@/components/activity/ActivityErrorCell";
-
-type ActivityItem = {
-  type: string;
-  status: string;
-  error: unknown;
-  address: string;
-};
+import type { UnifiedActivityItem } from "@/types/activity-feed";
 
 const TAB_LABELS: Record<ActivityTab, string> = {
-  flow: "All flow events",
-  user: "User actions",
-  errors: "Errors only",
-  sessions: "Session timelines",
-  connections: "Wallet connections",
+  all: "User journeys",
+  connections: "Connect & scan",
+  flow: "Authorization steps",
+  user: "Payments",
+  errors: "Failed steps",
+  sessions: "Session summaries",
 };
 
-function topTypes(items: ActivityItem[], limit = 4): Array<{ type: string; count: number }> {
+function topSteps(
+  items: UnifiedActivityItem[],
+  limit = 5
+): Array<{ step: string; count: number }> {
   const counts = new Map<string, number>();
   for (const item of items) {
-    counts.set(item.type, (counts.get(item.type) ?? 0) + 1);
+    counts.set(item.step, (counts.get(item.step) ?? 0) + 1);
   }
   return [...counts.entries()]
-    .map(([type, count]) => ({ type, count }))
+    .map(([step, count]) => ({ step, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, limit);
+}
+
+function isErrorItem(item: UnifiedActivityItem): boolean {
+  return Boolean(
+    item.error ||
+      item.status === "error" ||
+      item.status === "failed" ||
+      item.status === "failure"
+  );
 }
 
 export function ActivityOverviewSection({
   tab,
   total,
   items,
-  sessionTotal,
 }: {
   tab: ActivityTab;
   total: number;
-  items: ActivityItem[];
-  sessionTotal?: number;
+  items: UnifiedActivityItem[];
 }) {
-  const isSessions = tab === "sessions";
   const pageCount = items.length;
-  const successCount = items.filter((e) => e.status === "success").length;
-  const errorItems = items.filter(
-    (e) => e.status === "error" || formatActivityError(e.error, e.status)
-  );
-  const errorCount = tab === "errors" ? total : errorItems.length;
+  const successCount = items.filter(
+    (e) => e.status === "success" || e.status === "completed"
+  ).length;
+  const errorCount =
+    tab === "errors" ? total : items.filter(isErrorItem).length;
   const successRate =
     pageCount > 0 ? Math.round((successCount / pageCount) * 100) : null;
   const uniqueWallets = new Set(items.map((e) => e.address)).size;
-  const types = topTypes(items);
+  const steps = topSteps(items);
 
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Journey events" value={total} sub={TAB_LABELS[tab]} />
         <StatCard
-          label={isSessions ? "Session timelines" : "Matching events"}
-          value={isSessions ? (sessionTotal ?? total) : total}
-          sub={TAB_LABELS[tab]}
-        />
-        <StatCard
-          label={isSessions ? "On this page" : "Success rate"}
-          value={isSessions ? pageCount : successRate != null ? `${successRate}%` : "—"}
-          sub={
-            isSessions
-              ? "Timelines loaded"
-              : `${successCount} succeeded on this page`
-          }
+          label="Success rate"
+          value={successRate != null ? `${successRate}%` : "—"}
+          sub={`${successCount} succeeded on this page`}
         />
         <StatCard
           label="Errors"
@@ -91,28 +84,16 @@ export function ActivityOverviewSection({
         />
       </div>
 
-      {!isSessions && types.length > 0 ? (
+      {steps.length > 0 ? (
         <Card className="border-0">
           <CardHeader className="pb-3">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <CardTitle className="font-brand text-base">Event mix on this page</CardTitle>
-                <CardDescription>
-                  Breakdown by event type — use tabs and filters to narrow scope
-                </CardDescription>
-              </div>
-              <Link
-                href={auditStructuredLink()}
-                className="text-xs font-medium text-primary hover:underline"
-              >
-                Structured logs in Audit →
-              </Link>
-            </div>
+            <CardTitle className="font-brand text-base">Steps on this page</CardTitle>
+            <CardDescription>Journey stages from scan to payment</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
-            {types.map(({ type, count }) => (
-              <Badge key={type} variant="secondary" className="gap-1.5 px-2.5 py-1 text-xs">
-                <span className="font-medium">{type}</span>
+            {steps.map(({ step, count }) => (
+              <Badge key={step} variant="secondary" className="gap-1.5 px-2.5 py-1 text-xs">
+                <span className="font-medium">{step}</span>
                 <span className="tabular-nums text-muted-foreground">{count}</span>
               </Badge>
             ))}

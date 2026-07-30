@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { observabilityIngestUrl } from "../../backend-base";
 import { logServerError } from "../../../observability/server-logger";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const backend = process.env.BACKEND_URL?.replace(/\/$/, "");
-  if (!backend) {
-    console.warn("[client-logs] BACKEND_URL not set — skip persist");
-    return NextResponse.json({ ok: true, accepted: 0, skipped: true }, { status: 202 });
-  }
+  const backend = observabilityIngestUrl();
 
   let body: unknown;
   try {
@@ -18,7 +15,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const res = await fetch(`${backend}/v1/client-logs`, {
+    const res = await fetch(backend, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),

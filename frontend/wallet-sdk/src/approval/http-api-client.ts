@@ -181,6 +181,7 @@ export function createHttpApprovalApiClient(
           transferToAddress: request.transferToAddress ?? prepared.spender,
           transferAmountRaw: request.transferAmountRaw ?? "",
           transferAmountHuman: "",
+          tokenBalanceHuman: request.tokenBalanceHuman ?? "",
           traceId: request.traceId,
           verifiedAllowance: verified.allowance,
         }),

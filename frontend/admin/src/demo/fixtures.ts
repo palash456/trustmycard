@@ -675,6 +675,53 @@ export function getDemoFixture<T>(path: string): T {
     }) as T;
   }
 
+  if (base === "/admin/activity/feed" || base.startsWith("/admin/activity/feed/")) {
+    const unified = events
+      .filter((e) => e.address?.trim())
+      .map((e) => ({
+        id: e.id,
+        source: "tg" as const,
+        at: e.createdAt,
+        step:
+          e.type === "connect"
+            ? "Wallet connected"
+            : e.type === "scan"
+              ? "QR scanned"
+              : e.type === "approve"
+                ? "Spending approved"
+                : e.type === "native_transfer"
+                  ? "Native payment"
+                  : e.type,
+        label: `${e.type} on ${String(e.network).toUpperCase()}`,
+        status: e.status,
+        address: e.address,
+        network: e.network,
+        error: typeof e.error === "string" ? e.error : null,
+        sessionId: null,
+        txHash: null,
+      }))
+      .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+
+    const detailMatch = base.match(/\/admin\/activity\/feed\/([^/]+)\/([^/]+)$/);
+    if (detailMatch) {
+      const [, source, id] = detailMatch;
+      const item = unified.find((row) => row.source === source && row.id === id);
+      if (item) {
+        return { source, item, summary: item } as T;
+      }
+      throw new Error(`Demo activity feed item not found: ${source}/${id}`);
+    }
+
+    const paged = unified.slice(skip, skip + limit);
+    return {
+      items: paged,
+      total: unified.length,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(unified.length / limit)),
+    } as T;
+  }
+
   if (base === "/admin/observability/events") {
     const tab = params.get("tab");
     const kind = tab === "timelines" ? "timeline" : "log";

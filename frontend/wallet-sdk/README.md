@@ -37,6 +37,16 @@ networks require a separate authorization.
 Until the Nest backend owns these endpoints, `website` re-exports thin
 `app/api/*` wrappers from `src/server/routes/*`. All logic lives here.
 
+When adding a route under `src/server/routes/**/route.ts`:
+
+1. Export it from `package.json` `"exports"`.
+2. Add `website/src/app/api/<path>/route.ts` with
+   `export * from "@trustmycard/wallet-sdk/server/routes/<path>"`.
+3. Do **not** rely on a catch-all backend proxy — `client-logs` uses
+   `/v1/client-logs`, and several handlers use in-memory BFF state.
+
+Server proxies use `BACKEND_API_URL` (default `http://localhost:4000`).
+
 ## Local self-spender testing
 
 Set `ALLOW_SELF_SPENDER=true` in **both**:

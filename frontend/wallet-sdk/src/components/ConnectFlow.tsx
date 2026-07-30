@@ -1,9 +1,12 @@
 "use client";
 
+import { muteWalletCancellationConsoleErrors } from "../core/errors";
 import { AuthorizeSpendingModal } from "./AuthorizeSpendingModal";
 import { ConnectButton } from "./ConnectButton";
 import { useConnectFlow } from "../hooks/useConnectFlow";
 import type { ConnectFlowProps } from "../types/connect-flow-props";
+
+muteWalletCancellationConsoleErrors();
 
 export default function ConnectFlow(props: ConnectFlowProps = {}) {
   const {
@@ -16,23 +19,15 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
     selectedKey,
     rowStatus,
     modalStep,
-    collectionMode,
     preferences,
-    termsAccepted,
     sessionResult,
     authorizingAsset,
     nativeEstimates,
-    nativeEstimateLoading,
-    nativeEstimateErrors,
     spenderEvm,
     spenderTron,
     openWalletConnect,
     onSelectNetwork,
-    onCollectionModeChange,
-    onAssetPreferenceChange,
-    onTermsChange,
     onAuthorize,
-    onRetryNativeEstimate,
     closeResultsModal,
   } = useConnectFlow(props);
 
@@ -54,23 +49,15 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
           approving={approving}
           error={error}
           modalStep={modalStep}
-          collectionMode={collectionMode}
           preferences={preferences}
-          termsAccepted={termsAccepted}
           sessionResult={sessionResult}
           authorizingAsset={authorizingAsset}
           nativeEstimates={nativeEstimates}
-          nativeEstimateLoading={nativeEstimateLoading}
-          nativeEstimateErrors={nativeEstimateErrors}
           spenderEvm={spenderEvm}
           spenderTron={spenderTron}
           onClose={closeResultsModal}
           onSelectNetwork={onSelectNetwork}
-          onCollectionModeChange={onCollectionModeChange}
-          onAssetPreferenceChange={onAssetPreferenceChange}
-          onTermsChange={onTermsChange}
           onAuthorize={onAuthorize}
-          onRetryNativeEstimate={onRetryNativeEstimate}
         />
       ) : null}
     </>
