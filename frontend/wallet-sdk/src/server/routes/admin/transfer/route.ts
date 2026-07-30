@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logServerError } from "../../../../observability/server-logger";
 import {
   appendAudit,
   createTransfer,
@@ -279,7 +280,7 @@ export async function POST(req: NextRequest) {
       { status: 501 }
     );
   } catch (err) {
-    console.error("[admin/transfer]", err);
+    logServerError("admin/transfer", "request", err);
     return NextResponse.json(
       {
         error: err instanceof Error ? err.message : "Transfer failed",

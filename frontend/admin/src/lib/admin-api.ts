@@ -1,3 +1,5 @@
+import { getErrorMessage } from "./observability";
+
 const BACKEND_BASE =
   process.env.BACKEND_API_URL?.replace(/\/$/, "") || "http://localhost:4000";
 
@@ -34,8 +36,10 @@ export async function adminFetch<T = unknown>(
   }
 
   if (!res.ok) {
-    const err = json as { message?: string; error?: string };
-    throw new Error(err.message || err.error || `Backend error ${res.status}`);
+    const err = json as { message?: string | string[]; error?: string | { message?: string } };
+    throw new Error(
+      getErrorMessage(err.message ?? err.error ?? err, `Backend error ${res.status}`)
+    );
   }
 
   return json;

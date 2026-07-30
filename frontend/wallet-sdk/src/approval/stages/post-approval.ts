@@ -1,3 +1,4 @@
+import { failStageFromError } from "../resilience/errors";
 import {
   ApprovalStageName,
   cancelledStage,
@@ -35,11 +36,7 @@ export const postApprovalStage: ApprovalStage = {
         return cancelledStage(ApprovalStageName.POST_APPROVAL);
       }
       ctx.post = { logged: false };
-      return failStage(
-        ApprovalStageName.POST_APPROVAL,
-        err instanceof Error ? err.message : "Post-approval actions failed",
-        { retryable: true }
-      );
+      return failStageFromError(ApprovalStageName.POST_APPROVAL, err);
     }
   },
 };

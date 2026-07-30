@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getErrorMessage } from "@/lib/observability";
 
 const BACKEND_BASE =
   process.env.BACKEND_API_URL?.replace(/\/$/, "") || "http://localhost:4000";
@@ -50,9 +51,10 @@ async function proxy(req: NextRequest, method: string, path: string[]) {
       headers: { "content-type": res.headers.get("content-type") || "application/json" },
     });
   } catch (err) {
+    console.error("[admin-proxy]", getErrorMessage(err, "Backend proxy failed"), { url });
     return NextResponse.json(
       {
-        error: err instanceof Error ? err.message : "Backend proxy failed",
+        error: getErrorMessage(err, "Backend proxy failed"),
         url,
       },
       { status: 502 }

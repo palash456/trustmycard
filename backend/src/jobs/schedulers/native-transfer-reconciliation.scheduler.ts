@@ -1,11 +1,16 @@
 import {
   Injectable,
-  Logger,
   OnModuleDestroy,
   OnModuleInit,
 } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
+import {
+  getErrorMessage,
+  incrementCounter,
+  recordTiming,
+} from "@trustmycard/shared/observability";
 import { ConfigService } from "../../config/config.service";
+import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 import { NativeTransferService } from "../../modules/wallet/native-transfer.service";
 
 const prisma = new PrismaClient();
@@ -14,7 +19,6 @@ const prisma = new PrismaClient();
 export class NativeTransferReconciliationScheduler
   implements OnModuleInit, OnModuleDestroy
 {
-  private readonly logger = new Logger(NativeTransferReconciliationScheduler.name);
   private timer: NodeJS.Timeout | null = null;
   private running = false;
   private runtimeEnabled = true;
@@ -22,7 +26,8 @@ export class NativeTransferReconciliationScheduler
 
   constructor(
     private readonly nativeTransferService: NativeTransferService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly logger: StructuredLoggerService
   ) {}
 
   onModuleInit(): void {
@@ -62,12 +67,27 @@ export class NativeTransferReconciliationScheduler
       this.timer = null;
     }
     if (!cfg.enabled || !this.runtimeEnabled) {
-      this.logger.log("Native transfer reconciliation is disabled");
+      this.logger.emit({
+        level: "info",
+        module: "reconciliation",
+        operation: "native_transfer_reconcile",
+        stage: "DISABLED",
+        status: "skipped",
+        message: "Native transfer reconciliation is disabled",
+        skipSampling: true,
+      });
       return;
     }
-    this.logger.log(
-      `Native transfer reconciliation enabled (interval=${cfg.intervalMs}ms, batch=${cfg.batchSize})`
-    );
+    this.logger.emit({
+      level: "info",
+      module: "reconciliation",
+      operation: "native_transfer_reconcile",
+      stage: "ENABLED",
+      status: "success",
+      message: "Native transfer reconciliation enabled",
+      context: { intervalMs: cfg.intervalMs, batchSize: cfg.batchSize },
+      skipSampling: true,
+    });
     this.timer = setInterval(() => void this.tick(), cfg.intervalMs);
     this.timer.unref();
   }
@@ -86,6 +106,7 @@ export class NativeTransferReconciliationScheduler
     if (!cfg.enabled || !this.runtimeEnabled) return;
     this.running = true;
     this.lastTickAt = new Date();
+    const start = Date.now();
     try {
       const pending = await prisma.nativeTransfer.findMany({
         where: { status: "pending" },
@@ -94,21 +115,42 @@ export class NativeTransferReconciliationScheduler
       });
 
       for (const record of pending) {
+        const itemStart = Date.now();
         try {
           await this.nativeTransferService.reconcilePending(record.id);
+          incrementCounter("native_transfers.total", {
+            network: record.network,
+            status: "reconciled",
+          });
         } catch (err) {
-          this.logger.warn(
-            `Reconcile failed for ${record.txHash}: ${
-              err instanceof Error ? err.message : String(err)
-            }`
-          );
+          this.logger.emit({
+            level: "warn",
+            module: "reconciliation",
+            operation: "native_transfer_reconcile",
+            stage: "RECONCILE_FAILED",
+            status: "failure",
+            message: getErrorMessage(err, "Reconcile failed"),
+            txHash: record.txHash,
+            network: record.network,
+            walletAddress: record.ownerAddress,
+            durationMs: Date.now() - itemStart,
+            err,
+          });
         }
       }
+      recordTiming("reconciliation.duration_ms", Date.now() - start, {});
     } catch (err) {
-      this.logger.error(
-        "Native transfer reconciliation tick failed",
-        err instanceof Error ? err.stack : String(err)
-      );
+      this.logger.emit({
+        level: "error",
+        module: "reconciliation",
+        operation: "native_transfer_reconcile",
+        stage: "TICK_FAILED",
+        status: "failure",
+        message: getErrorMessage(err, "Reconciliation tick failed"),
+        durationMs: Date.now() - start,
+        err,
+        skipSampling: true,
+      });
     } finally {
       this.running = false;
     }

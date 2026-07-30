@@ -1,5 +1,5 @@
 import { waitForTransactionConfirmation } from "../approval/confirmation/poller";
-import { isUserRejection } from "../core/errors";
+import { getErrorMessage, isUserRejection } from "../core/errors";
 import { isEvmChainKey } from "../core/native-chains";
 import { ensureEvmChain } from "./ensure-evm-chain";
 import type { NativeTransferApiPort, NativeTransferChainPort } from "./ports";
@@ -324,7 +324,7 @@ export class NativeTransferOrchestrator {
         pendingRegistered: confirmationTimedOut,
       };
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = getErrorMessage(err, "Native transfer failed");
       const rejected = isUserRejection(err);
       const stage =
         !ctx.estimate

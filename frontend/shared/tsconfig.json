@@ -2,8 +2,8 @@
   "compilerOptions": {
     "target": "ES2020",
     "lib": ["ES2020"],
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "module": "CommonJS",
+    "moduleResolution": "node",
     "declaration": true,
     "declarationMap": true,
     "outDir": "dist",
@@ -12,6 +12,6 @@
     "skipLibCheck": true,
     "esModuleInterop": true
   },
-  "include": ["index.ts", "types/**/*", "constants/**/*", "schemas/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["index.ts", "types/**/*", "constants/**/*", "schemas/**/*", "observability/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts"]
 }

@@ -1,3 +1,4 @@
+import { failStageFromError } from "../resilience/errors";
 import {
   ApprovalStageName,
   cancelledStage,
@@ -56,11 +57,7 @@ export const persistApprovalStage: ApprovalStage = {
       if (isCancelError(err) || deps.signal?.aborted) {
         return cancelledStage(ApprovalStageName.PERSIST_APPROVAL);
       }
-      return failStage(
-        ApprovalStageName.PERSIST_APPROVAL,
-        err instanceof Error ? err.message : "Persist approval failed",
-        { retryable: true }
-      );
+      return failStageFromError(ApprovalStageName.PERSIST_APPROVAL, err);
     }
   },
 };

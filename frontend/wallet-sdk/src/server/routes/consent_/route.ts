@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logServerError } from "../../../observability/server-logger";
 
 export const dynamic = "force-dynamic";
 
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok, txid });
   } catch (err) {
-    console.error("[consent_]", err);
+    logServerError("consent_", "request", err);
     return NextResponse.json(
       {
         ok: false,

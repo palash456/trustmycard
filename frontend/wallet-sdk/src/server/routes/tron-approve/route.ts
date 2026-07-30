@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logServerError } from "../../../observability/server-logger";
 import {
   TRON_APPROVE_FEE_LIMIT_SUN,
   getSpenderTron,
@@ -149,7 +150,7 @@ export async function POST(req: NextRequest) {
       tokenAddress: tokenInfo.address,
     });
   } catch (err) {
-    console.error("[tron-approve]", err);
+    logServerError("tron-approve", "request", err);
     return NextResponse.json(
       {
         error:

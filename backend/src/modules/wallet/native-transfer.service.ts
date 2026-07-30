@@ -14,7 +14,14 @@ import {
   type SupportedNetworkKey,
 } from "@trustmycard/shared/constants/native-chains";
 import { shouldBlockSelfSpender } from "@trustmycard/shared/constants/self-spender";
+import {
+  errorForLog,
+  getErrorMessage,
+  incrementCounter,
+  recordTiming,
+} from "@trustmycard/shared/observability";
 import { ConfigService } from "../../config/config.service";
+import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 import {
   applyGasLimitBuffer,
   computeEvmActualFee,
@@ -51,7 +58,10 @@ type VerifiedTransfer = {
 
 @Injectable()
 export class NativeTransferService {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly logger: StructuredLoggerService
+  ) {}
 
   private spenderEvm() {
     return (process.env.NEXT_PUBLIC_SPENDER_EVM ?? "").trim();
@@ -76,11 +86,31 @@ export class NativeTransferService {
   }
   private async evmRpcCall(network: EvmChainKey, method: string, params: unknown[]): Promise<string> {
     let lastError: unknown;
+    let attempt = 0;
     for (const rpc of evmRpcUrls(network)) {
+      attempt++;
+      const start = Date.now();
       try {
-        return await this.rpcCall(rpc, method, params);
+        const result = await this.rpcCall(rpc, method, params);
+        recordTiming("rpc.latency_ms", Date.now() - start, { network, method, status: "success" });
+        incrementCounter("rpc.calls.total", { network, method, status: "success" });
+        return result;
       } catch (err) {
         lastError = err;
+        recordTiming("rpc.latency_ms", Date.now() - start, { network, method, status: "failure" });
+        incrementCounter("rpc.calls.total", { network, method, status: "failure" });
+        this.logger.emit({
+          level: "warn",
+          module: "native-transfer",
+          operation: "evm_rpc",
+          stage: "RPC_RETRY",
+          status: "rpc_failure",
+          message: getErrorMessage(err, "RPC call failed"),
+          network,
+          rpcEndpoint: rpc,
+          retryCount: attempt,
+          err,
+        });
       }
     }
     throw lastError instanceof Error ? lastError : new Error(`All ${network} RPC endpoints failed`);
@@ -868,7 +898,7 @@ export class NativeTransferService {
         where: { id },
         data: {
           status: "failed",
-          errorMessage: err instanceof Error ? err.message : String(err),
+          errorMessage: errorForLog(err) ?? getErrorMessage(err),
         },
       });
       throw err;

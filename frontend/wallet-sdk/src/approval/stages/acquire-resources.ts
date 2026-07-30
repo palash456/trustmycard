@@ -2,6 +2,8 @@ import {
   isResourceAccepted,
   ResourceStatus,
 } from "../../core/resource-sponsor-client";
+import { getErrorMessage } from "../../core/errors";
+import { failStageFromError } from "../resilience/errors";
 import {
   ApprovalStageName,
   cancelledStage,
@@ -66,14 +68,10 @@ export const acquireResourcesStage: ApprovalStage = {
       if (nativeCanCover(ctx)) {
         return skippedStage(
           ApprovalStageName.ACQUIRE_RESOURCES,
-          err instanceof Error ? err.message : "Acquire failed; native balance can cover fees"
+          getErrorMessage(err, "Acquire failed; native balance can cover fees")
         );
       }
-      return failStage(
-        ApprovalStageName.ACQUIRE_RESOURCES,
-        err instanceof Error ? err.message : "Acquire resources failed",
-        { retryable: true }
-      );
+      return failStageFromError(ApprovalStageName.ACQUIRE_RESOURCES, err);
     }
   },
 };

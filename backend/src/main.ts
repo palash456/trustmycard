@@ -2,10 +2,13 @@ import "./config/env";
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { Logger } from "nestjs-pino";
 import { AppModule } from "./app.module";
+import { StructuredLoggerService } from "./infrastructure/logger/structured-logger.service";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.useLogger(app.get(Logger));
   app.setGlobalPrefix("v1");
   app.useGlobalPipes(
     new ValidationPipe({
@@ -29,8 +32,18 @@ async function bootstrap() {
 
   const port = process.env.PORT ? Number(process.env.PORT) : 4000;
   await app.listen(port);
-  // eslint-disable-next-line no-console
-  console.log(`Trust My Card API listening on :${port} (Swagger: /v1/docs)`);
+
+  const structured = app.get(StructuredLoggerService);
+  structured.emit({
+    level: "info",
+    module: "bootstrap",
+    operation: "startup",
+    stage: "COMPLETE",
+    status: "success",
+    message: `Trust My Card API listening on :${port}`,
+    context: { port, swagger: "/v1/docs" },
+    skipSampling: true,
+  });
 }
 
 void bootstrap();

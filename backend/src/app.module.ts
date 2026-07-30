@@ -1,4 +1,5 @@
-import { Module } from "@nestjs/common";
+import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
+import { APP_FILTER, APP_INTERCEPTOR } from "@nestjs/core";
 import { ConfigModule } from "./config/config.module";
 import { ApprovalsModule } from "./modules/approvals/approval.module";
 import { AuthModule } from "./modules/auth/auth.module";
@@ -16,9 +17,18 @@ import { AdminModule } from "./modules/admin/admin.module";
 import { SettingsModule } from "./modules/settings/settings.module";
 import { ResourcesModule } from "./modules/resources/resources.module";
 import { JobsModule } from "./jobs/jobs.module";
+import { AppLoggerModule } from "./infrastructure/logger/logger.module";
+import { MetricsModule } from "./infrastructure/metrics/metrics.module";
+import { CorrelationMiddleware } from "./common/middleware/correlation.middleware";
+import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
+import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
+import { ObservabilityModule } from "./modules/observability/observability.module";
 
 @Module({
   imports: [
+    AppLoggerModule,
+    MetricsModule,
+    ObservabilityModule,
     ConfigModule,
     AuthModule,
     UsersModule,
@@ -37,5 +47,13 @@ import { JobsModule } from "./jobs/jobs.module";
     SettingsModule,
     JobsModule,
   ],
+  providers: [
+    { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(CorrelationMiddleware).forRoutes("*");
+  }
+}

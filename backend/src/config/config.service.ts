@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { getErrorMessage } from "@trustmycard/shared/observability";
 import { PrismaClient } from "@prisma/client";
 import { EventEmitter } from "events";
 import {
@@ -39,9 +40,7 @@ export class ConfigService implements OnModuleInit {
       }
     } catch (err) {
       this.logger.warn(
-        `AppSettings table unavailable, using env defaults only: ${
-          err instanceof Error ? err.message : String(err)
-        }`
+        `AppSettings table unavailable, using env defaults only: ${getErrorMessage(err)}`
       );
     }
 

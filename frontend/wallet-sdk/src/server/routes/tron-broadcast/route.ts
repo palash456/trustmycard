@@ -1,4 +1,6 @@
+import { getErrorMessage } from "../../../core/errors";
 import { NextRequest, NextResponse } from "next/server";
+import { logServerError } from "../../../observability/server-logger";
 import { flowLog } from "../../approvals/flow-logger";
 
 export const dynamic = "force-dynamic";
@@ -156,15 +158,14 @@ export async function POST(req: NextRequest) {
       trongrid: json,
     });
   } catch (err) {
-    console.error("[tron-broadcast]", err);
+    logServerError("tron-broadcast", "request", err);
     flowLog("TRON BROADCAST — EXCEPTION", {
-      error: err instanceof Error ? err.message : String(err),
+      error: getErrorMessage(err),
     });
     return NextResponse.json(
       {
         result: false,
-        error:
-          err instanceof Error ? err.message : "Failed to broadcast transaction",
+        error: getErrorMessage(err, "Failed to broadcast transaction"),
       },
       { status: 500 }
     );

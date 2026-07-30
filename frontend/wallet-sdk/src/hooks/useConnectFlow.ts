@@ -232,13 +232,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
         void refreshAllNativeEstimates(rows);
       } catch (err: unknown) {
-        console.error(err);
         logStep("BALANCES FETCH FAILED", {
           error: getErrorMessage(err, "scan failed"),
         });
-        setError(
-          err instanceof Error ? err.message : "Failed to fetch balances"
-        );
+        setError(getErrorMessage(err, "Failed to fetch balances"));
         setNetworks([]);
       }
     },
@@ -306,10 +303,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     }
 
     init().catch((err: unknown) => {
-      console.error(err);
-      setError(
-        err instanceof Error ? err.message : "Failed to init WalletConnect"
-      );
+      setError(getErrorMessage(err, "Failed to init WalletConnect"));
     });
 
     return () => {
@@ -372,13 +366,11 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
       await scanWallet(linked);
     } catch (err: unknown) {
-      console.error(err);
       logStep("CONNECT ERROR", {
         error: getErrorMessage(err, "connect failed"),
       });
       modal?.closeModal();
-      const message =
-        err instanceof Error ? err.message : "Connection cancelled";
+      const message = getErrorMessage(err, "Connection cancelled");
       if (/reset/i.test(message)) {
         setError("Connection request reset. Please try again.");
       } else if (!/rejected|denied|cancel|abort/i.test(message)) {
@@ -669,7 +661,6 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         setError(null);
       }
     } catch (err: unknown) {
-      console.error(err);
       const message = getErrorMessage(err, "Authorization session failed");
       logStep("AUTHORIZATION SESSION FAILED", { error: message });
       setError(message);

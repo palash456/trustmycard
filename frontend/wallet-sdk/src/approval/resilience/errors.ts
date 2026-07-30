@@ -1,4 +1,4 @@
-import { isUserRejection } from "../../core/errors";
+import { getErrorMessage, getErrorCode, isUserRejection } from "../../core/errors";
 import type { ApprovalContext, ApprovalStageName, StageResult } from "../types";
 import { failStage, StageStatus } from "../types";
 
@@ -37,12 +37,8 @@ export function classifyFailure(err: unknown): ClassifiedFailure {
   }
 
   const e = err as { code?: string; name?: string; message?: string };
-  const message =
-    err instanceof Error
-      ? err.message
-      : typeof err === "string"
-        ? err
-        : e.message ?? "Unknown error";
+  const message = getErrorMessage(err, "Unknown error");
+  const code = e.code ?? getErrorCode(err) ?? undefined;
 
   if (
     e.code === "CANCELLED" ||

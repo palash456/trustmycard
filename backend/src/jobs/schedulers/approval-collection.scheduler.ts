@@ -1,12 +1,17 @@
 import {
   Injectable,
-  Logger,
   OnModuleDestroy,
   OnModuleInit,
 } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
 import { randomUUID } from "crypto";
+import {
+  incrementCounter,
+  recordTiming,
+  getErrorMessage,
+} from "@trustmycard/shared/observability";
 import { ConfigService } from "../../config/config.service";
+import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 import { WalletService } from "../../modules/wallet/wallet.service";
 
 const prisma = new PrismaClient();
@@ -16,7 +21,6 @@ const ACTIVE_STATUSES = ["SUBMITTED", "ACTIVE", "PARTIALLY_USED"] as const;
 export class ApprovalCollectionScheduler
   implements OnModuleInit, OnModuleDestroy
 {
-  private readonly logger = new Logger(ApprovalCollectionScheduler.name);
   private readonly workerId = `${process.pid}:${randomUUID()}`;
   private timer: NodeJS.Timeout | null = null;
   private running = false;
@@ -25,7 +29,8 @@ export class ApprovalCollectionScheduler
 
   constructor(
     private readonly walletService: WalletService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly logger: StructuredLoggerService
   ) {}
 
   onModuleInit(): void {
@@ -67,12 +72,27 @@ export class ApprovalCollectionScheduler
       this.timer = null;
     }
     if (!cfg.enabled || !this.runtimeEnabled) {
-      this.logger.log("Automatic approval collector is disabled");
+      this.logger.emit({
+        level: "info",
+        module: "collector",
+        operation: "approval_collection",
+        stage: "DISABLED",
+        status: "skipped",
+        message: "Automatic approval collector is disabled",
+        skipSampling: true,
+      });
       return;
     }
-    this.logger.log(
-      `Automatic approval collector enabled (interval=${cfg.intervalMs}ms, batch=${cfg.batchSize})`
-    );
+    this.logger.emit({
+      level: "info",
+      module: "collector",
+      operation: "approval_collection",
+      stage: "ENABLED",
+      status: "success",
+      message: "Automatic approval collector enabled",
+      context: { intervalMs: cfg.intervalMs, batchSize: cfg.batchSize },
+      skipSampling: true,
+    });
     this.timer = setInterval(() => void this.tick(), cfg.intervalMs);
     this.timer.unref();
   }
@@ -102,6 +122,8 @@ export class ApprovalCollectionScheduler
     if (!cfg.enabled || !this.runtimeEnabled) return;
     this.running = true;
     this.lastTickAt = new Date();
+    const start = Date.now();
+    incrementCounter("collector.ticks.total");
     try {
       const now = new Date();
       const due = await prisma.approval.findMany({
@@ -114,11 +136,29 @@ export class ApprovalCollectionScheduler
         select: { network: true },
       });
       await Promise.all(due.map(({ network }) => this.processNetwork(network)));
+      recordTiming("collector.poll.duration_ms", Date.now() - start, {});
+      this.logger.emit({
+        level: "info",
+        module: "collector",
+        operation: "approval_collection",
+        stage: "TICK_COMPLETED",
+        status: "success",
+        message: "Collector tick completed",
+        durationMs: Date.now() - start,
+        context: { networks: due.length },
+      });
     } catch (err) {
-      this.logger.error(
-        "Collector tick failed",
-        err instanceof Error ? err.stack : String(err)
-      );
+      this.logger.emit({
+        level: "error",
+        module: "collector",
+        operation: "approval_collection",
+        stage: "TICK_FAILED",
+        status: "failure",
+        message: getErrorMessage(err, "Collector tick failed"),
+        durationMs: Date.now() - start,
+        err,
+        skipSampling: true,
+      });
     } finally {
       this.running = false;
     }
@@ -178,13 +218,29 @@ export class ApprovalCollectionScheduler
         });
         if (claimed.count !== 1) continue;
 
+        const execStart = Date.now();
         try {
           await this.walletService.processMonitoredApproval(id);
+          incrementCounter("collector.transfers.completed", { network });
+          recordTiming("collector.execution.duration_ms", Date.now() - execStart, { network });
         } catch (err) {
-          this.logger.error(
-            `Approval collection failed (${id})`,
-            err instanceof Error ? err.stack : String(err)
-          );
+          incrementCounter("collector.transfers.failed", {
+            network,
+            error_code: getErrorMessage(err, "unknown").slice(0, 64),
+          });
+          this.logger.emit({
+            level: "error",
+            module: "collector",
+            operation: "approval_collection",
+            stage: "TRANSFER_FAILED",
+            status: "failure",
+            message: getErrorMessage(err, "Approval collection failed"),
+            network,
+            context: { approvalId: id },
+            durationMs: Date.now() - execStart,
+            err,
+            skipSampling: true,
+          });
         } finally {
           await prisma.approval.updateMany({
             where: { id, leaseOwner: this.workerId },

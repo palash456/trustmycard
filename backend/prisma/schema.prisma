@@ -177,3 +177,52 @@ model AppSettings {
   updatedAt DateTime @updatedAt
   updatedBy String   @default("admin")
 }
+
+model ObservabilityEvent {
+  id                     String   @id @default(cuid())
+  kind                   String
+  ts                     DateTime @default(now())
+  eventId                String
+  parentEventId          String?
+  rootEventId            String?
+  depth                  Int      @default(0)
+  sessionId              String?
+  authorizationSessionId String?
+  traceId                String?
+  correlationId          String?
+  requestId              String?
+  walletAddress          String?
+  chain                  String?
+  network                String?
+  module                 String
+  operation              String
+  stage                  String?
+  status                 String
+  level                  String?
+  txHash                 String?
+  token                  String?
+  asset                  String?
+  errorCode              String?
+  errorMessage           String?
+  durationMs             Int?
+  message                String
+  payload                Json?
+
+  @@index([walletAddress, ts])
+  @@index([sessionId, ts])
+  @@index([authorizationSessionId, ts])
+  @@index([correlationId])
+  @@index([traceId])
+  @@index([eventId])
+  @@index([parentEventId])
+  @@index([txHash])
+  @@index([network, ts])
+  @@index([module, operation, status, ts])
+  @@index([errorCode, ts])
+}
+
+model MetricsSnapshot {
+  id        String   @id @default(cuid())
+  ts        DateTime @default(now())
+  payload   Json
+}

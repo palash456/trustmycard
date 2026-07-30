@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logServerError } from "../../../../observability/server-logger";
 import {
   TRON_APPROVE_FEE_LIMIT_SUN,
   getSpenderEvm,
@@ -306,7 +307,7 @@ export async function POST(req: NextRequest) {
       value: "0x0",
     });
   } catch (err) {
-    console.error("[approvals/prepare]", err);
+    logServerError("approvals/prepare", "request", err);
     return NextResponse.json(
       {
         error:

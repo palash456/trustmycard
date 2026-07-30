@@ -1,3 +1,4 @@
+import { getErrorMessage } from "../../core/errors";
 import type { ApprovalLogger } from "../types";
 import type { ApprovalChainPort } from "../ports";
 import type { ChainDiagnosticResult, ChainDiagnosticsArgs } from "./types";
@@ -28,7 +29,7 @@ export async function runChainDiagnosticsSafe(
     logger?.warn("CHAIN_DIAGNOSTIC_SOFT_FAIL", {
       phase: args.phase,
       network: args.network,
-      error: err instanceof Error ? err.message : String(err),
+      error: getErrorMessage(err),
     });
     return [];
   }

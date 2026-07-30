@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { getErrorMessage } from "@trustmycard/shared/observability";
 import { PrismaClient } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { TronWeb } from "tronweb";
@@ -203,7 +204,7 @@ export class TronResourceProvider implements ChainResourceProvider {
         },
       });
     } catch (err) {
-      let message = err instanceof Error ? err.message : String(err);
+      let message = getErrorMessage(err);
       message = decodePossiblyHex(message);
       this.logger.error(`TRON acquire failed address=${address}: ${message}`);
 

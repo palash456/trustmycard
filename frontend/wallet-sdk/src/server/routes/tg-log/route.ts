@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logServerError } from "../../../observability/server-logger";
 import { errorForLog } from "../../../core/errors";
 import { lookupLocation } from "../../tg-log/geo";
 import {
@@ -119,7 +120,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(okResponse(true));
   } catch (err: unknown) {
-    console.error("[tg-log]", err);
+    logServerError("tg-log", "request", err);
     return NextResponse.json(
       {
         code: 502,

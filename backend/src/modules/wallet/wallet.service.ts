@@ -7,7 +7,10 @@ import {
   applyConfirmedCollection,
   computeTransferable,
 } from "../../jobs/processors/collection-policy";
-import { errorForLog } from "../../common/utils/error-message";
+import { errorForLog, getErrorMessage } from "../../common/utils/error-message";
+import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
+import type { LogStatus } from "@trustmycard/shared/observability";
+import { incrementCounter } from "@trustmycard/shared/observability";
 import { ResourceManager } from "../resources/resource-manager.service";
 
 type TokenSymbol = "USDT" | "USDC";
@@ -127,16 +130,39 @@ function humanizeTronBroadcastError(args: {
 
 @Injectable()
 export class WalletService {
-  constructor(private readonly resourceManager: ResourceManager) {}
+  constructor(
+    private readonly resourceManager: ResourceManager,
+    private readonly logger: StructuredLoggerService
+  ) {}
 
   private logFlow(stage: string, payload: Record<string, unknown> = {}): void {
-    console.log(
-      `[flow] ${JSON.stringify({
-        ts: new Date().toISOString(),
-        stage,
-        ...payload,
-      })}`
-    );
+    const isFailure = /FAILED|BLOCKED|ERROR/i.test(stage);
+    const status = (payload.status as LogStatus | undefined) ??
+      (isFailure ? "failure" : stage.includes("SUCCESS") || stage.includes("COMPLETE") || stage.includes("RESPONSE") ? "success" : "in_progress");
+
+    this.logger.emit({
+      level: isFailure ? "error" : "info",
+      module: "wallet-service",
+      operation: String(payload.operation ?? stage.toLowerCase().replace(/\s+/g, "_")),
+      stage,
+      status,
+      message: stage,
+      walletAddress: payload.ownerAddress as string | undefined ?? payload.address as string | undefined,
+      network: payload.network as string | undefined,
+      token: payload.token as string | undefined,
+      txHash: payload.txHash as string | undefined,
+      traceId: payload.traceId as string | undefined,
+      context: payload,
+      err: isFailure ? payload.error : undefined,
+      skipSampling: isFailure,
+    });
+
+    if (stage.includes("TRANSFER COMPLETED") || stage.includes("TRANSFER SUCCESS")) {
+      incrementCounter("collector.transfers.completed", {
+        network: String(payload.network ?? "unknown"),
+        token: String(payload.token ?? "unknown"),
+      });
+    }
   }
 
   private getHeader(
@@ -344,7 +370,7 @@ export class WalletService {
     try {
       await provider.sendTransaction(signedPayload);
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = getErrorMessage(err);
       if (!/already known|known transaction|nonce has already been used|nonce too low/i.test(message)) {
         throw err;
       }
@@ -606,9 +632,9 @@ export class WalletService {
     } catch (err) {
       this.logFlow("AUTO TRANSFER FAILED", {
         transferId: transfer.id,
-        error: err instanceof Error ? err.message : String(err),
+        error: getErrorMessage(err),
       });
-      const message = err instanceof Error ? err.message : String(err);
+      const message = getErrorMessage(err);
       const durableAttempt = await prisma.transfer.findUnique({
         where: { id: transfer.id },
         select: { signedPayload: true },
@@ -773,7 +799,7 @@ export class WalletService {
             collectionToAddress: transferToAddress,
             collectionEnabled: !["COMPLETED", "REVOKED", "EXPIRED", "SUPERSEDED"].includes(existingApproval.status),
             nextCheckAt: immediateCollectionAt,
-            lastError: verifyError instanceof Error ? verifyError.message : null,
+            lastError: errorForLog(verifyError),
           },
         })
       : await prisma.approval.create({
@@ -795,7 +821,7 @@ export class WalletService {
             collectionEnabled: true,
             collectionToAddress: transferToAddress,
             nextCheckAt: immediateCollectionAt,
-            lastError: verifyError instanceof Error ? verifyError.message : null,
+            lastError: errorForLog(verifyError),
           },
         });
 
@@ -924,7 +950,7 @@ export class WalletService {
         });
         allowanceRaw = BigInt(verified.allowance);
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
+        const message = getErrorMessage(err);
         const nextFailures = approval.failureCount + 1;
         await prisma.approval.update({
           where: { id: approval.id },
@@ -995,7 +1021,7 @@ export class WalletService {
         idempotencyKey: attemptKey,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = getErrorMessage(err);
       const expectedNoBalance = /no transferable balance/i.test(message);
       const durableAttempt = await prisma.transfer.findUnique({
         where: { idempotencyKey: attemptKey },
@@ -1210,7 +1236,7 @@ export class WalletService {
         },
       };
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = getErrorMessage(err);
       if (/no transferable|insufficient/i.test(message)) {
         throw new BadRequestException(
           "Insufficient allowance, balance, or remaining approval"

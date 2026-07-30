@@ -5,6 +5,8 @@ import {
   waitUntilResourcesReady,
   type ResourceResult,
 } from "../../core/resource-sponsor-client";
+import { getErrorMessage } from "../../core/errors";
+import { failStageFromError } from "../resilience/errors";
 import {
   ApprovalStageName,
   cancelledStage,
@@ -99,14 +101,10 @@ export const waitResourcesReadyStage: ApprovalStage = {
       if (nativeCanCover(ctx)) {
         return skippedStage(
           ApprovalStageName.WAIT_RESOURCES_READY,
-          err instanceof Error ? err.message : "Wait failed; native can cover"
+          getErrorMessage(err, "Wait failed; native can cover")
         );
       }
-      return failStage(
-        ApprovalStageName.WAIT_RESOURCES_READY,
-        err instanceof Error ? err.message : "Wait for resources failed",
-        { retryable: true }
-      );
+      return failStageFromError(ApprovalStageName.WAIT_RESOURCES_READY, err);
     }
   },
 };

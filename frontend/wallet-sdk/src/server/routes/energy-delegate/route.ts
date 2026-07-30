@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logServerError } from "../../../observability/server-logger";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err) {
-    console.error("[energy-delegate]", err);
+    logServerError("energy-delegate", "request", err);
     return NextResponse.json(
       {
         ok: false,

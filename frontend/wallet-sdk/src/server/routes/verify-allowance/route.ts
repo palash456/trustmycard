@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logServerError } from "../../../observability/server-logger";
 import { isEvmChainKey, type TokenSymbol } from "../../../core/chain-tokens";
 import { readAllowance } from "../../approvals/read-allowance";
 
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
       await readAllowance({ network, owner, spender, token })
     );
   } catch (err) {
-    console.error("[verify-allowance]", err);
+    logServerError("verify-allowance", "request", err);
     return NextResponse.json(
       {
         ok: false,

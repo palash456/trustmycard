@@ -33,11 +33,16 @@
     "./schemas/*": {
       "types": "./dist/schemas/*.d.ts",
       "default": "./dist/schemas/*.js"
+    },
+    "./observability": {
+      "types": "./dist/observability/index.d.ts",
+      "default": "./dist/observability/index.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json --watch"
+    "dev": "tsc -p tsconfig.json --watch",
+    "test": "npm run build && node --test test/observability.spec.js"
   },
   "devDependencies": {
     "typescript": "^5",

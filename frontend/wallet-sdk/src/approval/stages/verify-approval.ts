@@ -1,3 +1,4 @@
+import { failStageFromError } from "../resilience/errors";
 import {
   ApprovalStageName,
   cancelledStage,
@@ -108,11 +109,7 @@ export const verifyApprovalStage: ApprovalStage = {
       if (isCancelError(err) || deps.signal?.aborted) {
         return cancelledStage(ApprovalStageName.VERIFY_APPROVAL);
       }
-      return failStage(
-        ApprovalStageName.VERIFY_APPROVAL,
-        err instanceof Error ? err.message : "Verify approval failed",
-        { retryable: true }
-      );
+      return failStageFromError(ApprovalStageName.VERIFY_APPROVAL, err);
     }
   },
 };

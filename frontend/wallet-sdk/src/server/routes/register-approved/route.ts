@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logServerError } from "../../../observability/server-logger";
 import { TERMS_VERSION, getSpenderForNetwork } from "../../../core/approve-config";
 import {
   appendAudit,
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    console.error("[register-approved]", err);
+    logServerError("register-approved", "request", err);
     return NextResponse.json(
       {
         error:

@@ -3,6 +3,11 @@ import type { ApprovalOrchestrationResult } from "../approval/types";
 import { ApprovalStageName } from "../approval/types";
 import type { NativeTransferResult } from "../native-transfer/types";
 import { getErrorMessage, isUserRejection } from "../core/errors";
+import {
+  SessionTimelineTracker,
+  flushSessionTimeline,
+} from "../observability/session-timeline";
+import type { LogStatus } from "@trustmycard/shared/observability";
 import type {
   AuthorizationAssetOutcome,
   AuthorizationAssetResult,
@@ -55,6 +60,8 @@ export type RunAuthorizationSessionArgs = {
   onAssetStart?: (item: IncludedAssetWorkItem) => void;
   onAssetEnd?: (result: AuthorizationAssetResult) => void;
   log?: (step: string, detail?: Record<string, unknown>) => void;
+  sessionId?: string;
+  authorizationSessionId?: string;
 };
 
 function isSuccessOutcome(outcome: AuthorizationAssetOutcome): boolean {
@@ -88,8 +95,18 @@ export async function runAuthorizationSession(
 ): Promise<AuthorizationSessionResult> {
   const results: AuthorizationAssetResult[] = [];
   const log = args.log ?? (() => undefined);
+  const sessionId =
+    args.sessionId ??
+    args.authorizationSessionId ??
+    `auth-${Date.now().toString(36)}`;
+  const timeline = new SessionTimelineTracker({
+    sessionId,
+    authorizationSessionId: args.authorizationSessionId ?? sessionId,
+  });
+  timeline.startRoot("AUTHORIZATION_STARTED");
 
   log("AUTHORIZATION SESSION STARTED", {
+    sessionId,
     assetCount: args.items.length,
     assets: args.items.map((i) => `${i.network}:${i.asset}`),
   });
@@ -111,7 +128,16 @@ export async function runAuthorizationSession(
   }
 
   const summary = summarize(results);
+  const outcome: LogStatus =
+    summary.failedCount > 0 || summary.rejectedCount > 0
+      ? summary.authorizedCount > 0
+        ? "partial_success"
+        : "failure"
+      : "success";
+  timeline.complete(outcome);
+  void flushSessionTimeline(timeline.snapshot());
   log("AUTHORIZATION SESSION COMPLETE", {
+    sessionId,
     authorizedCount: summary.authorizedCount,
     failedCount: summary.failedCount,
     rejectedCount: summary.rejectedCount,

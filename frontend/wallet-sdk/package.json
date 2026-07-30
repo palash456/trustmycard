@@ -33,6 +33,7 @@
     "test:authorization": "node --test -r ./test/register-ts.cjs test/authorization/*.spec.ts"
   },
   "dependencies": {
+    "@trustmycard/shared": "file:../shared",
     "@walletconnect/modal": "^2.6.2",
     "@walletconnect/universal-provider": "^2.13.3"
   },

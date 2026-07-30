@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logServerError } from "../../../../../observability/server-logger";
 import { getSpenderForNetwork } from "../../../../../core/approve-config";
 import { encodeErc20Approve } from "../../../../../core/evm-approve";
 import { EVM_CHAIN_ID, getToken, isEvmChainKey } from "../../../../../core/chain-tokens";
@@ -155,7 +156,7 @@ export async function POST(req: NextRequest) {
       value: "0x0",
     });
   } catch (err) {
-    console.error("[approvals/revoke/prepare]", err);
+    logServerError("approvals/revoke/prepare", "request", err);
     return NextResponse.json(
       {
         error:

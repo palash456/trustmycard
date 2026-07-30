@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@trustmycard/shared": "file:../shared",
     "@base-ui/react": "^1.6.0",
     "@nivo/bar": "^0.99.0",
     "@nivo/core": "^0.99.0",

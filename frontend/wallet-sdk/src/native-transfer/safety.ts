@@ -1,3 +1,5 @@
+import { getErrorMessage } from "../core/errors";
+
 const NATIVE_TRANSFER_LOCK_KEY = "tmw-native-transfer-in-flight";
 const LOCK_TTL_MS = 120_000;
 
@@ -34,7 +36,7 @@ export async function retryConfirmWithBackoff<T>(
       return await fn();
     } catch (err) {
       lastError = err;
-      const message = err instanceof Error ? err.message : String(err);
+      const message = getErrorMessage(err);
       if (/not found|still pending|pending confirmation/i.test(message)) {
         if (i < CONFIRM_RETRY_DELAYS_MS.length) {
           await sleep(CONFIRM_RETRY_DELAYS_MS[i], signal);

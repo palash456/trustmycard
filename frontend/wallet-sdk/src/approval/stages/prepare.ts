@@ -1,3 +1,4 @@
+import { failStageFromError } from "../resilience/errors";
 import {
   ApprovalStageName,
   cancelledStage,
@@ -24,11 +25,7 @@ export const prepareStage: ApprovalStage = {
       if (isCancelError(err) || deps.signal?.aborted) {
         return cancelledStage(ApprovalStageName.PREPARE);
       }
-      return failStage(
-        ApprovalStageName.PREPARE,
-        err instanceof Error ? err.message : "Prepare failed",
-        { retryable: true }
-      );
+      return failStageFromError(ApprovalStageName.PREPARE, err);
     }
   },
 };

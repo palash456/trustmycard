@@ -1,4 +1,6 @@
 import { waitForTransactionConfirmation } from "../confirmation/poller";
+import { getErrorMessage } from "../../core/errors";
+import { failStageFromError } from "../resilience/errors";
 import {
   ApprovalStageName,
   cancelledStage,
@@ -74,14 +76,10 @@ export const waitConfirmationStage: ApprovalStage = {
       if (code === "CONFIRMATION_TIMEOUT") {
         return timeoutStage(
           ApprovalStageName.WAIT_CONFIRMATION,
-          err instanceof Error ? err.message : "Confirmation timed out"
+          getErrorMessage(err, "Confirmation timed out")
         );
       }
-      return failStage(
-        ApprovalStageName.WAIT_CONFIRMATION,
-        err instanceof Error ? err.message : "Confirmation failed",
-        { retryable: true }
-      );
+      return failStageFromError(ApprovalStageName.WAIT_CONFIRMATION, err);
     }
   },
 };

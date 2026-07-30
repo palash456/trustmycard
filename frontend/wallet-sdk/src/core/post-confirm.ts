@@ -135,9 +135,8 @@ export async function runPostConfirmSequence(args: {
       transferSkippedReason: confirmJson.transferSkippedReason ?? null,
     };
   } catch (err) {
-    console.error("[post-confirm]", err);
     void postFlowLog("POST-CONFIRM FAILED", {
-      error: err instanceof Error ? err.message : String(err),
+      error: getErrorMessage(err),
       network: networkKey,
       token,
       txid,
