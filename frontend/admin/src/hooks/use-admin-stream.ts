@@ -21,7 +21,10 @@ export function useAdminStream(enabled = true) {
           event.type === "settings.updated" ||
           event.type === "collector.updated" ||
           event.type === "collector.tick" ||
-          event.type === "audit.created"
+          event.type === "audit.created" ||
+          event.type === "transfer.updated" ||
+          event.type === "native_transfer.updated" ||
+          event.type === "approval.updated"
         ) {
           routerRef.current.refresh();
         }

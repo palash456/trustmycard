@@ -7,8 +7,10 @@ import {
   applyConfirmedCollection,
   computeTransferable,
 } from "../../jobs/processors/collection-policy";
+import { safeCreateAuditLog } from "../../common/audit/safe-audit";
 import { errorForLog, getErrorMessage } from "../../common/utils/error-message";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
+import { AdminEventsService } from "../../infrastructure/admin-events/admin-events.service";
 import type { LogStatus } from "@trustmycard/shared/observability";
 import { incrementCounter } from "@trustmycard/shared/observability";
 import { ResourceManager } from "../resources/resource-manager.service";
@@ -132,7 +134,8 @@ function humanizeTronBroadcastError(args: {
 export class WalletService {
   constructor(
     private readonly resourceManager: ResourceManager,
-    private readonly logger: StructuredLoggerService
+    private readonly logger: StructuredLoggerService,
+    private readonly adminEvents: AdminEventsService
   ) {}
 
   private logFlow(stage: string, payload: Record<string, unknown> = {}): void {
@@ -253,16 +256,24 @@ export class WalletService {
     }
     throw lastError instanceof Error ? lastError : new Error(`All ${network} RPC endpoints failed`);
   }
-  private async recordAudit(actor: string, action: string, entityType: string, payload: Record<string, unknown>, entityId?: string) {
-    await prisma.auditLog.create({
-      data: {
+  private async recordAudit(
+    actor: string,
+    action: string,
+    entityType: string,
+    payload: Record<string, unknown>,
+    entityId?: string
+  ): Promise<void> {
+    await safeCreateAuditLog(
+      prisma,
+      {
         actor,
         action,
         entityType,
         entityId,
         payload: payload as Prisma.InputJsonValue,
       },
-    });
+      this.logger
+    );
   }
 
   private getAdminEvmPrivateKey(): string {
@@ -614,14 +625,27 @@ export class WalletService {
           },
         }),
       ]);
-      await this.recordAudit("admin", "transfer_executed", "transfer", {
+      await this.recordTransferExecutedAudit({
         approvalId: approval.id,
+        transferId: transfer.id,
         network: approval.network,
         token: approval.tokenSymbol,
         amountRaw: transferable.toString(),
         txHash: tx.txHash,
         toAddress: transferToAddress,
-      }, transfer.id);
+      });
+      this.notifyTransferUpdated({
+        transferId: transfer.id,
+        status: "confirmed",
+        approvalId: approval.id,
+        network: approval.network,
+        txHash: tx.txHash,
+      });
+      this.notifyApprovalUpdated({
+        approvalId: approval.id,
+        status: progress.status,
+        network: approval.network,
+      });
 
       return {
         transferId: transfer.id,
@@ -630,19 +654,58 @@ export class WalletService {
         blockNumber: tx.blockNumber,
       };
     } catch (err) {
+      const message = getErrorMessage(err);
+      const current = await prisma.transfer.findUnique({
+        where: { id: transfer.id },
+        select: {
+          status: true,
+          confirmedAt: true,
+          txHash: true,
+          blockNumber: true,
+          amountRaw: true,
+          signedPayload: true,
+        },
+      });
+      if (current?.confirmedAt || current?.status === "confirmed") {
+        this.logFlow("AUTO TRANSFER POST_CONFIRM_ERROR", {
+          transferId: transfer.id,
+          txHash: current.txHash ?? undefined,
+          error: message,
+        });
+        if (current.txHash) {
+          await this.recordTransferExecutedAudit({
+            approvalId: approval.id,
+            transferId: transfer.id,
+            network: approval.network,
+            token: approval.tokenSymbol,
+            amountRaw: current.amountRaw,
+            txHash: current.txHash,
+            toAddress: transferToAddress,
+          });
+        }
+        this.notifyTransferUpdated({
+          transferId: transfer.id,
+          status: "confirmed",
+          approvalId: approval.id,
+          network: approval.network,
+          txHash: current.txHash,
+        });
+        return {
+          transferId: transfer.id,
+          txHash: current.txHash ?? "",
+          transferredRaw: current.amountRaw,
+          blockNumber: current.blockNumber ?? null,
+        };
+      }
+
       this.logFlow("AUTO TRANSFER FAILED", {
         transferId: transfer.id,
-        error: getErrorMessage(err),
-      });
-      const message = getErrorMessage(err);
-      const durableAttempt = await prisma.transfer.findUnique({
-        where: { id: transfer.id },
-        select: { signedPayload: true },
+        error: message,
       });
       const confirmedOnChainFailure =
         /EVM transferFrom transaction failed|TRON transferFrom failed/i.test(message);
       const confirmationPending =
-        Boolean(durableAttempt?.signedPayload) && !confirmedOnChainFailure;
+        Boolean(current?.signedPayload) && !confirmedOnChainFailure;
       await prisma.transfer.update({
         where: { id: transfer.id },
         data: {
@@ -653,6 +716,231 @@ export class WalletService {
       });
       throw err;
     }
+  }
+
+  private async recordTransferExecutedAudit(args: {
+    approvalId: string;
+    transferId: string;
+    network: string;
+    token: string;
+    amountRaw: string;
+    txHash: string;
+    toAddress: string;
+  }): Promise<void> {
+    await this.recordAudit("admin", "transfer_executed", "approval", {
+      transferId: args.transferId,
+      approvalId: args.approvalId,
+      network: args.network,
+      token: args.token,
+      amountRaw: args.amountRaw,
+      txHash: args.txHash,
+      toAddress: args.toAddress,
+    }, args.approvalId);
+  }
+
+  private notifyTransferUpdated(args: {
+    transferId: string;
+    status: string;
+    approvalId: string;
+    network: string;
+    txHash?: string | null;
+    repaired?: boolean;
+  }): void {
+    this.adminEvents.transferUpdated({
+      id: args.transferId,
+      status: args.status,
+      approvalId: args.approvalId,
+      network: args.network,
+      txHash: args.txHash,
+      repaired: args.repaired,
+    });
+  }
+
+  private notifyApprovalUpdated(args: {
+    approvalId: string;
+    status: string;
+    network: string;
+  }): void {
+    this.adminEvents.approvalUpdated({
+      id: args.approvalId,
+      status: args.status,
+      network: args.network,
+    });
+  }
+
+  /** Fix rows confirmed on-chain but left as broadcast after a post-confirm failure. */
+  async repairInconsistentConfirmedTransfers(limit = 100): Promise<number> {
+    const rows = await prisma.transfer.findMany({
+      where: {
+        status: "broadcast",
+        confirmedAt: { not: null },
+        blockNumber: { not: null },
+      },
+      include: { approval: true },
+      orderBy: { updatedAt: "asc" },
+      take: limit,
+    });
+    let repaired = 0;
+    for (const row of rows) {
+      await prisma.transfer.update({
+        where: { id: row.id },
+        data: { status: "confirmed", errorMessage: null },
+      });
+      if (row.txHash) {
+        await this.recordTransferExecutedAudit({
+          approvalId: row.approvalId,
+          transferId: row.id,
+          network: row.approval.network,
+          token: row.approval.tokenSymbol,
+          amountRaw: row.amountRaw,
+          txHash: row.txHash,
+          toAddress: row.toAddress,
+        });
+      }
+      this.notifyTransferUpdated({
+        transferId: row.id,
+        status: "confirmed",
+        approvalId: row.approvalId,
+        network: row.approval.network,
+        txHash: row.txHash,
+        repaired: true,
+      });
+      incrementCounter("reconciliation.repaired.total", {
+        network: row.approval.network,
+        kind: "token_inconsistent",
+      });
+      repaired += 1;
+    }
+    if (repaired > 0) {
+      this.logger.emit({
+        level: "info",
+        module: "wallet-service",
+        operation: "transfer_reconcile",
+        stage: "INCONSISTENT_REPAIRED",
+        status: "success",
+        message: "Repaired transfers left as broadcast after confirmation",
+        context: { repaired },
+        skipSampling: true,
+      });
+    }
+    return repaired;
+  }
+
+  async reconcileTransfer(transferId: string) {
+    const transfer = await prisma.transfer.findUnique({
+      where: { id: transferId },
+      include: { approval: true },
+    });
+    if (!transfer) throw new NotFoundException("Transfer not found");
+
+    if (transfer.status === "confirmed") {
+      return { ok: true, idempotent: true, item: transfer };
+    }
+
+    if (
+      transfer.status === "broadcast" &&
+      transfer.confirmedAt != null &&
+      transfer.blockNumber != null
+    ) {
+      const item = await prisma.transfer.update({
+        where: { id: transferId },
+        data: { status: "confirmed", errorMessage: null },
+      });
+      if (transfer.txHash) {
+        await this.recordTransferExecutedAudit({
+          approvalId: transfer.approvalId,
+          transferId: transfer.id,
+          network: transfer.approval.network,
+          token: transfer.approval.tokenSymbol,
+          amountRaw: transfer.amountRaw,
+          txHash: transfer.txHash,
+          toAddress: transfer.toAddress,
+        });
+      }
+      this.notifyTransferUpdated({
+        transferId: transfer.id,
+        status: "confirmed",
+        approvalId: transfer.approvalId,
+        network: transfer.approval.network,
+        txHash: transfer.txHash,
+        repaired: true,
+      });
+      incrementCounter("reconciliation.repaired.total", {
+        network: transfer.approval.network,
+        kind: "token_inconsistent",
+      });
+      return { ok: true, repaired: true, item };
+    }
+
+    if (!["broadcast", "failed"].includes(transfer.status)) {
+      throw new BadRequestException(
+        `Transfer status ${transfer.status} cannot be reconciled`
+      );
+    }
+
+    const approval = transfer.approval;
+    const executed = await this.executeAutoTransfer({
+      approval: {
+        id: approval.id,
+        ownerAddress: approval.ownerAddress,
+        spenderAddress: approval.spenderAddress,
+        network: approval.network,
+        tokenSymbol: approval.tokenSymbol,
+        tokenAddress: approval.tokenAddress,
+        decimals: approval.decimals,
+        remainingRaw: approval.remainingRaw,
+        collectedRaw: approval.collectedRaw,
+        unlimited: approval.unlimited,
+        failureCount: approval.failureCount,
+      },
+      transferToAddress: transfer.toAddress,
+      requestedRaw: BigInt(transfer.amountRaw),
+      allowanceRaw: BigInt(transfer.amountRaw),
+      idempotencyKey: transfer.idempotencyKey,
+    });
+
+    const item = await prisma.transfer.findUniqueOrThrow({
+      where: { id: executed.transferId },
+      include: { approval: true },
+    });
+    this.notifyTransferUpdated({
+      transferId: item.id,
+      status: item.status,
+      approvalId: item.approvalId,
+      network: item.approval.network,
+      txHash: item.txHash,
+      repaired: item.status === "confirmed",
+    });
+    return { ok: true, item };
+  }
+
+  async reconcileBroadcastTransfers(limit = 10): Promise<number> {
+    await this.repairInconsistentConfirmedTransfers(limit);
+    const pending = await prisma.transfer.findMany({
+      where: { status: "broadcast", confirmedAt: null },
+      orderBy: { broadcastAt: "asc" },
+      take: limit,
+      select: { id: true },
+    });
+    let reconciled = 0;
+    for (const { id } of pending) {
+      try {
+        await this.reconcileTransfer(id);
+        reconciled += 1;
+      } catch (err) {
+        this.logger.emit({
+          level: "warn",
+          module: "wallet-service",
+          operation: "transfer_reconcile",
+          stage: "BROADCAST_RECONCILE_FAILED",
+          status: "failure",
+          message: getErrorMessage(err, "Broadcast transfer reconcile failed"),
+          context: { transferId: id },
+          err,
+        });
+      }
+    }
+    return reconciled;
   }
 
   async getBalances(evm: string, tron: string) {

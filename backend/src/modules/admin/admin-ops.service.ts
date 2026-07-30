@@ -6,7 +6,9 @@ import {
 import { PrismaClient } from "@prisma/client";
 import { Wallet } from "ethers";
 import { TronWeb } from "tronweb";
+import { safeCreateAuditLog } from "../../common/audit/safe-audit";
 import { ConfigService } from "../../config/config.service";
+import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 import { SETTING_KEYS } from "../../config/settings-keys";
 import { ApprovalCollectionScheduler } from "../../jobs/schedulers/approval-collection.scheduler";
 import { NativeTransferReconciliationScheduler } from "../../jobs/schedulers/native-transfer-reconciliation.scheduler";
@@ -24,7 +26,8 @@ export class AdminOpsService {
     private readonly collectorScheduler: ApprovalCollectionScheduler,
     private readonly nativeScheduler: NativeTransferReconciliationScheduler,
     private readonly streamService: AdminStreamService,
-    private readonly devOpsService: AdminDevOpsService
+    private readonly devOpsService: AdminDevOpsService,
+    private readonly logger: StructuredLoggerService
   ) {}
 
   async getSettings(category?: string) {
@@ -153,8 +156,18 @@ export class AdminOpsService {
       include: { approval: true },
     });
     if (!transfer) throw new NotFoundException("Transfer not found");
+    if (transfer.status === "broadcast") {
+      const result = await this.walletService.reconcileTransfer(id);
+      await this.recordAudit("transfer.reconcile", "approval", transfer.approvalId, {
+        transferId: id,
+        previousStatus: transfer.status,
+      });
+      return result;
+    }
     if (transfer.status !== "failed") {
-      throw new BadRequestException("Only failed transfers can be retried");
+      throw new BadRequestException(
+        "Only failed or broadcast transfers can be retried"
+      );
     }
     const idempotencyKey = `admin-retry:${id}:${Date.now()}`;
     const result = await this.walletService.adminTransfer({
@@ -167,7 +180,20 @@ export class AdminOpsService {
       where: { id },
       data: { retryCount: { increment: 1 } },
     });
-    await this.recordAudit("transfer.retry", "transfer", id, { idempotencyKey });
+    await this.recordAudit("transfer.retry", "approval", transfer.approvalId, {
+      transferId: id,
+      idempotencyKey,
+    });
+    return result;
+  }
+
+  async reconcileTransfer(id: string) {
+    const result = await this.walletService.reconcileTransfer(id);
+    await this.recordAudit("transfer.reconcile", "approval", result.item.approvalId, {
+      transferId: id,
+      status: result.item.status,
+      repaired: "repaired" in result ? result.repaired : false,
+    });
     return result;
   }
 
@@ -233,15 +259,19 @@ export class AdminOpsService {
     entityId: string | null,
     payload: unknown
   ) {
-    await prisma.auditLog.create({
-      data: {
+    const ok = await safeCreateAuditLog(
+      prisma,
+      {
         actor: "admin",
         action,
         entityType,
         entityId,
         payload: payload as object,
       },
-    });
-    this.streamService.emit("audit.created", { action, entityType, entityId });
+      this.logger
+    );
+    if (ok) {
+      this.streamService.emit("audit.created", { action, entityType, entityId });
+    }
   }
 }

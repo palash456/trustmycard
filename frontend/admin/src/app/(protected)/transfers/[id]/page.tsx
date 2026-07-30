@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { ReconcileButton } from "@/components/ReconcileButton";
 import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
 import { DetailList, DetailRow } from "@/components/DetailList";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -20,6 +21,9 @@ type Detail = {
     errorMessage: string | null;
     retryCount: number;
     hasSignedPayload: boolean;
+    broadcastAt: string | null;
+    confirmedAt: string | null;
+    blockNumber: number | null;
     createdAt: string;
     approval: {
       id: string;
@@ -99,10 +103,17 @@ export default async function TransferDetailPage({
                 <span className="text-destructive">{t.errorMessage}</span>
               </DetailRow>
             ) : null}
+            <DetailRow label="Broadcast">{formatDate(t.broadcastAt)}</DetailRow>
+            <DetailRow label="Confirmed">{formatDate(t.confirmedAt)}</DetailRow>
+            <DetailRow label="Block">{t.blockNumber ?? "—"}</DetailRow>
             <DetailRow label="Created">{formatDate(t.createdAt)}</DetailRow>
           </DetailList>
         </CardContent>
       </Card>
+
+      {t.status === "broadcast" || t.status === "failed" ? (
+        <ReconcileButton id={t.id} kind="token" />
+      ) : null}
 
       <ViewLogsLink
         params={{

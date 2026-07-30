@@ -1,4 +1,5 @@
 import { AdminShell } from "@/components/AdminShell";
+import { AdminLiveRefresh } from "@/components/AdminLiveRefresh";
 import { DemoBanner } from "@/components/DemoBanner";
 import { DemoProvider } from "@/components/DemoProvider";
 
@@ -10,6 +11,7 @@ export default function ProtectedLayout({
   return (
     <DemoProvider>
       <AdminShell>
+        <AdminLiveRefresh />
         <DemoBanner />
         {children}
       </AdminShell>

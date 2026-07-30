@@ -11,6 +11,7 @@ import {
 } from "@trustmycard/shared/observability";
 import { ConfigService } from "../../config/config.service";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
+import { WalletService } from "../../modules/wallet/wallet.service";
 import { NativeTransferService } from "../../modules/wallet/native-transfer.service";
 
 const prisma = new PrismaClient();
@@ -26,11 +27,13 @@ export class NativeTransferReconciliationScheduler
 
   constructor(
     private readonly nativeTransferService: NativeTransferService,
+    private readonly walletService: WalletService,
     private readonly configService: ConfigService,
     private readonly logger: StructuredLoggerService
   ) {}
 
   onModuleInit(): void {
+    void this.walletService.repairInconsistentConfirmedTransfers();
     this.configService.events.on("settings.updated", () => {
       this.updateFromConfig();
     });
@@ -108,6 +111,39 @@ export class NativeTransferReconciliationScheduler
     this.lastTickAt = new Date();
     const start = Date.now();
     try {
+      await this.walletService.repairInconsistentConfirmedTransfers(cfg.batchSize);
+
+      const broadcast = await prisma.transfer.findMany({
+        where: { status: "broadcast", confirmedAt: null },
+        orderBy: { broadcastAt: "asc" },
+        take: cfg.batchSize,
+        select: { id: true, txHash: true, approval: { select: { network: true } } },
+      });
+
+      for (const record of broadcast) {
+        const itemStart = Date.now();
+        try {
+          await this.walletService.reconcileTransfer(record.id);
+          incrementCounter("collector.transfers.completed", {
+            network: record.approval.network,
+            status: "reconciled",
+          });
+        } catch (err) {
+          this.logger.emit({
+            level: "warn",
+            module: "reconciliation",
+            operation: "token_transfer_reconcile",
+            stage: "RECONCILE_FAILED",
+            status: "failure",
+            message: getErrorMessage(err, "Token transfer reconcile failed"),
+            txHash: record.txHash ?? undefined,
+            network: record.approval.network,
+            durationMs: Date.now() - itemStart,
+            err,
+          });
+        }
+      }
+
       const pending = await prisma.nativeTransfer.findMany({
         where: { status: "pending" },
         orderBy: { createdAt: "asc" },

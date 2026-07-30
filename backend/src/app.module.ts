@@ -17,6 +17,7 @@ import { AdminModule } from "./modules/admin/admin.module";
 import { SettingsModule } from "./modules/settings/settings.module";
 import { ResourcesModule } from "./modules/resources/resources.module";
 import { JobsModule } from "./jobs/jobs.module";
+import { AdminEventsModule } from "./infrastructure/admin-events/admin-events.module";
 import { AppLoggerModule } from "./infrastructure/logger/logger.module";
 import { MetricsModule } from "./infrastructure/metrics/metrics.module";
 import { CorrelationMiddleware } from "./common/middleware/correlation.middleware";
@@ -26,6 +27,7 @@ import { ObservabilityModule } from "./modules/observability/observability.modul
 
 @Module({
   imports: [
+    AdminEventsModule,
     AppLoggerModule,
     MetricsModule,
     ObservabilityModule,

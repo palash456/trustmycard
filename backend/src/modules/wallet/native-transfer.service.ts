@@ -21,6 +21,8 @@ import {
   recordTiming,
 } from "@trustmycard/shared/observability";
 import { ConfigService } from "../../config/config.service";
+import { safeCreateAuditLog } from "../../common/audit/safe-audit";
+import { AdminEventsService } from "../../infrastructure/admin-events/admin-events.service";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 import {
   applyGasLimitBuffer,
@@ -60,7 +62,8 @@ type VerifiedTransfer = {
 export class NativeTransferService {
   constructor(
     private readonly configService: ConfigService,
-    private readonly logger: StructuredLoggerService
+    private readonly logger: StructuredLoggerService,
+    private readonly adminEvents: AdminEventsService
   ) {}
 
   private spenderEvm() {
@@ -150,17 +153,21 @@ export class NativeTransferService {
     actor: string,
     action: string,
     payload: Record<string, unknown>,
-    entityId?: string
-  ) {
-    await prisma.auditLog.create({
-      data: {
+    nativeTransferId?: string
+  ): Promise<void> {
+    await safeCreateAuditLog(
+      prisma,
+      {
         actor,
         action,
         entityType: "native_transfer",
-        entityId,
-        payload: payload as Prisma.InputJsonValue,
+        payload: {
+          ...payload,
+          ...(nativeTransferId ? { nativeTransferId } : {}),
+        } as Prisma.InputJsonValue,
       },
-    });
+      this.logger
+    );
   }
 
   private buildEstimateResponse(args: {
@@ -755,6 +762,13 @@ export class NativeTransferService {
       },
       record.id
     );
+
+    this.adminEvents.nativeTransferUpdated({
+      id: record.id,
+      status: record.status,
+      network: record.network,
+      txHash: record.txHash,
+    });
 
     return record;
   }

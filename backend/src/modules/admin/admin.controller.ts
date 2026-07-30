@@ -127,9 +127,15 @@ export class AdminController {
   }
 
   @Post("transfers/:id/retry")
-  @ApiOperation({ summary: "Retry a failed transfer" })
+  @ApiOperation({ summary: "Retry a failed transfer or reconcile a broadcast transfer" })
   retryTransfer(@Param("id") id: string) {
     return this.adminOps.retryTransfer(id);
+  }
+
+  @Post("transfers/:id/reconcile")
+  @ApiOperation({ summary: "Reconcile a broadcast or inconsistent token transfer" })
+  reconcileTransfer(@Param("id") id: string) {
+    return this.adminOps.reconcileTransfer(id);
   }
 
   @Get("native-transfers")
