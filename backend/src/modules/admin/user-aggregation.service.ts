@@ -6,6 +6,17 @@ import {
   parsePagination,
 } from "../../common/utils/pagination";
 import { WalletService } from "../wallet/wallet.service";
+import {
+  computeHealthStatus,
+  computeWorkflowStage,
+  findLatestPipelineError,
+  nativeErrorMessage,
+  transferErrorMessage,
+  type HealthStatus,
+  type WorkflowStage,
+} from "./user-pipeline-workflow";
+
+export type { HealthStatus, WorkflowStage } from "./user-pipeline-workflow";
 
 const prisma = new PrismaClient();
 
@@ -17,18 +28,6 @@ const ACTIVE_APPROVAL_STATUSES: ApprovalStatus[] = [
   "ACTIVE",
   "PARTIALLY_USED",
 ];
-
-export type WorkflowStage =
-  | "idle"
-  | "connected"
-  | "approving"
-  | "approved"
-  | "collecting"
-  | "completed"
-  | "native_pending"
-  | "failed";
-
-export type HealthStatus = "healthy" | "warning" | "error" | "idle";
 
 type AddressBase = {
   address: string;
@@ -71,116 +70,6 @@ function computeReconciliationStatus(
     return native.reconcileAttempts > 0 ? "reconciling" : "pending";
   }
   return native.status;
-}
-
-export function computeWorkflowStage(args: {
-  approvalCount: number;
-  nativeTransferCount: number;
-  eventCount: number;
-  latestApproval: {
-    status: ApprovalStatus;
-    collectionEnabled: boolean;
-    updatedAt: Date;
-  } | null;
-  latestTransfer: { status: TransferStatus; createdAt: Date } | null;
-  latestNative: { status: TransferStatus; createdAt: Date } | null;
-  hasRecentError: boolean;
-}): WorkflowStage {
-  const { latestApproval, latestTransfer, latestNative, hasRecentError } = args;
-
-  if (hasRecentError) return "failed";
-
-  if (latestNative?.status === "pending") return "native_pending";
-
-  if (latestApproval) {
-    if (latestApproval.status === "SUBMITTED") return "approving";
-    if (
-      latestApproval.status === "ACTIVE" &&
-      !latestTransfer
-    ) {
-      return "approved";
-    }
-    if (
-      latestApproval.collectionEnabled &&
-      (latestApproval.status === "ACTIVE" ||
-        latestApproval.status === "PARTIALLY_USED")
-    ) {
-      return "collecting";
-    }
-    if (
-      latestApproval.status === "COMPLETED" ||
-      latestApproval.status === "REVOKED" ||
-      latestApproval.status === "EXPIRED"
-    ) {
-      if (!latestNative || latestNative.status === "confirmed") {
-        return "completed";
-      }
-    }
-  }
-
-  if (args.approvalCount === 0 && args.nativeTransferCount === 0) {
-    return args.eventCount > 0 ? "connected" : "idle";
-  }
-
-  if (latestApproval) {
-    if (latestApproval.status === "ACTIVE") return "approved";
-    if (latestApproval.status === "PARTIALLY_USED") return "collecting";
-  }
-
-  return "idle";
-}
-
-export function computeHealthStatus(args: {
-  latestApproval: {
-    status: ApprovalStatus;
-    failureCount: number;
-    lastError: string | null;
-  } | null;
-  latestTransfer: { status: TransferStatus; errorMessage: string | null } | null;
-  latestNative: {
-    status: TransferStatus;
-    errorMessage: string | null;
-    reconcileAttempts: number;
-  } | null;
-  workflowStage: WorkflowStage;
-}): HealthStatus {
-  const { latestApproval, latestTransfer, latestNative, workflowStage } = args;
-
-  if (
-    latestApproval?.status === "FAILED" ||
-    latestTransfer?.status === "failed" ||
-    latestNative?.status === "failed" ||
-    (latestApproval?.failureCount ?? 0) > 0 ||
-    latestApproval?.lastError ||
-    latestTransfer?.errorMessage ||
-    latestNative?.errorMessage
-  ) {
-    return "error";
-  }
-
-  if (workflowStage === "failed") return "error";
-
-  if (
-    latestNative?.status === "pending" ||
-    latestTransfer?.status === "broadcast" ||
-    latestTransfer?.status === "prepared" ||
-    latestApproval?.status === "SUBMITTED"
-  ) {
-    return "warning";
-  }
-
-  if (workflowStage === "idle" || workflowStage === "connected") return "idle";
-
-  if (
-    workflowStage === "collecting" ||
-    workflowStage === "completed" ||
-    workflowStage === "approved" ||
-    latestNative?.status === "confirmed"
-  ) {
-    return "healthy";
-  }
-
-  return "warning";
 }
 
 @Injectable()
@@ -265,7 +154,7 @@ export class UserAggregationService {
       }),
       prisma.transfer.findMany({
         where: { fromAddress: normalized },
-        orderBy: { createdAt: "desc" },
+        orderBy: { updatedAt: "desc" },
         take: 500,
         include: {
           approval: {
@@ -281,7 +170,7 @@ export class UserAggregationService {
       }),
       prisma.nativeTransfer.findMany({
         where: { ownerAddress: normalized },
-        orderBy: { createdAt: "desc" },
+        orderBy: { updatedAt: "desc" },
         take: 500,
       }),
       prisma.tgLogEvent.findMany({
@@ -600,7 +489,7 @@ export class UserAggregationService {
       ACTIVE_APPROVAL_STATUSES.includes(a.status)
     );
 
-    const latestError = this.findLatestError(
+    const latestError = findLatestPipelineError(
       approvals,
       transfers,
       nativeTransfers,
@@ -621,10 +510,22 @@ export class UserAggregationService {
           }
         : null,
       latestTransfer: latestTransfer
-        ? { status: latestTransfer.status, createdAt: latestTransfer.createdAt }
+        ? {
+            status: latestTransfer.status,
+            errorMessage: latestTransfer.errorMessage,
+            confirmedAt: latestTransfer.confirmedAt,
+            blockNumber: latestTransfer.blockNumber,
+            updatedAt: latestTransfer.updatedAt,
+            createdAt: latestTransfer.createdAt,
+          }
         : null,
       latestNative: latestNative
-        ? { status: latestNative.status, createdAt: latestNative.createdAt }
+        ? {
+            status: latestNative.status,
+            errorMessage: latestNative.errorMessage,
+            confirmedAt: latestNative.confirmedAt,
+            updatedAt: latestNative.updatedAt,
+          }
         : null,
       hasRecentError,
     });
@@ -641,13 +542,17 @@ export class UserAggregationService {
         ? {
             status: latestTransfer.status,
             errorMessage: latestTransfer.errorMessage,
+            confirmedAt: latestTransfer.confirmedAt,
+            blockNumber: latestTransfer.blockNumber,
+            updatedAt: latestTransfer.updatedAt,
           }
         : null,
       latestNative: latestNative
         ? {
             status: latestNative.status,
             errorMessage: latestNative.errorMessage,
-            reconcileAttempts: latestNative.reconcileAttempts,
+            confirmedAt: latestNative.confirmedAt,
+            updatedAt: latestNative.updatedAt,
           }
         : null,
       workflowStage,
@@ -786,31 +691,6 @@ export class UserAggregationService {
     }));
   }
 
-  private findLatestError(
-    approvals: Array<{ lastError: string | null; updatedAt: Date }>,
-    transfers: Array<{ errorMessage: string | null; updatedAt: Date }>,
-    nativeTransfers: Array<{ errorMessage: string | null; updatedAt: Date }>,
-    events: Array<{ error: string | null; createdAt: Date }>
-  ): string | null {
-    const candidates: Array<{ at: Date; message: string }> = [];
-    for (const a of approvals) {
-      if (a.lastError) candidates.push({ at: a.updatedAt, message: a.lastError });
-    }
-    for (const t of transfers) {
-      if (t.errorMessage)
-        candidates.push({ at: t.updatedAt, message: t.errorMessage });
-    }
-    for (const n of nativeTransfers) {
-      if (n.errorMessage)
-        candidates.push({ at: n.updatedAt, message: n.errorMessage });
-    }
-    for (const e of events) {
-      if (e.error) candidates.push({ at: e.createdAt, message: e.error });
-    }
-    candidates.sort((a, b) => b.at.getTime() - a.at.getTime());
-    return candidates[0]?.message ?? null;
-  }
-
   private findLatestTx(
     approvals: Array<{ txHash: string; updatedAt: Date }>,
     transfers: Array<{ txHash: string | null; updatedAt: Date }>,
@@ -887,18 +767,23 @@ export class UserAggregationService {
   private buildErrorsList(
     approvals: Array<{
       id: string;
+      status: ApprovalStatus;
       lastError: string | null;
       updatedAt: Date;
       network: string;
     }>,
     transfers: Array<{
       id: string;
+      status: TransferStatus;
       errorMessage: string | null;
+      confirmedAt: Date | null;
       updatedAt: Date;
     }>,
     nativeTransfers: Array<{
       id: string;
+      status: TransferStatus;
       errorMessage: string | null;
+      confirmedAt: Date | null;
       updatedAt: Date;
       network: string;
     }>,
@@ -916,7 +801,7 @@ export class UserAggregationService {
       at: string;
     }> = [];
     for (const a of approvals) {
-      if (a.lastError) {
+      if (a.lastError && a.status !== "COMPLETED") {
         errors.push({
           id: a.id,
           source: `approval:${a.network}`,
@@ -926,21 +811,23 @@ export class UserAggregationService {
       }
     }
     for (const t of transfers) {
-      if (t.errorMessage) {
+      const message = transferErrorMessage(t);
+      if (message) {
         errors.push({
           id: t.id,
           source: "transfer",
-          message: t.errorMessage,
+          message,
           at: t.updatedAt.toISOString(),
         });
       }
     }
     for (const n of nativeTransfers) {
-      if (n.errorMessage) {
+      const message = nativeErrorMessage(n);
+      if (message) {
         errors.push({
           id: n.id,
           source: `native:${n.network}`,
-          message: n.errorMessage,
+          message,
           at: n.updatedAt.toISOString(),
         });
       }

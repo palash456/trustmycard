@@ -3,17 +3,16 @@ import { ChevronLeft, ExternalLink } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
 import { ListPageLayout } from "@/components/ListPageLayout";
 import { PageHeader } from "@/components/PageHeader";
-import { StatCard } from "@/components/StatCard";
+import { PipelineLifecycleDashboard } from "@/components/pipeline/PipelineLifecycleDashboard";
+import { PipelineLiveRefresh } from "@/components/pipeline/PipelineLiveRefresh";
 import { UserHealthBadge } from "@/components/UserHealthBadge";
 import { WorkflowStageBadge } from "@/components/WorkflowStageBadge";
-import { UserPipelineFunnel } from "@/components/pipeline/UserPipelineFunnel";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { auditStructuredLink, auditTimelineLink } from "@/lib/log-links";
 import { adminGetData } from "@/lib/admin-data";
 import { blockExplorerAddress, formatDate } from "@/lib/format";
-import { buildUserPipelineFunnel } from "@/lib/user-pipeline-funnel";
-import type { UserDetail } from "@/types/users";
+import type { UserPipelineSnapshot } from "@/types/pipeline";
 
 export default async function UserPipelinePage({
   params,
@@ -22,11 +21,13 @@ export default async function UserPipelinePage({
 }) {
   const { address } = await params;
   const decoded = decodeURIComponent(address);
-  const data = await adminGetData<UserDetail>(
-    `/admin/users/${encodeURIComponent(decoded)}`
+  const encoded = encodeURIComponent(decoded);
+
+  const pipeline = await adminGetData<UserPipelineSnapshot>(
+    `/admin/users/${encoded}/pipeline`
   ).catch(() => null);
 
-  if (!data) {
+  if (!pipeline) {
     return (
       <ListPageLayout>
         <p className="text-destructive">User not found</p>
@@ -34,12 +35,13 @@ export default async function UserPipelinePage({
     );
   }
 
-  const s = data.summary;
-  const funnelStages = buildUserPipelineFunnel(data);
-  const explorerNetworks = s.networksUsed.length > 0 ? s.networksUsed : s.approvedChains;
+  const { summary } = pipeline;
+  const explorerNetworks =
+    summary.networksUsed.length > 0 ? summary.networksUsed : summary.approvedChains;
 
   return (
     <ListPageLayout className="space-y-4">
+      <PipelineLiveRefresh address={decoded} />
       <Button variant="ghost" size="sm" className="-ml-2 w-fit" render={<Link href="/pipeline" />}>
         <ChevronLeft className="size-4" />
         Back to pipeline
@@ -51,21 +53,30 @@ export default async function UserPipelinePage({
         description={
           <>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="break-all font-mono text-sm font-medium">{data.address}</span>
-              <CopyButton value={data.address} />
+              <span className="break-all font-mono text-sm font-medium">{pipeline.address}</span>
+              <CopyButton value={pipeline.address} />
             </div>
             <p className="text-xs text-muted-foreground">
-              First seen {formatDate(s.firstSeen)} · Last activity {formatDate(s.lastActivity)}
+              First seen {formatDate(summary.firstSeen)} · Last activity{" "}
+              {formatDate(summary.lastActivity)}
             </p>
           </>
         }
       >
         <div className="flex flex-col items-end gap-2">
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <WorkflowStageBadge value={s.workflowStage} />
-            <UserHealthBadge value={s.healthStatus} />
+            <WorkflowStageBadge value={summary.workflowStage} />
+            <UserHealthBadge value={summary.healthStatus} />
+            {summary.isComplete ? (
+              <Badge
+                variant="outline"
+                className="border-emerald-700/30 bg-emerald-700/15 font-medium text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-600/15 dark:text-emerald-400"
+              >
+                All pipelines complete
+              </Badge>
+            ) : null}
             {explorerNetworks.map((network) => {
-              const url = blockExplorerAddress(network, data.address);
+              const url = blockExplorerAddress(network, pipeline.address);
               if (!url) return null;
               return (
                 <a
@@ -82,19 +93,19 @@ export default async function UserPipelinePage({
             })}
           </div>
           <Link
-            href={`/users/${encodeURIComponent(data.address)}`}
+            href={`/users/${encoded}`}
             className="text-xs text-primary hover:underline"
           >
             Open profile →
           </Link>
           <Link
-            href={auditStructuredLink({ walletAddress: data.address })}
+            href={auditStructuredLink({ walletAddress: pipeline.address })}
             className="text-xs text-primary hover:underline"
           >
             Structured logs →
           </Link>
           <Link
-            href={auditTimelineLink({ walletAddress: data.address })}
+            href={auditTimelineLink({ walletAddress: pipeline.address })}
             className="text-xs text-primary hover:underline"
           >
             Timelines →
@@ -102,40 +113,7 @@ export default async function UserPipelinePage({
         </div>
       </PageHeader>
 
-      <Card className="overflow-hidden">
-        <CardHeader className="border-b bg-muted/30 py-3">
-          <CardTitle className="text-base">Pipeline funnel</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Hover each stage for live status, counts, and amounts
-          </p>
-        </CardHeader>
-        <CardContent className="px-4 py-5 md:px-8">
-          <UserPipelineFunnel stages={funnelStages} />
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Approvals"
-          value={data.analytics.approvalCount}
-          sub={`${data.analytics.failedApprovals} failed`}
-        />
-        <StatCard
-          label="Transfers"
-          value={data.analytics.transferCount}
-          sub={`${data.analytics.confirmedTransfers} confirmed`}
-        />
-        <StatCard
-          label="Native funding"
-          value={data.analytics.nativeTransferCount}
-          sub={`${data.analytics.confirmedNative} confirmed`}
-        />
-        <StatCard
-          label="Success rate"
-          value={`${Math.round(data.analytics.successRate)}%`}
-          sub={`${data.analytics.eventCount} events tracked`}
-        />
-      </div>
+      <PipelineLifecycleDashboard pipeline={pipeline} />
     </ListPageLayout>
   );
 }

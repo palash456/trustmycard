@@ -3,7 +3,41 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function useAdminStream(enabled = true) {
+const REFRESH_EVENTS = new Set([
+  "settings.updated",
+  "collector.updated",
+  "collector.tick",
+  "audit.created",
+  "transfer.updated",
+  "native_transfer.updated",
+  "approval.updated",
+  "user.updated",
+]);
+
+function eventMatchesScope(
+  event: { type?: string; payload?: unknown },
+  scopeAddress?: string
+): boolean {
+  if (!scopeAddress) return true;
+  const normalized = scopeAddress.toLowerCase();
+  const payload = (event.payload ?? {}) as { address?: string; ownerAddress?: string };
+  if (event.type === "user.updated") {
+    return payload.address?.toLowerCase() === normalized;
+  }
+  if (
+    event.type === "transfer.updated" ||
+    event.type === "native_transfer.updated" ||
+    event.type === "approval.updated"
+  ) {
+    if (payload.ownerAddress) {
+      return payload.ownerAddress.toLowerCase() === normalized;
+    }
+    return false;
+  }
+  return false;
+}
+
+export function useAdminStream(enabled = true, scopeAddress?: string) {
   const router = useRouter();
   const [connected, setConnected] = useState(false);
   const routerRef = useRef(router);
@@ -16,18 +50,12 @@ export function useAdminStream(enabled = true) {
     es.onerror = () => setConnected(false);
     es.onmessage = (msg) => {
       try {
-        const event = JSON.parse(msg.data) as { type?: string };
-        if (
-          event.type === "settings.updated" ||
-          event.type === "collector.updated" ||
-          event.type === "collector.tick" ||
-          event.type === "audit.created" ||
-          event.type === "transfer.updated" ||
-          event.type === "native_transfer.updated" ||
-          event.type === "approval.updated"
-        ) {
-          routerRef.current.refresh();
+        const event = JSON.parse(msg.data) as { type?: string; payload?: unknown };
+        if (!event.type || !REFRESH_EVENTS.has(event.type)) return;
+        if (scopeAddress) {
+          if (!eventMatchesScope(event, scopeAddress)) return;
         }
+        routerRef.current.refresh();
       } catch {
         // ignore malformed events
       }
@@ -36,7 +64,7 @@ export function useAdminStream(enabled = true) {
       es.close();
       setConnected(false);
     };
-  }, [enabled]);
+  }, [enabled, scopeAddress]);
 
   return { connected };
 }

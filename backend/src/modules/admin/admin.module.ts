@@ -9,6 +9,7 @@ import { AdminService } from "./admin.service";
 import { AdminStreamService } from "./admin-stream.service";
 import { AnalyticsService } from "./analytics.service";
 import { UserAggregationService } from "./user-aggregation.service";
+import { PipelineBuilderService } from "./pipeline/pipeline-builder.service";
 import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
 
 @Module({
@@ -20,6 +21,7 @@ import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
     AdminStreamService,
     AdminDevOpsService,
     UserAggregationService,
+    PipelineBuilderService,
     AnalyticsService,
     AdminApiKeyGuard,
   ],

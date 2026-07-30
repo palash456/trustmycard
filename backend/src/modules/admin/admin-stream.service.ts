@@ -27,6 +27,7 @@ export class AdminStreamService implements OnModuleInit {
       "transfer.updated",
       "native_transfer.updated",
       "approval.updated",
+      "user.updated",
     ] as const) {
       this.adminEvents.bus.on(type, (payload) => {
         this.emit(type, payload);

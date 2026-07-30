@@ -766,9 +766,11 @@ export class NativeTransferService {
     this.adminEvents.nativeTransferUpdated({
       id: record.id,
       status: record.status,
+      ownerAddress: args.owner,
       network: record.network,
       txHash: record.txHash,
     });
+    this.adminEvents.userUpdated({ address: args.owner });
 
     return record;
   }

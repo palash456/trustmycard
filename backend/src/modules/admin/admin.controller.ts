@@ -20,6 +20,7 @@ import { AdminService } from "./admin.service";
 import { AdminStreamService } from "./admin-stream.service";
 import { AnalyticsService } from "./analytics.service";
 import { UserAggregationService } from "./user-aggregation.service";
+import { PipelineBuilderService } from "./pipeline/pipeline-builder.service";
 
 @ApiTags("Admin")
 @ApiSecurity("adminApiKey")
@@ -31,6 +32,7 @@ export class AdminController {
     private readonly adminOps: AdminOpsService,
     private readonly streamService: AdminStreamService,
     private readonly userAggregation: UserAggregationService,
+    private readonly pipelineBuilder: PipelineBuilderService,
     private readonly analytics: AnalyticsService,
     private readonly observability: ObservabilityService
   ) {}
@@ -216,6 +218,12 @@ export class AdminController {
   @ApiOperation({ summary: "Live on-chain balances for a user address" })
   getUserBalances(@Param("address") address: string) {
     return this.userAggregation.getUserBalances(decodeURIComponent(address));
+  }
+
+  @Get("users/:address/pipeline")
+  @ApiOperation({ summary: "User pipeline snapshot — asset lifecycles, attempts, metrics" })
+  getUserPipeline(@Param("address") address: string) {
+    return this.pipelineBuilder.buildPipeline(decodeURIComponent(address));
   }
 
   @Get("users/:address")

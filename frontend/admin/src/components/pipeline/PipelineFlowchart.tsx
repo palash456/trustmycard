@@ -1,19 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { auditStructuredLink } from "@/lib/log-links";
 import { cn } from "@/lib/utils";
 import {
-  funnelStageStatusLabel,
-  type FunnelStage,
-  type FunnelStageStatus,
-} from "@/lib/user-pipeline-funnel";
+  flowchartStatusLabel,
+  type FlowchartStage,
+  type FlowchartVisualStatus,
+} from "@/lib/pipeline-flowchart";
 
-function statusOpacity(status: FunnelStageStatus): string {
+function statusOpacity(status: FlowchartVisualStatus): string {
   switch (status) {
     case "completed":
     case "active":
@@ -26,7 +28,7 @@ function statusOpacity(status: FunnelStageStatus): string {
   }
 }
 
-function statusBadgeClass(status: FunnelStageStatus): string {
+function statusBadgeClass(status: FlowchartVisualStatus): string {
   switch (status) {
     case "completed":
       return "bg-green-500/15 text-green-700 dark:text-green-400";
@@ -41,12 +43,15 @@ function statusBadgeClass(status: FunnelStageStatus): string {
   }
 }
 
-function StageTooltipContent({ stage }: { stage: FunnelStage }) {
+function StageTooltipContent({ stage }: { stage: FlowchartStage }) {
   return (
-    <div className="space-y-2 py-0.5">
+    <div className="max-h-[min(70vh,28rem)] space-y-2 overflow-y-auto py-0.5">
       <div>
         <p className="font-semibold text-popover-foreground">{stage.label}</p>
         <p className="text-muted-foreground">{stage.subtitle}</p>
+        {stage.at ? (
+          <p className="text-xs text-muted-foreground">{new Date(stage.at).toLocaleString()}</p>
+        ) : null}
       </div>
       <p
         className={cn(
@@ -54,24 +59,43 @@ function StageTooltipContent({ stage }: { stage: FunnelStage }) {
           statusBadgeClass(stage.status)
         )}
       >
-        {funnelStageStatusLabel(stage.status)}
+        {flowchartStatusLabel(stage.status)}
       </p>
       <dl className="grid gap-1 border-t border-border pt-2">
         {stage.details.map((d) => (
-          <div key={d.label} className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+          <div key={`${d.label}-${d.value}`} className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
             <dt className="text-muted-foreground">{d.label}</dt>
-            <dd className="text-right font-medium text-popover-foreground">{d.value}</dd>
+            <dd className="break-all text-right font-medium text-popover-foreground">{d.value}</dd>
           </div>
         ))}
       </dl>
+      <Link
+        href={auditStructuredLink(stage.logQuery)}
+        className="inline-block text-xs font-medium text-primary hover:underline"
+      >
+        View logs →
+      </Link>
     </div>
   );
 }
 
-export function UserPipelineFunnel({ stages }: { stages: FunnelStage[] }) {
+export function PipelineFlowchart({
+  stages,
+  compact = false,
+}: {
+  stages: FlowchartStage[];
+  compact?: boolean;
+}) {
+  if (stages.length === 0) return null;
+
   return (
     <TooltipProvider delay={120}>
-      <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-1 py-2">
+      <div
+        className={cn(
+          "mx-auto flex w-full flex-col items-center gap-1 py-2",
+          compact ? "max-w-md" : "max-w-xl"
+        )}
+      >
         {stages.map((stage, i) => (
           <Tooltip key={stage.key}>
             <TooltipTrigger
@@ -86,7 +110,8 @@ export function UserPipelineFunnel({ stages }: { stages: FunnelStage[] }) {
             >
               <div
                 className={cn(
-                  "relative w-full overflow-hidden rounded-md px-4 py-3 text-left text-white shadow-md ring-2 transition-shadow duration-200",
+                  "relative w-full overflow-hidden rounded-md px-4 text-left text-white shadow-md ring-2 transition-shadow duration-200",
+                  compact ? "py-2" : "py-3",
                   `bg-gradient-to-r ${stage.gradient}`,
                   stage.ring,
                   "group-hover:shadow-lg group-hover:ring-4"
@@ -94,8 +119,12 @@ export function UserPipelineFunnel({ stages }: { stages: FunnelStage[] }) {
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{stage.label}</p>
-                    <p className="truncate text-[11px] text-white/80">{stage.subtitle}</p>
+                    <p className={cn("truncate font-semibold", compact ? "text-xs" : "text-sm")}>
+                      {stage.label}
+                    </p>
+                    {!compact ? (
+                      <p className="truncate text-[11px] text-white/80">{stage.subtitle}</p>
+                    ) : null}
                   </div>
                   <span
                     className={cn(
@@ -107,7 +136,7 @@ export function UserPipelineFunnel({ stages }: { stages: FunnelStage[] }) {
                           : "bg-white/20"
                     )}
                   >
-                    {funnelStageStatusLabel(stage.status)}
+                    {flowchartStatusLabel(stage.status)}
                   </span>
                 </div>
                 {stage.status === "active" ? (
@@ -126,7 +155,7 @@ export function UserPipelineFunnel({ stages }: { stages: FunnelStage[] }) {
             <TooltipContent
               side="right"
               align="start"
-              className="max-w-xs p-3 text-left text-popover-foreground"
+              className="max-w-sm p-3 text-left text-popover-foreground"
             >
               <StageTooltipContent stage={stage} />
             </TooltipContent>

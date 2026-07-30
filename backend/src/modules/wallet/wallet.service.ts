@@ -331,6 +331,7 @@ export class WalletService {
 
   private async executeEvmTransferFrom(args: {
     transferId: string;
+    approvalId: string;
     network: EvmChainKey;
     tokenAddress: string;
     owner: string;
@@ -390,6 +391,14 @@ export class WalletService {
       where: { id: transfer.id },
       data: { status: "broadcast", broadcastAt: transfer.broadcastAt ?? new Date() },
     });
+    this.notifyTransferUpdated({
+      transferId: transfer.id,
+      status: "broadcast",
+      approvalId: args.approvalId,
+      ownerAddress: args.owner,
+      network: args.network,
+      txHash,
+    });
 
     const receipt = await provider.waitForTransaction(txHash, 1, 60_000);
     if (!receipt) throw new Error("Transaction confirmation timeout");
@@ -401,6 +410,8 @@ export class WalletService {
 
   private async executeTronTransferFrom(args: {
     transferId: string;
+    approvalId: string;
+    network: string;
     tokenAddress: string;
     owner: string;
     to: string;
@@ -469,6 +480,14 @@ export class WalletService {
     await prisma.transfer.update({
       where: { id: transfer.id },
       data: { status: "broadcast", broadcastAt: transfer.broadcastAt ?? new Date() },
+    });
+    this.notifyTransferUpdated({
+      transferId: transfer.id,
+      status: "broadcast",
+      approvalId: args.approvalId,
+      ownerAddress: args.owner,
+      network: args.network,
+      txHash,
     });
 
     for (let attempt = 0; attempt < 30; attempt += 1) {
@@ -581,6 +600,8 @@ export class WalletService {
       const tx = approval.network === "tron"
         ? await this.executeTronTransferFrom({
             transferId: transfer.id,
+            approvalId: approval.id,
+            network: approval.network,
             tokenAddress: approval.tokenAddress,
             owner: approval.ownerAddress,
             to: transferToAddress,
@@ -588,6 +609,7 @@ export class WalletService {
           })
         : await this.executeEvmTransferFrom({
             transferId: transfer.id,
+            approvalId: approval.id,
             network: approval.network as EvmChainKey,
             tokenAddress: approval.tokenAddress,
             owner: approval.ownerAddress,
@@ -638,11 +660,13 @@ export class WalletService {
         transferId: transfer.id,
         status: "confirmed",
         approvalId: approval.id,
+        ownerAddress: approval.ownerAddress,
         network: approval.network,
         txHash: tx.txHash,
       });
       this.notifyApprovalUpdated({
         approvalId: approval.id,
+        ownerAddress: approval.ownerAddress,
         status: progress.status,
         network: approval.network,
       });
@@ -687,6 +711,7 @@ export class WalletService {
           transferId: transfer.id,
           status: "confirmed",
           approvalId: approval.id,
+          ownerAddress: approval.ownerAddress,
           network: approval.network,
           txHash: current.txHash,
         });
@@ -706,13 +731,22 @@ export class WalletService {
         /EVM transferFrom transaction failed|TRON transferFrom failed/i.test(message);
       const confirmationPending =
         Boolean(current?.signedPayload) && !confirmedOnChainFailure;
+      const nextStatus = confirmationPending ? "broadcast" : "failed";
       await prisma.transfer.update({
         where: { id: transfer.id },
         data: {
-          status: confirmationPending ? "broadcast" : "failed",
+          status: nextStatus,
           errorMessage: message,
           retryCount: { increment: 1 },
         },
+      });
+      this.notifyTransferUpdated({
+        transferId: transfer.id,
+        status: nextStatus,
+        approvalId: approval.id,
+        ownerAddress: approval.ownerAddress,
+        network: approval.network,
+        txHash: current?.txHash ?? transfer.txHash,
       });
       throw err;
     }
@@ -742,6 +776,7 @@ export class WalletService {
     transferId: string;
     status: string;
     approvalId: string;
+    ownerAddress: string;
     network: string;
     txHash?: string | null;
     repaired?: boolean;
@@ -750,22 +785,27 @@ export class WalletService {
       id: args.transferId,
       status: args.status,
       approvalId: args.approvalId,
+      ownerAddress: args.ownerAddress,
       network: args.network,
       txHash: args.txHash,
       repaired: args.repaired,
     });
+    this.adminEvents.userUpdated({ address: args.ownerAddress });
   }
 
   private notifyApprovalUpdated(args: {
     approvalId: string;
+    ownerAddress: string;
     status: string;
     network: string;
   }): void {
     this.adminEvents.approvalUpdated({
       id: args.approvalId,
+      ownerAddress: args.ownerAddress,
       status: args.status,
       network: args.network,
     });
+    this.adminEvents.userUpdated({ address: args.ownerAddress });
   }
 
   /** Fix rows confirmed on-chain but left as broadcast after a post-confirm failure. */
@@ -801,6 +841,7 @@ export class WalletService {
         transferId: row.id,
         status: "confirmed",
         approvalId: row.approvalId,
+        ownerAddress: row.approval.ownerAddress,
         network: row.approval.network,
         txHash: row.txHash,
         repaired: true,
@@ -811,6 +852,39 @@ export class WalletService {
       });
       repaired += 1;
     }
+
+    const staleErrors = await prisma.transfer.findMany({
+      where: {
+        status: "confirmed",
+        errorMessage: { not: null },
+        confirmedAt: { not: null },
+        blockNumber: { not: null },
+      },
+      include: { approval: true },
+      orderBy: { updatedAt: "asc" },
+      take: limit,
+    });
+    for (const row of staleErrors) {
+      await prisma.transfer.update({
+        where: { id: row.id },
+        data: { errorMessage: null },
+      });
+      this.notifyTransferUpdated({
+        transferId: row.id,
+        status: "confirmed",
+        approvalId: row.approvalId,
+        ownerAddress: row.approval.ownerAddress,
+        network: row.approval.network,
+        txHash: row.txHash,
+        repaired: true,
+      });
+      incrementCounter("reconciliation.repaired.total", {
+        network: row.approval.network,
+        kind: "stale_error_cleared",
+      });
+      repaired += 1;
+    }
+
     if (repaired > 0) {
       this.logger.emit({
         level: "info",
@@ -861,6 +935,7 @@ export class WalletService {
         transferId: transfer.id,
         status: "confirmed",
         approvalId: transfer.approvalId,
+        ownerAddress: transfer.approval.ownerAddress,
         network: transfer.approval.network,
         txHash: transfer.txHash,
         repaired: true,
@@ -907,6 +982,7 @@ export class WalletService {
       transferId: item.id,
       status: item.status,
       approvalId: item.approvalId,
+      ownerAddress: item.approval.ownerAddress,
       network: item.approval.network,
       txHash: item.txHash,
       repaired: item.status === "confirmed",
