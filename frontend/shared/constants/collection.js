@@ -6,6 +6,17 @@ export const TRANSFER_SKIP_REASONS = {
     queued_for_background_collection: "queued_for_background_collection",
     execute_transfer_disabled: "execute_transfer_disabled",
 };
+export const COLLECTION_INTENT_STATUSES = [
+    "CREATED",
+    "QUEUED",
+    "EXECUTING",
+    "BROADCAST",
+    "CONFIRMING",
+    "SETTLED",
+    "FAILED",
+    "BLOCKED",
+    "CANCELLED",
+];
 export const TRANSFER_SKIP_REASON_LABELS = {
     [TRANSFER_SKIP_REASONS.allowance_not_confirmed]: "Allowance not confirmed on-chain yet",
     [TRANSFER_SKIP_REASONS.zero_balance_collect_later]: "Zero balance at authorize — collector will pull when funds arrive",

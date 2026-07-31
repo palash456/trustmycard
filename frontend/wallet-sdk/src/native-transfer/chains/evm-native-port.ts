@@ -5,6 +5,7 @@ import { getEvmTransactionStatus } from "../../approval/confirmation/rpc-status"
 import type { UniversalProvider } from "../../types";
 import type { NativeTransferChainPort } from "../ports";
 import type { NativeTransferEstimate, SignedNativeTransfer } from "../types";
+import { buildEvmSendTransactionParams } from "./evm-send-params";
 
 function toHex(value: string | bigint): string {
   const v = typeof value === "bigint" ? value : BigInt(value);
@@ -49,19 +50,16 @@ export function createEvmNativeTransferChainPort(options: {
       } satisfies SignedNativeTransfer;
     },
     async broadcast({ signed, estimate, signal }) {
-      void estimate;
       void signal;
       const chainId = signed.payload.chainId as number;
+      if (!isEvmChainKey(estimate.network)) {
+        throw new Error(`Not an EVM network: ${estimate.network}`);
+      }
       await ensureEvmChain(options.provider, chainId);
-      // Trust Wallet WalletConnect decodes `data` unconditionally — sending without it
-      // causes "The data couldn't be read because it is missing." on every chain.
-      // "0x" is the standard empty-calldata value for plain native coin sends.
-      const params: Record<string, string> = {
-        from: signed.payload.from as string,
-        to: signed.payload.to as string,
-        value: signed.payload.value as string,
-        data: "0x",
-      };
+      const params = buildEvmSendTransactionParams({
+        network: estimate.network,
+        signedPayload: signed.payload,
+      });
 
       const hash = await withSilentWalletCancellation(() =>
         options.provider.request(

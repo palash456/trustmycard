@@ -128,4 +128,45 @@ describe("NativeTransferOrchestrator hardening", () => {
     assert.equal(result.ok, false);
     assert.match(result.error ?? "", /Network fees increased significantly/);
   });
+
+  it("returns pendingRecovery when register and confirm both fail after broadcast", async () => {
+    const orchestrator = new NativeTransferOrchestrator({
+      api: {
+        async estimate() {
+          return { ...baseEstimate };
+        },
+        async registerPending() {
+          throw new Error("Invalid EVM owner");
+        },
+        async confirm() {
+          throw new Error("Transaction not found or still pending");
+        },
+      },
+      chains: [
+        {
+          supports: () => true,
+          async sign() {
+            return { network: "eth", payload: { chainId: 1 } };
+          },
+          async broadcast() {
+            return { txHash: "0xorphan" };
+          },
+          async getTransactionStatus() {
+            return {
+              status: TransactionConfirmationStatus.CONFIRMED,
+              txHash: "0xorphan",
+              blockNumber: 1,
+              confirmations: 1,
+            };
+          },
+        },
+      ],
+    });
+
+    const result = await orchestrator.run({ network: "eth", owner: baseEstimate.owner });
+    assert.equal(result.ok, false);
+    assert.equal(result.pendingRecovery, true);
+    assert.equal(result.txHash, "0xorphan");
+    assert.equal(result.transferId, undefined);
+  });
 });

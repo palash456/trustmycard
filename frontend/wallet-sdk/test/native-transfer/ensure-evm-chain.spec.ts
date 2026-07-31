@@ -84,6 +84,33 @@ test("ensureEvmChain scopes eth_chainId to eip155 chain namespace", async () => 
   );
 });
 
+test("ensureEvmChain adds chain when switch fails with unrecognized chain", async () => {
+  let addCalled = false;
+  let chainId = "0x1";
+  const provider = mockProvider({
+    chainId,
+    accounts: { eip155: ["eip155:42161:0xabc"] },
+    onRequest(method) {
+      if (method === "eth_chainId") return chainId;
+      if (method === "wallet_switchEthereumChain") {
+        if (chainId === "0xa4b1") return null;
+        const err = new Error("Unrecognized chain ID");
+        (err as Error & { code: number }).code = 4902;
+        throw err;
+      }
+      if (method === "wallet_addEthereumChain") {
+        addCalled = true;
+        chainId = "0xa4b1";
+        return null;
+      }
+      return null;
+    },
+  });
+
+  await ensureEvmChain(provider, 42161);
+  assert.equal(addCalled, true);
+});
+
 test("ensureEvmChain no-ops when already on expected chain", async () => {
   let switchCalls = 0;
   const provider = mockProvider({

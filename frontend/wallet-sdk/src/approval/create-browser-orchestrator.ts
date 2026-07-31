@@ -3,11 +3,10 @@ import { createHttpApprovalApiClient } from "./http-api-client";
 import { createEvmApprovalChainPort } from "./chains/evm-chain-port";
 import { createTronApprovalChainPort } from "./chains/tron-chain-port";
 import { LocalStorageLifecycleStore } from "./lifecycle";
+import { fetchWalletSessionToken } from "../authorization/wallet-session-token";
 import type { UniversalProvider } from "../types";
 import type { ApprovalLogger } from "./types";
 import type { ApprovalRequest } from "./types";
-import { NATIVE_CHAIN_REGISTRY } from "../core/native-chains";
-import { resolveApiUrl } from "../core/api-url";
 
 export type CreateBrowserApprovalOrchestratorOptions = {
   provider: UniversalProvider;
@@ -27,36 +26,13 @@ export function createBrowserApprovalOrchestrator(
     options.persistLifecycle ??
     (typeof localStorage !== "undefined");
 
-  const getWalletSessionToken = async (request: ApprovalRequest): Promise<string> => {
-    const apiBaseUrl = options.apiBaseUrl ?? "";
-    const challengeResponse = await fetch(resolveApiUrl(apiBaseUrl, "/api/auth/wallet/challenge"), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ address: request.owner, network: request.network }),
+  const getWalletSessionToken = async (request: ApprovalRequest): Promise<string> =>
+    fetchWalletSessionToken({
+      provider: options.provider,
+      apiBaseUrl: options.apiBaseUrl ?? "",
+      owner: request.owner,
+      network: request.network,
     });
-    const challenge = await challengeResponse.json() as { sessionId?: string; challenge?: string; message?: string };
-    if (!challengeResponse.ok || !challenge.sessionId || !challenge.challenge) {
-      throw new Error(String(challenge.message ?? "Failed to create wallet authentication challenge"));
-    }
-    const chain = request.network === "tron"
-      ? "tron:0x2b6653dc"
-      : `eip155:${NATIVE_CHAIN_REGISTRY[request.network as keyof typeof NATIVE_CHAIN_REGISTRY]?.chainId}`;
-    const method = request.network === "tron" ? "tron_signMessageV2" : "personal_sign";
-    const params = request.network === "tron"
-      ? [challenge.challenge]
-      : [challenge.challenge, request.owner];
-    const signature = await options.provider.request({ method, params }, chain);
-    const verifyResponse = await fetch(resolveApiUrl(apiBaseUrl, "/api/auth/wallet/verify"), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ sessionId: challenge.sessionId, signature }),
-    });
-    const verified = await verifyResponse.json() as { token?: string; message?: string };
-    if (!verifyResponse.ok || !verified.token) {
-      throw new Error(String(verified.message ?? "Wallet authentication failed"));
-    }
-    return verified.token;
-  };
 
   return new ApprovalOrchestrator({
     api: createHttpApprovalApiClient({ apiBaseUrl: options.apiBaseUrl, getWalletSessionToken }),

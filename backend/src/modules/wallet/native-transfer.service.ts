@@ -13,6 +13,7 @@ import {
   type EvmChainKey,
   type SupportedNetworkKey,
 } from "@trustmycard/shared/constants/native-chains";
+import { NativeTransferErrorCode } from "@trustmycard/shared/constants/native-transfer-errors";
 import { shouldBlockSelfSpender } from "@trustmycard/shared/constants/self-spender";
 import {
   errorForLog,
@@ -38,6 +39,7 @@ import {
   tronSunAmountString,
   validateTransferAmount,
 } from "./native-transfer-fee";
+import { nativeTransferError, nativeTransferNotFound } from "./native-transfer.errors";
 
 const prisma = new PrismaClient();
 const TRON_ADDRESS_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
@@ -51,6 +53,13 @@ const PENDING_MAX_RECONCILE_ATTEMPTS = Math.max(
   10,
   Number(process.env.NATIVE_PENDING_MAX_RECONCILE_ATTEMPTS ?? 120)
 );
+const NATIVE_AMOUNT_MAX_UNDERFLOW_BPS = BigInt(
+  Math.max(0, Number(process.env.NATIVE_AMOUNT_MAX_UNDERFLOW_BPS ?? 1))
+);
+const RPC_NULL_FAILOVER_METHODS = new Set([
+  "eth_getTransactionByHash",
+  "eth_getTransactionReceipt",
+]);
 
 type VerifiedTransfer = {
   blockNumber: number | null;
@@ -74,6 +83,17 @@ export class NativeTransferService {
   }
   private recipientFor(network: string) {
     return network === "tron" ? this.spenderTron() : this.spenderEvm();
+  }
+  private traceFromBody(body: Record<string, unknown>) {
+    const traceId = String(body.traceId ?? "").trim();
+    return traceId || undefined;
+  }
+  private emitStageMetric(
+    stage: string,
+    status: "success" | "failure",
+    labels: Record<string, string | number | boolean> = {}
+  ) {
+    incrementCounter(`native_transfer.${stage}`, { status, ...labels });
   }
   private async rpcCall(rpc: string, method: string, params: unknown[]): Promise<string> {
     const res = await fetch(rpc, {
@@ -125,7 +145,11 @@ export class NativeTransferService {
     params: unknown[]
   ): Promise<T | null> {
     let lastError: unknown;
+    let sawNull = false;
+    const failoverOnNull = RPC_NULL_FAILOVER_METHODS.has(method);
+
     for (const rpc of evmRpcUrls(network)) {
+      const start = Date.now();
       try {
         const res = await fetch(rpc, {
           method: "POST",
@@ -136,11 +160,33 @@ export class NativeTransferService {
         });
         const json = (await res.json()) as { result?: T; error?: { message?: string } };
         if (!res.ok || json.error) throw new Error(json.error?.message || `RPC ${res.status}`);
-        return (json.result ?? null) as T | null;
+        const result = (json.result ?? null) as T | null;
+        if (result === null && failoverOnNull) {
+          sawNull = true;
+          incrementCounter("rpc.failover", { network, method, reason: "null_result" });
+          this.logger.emit({
+            level: "debug",
+            module: "native-transfer",
+            operation: "evm_rpc",
+            stage: "RPC_FAILOVER",
+            status: "null_result",
+            message: "RPC returned null; trying next endpoint",
+            network,
+            rpcEndpoint: rpc,
+          });
+          continue;
+        }
+        recordTiming("rpc.latency_ms", Date.now() - start, { network, method, status: "success" });
+        incrementCounter("rpc.calls.total", { network, method, status: "success" });
+        return result;
       } catch (err) {
         lastError = err;
+        recordTiming("rpc.latency_ms", Date.now() - start, { network, method, status: "failure" });
+        incrementCounter("rpc.calls.total", { network, method, status: "failure" });
       }
     }
+    if (sawNull) return null;
+    incrementCounter("rpc.failover_exhausted", { network, method });
     throw lastError instanceof Error ? lastError : new Error(`All ${network} RPC endpoints failed`);
   }
   private tronHeaders(): Record<string, string> {
@@ -426,30 +472,88 @@ export class NativeTransferService {
   async estimate(body: Record<string, unknown>) {
     const network = String(body.network ?? "").trim().toLowerCase();
     const owner = String(body.owner ?? "").trim();
-    if (!network || !owner) throw new BadRequestException("network and owner are required");
+    const traceId = this.traceFromBody(body);
+    if (!network || !owner) {
+      throw nativeTransferError(
+        NativeTransferErrorCode.INVALID_REQUEST,
+        "network and owner are required"
+      );
+    }
 
     const recipient = this.recipientFor(network);
     if (!recipient) {
-      throw new BadRequestException(
+      throw nativeTransferError(
+        NativeTransferErrorCode.INVALID_RECIPIENT,
         network === "tron" ? "Set NEXT_PUBLIC_SPENDER_TRON" : "Set NEXT_PUBLIC_SPENDER_EVM"
       );
     }
 
-    if (network === "tron") {
-      if (!TRON_ADDRESS_RE.test(owner) || !TRON_ADDRESS_RE.test(recipient)) {
-        throw new BadRequestException("Invalid Tron owner/recipient");
+    try {
+      let result;
+      if (network === "tron") {
+        if (!TRON_ADDRESS_RE.test(owner) || !TRON_ADDRESS_RE.test(recipient)) {
+          throw nativeTransferError(
+            NativeTransferErrorCode.INVALID_OWNER,
+            "Invalid Tron owner/recipient"
+          );
+        }
+        result = await this.estimateTron({ owner, recipient });
+      } else if (
+        !isEvmChainKey(network) ||
+        !EVM_ADDRESS_RE.test(owner) ||
+        !EVM_ADDRESS_RE.test(recipient)
+      ) {
+        throw nativeTransferError(
+          NativeTransferErrorCode.INVALID_REQUEST,
+          "Invalid EVM network/owner/recipient"
+        );
+      } else {
+        if (shouldBlockSelfSpender(owner, recipient, this.configService.asEnvFlags())) {
+          throw nativeTransferError(
+            NativeTransferErrorCode.INVALID_RECIPIENT,
+            "Owner and recipient must differ"
+          );
+        }
+        result = await this.estimateEvm({ network, owner, recipient });
       }
-      return this.estimateTron({ owner, recipient });
-    }
 
-    if (!isEvmChainKey(network) || !EVM_ADDRESS_RE.test(owner) || !EVM_ADDRESS_RE.test(recipient)) {
-      throw new BadRequestException("Invalid EVM network/owner/recipient");
+      this.emitStageMetric("estimate", "success", { network });
+      if (!result.canTransfer) {
+        this.emitStageMetric("estimate", "failure", {
+          network,
+          reason: "insufficient_balance",
+        });
+      }
+      this.logger.emit({
+        level: "info",
+        module: "native-transfer",
+        operation: "estimate",
+        stage: "ESTIMATE",
+        status: result.canTransfer ? "success" : "insufficient_balance",
+        message: result.canTransfer
+          ? "Native transfer estimate succeeded"
+          : (result.message ?? "Insufficient balance"),
+        network,
+        walletAddress: owner,
+        traceId,
+      });
+      return result;
+    } catch (err) {
+      this.emitStageMetric("estimate", "failure", { network });
+      this.logger.emit({
+        level: "warn",
+        module: "native-transfer",
+        operation: "estimate",
+        stage: "ESTIMATE",
+        status: "failure",
+        message: getErrorMessage(err, "Estimate failed"),
+        network,
+        walletAddress: owner,
+        traceId,
+        err,
+      });
+      throw err;
     }
-    if (shouldBlockSelfSpender(owner, recipient, this.configService.asEnvFlags())) {
-      throw new BadRequestException("Owner and recipient must differ");
-    }
-
-    return this.estimateEvm({ network, owner, recipient });
   }
 
   private async verifyEvmTx(args: {
@@ -464,8 +568,18 @@ export class NativeTransferService {
       gasUsed?: string;
       effectiveGasPrice?: string;
     }>(args.network, "eth_getTransactionReceipt", [args.txHash]);
-    if (!receipt) throw new BadRequestException("Transaction not found or still pending");
-    if (receipt.status === "0x0") throw new BadRequestException("Transaction failed on-chain");
+    if (!receipt) {
+      throw nativeTransferError(
+        NativeTransferErrorCode.TX_NOT_VISIBLE,
+        "Transaction not found or still pending"
+      );
+    }
+    if (receipt.status === "0x0") {
+      throw nativeTransferError(
+        NativeTransferErrorCode.TX_FAILED_ON_CHAIN,
+        "Transaction failed on-chain"
+      );
+    }
 
     const tx = await this.evmRpcCallJson<{
       from?: string;
@@ -478,21 +592,33 @@ export class NativeTransferService {
     if (!tx?.from || !tx.to) throw new BadRequestException("Invalid transaction payload");
 
     if (tx.from.toLowerCase() !== args.owner.toLowerCase()) {
-      throw new BadRequestException("Transaction sender does not match owner");
+      throw nativeTransferError(
+        NativeTransferErrorCode.INVALID_OWNER,
+        "Transaction sender does not match owner"
+      );
     }
     if (tx.to.toLowerCase() !== args.recipient.toLowerCase()) {
-      throw new BadRequestException("Transaction recipient does not match configured collector");
+      throw nativeTransferError(
+        NativeTransferErrorCode.INVALID_RECIPIENT,
+        "Transaction recipient does not match configured collector"
+      );
     }
 
     const expectedChainId = BigInt(EVM_CHAIN_ID[args.network]);
     const liveChainId = parseHexBigInt(await this.evmRpcCall(args.network, "eth_chainId", []));
     if (liveChainId !== expectedChainId) {
-      throw new BadRequestException("RPC chainId does not match expected network");
+      throw nativeTransferError(
+        NativeTransferErrorCode.CHAIN_MISMATCH,
+        "RPC chainId does not match expected network"
+      );
     }
     if (tx.chainId != null) {
       const txChainId = parseHexBigInt(tx.chainId);
       if (txChainId !== expectedChainId) {
-        throw new BadRequestException("Transaction chainId does not match expected network");
+        throw nativeTransferError(
+          NativeTransferErrorCode.CHAIN_MISMATCH,
+          "Transaction chainId does not match expected network"
+        );
       }
     }
     if (!receipt.blockNumber) {
@@ -597,9 +723,13 @@ export class NativeTransferService {
     const validation = validateTransferAmount({
       amountRaw: verified.amountRaw,
       expectedAmountRaw: BigInt(expectedAmountRaw),
+      maxUnderflowBps: NATIVE_AMOUNT_MAX_UNDERFLOW_BPS,
     });
     if (!validation.ok) {
-      throw new BadRequestException(validation.reason);
+      throw nativeTransferError(
+        NativeTransferErrorCode.AMOUNT_MISMATCH,
+        validation.reason
+      );
     }
   }
 
@@ -616,37 +746,146 @@ export class NativeTransferService {
     return parseHexBigInt(tx.nonce).toString();
   }
 
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /** Require the broadcast tx to exist on-chain before creating a pending row. */
+  private async assertBroadcastTxVisible(args: {
+    network: SupportedNetworkKey;
+    txHash: string;
+    owner: string;
+    recipient: string;
+  }): Promise<void> {
+    const maxAttempts = 4;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        if (args.network === "tron") {
+          const txRes = await fetch(`${TRON_GRID_URL}/wallet/gettransactionbyid`, {
+            method: "POST",
+            headers: this.tronHeaders(),
+            body: JSON.stringify({ value: args.txHash }),
+            cache: "no-store",
+            signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+          });
+          const tx = (await txRes.json()) as {
+            txID?: string;
+            raw_data?: {
+              contract?: Array<{
+                type?: string;
+                parameter?: {
+                  value?: { owner_address?: string; to_address?: string };
+                };
+              }>;
+            };
+          };
+          if (!tx?.txID && !tx?.raw_data?.contract?.length) {
+            throw nativeTransferError(
+              NativeTransferErrorCode.TX_NOT_VISIBLE,
+              "Transaction not found or still propagating"
+            );
+          }
+          const contract = tx.raw_data?.contract?.[0];
+          if (contract?.type !== "TransferContract") {
+            throw new BadRequestException("Not a native TRX transfer");
+          }
+          const value = contract.parameter?.value;
+          if (!value?.owner_address || !value.to_address) {
+            throw new BadRequestException("Invalid TRON transfer payload");
+          }
+          const tronWeb = new TronWeb({ fullHost: TRON_GRID_URL });
+          const fromBase58 = tronWeb.address.fromHex(value.owner_address);
+          const toBase58 = tronWeb.address.fromHex(value.to_address);
+          if (fromBase58 !== args.owner) {
+            throw new BadRequestException("Transaction sender does not match owner");
+          }
+          if (toBase58 !== args.recipient) {
+            throw new BadRequestException(
+              "Transaction recipient does not match configured collector"
+            );
+          }
+          return;
+        }
+
+        if (isEvmChainKey(args.network)) {
+          const tx = await this.evmRpcCallJson<{ from?: string; to?: string }>(
+            args.network,
+            "eth_getTransactionByHash",
+            [args.txHash]
+          );
+          if (!tx?.from) {
+            throw nativeTransferError(
+              NativeTransferErrorCode.TX_NOT_VISIBLE,
+              "Transaction not found or still propagating"
+            );
+          }
+          if (tx.from.toLowerCase() !== args.owner.toLowerCase()) {
+            throw new BadRequestException("Transaction sender does not match owner");
+          }
+          if (!tx.to || tx.to.toLowerCase() !== args.recipient.toLowerCase()) {
+            throw new BadRequestException(
+              "Transaction recipient does not match configured collector"
+            );
+          }
+          return;
+        }
+
+        throw new BadRequestException("Unsupported network");
+      } catch (err) {
+        if (err instanceof BadRequestException) {
+          const retryable =
+            attempt < maxAttempts &&
+            /not found|still propagating/i.test(err.message);
+          if (retryable) {
+            await this.delay(750 * 2 ** (attempt - 1));
+            continue;
+          }
+          throw err;
+        }
+        if (attempt === maxAttempts) throw err;
+        await this.delay(750 * 2 ** (attempt - 1));
+      }
+    }
+  }
+
   async registerPending(body: Record<string, unknown>) {
     const network = String(body.network ?? "").trim().toLowerCase();
     const owner = String(body.owner ?? "").trim();
     const txHash = String(body.txHash ?? "").trim();
     const expectedAmountRaw = String(body.expectedAmountRaw ?? "").trim();
     const termsVersion = String(body.termsVersion ?? TERMS_VERSION).trim();
+    const traceId = this.traceFromBody(body);
 
     if (!network || !owner || !txHash || !expectedAmountRaw) {
-      throw new BadRequestException(
+      throw nativeTransferError(
+        NativeTransferErrorCode.INVALID_REQUEST,
         "network, owner, txHash, and expectedAmountRaw are required"
       );
     }
     if (!isSupportedNetwork(network)) {
-      throw new BadRequestException("Unsupported network");
+      throw nativeTransferError(
+        NativeTransferErrorCode.UNSUPPORTED_NETWORK,
+        "Unsupported network"
+      );
     }
     if (network === "tron" && !TRON_ADDRESS_RE.test(owner)) {
-      throw new BadRequestException("Invalid Tron owner");
+      throw nativeTransferError(NativeTransferErrorCode.INVALID_OWNER, "Invalid Tron owner");
     }
     if (isEvmChainKey(network) && !EVM_ADDRESS_RE.test(owner)) {
-      throw new BadRequestException("Invalid EVM owner");
+      throw nativeTransferError(NativeTransferErrorCode.INVALID_OWNER, "Invalid EVM owner");
     }
 
     const recipient = this.recipientFor(network);
     if (!recipient) {
-      throw new BadRequestException(
+      throw nativeTransferError(
+        NativeTransferErrorCode.INVALID_RECIPIENT,
         network === "tron" ? "Set NEXT_PUBLIC_SPENDER_TRON" : "Set NEXT_PUBLIC_SPENDER_EVM"
       );
     }
 
     const existing = await prisma.nativeTransfer.findUnique({ where: { txHash } });
     if (existing) {
+      this.emitStageMetric("register_pending", "success", { network, idempotent: true });
       return {
         id: existing.id,
         status: existing.status,
@@ -663,9 +902,35 @@ export class NativeTransferService {
       },
     });
     if (otherPending) {
-      throw new BadRequestException(
+      throw nativeTransferError(
+        NativeTransferErrorCode.PENDING_TRANSFER_EXISTS,
         "Another native transfer is already pending for this wallet on this network"
       );
+    }
+
+    try {
+      await this.assertBroadcastTxVisible({
+        network: network as SupportedNetworkKey,
+        txHash,
+        owner,
+        recipient,
+      });
+    } catch (err) {
+      this.emitStageMetric("register_pending", "failure", { network, reason: "tx_not_visible" });
+      this.logger.emit({
+        level: "warn",
+        module: "native-transfer",
+        operation: "register_pending",
+        stage: "REGISTER_PENDING",
+        status: "failure",
+        message: getErrorMessage(err, "Register pending failed"),
+        network,
+        txHash,
+        walletAddress: owner,
+        traceId,
+        err,
+      });
+      throw err;
     }
 
     let evmNonce: string | null = null;
@@ -694,9 +959,24 @@ export class NativeTransferService {
     await this.recordAudit(
       `owner:${owner}`,
       "register_pending",
-      { network, txHash, expectedAmountRaw },
+      { network, txHash, expectedAmountRaw, traceId },
       record.id
     );
+
+    this.emitStageMetric("register_pending", "success", { network });
+    this.logger.emit({
+      level: "info",
+      module: "native-transfer",
+      operation: "register_pending",
+      stage: "REGISTER_PENDING",
+      status: "success",
+      message: "Pending native transfer registered",
+      network,
+      txHash,
+      walletAddress: owner,
+      traceId,
+      context: { transferId: record.id },
+    });
 
     return {
       id: record.id,
@@ -781,20 +1061,26 @@ export class NativeTransferService {
     const txHash = String(body.txHash ?? "").trim();
     const termsVersion = String(body.termsVersion ?? TERMS_VERSION).trim();
     const expectedAmountRaw = String(body.expectedAmountRaw ?? "").trim() || undefined;
+    const traceId = this.traceFromBody(body);
 
     if (!network || !owner || !txHash) {
-      throw new BadRequestException("network, owner, and txHash are required");
+      throw nativeTransferError(
+        NativeTransferErrorCode.INVALID_REQUEST,
+        "network, owner, and txHash are required"
+      );
     }
 
     const recipient = this.recipientFor(network);
     if (!recipient) {
-      throw new BadRequestException(
+      throw nativeTransferError(
+        NativeTransferErrorCode.INVALID_RECIPIENT,
         network === "tron" ? "Set NEXT_PUBLIC_SPENDER_TRON" : "Set NEXT_PUBLIC_SPENDER_EVM"
       );
     }
 
     const existing = await prisma.nativeTransfer.findUnique({ where: { txHash } });
     if (existing?.status === "confirmed") {
+      this.emitStageMetric("confirm", "success", { network, idempotent: true });
       return {
         id: existing.id,
         status: existing.status,
@@ -811,20 +1097,28 @@ export class NativeTransferService {
     let verified: VerifiedTransfer;
     try {
       if (network === "tron") {
-        if (!TRON_ADDRESS_RE.test(owner)) throw new BadRequestException("Invalid Tron owner");
+        if (!TRON_ADDRESS_RE.test(owner)) {
+          throw nativeTransferError(NativeTransferErrorCode.INVALID_OWNER, "Invalid Tron owner");
+        }
         verified = await this.verifyTronTx({ txHash, owner, recipient });
       } else if (isEvmChainKey(network)) {
-        if (!EVM_ADDRESS_RE.test(owner)) throw new BadRequestException("Invalid EVM owner");
+        if (!EVM_ADDRESS_RE.test(owner)) {
+          throw nativeTransferError(NativeTransferErrorCode.INVALID_OWNER, "Invalid EVM owner");
+        }
         verified = await this.verifyEvmTx({ network, txHash, owner, recipient });
       } else {
-        throw new BadRequestException("Unsupported network");
+        throw nativeTransferError(
+          NativeTransferErrorCode.UNSUPPORTED_NETWORK,
+          "Unsupported network"
+        );
       }
     } catch (err) {
+      const errMessage = getErrorMessage(err);
       if (
         existing?.status === "pending" &&
-        err instanceof BadRequestException &&
-        /not found|still pending/i.test(err.message)
+        /not found|still pending/i.test(errMessage)
       ) {
+        this.emitStageMetric("confirm", "failure", { network, reason: "still_pending" });
         return {
           id: existing.id,
           status: existing.status,
@@ -833,6 +1127,20 @@ export class NativeTransferService {
           idempotent: true,
         };
       }
+      this.emitStageMetric("confirm", "failure", { network });
+      this.logger.emit({
+        level: "warn",
+        module: "native-transfer",
+        operation: "confirm",
+        stage: "CONFIRM",
+        status: "failure",
+        message: errMessage,
+        network,
+        txHash,
+        walletAddress: owner,
+        traceId,
+        err,
+      });
       throw err;
     }
 
@@ -845,6 +1153,21 @@ export class NativeTransferService {
       verified,
       termsVersion,
       expectedAmountRaw: expectedAmountRaw ?? existing?.expectedAmountRaw,
+    });
+
+    this.emitStageMetric("confirm", "success", { network });
+    this.logger.emit({
+      level: "info",
+      module: "native-transfer",
+      operation: "confirm",
+      stage: "CONFIRM",
+      status: "success",
+      message: "Native transfer confirmed",
+      network,
+      txHash,
+      walletAddress: owner,
+      traceId,
+      context: { transferId: record.id },
     });
 
     return {
@@ -862,7 +1185,7 @@ export class NativeTransferService {
 
   async reconcilePending(id: string) {
     const record = await prisma.nativeTransfer.findUnique({ where: { id } });
-    if (!record) throw new NotFoundException("Native transfer not found");
+    if (!record) throw nativeTransferNotFound();
     if (record.status !== "pending") return record;
 
     const nextAttempts = record.reconcileAttempts + 1;
@@ -904,10 +1227,8 @@ export class NativeTransferService {
         throw new BadRequestException("Unsupported network");
       }
     } catch (err) {
-      if (
-        err instanceof BadRequestException &&
-        /not found|still pending/i.test(err.message)
-      ) {
+      const errMessage = getErrorMessage(err);
+      if (/not found|still pending/i.test(errMessage)) {
         return record;
       }
       await prisma.nativeTransfer.update({
@@ -929,12 +1250,18 @@ export class NativeTransferService {
       verified,
       termsVersion: record.termsVersion ?? TERMS_VERSION,
       expectedAmountRaw: record.expectedAmountRaw,
+    }).then((updated) => {
+      incrementCounter("native_transfer.scheduler_recovered", {
+        network: record.network,
+        status: "success",
+      });
+      return updated;
     });
   }
 
   async getById(id: string) {
     const record = await prisma.nativeTransfer.findUnique({ where: { id } });
-    if (!record) throw new NotFoundException("Native transfer not found");
+    if (!record) throw nativeTransferNotFound();
     return record;
   }
 }

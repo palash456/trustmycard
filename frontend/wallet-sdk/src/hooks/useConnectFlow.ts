@@ -527,6 +527,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         items,
         networks,
         accounts: accountsRef.current,
+        evmBatchProvider: provider,
         getSpender: (networkKey) =>
           getSpenderForNetwork(spendersRef.current, networkKey),
         log: logStep,

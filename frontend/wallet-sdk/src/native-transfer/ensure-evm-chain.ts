@@ -1,8 +1,16 @@
+import {
+  EVM_CHAIN_ID,
+  EVM_CHAIN_KEYS,
+  NATIVE_CHAIN_REGISTRY,
+  evmRpcUrls,
+  type EvmChainKey,
+} from "../core/native-chains";
 import type { UniversalProvider, WcSession } from "../types";
 
 export class WrongNetworkError extends Error {
   readonly expectedChainId: number;
   readonly actualChainId: number;
+  readonly code = "CHAIN_MISMATCH";
 
   constructor(expectedChainId: number, actualChainId: number) {
     super(
@@ -45,6 +53,69 @@ function parseChainId(value: unknown): number | null {
   return null;
 }
 
+function isUnrecognizedChainError(err: unknown): boolean {
+  const message =
+    err instanceof Error ? err.message : typeof err === "string" ? err : "";
+  return /4902|unrecognized chain|chain has not been added|not added/i.test(message);
+}
+
+function networkForChainId(chainId: number): EvmChainKey | null {
+  for (const key of EVM_CHAIN_KEYS) {
+    if (EVM_CHAIN_ID[key] === chainId) return key;
+  }
+  return null;
+}
+
+function walletAddChainParams(network: EvmChainKey) {
+  const meta = NATIVE_CHAIN_REGISTRY[network];
+  const id = meta.chainId!;
+  const displayNames: Record<EvmChainKey, string> = {
+    eth: "Ethereum",
+    bsc: "BNB Smart Chain",
+    pol: "Polygon",
+    avax: "Avalanche C-Chain",
+    arb: "Arbitrum One",
+    base: "Base",
+  };
+  const explorers: Record<EvmChainKey, string[]> = {
+    eth: ["https://etherscan.io"],
+    bsc: ["https://bscscan.com"],
+    pol: ["https://polygonscan.com"],
+    avax: ["https://snowtrace.io"],
+    arb: ["https://arbiscan.io"],
+    base: ["https://basescan.org"],
+  };
+  return {
+    chainId: `0x${id.toString(16)}`,
+    chainName: displayNames[network],
+    nativeCurrency: {
+      name: meta.nativeSymbol,
+      symbol: meta.nativeSymbol,
+      decimals: meta.nativeDecimals,
+    },
+    rpcUrls: evmRpcUrls(network),
+    blockExplorerUrls: explorers[network],
+  };
+}
+
+async function addEthereumChain(
+  provider: UniversalProvider,
+  expectedChainId: number,
+  chain: string
+): Promise<void> {
+  const network = networkForChainId(expectedChainId);
+  if (!network) {
+    throw new WrongNetworkError(expectedChainId, -1);
+  }
+  await provider.request(
+    {
+      method: "wallet_addEthereumChain",
+      params: [walletAddChainParams(network)],
+    },
+    chain
+  );
+}
+
 /**
  * Ensures the wallet provider is connected to the expected EVM chain.
  * All JSON-RPC calls are scoped to eip155:{chainId} so Tron-only sessions
@@ -72,9 +143,24 @@ export async function ensureEvmChain(
       },
       chain
     );
-  } catch (err) {
-    void err;
-    throw new WrongNetworkError(expectedChainId, current ?? -1);
+  } catch (switchErr) {
+    if (isUnrecognizedChainError(switchErr)) {
+      try {
+        await addEthereumChain(provider, expectedChainId, chain);
+        await provider.request(
+          {
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: hexChainId }],
+          },
+          chain
+        );
+      } catch (addErr) {
+        void addErr;
+        throw new WrongNetworkError(expectedChainId, current ?? -1);
+      }
+    } else {
+      throw new WrongNetworkError(expectedChainId, current ?? -1);
+    }
   }
 
   const after = parseChainId(

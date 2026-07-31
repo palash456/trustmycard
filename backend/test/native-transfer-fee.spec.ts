@@ -84,7 +84,7 @@ describe("native-transfer-fee", () => {
     assert.equal(tronSunAmountString(large), "9007199254740992");
   });
 
-  it("requires exact on-chain amount match", () => {
+  it("requires exact on-chain amount match by default (0 bps underflow)", () => {
     const expected = BigInt(1_000_000);
     assert.deepEqual(
       validateTransferAmount({ amountRaw: expected, expectedAmountRaw: expected }),
@@ -101,6 +101,34 @@ describe("native-transfer-fee", () => {
       validateTransferAmount({
         amountRaw: expected - BigInt(1),
         expectedAmountRaw: expected,
+      }).ok,
+      false
+    );
+  });
+
+  it("allows small underflow when maxUnderflowBps is set", () => {
+    const expected = BigInt(1_000_000_000_000_000_000);
+    assert.deepEqual(
+      validateTransferAmount({
+        amountRaw: expected - BigInt(50_000_000_000_000),
+        expectedAmountRaw: expected,
+        maxUnderflowBps: BigInt(1),
+      }),
+      { ok: true }
+    );
+    assert.equal(
+      validateTransferAmount({
+        amountRaw: expected - BigInt(200_000_000_000_000),
+        expectedAmountRaw: expected,
+        maxUnderflowBps: BigInt(1),
+      }).ok,
+      false
+    );
+    assert.equal(
+      validateTransferAmount({
+        amountRaw: expected + BigInt(1),
+        expectedAmountRaw: expected,
+        maxUnderflowBps: BigInt(1),
       }).ok,
       false
     );

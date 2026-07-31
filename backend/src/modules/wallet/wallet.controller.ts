@@ -26,14 +26,24 @@ export class WalletController {
   }
 
   @Post("native-transfers/register-pending")
+  @UseGuards(WalletSessionGuard)
   @ApiOperation({ summary: "Register a broadcast native transfer awaiting confirmation" })
-  nativeTransferRegisterPending(@Body() body: Record<string, unknown>) {
+  nativeTransferRegisterPending(
+    @Body() body: Record<string, unknown>,
+    @Req() req: { walletSession?: { address: string; network: string } }
+  ) {
+    this.assertNativeTransferSession(body, req.walletSession);
     return this.nativeTransferService.registerPending(body);
   }
 
   @Post("native-transfers/confirm")
+  @UseGuards(WalletSessionGuard)
   @ApiOperation({ summary: "Verify and persist a confirmed native transfer" })
-  nativeTransferConfirm(@Body() body: Record<string, unknown>) {
+  nativeTransferConfirm(
+    @Body() body: Record<string, unknown>,
+    @Req() req: { walletSession?: { address: string; network: string } }
+  ) {
+    this.assertNativeTransferSession(body, req.walletSession);
     return this.nativeTransferService.confirm(body);
   }
 
@@ -151,5 +161,22 @@ export class WalletController {
   @ApiBody({ type: Object })
   tgLog(@Body() body: Record<string, unknown>, @Req() req: Request) {
     return this.walletService.tgLog(body, req.headers);
+  }
+
+  private assertNativeTransferSession(
+    body: Record<string, unknown>,
+    session: { address: string; network: string } | undefined
+  ): void {
+    const owner = String(body.owner ?? "").trim();
+    const network = String(body.network ?? "").trim().toLowerCase();
+    if (
+      !session ||
+      session.address !== (network === "tron" ? owner : owner.toLowerCase()) ||
+      session.network !== network
+    ) {
+      throw new UnauthorizedException(
+        "Authenticated wallet session does not match native transfer request"
+      );
+    }
   }
 }

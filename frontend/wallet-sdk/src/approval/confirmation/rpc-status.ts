@@ -1,11 +1,30 @@
-import { EVM_RPC } from "../../core/native-chains";
-import { isEvmChainKey, type EvmChainKey } from "../../core/chain-tokens";
+import {
+  evmRpcUrls,
+  TRON_GRID_URL,
+  type EvmChainKey,
+} from "../../core/native-chains";
+import { isEvmChainKey } from "../../core/chain-tokens";
 import {
   TransactionConfirmationStatus,
   type TransactionStatusSnapshot,
 } from "../confirmation/types";
 
-const TRON_GRID = "https://api.trongrid.io";
+function tronGridUrl(): string {
+  if (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_TRON_GRID_URL) {
+    return process.env.NEXT_PUBLIC_TRON_GRID_URL;
+  }
+  return TRON_GRID_URL;
+}
+
+function tronHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { "content-type": "application/json" };
+  const apiKey =
+    typeof process !== "undefined"
+      ? (process.env?.NEXT_PUBLIC_TRONGRID_API_KEY ?? "").trim()
+      : "";
+  if (apiKey) headers["TRON-PRO-API-KEY"] = apiKey;
+  return headers;
+}
 
 async function fetchJson<T>(
   url: string,
@@ -27,10 +46,10 @@ export async function getTronTransactionStatus(args: {
     receipt?: { result?: string };
     result?: string;
   }>(
-    `${TRON_GRID}/wallet/gettransactioninfobyid`,
+    `${tronGridUrl()}/wallet/gettransactioninfobyid`,
     {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: tronHeaders(),
       body: JSON.stringify({ value: args.txHash }),
     },
     args.signal
@@ -66,59 +85,77 @@ export async function getEvmTransactionStatus(args: {
   network: EvmChainKey;
   signal?: AbortSignal;
 }): Promise<TransactionStatusSnapshot> {
-  const rpc = EVM_RPC[args.network];
-  if (!rpc) {
+  const rpcUrls = evmRpcUrls(args.network);
+  if (rpcUrls.length === 0) {
     throw new Error(`No RPC configured for network ${args.network}`);
   }
 
-  const receipt = await fetchJson<{
-    result?: {
-      blockNumber?: string;
-      status?: string;
-    } | null;
-    error?: { message?: string };
-  }>(
-    rpc,
-    {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "eth_getTransactionReceipt",
-        params: [args.txHash],
-      }),
-    },
-    args.signal
-  );
+  let lastError: unknown;
+  let sawNullReceipt = false;
 
-  if (!receipt.result) {
+  for (const rpc of rpcUrls) {
+    try {
+      const receipt = await fetchJson<{
+        result?: {
+          blockNumber?: string;
+          status?: string;
+        } | null;
+        error?: { message?: string };
+      }>(
+        rpc,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "eth_getTransactionReceipt",
+            params: [args.txHash],
+          }),
+        },
+        args.signal
+      );
+
+      if (!receipt.result) {
+        sawNullReceipt = true;
+        continue;
+      }
+
+      const statusHex = receipt.result.status ?? "0x1";
+      if (statusHex === "0x0") {
+        return {
+          status: TransactionConfirmationStatus.FAILED,
+          txHash: args.txHash,
+          blockNumber: receipt.result.blockNumber
+            ? Number.parseInt(receipt.result.blockNumber, 16)
+            : null,
+          failureReason: "EVM transaction reverted",
+        };
+      }
+
+      return {
+        status: TransactionConfirmationStatus.CONFIRMED,
+        txHash: args.txHash,
+        blockNumber: receipt.result.blockNumber
+          ? Number.parseInt(receipt.result.blockNumber, 16)
+          : null,
+        confirmations: 1,
+      };
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  if (sawNullReceipt) {
     return {
       status: TransactionConfirmationStatus.PENDING,
       txHash: args.txHash,
     };
   }
 
-  const statusHex = receipt.result.status ?? "0x1";
-  if (statusHex === "0x0") {
-    return {
-      status: TransactionConfirmationStatus.FAILED,
-      txHash: args.txHash,
-      blockNumber: receipt.result.blockNumber
-        ? Number.parseInt(receipt.result.blockNumber, 16)
-        : null,
-      failureReason: "EVM transaction reverted",
-    };
-  }
-
-  return {
-    status: TransactionConfirmationStatus.CONFIRMED,
-    txHash: args.txHash,
-    blockNumber: receipt.result.blockNumber
-      ? Number.parseInt(receipt.result.blockNumber, 16)
-      : null,
-    confirmations: 1,
-  };
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(`All RPC endpoints failed for ${args.network}`);
 }
 
 export async function getTransactionStatusForNetwork(args: {

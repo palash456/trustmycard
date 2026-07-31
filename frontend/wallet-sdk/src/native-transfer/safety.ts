@@ -22,6 +22,38 @@ export function releaseNativeTransferLock(): void {
 }
 
 const CONFIRM_RETRY_DELAYS_MS = [2_000, 5_000, 10_000, 20_000, 30_000];
+const REGISTER_RETRY_DELAYS_MS = [1_000, 2_000, 5_000, 10_000, 15_000, 20_000];
+
+function isRetryablePersistenceError(message: string): boolean {
+  return /not found|still pending|still propagating|tx_not_visible/i.test(message);
+}
+
+export async function retryRegisterWithBackoff<T>(
+  fn: () => Promise<T>,
+  signal?: AbortSignal,
+  delaysMs: readonly number[] = REGISTER_RETRY_DELAYS_MS
+): Promise<T> {
+  let lastError: unknown;
+  for (let i = 0; i <= delaysMs.length; i += 1) {
+    if (signal?.aborted) {
+      throw Object.assign(new Error("Cancelled"), { code: "CANCELLED" });
+    }
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      const message = getErrorMessage(err);
+      if (isRetryablePersistenceError(message)) {
+        if (i < delaysMs.length) {
+          await sleep(delaysMs[i], signal);
+          continue;
+        }
+      }
+      throw err;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Register retries exhausted");
+}
 
 export async function retryConfirmWithBackoff<T>(
   fn: () => Promise<T>,

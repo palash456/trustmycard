@@ -35,6 +35,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
           ? getErrorMessage((responseBody as { message: unknown }).message, getErrorMessage(exception))
           : getErrorMessage(exception);
 
+    const errorCode =
+      responseBody &&
+      typeof responseBody === "object" &&
+      "code" in responseBody &&
+      typeof (responseBody as { code: unknown }).code === "string"
+        ? (responseBody as { code: string }).code
+        : undefined;
+
     safeObservability(() =>
       this.logger.emit({
         level: status >= 500 ? "error" : "warn",
@@ -55,6 +63,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     res.status(status).json({
       statusCode: status,
       message,
+      ...(errorCode ? { code: errorCode } : {}),
       correlationId,
       requestId,
       timestamp: new Date().toISOString(),

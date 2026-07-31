@@ -1,4 +1,5 @@
 import { waitForTransactionConfirmation } from "../approval/confirmation/poller";
+import { incrementCounter } from "@trustmycard/shared/observability";
 import { getErrorMessage, isUserRejection } from "../core/errors";
 import { isEvmChainKey } from "../core/native-chains";
 import { ensureEvmChain } from "./ensure-evm-chain";
@@ -10,6 +11,7 @@ import {
   assertFreshEstimate,
   releaseNativeTransferLock,
   retryConfirmWithBackoff,
+  retryRegisterWithBackoff,
 } from "./safety";
 import {
   NativeStageStatus,
@@ -92,6 +94,18 @@ export class NativeTransferOrchestrator {
       options.onStage?.(result);
     };
 
+    const trackStage = (
+      stage: string,
+      status: "success" | "failure",
+      labels: Record<string, string | number | boolean> = {}
+    ) => {
+      incrementCounter(`native_transfer.${stage}`, {
+        status,
+        network: request.network,
+        ...labels,
+      });
+    };
+
     const fail = (
       stage: (typeof NativeTransferStageName)[keyof typeof NativeTransferStageName],
       error: string,
@@ -124,6 +138,9 @@ export class NativeTransferOrchestrator {
         status: NativeStageStatus.OK,
         stage: NativeTransferStageName.ESTIMATE,
         elapsedMs: Date.now() - estimateStarted,
+      });
+      trackStage("estimate", ctx.estimate.canTransfer ? "success" : "failure", {
+        ...(ctx.estimate.canTransfer ? {} : { reason: "insufficient_balance" }),
       });
 
       if (!ctx.estimate.canTransfer || BigInt(ctx.estimate.transferableRaw) <= BigInt(0)) {
@@ -181,16 +198,6 @@ export class NativeTransferOrchestrator {
         elapsedMs: Date.now() - signStarted,
       });
 
-      if (isEvmChainKey(request.network) && ctx.estimate.chainId != null && this.evmProvider) {
-        const ensureStarted = Date.now();
-        await ensureEvmChain(this.evmProvider, ctx.estimate.chainId);
-        emit({
-          status: NativeStageStatus.OK,
-          stage: NativeTransferStageName.ENSURE_NETWORK,
-          elapsedMs: Date.now() - ensureStarted,
-        });
-      }
-
       const broadcastStarted = Date.now();
       ctx.broadcast = await chain.broadcast({
         signed: ctx.signed,
@@ -202,20 +209,28 @@ export class NativeTransferOrchestrator {
         stage: NativeTransferStageName.BROADCAST,
         elapsedMs: Date.now() - broadcastStarted,
       });
+      trackStage("broadcast", "success");
 
+      let registerTransferId: string | undefined;
       const registerStarted = Date.now();
       try {
-        await this.api.registerPending({
-          request,
-          txHash: ctx.broadcast.txHash,
-          expectedAmountRaw: ctx.estimate.transferableRaw,
-          signal: options.signal,
-        });
+        const registered = await retryRegisterWithBackoff(
+          () =>
+            this.api.registerPending({
+              request,
+              txHash: ctx.broadcast!.txHash,
+              expectedAmountRaw: ctx.estimate!.transferableRaw,
+              signal: options.signal,
+            }),
+          options.signal
+        );
+        registerTransferId = registered.id;
         emit({
           status: NativeStageStatus.OK,
           stage: NativeTransferStageName.REGISTER_PENDING,
           elapsedMs: Date.now() - registerStarted,
         });
+        trackStage("register_pending", "success");
       } catch (regErr) {
         const regMessage = regErr instanceof Error ? regErr.message : String(regErr);
         emit({
@@ -224,6 +239,7 @@ export class NativeTransferOrchestrator {
           error: regMessage,
           elapsedMs: Date.now() - registerStarted,
         });
+        trackStage("register_pending", "failure");
         this.logger.warn("REGISTER_PENDING_FAILED", {
           txHash: ctx.broadcast.txHash,
           error: regMessage,
@@ -264,6 +280,7 @@ export class NativeTransferOrchestrator {
             txHash: ctx.broadcast.txHash,
             traceId: request.traceId,
           });
+          trackStage("confirm", "failure", { reason: "timeout" });
         } else {
           throw pollErr;
         }
@@ -282,17 +299,28 @@ export class NativeTransferOrchestrator {
           options.signal
         );
       } catch (confirmErr) {
+        const confirmMessage =
+          confirmErr instanceof Error ? confirmErr.message : String(confirmErr);
         if (ctx.broadcast) {
           this.logger.warn("CONFIRM_DEFERRED", {
             txHash: ctx.broadcast.txHash,
-            error: confirmErr instanceof Error ? confirmErr.message : String(confirmErr),
+            error: confirmMessage,
+            traceId: request.traceId,
+            registerTransferId,
           });
+          trackStage("confirm", "failure", { reason: "deferred" });
+          const hasRecoveryAnchor = Boolean(registerTransferId);
           return {
-            ok: true,
-            pendingRegistered: true,
+            ok: hasRecoveryAnchor,
+            pendingRegistered: hasRecoveryAnchor,
+            pendingRecovery: !hasRecoveryAnchor,
+            error: hasRecoveryAnchor
+              ? undefined
+              : "Transfer broadcast but not registered — retry or contact support with tx hash",
             context: ctx,
             stages,
             txHash: ctx.broadcast.txHash,
+            transferId: registerTransferId,
           };
         }
         throw confirmErr;
@@ -302,6 +330,7 @@ export class NativeTransferOrchestrator {
         stage: NativeTransferStageName.CONFIRM,
         elapsedMs: Date.now() - persistStarted,
       });
+      trackStage("confirm", "success");
 
       if (ctx.persisted.pending) {
         return {
@@ -310,7 +339,7 @@ export class NativeTransferOrchestrator {
           context: ctx,
           stages,
           txHash: ctx.broadcast.txHash,
-          transferId: ctx.persisted.id,
+          transferId: ctx.persisted.id ?? registerTransferId,
         };
       }
 
@@ -319,7 +348,7 @@ export class NativeTransferOrchestrator {
         context: ctx,
         stages,
         txHash: ctx.broadcast.txHash,
-        transferId: ctx.persisted.id,
+        transferId: ctx.persisted.id ?? registerTransferId,
         pendingRegistered: confirmationTimedOut,
       };
     } catch (err) {
@@ -340,6 +369,9 @@ export class NativeTransferOrchestrator {
         stage,
         error: message,
         userRejected: rejected,
+      });
+      trackStage(String(stage).toLowerCase(), "failure", {
+        ...(rejected ? { reason: "user_rejected" } : {}),
       });
       this.logger.error("NATIVE_TRANSFER_FAILED", {
         stage,

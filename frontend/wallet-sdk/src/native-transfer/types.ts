@@ -36,6 +36,8 @@ export type NativeTransferRequest = {
   transferAmountRaw?: string;
   /** Human-readable amount matching transferAmountRaw (for estimate display). */
   transferAmountHuman?: string;
+  /** Cached wallet session token for authenticated register/confirm calls. */
+  walletSessionToken?: string;
 };
 
 export type NativeTransferEstimate = {
@@ -101,6 +103,8 @@ export type NativeTransferResult = {
   txHash?: string;
   transferId?: string;
   pendingRegistered?: boolean;
+  /** Broadcast succeeded but no DB row yet — scheduler/manual recovery needed. */
+  pendingRecovery?: boolean;
   context: NativeTransferContext;
   stages: NativeStageResult[];
 };

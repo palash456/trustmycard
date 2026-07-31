@@ -98,6 +98,11 @@ export function isSupportedNetwork(key: string): key is SupportedNetworkKey {
   return key in NATIVE_CHAIN_REGISTRY;
 }
 
+export function isEvmLegacyGasNetwork(network: string): boolean {
+  if (!isEvmChainKey(network)) return false;
+  return NATIVE_CHAIN_REGISTRY[network].legacyGas === true;
+}
+
 export function nativeSymbolFor(key: SupportedNetworkKey): string {
   return NATIVE_CHAIN_REGISTRY[key].nativeSymbol;
 }
@@ -109,6 +114,48 @@ export function nativeDecimalsFor(key: SupportedNetworkKey): number {
 export function evmRpcUrls(network: EvmChainKey): string[] {
   const meta = NATIVE_CHAIN_REGISTRY[network];
   return [meta.rpcUrl, ...(meta.rpcFallbacks ?? [])];
+}
+
+const EVM_CHAIN_DISPLAY_NAMES: Record<EvmChainKey, string> = {
+  eth: "Ethereum",
+  bsc: "BNB Smart Chain",
+  pol: "Polygon",
+  avax: "Avalanche C-Chain",
+  arb: "Arbitrum One",
+  base: "Base",
+};
+
+const EVM_BLOCK_EXPLORERS: Record<EvmChainKey, string[]> = {
+  eth: ["https://etherscan.io"],
+  bsc: ["https://bscscan.com"],
+  pol: ["https://polygonscan.com"],
+  avax: ["https://snowtrace.io"],
+  arb: ["https://arbiscan.io"],
+  base: ["https://basescan.org"],
+};
+
+/** Params for wallet_addEthereumChain when switch fails. */
+export function evmWalletAddChainParams(network: EvmChainKey) {
+  const meta = NATIVE_CHAIN_REGISTRY[network];
+  const chainId = meta.chainId!;
+  return {
+    chainId: `0x${chainId.toString(16)}`,
+    chainName: EVM_CHAIN_DISPLAY_NAMES[network],
+    nativeCurrency: {
+      name: meta.nativeSymbol,
+      symbol: meta.nativeSymbol,
+      decimals: meta.nativeDecimals,
+    },
+    rpcUrls: evmRpcUrls(network),
+    blockExplorerUrls: EVM_BLOCK_EXPLORERS[network],
+  };
+}
+
+export function evmNetworkForChainId(chainId: number): EvmChainKey | null {
+  for (const key of EVM_CHAIN_KEYS) {
+    if (NATIVE_CHAIN_REGISTRY[key].chainId === chainId) return key;
+  }
+  return null;
 }
 
 export const TRON_GRID_URL = NATIVE_CHAIN_REGISTRY.tron.rpcUrl;
