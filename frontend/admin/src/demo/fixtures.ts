@@ -2,6 +2,7 @@
 
 import { buildDemoActivity, buildDemoAnalytics } from "./analytics-fixture";
 import { buildDemoPipelineSnapshot, demoBalances } from "./pipeline-fixture";
+import { formatAdminAmount } from "@/lib/amount-display";
 
 function daysAgo(n: number, hour = 12): string {
   const d = new Date();
@@ -999,7 +1000,7 @@ export function getDemoFixture<T>(path: string): T {
         type: "transfer",
         id: t.id,
         at: t.createdAt,
-        label: `${t.approval.network} ${t.approval.tokenSymbol} · ${t.amountRaw}`,
+        label: `${t.approval.network} ${t.approval.tokenSymbol} · ${formatAdminAmount(t.amountRaw)}`,
         status: t.status,
       })),
       ...ownerNative.map((n) => ({

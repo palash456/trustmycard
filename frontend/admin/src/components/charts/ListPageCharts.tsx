@@ -10,8 +10,8 @@ export function ApprovalsListChart({
   if (items.length === 0) return null;
   return (
     <div className="grid gap-3 md:grid-cols-2">
-      <ListStatusMiniChart title="Status breakdown" data={countByField(items, "status")} />
-      <ListStatusMiniChart title="Network breakdown" data={countByField(items, "network")} />
+      <ListStatusMiniChart title="Loaded rows by status" data={countByField(items, "status")} />
+      <ListStatusMiniChart title="Loaded rows by network" data={countByField(items, "network")} />
     </div>
   );
 }
@@ -29,8 +29,8 @@ export function TransfersListChart({
   }
   return (
     <div className="grid gap-3 md:grid-cols-2">
-      <ListStatusMiniChart title="Status breakdown" data={countByField(items, "status")} />
-      <ListStatusMiniChart title="Network breakdown" data={byNetwork} />
+      <ListStatusMiniChart title="Loaded rows by status" data={countByField(items, "status")} />
+      <ListStatusMiniChart title="Loaded rows by network" data={byNetwork} />
     </div>
   );
 }
@@ -43,8 +43,8 @@ export function EventsListChart({
   if (items.length === 0) return null;
   return (
     <div className="grid gap-3 md:grid-cols-2">
-      <ListStatusMiniChart title="Event type breakdown" data={countByField(items, "type")} />
-      <ListStatusMiniChart title="Outcome breakdown" data={countByField(items, "status")} />
+      <ListStatusMiniChart title="Loaded rows by event type" data={countByField(items, "type")} />
+      <ListStatusMiniChart title="Loaded rows by outcome" data={countByField(items, "status")} />
     </div>
   );
 }

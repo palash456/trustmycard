@@ -37,6 +37,14 @@
     "./observability": {
       "types": "./dist/observability/index.d.ts",
       "default": "./dist/observability/index.js"
+    },
+    "./platform-config": {
+      "types": "./dist/platform-config/index.d.ts",
+      "default": "./dist/platform-config/index.js"
+    },
+    "./platform-config/*": {
+      "types": "./dist/platform-config/*.d.ts",
+      "default": "./dist/platform-config/*.js"
     }
   },
   "scripts": {

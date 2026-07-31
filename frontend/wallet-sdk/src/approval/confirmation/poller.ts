@@ -1,5 +1,6 @@
 import {
   DEFAULT_CONFIRMATION_OPTIONS,
+  getClientConfirmationDefaults,
   TransactionConfirmationStatus,
   type ConfirmationPollOptions,
   type TransactionConfirmationResult,
@@ -45,13 +46,14 @@ export async function waitForTransactionConfirmation(
     now?: () => number;
   } & ConfirmationPollOptions
 ): Promise<TransactionConfirmationResult> {
+  const defaults = getClientConfirmationDefaults();
   const pollIntervalMs =
-    args.pollIntervalMs ?? DEFAULT_CONFIRMATION_OPTIONS.pollIntervalMs;
+    args.pollIntervalMs ?? defaults.pollIntervalMs;
   const maxAttempts =
-    args.maxAttempts ?? DEFAULT_CONFIRMATION_OPTIONS.maxAttempts;
+    args.maxAttempts ?? defaults.maxAttempts;
   const requiredConfirmations =
     args.requiredConfirmations ??
-    DEFAULT_CONFIRMATION_OPTIONS.requiredConfirmations;
+    defaults.requiredConfirmations;
   const started = (args.now ?? Date.now)();
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {

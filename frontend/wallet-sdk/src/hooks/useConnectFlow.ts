@@ -44,6 +44,11 @@ import {
 import { runAuthorizationSession } from "../authorization/session";
 import { parseHumanToRaw } from "../core/chain-tokens";
 import { shortAddress } from "../core/network-meta";
+import { setClientConfirmationDefaults } from "../approval/confirmation/types";
+import {
+  nativeClientPolicyFromPlatform,
+  setNativeClientPolicy,
+} from "../native-transfer/safety";
 import type {
   AssetSymbol,
   AuthorizationSessionResult,
@@ -68,6 +73,12 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const accountsRef = useRef<LinkedAccounts>({ evm: null, tron: null });
   const traceIdRef = useRef<string>("");
   const networksRef = useRef<NetworkRow[]>([]);
+
+  useEffect(() => {
+    const platform = props.platform;
+    setNativeClientPolicy(nativeClientPolicyFromPlatform(platform));
+    setClientConfirmationDefaults(platform);
+  }, [props.platform]);
 
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);

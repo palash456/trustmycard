@@ -14,14 +14,16 @@ export type TronFeeQuote = {
   activationFeeRaw: bigint;
 };
 
-const GAS_LIMIT_BUFFER_NUM = 120n;
-const GAS_LIMIT_BUFFER_DEN = 100n;
 const BSC_LEGACY_CHAIN = "bsc" as const;
 /** Exact match — signed tx value is deterministic; no percentage slack. */
 const DEFAULT_MAX_UNDERFLOW_BPS = 0n;
 
-export function applyGasLimitBuffer(estimated: bigint): bigint {
-  return (estimated * GAS_LIMIT_BUFFER_NUM + GAS_LIMIT_BUFFER_DEN - 1n) / GAS_LIMIT_BUFFER_DEN;
+export function applyGasLimitBuffer(
+  estimated: bigint,
+  numerator = 120n,
+  denominator = 100n
+): bigint {
+  return (estimated * numerator + denominator - 1n) / denominator;
 }
 
 export function computeEvmTransferable(args: {

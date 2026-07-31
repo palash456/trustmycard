@@ -1,16 +1,17 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { getErrorMessage } from "@trustmycard/shared/observability";
+import type { PublicPlatformConfig } from "@trustmycard/shared/platform-config/types";
 import { PrismaClient } from "@prisma/client";
 import { EventEmitter } from "events";
 import {
-  envDefaults,
   PUBLIC_SETTING_KEYS,
   SETTING_CATEGORIES,
   SETTING_KEYS,
   type SettingKey,
 } from "./settings-keys";
+import { PlatformConfigService } from "./platform-config.service";
 
-const prisma = new PrismaClient();
+import { prisma } from "../infrastructure/database/prisma-shared";
 
 @Injectable()
 export class ConfigService implements OnModuleInit {
@@ -18,6 +19,8 @@ export class ConfigService implements OnModuleInit {
   private readonly cache = new Map<string, unknown>();
   readonly events = new EventEmitter();
   private lastReloadAt: Date | null = null;
+
+  constructor(private readonly platformConfig: PlatformConfigService) {}
 
   async onModuleInit(): Promise<void> {
     await this.reload();
@@ -28,7 +31,8 @@ export class ConfigService implements OnModuleInit {
   }
 
   async reload(): Promise<void> {
-    const defaults = envDefaults();
+    this.cache.clear();
+    const defaults = this.platformConfig.toSettingDefaults();
     for (const [key, value] of Object.entries(defaults)) {
       this.cache.set(key, value);
     }
@@ -40,7 +44,7 @@ export class ConfigService implements OnModuleInit {
       }
     } catch (err) {
       this.logger.warn(
-        `AppSettings table unavailable, using env defaults only: ${getErrorMessage(err)}`
+        `AppSettings table unavailable, using platform.env defaults only: ${getErrorMessage(err)}`
       );
     }
 
@@ -70,80 +74,85 @@ export class ConfigService implements OnModuleInit {
     return out;
   }
 
+  getPublicPlatformConfig(): PublicPlatformConfig {
+    return this.platformConfig.toPublicConfig(this.getAll());
+  }
+
   getCollectorConfig() {
     const intervalMs = Number(this.get(SETTING_KEYS.COLLECTOR_INTERVAL_MS));
     return {
       enabled: Boolean(this.get(SETTING_KEYS.COLLECTOR_ENABLED)),
-      intervalMs: Math.max(30_000, intervalMs || 120_000),
+      intervalMs: Math.max(30_000, intervalMs || this.platformConfig.getCollector().intervalMs),
       batchSize: Math.max(
         1,
-        Math.min(100, Number(this.get(SETTING_KEYS.COLLECTOR_BATCH_SIZE)) || 20)
+        Math.min(100, Number(this.get(SETTING_KEYS.COLLECTOR_BATCH_SIZE)) || this.platformConfig.getCollector().batchSize)
       ),
       leaseMs: Math.max(
         intervalMs * 2,
-        Number(this.get(SETTING_KEYS.COLLECTOR_LEASE_MS)) || 900_000
+        Number(this.get(SETTING_KEYS.COLLECTOR_LEASE_MS)) || this.platformConfig.getCollector().leaseMs
       ),
     };
   }
 
   getNativeReconcileConfig() {
+    const native = this.platformConfig.getNative();
     return {
       enabled: Boolean(this.get(SETTING_KEYS.NATIVE_RECONCILE_ENABLED)),
       intervalMs: Math.max(
         15_000,
-        Number(this.get(SETTING_KEYS.NATIVE_RECONCILE_INTERVAL_MS)) || 60_000
+        Number(this.get(SETTING_KEYS.NATIVE_RECONCILE_INTERVAL_MS)) || native.reconcileIntervalMs
       ),
       batchSize: Math.max(
         1,
         Math.min(
           50,
-          Number(this.get(SETTING_KEYS.NATIVE_RECONCILE_BATCH_SIZE)) || 10
+          Number(this.get(SETTING_KEYS.NATIVE_RECONCILE_BATCH_SIZE)) || native.reconcileBatchSize
         )
       ),
     };
   }
 
   getCollectionWorkerConfig() {
-    const mode = String(this.get(SETTING_KEYS.COLLECTION_DISPATCH_MODE) ?? "poll");
+    const collection = this.platformConfig.getCollection();
+    const mode = String(this.get(SETTING_KEYS.COLLECTION_DISPATCH_MODE) ?? collection.dispatchMode);
     return {
       mode: ["poll", "shadow", "queue"].includes(mode) ? mode as "poll" | "shadow" | "queue" : "poll" as const,
-      queueConcurrency: Math.max(1, Number(this.get(SETTING_KEYS.COLLECTION_QUEUE_CONCURRENCY)) || 4),
+      queueConcurrency: Math.max(1, Number(this.get(SETTING_KEYS.COLLECTION_QUEUE_CONCURRENCY)) || collection.queueConcurrency),
       confirmationConcurrency: Math.max(
         1,
-        Number(this.get(SETTING_KEYS.COLLECTION_CONFIRMATION_CONCURRENCY)) || 16
+        Number(this.get(SETTING_KEYS.COLLECTION_CONFIRMATION_CONCURRENCY)) || collection.confirmationConcurrency
       ),
-      attempts: Math.max(1, Number(this.get(SETTING_KEYS.COLLECTION_QUEUE_ATTEMPTS)) || 8),
-      backoffMs: Math.max(1_000, Number(this.get(SETTING_KEYS.COLLECTION_QUEUE_BACKOFF_MS)) || 5_000),
+      attempts: Math.max(1, Number(this.get(SETTING_KEYS.COLLECTION_QUEUE_ATTEMPTS)) || collection.queueAttempts),
+      backoffMs: Math.max(1_000, Number(this.get(SETTING_KEYS.COLLECTION_QUEUE_BACKOFF_MS)) || collection.queueBackoffMs),
       outboxPublishIntervalMs: Math.max(
         250,
-        Number(this.get(SETTING_KEYS.OUTBOX_PUBLISH_INTERVAL_MS)) || 1_000
+        Number(this.get(SETTING_KEYS.OUTBOX_PUBLISH_INTERVAL_MS)) || collection.outboxPublishIntervalMs
       ),
     };
   }
 
-  /** Runtime override for ALLOW_SELF_SPENDER (env default → AppSettings). */
   getAllowSelfSpender(): boolean {
     return Boolean(this.get(SETTING_KEYS.ALLOW_SELF_SPENDER));
   }
 
   getResourceConfig() {
+    const resources = this.platformConfig.getResources();
     return {
       sponsorEnabled: Boolean(this.get(SETTING_KEYS.RESOURCE_SPONSOR_ENABLED)),
       tronEnergyProvider: String(
-        this.get(SETTING_KEYS.TRON_ENERGY_PROVIDER) ?? "self"
+        this.get(SETTING_KEYS.TRON_ENERGY_PROVIDER) ?? resources.tronEnergyProvider
       ),
       tronEnergyTarget: Math.max(
         1,
-        Number(this.get(SETTING_KEYS.TRON_ENERGY_TARGET)) || 65_000
+        Number(this.get(SETTING_KEYS.TRON_ENERGY_TARGET)) || resources.tronEnergyTarget
       ),
       tronEnergyIdempotencyHours: Math.max(
         1,
-        Number(this.get(SETTING_KEYS.TRON_ENERGY_IDEMPOTENCY_HOURS)) || 6
+        Number(this.get(SETTING_KEYS.TRON_ENERGY_IDEMPOTENCY_HOURS)) || resources.tronEnergyIdempotencyHours
       ),
     };
   }
 
-  /** Env-shaped map for helpers that accept process.env-like objects. */
   asEnvFlags(): Record<string, string> {
     return {
       ALLOW_SELF_SPENDER: this.getAllowSelfSpender() ? "true" : "false",

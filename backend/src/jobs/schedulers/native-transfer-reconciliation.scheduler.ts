@@ -14,7 +14,7 @@ import { StructuredLoggerService } from "../../infrastructure/logger/structured-
 import { WalletService } from "../../modules/wallet/wallet.service";
 import { NativeTransferService } from "../../modules/wallet/native-transfer.service";
 
-const prisma = new PrismaClient();
+import { prisma } from "../../infrastructure/database/prisma-shared";
 
 @Injectable()
 export class NativeTransferReconciliationScheduler

@@ -40,6 +40,8 @@ const FILTER_FIELDS = [
     options: ["success", "in_progress", "error", "failed", "failure", "rejected"],
   },
   { name: "search", label: "Search", placeholder: "Message or tx hash" },
+  { name: "from", label: "From", placeholder: "YYYY-MM-DD" },
+  { name: "to", label: "To", placeholder: "YYYY-MM-DD" },
 ] as const;
 
 function headClass(column: keyof typeof ACTIVITY_COL, extra?: string) {
@@ -76,12 +78,15 @@ export default async function ActivityPage({
 
   const feedQuery = buildQuery({
     page: sp.page ?? "1",
+    limit: sp.limit ?? "25",
     tab: tab === "all" ? undefined : tab,
     network: sp.network,
     address: sp.address,
     type: sp.type,
     status: sp.status,
     search: sp.search,
+    from: sp.from,
+    to: sp.to,
   });
 
   let feedData: ActivityFeedResponse | null = null;

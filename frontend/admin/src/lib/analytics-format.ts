@@ -1,4 +1,5 @@
 import type { NetworkTokenAmount } from "@/types/analytics";
+import { formatAdminAmount, isUint256Unlimited } from "@/lib/amount-display";
 
 export function formatTokenAmounts(items: NetworkTokenAmount[], max = 3): string {
   if (!items.length) return "—";
@@ -16,8 +17,8 @@ export function sanitizeMetricText(value: string | number | null | undefined): s
   if (value == null) return "—";
   const text = String(value).trim();
   if (!text) return "—";
-  if (/^115792089237316195423570985008687907853269984665640564039457584007913129639935/.test(text)) {
-    return "Unlimited";
+  if (isUint256Unlimited(text)) {
+    return formatAdminAmount(text);
   }
   if (text.length <= 22) return text;
   return `${text.slice(0, 19)}…`;

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { adminGetData } from "@/lib/admin-data";
+import { formatAdminAmount } from "@/lib/amount-display";
 import { formatDate } from "@/lib/format";
 
 type WalletDetail = {
@@ -140,7 +141,7 @@ export default async function WalletDetailPage({
                     className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
                   >
                     <Link href={`/transfers/${t.id}`} className="font-medium text-primary hover:underline">
-                      {t.approval.network} {t.approval.tokenSymbol} · {t.amountRaw}
+                      {t.approval.network} {t.approval.tokenSymbol} · {formatAdminAmount(t.amountRaw)}
                     </Link>
                     <StatusBadge value={t.status} />
                   </div>

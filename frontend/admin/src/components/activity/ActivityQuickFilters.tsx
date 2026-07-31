@@ -13,11 +13,11 @@ const QUICK_FILTERS: QuickFilter[] = [
   { label: "All activity" },
   { label: "Successful", status: "success" },
   { label: "Failed", status: "error" },
-  { label: "Broadcast", type: "BROADCAST" },
-  { label: "Approvals", type: "APPROVAL" },
-  { label: "Payments", type: "TRANSFER" },
-  { label: "Connect & scan", type: "SCAN" },
-  { label: "Revoked", type: "REVOKE" },
+  { label: "Broadcast", type: "broadcast" },
+  { label: "Approvals", type: "approval" },
+  { label: "Payments", type: "payment" },
+  { label: "Connect & scan", type: "connect_scan" },
+  { label: "Revoked", type: "revoke" },
 ];
 
 export function ActivityQuickFilters({

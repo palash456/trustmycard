@@ -8,10 +8,11 @@ export class SettingsController {
   constructor(private readonly configService: ConfigService) {}
 
   @Get("public")
-  @ApiOperation({ summary: "Public platform settings for website/wallet-sdk" })
+  @ApiOperation({ summary: "Public platform configuration for website/wallet-sdk" })
   getPublic() {
     return {
       ok: true,
+      config: this.configService.getPublicPlatformConfig(),
       settings: this.configService.getPublicSettings(),
       timestamp: new Date().toISOString(),
     };

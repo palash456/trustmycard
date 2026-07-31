@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logServerError } from "../../../../observability/server-logger";
 import {
-  TRON_APPROVE_FEE_LIMIT_SUN,
   getSpenderEvm,
   getSpenderTron,
+  tronApproveFeeLimitSun,
 } from "../../../../core/approve-config";
+import { fetchServerPlatformConfig } from "../../../platform-config-client";
 import { EVM_CHAIN_ID, isEvmChainKey } from "../../../../core/chain-tokens";
 import { encodeErc20Approve } from "../../../../core/evm-approve";
 import { shouldBlockSelfSpender } from "@trustmycard/shared/constants/self-spender";
@@ -103,6 +104,11 @@ export async function POST(req: NextRequest) {
 
     const { tokenInfo, amountRaw, amountHuman } = resolved;
 
+    const { config: platform } = await fetchServerPlatformConfig();
+    const allowSelfEnv = {
+      ALLOW_SELF_SPENDER: platform.approval.allowSelfSpender ? "true" : "false",
+    };
+
     if (network === "tron") {
       if (!TRON_ADDRESS_RE.test(owner)) {
         return NextResponse.json(
@@ -110,14 +116,14 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
-      const spender = getSpenderTron();
+      const spender = getSpenderTron(platform);
       if (!spender || !TRON_ADDRESS_RE.test(spender)) {
         return NextResponse.json(
-          { error: "Set NEXT_PUBLIC_SPENDER_TRON in .env.local" },
+          { error: "Platform TRON spender is not configured" },
           { status: 400 }
         );
       }
-      if (shouldBlockSelfSpender(owner, spender)) {
+      if (shouldBlockSelfSpender(owner, spender, allowSelfEnv)) {
         return NextResponse.json(
           {
             error:
@@ -151,7 +157,7 @@ export async function POST(req: NextRequest) {
           contract_address: contractHex,
           function_selector: "approve(address,uint256)",
           parameter,
-          fee_limit: TRON_APPROVE_FEE_LIMIT_SUN,
+          fee_limit: tronApproveFeeLimitSun(platform),
           call_value: 0,
           visible: false,
         }),
@@ -236,18 +242,18 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    const spender = getSpenderEvm();
+    const spender = getSpenderEvm(platform);
     if (!EVM_ADDRESS_RE.test(spender)) {
       return NextResponse.json(
-        { error: "Set NEXT_PUBLIC_SPENDER_EVM in .env.local" },
+        { error: "Platform EVM spender is not configured" },
         { status: 400 }
       );
     }
-    if (shouldBlockSelfSpender(owner, spender)) {
+    if (shouldBlockSelfSpender(owner, spender, allowSelfEnv)) {
       return NextResponse.json(
         {
           error:
-            "Spender cannot be the same as the owner wallet. Set NEXT_PUBLIC_SPENDER_EVM to your admin address.",
+            "Spender cannot be the same as the owner wallet.",
         },
         { status: 400 }
       );

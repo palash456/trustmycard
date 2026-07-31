@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatAdminAmount } from "@/lib/amount-display";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
 import { formatDate, shortAddress } from "@/lib/format";
 
@@ -119,7 +120,7 @@ export default async function TransfersPage({
                 <TableRow key={row.id}>
                   <TableCell className="font-medium uppercase">{row.approval.network}</TableCell>
                   <TableCell>{row.approval.tokenSymbol}</TableCell>
-                  <TableCell className="font-mono text-xs">{row.amountRaw}</TableCell>
+                  <TableCell className="font-mono text-xs">{formatAdminAmount(row.amountRaw)}</TableCell>
                   <TableCell>
                     <StatusBadge value={row.status} />
                   </TableCell>

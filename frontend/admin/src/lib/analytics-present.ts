@@ -1,3 +1,5 @@
+import { UINT256_UNLIMITED_LABEL, isUint256Unlimited } from "@/lib/amount-display";
+
 import type { AnalyticsResponse, NetworkTokenAmount } from "@/types/analytics";
 
 export type AssetBreakdown = {
@@ -60,8 +62,8 @@ export function aggregateStablecoinAssets(
 function formatHumanFromRaw(raw: string, decimals: number): string {
   try {
     const value = BigInt(raw || "0");
-    if (value >= BigInt("115792089237316195423570985008687907853269984665640564039457584007913129639935")) {
-      return "Unlimited";
+    if (isUint256Unlimited(value)) {
+      return UINT256_UNLIMITED_LABEL;
     }
     if (value === BigInt(0)) return "0";
     const divisor = BigInt(10) ** BigInt(decimals);

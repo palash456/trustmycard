@@ -1,9 +1,10 @@
 import { Global, Module } from "@nestjs/common";
 import { ConfigService } from "./config.service";
+import { PlatformConfigService } from "./platform-config.service";
 
 @Global()
 @Module({
-  providers: [ConfigService],
-  exports: [ConfigService],
+  providers: [PlatformConfigService, ConfigService],
+  exports: [PlatformConfigService, ConfigService],
 })
 export class ConfigModule {}

@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { OutboxEventStatus, Prisma } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { PrismaService } from "../../infrastructure/database/prisma.service";
+import { PlatformConfigService } from "../../config/platform-config.service";
 
 export const COLLECTION_EVENT = {
   QUEUED: "CollectionQueued",
@@ -19,7 +20,10 @@ export type CollectionEventType = (typeof COLLECTION_EVENT)[keyof typeof COLLECT
 
 @Injectable()
 export class OutboxService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly platformConfig: PlatformConfigService
+  ) {}
 
   async record(
     tx: Prisma.TransactionClient,
@@ -45,7 +49,9 @@ export class OutboxService {
 
   async claimPending(owner: string, limit: number) {
     const now = new Date();
-    const lockUntil = new Date(now.getTime() + 60_000);
+    const lockUntil = new Date(
+      now.getTime() + this.platformConfig.getOutbox().claimLockMs
+    );
     return this.prisma.$transaction(async (tx) => {
       const events = await tx.$queryRaw<Array<{ id: string }>>`
         SELECT "id" FROM "OutboxEvent"

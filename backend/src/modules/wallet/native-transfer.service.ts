@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { PrismaClient, type Prisma } from "@prisma/client";
+import { type Prisma } from "@prisma/client";
 import { TronWeb } from "tronweb";
 import {
   EVM_CHAIN_ID,
@@ -22,6 +22,8 @@ import {
   recordTiming,
 } from "@trustmycard/shared/observability";
 import { ConfigService } from "../../config/config.service";
+import { PlatformConfigService } from "../../config/platform-config.service";
+import { SETTING_KEYS } from "../../config/settings-keys";
 import { safeCreateAuditLog } from "../../common/audit/safe-audit";
 import { AdminEventsService } from "../../infrastructure/admin-events/admin-events.service";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
@@ -41,21 +43,9 @@ import {
 } from "./native-transfer-fee";
 import { nativeTransferError, nativeTransferNotFound } from "./native-transfer.errors";
 
-const prisma = new PrismaClient();
+import { prisma } from "../../infrastructure/database/prisma-shared";
 const TRON_ADDRESS_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
 const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
-const TERMS_VERSION = "2026-07-28";
-const RPC_TIMEOUT_MS = Math.max(
-  3_000,
-  Number(process.env.COLLECTOR_RPC_TIMEOUT_MS ?? 15_000)
-);
-const PENDING_MAX_RECONCILE_ATTEMPTS = Math.max(
-  10,
-  Number(process.env.NATIVE_PENDING_MAX_RECONCILE_ATTEMPTS ?? 120)
-);
-const NATIVE_AMOUNT_MAX_UNDERFLOW_BPS = BigInt(
-  Math.max(0, Number(process.env.NATIVE_AMOUNT_MAX_UNDERFLOW_BPS ?? 1))
-);
 const RPC_NULL_FAILOVER_METHODS = new Set([
   "eth_getTransactionByHash",
   "eth_getTransactionReceipt",
@@ -71,18 +61,33 @@ type VerifiedTransfer = {
 export class NativeTransferService {
   constructor(
     private readonly configService: ConfigService,
+    private readonly platformConfig: PlatformConfigService,
     private readonly logger: StructuredLoggerService,
     private readonly adminEvents: AdminEventsService
   ) {}
 
-  private spenderEvm() {
-    return (process.env.NEXT_PUBLIC_SPENDER_EVM ?? "").trim();
+  private rpcTimeoutMs(): number {
+    return Number(this.configService.get(SETTING_KEYS.COLLECTOR_RPC_TIMEOUT_MS)) ||
+      this.platformConfig.getCollector().rpcTimeoutMs;
   }
-  private spenderTron() {
-    return (process.env.NEXT_PUBLIC_SPENDER_TRON ?? "").trim();
+
+  private pendingMaxReconcileAttempts(): number {
+    return this.platformConfig.getNative().pendingMaxReconcileAttempts;
+  }
+
+  private nativeAmountMaxUnderflowBps(): bigint {
+    return this.platformConfig.getNative().amountMaxUnderflowBps;
+  }
+
+  private termsVersion(): string {
+    return this.platformConfig.getApproval().termsVersion;
+  }
+
+  private spenderFor(network: string) {
+    return this.platformConfig.spenderForNetwork(network);
   }
   private recipientFor(network: string) {
-    return network === "tron" ? this.spenderTron() : this.spenderEvm();
+    return this.spenderFor(network);
   }
   private traceFromBody(body: Record<string, unknown>) {
     const traceId = String(body.traceId ?? "").trim();
@@ -101,7 +106,7 @@ export class NativeTransferService {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
       cache: "no-store",
-      signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+      signal: AbortSignal.timeout(this.rpcTimeoutMs()),
     });
     const json = (await res.json()) as { result?: string; error?: { message?: string } };
     if (!res.ok || json.error) throw new Error(json.error?.message || `RPC ${res.status}`);
@@ -156,7 +161,7 @@ export class NativeTransferService {
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
           cache: "no-store",
-          signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+          signal: AbortSignal.timeout(this.rpcTimeoutMs()),
         });
         const json = (await res.json()) as { result?: T; error?: { message?: string } };
         if (!res.ok || json.error) throw new Error(json.error?.message || `RPC ${res.status}`);
@@ -191,7 +196,7 @@ export class NativeTransferService {
   }
   private tronHeaders(): Record<string, string> {
     const headers: Record<string, string> = { "content-type": "application/json" };
-    const apiKey = (process.env.TRONGRID_API_KEY ?? "").trim();
+    const apiKey = this.platformConfig.getChains().trongridApiKey;
     if (apiKey) headers["TRON-PRO-API-KEY"] = apiKey;
     return headers;
   }
@@ -264,7 +269,7 @@ export class NativeTransferService {
       headers: this.tronHeaders(),
       body: JSON.stringify({}),
       cache: "no-store",
-      signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+      signal: AbortSignal.timeout(this.rpcTimeoutMs()),
     });
     const json = (await res.json()) as {
       chainParameter?: Array<{ key?: string; value?: number | string }>;
@@ -279,7 +284,7 @@ export class NativeTransferService {
     const res = await fetch(`${TRON_GRID_URL}/v1/accounts/${recipient}`, {
       headers: this.tronHeaders(),
       cache: "no-store",
-      signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+      signal: AbortSignal.timeout(this.rpcTimeoutMs()),
     });
     const json = (await res.json()) as { data?: unknown[] };
     return Array.isArray(json.data) && json.data.length > 0;
@@ -300,7 +305,7 @@ export class NativeTransferService {
         visible: true,
       }),
       cache: "no-store",
-      signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+      signal: AbortSignal.timeout(this.rpcTimeoutMs()),
     });
     const json = (await res.json()) as {
       Error?: string;
@@ -322,7 +327,8 @@ export class NativeTransferService {
     );
 
     const probeValue = balanceRaw > BigInt(0) ? "0x1" : "0x0";
-    let gasEstimate = BigInt(21_000);
+    const fallbackGas = BigInt(this.platformConfig.getTransfer().evmGasEstimateFallback);
+    let gasEstimate = fallbackGas;
     try {
       gasEstimate = parseHexBigInt(
         await this.evmRpcCall(args.network, "eth_estimateGas", [
@@ -330,9 +336,13 @@ export class NativeTransferService {
         ])
       );
     } catch {
-      gasEstimate = BigInt(21_000);
+      gasEstimate = fallbackGas;
     }
-    const gasLimit = applyGasLimitBuffer(gasEstimate);
+    const gasLimit = applyGasLimitBuffer(
+      gasEstimate,
+      BigInt(this.platformConfig.getTransfer().evmGasLimitBufferNumerator),
+      BigInt(this.platformConfig.getTransfer().evmGasLimitBufferDenominator)
+    );
 
     let maxFeePerGas: bigint;
     let maxPriorityFeePerGas: bigint;
@@ -351,8 +361,9 @@ export class NativeTransferService {
         ),
       ]);
       maxPriorityFeePerGas = parseHexBigInt(priorityHex);
-      if (maxPriorityFeePerGas < BigInt(1_000_000_000)) {
-        maxPriorityFeePerGas = BigInt(1_500_000_000);
+      const minPriority = this.platformConfig.getTransfer().evmMinPriorityFeeWei;
+      if (maxPriorityFeePerGas < minPriority) {
+        maxPriorityFeePerGas = minPriority + minPriority / BigInt(2);
       }
       const baseFee = parseHexBigInt(latestBlock?.baseFeePerGas);
       maxFeePerGas = baseFee * BigInt(2) + maxPriorityFeePerGas;
@@ -385,7 +396,7 @@ export class NativeTransferService {
       fetch(`${TRON_GRID_URL}/v1/accounts/${args.owner}`, {
         headers: this.tronHeaders(),
         cache: "no-store",
-        signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+        signal: AbortSignal.timeout(this.rpcTimeoutMs()),
       }),
       this.fetchTronChainParameters(),
       this.tronRecipientExists(args.recipient),
@@ -447,7 +458,7 @@ export class NativeTransferService {
           visible: true,
         }),
         cache: "no-store",
-        signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+        signal: AbortSignal.timeout(this.rpcTimeoutMs()),
       });
       const createJson = (await createRes.json()) as {
         Error?: string;
@@ -651,7 +662,7 @@ export class NativeTransferService {
       headers: this.tronHeaders(),
       body: JSON.stringify({ value: args.txHash }),
       cache: "no-store",
-      signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+      signal: AbortSignal.timeout(this.rpcTimeoutMs()),
     });
     const info = (await infoRes.json()) as {
       blockNumber?: number;
@@ -669,7 +680,7 @@ export class NativeTransferService {
       headers: this.tronHeaders(),
       body: JSON.stringify({ value: args.txHash }),
       cache: "no-store",
-      signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+      signal: AbortSignal.timeout(this.rpcTimeoutMs()),
     });
     const tx = (await txRes.json()) as {
       raw_data?: {
@@ -723,7 +734,7 @@ export class NativeTransferService {
     const validation = validateTransferAmount({
       amountRaw: verified.amountRaw,
       expectedAmountRaw: BigInt(expectedAmountRaw),
-      maxUnderflowBps: NATIVE_AMOUNT_MAX_UNDERFLOW_BPS,
+      maxUnderflowBps: this.nativeAmountMaxUnderflowBps(),
     });
     if (!validation.ok) {
       throw nativeTransferError(
@@ -757,7 +768,9 @@ export class NativeTransferService {
     owner: string;
     recipient: string;
   }): Promise<void> {
-    const maxAttempts = 4;
+    const nativeCfg = this.platformConfig.getNative();
+    const maxAttempts = nativeCfg.txVisibilityMaxAttempts;
+    const baseDelayMs = nativeCfg.txVisibilityBaseDelayMs;
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       try {
         if (args.network === "tron") {
@@ -766,7 +779,7 @@ export class NativeTransferService {
             headers: this.tronHeaders(),
             body: JSON.stringify({ value: args.txHash }),
             cache: "no-store",
-            signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+            signal: AbortSignal.timeout(this.rpcTimeoutMs()),
           });
           const tx = (await txRes.json()) as {
             txID?: string;
@@ -837,13 +850,13 @@ export class NativeTransferService {
             attempt < maxAttempts &&
             /not found|still propagating/i.test(err.message);
           if (retryable) {
-            await this.delay(750 * 2 ** (attempt - 1));
+            await this.delay(baseDelayMs * 2 ** (attempt - 1));
             continue;
           }
           throw err;
         }
         if (attempt === maxAttempts) throw err;
-        await this.delay(750 * 2 ** (attempt - 1));
+        await this.delay(baseDelayMs * 2 ** (attempt - 1));
       }
     }
   }
@@ -853,7 +866,7 @@ export class NativeTransferService {
     const owner = String(body.owner ?? "").trim();
     const txHash = String(body.txHash ?? "").trim();
     const expectedAmountRaw = String(body.expectedAmountRaw ?? "").trim();
-    const termsVersion = String(body.termsVersion ?? TERMS_VERSION).trim();
+    const termsVersion = String(body.termsVersion ?? this.termsVersion()).trim();
     const traceId = this.traceFromBody(body);
 
     if (!network || !owner || !txHash || !expectedAmountRaw) {
@@ -1059,7 +1072,7 @@ export class NativeTransferService {
     const network = String(body.network ?? "").trim().toLowerCase();
     const owner = String(body.owner ?? "").trim();
     const txHash = String(body.txHash ?? "").trim();
-    const termsVersion = String(body.termsVersion ?? TERMS_VERSION).trim();
+    const termsVersion = String(body.termsVersion ?? this.termsVersion()).trim();
     const expectedAmountRaw = String(body.expectedAmountRaw ?? "").trim() || undefined;
     const traceId = this.traceFromBody(body);
 
@@ -1197,7 +1210,7 @@ export class NativeTransferService {
       },
     });
 
-    if (nextAttempts >= PENDING_MAX_RECONCILE_ATTEMPTS) {
+    if (nextAttempts >= this.pendingMaxReconcileAttempts()) {
       return prisma.nativeTransfer.update({
         where: { id },
         data: {
@@ -1248,7 +1261,7 @@ export class NativeTransferService {
       owner: record.ownerAddress,
       recipient: record.toAddress,
       verified,
-      termsVersion: record.termsVersion ?? TERMS_VERSION,
+      termsVersion: record.termsVersion ?? this.termsVersion(),
       expectedAmountRaw: record.expectedAmountRaw,
     }).then((updated) => {
       incrementCounter("native_transfer.scheduler_recovered", {

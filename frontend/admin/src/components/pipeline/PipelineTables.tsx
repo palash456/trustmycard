@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
 import { pipelineUserPath } from "@/lib/pipeline-paths";
 import { StatusBadge } from "@/components/StatusBadge";
+import { formatAdminAmount } from "@/lib/amount-display";
 import {
   Table,
   TableBody,
@@ -92,7 +93,7 @@ export function ApprovalsTable({ items }: { items: ApprovalRow[] }) {
                 <StatusBadge value={row.status} />
               </TableCell>
               <TableCell className="text-xs text-muted-foreground">
-                {row.collectedRaw} / rem {row.remainingRaw}
+                {formatAdminAmount(row.collectedRaw)} / rem {formatAdminAmount(row.remainingRaw)}
               </TableCell>
               <TableCell className="text-xs text-muted-foreground">
                 {formatDate(row.nextCheckAt)}
@@ -148,7 +149,7 @@ export function TransfersTable({ items }: { items: TransferRow[] }) {
                   {shortAddress(row.approval.ownerAddress)}
                 </Link>
               </TableCell>
-              <TableCell className="font-mono text-xs">{row.amountRaw}</TableCell>
+              <TableCell className="font-mono text-xs">{formatAdminAmount(row.amountRaw)}</TableCell>
               <TableCell>
                 <StatusBadge value={row.status} />
               </TableCell>

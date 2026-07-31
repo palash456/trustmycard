@@ -36,6 +36,7 @@ cd backend
 npm install
 npx prisma generate
 npx prisma db push
+cp ../config/platform.env.example ../config/platform.env   # edit spender + keys
 npm run start:dev      # http://localhost:4000
 ```
 

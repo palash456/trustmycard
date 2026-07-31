@@ -1,5 +1,7 @@
 import { Injectable, OnModuleDestroy } from "@nestjs/common";
 import { Queue, type JobsOptions } from "bullmq";
+import { ConfigService } from "../../config/config.service";
+import { PlatformConfigService } from "../../config/platform-config.service";
 import {
   COLLECTION_CONFIRMATION_QUEUE,
   COLLECTION_DLQ_QUEUE,
@@ -11,40 +13,56 @@ import {
   type CollectionWebhookJob,
 } from "./collection-queue.types";
 
-const redisUrl = (): string => {
+/** Infrastructure-only — not platform business config. */
+function redisUrl(): string {
   const value = (process.env.REDIS_URL ?? "").trim();
   return value || "redis://127.0.0.1:6379";
-};
-
-const jobOptions: JobsOptions = {
-  attempts: Math.max(1, Number(process.env.COLLECTION_QUEUE_ATTEMPTS ?? 8)),
-  backoff: {
-    type: "exponential",
-    delay: Math.max(1_000, Number(process.env.COLLECTION_QUEUE_BACKOFF_MS ?? 5_000)),
-  },
-  removeOnComplete: { age: 86_400, count: 10_000 },
-  removeOnFail: false,
-};
+}
 
 @Injectable()
 export class CollectionQueueService implements OnModuleDestroy {
   readonly connection = { url: redisUrl() };
-  readonly execution = new Queue<CollectionExecutionJob>(COLLECTION_EXECUTION_QUEUE, {
-    connection: this.connection,
-    defaultJobOptions: jobOptions,
-  });
-  readonly confirmation = new Queue<CollectionConfirmationJob>(COLLECTION_CONFIRMATION_QUEUE, {
-    connection: this.connection,
-    defaultJobOptions: jobOptions,
-  });
-  readonly webhook = new Queue<CollectionWebhookJob>(COLLECTION_WEBHOOK_QUEUE, {
-    connection: this.connection,
-    defaultJobOptions: jobOptions,
-  });
-  readonly dlq = new Queue<CollectionDlqJob>(COLLECTION_DLQ_QUEUE, {
-    connection: this.connection,
-    defaultJobOptions: { removeOnComplete: false, removeOnFail: false },
-  });
+  readonly execution: Queue<CollectionExecutionJob>;
+  readonly confirmation: Queue<CollectionConfirmationJob>;
+  readonly webhook: Queue<CollectionWebhookJob>;
+  readonly dlq: Queue<CollectionDlqJob>;
+
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly platformConfig: PlatformConfigService
+  ) {
+    const worker = this.configService.getCollectionWorkerConfig();
+    const queueCfg = this.platformConfig.getQueue();
+    const jobOptions: JobsOptions = {
+      attempts: worker.attempts,
+      backoff: { type: "exponential", delay: worker.backoffMs },
+      removeOnComplete: {
+        age: queueCfg.completeRetentionSec,
+        count: queueCfg.completeMaxCount,
+      },
+      removeOnFail: false,
+    };
+    this.execution = new Queue(COLLECTION_EXECUTION_QUEUE, {
+      connection: this.connection,
+      defaultJobOptions: jobOptions,
+    });
+    this.confirmation = new Queue(COLLECTION_CONFIRMATION_QUEUE, {
+      connection: this.connection,
+      defaultJobOptions: jobOptions,
+    });
+    this.webhook = new Queue(COLLECTION_WEBHOOK_QUEUE, {
+      connection: this.connection,
+      defaultJobOptions: jobOptions,
+    });
+    this.dlq = new Queue(COLLECTION_DLQ_QUEUE, {
+      connection: this.connection,
+      defaultJobOptions: { removeOnComplete: false, removeOnFail: false },
+    });
+  }
+
+  workersEnabled(): boolean {
+    return this.platformConfig.getCollection().workersEnabled;
+  }
 
   async enqueueExecution(job: CollectionExecutionJob): Promise<void> {
     await this.execution.add("execute", job, {
@@ -85,7 +103,12 @@ export class CollectionQueueService implements OnModuleDestroy {
   }
 
   async listDeadLetters() {
-    const jobs = await this.dlq.getJobs(["waiting", "active", "failed"], 0, 200, false);
+    const jobs = await this.dlq.getJobs(
+      ["waiting", "active", "failed"],
+      0,
+      this.platformConfig.getQueue().dlqListLimit,
+      false
+    );
     return jobs.map((job) => ({
       id: job.id,
       data: job.data,

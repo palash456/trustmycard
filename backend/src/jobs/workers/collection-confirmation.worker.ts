@@ -1,6 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { Worker } from "bullmq";
 import { ConfigService } from "../../config/config.service";
+import { PlatformConfigService } from "../../config/platform-config.service";
 import { WalletService } from "../../modules/wallet/wallet.service";
 import { incrementCounter, recordTiming } from "@trustmycard/shared/observability";
 import {
@@ -15,13 +16,14 @@ export class CollectionConfirmationWorker implements OnModuleInit, OnModuleDestr
 
   constructor(
     private readonly config: ConfigService,
+    private readonly platformConfig: PlatformConfigService,
     private readonly queues: CollectionQueueService,
     private readonly wallet: WalletService
   ) {}
 
   onModuleInit(): void {
     const config = this.config.getCollectionWorkerConfig();
-    if (config.mode !== "queue" || process.env.COLLECTION_WORKERS_ENABLED !== "true") return;
+    if (config.mode !== "queue" || !this.queues.workersEnabled()) return;
     this.worker = new Worker(
       COLLECTION_CONFIRMATION_QUEUE,
       async (job) => {
@@ -30,7 +32,11 @@ export class CollectionConfirmationWorker implements OnModuleInit, OnModuleDestr
         recordTiming("collection.confirmation.check_ms", Date.now() - started, {});
         if (!result.finalized) {
           incrementCounter("collection.confirmation.pending.total");
-          await this.queues.enqueueConfirmation(job.data, result.retryAfterMs ?? 2_000);
+          await this.queues.enqueueConfirmation(
+            job.data,
+            result.retryAfterMs ??
+              this.platformConfig.getTransfer().confirmationRetryDelayMs
+          );
         } else {
           incrementCounter("collection.confirmation.finalized.total");
         }

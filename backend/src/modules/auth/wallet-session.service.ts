@@ -3,8 +3,7 @@ import { randomBytes, randomUUID } from "crypto";
 import { ethers } from "ethers";
 import { TronWeb } from "tronweb";
 import { PrismaService } from "../../infrastructure/database/prisma.service";
-
-const SESSION_TTL_MS = Math.max(60_000, Number(process.env.WALLET_SESSION_TTL_MS ?? 30 * 60_000));
+import { PlatformConfigService } from "../../config/platform-config.service";
 
 export type VerifiedWalletSession = {
   id: string;
@@ -15,13 +14,20 @@ export type VerifiedWalletSession = {
 
 @Injectable()
 export class WalletSessionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly platformConfig: PlatformConfigService
+  ) {}
+
+  private sessionTtlMs(): number {
+    return this.platformConfig.getSession().walletSessionTtlMs;
+  }
 
   async createChallenge(address: string, network: string) {
     const normalizedAddress = this.normalize(address, network);
     const nonce = randomUUID();
     const challenge = `TrustMyCard wallet session\nAddress: ${normalizedAddress}\nNetwork: ${network}\nNonce: ${nonce}`;
-    const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
+    const expiresAt = new Date(Date.now() + this.sessionTtlMs());
     const session = await this.prisma.walletSession.create({
       data: { address: normalizedAddress, network, nonce, challenge, expiresAt },
     });
@@ -57,7 +63,7 @@ export class WalletSessionService {
   private async verifySignature(network: string, message: string, signature: string): Promise<string> {
     if (network === "tron") {
       try {
-        const tron = new TronWeb({ fullHost: process.env.TRON_FULL_HOST ?? "https://api.trongrid.io" });
+        const tron = new TronWeb({ fullHost: this.platformConfig.getChains().tronFullHost });
         return await tron.trx.verifyMessageV2(message, signature);
       } catch {
         throw new UnauthorizedException("Invalid TRON wallet signature");

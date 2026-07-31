@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
+import { formatAdminAmount } from "@/lib/amount-display";
 import { blockExplorerAddress, formatDate, shortAddress } from "@/lib/format";
 import type { UserListResponse } from "@/types/users";
 
@@ -31,7 +32,7 @@ function formatCollectable(
   return items
     .map(
       (i) =>
-        `${i.remainingHuman ?? i.remainingRaw} ${i.tokenSymbol} (${i.network})`
+        `${formatAdminAmount(i.remainingHuman ?? i.remainingRaw)} ${i.tokenSymbol} (${i.network})`
     )
     .join(", ");
 }
@@ -43,7 +44,7 @@ function formatCollected(
   return items
     .map(
       (i) =>
-        `${i.collectedHuman ?? i.collectedRaw} ${i.tokenSymbol} (${i.network})`
+        `${formatAdminAmount(i.collectedHuman ?? i.collectedRaw)} ${i.tokenSymbol} (${i.network})`
     )
     .join(", ");
 }

@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { adminGetData } from "@/lib/admin-data";
+import { formatAdminAmount } from "@/lib/amount-display";
 import { blockExplorerTx, formatDate } from "@/lib/format";
 
 type Detail = {
@@ -78,9 +79,9 @@ export default async function NativeTransferDetailPage({
               <span className="font-mono text-xs">{n.toAddress}</span>
             </DetailRow>
             <DetailRow label="Amount">
-              {n.amountHuman} ({n.amountRaw} raw)
+              {formatAdminAmount(n.amountHuman)} ({formatAdminAmount(n.amountRaw)} raw)
             </DetailRow>
-            <DetailRow label="Expected raw">{n.expectedAmountRaw ?? "—"}</DetailRow>
+            <DetailRow label="Expected raw">{formatAdminAmount(n.expectedAmountRaw)}</DetailRow>
             <DetailRow label="Fee">{n.feeHuman ?? "—"}</DetailRow>
             <DetailRow label="Tx">
               {explorer ? (

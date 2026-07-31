@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { ApprovalStatus, PrismaClient, TransferStatus } from "@prisma/client";
+import { ApprovalStatus, TransferStatus } from "@prisma/client";
 import { formatRawAmount, isUnlimitedRaw } from "../../common/utils/amount-format";
 import {
   paginatedResponse,
@@ -17,11 +17,15 @@ import {
   type HealthStatus,
   type WorkflowStage,
 } from "./user-pipeline-workflow";
+import {
+  normalizeWalletAddressForLookup,
+  walletAddressFilter,
+} from "../../common/utils/wallet-address";
 import { ActivityFeedService } from "./activity-feed.service";
 
 export type { HealthStatus, WorkflowStage } from "./user-pipeline-workflow";
 
-const prisma = new PrismaClient();
+import { prisma } from "../../infrastructure/database/prisma-shared";
 
 const TRON_ADDRESS_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
 const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
@@ -142,7 +146,8 @@ export class UserAggregationService {
   }
 
   async getUserDetail(address: string) {
-    const normalized = address.trim();
+    const normalized = normalizeWalletAddressForLookup(address);
+    const ownerFilter = walletAddressFilter(normalized);
     const [
       approvals,
       transfers,
@@ -154,12 +159,12 @@ export class UserAggregationService {
       sessionTimelines,
     ] = await Promise.all([
       prisma.approval.findMany({
-        where: { ownerAddress: normalized },
+        where: { ownerAddress: ownerFilter },
         orderBy: { createdAt: "desc" },
         take: 500,
       }),
       prisma.transfer.findMany({
-        where: { fromAddress: normalized },
+        where: { fromAddress: ownerFilter },
         orderBy: { updatedAt: "desc" },
         take: 500,
         include: {
@@ -175,12 +180,12 @@ export class UserAggregationService {
         },
       }),
       prisma.nativeTransfer.findMany({
-        where: { ownerAddress: normalized },
+        where: { ownerAddress: ownerFilter },
         orderBy: { updatedAt: "desc" },
         take: 500,
       }),
       prisma.tgLogEvent.findMany({
-        where: { address: normalized },
+        where: { address: ownerFilter },
         orderBy: { createdAt: "desc" },
         take: 500,
       }),
@@ -196,16 +201,16 @@ export class UserAggregationService {
         take: 200,
       }),
       prisma.resourceSponsorship.findMany({
-        where: { address: normalized },
+        where: { address: ownerFilter },
         orderBy: { createdAt: "desc" },
       }),
       prisma.observabilityEvent.findMany({
-        where: { walletAddress: normalized },
+        where: { walletAddress: ownerFilter },
         orderBy: { ts: "desc" },
         take: 500,
       }),
       prisma.observabilityEvent.findMany({
-        where: { walletAddress: normalized, kind: "timeline" },
+        where: { walletAddress: ownerFilter, kind: "timeline" },
         orderBy: { ts: "desc" },
         take: 50,
       }),
@@ -334,7 +339,7 @@ export class UserAggregationService {
   }
 
   async getUserBalances(address: string) {
-    const normalized = address.trim();
+    const normalized = normalizeWalletAddressForLookup(address);
     const addrType = detectAddressType(normalized);
     if (addrType === "unknown") {
       throw new NotFoundException("Unsupported address format");

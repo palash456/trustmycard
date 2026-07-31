@@ -67,18 +67,18 @@ export function ActivityOverviewSection({
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Journey events" value={total} sub={TAB_LABELS[tab]} />
         <StatCard
-          label="Success rate"
+          label="Page success rate"
           value={successRate != null ? `${successRate}%` : "—"}
-          sub={`${successCount} succeeded on this page`}
+          sub={`${successCount} of ${pageCount} loaded rows succeeded`}
         />
         <StatCard
-          label="Errors"
+          label={tab === "errors" ? "Errors" : "Page errors"}
           value={errorCount}
           sub={tab === "errors" ? "Total matching filter" : "On this page"}
           className={errorCount > 0 ? "ring-1 ring-destructive/20" : undefined}
         />
         <StatCard
-          label="Unique wallets"
+          label="Page wallets"
           value={uniqueWallets}
           sub={pageCount > 0 ? "On this page" : "No rows loaded"}
         />

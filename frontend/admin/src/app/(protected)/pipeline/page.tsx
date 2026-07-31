@@ -123,6 +123,7 @@ export default async function PipelinePage({
       listPromise = adminGetData<Paginated<TransferRow>>(
         `/admin/transfers${buildQuery({
           page: baseQuery.page,
+          limit: baseQuery.limit,
           network: baseQuery.network,
           owner: baseQuery.owner,
           status: baseQuery.status,
@@ -132,6 +133,7 @@ export default async function PipelinePage({
       listPromise = adminGetData<Paginated<NativeRow>>(
         `/admin/native-transfers${buildQuery({
           page: baseQuery.page,
+          limit: baseQuery.limit,
           network: baseQuery.network,
           owner: baseQuery.owner,
           status: baseQuery.status,
@@ -206,6 +208,9 @@ export default async function PipelinePage({
         listTotal={listData?.total ?? 0}
         owner={owner}
         pipelineQuery={pipelineQuery}
+        filtersActive={Boolean(
+          owner || sp.network || sp.status || sp.collectionEnabled
+        )}
       />
 
       <PipelineWorkflowStrip

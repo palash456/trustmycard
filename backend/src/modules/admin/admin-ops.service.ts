@@ -8,6 +8,7 @@ import { Wallet } from "ethers";
 import { TronWeb } from "tronweb";
 import { safeCreateAuditLog } from "../../common/audit/safe-audit";
 import { ConfigService } from "../../config/config.service";
+import { PlatformConfigService } from "../../config/platform-config.service";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 import { SETTING_KEYS } from "../../config/settings-keys";
 import { ApprovalCollectionScheduler } from "../../jobs/schedulers/approval-collection.scheduler";
@@ -16,12 +17,13 @@ import { AdminDevOpsService } from "./admin-devops.service";
 import { AdminStreamService } from "./admin-stream.service";
 import { WalletService } from "../wallet/wallet.service";
 
-const prisma = new PrismaClient();
+import { prisma } from "../../infrastructure/database/prisma-shared";
 
 @Injectable()
 export class AdminOpsService {
   constructor(
     private readonly configService: ConfigService,
+    private readonly platformConfig: PlatformConfigService,
     private readonly walletService: WalletService,
     private readonly collectorScheduler: ApprovalCollectionScheduler,
     private readonly nativeScheduler: NativeTransferReconciliationScheduler,
@@ -59,10 +61,11 @@ export class AdminOpsService {
   }
 
   async getSystemStatus() {
-    const evmSpender = (process.env.NEXT_PUBLIC_SPENDER_EVM ?? "").trim();
-    const tronSpender = (process.env.NEXT_PUBLIC_SPENDER_TRON ?? "").trim();
-    const evmKey = (process.env.ADMIN_EVM_PRIVATE_KEY ?? "").trim();
-    const tronKey = (process.env.ADMIN_TRON_PRIVATE_KEY ?? "").trim();
+    const wallets = this.platformConfig.getWallets();
+    const evmSpender = wallets.spenderEvm;
+    const tronSpender = wallets.spenderTron;
+    const evmKey = wallets.adminEvmPrivateKey;
+    const tronKey = wallets.adminTronPrivateKey;
 
     let evmMatch = false;
     let tronMatch = false;
@@ -77,7 +80,7 @@ export class AdminOpsService {
     try {
       if (tronKey && tronSpender) {
         const tron = new TronWeb({
-          fullHost: "https://api.trongrid.io",
+          fullHost: this.platformConfig.getChains().tronFullHost,
           privateKey: tronKey,
         });
         const derived = tron.address.fromPrivateKey(tronKey);
@@ -101,6 +104,7 @@ export class AdminOpsService {
           spenderMatch: tronMatch,
         },
       },
+      platform: this.configService.getPublicPlatformConfig(),
       collector: this.collectorScheduler.getStatus(),
       nativeReconcile: this.nativeScheduler.getStatus(),
       configLastReloadAt:

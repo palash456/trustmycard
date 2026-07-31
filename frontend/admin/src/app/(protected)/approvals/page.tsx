@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatAdminAmount } from "@/lib/amount-display";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
 import { formatDate, shortAddress } from "@/lib/format";
 
@@ -146,7 +147,7 @@ export default async function ApprovalsPage({
                     <StatusBadge value={row.status} />
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {row.collectedRaw} / rem {row.remainingRaw}
+                    {formatAdminAmount(row.collectedRaw)} / rem {formatAdminAmount(row.remainingRaw)}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {formatDate(row.nextCheckAt)}

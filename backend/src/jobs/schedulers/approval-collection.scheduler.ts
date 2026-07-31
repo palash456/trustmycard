@@ -14,7 +14,7 @@ import { ConfigService } from "../../config/config.service";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 import { WalletService } from "../../modules/wallet/wallet.service";
 
-const prisma = new PrismaClient();
+import { prisma } from "../../infrastructure/database/prisma-shared";
 const ACTIVE_STATUSES = ["SUBMITTED", "ACTIVE", "PARTIALLY_USED"] as const;
 
 @Injectable()

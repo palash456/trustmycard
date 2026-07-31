@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { createHmac } from "crypto";
 import { Worker } from "bullmq";
 import { ConfigService } from "../../config/config.service";
+import { PlatformConfigService } from "../../config/platform-config.service";
 import { PrismaService } from "../../infrastructure/database/prisma.service";
 import {
   COLLECTION_WEBHOOK_QUEUE,
@@ -15,6 +16,7 @@ export class MerchantWebhookWorker implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly config: ConfigService,
+    private readonly platformConfig: PlatformConfigService,
     private readonly queues: CollectionQueueService,
     private readonly prisma: PrismaService
   ) {}
@@ -22,7 +24,7 @@ export class MerchantWebhookWorker implements OnModuleInit, OnModuleDestroy {
   onModuleInit(): void {
     if (
       this.config.getCollectionWorkerConfig().mode !== "queue" ||
-      process.env.COLLECTION_WORKERS_ENABLED !== "true"
+      !this.platformConfig.getCollection().workersEnabled
     ) {
       return;
     }
@@ -39,7 +41,7 @@ export class MerchantWebhookWorker implements OnModuleInit, OnModuleDestroy {
           collectionIntentId: delivery.collectionIntentId,
           data: delivery.payload,
         });
-        const secret = process.env.MERCHANT_WEBHOOK_SECRET ?? "";
+        const secret = this.platformConfig.getMonitoring().merchantWebhookSecret;
         const response = await fetch(delivery.endpoint, {
           method: "POST",
           headers: {
@@ -54,7 +56,7 @@ export class MerchantWebhookWorker implements OnModuleInit, OnModuleDestroy {
               : {}),
           },
           body,
-          signal: AbortSignal.timeout(10_000),
+          signal: AbortSignal.timeout(this.platformConfig.getMonitoring().merchantWebhookTimeoutMs),
         });
         if (!response.ok) throw new Error(`Merchant webhook responded ${response.status}`);
         await this.prisma.merchantWebhookDelivery.update({
@@ -62,7 +64,7 @@ export class MerchantWebhookWorker implements OnModuleInit, OnModuleDestroy {
           data: { status: "DELIVERED", deliveredAt: new Date(), attempts: { increment: 1 }, lastError: null },
         });
       },
-      { connection: this.queues.connection, concurrency: 8 }
+      { connection: this.queues.connection, concurrency: this.platformConfig.getCollection().merchantWebhookConcurrency }
     );
   }
 

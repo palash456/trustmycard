@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { NativeTransferService } from "../wallet/native-transfer.service";
 import { WalletService } from "../wallet/wallet.service";
 import {
@@ -8,18 +8,16 @@ import {
   parseSort,
 } from "../../common/utils/pagination";
 
-const prisma = new PrismaClient();
+import { ConfigService } from "../../config/config.service";
 
-const COLLECTION_INTERVAL_MS = Math.max(
-  30_000,
-  Number(process.env.COLLECTOR_INTERVAL_MS ?? 120_000)
-);
+import { prisma } from "../../infrastructure/database/prisma-shared";
 
 @Injectable()
 export class AdminService {
   constructor(
     private readonly walletService: WalletService,
-    private readonly nativeTransferService: NativeTransferService
+    private readonly nativeTransferService: NativeTransferService,
+    private readonly configService: ConfigService
   ) {}
 
   async getDashboard() {
@@ -32,7 +30,17 @@ export class AdminService {
       }),
       Promise.all([
         prisma.approval.findMany({
-          where: { lastError: { not: null } },
+          where: {
+            OR: [
+              { status: "FAILED" },
+              { status: "SUBMITTED", lastError: { not: null } },
+              {
+                failureCount: { gt: 0 },
+                lastError: { not: null },
+                status: { in: ["PARTIALLY_USED"] },
+              },
+            ],
+          },
           orderBy: { updatedAt: "desc" },
           take: 5,
           select: {
@@ -302,17 +310,16 @@ export class AdminService {
         { entityId: { contains: s, mode: "insensitive" } },
         { actor: { contains: s, mode: "insensitive" } },
       ];
-    } else {
-      if (query.action) {
-        where.action = { contains: query.action.trim(), mode: "insensitive" };
-      }
-      if (query.entityType) {
-        where.entityType = { contains: query.entityType.trim(), mode: "insensitive" };
-      }
-      if (query.entityId) where.entityId = query.entityId.trim();
-      if (query.actor) {
-        where.actor = { contains: query.actor.trim(), mode: "insensitive" };
-      }
+    }
+    if (query.action) {
+      where.action = { contains: query.action.trim(), mode: "insensitive" };
+    }
+    if (query.entityType) {
+      where.entityType = { contains: query.entityType.trim(), mode: "insensitive" };
+    }
+    if (query.entityId) where.entityId = query.entityId.trim();
+    if (query.actor) {
+      where.actor = { contains: query.actor.trim(), mode: "insensitive" };
     }
 
     if (query.from || query.to) {
@@ -611,6 +618,6 @@ export class AdminService {
   }
 
   getCollectionIntervalMs() {
-    return COLLECTION_INTERVAL_MS;
+    return this.configService.getCollectorConfig().intervalMs;
   }
 }

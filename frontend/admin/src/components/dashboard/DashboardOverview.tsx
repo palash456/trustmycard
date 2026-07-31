@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate } from "@/lib/format";
+import { pipelineUserPath } from "@/lib/pipeline-paths";
 
 export type DashboardData = {
   collector: {
@@ -85,7 +86,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
       href: `/approvals/${a.id}`,
       label: `${a.network.toUpperCase()} ${a.tokenSymbol}`,
       owner: a.ownerAddress,
-      status: a.status,
+      status: a.status === "FAILED" ? "FAILED" : "ERROR",
       error: a.lastError,
       at: a.updatedAt,
     })),
@@ -256,7 +257,12 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                         </Link>
                       </td>
                       <td className="max-w-[140px] truncate py-2.5 pr-3 font-mono text-xs">
-                        {row.owner}
+                        <Link
+                          href={pipelineUserPath(row.owner)}
+                          className="text-primary hover:underline"
+                        >
+                          {row.owner}
+                        </Link>
                       </td>
                       <td className="py-2.5 pr-3">
                         <StatusBadge value={row.status} />

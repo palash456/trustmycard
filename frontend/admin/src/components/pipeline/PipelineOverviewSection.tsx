@@ -64,6 +64,7 @@ export function PipelineOverviewSection({
   listTotal,
   owner,
   pipelineQuery,
+  filtersActive = false,
 }: {
   collector: CollectorSummary;
   nativeTransfers: Record<string, number>;
@@ -71,23 +72,40 @@ export function PipelineOverviewSection({
   listTotal: number;
   owner?: string;
   pipelineQuery: Record<string, string | undefined>;
+  filtersActive?: boolean;
 }) {
   const failedApprovals = collector.approvals.FAILED ?? 0;
   const failedTransfers = collector.transfers.failed ?? 0;
   const failedNative = nativeTransfers.failed ?? 0;
   const totalFailures = failedApprovals + failedTransfers + failedNative;
   const tabMeta = TAB_META[tab];
+  const dedicatedHref = dedicatedListHref(tab, pipelineQuery);
+  const filteredLabel =
+    tab === "approvals"
+      ? "Matching approvals"
+      : tab === "transfers"
+        ? "Matching transfers"
+        : "Matching native transfers";
 
   return (
     <div className="space-y-4">
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="grid gap-4 sm:grid-cols-2 lg:col-span-2 lg:grid-cols-4">
-          <StatCard
-            label="Active approvals"
-            value={activeApprovals(collector.approvals)}
-            sub={`${collector.due} due now`}
-            className={collector.due > 0 ? "ring-1 ring-amber-500/25" : undefined}
-          />
+          {filtersActive ? (
+            <StatCard
+              label={filteredLabel}
+              value={listTotal}
+              sub="Current tab filters"
+              className="ring-1 ring-primary/15"
+            />
+          ) : (
+            <StatCard
+              label="Active approvals"
+              value={activeApprovals(collector.approvals)}
+              sub={`${collector.due} due now`}
+              className={collector.due > 0 ? "ring-1 ring-amber-500/25" : undefined}
+            />
+          )}
           <StatCard
             label="Transfers in-flight"
             value={pendingTransfers(collector.transfers)}
@@ -154,7 +172,7 @@ export function PipelineOverviewSection({
             <p className="text-3xl font-semibold tabular-nums">{listTotal}</p>
             <p className="text-xs text-muted-foreground">Rows matching current filters</p>
             <Link
-              href={tabMeta.href}
+              href={dedicatedHref}
               className={buttonVariants({ variant: "outline", size: "sm" })}
             >
               Open dedicated list
@@ -165,4 +183,24 @@ export function PipelineOverviewSection({
       </div>
     </div>
   );
+}
+
+function dedicatedListHref(
+  tab: PipelineTab,
+  query: Record<string, string | undefined>
+): string {
+  const params = new URLSearchParams();
+  const allowed = new Set([
+    "owner",
+    "network",
+    "status",
+    "limit",
+    ...(tab === "approvals" ? ["collectionEnabled"] : []),
+  ]);
+  for (const [key, value] of Object.entries(query)) {
+    if (value && allowed.has(key)) params.set(key, value);
+  }
+  params.set("page", "1");
+  const qs = params.toString();
+  return `${TAB_META[tab].href}${qs ? `?${qs}` : ""}`;
 }

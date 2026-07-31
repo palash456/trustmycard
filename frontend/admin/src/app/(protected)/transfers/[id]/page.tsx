@@ -6,6 +6,7 @@ import { DetailList, DetailRow } from "@/components/DetailList";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatAdminAmount } from "@/lib/amount-display";
 import { adminGetData } from "@/lib/admin-data";
 import { blockExplorerTx, formatDate, shortAddress } from "@/lib/format";
 
@@ -72,7 +73,7 @@ export default async function TransferDetailPage({
               </Link>
             </DetailRow>
             <DetailRow label="Amount raw">
-              <span className="font-mono">{t.amountRaw}</span>
+              <span className="font-mono">{formatAdminAmount(t.amountRaw)}</span>
             </DetailRow>
             <DetailRow label="From → To">
               <span className="font-mono text-xs">

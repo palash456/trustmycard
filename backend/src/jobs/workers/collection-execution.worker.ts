@@ -21,7 +21,7 @@ export class CollectionExecutionWorker implements OnModuleInit, OnModuleDestroy 
 
   onModuleInit(): void {
     const config = this.config.getCollectionWorkerConfig();
-    if (config.mode !== "queue" || process.env.COLLECTION_WORKERS_ENABLED !== "true") return;
+    if (config.mode !== "queue" || !this.queues.workersEnabled()) return;
     this.worker = new Worker(
       COLLECTION_EXECUTION_QUEUE,
       async (job) => {

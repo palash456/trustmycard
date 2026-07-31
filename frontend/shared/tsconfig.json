@@ -12,6 +12,6 @@
     "skipLibCheck": true,
     "esModuleInterop": true
   },
-  "include": ["index.ts", "types/**/*", "constants/**/*", "schemas/**/*", "observability/**/*"],
+  "include": ["index.ts", "types/**/*", "constants/**/*", "schemas/**/*", "observability/**/*", "platform-config/**/*"],
   "exclude": ["node_modules", "dist", "**/*.spec.ts"]
 }

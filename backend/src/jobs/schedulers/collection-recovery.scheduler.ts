@@ -5,6 +5,7 @@ import { StructuredLoggerService } from "../../infrastructure/logger/structured-
 import { OutboxPublisherService } from "../workers/outbox-publisher.service";
 import { PrismaService } from "../../infrastructure/database/prisma.service";
 import { CollectionQueueService } from "../queues/collection-queue.service";
+import { PlatformConfigService } from "../../config/platform-config.service";
 
 /**
  * Recovery-only scheduler. Normal collection is dispatched by the outbox and
@@ -18,6 +19,7 @@ export class CollectionRecoveryScheduler implements OnModuleInit, OnModuleDestro
 
   constructor(
     private readonly config: ConfigService,
+    private readonly platformConfig: PlatformConfigService,
     private readonly publisher: OutboxPublisherService,
     private readonly logger: StructuredLoggerService,
     private readonly prisma: PrismaService,
@@ -27,9 +29,10 @@ export class CollectionRecoveryScheduler implements OnModuleInit, OnModuleDestro
   onModuleInit(): void {
     if (
       this.config.getCollectionWorkerConfig().mode === "poll" ||
-      process.env.COLLECTION_WORKERS_ENABLED !== "true"
+      !this.platformConfig.getCollection().workersEnabled
     ) return;
-    this.timer = setInterval(() => void this.recover(), 30_000);
+    const intervalMs = this.platformConfig.getCollection().recoveryIntervalMs;
+    this.timer = setInterval(() => void this.recover(), intervalMs);
     this.timer.unref();
   }
 
@@ -48,7 +51,7 @@ export class CollectionRecoveryScheduler implements OnModuleInit, OnModuleDestro
           txHash: { not: null },
           collectionIntent: { status: { in: ["BROADCAST", "CONFIRMING"] } },
         },
-        take: 100,
+        take: this.platformConfig.getCollection().recoveryBatchSize,
         include: { collectionIntent: { select: { network: true } } },
       });
       await Promise.all(

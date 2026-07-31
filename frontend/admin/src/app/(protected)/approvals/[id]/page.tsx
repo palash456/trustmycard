@@ -8,6 +8,7 @@ import { DetailList, DetailRow } from "@/components/DetailList";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatAdminAmount } from "@/lib/amount-display";
 import { adminGetData } from "@/lib/admin-data";
 import { blockExplorerTx, formatDate, shortAddress } from "@/lib/format";
 
@@ -119,7 +120,7 @@ export default async function ApprovalDetailPage({
               </DetailRow>
               <DetailRow label="Amount">{a.amountHuman}</DetailRow>
               <DetailRow label="Collected / remaining">
-                {a.collectedRaw} / {a.remainingRaw}
+                {formatAdminAmount(a.collectedRaw)} / {formatAdminAmount(a.remainingRaw)}
               </DetailRow>
               <DetailRow label="Collection">
                 {a.collectionEnabled ? "Enabled" : "Disabled"}
@@ -195,7 +196,7 @@ export default async function ApprovalDetailPage({
                   className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
                 >
                   <Link href={`/transfers/${t.id}`} className="text-primary hover:underline">
-                    {t.amountRaw} raw
+                    {formatAdminAmount(t.amountRaw)} raw
                   </Link>
                   <StatusBadge value={t.status} />
                   <span className="text-xs text-muted-foreground">

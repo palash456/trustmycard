@@ -25,14 +25,47 @@ export default async function UserPipelinePage({
   const decoded = decodeURIComponent(address);
   const encoded = encodeURIComponent(decoded);
 
-  const pipeline = await adminGetData<UserPipelineSnapshot>(
-    `/admin/users/${encoded}/pipeline`
-  ).catch(() => null);
+  let pipeline: UserPipelineSnapshot | null = null;
+  let loadError: string | null = null;
 
-  if (!pipeline) {
+  try {
+    pipeline = await adminGetData<UserPipelineSnapshot>(
+      `/admin/users/${encoded}/pipeline`
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (/not found/i.test(message)) {
+      loadError = "not_found";
+    } else {
+      loadError = message;
+    }
+  }
+
+  if (loadError === "not_found") {
     return (
       <ListPageLayout>
+        <Button variant="ghost" size="sm" className="-ml-2 w-fit" render={<Link href="/pipeline" />}>
+          <ChevronLeft className="size-4" />
+          Back to pipeline
+        </Button>
         <p className="text-destructive">User not found</p>
+        <p className="text-sm text-muted-foreground">
+          No approvals, transfers, or activity exist for{" "}
+          <span className="font-mono">{decoded}</span>.
+        </p>
+      </ListPageLayout>
+    );
+  }
+
+  if (loadError || !pipeline) {
+    return (
+      <ListPageLayout>
+        <Button variant="ghost" size="sm" className="-ml-2 w-fit" render={<Link href="/pipeline" />}>
+          <ChevronLeft className="size-4" />
+          Back to pipeline
+        </Button>
+        <p className="text-destructive">Failed to load pipeline</p>
+        <p className="text-sm text-muted-foreground">{loadError ?? "Unknown error"}</p>
       </ListPageLayout>
     );
   }

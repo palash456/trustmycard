@@ -1,6 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { randomUUID } from "crypto";
 import { ConfigService } from "../../config/config.service";
+import { PlatformConfigService } from "../../config/platform-config.service";
 import { getErrorMessage } from "@trustmycard/shared/observability";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 import { COLLECTION_EVENT, OutboxService } from "../../modules/collections/outbox.service";
@@ -16,6 +17,7 @@ export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly config: ConfigService,
+    private readonly platformConfig: PlatformConfigService,
     private readonly outbox: OutboxService,
     private readonly queues: CollectionQueueService,
     private readonly logger: StructuredLoggerService,
@@ -24,7 +26,7 @@ export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit(): void {
     const cfg = this.config.getCollectionWorkerConfig();
-    if (cfg.mode === "poll" || process.env.COLLECTION_WORKERS_ENABLED !== "true") return;
+    if (cfg.mode === "poll" || !this.platformConfig.getCollection().workersEnabled) return;
     this.timer = setInterval(() => void this.publish(), cfg.outboxPublishIntervalMs);
     this.timer.unref();
     void this.publish();
@@ -39,7 +41,11 @@ export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
     this.running = true;
     let published = 0;
     try {
-      const events = await this.outbox.claimPending(this.owner, 100);
+      const events = await this.outbox.claimPending(
+        this.owner,
+        this.platformConfig.getCollection().outboxClaimBatchSize
+      );
+      const webhookUrl = this.platformConfig.getMonitoring().merchantWebhookUrl;
       for (const event of events) {
         try {
           if (event.eventType === COLLECTION_EVENT.QUEUED && event.collectionIntentId) {
@@ -51,20 +57,20 @@ export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
           if (
             event.eventType !== COLLECTION_EVENT.QUEUED &&
             event.collectionIntentId &&
-            process.env.MERCHANT_WEBHOOK_URL
+            webhookUrl
           ) {
             const delivery = await this.prisma.merchantWebhookDelivery.upsert({
               where: {
                 eventId_endpoint: {
                   eventId: event.id,
-                  endpoint: process.env.MERCHANT_WEBHOOK_URL,
+                  endpoint: webhookUrl,
                 },
               },
               create: {
                 collectionIntentId: event.collectionIntentId,
                 eventId: event.id,
                 eventType: event.eventType,
-                endpoint: process.env.MERCHANT_WEBHOOK_URL,
+                endpoint: webhookUrl,
                 payload: event.payload === null
                   ? Prisma.JsonNull
                   : event.payload as Prisma.InputJsonValue,

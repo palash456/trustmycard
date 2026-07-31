@@ -9,3 +9,4 @@ export * from "./types";
 export * from "./constants";
 export * from "./schemas";
 export * from "./observability";
+export * from "./platform-config";

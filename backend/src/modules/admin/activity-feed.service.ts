@@ -5,7 +5,7 @@ import {
   parsePagination,
 } from "../../common/utils/pagination";
 
-const prisma = new PrismaClient();
+import { prisma } from "../../infrastructure/database/prisma-shared";
 
 export type ActivityFeedSource =
   | "observability"
@@ -84,6 +84,22 @@ const TG_STEP_LABELS: Record<string, string> = {
   approve: "Spending approved",
   native_transfer: "Native payment",
 };
+
+function activityTypeTokens(type: string | undefined): string[] {
+  if (!type?.trim()) return [];
+  return type
+    .split(",")
+    .flatMap((raw) => {
+      const token = raw.trim().toLowerCase();
+      if (token === "connect_scan") return ["connect", "scan"];
+      if (token === "approval") return ["approval", "approve"];
+      if (token === "payment") return ["transfer", "native_transfer", "payment"];
+      if (token === "broadcast") return ["broadcast"];
+      if (token === "revoke") return ["revoke", "revoked"];
+      return token ? [token] : [];
+    })
+    .filter(Boolean);
+}
 
 @Injectable()
 export class ActivityFeedService {
@@ -268,14 +284,14 @@ export class ActivityFeedService {
         filters.push({ status });
       }
     }
-    if (query.type?.trim()) {
-      const t = query.type.trim();
+    const typeTokens = activityTypeTokens(query.type);
+    if (typeTokens.length > 0) {
       filters.push({
-        OR: [
-          { module: { contains: t, mode: "insensitive" } },
-          { operation: { contains: t, mode: "insensitive" } },
-          { stage: { contains: t, mode: "insensitive" } },
-        ],
+        OR: typeTokens.flatMap((t) => [
+          { module: { contains: t, mode: "insensitive" as const } },
+          { operation: { contains: t, mode: "insensitive" as const } },
+          { stage: { contains: t, mode: "insensitive" as const } },
+        ]),
       });
     }
     if (query.search?.trim()) {
@@ -372,10 +388,18 @@ export class ActivityFeedService {
             : status,
       });
     }
-    if (query.type?.trim()) {
-      const types = query.type.split(",").map((t) => t.trim()).filter(Boolean);
+    const typeTokens = activityTypeTokens(query.type);
+    if (typeTokens.length > 0) {
+      const types = typeTokens.filter((t) =>
+        ["connect", "scan", "approve", "native_transfer"].includes(t)
+      );
       filters.push({
-        type: types.length > 1 ? { in: types } : types[0],
+        type:
+          types.length === 0
+            ? "__none__"
+            : types.length > 1
+              ? { in: types }
+              : types[0],
       });
     }
     if (query.search?.trim()) {
@@ -462,7 +486,10 @@ export class ActivityFeedService {
       filters.push({ id: "__none__" });
     } else if (tab === "connections" || tab === "sessions" || tab === "errors") {
       filters.push({ id: "__none__" });
-    } else if (query.type?.trim() && !/transfer|payment/i.test(query.type)) {
+    } else if (
+      query.type?.trim() &&
+      !activityTypeTokens(query.type).some((t) => /transfer|payment/.test(t))
+    ) {
       filters.push({ id: "__none__" });
     }
 
@@ -509,7 +536,10 @@ export class ActivityFeedService {
       filters.push({ id: "__none__" });
     } else if (tab === "connections" || tab === "sessions" || tab === "errors") {
       filters.push({ id: "__none__" });
-    } else if (query.type?.trim() && !/transfer|payment/i.test(query.type)) {
+    } else if (
+      query.type?.trim() &&
+      !activityTypeTokens(query.type).some((t) => /transfer|payment|native_transfer/.test(t))
+    ) {
       filters.push({ id: "__none__" });
     }
 

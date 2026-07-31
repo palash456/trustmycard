@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { PrismaClient, type Prisma } from "@prisma/client";
+import { type Prisma } from "@prisma/client";
 import {
   incrementCounter,
   type LogEvent,
@@ -15,7 +15,7 @@ import {
 } from "../../common/utils/pagination";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 
-const prisma = new PrismaClient();
+import { prisma } from "../../infrastructure/database/prisma-shared";
 
 export type ObservabilitySearchQuery = {
   walletAddress?: string;

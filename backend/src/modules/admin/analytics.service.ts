@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { ApprovalStatus, PrismaClient, TransferStatus } from "@prisma/client";
+import { ApprovalStatus, TransferStatus } from "@prisma/client";
 import {
   aggregateByNetworkToken,
   formatRawAmount,
@@ -12,7 +12,7 @@ import {
 import { AdminOpsService } from "./admin-ops.service";
 import { WalletService } from "../wallet/wallet.service";
 
-const prisma = new PrismaClient();
+import { prisma } from "../../infrastructure/database/prisma-shared";
 
 const ACTIVE_APPROVAL_STATUSES: ApprovalStatus[] = [
   "SUBMITTED",

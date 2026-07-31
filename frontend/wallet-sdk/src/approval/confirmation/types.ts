@@ -1,3 +1,5 @@
+import type { PublicPlatformConfig } from "@trustmycard/shared/platform-config/types";
+
 export const TransactionConfirmationStatus = {
   PENDING: "PENDING",
   CONFIRMED: "CONFIRMED",
@@ -44,3 +46,23 @@ export const DEFAULT_CONFIRMATION_OPTIONS: Required<
   maxAttempts: 30,
   requiredConfirmations: 1,
 };
+
+let activeConfirmationDefaults = { ...DEFAULT_CONFIRMATION_OPTIONS };
+
+export function setClientConfirmationDefaults(
+  platform?: PublicPlatformConfig
+): void {
+  if (!platform?.client) {
+    activeConfirmationDefaults = { ...DEFAULT_CONFIRMATION_OPTIONS };
+    return;
+  }
+  activeConfirmationDefaults = {
+    pollIntervalMs: platform.client.confirmationPollMs,
+    maxAttempts: platform.client.confirmationMaxAttempts,
+    requiredConfirmations: platform.client.confirmationConfirmations,
+  };
+}
+
+export function getClientConfirmationDefaults(): typeof activeConfirmationDefaults {
+  return activeConfirmationDefaults;
+}
