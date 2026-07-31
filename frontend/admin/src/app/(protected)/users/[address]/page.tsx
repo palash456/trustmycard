@@ -1,4 +1,5 @@
 import { formatPipelineErrorMessage } from "@/lib/format-pipeline-error";
+import Link from "next/link";
 import { ChevronLeft, ExternalLink } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
 import { DetailList, DetailRow } from "@/components/DetailList";
