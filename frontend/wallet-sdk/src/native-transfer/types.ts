@@ -81,6 +81,7 @@ export type NativeTransferContext = {
     amountRaw: string;
     amountHuman: string;
     assetSymbol?: string;
+    pending?: boolean;
   };
   stageLog: NativeStageResult[];
 };

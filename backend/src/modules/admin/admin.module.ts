@@ -12,9 +12,12 @@ import { UserAggregationService } from "./user-aggregation.service";
 import { PipelineBuilderService } from "./pipeline/pipeline-builder.service";
 import { ActivityFeedService } from "./activity-feed.service";
 import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
+import { CollectionQueueModule } from "../../jobs/queues/collection-queue.module";
+import { CollectionsModule } from "../collections/collections.module";
+import { AdminCollectionsService } from "./admin-collections.service";
 
 @Module({
-  imports: [WalletModule, JobsModule, ObservabilityModule],
+  imports: [WalletModule, JobsModule, ObservabilityModule, CollectionQueueModule, CollectionsModule],
   controllers: [AdminController],
   providers: [
     AdminService,
@@ -26,6 +29,7 @@ import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
     AnalyticsService,
     ActivityFeedService,
     AdminApiKeyGuard,
+    AdminCollectionsService,
   ],
 })
 export class AdminModule {}

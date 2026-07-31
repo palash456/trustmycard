@@ -118,6 +118,9 @@ export class ApprovalCollectionScheduler
 
   private async tick(): Promise<void> {
     if (this.running) return;
+    // Queue mode dispatches normal work through the transactional outbox.
+    // This legacy scheduler remains enabled only for poll/shadow rollback modes.
+    if (this.configService.getCollectionWorkerConfig().mode === "queue") return;
     const cfg = this.cfg();
     if (!cfg.enabled || !this.runtimeEnabled) return;
     this.running = true;

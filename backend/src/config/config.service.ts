@@ -103,6 +103,24 @@ export class ConfigService implements OnModuleInit {
     };
   }
 
+  getCollectionWorkerConfig() {
+    const mode = String(this.get(SETTING_KEYS.COLLECTION_DISPATCH_MODE) ?? "poll");
+    return {
+      mode: ["poll", "shadow", "queue"].includes(mode) ? mode as "poll" | "shadow" | "queue" : "poll" as const,
+      queueConcurrency: Math.max(1, Number(this.get(SETTING_KEYS.COLLECTION_QUEUE_CONCURRENCY)) || 4),
+      confirmationConcurrency: Math.max(
+        1,
+        Number(this.get(SETTING_KEYS.COLLECTION_CONFIRMATION_CONCURRENCY)) || 16
+      ),
+      attempts: Math.max(1, Number(this.get(SETTING_KEYS.COLLECTION_QUEUE_ATTEMPTS)) || 8),
+      backoffMs: Math.max(1_000, Number(this.get(SETTING_KEYS.COLLECTION_QUEUE_BACKOFF_MS)) || 5_000),
+      outboxPublishIntervalMs: Math.max(
+        250,
+        Number(this.get(SETTING_KEYS.OUTBOX_PUBLISH_INTERVAL_MS)) || 1_000
+      ),
+    };
+  }
+
   /** Runtime override for ALLOW_SELF_SPENDER (env default → AppSettings). */
   getAllowSelfSpender(): boolean {
     return Boolean(this.get(SETTING_KEYS.ALLOW_SELF_SPENDER));

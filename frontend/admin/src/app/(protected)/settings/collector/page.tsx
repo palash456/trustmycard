@@ -7,14 +7,17 @@ import { PageToolbar } from "@/components/PageToolbar";
 import { adminGetData } from "@/lib/admin-data";
 
 export default async function CollectorSettingsPage() {
-  const status = await adminGetData<Record<string, unknown>>("/admin/system/status");
+  const [status, collection] = await Promise.all([
+    adminGetData<Record<string, unknown>>("/admin/system/status"),
+    adminGetData<Record<string, unknown>>("/admin/collections/status"),
+  ]);
 
   return (
     <ListPageLayout className="space-y-6">
       <PageHeader
-        title="Collector"
-        tip="Force a collector tick, release stuck leases, or enable/disable the worker without restarting Nest."
-        description="Runtime collector controls and lease management"
+        title="Collection workers"
+        tip="Queue, outbox and recovery status for event-driven collection."
+        description="Collection dispatch and recovery operations"
       >
         <PageToolbar>
           <PageRefreshButton />
@@ -23,7 +26,7 @@ export default async function CollectorSettingsPage() {
       <Link href="/settings" className="text-sm text-primary hover:underline">
         ← All settings
       </Link>
-      <CollectorPanel status={status} />
+      <CollectorPanel status={status} collection={collection} />
     </ListPageLayout>
   );
 }

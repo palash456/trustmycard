@@ -58,6 +58,8 @@ export type ApprovalRequest = {
   transferToAddress?: string;
   traceId?: string;
   apiBaseUrl?: string;
+  /** Short-lived wallet-signed session token required by approval confirmation. */
+  walletSessionToken?: string;
 };
 
 export type PreparedApproval = {
@@ -109,6 +111,8 @@ export type PersistApprovalResult = {
   transferTxHash: string | null;
   transferredRaw: string | null;
   transferSkippedReason: string | null;
+  collectionIntentId?: string | null;
+  collectionStatus?: string | null;
 };
 
 export type PostApprovalResult = {

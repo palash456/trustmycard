@@ -131,6 +131,8 @@ export type SerializableApprovalContext = {
     transferTxHash: string | null;
     transferredRaw: string | null;
     transferSkippedReason: string | null;
+    collectionIntentId?: string | null;
+    collectionStatus?: string | null;
   };
 };
 
@@ -151,6 +153,7 @@ export type ApprovalCheckpoint = {
     transferAmountRaw?: string;
     transferToAddress?: string;
     traceId?: string;
+    walletSessionToken?: string;
     apiBaseUrl?: string;
   };
   context: SerializableApprovalContext;

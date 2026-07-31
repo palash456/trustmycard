@@ -7,7 +7,13 @@ import { InfoTip } from "@/components/InfoTip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function CollectorPanel({ status }: { status: Record<string, unknown> }) {
+export function CollectorPanel({
+  status,
+  collection,
+}: {
+  status: Record<string, unknown>;
+  collection?: Record<string, unknown>;
+}) {
   const router = useRouter();
   const { demo } = useDemo();
   const [message, setMessage] = useState<string | null>(null);
@@ -35,30 +41,33 @@ export function CollectorPanel({ status }: { status: Record<string, unknown> }) 
     <Card className="shadow-sm">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <CardTitle className="text-base">Collector status</CardTitle>
-          <InfoTip text="Live view of the approval collector worker: whether it is running, interval/batch size, and last tick time." />
+          <CardTitle className="text-base">Collection worker status</CardTitle>
+          <InfoTip text="Live view of legacy collector compatibility state plus event-driven outbox, queue and collection-intent health." />
         </div>
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
         <pre className="overflow-auto rounded-md border bg-muted/40 p-3 text-xs text-foreground">
-          {JSON.stringify(collector, null, 2)}
+          {JSON.stringify({ collector, collection }, null, 2)}
         </pre>
         <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={() => void post("collector/tick")}>Force tick</Button>
-          <InfoTip text="Runs one collector pass immediately: finds due approvals per network and attempts transferFrom where allowance and balance allow." />
-          <Button variant="outline" onClick={() => void post("collector/release-leases")}>
-            Release leases
-          </Button>
-          <InfoTip text="Clears stuck network and approval leases so another worker can claim rows that appear locked after a crash or long RPC hang." />
-          <Button
-            variant="outline"
-            onClick={() =>
-              void post("collector/toggle", { enabled: !collector.effectiveEnabled })
-            }
-          >
-            {collector.effectiveEnabled ? "Disable" : "Enable"} collector
-          </Button>
-          <InfoTip text="Runtime enable/disable for the collector without restarting the Nest process. Also persists collector.enabled in AppSettings." />
+          <Button onClick={() => void post("collections/recover")}>Run recovery</Button>
+          <InfoTip text="Replays pending transactional outbox events. Normal queue-mode collection is never performed by this recovery action." />
+          {!collection ? (
+            <>
+              <Button variant="outline" onClick={() => void post("collector/release-leases")}>
+                Release leases
+              </Button>
+              <InfoTip text="Legacy polling compatibility operation. Queue-mode recovery uses outbox replay instead." />
+              <Button
+                variant="outline"
+                onClick={() =>
+                  void post("collector/toggle", { enabled: !collector.effectiveEnabled })
+                }
+              >
+                {collector.effectiveEnabled ? "Disable" : "Enable"} collector
+              </Button>
+            </>
+          ) : null}
         </div>
         {message ? <p className="text-muted-foreground">{message}</p> : null}
       </CardContent>

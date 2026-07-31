@@ -22,6 +22,7 @@ import { AnalyticsService } from "./analytics.service";
 import { UserAggregationService } from "./user-aggregation.service";
 import { PipelineBuilderService } from "./pipeline/pipeline-builder.service";
 import { ActivityFeedService, type ActivityFeedSource } from "./activity-feed.service";
+import { AdminCollectionsService } from "./admin-collections.service";
 
 @ApiTags("Admin")
 @ApiSecurity("adminApiKey")
@@ -36,7 +37,8 @@ export class AdminController {
     private readonly pipelineBuilder: PipelineBuilderService,
     private readonly analytics: AnalyticsService,
     private readonly observability: ObservabilityService,
-    private readonly activityFeed: ActivityFeedService
+    private readonly activityFeed: ActivityFeedService,
+    private readonly collections: AdminCollectionsService
   ) {}
 
   @Get("analytics")
@@ -55,6 +57,36 @@ export class AdminController {
   @ApiOperation({ summary: "Admin dashboard aggregates" })
   dashboard() {
     return this.adminService.getDashboard();
+  }
+
+  @Get("collections/status")
+  @ApiOperation({ summary: "Collection queue, outbox and intent health" })
+  collectionStatus() {
+    return this.collections.status();
+  }
+
+  @Get("collections/intents")
+  @ApiOperation({ summary: "Collection intents and recent attempts" })
+  collectionIntents(@Query("status") status?: string) {
+    return this.collections.listIntents(status);
+  }
+
+  @Get("collections/dlq")
+  @ApiOperation({ summary: "Collection dead-letter jobs" })
+  collectionDeadLetters() {
+    return this.collections.deadLetters();
+  }
+
+  @Post("collections/intents/:id/retry")
+  @ApiOperation({ summary: "Requeue a collection intent after operator review" })
+  retryCollectionIntent(@Param("id") id: string) {
+    return this.collections.retryIntent(id);
+  }
+
+  @Post("collections/recover")
+  @ApiOperation({ summary: "Replay pending or failed transactional outbox events" })
+  recoverCollections() {
+    return this.collections.recoverOutbox();
   }
 
   @Get("settings")
@@ -250,9 +282,9 @@ export class AdminController {
   }
 
   @Post("transfer")
-  @ApiOperation({ summary: "Execute admin transferFrom for an approval" })
+  @ApiOperation({ summary: "Enqueue admin collection for an approval (queue) or legacy transfer (poll)" })
   adminTransfer(@Body() body: Record<string, unknown>) {
-    return this.adminService.adminTransfer(body);
+    return this.collections.adminTransfer(body);
   }
 
   @Get("collector/status")

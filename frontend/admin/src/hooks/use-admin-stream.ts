@@ -11,6 +11,7 @@ const REFRESH_EVENTS = new Set([
   "transfer.updated",
   "native_transfer.updated",
   "approval.updated",
+  "collection.intent.updated",
   "user.updated",
 ]);
 
@@ -27,7 +28,8 @@ function eventMatchesScope(
   if (
     event.type === "transfer.updated" ||
     event.type === "native_transfer.updated" ||
-    event.type === "approval.updated"
+    event.type === "approval.updated" ||
+    event.type === "collection.intent.updated"
   ) {
     if (payload.ownerAddress) {
       return payload.ownerAddress.toLowerCase() === normalized;

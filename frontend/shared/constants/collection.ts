@@ -10,6 +10,20 @@ export const TRANSFER_SKIP_REASONS = {
 export type TransferSkipReason =
   (typeof TRANSFER_SKIP_REASONS)[keyof typeof TRANSFER_SKIP_REASONS];
 
+export const COLLECTION_INTENT_STATUSES = [
+  "CREATED",
+  "QUEUED",
+  "EXECUTING",
+  "BROADCAST",
+  "CONFIRMING",
+  "SETTLED",
+  "FAILED",
+  "BLOCKED",
+  "CANCELLED",
+] as const;
+
+export type CollectionIntentStatus = (typeof COLLECTION_INTENT_STATUSES)[number];
+
 export const TRANSFER_SKIP_REASON_LABELS: Record<string, string> = {
   [TRANSFER_SKIP_REASONS.allowance_not_confirmed]:
     "Allowance not confirmed on-chain yet",

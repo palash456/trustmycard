@@ -105,7 +105,7 @@ export function createLogger(options: CreateLoggerOptions): ObservabilityLogger 
     },
     emit: (input) => {
       safeObservability(() => {
-        const eventId = input.eventId ?? createEventId();
+        const eventId = (input as Partial<LogEvent>).eventId ?? createEventId();
         const error =
           input.error ?? (input.err !== undefined ? serializeError(input.err) : undefined);
         const event: LogEvent = {

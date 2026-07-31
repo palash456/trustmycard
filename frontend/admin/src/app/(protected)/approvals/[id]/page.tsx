@@ -46,6 +46,16 @@ type Detail = {
     createdAt: string;
     payload?: unknown;
   }>;
+  collectionIntents: Array<{
+    id: string;
+    status: string;
+    requestedRaw: string;
+    settledRaw: string;
+    retryCount: number;
+    lastErrorMessage: string | null;
+    createdAt: string;
+    attempts: Array<{ id: string; sequence: number; status: string; txHash: string | null }>;
+  }>;
 };
 
 export default async function ApprovalDetailPage({
@@ -191,6 +201,37 @@ export default async function ApprovalDetailPage({
                   <span className="text-xs text-muted-foreground">
                     {formatDate(t.createdAt)}
                   </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-base">Collection intents</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data.collectionIntents.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No event-driven collection intent exists for this approval.</p>
+          ) : (
+            <ul className="space-y-3">
+              {data.collectionIntents.map((intent) => (
+                <li key={intent.id} className="rounded-md border border-border/60 p-3 text-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-mono text-xs">{shortAddress(intent.id)}</span>
+                    <StatusBadge value={intent.status} />
+                  </div>
+                  <p className="mt-2 text-muted-foreground">
+                    Requested {intent.requestedRaw} · settled {intent.settledRaw} · retries {intent.retryCount}
+                  </p>
+                  {intent.lastErrorMessage ? <p className="mt-1 text-destructive">{intent.lastErrorMessage}</p> : null}
+                  {intent.attempts.map((attempt) => (
+                    <p key={attempt.id} className="mt-1 font-mono text-xs text-muted-foreground">
+                      Attempt {attempt.sequence}: {attempt.status} {attempt.txHash ? `· ${shortAddress(attempt.txHash)}` : ""}
+                    </p>
+                  ))}
                 </li>
               ))}
             </ul>

@@ -24,6 +24,7 @@ import { CorrelationMiddleware } from "./common/middleware/correlation.middlewar
 import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 import { ObservabilityModule } from "./modules/observability/observability.module";
+import { PrismaModule } from "./infrastructure/database/prisma.module";
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { ObservabilityModule } from "./modules/observability/observability.modul
     AppLoggerModule,
     MetricsModule,
     ObservabilityModule,
+    PrismaModule,
     ConfigModule,
     AuthModule,
     UsersModule,

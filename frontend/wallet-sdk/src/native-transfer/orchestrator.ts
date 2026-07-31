@@ -2,6 +2,7 @@ import { waitForTransactionConfirmation } from "../approval/confirmation/poller"
 import { getErrorMessage, isUserRejection } from "../core/errors";
 import { isEvmChainKey } from "../core/native-chains";
 import { ensureEvmChain } from "./ensure-evm-chain";
+import type { UniversalProvider } from "../types";
 import type { NativeTransferApiPort, NativeTransferChainPort } from "./ports";
 import {
   acquireNativeTransferLock,
@@ -25,9 +26,7 @@ export type NativeTransferOrchestratorDeps = {
   chains: NativeTransferChainPort[];
   logger?: NativeTransferLogger;
   /** Optional provider for EVM network checks before broadcast. */
-  evmProvider?: {
-    request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-  };
+  evmProvider?: UniversalProvider;
 };
 
 const defaultLogger: NativeTransferLogger = {

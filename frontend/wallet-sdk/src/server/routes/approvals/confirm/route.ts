@@ -18,6 +18,9 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: {
         "content-type": req.headers.get("content-type") || "application/json",
+        ...(req.headers.get("authorization")
+          ? { authorization: req.headers.get("authorization")! }
+          : {}),
       },
       body: bodyText,
       cache: "no-store",

@@ -27,6 +27,34 @@ enum TransferStatus {
   failed
 }
 
+enum CollectionIntentStatus {
+  CREATED
+  QUEUED
+  EXECUTING
+  BROADCAST
+  CONFIRMING
+  SETTLED
+  FAILED
+  BLOCKED
+  CANCELLED
+}
+
+enum TransferAttemptStatus {
+  CREATED
+  SIGNED
+  BROADCAST
+  CONFIRMED
+  FAILED
+  REPLACED
+}
+
+enum OutboxEventStatus {
+  PENDING
+  PUBLISHING
+  PUBLISHED
+  FAILED
+}
+
 model Approval {
   id                  String         @id @default(cuid())
   ownerAddress        String
@@ -57,6 +85,7 @@ model Approval {
   updatedAt           DateTime       @updatedAt
   audits              AuditLog[]
   transfers           Transfer[]
+  collectionIntents   CollectionIntent[]
 
   @@unique([network, txHash])
   @@index([collectionEnabled, status, nextCheckAt])
@@ -94,9 +123,135 @@ model Transfer {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   approval       Approval       @relation(fields: [approvalId], references: [id], onDelete: Cascade)
+  attempts       TransferAttempt[]
 
   @@index([status, createdAt])
   @@index([approvalId, status])
+}
+
+model CollectionIntent {
+  id               String                 @id @default(cuid())
+  approvalId       String
+  merchantId       String                 @default("platform")
+  merchantReference String?
+  idempotencyKey   String
+  ownerAddress     String
+  spenderAddress   String
+  network          String
+  tokenSymbol      String
+  tokenAddress     String
+  requestedRaw     String
+  settledRaw       String                 @default("0")
+  status           CollectionIntentStatus @default(CREATED)
+  retryCount       Int                    @default(0)
+  nextRetryAt      DateTime?
+  lastErrorCode    String?
+  lastErrorMessage String?
+  executionOwner   String?
+  executionToken   String?
+  executionLeaseUntil DateTime?
+  queuedAt         DateTime?
+  broadcastAt      DateTime?
+  settledAt        DateTime?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  approval         Approval               @relation(fields: [approvalId], references: [id], onDelete: Cascade)
+  attempts         TransferAttempt[]
+  outboxEvents     OutboxEvent[]
+  webhookDeliveries MerchantWebhookDelivery[]
+
+  @@unique([merchantId, idempotencyKey])
+  @@index([status, createdAt])
+  @@index([network, status, nextRetryAt])
+  @@index([approvalId, createdAt])
+}
+
+model TransferAttempt {
+  id                 String                @id @default(cuid())
+  collectionIntentId String
+  transferId         String?
+  sequence           Int
+  idempotencyKey     String                @unique
+  signerAddress      String?
+  nonce              String?
+  payloadKind        String?
+  signedPayload      String?
+  txHash             String?               @unique
+  status             TransferAttemptStatus @default(CREATED)
+  failureCode        String?
+  failureMessage     String?
+  broadcastAt        DateTime?
+  confirmedAt        DateTime?
+  finalityAt         DateTime?
+  replacedById       String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  collectionIntent   CollectionIntent      @relation(fields: [collectionIntentId], references: [id], onDelete: Cascade)
+  transfer           Transfer?             @relation(fields: [transferId], references: [id], onDelete: SetNull)
+
+  @@unique([collectionIntentId, sequence])
+  @@index([status, createdAt])
+  @@index([txHash, status])
+}
+
+model OutboxEvent {
+  id                 String            @id @default(cuid())
+  aggregateType      String
+  aggregateId        String
+  collectionIntentId String?
+  eventType          String
+  eventVersion       Int               @default(1)
+  payload            Json
+  status             OutboxEventStatus @default(PENDING)
+  publishAttempts    Int               @default(0)
+  lockOwner          String?
+  lockToken          String?
+  lockUntil          DateTime?
+  publishedAt        DateTime?
+  lastError          String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  collectionIntent   CollectionIntent? @relation(fields: [collectionIntentId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([aggregateType, aggregateId])
+  @@index([collectionIntentId, createdAt])
+}
+
+model MerchantWebhookDelivery {
+  id                 String           @id @default(cuid())
+  collectionIntentId String
+  eventId            String
+  eventType          String
+  endpoint           String
+  payload            Json
+  status             String           @default("PENDING")
+  attempts           Int              @default(0)
+  nextAttemptAt      DateTime?
+  deliveredAt        DateTime?
+  lastError          String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  collectionIntent   CollectionIntent @relation(fields: [collectionIntentId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, endpoint])
+  @@index([status, nextAttemptAt])
+}
+
+model WalletSession {
+  id             String   @id @default(cuid())
+  address        String
+  network        String
+  challenge      String   @unique
+  nonce          String   @unique
+  signature      String?
+  sessionToken   String?  @unique
+  verifiedAt     DateTime?
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([address, network, expiresAt])
 }
 
 model CollectorLease {

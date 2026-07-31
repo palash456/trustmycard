@@ -116,7 +116,12 @@ export async function runAuthorizationSession(
     args.onAssetStart?.(item);
 
     if (item.asset === "NATIVE") {
-      await runNativeAsset({ item, args, results, log });
+      await runNativeAsset({
+        item: item as IncludedAssetWorkItem & { asset: "NATIVE" },
+        args,
+        results,
+        log,
+      });
       continue;
     }
 
@@ -308,6 +313,8 @@ async function runTokenAsset(ctx: {
         ? `Authorized — ${skipLabel}`
         : "Authorized — collection queued",
       approvalId: orchestration.approvalId,
+      collectionIntentId: persisted?.collectionIntentId ?? null,
+      collectionStatus: persisted?.collectionStatus ?? null,
       txHash: orchestration.txHash,
       transferSkippedReason: persisted?.transferSkippedReason ?? null,
     };
@@ -323,6 +330,7 @@ async function runTokenAsset(ctx: {
         approveTxHash: orchestration.txHash,
         transferTxHash: persisted.transferTxHash,
         approvalId: orchestration.approvalId,
+        collectionIntentId: persisted?.collectionIntentId ?? null,
       });
     } else {
       log?.("TOKEN AUTHORIZE COMPLETE — COLLECTION QUEUED", {

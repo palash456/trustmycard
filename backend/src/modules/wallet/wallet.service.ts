@@ -1,5 +1,5 @@
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
-import { PrismaClient, type Prisma } from "@prisma/client";
+import { BadRequestException, Inject, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { CollectionIntentStatus, PrismaClient, TransferAttemptStatus, type Prisma } from "@prisma/client";
 import { createHash, randomUUID } from "crypto";
 import { ethers } from "ethers";
 import { TronWeb } from "tronweb";
@@ -14,6 +14,8 @@ import { AdminEventsService } from "../../infrastructure/admin-events/admin-even
 import type { LogStatus } from "@trustmycard/shared/observability";
 import { incrementCounter } from "@trustmycard/shared/observability";
 import { ResourceManager } from "../resources/resource-manager.service";
+import { CollectionIntentService } from "../collections/collection-intent.service";
+import { COLLECTION_SIGNER, type CollectionSigner } from "../custody/signer";
 
 type TokenSymbol = "USDT" | "USDC";
 type EvmChainKey = "eth" | "bsc" | "pol" | "avax" | "arb" | "base";
@@ -135,7 +137,9 @@ export class WalletService {
   constructor(
     private readonly resourceManager: ResourceManager,
     private readonly logger: StructuredLoggerService,
-    private readonly adminEvents: AdminEventsService
+    private readonly adminEvents: AdminEventsService,
+    private readonly collectionIntents: CollectionIntentService,
+    @Inject(COLLECTION_SIGNER) private readonly collectionSigner: CollectionSigner
   ) {}
 
   private logFlow(stage: string, payload: Record<string, unknown> = {}): void {
@@ -337,11 +341,10 @@ export class WalletService {
     owner: string;
     to: string;
     amountRaw: bigint;
+    waitForConfirmation?: boolean;
   }): Promise<{ txHash: string; blockNumber: number | null }> {
-    const pk = this.getAdminEvmPrivateKey();
-    if (!pk) throw new BadRequestException("ADMIN_EVM_PRIVATE_KEY is not configured");
     const provider = new ethers.providers.JsonRpcProvider(EVM_RPCS[args.network][0]);
-    const wallet = new ethers.Wallet(pk, provider);
+    const wallet = await this.collectionSigner.evmWallet(provider);
     const configuredSpender = this.spenderEvm().toLowerCase();
     if (configuredSpender && wallet.address.toLowerCase() !== configuredSpender) {
       throw new BadRequestException("ADMIN_EVM_PRIVATE_KEY does not match configured spender address");
@@ -399,6 +402,9 @@ export class WalletService {
       network: args.network,
       txHash,
     });
+    if (!args.waitForConfirmation) {
+      return { txHash, blockNumber: null };
+    }
 
     const receipt = await provider.waitForTransaction(txHash, 1, 60_000);
     if (!receipt) throw new Error("Transaction confirmation timeout");
@@ -416,14 +422,10 @@ export class WalletService {
     owner: string;
     to: string;
     amountRaw: bigint;
+    waitForConfirmation?: boolean;
   }): Promise<{ txHash: string; blockNumber: number | null }> {
-    const pk = this.getAdminTronPrivateKey();
-    if (!pk) throw new BadRequestException("ADMIN_TRON_PRIVATE_KEY is not configured");
-    const tron = new TronWeb({ fullHost: TRON_GRID, privateKey: pk });
-    const spenderAddress = tron.address.fromPrivateKey(pk);
-    if (typeof spenderAddress !== "string" || !spenderAddress) {
-      throw new BadRequestException("ADMIN_TRON_PRIVATE_KEY is invalid");
-    }
+    const signer = await this.collectionSigner.tronSigner();
+    const { tron, privateKey: pk, address: spenderAddress } = signer;
     const configuredSpender = this.spenderTron();
     if (configuredSpender && spenderAddress !== configuredSpender) {
       throw new BadRequestException("ADMIN_TRON_PRIVATE_KEY does not match configured spender address");
@@ -489,6 +491,9 @@ export class WalletService {
       network: args.network,
       txHash,
     });
+    if (!args.waitForConfirmation) {
+      return { txHash, blockNumber: null };
+    }
 
     for (let attempt = 0; attempt < 30; attempt += 1) {
       const info = await tron.trx.getTransactionInfo(txHash).catch(() => null) as
@@ -1119,6 +1124,46 @@ export class WalletService {
     return { ok: true, hasAllowance: BigInt(allowance) > BigInt(0), allowance, spender, token, tokenAddress: tokenInfo.address };
   }
 
+  private async verifyApprovalReceipt(args: {
+    network: string;
+    txHash: string;
+    owner: string;
+    spender: string;
+    tokenAddress: string;
+  }): Promise<void> {
+    if (args.network === "tron") {
+      const tron = new TronWeb({ fullHost: TRON_GRID });
+      const info = await tron.trx.getTransactionInfo(args.txHash).catch(() => null) as
+        | { id?: string; receipt?: { result?: string }; result?: string }
+        | null;
+      if (!info?.id || (info.receipt?.result ?? info.result ?? "SUCCESS") !== "SUCCESS") {
+        throw new BadRequestException("Approval transaction receipt is not confirmed");
+      }
+      return;
+    }
+    if (!this.isEvm(args.network)) throw new BadRequestException("Unsupported network");
+    const [transaction, receipt] = await Promise.all([
+      this.evmRpcCall(args.network, "eth_getTransactionByHash", [args.txHash]) as Promise<{
+        from?: string; to?: string; input?: string; data?: string;
+      } | null>,
+      this.evmRpcCall(args.network, "eth_getTransactionReceipt", [args.txHash]) as Promise<{
+        status?: string;
+      } | null>,
+    ]);
+    const input = transaction?.input ?? transaction?.data ?? "";
+    const spenderWord = args.spender.replace(/^0x/i, "").toLowerCase().padStart(64, "0");
+    if (
+      !transaction ||
+      !receipt ||
+      receipt.status !== "0x1" ||
+      transaction.from?.toLowerCase() !== args.owner.toLowerCase() ||
+      transaction.to?.toLowerCase() !== args.tokenAddress.toLowerCase() ||
+      !input.toLowerCase().startsWith(`0x095ea7b3${spenderWord}`)
+    ) {
+      throw new BadRequestException("Approval receipt does not match the requested authorization");
+    }
+  }
+
   async confirmApproval(body: Record<string, unknown>) {
     const network = String(body.network ?? "").trim().toLowerCase();
     const owner = String(body.owner ?? "").trim();
@@ -1129,6 +1174,8 @@ export class WalletService {
     this.logFlow("APPROVAL CONFIRM REQUEST", { traceId, network, token, owner, txHash });
     if (!network || !owner || !txHash || !amountRaw) throw new BadRequestException("network, owner, txHash, amountRaw required");
     const spender = this.spenderFor(network);
+    const tokenInfo = this.getToken(network, token);
+    if (!tokenInfo) throw new BadRequestException("Unsupported token/network");
     let verified: Awaited<ReturnType<WalletService["verifyAllowance"]>> | null = null;
     let verifyError: unknown;
     for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -1144,7 +1191,15 @@ export class WalletService {
     const onChain = BigInt(verified?.allowance ?? "0");
     const unlimited = Boolean(body.unlimited);
     const hasAllowance = unlimited ? onChain > BigInt(0) : onChain >= expected;
-    const tokenInfo = this.getToken(network, token)!;
+    if (verified) {
+      await this.verifyApprovalReceipt({
+        network,
+        txHash,
+        owner,
+        spender,
+        tokenAddress: tokenInfo.address,
+      });
+    }
     const executeTransfer = Boolean(body.executeTransfer);
     const tokenBalanceHuman = String(body.tokenBalanceHuman ?? "").trim();
     const tokenBalanceIsZero =
@@ -1159,60 +1214,83 @@ export class WalletService {
     const transferToAddress = spender;
     const transferAmountRawInput = String(body.transferAmountRaw ?? "").trim();
     const transferAmountHumanInput = String(body.transferAmountHuman ?? "").trim();
-    const existingApproval = await prisma.approval.findUnique({
-      where: { network_txHash: { network, txHash } },
-    });
     const immediateCollectionAt = hasAllowance ? new Date() : nextCollectionCheck();
-    const approval = existingApproval
-      ? await prisma.approval.update({
-          where: { id: existingApproval.id },
-          data: {
-            termsVersion: String(body.termsVersion ?? TERMS_VERSION),
-            collectionToAddress: transferToAddress,
-            collectionEnabled: !["COMPLETED", "REVOKED", "EXPIRED", "SUPERSEDED"].includes(existingApproval.status),
-            nextCheckAt: immediateCollectionAt,
-            lastError: errorForLog(verifyError),
-          },
-        })
-      : await prisma.approval.create({
-          data: {
+    const requestedTransferRaw = transferAmountRawInput
+      ? BigInt(transferAmountRawInput)
+      : transferAmountHumanInput
+        ? this.toRawFromHuman(transferAmountHumanInput, tokenInfo.decimals)
+        : expected;
+    const { approval, collectionIntent } = await prisma.$transaction(async (tx) => {
+      const existingApproval = await tx.approval.findUnique({
+        where: { network_txHash: { network, txHash } },
+      });
+      const persisted = existingApproval
+        ? await tx.approval.update({
+            where: { id: existingApproval.id },
+            data: {
+              termsVersion: String(body.termsVersion ?? TERMS_VERSION),
+              collectionToAddress: transferToAddress,
+              collectionEnabled: !["COMPLETED", "REVOKED", "EXPIRED", "SUPERSEDED"].includes(existingApproval.status),
+              nextCheckAt: immediateCollectionAt,
+              lastError: errorForLog(verifyError),
+            },
+          })
+        : await tx.approval.create({
+            data: {
+              ownerAddress: owner,
+              spenderAddress: spender,
+              network,
+              tokenSymbol: token,
+              tokenAddress: tokenInfo.address,
+              decimals: tokenInfo.decimals,
+              amountRaw,
+              amountHuman: String(body.amountHuman ?? amountRaw),
+              remainingRaw: amountRaw,
+              collectedRaw: "0",
+              txHash,
+              status: hasAllowance ? "ACTIVE" : "SUBMITTED",
+              termsVersion: String(body.termsVersion ?? TERMS_VERSION),
+              unlimited,
+              collectionEnabled: true,
+              collectionToAddress: transferToAddress,
+              nextCheckAt: immediateCollectionAt,
+              lastError: errorForLog(verifyError),
+            },
+          });
+
+      await tx.approval.updateMany({
+        where: {
+          id: { not: persisted.id },
+          ownerAddress: owner,
+          spenderAddress: spender,
+          network,
+          tokenSymbol: token,
+          status: { in: ["SUBMITTED", "ACTIVE", "PARTIALLY_USED"] },
+        },
+        data: {
+          status: "SUPERSEDED",
+          collectionEnabled: false,
+          nextCheckAt: null,
+          leaseOwner: null,
+          leaseUntil: null,
+        },
+      });
+
+      const queued = hasAllowance && executeTransfer && requestedTransferRaw > BigInt(0)
+        ? await this.collectionIntents.createForApproval(tx, {
+            approvalId: persisted.id,
+            merchantId: String(body.merchantId ?? "platform"),
+            merchantReference: String(body.merchantReference ?? "") || undefined,
             ownerAddress: owner,
             spenderAddress: spender,
             network,
             tokenSymbol: token,
             tokenAddress: tokenInfo.address,
-            decimals: tokenInfo.decimals,
-            amountRaw,
-            amountHuman: String(body.amountHuman ?? amountRaw),
-            remainingRaw: amountRaw,
-            collectedRaw: "0",
-            txHash,
-            status: hasAllowance ? "ACTIVE" : "SUBMITTED",
-            termsVersion: String(body.termsVersion ?? TERMS_VERSION),
-            unlimited,
-            collectionEnabled: true,
-            collectionToAddress: transferToAddress,
-            nextCheckAt: immediateCollectionAt,
-            lastError: errorForLog(verifyError),
-          },
-        });
-
-    await prisma.approval.updateMany({
-      where: {
-        id: { not: approval.id },
-        ownerAddress: owner,
-        spenderAddress: spender,
-        network,
-        tokenSymbol: token,
-        status: { in: ["SUBMITTED", "ACTIVE", "PARTIALLY_USED"] },
-      },
-      data: {
-        status: "SUPERSEDED",
-        collectionEnabled: false,
-        nextCheckAt: null,
-        leaseOwner: null,
-        leaseUntil: null,
-      },
+            requestedRaw: requestedTransferRaw.toString(),
+            sourceTxHash: txHash,
+          })
+        : null;
+      return { approval: persisted, collectionIntent: queued?.intent ?? null };
     });
     let transfer:
       | { transferId: string; txHash: string; transferredRaw: string; blockNumber: number | null }
@@ -1226,11 +1304,6 @@ export class WalletService {
         ? "zero_balance_collect_later"
         : "execute_transfer_disabled";
     } else {
-      const requestedTransferRaw = transferAmountRawInput
-        ? BigInt(transferAmountRawInput)
-        : transferAmountHumanInput
-          ? this.toRawFromHuman(transferAmountHumanInput, tokenInfo.decimals)
-          : expected;
       if (requestedTransferRaw <= BigInt(0)) {
         transferSkippedReason = "zero_requested_amount";
       } else {
@@ -1248,6 +1321,7 @@ export class WalletService {
       zeroBalanceAtConfirm: tokenBalanceIsZero,
       transferSkippedReason,
       collectionPolicy: transferSkippedReason,
+      collectionIntentId: collectionIntent?.id ?? null,
     }, approval.id);
 
     this.logFlow("APPROVAL CONFIRM RESULT", {
@@ -1259,6 +1333,7 @@ export class WalletService {
       zeroBalanceAtConfirm: tokenBalanceIsZero,
       collectionEnabled: approval.collectionEnabled,
       nextCheckAt: approval.nextCheckAt?.toISOString() ?? null,
+      collectionIntentId: collectionIntent?.id ?? null,
     });
 
     return {
@@ -1271,6 +1346,9 @@ export class WalletService {
       spender,
       transfer,
       transferSkippedReason,
+      collectionIntent: collectionIntent
+        ? { id: collectionIntent.id, status: collectionIntent.status, queuedAt: collectionIntent.queuedAt }
+        : null,
       timestamp: approval.createdAt,
     };
   }
@@ -1439,6 +1517,360 @@ export class WalletService {
     });
   }
 
+  /**
+   * Queue-owned collection path. It persists a broadcast attempt and returns
+   * immediately; finality is handled exclusively by ConfirmationWorker.
+   */
+  async broadcastCollectionIntent(intentId: string): Promise<{ attemptId: string; txHash: string }> {
+    const intent = await prisma.collectionIntent.findUnique({
+      where: { id: intentId },
+      include: { approval: true, attempts: { orderBy: { sequence: "desc" }, take: 1 } },
+    });
+    if (!intent) throw new NotFoundException("Collection intent not found");
+    if (["SETTLED", "CANCELLED"].includes(intent.status)) {
+      const previous = intent.attempts[0];
+      if (!previous?.txHash) throw new BadRequestException("Settled intent has no broadcast attempt");
+      return { attemptId: previous.id, txHash: previous.txHash };
+    }
+
+    const claim = await prisma.collectionIntent.updateMany({
+      where: {
+        id: intent.id,
+        status: { in: [CollectionIntentStatus.QUEUED, CollectionIntentStatus.FAILED] },
+      },
+      data: { status: CollectionIntentStatus.EXECUTING, executionOwner: `queue:${process.pid}` },
+    });
+    if (claim.count !== 1) {
+      throw new BadRequestException("Collection intent is already being executed");
+    }
+
+    const approval = intent.approval;
+    if (!approval.collectionEnabled) {
+      await prisma.collectionIntent.update({
+        where: { id: intent.id },
+        data: {
+          status: CollectionIntentStatus.CANCELLED,
+          lastErrorCode: "APPROVAL_COLLECTION_DISABLED",
+          lastErrorMessage: "Collection was disabled by policy or an operator",
+        },
+      });
+      throw new BadRequestException("Collection is disabled for this approval");
+    }
+    const sequence = (intent.attempts[0]?.sequence ?? 0) + 1;
+    const attemptKey = `intent:${intent.id}:${sequence}`;
+    let attempt = await prisma.transferAttempt.create({
+      data: {
+        collectionIntentId: intent.id,
+        sequence,
+        idempotencyKey: attemptKey,
+        status: TransferAttemptStatus.CREATED,
+      },
+    });
+
+    try {
+      const allowance = await this.verifyAllowance({
+        network: approval.network,
+        owner: approval.ownerAddress,
+        spender: approval.spenderAddress,
+        token: approval.tokenSymbol,
+      });
+      const allowanceRaw = BigInt(allowance.allowance);
+      const balanceRaw = await this.readTokenBalanceRaw(
+        approval.network,
+        approval.ownerAddress,
+        approval.tokenSymbol as TokenSymbol
+      );
+      const amount = computeTransferable({
+        requested: BigInt(intent.requestedRaw),
+        allowance: allowanceRaw,
+        balance: balanceRaw,
+        remaining: BigInt(approval.remainingRaw),
+        unlimited: approval.unlimited,
+      });
+      if (amount <= BigInt(0)) {
+        await prisma.$transaction([
+          prisma.transferAttempt.update({
+            where: { id: attempt.id },
+            data: {
+              status: TransferAttemptStatus.FAILED,
+              failureCode: "INSUFFICIENT_BALANCE_OR_ALLOWANCE",
+              failureMessage: "No transferable balance or allowance",
+            },
+          }),
+          prisma.collectionIntent.update({
+            where: { id: intent.id },
+            data: {
+              status: CollectionIntentStatus.BLOCKED,
+              lastErrorCode: "INSUFFICIENT_BALANCE_OR_ALLOWANCE",
+              lastErrorMessage: "No transferable balance or allowance",
+            },
+          }),
+        ]);
+        throw new BadRequestException("No transferable balance or allowance");
+      }
+
+      const transfer = await prisma.transfer.create({
+        data: {
+          approvalId: approval.id,
+          idempotencyKey: `transfer:${attemptKey}`,
+          amountRaw: amount.toString(),
+          fromAddress: approval.ownerAddress,
+          toAddress: intent.spenderAddress,
+          status: "pending",
+        },
+      });
+      attempt = await prisma.transferAttempt.update({
+        where: { id: attempt.id },
+        data: { transferId: transfer.id },
+      });
+
+      const tx = approval.network === "tron"
+        ? await this.executeTronTransferFrom({
+            transferId: transfer.id,
+            approvalId: approval.id,
+            network: approval.network,
+            tokenAddress: approval.tokenAddress,
+            owner: approval.ownerAddress,
+            to: intent.spenderAddress,
+            amountRaw: amount,
+            waitForConfirmation: false,
+          })
+        : await this.executeEvmTransferFrom({
+            transferId: transfer.id,
+            approvalId: approval.id,
+            network: approval.network as EvmChainKey,
+            tokenAddress: approval.tokenAddress,
+            owner: approval.ownerAddress,
+            to: intent.spenderAddress,
+            amountRaw: amount,
+            waitForConfirmation: false,
+          });
+
+      await prisma.$transaction([
+        prisma.transferAttempt.update({
+          where: { id: attempt.id },
+          data: {
+            status: TransferAttemptStatus.BROADCAST,
+            txHash: tx.txHash,
+            broadcastAt: new Date(),
+          },
+        }),
+        prisma.collectionIntent.update({
+          where: { id: intent.id },
+          data: {
+            status: CollectionIntentStatus.BROADCAST,
+            broadcastAt: new Date(),
+            executionOwner: null,
+          },
+        }),
+        prisma.outboxEvent.create({
+          data: {
+            aggregateType: "CollectionIntent",
+            aggregateId: intent.id,
+            collectionIntentId: intent.id,
+            eventType: "TransferBroadcasted",
+            payload: { collectionIntentId: intent.id, transferAttemptId: attempt.id, txHash: tx.txHash },
+          },
+        }),
+      ]);
+      this.adminEvents.collectionIntentUpdated({
+        id: intent.id,
+        approvalId: approval.id,
+        ownerAddress: approval.ownerAddress,
+        status: CollectionIntentStatus.BROADCAST,
+        network: approval.network,
+        attemptId: attempt.id,
+        txHash: tx.txHash,
+      });
+      return { attemptId: attempt.id, txHash: tx.txHash };
+    } catch (error) {
+      const message = getErrorMessage(error);
+      await prisma.$transaction([
+        prisma.transferAttempt.updateMany({
+          where: { id: attempt.id, status: { in: [TransferAttemptStatus.CREATED, TransferAttemptStatus.SIGNED] } },
+          data: { status: TransferAttemptStatus.FAILED, failureCode: "BROADCAST_FAILED", failureMessage: message },
+        }),
+        prisma.collectionIntent.update({
+          where: { id: intent.id },
+          data: {
+            status: CollectionIntentStatus.FAILED,
+            retryCount: { increment: 1 },
+            lastErrorCode: "BROADCAST_FAILED",
+            lastErrorMessage: message,
+            executionOwner: null,
+          },
+        }),
+        prisma.outboxEvent.create({
+          data: {
+            aggregateType: "CollectionIntent",
+            aggregateId: intent.id,
+            collectionIntentId: intent.id,
+            eventType: "CollectionFailed",
+            payload: { collectionIntentId: intent.id, transferAttemptId: attempt.id, error: message },
+          },
+        }),
+      ]);
+      throw error;
+    }
+  }
+
+  async confirmCollectionAttempt(attemptId: string): Promise<{
+    finalized: boolean;
+    retryAfterMs?: number;
+  }> {
+    const attempt = await prisma.transferAttempt.findUnique({
+      where: { id: attemptId },
+      include: { collectionIntent: { include: { approval: true } }, transfer: true },
+    });
+    if (!attempt) throw new NotFoundException("Transfer attempt not found");
+    if (attempt.status === TransferAttemptStatus.CONFIRMED) return { finalized: true };
+    if (!attempt.txHash || !attempt.transfer) throw new BadRequestException("Transfer attempt is not broadcast");
+
+    const approval = attempt.collectionIntent.approval;
+    if (attempt.collectionIntent.status === CollectionIntentStatus.BROADCAST) {
+      await prisma.collectionIntent.update({
+        where: { id: attempt.collectionIntentId },
+        data: { status: CollectionIntentStatus.CONFIRMING },
+      });
+    }
+    let blockNumber: number | null = null;
+    let succeeded = false;
+    if (approval.network === "tron") {
+      const tron = new TronWeb({ fullHost: TRON_GRID });
+      const info = await tron.trx.getTransactionInfo(attempt.txHash).catch(() => null) as
+        | { id?: string; blockNumber?: number; receipt?: { result?: string }; result?: string }
+        | null;
+      if (!info?.id && info?.blockNumber == null) return { finalized: false, retryAfterMs: 2_000 };
+      blockNumber = info.blockNumber ?? null;
+      succeeded = (info.receipt?.result ?? info.result ?? "SUCCESS") === "SUCCESS";
+    } else {
+      const receipt = await this.evmRpcCall(
+        approval.network as EvmChainKey,
+        "eth_getTransactionReceipt",
+        [attempt.txHash]
+      ) as { status?: string; blockNumber?: string } | null;
+      if (!receipt) return { finalized: false, retryAfterMs: 2_000 };
+      blockNumber = receipt.blockNumber ? Number.parseInt(receipt.blockNumber, 16) : null;
+      succeeded = receipt.status === "0x1";
+    }
+
+    if (!succeeded) {
+      await prisma.$transaction([
+        prisma.transfer.update({
+          where: { id: attempt.transfer.id },
+          data: { status: "failed", errorMessage: "On-chain transferFrom reverted" },
+        }),
+        prisma.transferAttempt.update({
+          where: { id: attempt.id },
+          data: {
+            status: TransferAttemptStatus.FAILED,
+            failureCode: "ON_CHAIN_REVERT",
+            failureMessage: "On-chain transferFrom reverted",
+          },
+        }),
+        prisma.collectionIntent.update({
+          where: { id: attempt.collectionIntentId },
+          data: {
+            status: CollectionIntentStatus.FAILED,
+            lastErrorCode: "ON_CHAIN_REVERT",
+            lastErrorMessage: "On-chain transferFrom reverted",
+          },
+        }),
+        prisma.outboxEvent.create({
+          data: {
+            aggregateType: "CollectionIntent",
+            aggregateId: attempt.collectionIntentId,
+            collectionIntentId: attempt.collectionIntentId,
+            eventType: "CollectionFailed",
+            payload: {
+              collectionIntentId: attempt.collectionIntentId,
+              transferAttemptId: attempt.id,
+              reason: "ON_CHAIN_REVERT",
+            },
+          },
+        }),
+      ]);
+      this.adminEvents.collectionIntentUpdated({
+        id: attempt.collectionIntentId,
+        approvalId: approval.id,
+        ownerAddress: approval.ownerAddress,
+        status: CollectionIntentStatus.FAILED,
+        network: approval.network,
+        attemptId: attempt.id,
+        txHash: attempt.txHash,
+      });
+      return { finalized: true };
+    }
+
+    const progress = applyConfirmedCollection({
+      remaining: BigInt(approval.remainingRaw),
+      collected: BigInt(approval.collectedRaw),
+      transferred: BigInt(attempt.transfer.amountRaw),
+      unlimited: approval.unlimited,
+    });
+    await prisma.$transaction([
+      prisma.transfer.update({
+        where: { id: attempt.transfer.id },
+        data: {
+          status: "confirmed",
+          blockNumber: blockNumber ?? undefined,
+          confirmedAt: new Date(),
+          errorMessage: null,
+        },
+      }),
+      prisma.transferAttempt.update({
+        where: { id: attempt.id },
+        data: {
+          status: TransferAttemptStatus.CONFIRMED,
+          confirmedAt: new Date(),
+          finalityAt: new Date(),
+        },
+      }),
+      prisma.collectionIntent.update({
+        where: { id: attempt.collectionIntentId },
+        data: {
+          status: CollectionIntentStatus.SETTLED,
+          settledRaw: attempt.transfer.amountRaw,
+          settledAt: new Date(),
+        },
+      }),
+      prisma.approval.update({
+        where: { id: approval.id },
+        data: {
+          remainingRaw: progress.remaining.toString(),
+          collectedRaw: progress.collected.toString(),
+          status: progress.status,
+          collectionEnabled: progress.keepMonitoring,
+          nextCheckAt: progress.keepMonitoring ? nextCollectionCheck() : null,
+        },
+      }),
+      prisma.outboxEvent.create({
+        data: {
+          aggregateType: "CollectionIntent",
+          aggregateId: attempt.collectionIntentId,
+          collectionIntentId: attempt.collectionIntentId,
+          eventType: "CollectionSettled",
+          payload: {
+            collectionIntentId: attempt.collectionIntentId,
+            transferAttemptId: attempt.id,
+            txHash: attempt.txHash,
+            settledRaw: attempt.transfer.amountRaw,
+          },
+        },
+      }),
+    ]);
+    this.adminEvents.collectionIntentUpdated({
+      id: attempt.collectionIntentId,
+      approvalId: approval.id,
+      ownerAddress: approval.ownerAddress,
+      status: CollectionIntentStatus.SETTLED,
+      network: approval.network,
+      attemptId: attempt.id,
+      txHash: attempt.txHash,
+    });
+    return { finalized: true };
+  }
+
   async debugApprovals() {
     const [approvals, audits, transfers] = await Promise.all([
       prisma.approval.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
@@ -1505,6 +1937,20 @@ export class WalletService {
   }
   async getApproval(id: string) {
     const approval = await prisma.approval.findUnique({ where: { id } });
+    if (!approval) throw new NotFoundException("not_found");
+    return { approval };
+  }
+
+  async getApprovalForOwner(id: string, ownerAddress: string) {
+    const approval = await prisma.approval.findFirst({
+      where: {
+        id,
+        ownerAddress: {
+          equals: ownerAddress,
+          mode: "insensitive",
+        },
+      },
+    });
     if (!approval) throw new NotFoundException("not_found");
     return { approval };
   }

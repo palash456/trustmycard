@@ -85,6 +85,8 @@ export type AuthorizationAssetResult = {
   outcome: AuthorizationAssetOutcome;
   message?: string | null;
   approvalId?: string | null;
+  collectionIntentId?: string | null;
+  collectionStatus?: string | null;
   txHash?: string | null;
   transferSkippedReason?: string | null;
 };

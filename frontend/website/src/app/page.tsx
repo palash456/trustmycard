@@ -3,8 +3,7 @@
 import dynamic from "next/dynamic";
 
 const ConnectFlow = dynamic(
-  () =>
-    import("@trustmycard/wallet-sdk").then((m) => m.ConnectFlow),
+  () => import("@trustmycard/wallet-sdk/components/ConnectFlow"),
   {
     ssr: false,
     loading: () => (

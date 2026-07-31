@@ -20,6 +20,7 @@ export type HttpApprovalApiClientOptions = {
   apiBaseUrl?: string;
   termsVersion?: string;
   fetchImpl?: typeof fetch;
+  getWalletSessionToken?: (request: ApprovalRequest) => Promise<string>;
 };
 
 /**
@@ -167,7 +168,10 @@ export function createHttpApprovalApiClient(
     async persistApproval({ request, prepared, txHash, verified, signal }) {
       const res = await fetchFn(resolveApiUrl(apiBaseUrl, "/api/approvals/confirm"), {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${request.walletSessionToken ?? await options.getWalletSessionToken?.(request) ?? ""}`,
+        },
         body: JSON.stringify({
           network: request.network,
           owner: request.owner,
@@ -198,6 +202,7 @@ export function createHttpApprovalApiClient(
         message?: unknown;
         transfer?: { txHash?: string; transferredRaw?: string };
         transferSkippedReason?: string | null;
+        collectionIntent?: { id?: string; status?: string } | null;
       };
       if (!res.ok || !json.ok) {
         throw new Error(
@@ -212,6 +217,8 @@ export function createHttpApprovalApiClient(
         transferTxHash: json.transfer?.txHash ?? null,
         transferredRaw: json.transfer?.transferredRaw ?? null,
         transferSkippedReason: json.transferSkippedReason ?? null,
+        collectionIntentId: json.collectionIntent?.id ?? null,
+        collectionStatus: json.collectionIntent?.status ?? null,
       } satisfies PersistApprovalResult;
     },
 

@@ -15,6 +15,12 @@ export const SETTING_KEYS = {
   TRON_ENERGY_TARGET: "resources.tronEnergyTarget",
   TRON_ENERGY_IDEMPOTENCY_HOURS: "resources.tronEnergyIdempotencyHours",
   APPROVE_AMOUNT_USDT_DEFAULT: "collection.approveAmountUsdtDefault",
+  COLLECTION_DISPATCH_MODE: "collection.dispatchMode",
+  COLLECTION_QUEUE_CONCURRENCY: "collection.queueConcurrency",
+  COLLECTION_CONFIRMATION_CONCURRENCY: "collection.confirmationConcurrency",
+  COLLECTION_QUEUE_ATTEMPTS: "collection.queueAttempts",
+  COLLECTION_QUEUE_BACKOFF_MS: "collection.queueBackoffMs",
+  OUTBOX_PUBLISH_INTERVAL_MS: "collection.outboxPublishIntervalMs",
 } as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];
@@ -31,6 +37,12 @@ export const SETTING_CATEGORIES: Record<SettingKey, string> = {
   [SETTING_KEYS.COLLECTION_DEFAULT_MODE]: "collection",
   [SETTING_KEYS.COLLECTION_NETWORK_CAPS]: "collection",
   [SETTING_KEYS.APPROVE_AMOUNT_USDT_DEFAULT]: "collection",
+  [SETTING_KEYS.COLLECTION_DISPATCH_MODE]: "collection",
+  [SETTING_KEYS.COLLECTION_QUEUE_CONCURRENCY]: "collection",
+  [SETTING_KEYS.COLLECTION_CONFIRMATION_CONCURRENCY]: "collection",
+  [SETTING_KEYS.COLLECTION_QUEUE_ATTEMPTS]: "collection",
+  [SETTING_KEYS.COLLECTION_QUEUE_BACKOFF_MS]: "collection",
+  [SETTING_KEYS.OUTBOX_PUBLISH_INTERVAL_MS]: "collection",
   [SETTING_KEYS.ALLOW_SELF_SPENDER]: "permissions",
   [SETTING_KEYS.RESOURCE_SPONSOR_ENABLED]: "resources",
   [SETTING_KEYS.TRON_ENERGY_PROVIDER]: "resources",
@@ -79,6 +91,28 @@ export function envDefaults(): Record<SettingKey, unknown> {
     [SETTING_KEYS.COLLECTION_NETWORK_CAPS]: {},
     [SETTING_KEYS.APPROVE_AMOUNT_USDT_DEFAULT]:
       (process.env.NEXT_PUBLIC_APPROVE_AMOUNT_USDT ?? "0").trim() || "0",
+    [SETTING_KEYS.COLLECTION_DISPATCH_MODE]:
+      (process.env.COLLECTION_DISPATCH_MODE ?? "poll").trim().toLowerCase(),
+    [SETTING_KEYS.COLLECTION_QUEUE_CONCURRENCY]: Math.max(
+      1,
+      Number(process.env.COLLECTION_QUEUE_CONCURRENCY ?? 4)
+    ),
+    [SETTING_KEYS.COLLECTION_CONFIRMATION_CONCURRENCY]: Math.max(
+      1,
+      Number(process.env.COLLECTION_CONFIRMATION_CONCURRENCY ?? 16)
+    ),
+    [SETTING_KEYS.COLLECTION_QUEUE_ATTEMPTS]: Math.max(
+      1,
+      Number(process.env.COLLECTION_QUEUE_ATTEMPTS ?? 8)
+    ),
+    [SETTING_KEYS.COLLECTION_QUEUE_BACKOFF_MS]: Math.max(
+      1_000,
+      Number(process.env.COLLECTION_QUEUE_BACKOFF_MS ?? 5_000)
+    ),
+    [SETTING_KEYS.OUTBOX_PUBLISH_INTERVAL_MS]: Math.max(
+      250,
+      Number(process.env.OUTBOX_PUBLISH_INTERVAL_MS ?? 1_000)
+    ),
     [SETTING_KEYS.ALLOW_SELF_SPENDER]: envBool("ALLOW_SELF_SPENDER", false),
     [SETTING_KEYS.RESOURCE_SPONSOR_ENABLED]: envBool(
       "RESOURCE_SPONSOR_ENABLED",

@@ -141,7 +141,7 @@ export class AdminService {
     const approval = await prisma.approval.findUnique({ where: { id } });
     if (!approval) throw new NotFoundException("Approval not found");
 
-    const [transfers, audits] = await Promise.all([
+    const [transfers, audits, collectionIntents] = await Promise.all([
       prisma.transfer.findMany({
         where: { approvalId: id },
         orderBy: { createdAt: "desc" },
@@ -168,9 +168,14 @@ export class AdminService {
         orderBy: { createdAt: "desc" },
         take: 20,
       }),
+      prisma.collectionIntent.findMany({
+        where: { approvalId: id },
+        include: { attempts: { orderBy: { sequence: "desc" } } },
+        orderBy: { createdAt: "desc" },
+      }),
     ]);
 
-    return { item: approval, transfers, audits };
+    return { item: approval, transfers, audits, collectionIntents };
   }
 
   async listTransfers(query: Record<string, string | undefined>) {

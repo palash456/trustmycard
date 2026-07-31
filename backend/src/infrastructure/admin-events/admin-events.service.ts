@@ -31,6 +31,16 @@ export type UserUpdatedPayload = {
   address: string;
 };
 
+export type CollectionIntentUpdatedPayload = {
+  id: string;
+  approvalId: string;
+  ownerAddress: string;
+  status: string;
+  network: string;
+  attemptId?: string;
+  txHash?: string | null;
+};
+
 /** In-process bus for admin SSE — wallet/collector must not depend on AdminModule. */
 @Injectable()
 export class AdminEventsService {
@@ -50,5 +60,9 @@ export class AdminEventsService {
 
   userUpdated(payload: UserUpdatedPayload): void {
     this.bus.emit("user.updated", payload);
+  }
+
+  collectionIntentUpdated(payload: CollectionIntentUpdatedPayload): void {
+    this.bus.emit("collection.intent.updated", payload);
   }
 }

@@ -1,6 +1,5 @@
-import type { ApprovalStageName, StageResult } from "./types";
-import type { ApprovalContext } from "./types";
-import type { ApprovalApiPort, ApprovalChainPort } from "./ports";
+import type { ApprovalStageName, ApprovalContext, StageResult } from "../types";
+import type { ApprovalApiPort, ApprovalChainPort } from "../ports";
 
 import type { ConfirmationPollOptions } from "../confirmation/types";
 import type { ApprovalLogger } from "../types";

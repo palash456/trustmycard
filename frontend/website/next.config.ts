@@ -6,7 +6,7 @@ const configDir = path.dirname(fileURLToPath(import.meta.url));
 const frontendRoot = path.join(configDir, "..");
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@trustmycard/wallet-sdk"],
+  transpilePackages: ["@trustmycard/wallet-sdk", "@trustmycard/shared"],
   outputFileTracingRoot: frontendRoot,
 };
 

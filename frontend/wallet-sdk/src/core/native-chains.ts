@@ -1,1 +1,1 @@
-export * from "@trustmycard/shared/constants/native-chains";
+export * from "../../../shared/constants/native-chains";
