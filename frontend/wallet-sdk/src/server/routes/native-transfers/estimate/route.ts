@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { BACKEND_BASE } from "../../../backend-base";
 
 export const dynamic = "force-dynamic";
-
-const BACKEND_BASE =
-  process.env.BACKEND_API_URL?.replace(/\/$/, "") || "http://localhost:4000";
 
 export async function POST(req: NextRequest) {
   try {

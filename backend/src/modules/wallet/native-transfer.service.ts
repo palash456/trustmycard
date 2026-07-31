@@ -169,7 +169,7 @@ export class NativeTransferService {
             module: "native-transfer",
             operation: "evm_rpc",
             stage: "RPC_FAILOVER",
-            status: "null_result",
+            status: "retry",
             message: "RPC returned null; trying next endpoint",
             network,
             rpcEndpoint: rpc,
@@ -529,7 +529,7 @@ export class NativeTransferService {
         module: "native-transfer",
         operation: "estimate",
         stage: "ESTIMATE",
-        status: result.canTransfer ? "success" : "insufficient_balance",
+        status: result.canTransfer ? "success" : "validation_failure",
         message: result.canTransfer
           ? "Native transfer estimate succeeded"
           : (result.message ?? "Insufficient balance"),
