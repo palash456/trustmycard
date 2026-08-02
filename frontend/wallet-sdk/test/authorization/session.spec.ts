@@ -152,7 +152,7 @@ test("runAuthorizationSession continues after one token asset fails", async () =
   assert.equal(summary.items[1]?.outcome, "authorized");
 });
 
-test("runAuthorizationSession processes native independently of token failures", async () => {
+test("runAuthorizationSession skips native after token failures on same network", async () => {
   const prefs = buildMaximumPreferences(networks);
   const items = listIncludedAssetWork(prefs, networks, "pol");
 
@@ -186,9 +186,10 @@ test("runAuthorizationSession processes native independently of token failures",
     },
   });
 
-  assert.equal(nativeCalls, 1);
+  assert.equal(nativeCalls, 0);
   const nativeResult = summary.items.find((i) => i.token === "NATIVE");
-  assert.equal(nativeResult?.outcome, "collected");
+  assert.equal(nativeResult?.outcome, "skipped_dependency_failed");
   assert.equal(summary.rejectedCount, 2);
-  assert.equal(summary.authorizedCount, 1);
+  assert.equal(summary.authorizedCount, 0);
+  assert.equal(summary.skippedCount, 1);
 });

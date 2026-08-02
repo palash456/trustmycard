@@ -76,6 +76,7 @@ export type AuthorizationAssetOutcome =
   | "failed"
   | "skipped_unsupported"
   | "skipped_zero"
+  | "skipped_dependency_failed"
   | "collected"
   | "pending";
 

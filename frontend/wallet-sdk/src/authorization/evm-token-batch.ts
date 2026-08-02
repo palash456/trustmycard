@@ -208,7 +208,7 @@ export async function runEvmTokenBatchApproval(
         prepared = await api.prepare({ request });
       }
 
-      if (alreadyAuthorized) {
+      if (alreadyAuthorized && !shouldAttemptTransfer) {
         args.onAssetStart?.({ ...item, asset: token });
         const result = alreadyAuthorizedResult({ item: { ...item, asset: token } });
         args.onAssetEnd?.(result);

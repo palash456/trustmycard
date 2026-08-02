@@ -88,7 +88,7 @@ export class TronResourceProvider implements ChainResourceProvider {
 
     if (!this.isEnabled()) {
       return resourceResult({
-        status: ResourceStatus.READY,
+        status: ResourceStatus.PROVIDER_UNAVAILABLE,
         network: "tron",
         address,
         provider: this.name,
@@ -249,7 +249,7 @@ export class TronResourceProvider implements ChainResourceProvider {
 
     if (!this.isEnabled()) {
       return resourceResult({
-        status: ResourceStatus.READY,
+        status: ResourceStatus.PROVIDER_UNAVAILABLE,
         network: "tron",
         address,
         provider: this.name,

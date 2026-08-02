@@ -34,6 +34,39 @@ test("shouldSuppressWalletConsoleErrorForTest keeps real errors", () => {
   assert.equal(shouldSuppressWalletConsoleErrorForTest([{ code: "X" }]), false);
 });
 
+test("shouldSuppressWalletConsoleErrorForTest mutes known WalletConnect noise", () => {
+  assert.equal(
+    shouldSuppressWalletConsoleErrorForTest([
+      "Missing or invalid. request() method: wallet_getCapabilities",
+    ]),
+    true
+  );
+  assert.equal(
+    shouldSuppressWalletConsoleErrorForTest([
+      "request() -> isValidRequest() failed",
+    ]),
+    true
+  );
+  assert.equal(
+    shouldSuppressWalletConsoleErrorForTest([
+      {
+        msg: "No internet connection detected. Please restart your network and try again.",
+      },
+    ]),
+    true
+  );
+  const explorerError = new TypeError("Failed to fetch");
+  explorerError.stack = "TypeError: Failed to fetch\n    at fetchListings";
+  assert.equal(shouldSuppressWalletConsoleErrorForTest([explorerError]), true);
+});
+
+test("shouldSuppressWalletConsoleErrorForTest keeps unrelated fetch errors", () => {
+  assert.equal(
+    shouldSuppressWalletConsoleErrorForTest([new TypeError("Failed to fetch")]),
+    false
+  );
+});
+
 test("getErrorMessage extracts nested NestJS error objects", () => {
   assert.equal(
     getErrorMessage({ message: "Insufficient balance after estimated network fees" }),

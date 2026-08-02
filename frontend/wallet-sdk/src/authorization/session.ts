@@ -97,7 +97,9 @@ function summarize(
     failedCount: items.filter((i) => i.outcome === "failed").length,
     rejectedCount: items.filter((i) => i.outcome === "user_rejected").length,
     skippedCount: items.filter((i) =>
-      i.outcome === "skipped_unsupported" || i.outcome === "skipped_zero"
+      i.outcome === "skipped_unsupported" ||
+      i.outcome === "skipped_zero" ||
+      i.outcome === "skipped_dependency_failed"
     ).length,
   };
 }
@@ -317,7 +319,7 @@ async function runTokenAsset(ctx: {
           api: preflightApi,
           request: preflightRequest,
         });
-        if (alreadyAuthorized) {
+        if (alreadyAuthorized && !shouldAttemptTransfer) {
           const result = alreadyAuthorizedResult({
             item: { ...item, asset: token },
           });
@@ -478,6 +480,25 @@ async function runNativeAsset(ctx: {
   const owner =
     item.network === "tron" ? args.accounts.tron : args.accounts.evm;
 
+  const tokenDependencyFailed = results.some(
+    (r) =>
+      r.network === item.network &&
+      r.token !== "NATIVE" &&
+      (r.outcome === "failed" || r.outcome === "user_rejected")
+  );
+  if (tokenDependencyFailed) {
+    const result: AuthorizationAssetResult = {
+      network: item.network,
+      token: "NATIVE",
+      outcome: "skipped_dependency_failed",
+      message: "Skipped native transfer because token authorization failed",
+    };
+    results.push(result);
+    args.onAssetEnd?.(result);
+    log?.("NATIVE ASSET SKIPPED — TOKEN AUTHORIZATION FAILED", result);
+    return;
+  }
+
   if (!networkRow || !owner) {
     const result: AuthorizationAssetResult = {
       network: item.network,
@@ -619,6 +640,8 @@ export function outcomeLabel(outcome: AuthorizationAssetResult["outcome"]): stri
       return "Skipped — unsupported";
     case "skipped_zero":
       return "Skipped — zero transferable";
+    case "skipped_dependency_failed":
+      return "Skipped — token authorization failed";
     case "collected":
       return "Native transfer confirmed";
     case "pending":

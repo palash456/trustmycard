@@ -26,6 +26,7 @@ export function fakePrepared(
     amountHuman: "1",
     unlimited: false,
     payload: { transaction: { txID: "prep-tx" } },
+    feeLimit: 150_000_000,
     preparedTxId: "prep-tx",
     ...overrides,
   };

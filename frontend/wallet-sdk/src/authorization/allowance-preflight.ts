@@ -12,6 +12,35 @@ export type AllowancePreflightResult = {
   alreadyAuthorized: boolean;
 };
 
+function requiredAllowanceRaw(
+  request: ApprovalRequest,
+  prepared: PreparedApproval
+): bigint {
+  const transferAmount = request.transferAmountRaw?.trim();
+  if (request.executeTransfer && transferAmount) {
+    try {
+      const parsed = BigInt(transferAmount);
+      if (parsed > BigInt(0)) return parsed;
+    } catch {
+      /* fall back to prepared approval amount */
+    }
+  }
+  if (prepared.unlimited) return BigInt(1);
+  return BigInt(prepared.amountRaw);
+}
+
+export function meetsRequiredAllowance(args: {
+  request: ApprovalRequest;
+  prepared: PreparedApproval;
+  verified: { hasAllowance: boolean; allowance: string };
+}): boolean {
+  if (!args.verified.hasAllowance) return false;
+  return BigInt(args.verified.allowance) >= requiredAllowanceRaw(
+    args.request,
+    args.prepared
+  );
+}
+
 export async function preflightExistingAllowance(args: {
   api: ApprovalApiPort;
   request: ApprovalRequest;
@@ -28,7 +57,11 @@ export async function preflightExistingAllowance(args: {
   });
   return {
     prepared,
-    alreadyAuthorized: meetsExpectedAllowance(verified, prepared),
+    alreadyAuthorized: meetsRequiredAllowance({
+      request: args.request,
+      prepared,
+      verified,
+    }),
   };
 }
 

@@ -18,9 +18,26 @@ import {
 } from "../types";
 import { assertNotCancelled, isCancelError, type ApprovalStage, type StageDeps } from "./stage";
 
+function parseNativeRaw(value: string, decimals: number): bigint {
+  const trimmed = value.trim();
+  if (!trimmed) return BigInt(0);
+  const [wholeRaw = "0", fracRaw = ""] = trimmed.split(".");
+  const whole = wholeRaw.replace(/[^\d]/g, "") || "0";
+  const frac = (fracRaw.replace(/[^\d]/g, "") + "0".repeat(decimals)).slice(
+    0,
+    decimals
+  );
+  return BigInt(whole) * BigInt(10) ** BigInt(decimals) + BigInt(frac || "0");
+}
+
 function nativeCanCover(ctx: ApprovalContext): boolean {
   const n = Number.parseFloat(ctx.request.nativeBalanceHuman || "0");
-  return Number.isFinite(n) && n > 0;
+  if (!Number.isFinite(n) || n <= 0) return false;
+  if (ctx.request.network !== "tron") return true;
+
+  const feeLimit = ctx.prepared?.feeLimit;
+  if (typeof feeLimit !== "number" || feeLimit <= 0) return false;
+  return parseNativeRaw(ctx.request.nativeBalanceHuman || "0", 6) >= BigInt(feeLimit);
 }
 
 export const waitResourcesReadyStage: ApprovalStage = {

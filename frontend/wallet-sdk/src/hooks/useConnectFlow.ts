@@ -564,7 +564,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             );
           } else if (
             result.outcome === "failed" ||
-            result.outcome === "skipped_unsupported"
+            result.outcome === "skipped_unsupported" ||
+            result.outcome === "skipped_dependency_failed"
           ) {
             setStatus(result.network, "awaiting");
           }

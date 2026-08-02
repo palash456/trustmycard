@@ -10,8 +10,34 @@ export {
 
 const CANCEL_LOG_RE =
   /user canceled|user cancelled|user rejected|rejected by user|denied by user/i;
+const WALLETCONNECT_NOISE_RE =
+  /request\(\) -> isValidRequest\(\) failed|Missing or invalid\. request\(\) method: wallet_getCapabilities|No internet connection detected\. Please restart your network and try again\./i;
+const WALLETCONNECT_EXPLORER_FETCH_RE =
+  /Failed to fetch[\s\S]*(fetchListings|getDesktopListings|getRecomendedWallets|WcmExplorerContext|wcm-modal)/i;
 
 const OBJECT_COERCED = "[object Object]";
+
+function consoleArgText(arg: unknown): string {
+  if (typeof arg === "string") return arg;
+  if (arg instanceof Error) {
+    return `${arg.name}: ${arg.message}\n${arg.stack ?? ""}`;
+  }
+  if (arg && typeof arg === "object") {
+    const record = arg as Record<string, unknown>;
+    const parts: string[] = [];
+    for (const key of ["msg", "message", "reason", "stack"]) {
+      const value = record[key];
+      if (typeof value === "string") parts.push(value);
+    }
+    if (parts.length > 0) return parts.join("\n");
+    try {
+      return JSON.stringify(arg);
+    } catch {
+      return "";
+    }
+  }
+  return "";
+}
 
 function hasExtractableConsoleMessage(arg: unknown): boolean {
   if (typeof arg === "string") return arg.trim().length > 0;
@@ -54,6 +80,9 @@ function looksLikeCancellationLog(args: unknown[]): boolean {
 function shouldSuppressWalletConsoleError(args: unknown[]): boolean {
   if (args.length === 0) return true;
   if (looksLikeCancellationLog(args)) return true;
+  const joined = args.map(consoleArgText).filter(Boolean).join("\n");
+  if (WALLETCONNECT_NOISE_RE.test(joined)) return true;
+  if (WALLETCONNECT_EXPLORER_FETCH_RE.test(joined)) return true;
   // WalletConnect relay/session code often calls console.error({}) with no payload.
   // Next.js dev turns that into a scary overlay even though connect still works.
   if (!args.some(hasExtractableConsoleMessage)) return true;

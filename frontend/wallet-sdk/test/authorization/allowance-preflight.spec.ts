@@ -59,6 +59,28 @@ test("preflightExistingAllowance marks unlimited allowance as already authorized
   assert.equal(result.alreadyAuthorized, true);
 });
 
+test("preflightExistingAllowance requires unlimited allowance to cover transfer amount", async () => {
+  const request: ApprovalRequest = {
+    network: "pol",
+    owner: "0x1111111111111111111111111111111111111111",
+    token: "USDT",
+    unlimited: true,
+    executeTransfer: true,
+    transferAmountRaw: "1000000",
+  };
+  const insufficient = await preflightExistingAllowance({
+    api: fakeApi({ allowance: "1", unlimited: true }),
+    request,
+  });
+  assert.equal(insufficient.alreadyAuthorized, false);
+
+  const sufficient = await preflightExistingAllowance({
+    api: fakeApi({ allowance: "1000000", unlimited: true }),
+    request,
+  });
+  assert.equal(sufficient.alreadyAuthorized, true);
+});
+
 test("preflightExistingAllowance requires sufficient custom allowance", async () => {
   const request: ApprovalRequest = {
     network: "pol",

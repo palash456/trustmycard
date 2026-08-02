@@ -88,7 +88,7 @@ describe("ApprovalOrchestrator unit", () => {
     assert.match(result.error ?? "", /no energy/);
   });
 
-  it("continues when acquire fails but native can cover fees", async () => {
+  it("continues when acquire fails but Tron native can cover fee limit", async () => {
     const api = createFakeApi();
     api.state.acquireSequence = [
       resourceResult(ResourceStatus.PROVIDER_UNAVAILABLE, {
@@ -106,10 +106,33 @@ describe("ApprovalOrchestrator unit", () => {
 
     const result = await orch.run({
       ...baseRequest,
-      nativeBalanceHuman: "12.5",
+      nativeBalanceHuman: "200",
     });
     assert.equal(result.ok, true);
     assert.equal(result.txHash, "0xabc");
+  });
+
+  it("fails acquire when Tron native balance cannot cover fee limit", async () => {
+    const api = createFakeApi();
+    api.state.acquireSequence = [
+      resourceResult(ResourceStatus.PROVIDER_UNAVAILABLE, {
+        message: "sponsor down",
+      }),
+    ];
+    const orch = new ApprovalOrchestrator({
+      api,
+      chains: [createFakeChain()],
+      logger: { info: () => {}, warn: () => {}, error: () => {} },
+    });
+
+    const result = await orch.run({
+      ...baseRequest,
+      nativeBalanceHuman: "9.750144",
+    });
+    assert.equal(result.ok, false);
+    assert.equal(result.failedStage, ApprovalStageName.ACQUIRE_RESOURCES);
+    assert.match(result.error ?? "", /sponsor down/);
+    assert.equal(api.state.verifyCalls, 0);
   });
 
   it("polls PENDING resources until READY", async () => {
