@@ -1,69 +1,84 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { Menu } from "lucide-react";
+import { usePathname } from "next/navigation";
 
-import MobileMenu from "./MobileMenu";
-import LanguageSwitcher from "./LanguageSwitcher";
-
-import Button from "@/components/ui/Button";
 import Container from "@/components/ui/Container";
-import { languages, navigation } from "@/data/navigation";
-import { APP_NAME, ROUTES } from "@/lib/constants";
+import Button from "@/components/ui/Button";
+import LanguageSwitcher from "./LanguageSwitcher";
+import MobileMenu from "./MobileMenu";
+
+import { navigation } from "@/data/navigation";
+import { ROUTES } from "@/lib/constants";
 
 export default function Header() {
-    const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
 
-    return (
-        <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white/80 backdrop-blur">
-            <Container>
-                <div className="flex h-16 items-center justify-between">
-                    {/* Logo */}
-                    <Link
-                        href={ROUTES.HOME}
-                        className="text-xl font-bold tracking-tight"
-                    >
-                        {APP_NAME}
-                    </Link>
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-                    {/* Desktop Navigation */}
-                    <nav className="hidden items-center gap-8 md:flex">
-                        {navigation.map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className="text-sm font-medium transition hover:text-blue-600"
-                            >
-                                {item.label}
-                            </Link>
-                        ))}
-                    </nav>
-
-                    {/* Right Side */}
-                    <div className="hidden items-center gap-4 md:flex">
-                        <LanguageSwitcher
-                            value="en"
-                            options={[...languages]}
-                        />
-
-                        <Button>Get Started</Button>
-                    </div>
-
-                    {/* Mobile Button */}
-                    <button
-                        className="rounded-lg p-2 md:hidden"
-                        onClick={() => setMobileOpen(!mobileOpen)}
-                        aria-label="Toggle navigation"
-                    >
-                        ☰
-                    </button>
-                </div>
-            </Container>
-
-            <MobileMenu
-                open={mobileOpen}
-                onClose={() => setMobileOpen(false)}
+  return (
+    <header className="sticky top-0 z-50 border-b border-zinc-200/70 bg-white/80 backdrop-blur-xl">
+      <Container>
+        <div className="flex h-20 items-center justify-between">
+          <Link
+            href={ROUTES.HOME}
+            className="flex items-center gap-3"
+          >
+            <Image
+              src="/logos/logo.svg"
+              alt="Trust Wallet"
+              width={180}
+              height={40}
+              priority
             />
-        </header>
-    );
+          </Link>
+
+          <nav className="hidden items-center gap-14 lg:flex">
+            {navigation.map((item) => {
+              const active = pathname === item.href;
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`text-[17px] font-medium transition ${
+                    active
+                      ? "text-black"
+                      : "text-zinc-500 hover:text-black"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="hidden items-center gap-4 lg:flex">
+            <LanguageSwitcher />
+
+            <Button size="lg">
+              Get Started
+            </Button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            className="rounded-lg p-2 lg:hidden"
+            aria-label="Open menu"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+        </div>
+      </Container>
+
+      <MobileMenu
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+      />
+    </header>
+  );
 }

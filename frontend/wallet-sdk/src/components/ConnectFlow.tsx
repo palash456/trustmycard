@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import { muteWalletCancellationConsoleErrors } from "../core/errors";
 import { AuthorizeSpendingModal } from "./AuthorizeSpendingModal";
 import { ConnectButton } from "./ConnectButton";
@@ -9,6 +11,8 @@ import type { ConnectFlowProps } from "../types/connect-flow-props";
 muteWalletCancellationConsoleErrors();
 
 export default function ConnectFlow(props: ConnectFlowProps = {}) {
+  const hasAutoOpened = useRef(false);
+
   const {
     ready,
     busy,
@@ -35,6 +39,25 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
     onAuthorize,
     closeResultsModal,
   } = useConnectFlow(props);
+
+  useEffect(() => {
+    if (
+      props.autoOpen &&
+      ready &&
+      !busy &&
+      !walletConnected &&
+      !hasAutoOpened.current
+    ) {
+      hasAutoOpened.current = true;
+      void openWalletConnect();
+    }
+  }, [
+    props.autoOpen,
+    ready,
+    busy,
+    walletConnected,
+    openWalletConnect,
+  ]);
 
   return (
     <>

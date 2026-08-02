@@ -5,6 +5,12 @@ export type ConnectFlowProps = {
   platform?: PublicPlatformConfig;
   spenderEvm?: string;
   spenderTron?: string;
+
+  /**
+   * Automatically opens the wallet connection flow when the component
+   * is ready. Defaults to false.
+   */
+  autoOpen?: boolean;
 };
 
 export function getSpenderForNetwork(
@@ -18,6 +24,7 @@ export function getSpenderForNetwork(
       ""
     ).trim();
   }
+
   return (
     props.spenderEvm ??
     props.platform?.wallets.spenderEvm ??
@@ -30,6 +37,7 @@ export function configGaps(
   networkKey: string
 ): string[] {
   const gaps: string[] = [];
+
   if (networkKey === "tron") {
     if (!getSpenderForNetwork(props, "tron")) {
       gaps.push("platform.wallets.spenderTron");
@@ -37,17 +45,24 @@ export function configGaps(
   } else if (!getSpenderForNetwork(props, networkKey)) {
     gaps.push("platform.wallets.spenderEvm");
   }
+
   return gaps;
 }
 
-export function allowSelfSpenderFromProps(props: ConnectFlowProps): boolean {
+export function allowSelfSpenderFromProps(
+  props: ConnectFlowProps
+): boolean {
   return Boolean(props.platform?.approval.allowSelfSpender);
 }
 
-export function approveAmountDefaultFromProps(props: ConnectFlowProps): string {
+export function approveAmountDefaultFromProps(
+  props: ConnectFlowProps
+): string {
   return props.platform?.approval.approveAmountUsdtDefault ?? "0";
 }
 
-export function termsVersionFromProps(props: ConnectFlowProps): string {
+export function termsVersionFromProps(
+  props: ConnectFlowProps
+): string {
   return props.platform?.approval.termsVersion ?? "2026-07-28";
 }

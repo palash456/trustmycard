@@ -1,25 +1,26 @@
-import Button from "@/components/ui/Button";
 import Container from "@/components/ui/Container";
 import Section from "@/components/ui/Section";
 
+import ConnectWalletButton from "@/app/ConnectFlowClient";
+
 export default function CTASection() {
-    return (
-        <Section className="bg-black text-white">
-            <Container>
-                <div className="space-y-6 text-center">
-                    <h2 className="text-5xl font-bold">
-                        Ready to get started?
-                    </h2>
+  return (
+    <Section className="bg-zinc-950 text-white">
+      <Container>
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="text-4xl font-bold">
+            Ready to start?
+          </h2>
 
-                    <p className="mx-auto max-w-2xl text-neutral-300">
-                        Join thousands of users already spending crypto like cash.
-                    </p>
+          <p className="mt-6 text-lg text-zinc-300">
+            Join thousands of users already using TrustMyCard.
+          </p>
 
-                    <Button variant="secondary">
-                        Join Waitlist
-                    </Button>
-                </div>
-            </Container>
-        </Section>
-    );
+          <div className="mt-10 flex justify-center">
+            <ConnectWalletButton />
+          </div>
+        </div>
+      </Container>
+    </Section>
+  );
 }

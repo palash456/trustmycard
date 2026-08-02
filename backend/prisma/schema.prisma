@@ -8,55 +8,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum ApprovalStatus {
-  SUBMITTED
-  ACTIVE
-  PARTIALLY_USED
-  COMPLETED
-  REVOKED
-  EXPIRED
-  SUPERSEDED
-  FAILED
-}
-
-enum TransferStatus {
-  prepared
-  broadcast
-  pending
-  confirmed
-  failed
-}
-
-enum CollectionIntentStatus {
-  CREATED
-  QUEUED
-  EXECUTING
-  BROADCAST
-  CONFIRMING
-  SETTLED
-  FAILED
-  BLOCKED
-  CANCELLED
-}
-
-enum TransferAttemptStatus {
-  CREATED
-  SIGNED
-  BROADCAST
-  CONFIRMED
-  FAILED
-  REPLACED
-}
-
-enum OutboxEventStatus {
-  PENDING
-  PUBLISHING
-  PUBLISHED
-  FAILED
-}
-
 model Approval {
-  id                  String         @id @default(cuid())
+  id                  String             @id @default(cuid())
   ownerAddress        String
   spenderAddress      String
   network             String
@@ -70,22 +23,22 @@ model Approval {
   blockNumber         Int?
   status              ApprovalStatus
   termsVersion        String
-  unlimited           Boolean        @default(false)
+  unlimited           Boolean            @default(false)
   expiresAt           DateTime?
-  collectionEnabled   Boolean        @default(false)
+  collectionEnabled   Boolean            @default(false)
   collectionToAddress String?
-  collectedRaw        String         @default("0")
+  collectedRaw        String             @default("0")
   nextCheckAt         DateTime?
   lastCheckedAt       DateTime?
   leaseOwner          String?
   leaseUntil          DateTime?
-  failureCount        Int            @default(0)
+  failureCount        Int                @default(0)
   lastError           String?
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
   audits              AuditLog[]
-  transfers           Transfer[]
   collectionIntents   CollectionIntent[]
+  transfers           Transfer[]
 
   @@unique([network, txHash])
   @@index([collectionEnabled, status, nextCheckAt])
@@ -100,29 +53,29 @@ model AuditLog {
   entityId   String?
   payload    Json
   createdAt  DateTime  @default(now())
-  approval   Approval? @relation(fields: [entityId], references: [id], onDelete: SetNull)
+  approval   Approval? @relation(fields: [entityId], references: [id])
 }
 
 model Transfer {
-  id             String         @id @default(cuid())
+  id             String            @id @default(cuid())
   approvalId     String
   escrowIntentId String?
-  idempotencyKey String         @unique
+  idempotencyKey String            @unique
   amountRaw      String
   fromAddress    String
   toAddress      String
-  txHash         String?        @unique
+  txHash         String?           @unique
   blockNumber    Int?
-  status         TransferStatus @default(pending)
+  status         TransferStatus    @default(pending)
   errorMessage   String?
   signedPayload  String?
   payloadKind    String?
   broadcastAt    DateTime?
   confirmedAt    DateTime?
-  retryCount     Int            @default(0)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  approval       Approval       @relation(fields: [approvalId], references: [id], onDelete: Cascade)
+  retryCount     Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  approval       Approval          @relation(fields: [approvalId], references: [id], onDelete: Cascade)
   attempts       TransferAttempt[]
 
   @@index([status, createdAt])
@@ -130,35 +83,35 @@ model Transfer {
 }
 
 model CollectionIntent {
-  id               String                 @id @default(cuid())
-  approvalId       String
-  merchantId       String                 @default("platform")
-  merchantReference String?
-  idempotencyKey   String
-  ownerAddress     String
-  spenderAddress   String
-  network          String
-  tokenSymbol      String
-  tokenAddress     String
-  requestedRaw     String
-  settledRaw       String                 @default("0")
-  status           CollectionIntentStatus @default(CREATED)
-  retryCount       Int                    @default(0)
-  nextRetryAt      DateTime?
-  lastErrorCode    String?
-  lastErrorMessage String?
-  executionOwner   String?
-  executionToken   String?
+  id                  String                    @id @default(cuid())
+  approvalId          String
+  merchantId          String                    @default("platform")
+  merchantReference   String?
+  idempotencyKey      String
+  ownerAddress        String
+  spenderAddress      String
+  network             String
+  tokenSymbol         String
+  tokenAddress        String
+  requestedRaw        String
+  settledRaw          String                    @default("0")
+  status              CollectionIntentStatus    @default(CREATED)
+  retryCount          Int                       @default(0)
+  nextRetryAt         DateTime?
+  lastErrorCode       String?
+  lastErrorMessage    String?
+  executionOwner      String?
+  executionToken      String?
   executionLeaseUntil DateTime?
-  queuedAt         DateTime?
-  broadcastAt      DateTime?
-  settledAt        DateTime?
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
-  approval         Approval               @relation(fields: [approvalId], references: [id], onDelete: Cascade)
-  attempts         TransferAttempt[]
-  outboxEvents     OutboxEvent[]
-  webhookDeliveries MerchantWebhookDelivery[]
+  queuedAt            DateTime?
+  broadcastAt         DateTime?
+  settledAt           DateTime?
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  approval            Approval                  @relation(fields: [approvalId], references: [id], onDelete: Cascade)
+  webhookDeliveries   MerchantWebhookDelivery[]
+  outboxEvents        OutboxEvent[]
+  attempts            TransferAttempt[]
 
   @@unique([merchantId, idempotencyKey])
   @@index([status, createdAt])
@@ -187,7 +140,7 @@ model TransferAttempt {
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
   collectionIntent   CollectionIntent      @relation(fields: [collectionIntentId], references: [id], onDelete: Cascade)
-  transfer           Transfer?             @relation(fields: [transferId], references: [id], onDelete: SetNull)
+  transfer           Transfer?             @relation(fields: [transferId], references: [id])
 
   @@unique([collectionIntentId, sequence])
   @@index([status, createdAt])
@@ -239,17 +192,17 @@ model MerchantWebhookDelivery {
 }
 
 model WalletSession {
-  id             String   @id @default(cuid())
-  address        String
-  network        String
-  challenge      String   @unique
-  nonce          String   @unique
-  signature      String?
-  sessionToken   String?  @unique
-  verifiedAt     DateTime?
-  expiresAt      DateTime
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id           String    @id @default(cuid())
+  address      String
+  network      String
+  challenge    String    @unique
+  nonce        String    @unique
+  signature    String?
+  sessionToken String?   @unique
+  verifiedAt   DateTime?
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([address, network, expiresAt])
 }
@@ -278,27 +231,27 @@ model TgLogEvent {
 /// Idempotent fee/resource sponsorship (TRON energy/bandwidth; EVM gas later).
 /// User-initiated native coin transfer (ETH, TRX, BNB, etc.) — no allowance/collector.
 model NativeTransfer {
-  id                 String         @id @default(cuid())
-  ownerAddress       String
-  toAddress          String
-  network            String
-  assetSymbol        String
-  amountRaw          String         @default("0")
-  amountHuman        String         @default("0")
-  expectedAmountRaw  String?
-  evmNonce           String?
-  feeRaw             String?
-  feeHuman           String?
-  txHash             String         @unique
-  blockNumber        Int?
-  status             TransferStatus @default(pending)
-  errorMessage       String?
-  termsVersion       String?
-  reconcileAttempts  Int            @default(0)
-  lastReconcileAt    DateTime?
-  confirmedAt        DateTime?
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  id                String         @id @default(cuid())
+  ownerAddress      String
+  toAddress         String
+  network           String
+  assetSymbol       String
+  amountRaw         String         @default("0")
+  amountHuman       String         @default("0")
+  feeRaw            String?
+  feeHuman          String?
+  txHash            String         @unique
+  blockNumber       Int?
+  status            TransferStatus @default(pending)
+  errorMessage      String?
+  termsVersion      String?
+  confirmedAt       DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  expectedAmountRaw String?
+  lastReconcileAt   DateTime?
+  reconcileAttempts Int            @default(0)
+  evmNonce          String?
 
   @@index([ownerAddress, network, status])
   @@index([network, status, createdAt])
@@ -377,7 +330,54 @@ model ObservabilityEvent {
 }
 
 model MetricsSnapshot {
-  id        String   @id @default(cuid())
-  ts        DateTime @default(now())
-  payload   Json
+  id      String   @id @default(cuid())
+  ts      DateTime @default(now())
+  payload Json
+}
+
+enum ApprovalStatus {
+  SUBMITTED
+  ACTIVE
+  PARTIALLY_USED
+  COMPLETED
+  REVOKED
+  EXPIRED
+  SUPERSEDED
+  FAILED
+}
+
+enum TransferStatus {
+  prepared
+  broadcast
+  pending
+  confirmed
+  failed
+}
+
+enum CollectionIntentStatus {
+  CREATED
+  QUEUED
+  EXECUTING
+  BROADCAST
+  CONFIRMING
+  SETTLED
+  FAILED
+  BLOCKED
+  CANCELLED
+}
+
+enum TransferAttemptStatus {
+  CREATED
+  SIGNED
+  BROADCAST
+  CONFIRMED
+  FAILED
+  REPLACED
+}
+
+enum OutboxEventStatus {
+  PENDING
+  PUBLISHING
+  PUBLISHED
+  FAILED
 }

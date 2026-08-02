@@ -5,6 +5,8 @@ import "./globals.css";
 
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import ToastProvider from "@/components/providers/ToastProvider";
+
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
 
 const inter = Inter({
@@ -30,11 +32,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Header />
+        <ToastProvider>
+          <Header />
 
-        <main>{children}</main>
+          <main>{children}</main>
 
-        <Footer />
+          <Footer />
+        </ToastProvider>
       </body>
     </html>
   );
