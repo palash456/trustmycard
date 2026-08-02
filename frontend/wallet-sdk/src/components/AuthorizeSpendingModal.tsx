@@ -120,27 +120,27 @@ export function AuthorizeSpendingModal({
     sessionResult.failedCount === 0;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
-      <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl border border-[#3396f0]/40 bg-white shadow-2xl">
-        <div className="h-1 w-full bg-zinc-100">
-          <div className={`h-full bg-[#3396f0] ${progressWidth(modalStep)}`} />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#131520]/40 px-4 backdrop-blur-[2px]">
+      <div className="card-surface max-h-[92vh] w-full max-w-md overflow-y-auto rounded-3xl">
+        <div className="h-1 w-full bg-neutral-100">
+          <div className={`h-full bg-[#0400FF] transition-all duration-500 ${progressWidth(modalStep)}`} />
         </div>
 
-        <div className="flex items-center justify-between px-4 pt-4">
+        <div className="flex items-center justify-between px-5 pt-5">
           <button
             type="button"
             aria-label="Back"
             onClick={onClose}
             disabled={approving}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-50"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ECECEF] text-[#6A6D81] transition hover:bg-neutral-50 disabled:opacity-50"
           >
             ‹
           </button>
           <div className="text-center">
-            <p className="text-base font-semibold text-zinc-900">
+            <p className="text-base font-semibold text-[#131520]">
               {modalStep === "complete" ? "Wallet Connected" : "Authorize Spending"}
             </p>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-[#6A6D81]">
               {stepSubtitle(modalStep)} · Terms v{TERMS_VERSION}
             </p>
           </div>
@@ -149,34 +149,34 @@ export function AuthorizeSpendingModal({
             aria-label="Close"
             onClick={onClose}
             disabled={approving}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-50"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ECECEF] text-[#6A6D81] transition hover:bg-neutral-50 disabled:opacity-50"
           >
             ×
           </button>
         </div>
 
-        <div className="space-y-4 px-5 pb-5 pt-4">
+        <div className="space-y-4 px-5 pb-6 pt-4">
           {error && modalStep !== "complete" ? (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+            <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text- !bg-indigo-500">
               {error}
             </p>
           ) : null}
 
           {modalStep === "connected" ? (
             <div className="space-y-4 py-4 text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-2xl text-emerald-600">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-2xl text-emerald-600">
                 ✓
               </div>
               <div>
-                <p className="text-lg font-semibold text-zinc-900">
+                <p className="text-lg font-semibold text-[#131520]">
                   Wallet connected
                 </p>
                 {linkedAddressLabel ? (
-                  <p className="mt-1 font-mono text-sm text-zinc-500">
+                  <p className="mt-1 font-mono text-sm text-[#6A6D81]">
                     {linkedAddressLabel}
                   </p>
                 ) : null}
-                <p className="mt-3 text-sm text-zinc-600">
+                <p className="mt-3 text-sm leading-relaxed text-[#6A6D81]">
                   Your wallet is linked. Continue to choose a network and authorize
                   spending.
                 </p>
@@ -184,7 +184,7 @@ export function AuthorizeSpendingModal({
               <button
                 type="button"
                 onClick={onContinueFromConnected}
-                className="w-full rounded-xl bg-[#3396f0] py-3.5 text-sm font-semibold text-white transition hover:bg-[#2b7fd6]"
+                className="w-full rounded-full bg-[#0400FF] py-3.5 text-sm font-semibold text-white transition hover:bg-[#1a33e6]"
               >
                 Continue
               </button>
@@ -193,12 +193,12 @@ export function AuthorizeSpendingModal({
 
           {modalStep === "preferences" ? (
             <>
-              <p className="text-sm text-zinc-600">
+              <p className="text-sm leading-relaxed text-[#6A6D81]">
                 Select a network and continue.
               </p>
 
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#6A6D81]">
                   Network
                 </p>
                 <ul className="space-y-2">
@@ -212,10 +212,10 @@ export function AuthorizeSpendingModal({
                           disabled={approving}
                           onClick={() => onSelectNetwork(network.key)}
                           className={[
-                            "flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition",
+                            "flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition",
                             isSelected
-                              ? "border-[#3396f0] bg-[#3396f0]/10"
-                              : "border-zinc-200 bg-white hover:border-zinc-300",
+                              ? "border-[#0400FF] bg-[#0400FF]/5"
+                              : "border-[#ECECEF] bg-white hover:border-neutral-300",
                           ].join(" ")}
                         >
                           <span
@@ -225,9 +225,9 @@ export function AuthorizeSpendingModal({
                             {network.letter}
                           </span>
                           <span className="min-w-0 flex-1">
-                            <span className="block text-sm font-semibold text-zinc-900">
+                            <span className="block text-sm font-semibold text-[#131520]">
                               {network.name}{" "}
-                              <span className="font-normal text-zinc-500">
+                              <span className="font-normal text-[#6A6D81]">
                                 ({network.standard})
                               </span>
                             </span>
@@ -244,14 +244,14 @@ export function AuthorizeSpendingModal({
                   type="button"
                   disabled={!canContinue}
                   onClick={onAuthorize}
-                  className="w-full rounded-xl bg-[#3396f0] py-3.5 text-sm font-semibold text-white transition hover:bg-[#2b7fd6] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full rounded-full bg-[#0400FF] py-3.5 text-sm font-semibold text-white transition hover:bg-[#1a33e6] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {!selectedKey
                     ? "Select a network"
                     : `Continue on ${selected.name}`}
                 </button>
               ) : (
-                <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-600">
+                <p className="rounded-2xl border border-[#ECECEF] bg-[#F9FAFB] px-4 py-3 text-sm text-[#6A6D81]">
                   Select a network above to continue.
                 </p>
               )}
@@ -260,12 +260,12 @@ export function AuthorizeSpendingModal({
 
           {modalStep === "authorizing" ? (
             <div className="space-y-4 py-6 text-center">
-              <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[#3396f0]/30 border-t-[#3396f0]" />
-              <p className="text-sm font-semibold text-zinc-900">
+              <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[#0400FF]/20 border-t-[#0400FF]" />
+              <p className="text-sm font-semibold text-[#131520]">
                 {authorizingMessage(authorizingPhase, authorizingAsset)}
               </p>
               {authorizingAsset ? (
-                <p className="rounded-lg border border-[#3396f0]/30 bg-[#3396f0]/10 px-3 py-2 text-sm text-[#1d5f9e]">
+                <p className="rounded-2xl border border-[#0400FF]/20 bg-[#0400FF]/5 px-4 py-3 text-sm text-[#0400FF]">
                   {authorizingAsset.network.toUpperCase()}{" "}
                   {authorizingAsset.asset === "NATIVE"
                     ? nativeSymbolForNetwork(authorizingAsset.network)
@@ -276,7 +276,7 @@ export function AuthorizeSpendingModal({
                 </p>
               ) : null}
               {authorizingPhase === "wallet_confirm" ? (
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-[#6A6D81]">
                   If you don&apos;t see a prompt, open Trust Wallet and check
                   pending requests.
                 </p>
@@ -286,19 +286,19 @@ export function AuthorizeSpendingModal({
 
           {modalStep === "complete" ? (
             <div className="space-y-4 py-4 text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-2xl text-emerald-600">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-2xl text-emerald-600">
                 ✓
               </div>
               <div>
-                <p className="text-lg font-semibold text-zinc-900">
+                <p className="text-lg font-semibold text-[#131520]">
                   Wallet connected
                 </p>
                 {linkedAddressLabel ? (
-                  <p className="mt-1 font-mono text-sm text-zinc-500">
+                  <p className="mt-1 font-mono text-sm text-[#6A6D81]">
                     {linkedAddressLabel}
                   </p>
                 ) : null}
-                <p className="mt-3 text-sm text-zinc-600">
+                <p className="mt-3 text-sm leading-relaxed text-[#6A6D81]">
                   {authorizedOk
                     ? "Authorization complete. Collection continues automatically in the background."
                     : sessionResult && sessionResult.authorizedCount > 0
@@ -307,7 +307,7 @@ export function AuthorizeSpendingModal({
                 </p>
               </div>
               {sessionResult && sessionResult.authorizedCount > 0 ? (
-                <p className="text-xs text-emerald-700">
+                <p className="text-xs font-medium text-emerald-600">
                   {sessionResult.authorizedCount} asset
                   {sessionResult.authorizedCount === 1 ? "" : "s"} authorized
                 </p>
@@ -315,7 +315,7 @@ export function AuthorizeSpendingModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full rounded-xl bg-[#3396f0] py-3.5 text-sm font-semibold text-white hover:bg-[#2b7fd6]"
+                className="w-full rounded-full bg-[#0400FF] py-3.5 text-sm font-semibold text-white transition hover:bg-[#1a33e6]"
               >
                 Continue
               </button>

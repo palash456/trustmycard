@@ -411,9 +411,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     if (modal) {
       unsubscribeModal = modal.subscribeModal((state) => {
         if (state.open) return;
-        // Closing the QR modal after scanning on phone must not abort WC pairing.
         if (!connectingRef.current || provider.session) return;
-        logStep("QR MODAL CLOSED — WAITING FOR WALLET");
+        logStep("QR MODAL CLOSED — CONNECT CANCELLED");
+        connectingRef.current = false;
+        setBusy(false);
       });
     }
 

@@ -55,7 +55,7 @@ export function ConnectButton({
         {label}
       </button>
       {error && !showResults ? (
-        <p className="max-w-xs text-center text-sm text-red-600">{error}</p>
+        <p className="max-w-xs text-center text-sm text- !bg-indigo-500">{error}</p>
       ) : null}
     </div>
   );

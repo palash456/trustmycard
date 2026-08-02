@@ -26,17 +26,17 @@ export function NetworkRowButton({
         disabled={disabled}
         onClick={onSelect}
         className={[
-          "flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition",
+          "flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition",
           waiting || (selected && !approved)
-            ? "border-[#3396f0] bg-[#3396f0]/10 shadow-sm"
+            ? "border-[#0400FF] bg-[#0400FF]/5"
             : approved
-              ? "border-emerald-300 bg-emerald-50"
-              : "border-zinc-200 bg-white hover:border-zinc-300",
+              ? "border-emerald-200 bg-emerald-50"
+              : "border-[#ECECEF] bg-white hover:border-neutral-300",
         ].join(" ")}
       >
         {waiting ? (
           <span className="flex h-10 w-10 shrink-0 items-center justify-center">
-            <span className="h-6 w-6 animate-spin rounded-full border-2 border-[#3396f0] border-t-transparent" />
+            <span className="h-6 w-6 animate-spin rounded-full border-2 border-[#0400FF] border-t-transparent" />
           </span>
         ) : approved ? (
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-lg font-bold text-white">
@@ -52,16 +52,16 @@ export function NetworkRowButton({
         )}
 
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-zinc-900">
+          <span className="block text-sm font-semibold text-[#131520]">
             {network.name}{" "}
-            <span className="font-normal text-zinc-500">
+            <span className="font-normal text-[#6A6D81]">
               ({network.standard})
             </span>
           </span>
           <span
             className={[
               "mt-0.5 block text-xs",
-              approved ? "font-medium text-emerald-600" : "text-zinc-500",
+              approved ? "font-medium text-emerald-600" : "text-[#6A6D81]",
             ].join(" ")}
           >
             {statusLabel(status)}
@@ -69,7 +69,7 @@ export function NetworkRowButton({
         </span>
 
         {!waiting && !approved ? (
-          <span className="text-lg text-zinc-300" aria-hidden>
+          <span className="text-lg text-neutral-300" aria-hidden>
             ›
           </span>
         ) : null}

@@ -1,45 +1,25 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Geist } from "next/font/google";
 
 import "./globals.css";
 
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
-import ToastProvider from "@/components/providers/ToastProvider";
-
-import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
-
-const inter = Inter({
+const geist = Geist({
   subsets: ["latin"],
   display: "swap",
+  variable: "--font-sans",
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: APP_NAME,
-    template: `%s | ${APP_NAME}`,
-  },
-  description: APP_DESCRIPTION,
+  title: "Get Your Trust Card",
+  description: "A secure platform for digital payment experiences.",
 };
-
-interface RootLayoutProps {
-  children: React.ReactNode;
-}
 
 export default function RootLayout({
   children,
-}: Readonly<RootLayoutProps>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <ToastProvider>
-          <Header />
-
-          <main>{children}</main>
-
-          <Footer />
-        </ToastProvider>
-      </body>
+    <html lang="en" className={`${geist.variable} font-sans`}>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

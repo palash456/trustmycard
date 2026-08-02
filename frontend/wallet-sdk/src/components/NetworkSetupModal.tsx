@@ -34,42 +34,42 @@ export function NetworkSetupModal({
   onContinue,
 }: NetworkSetupModalProps) {
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[#3396f0]/40 bg-white shadow-2xl">
-        <div className="h-1 w-full bg-zinc-100">
-          <div className="h-full w-[66%] bg-[#3396f0]" />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#131520]/40 px-4 backdrop-blur-[2px]">
+      <div className="card-surface w-full max-w-md overflow-hidden rounded-3xl">
+        <div className="h-1 w-full bg-neutral-100">
+          <div className="h-full w-[66%] bg-[#0400FF]" />
         </div>
 
-        <div className="flex items-center justify-between px-4 pt-4">
+        <div className="flex items-center justify-between px-5 pt-5">
           <button
             type="button"
             aria-label="Back"
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 hover:bg-zinc-50"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ECECEF] text-[#6A6D81] transition hover:bg-neutral-50"
           >
             ‹
           </button>
           <div className="text-center">
-            <p className="text-base font-semibold text-zinc-900">Setup</p>
-            <p className="text-xs text-zinc-500">Step 2 of 3</p>
+            <p className="text-base font-semibold text-[#131520]">Setup</p>
+            <p className="text-xs text-[#6A6D81]">Step 2 of 3</p>
           </div>
           <button
             type="button"
             aria-label="Close"
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 hover:bg-zinc-50"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ECECEF] text-[#6A6D81] transition hover:bg-neutral-50"
           >
             ×
           </button>
         </div>
 
-        <div className="px-5 pb-5 pt-4">
-          <p className="mb-4 text-sm text-zinc-600">
+        <div className="px-5 pb-6 pt-4">
+          <p className="mb-4 text-sm leading-relaxed text-[#6A6D81]">
             Scanning your wallet on supported networks.
           </p>
 
           {error ? (
-            <p className="mb-3 text-sm text-red-600">{error}</p>
+            <p className="mb-3 rounded-2xl bg-red-50 px-4 py-3 text-sm text- !bg-indigo-500">{error}</p>
           ) : null}
 
           <ul className="space-y-2">
@@ -94,7 +94,7 @@ export function NetworkSetupModal({
             type="button"
             disabled={!selectedKey || approving}
             onClick={onContinue}
-            className="mt-5 w-full rounded-xl bg-[#3396f0] py-3.5 text-sm font-semibold text-white transition hover:bg-[#2b7fd6] disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-5 w-full rounded-full bg-[#0400FF] py-3.5 text-sm font-semibold text-white transition hover:bg-[#1a33e6] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {continueLabel(selectedKey, rowStatus)}
           </button>
