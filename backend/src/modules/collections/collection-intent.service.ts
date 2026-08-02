@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { CollectionIntentStatus, Prisma } from "@prisma/client";
 import { createHash } from "crypto";
+import { AdminEventsService } from "../../infrastructure/admin-events/admin-events.service";
 import { OutboxService, COLLECTION_EVENT } from "./outbox.service";
 import { PrismaService } from "../../infrastructure/database/prisma.service";
 
@@ -21,8 +22,29 @@ export type CollectionIntentInput = {
 export class CollectionIntentService {
   constructor(
     private readonly outbox: OutboxService,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
+    private readonly adminEvents?: AdminEventsService
   ) {}
+
+  private emitCollectionIntentUpdated(intent: {
+    id: string;
+    approvalId: string;
+    ownerAddress: string;
+    status: CollectionIntentStatus;
+    network: string;
+    attemptId?: string;
+    txHash?: string | null;
+  }) {
+    this.adminEvents?.collectionIntentUpdated({
+      id: intent.id,
+      approvalId: intent.approvalId,
+      ownerAddress: intent.ownerAddress,
+      status: intent.status,
+      network: intent.network,
+      attemptId: intent.attemptId,
+      txHash: intent.txHash ?? null,
+    });
+  }
 
   async createForApproval(tx: Prisma.TransactionClient, input: CollectionIntentInput) {
     if (BigInt(input.requestedRaw) <= BigInt(0)) {
@@ -58,6 +80,15 @@ export class CollectionIntentService {
     if (existing) {
       return { intent, event: null };
     }
+
+    this.emitCollectionIntentUpdated({
+      id: intent.id,
+      approvalId: intent.approvalId,
+      ownerAddress: intent.ownerAddress,
+      status: CollectionIntentStatus.QUEUED,
+      network: intent.network,
+      txHash: null,
+    });
 
     const event = await this.outbox.record(tx, {
       aggregateType: "CollectionIntent",

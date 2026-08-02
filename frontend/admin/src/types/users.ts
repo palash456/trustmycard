@@ -81,6 +81,7 @@ export type UserDetail = {
     successRate: number;
   };
   activeApprovals: Array<Record<string, unknown>>;
+  revokedApprovals: Array<Record<string, unknown>>;
   approvalHistory: Array<Record<string, unknown>>;
   transfers: Array<Record<string, unknown>>;
   nativeTransfers: Array<Record<string, unknown>>;

@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { createHash, randomUUID } from "crypto";
+import { AdminEventsService } from "../../infrastructure/admin-events/admin-events.service";
 import { PrismaService } from "../../infrastructure/database/prisma.service";
 import { ConfigService } from "../../config/config.service";
 import { CollectionQueueService } from "../../jobs/queues/collection-queue.service";
@@ -15,7 +16,8 @@ export class AdminCollectionsService {
     private readonly publisher: OutboxPublisherService,
     private readonly config: ConfigService,
     private readonly outbox: OutboxService,
-    private readonly wallet: WalletService
+    private readonly wallet: WalletService,
+    private readonly adminEvents: AdminEventsService
   ) {}
 
   async status() {
@@ -46,6 +48,14 @@ export class AdminCollectionsService {
     await this.prisma.collectionIntent.update({
       where: { id },
       data: { status: "QUEUED", lastErrorCode: null, lastErrorMessage: null, queuedAt: new Date() },
+    });
+    this.adminEvents.collectionIntentUpdated({
+      id,
+      approvalId: intent.approvalId,
+      ownerAddress: intent.ownerAddress,
+      status: "QUEUED",
+      network: intent.network,
+      txHash: null,
     });
     await this.queues.enqueueExecution({ intentId: id, outboxEventId: `admin-retry:${id}:${Date.now()}` });
     return { ok: true, id };
@@ -104,6 +114,15 @@ export class AdminCollectionsService {
         payload: { collectionIntentId: created.id, approvalId, manual: true },
       });
       return { intent: created };
+    });
+
+    this.adminEvents.collectionIntentUpdated({
+      id: intent.id,
+      approvalId: intent.approvalId,
+      ownerAddress: intent.ownerAddress,
+      status: "QUEUED",
+      network: intent.network,
+      txHash: null,
     });
 
     if (mode === "queue") {

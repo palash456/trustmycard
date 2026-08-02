@@ -36,6 +36,15 @@ const ACTIVE_APPROVAL_STATUSES: ApprovalStatus[] = [
   "PARTIALLY_USED",
 ];
 
+export function partitionApprovalsForAdminView<T extends { status: string }>(approvals: T[]) {
+  return {
+    activeApprovals: approvals.filter(
+      (approval) => !["SUPERSEDED", "REVOKED"].includes(approval.status)
+    ),
+    revokedApprovals: approvals.filter((approval) => approval.status === "REVOKED"),
+  };
+}
+
 type AddressBase = {
   address: string;
   approvalCount: number;
@@ -262,9 +271,7 @@ export class UserAggregationService {
       events,
     });
 
-    const activeApprovals = approvals.filter(
-      (a) => a.status !== "SUPERSEDED" && a.status !== "REVOKED"
-    );
+    const { activeApprovals, revokedApprovals } = partitionApprovalsForAdminView(approvals);
 
     const lifetimeCollected = this.aggregateCollected(approvals);
     const errors = this.buildErrorsList(
@@ -308,6 +315,7 @@ export class UserAggregationService {
         successRate: analytics.successRate,
       },
       activeApprovals,
+      revokedApprovals,
       approvalHistory: approvals,
       transfers: transfers.map(({ signedPayload, ...t }) => ({
         ...t,

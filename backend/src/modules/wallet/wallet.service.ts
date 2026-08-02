@@ -17,6 +17,7 @@ import { ResourceManager } from "../resources/resource-manager.service";
 import { CollectionIntentService } from "../collections/collection-intent.service";
 import { COLLECTION_SIGNER, type CollectionSigner } from "../custody/signer";
 import { ConfigService } from "../../config/config.service";
+import { resolveApprovalStateAfterAllowanceCheck } from "./approval-state-sync";
 import { PlatformConfigService } from "../../config/platform-config.service";
 import { SETTING_KEYS } from "../../config/settings-keys";
 
@@ -818,6 +819,27 @@ export class WalletService {
     this.adminEvents.userUpdated({ address: args.ownerAddress });
   }
 
+  private notifyCollectionIntentUpdated(args: {
+    id: string;
+    approvalId: string;
+    ownerAddress: string;
+    status: CollectionIntentStatus;
+    network: string;
+    attemptId?: string;
+    txHash?: string | null;
+  }): void {
+    this.adminEvents.collectionIntentUpdated({
+      id: args.id,
+      approvalId: args.approvalId,
+      ownerAddress: args.ownerAddress,
+      status: args.status,
+      network: args.network,
+      attemptId: args.attemptId,
+      txHash: args.txHash ?? null,
+    });
+    this.adminEvents.userUpdated({ address: args.ownerAddress });
+  }
+
   /** Fix rows confirmed on-chain but left as broadcast after a post-confirm failure. */
   async repairInconsistentConfirmedTransfers(limit = 100): Promise<number> {
     const rows = await prisma.transfer.findMany({
@@ -1445,24 +1467,23 @@ export class WalletService {
     }
 
     if (allowanceRaw <= BigInt(0)) {
-      const stillAwaitingConfirmation =
-        approval.status === "SUBMITTED" &&
-        now.getTime() - approval.createdAt.getTime() < this.platformConfig.getCollector().submittedGraceMs;
+      const state = resolveApprovalStateAfterAllowanceCheck({
+        status: approval.status,
+        collectionEnabled: approval.collectionEnabled,
+        createdAt: approval.createdAt,
+        now,
+        allowanceRaw,
+        submittedGraceMs: this.platformConfig.getCollector().submittedGraceMs,
+      });
       await prisma.approval.update({
         where: { id: approval.id },
-        data: stillAwaitingConfirmation
-          ? {
-              lastCheckedAt: now,
-              nextCheckAt: this.nextCollectionCheck(),
-              lastError: null,
-            }
-          : {
-              status: approval.status === "SUBMITTED" ? "FAILED" : "REVOKED",
-              collectionEnabled: false,
-              nextCheckAt: null,
-              lastCheckedAt: now,
-              lastError: null,
-            },
+        data: {
+          status: state.status,
+          collectionEnabled: state.collectionEnabled,
+          nextCheckAt: state.nextCheckAt,
+          lastCheckedAt: now,
+          lastError: null,
+        },
       });
       return;
     }
@@ -1545,6 +1566,7 @@ export class WalletService {
       return { attemptId: previous.id, txHash: previous.txHash };
     }
 
+    const approval = intent.approval;
     const claim = await prisma.collectionIntent.updateMany({
       where: {
         id: intent.id,
@@ -1552,11 +1574,18 @@ export class WalletService {
       },
       data: { status: CollectionIntentStatus.EXECUTING, executionOwner: `queue:${process.pid}` },
     });
+    if (claim.count === 1) {
+      this.notifyCollectionIntentUpdated({
+        id: intent.id,
+        approvalId: approval.id,
+        ownerAddress: approval.ownerAddress,
+        status: CollectionIntentStatus.EXECUTING,
+        network: approval.network,
+      });
+    }
     if (claim.count !== 1) {
       throw new BadRequestException("Collection intent is already being executed");
     }
-
-    const approval = intent.approval;
     if (!approval.collectionEnabled) {
       await prisma.collectionIntent.update({
         where: { id: intent.id },
@@ -1565,6 +1594,13 @@ export class WalletService {
           lastErrorCode: "APPROVAL_COLLECTION_DISABLED",
           lastErrorMessage: "Collection was disabled by policy or an operator",
         },
+      });
+      this.notifyCollectionIntentUpdated({
+        id: intent.id,
+        approvalId: approval.id,
+        ownerAddress: approval.ownerAddress,
+        status: CollectionIntentStatus.CANCELLED,
+        network: approval.network,
       });
       throw new BadRequestException("Collection is disabled for this approval");
     }
@@ -1618,6 +1654,13 @@ export class WalletService {
             },
           }),
         ]);
+        this.notifyCollectionIntentUpdated({
+          id: intent.id,
+          approvalId: approval.id,
+          ownerAddress: approval.ownerAddress,
+          status: CollectionIntentStatus.BLOCKED,
+          network: approval.network,
+        });
         throw new BadRequestException("No transferable balance or allowance");
       }
 
@@ -1685,7 +1728,7 @@ export class WalletService {
           },
         }),
       ]);
-      this.adminEvents.collectionIntentUpdated({
+      this.notifyCollectionIntentUpdated({
         id: intent.id,
         approvalId: approval.id,
         ownerAddress: approval.ownerAddress,
@@ -1722,6 +1765,15 @@ export class WalletService {
           },
         }),
       ]);
+      this.notifyCollectionIntentUpdated({
+        id: intent.id,
+        approvalId: approval.id,
+        ownerAddress: approval.ownerAddress,
+        status: CollectionIntentStatus.FAILED,
+        network: approval.network,
+        attemptId: attempt.id,
+        txHash: null,
+      });
       throw error;
     }
   }
@@ -1743,6 +1795,15 @@ export class WalletService {
       await prisma.collectionIntent.update({
         where: { id: attempt.collectionIntentId },
         data: { status: CollectionIntentStatus.CONFIRMING },
+      });
+      this.notifyCollectionIntentUpdated({
+        id: attempt.collectionIntentId,
+        approvalId: approval.id,
+        ownerAddress: approval.ownerAddress,
+        status: CollectionIntentStatus.CONFIRMING,
+        network: approval.network,
+        attemptId: attempt.id,
+        txHash: attempt.txHash,
       });
     }
     let blockNumber: number | null = null;
@@ -1812,7 +1873,7 @@ export class WalletService {
           },
         }),
       ]);
-      this.adminEvents.collectionIntentUpdated({
+      this.notifyCollectionIntentUpdated({
         id: attempt.collectionIntentId,
         approvalId: approval.id,
         ownerAddress: approval.ownerAddress,
@@ -1881,7 +1942,7 @@ export class WalletService {
         },
       }),
     ]);
-    this.adminEvents.collectionIntentUpdated({
+    this.notifyCollectionIntentUpdated({
       id: attempt.collectionIntentId,
       approvalId: approval.id,
       ownerAddress: approval.ownerAddress,

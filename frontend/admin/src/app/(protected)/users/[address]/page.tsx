@@ -98,6 +98,8 @@ export default async function UserDetailPage({
 
   const s = data.summary;
   const approvals = data.approvalHistory as ApprovalRow[];
+  const activeApprovals = (data.activeApprovals as ApprovalRow[]) ?? [];
+  const revokedApprovals = (data.revokedApprovals as ApprovalRow[]) ?? [];
   const transfers = data.transfers as TransferRow[];
   const nativeTransfers = data.nativeTransfers as NativeRow[];
   const events = data.events as EventRow[];
@@ -250,10 +252,39 @@ export default async function UserDetailPage({
               <CardTitle className="text-base">Active approvals</CardTitle>
             </CardHeader>
             <CardContent className="divide-y p-0">
-              {(data.activeApprovals as ApprovalRow[]).length === 0 ? (
+              {activeApprovals.length === 0 ? (
                 <p className="p-6 text-sm text-muted-foreground">No active approvals</p>
               ) : (
-                (data.activeApprovals as ApprovalRow[]).map((a) => (
+                activeApprovals.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
+                  >
+                    <Link
+                      href={`/approvals/${a.id}`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {a.network} {a.tokenSymbol}
+                    </Link>
+                    <StatusBadge value={a.status} />
+                    <span className="text-xs text-muted-foreground">
+                      {formatAdminAmount(a.amountHuman)} · collected {formatAdminAmount(a.collectedRaw)} · rem {formatAdminAmount(a.remainingRaw)}
+                    </span>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Revoked approvals</CardTitle>
+            </CardHeader>
+            <CardContent className="divide-y p-0">
+              {revokedApprovals.length === 0 ? (
+                <p className="p-6 text-sm text-muted-foreground">No revoked approvals</p>
+              ) : (
+                revokedApprovals.map((a) => (
                   <div
                     key={a.id}
                     className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"

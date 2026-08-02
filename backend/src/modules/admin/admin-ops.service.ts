@@ -150,7 +150,12 @@ export class AdminOpsService {
       },
       after: data,
     });
-    this.streamService.emit("approval.updated", { id });
+    this.streamService.emit("approval.updated", {
+      id: updated.id,
+      ownerAddress: updated.ownerAddress,
+      status: updated.status,
+      network: updated.network,
+    });
     return { ok: true, item: updated };
   }
 
