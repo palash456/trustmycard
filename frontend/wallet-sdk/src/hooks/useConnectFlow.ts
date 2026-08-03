@@ -523,6 +523,27 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         assets: items.map((i) => `${i.network}:${i.asset}`),
       });
 
+      let sessionNetworks = networks;
+      try {
+        const refreshed = await fetchBalances(linked.evm, linked.tron);
+        const refreshedRows = rowsFromBalances(refreshed).filter((row) =>
+          row.key === "tron" ? Boolean(linked.tron) : Boolean(linked.evm)
+        );
+        if (refreshedRows.length > 0) {
+          sessionNetworks = refreshedRows;
+          setNetworks(refreshedRows);
+          logStep("BALANCES REFRESHED BEFORE AUTHORIZE", {
+            network: selectedKey,
+            balances: refreshedRows.find((r) => r.key === selectedKey),
+          });
+        }
+      } catch (refreshErr) {
+        logStep("BALANCE REFRESH FAILED — USING CONNECT SNAPSHOT", {
+          network: selectedKey,
+          error: getErrorMessage(refreshErr, "refresh failed"),
+        });
+      }
+
       let assetIndex = 0;
 
       const approvalOrchestrator = createBrowserApprovalOrchestrator({
@@ -537,7 +558,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
       const summary = await runAuthorizationSession({
         items,
-        networks,
+        networks: sessionNetworks,
         accounts: accountsRef.current,
         evmBatchProvider: provider,
         getSpender: (networkKey) =>

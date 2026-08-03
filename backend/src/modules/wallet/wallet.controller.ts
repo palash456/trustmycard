@@ -75,6 +75,22 @@ export class WalletController {
     return this.walletService.confirmApproval(body);
   }
 
+  @Post("approvals/queue-collection")
+  @UseGuards(WalletSessionGuard)
+  @ApiOperation({ summary: "Queue collection for an existing on-chain allowance (skip re-approve)" })
+  approvalsQueueCollection(
+    @Body() body: Record<string, unknown>,
+    @Req() req: { walletSession?: { address: string; network: string } }
+  ) {
+    const session = req.walletSession;
+    const owner = String(body.owner ?? "").trim();
+    const network = String(body.network ?? "").trim().toLowerCase();
+    if (!session || session.address !== (network === "tron" ? owner : owner.toLowerCase()) || session.network !== network) {
+      throw new UnauthorizedException("Authenticated wallet session does not match queue-collection request");
+    }
+    return this.walletService.queueCollectionFromAllowance(body);
+  }
+
   @Get("approvals/debug")
   @UseGuards(AdminApiKeyGuard)
   @ApiSecurity("adminApiKey")

@@ -35,6 +35,7 @@ export const TRANSFER_SKIP_REASON_LABELS: Record<string, string> = {
     "Queued for background collection",
   [TRANSFER_SKIP_REASONS.execute_transfer_disabled]:
     "Immediate transfer skipped — background collector enabled",
+  already_authorized: "Already authorized on-chain — no new approve required",
 };
 
 export function formatTransferSkipReason(reason: string | null | undefined): string {

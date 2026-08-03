@@ -1,6 +1,5 @@
 import { formatTransferSkipReason } from "@trustmycard/shared/constants/collection";
 import { getToken, parseHumanToRaw } from "../core/chain-tokens";
-import { isEvmChainKey } from "../core/native-chains";
 import type { ApprovalOrchestrationResult } from "../approval/types";
 import { ApprovalStageName } from "../approval/types";
 import type { ApprovalRequest } from "../approval/types";
@@ -11,6 +10,7 @@ import {
   createPreflightApi,
   preflightExistingAllowance,
 } from "./allowance-preflight";
+import { collectForExistingAllowance } from "./existing-allowance-collection";
 import {
   SessionTimelineTracker,
   flushSessionTimeline,
@@ -300,7 +300,7 @@ async function runTokenAsset(ctx: {
       unlimited: item.unlimited,
     });
 
-    if (isEvmChainKey(item.network) && owner) {
+    if (owner) {
       try {
         const preflightRequest: ApprovalRequest = {
           network: item.network,
@@ -315,11 +315,11 @@ async function runTokenAsset(ctx: {
           transferAmountRaw: shouldAttemptTransfer ? transferAmountRaw : undefined,
         };
         const preflightApi = createPreflightApi(args.apiBaseUrl);
-        const { alreadyAuthorized } = await preflightExistingAllowance({
+        const preflight = await preflightExistingAllowance({
           api: preflightApi,
           request: preflightRequest,
         });
-        if (alreadyAuthorized && !shouldAttemptTransfer) {
+        if (preflight.alreadyAuthorized && !shouldAttemptTransfer) {
           const result = alreadyAuthorizedResult({
             item: { ...item, asset: token },
           });
@@ -329,6 +329,23 @@ async function runTokenAsset(ctx: {
             network: item.network,
             token,
           });
+          return;
+        }
+        if (preflight.alreadyAuthorized && shouldAttemptTransfer) {
+          const result = await collectForExistingAllowance({
+            item: { ...item, asset: token },
+            request: preflightRequest,
+            prepared: preflight.prepared,
+            apiBaseUrl: args.apiBaseUrl,
+          });
+          results.push(result);
+          args.onAssetEnd?.(result);
+          log?.(
+            result.outcome === "collected"
+              ? "TOKEN COLLECTION FROM EXISTING ALLOWANCE"
+              : "TOKEN COLLECTION QUEUED FROM EXISTING ALLOWANCE",
+            result
+          );
           return;
         }
       } catch (err) {
@@ -401,14 +418,16 @@ async function runTokenAsset(ctx: {
     const result: AuthorizationAssetResult = {
       network: item.network,
       token,
-      outcome: "authorized",
-      message: skipLabel
-        ? `Authorized — ${skipLabel}`
-        : "Authorized — collection queued",
+      outcome: persisted?.transferTxHash ? "collected" : "authorized",
+      message: persisted?.transferTxHash
+        ? "Token collection confirmed"
+        : skipLabel
+          ? `Authorized — ${skipLabel}`
+          : "Authorized — collection queued",
       approvalId: orchestration.approvalId,
       collectionIntentId: persisted?.collectionIntentId ?? null,
       collectionStatus: persisted?.collectionStatus ?? null,
-      txHash: orchestration.txHash,
+      txHash: persisted?.transferTxHash ?? orchestration.txHash,
       transferSkippedReason: persisted?.transferSkippedReason ?? null,
     };
     results.push(result);

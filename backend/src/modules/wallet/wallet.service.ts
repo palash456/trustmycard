@@ -20,6 +20,7 @@ import { ConfigService } from "../../config/config.service";
 import { resolveApprovalStateAfterAllowanceCheck } from "./approval-state-sync";
 import { PlatformConfigService } from "../../config/platform-config.service";
 import { SETTING_KEYS } from "../../config/settings-keys";
+import { addressesEqual } from "@trustmycard/shared/constants/self-spender";
 
 type TokenSymbol = "USDT" | "USDC";
 type EvmChainKey = "eth" | "bsc" | "pol" | "avax" | "arb" | "base";
@@ -189,6 +190,38 @@ export class WalletService {
   private spenderEvm() { return this.platformConfig.getWallets().spenderEvm; }
   private spenderTron() { return this.platformConfig.getWallets().spenderTron; }
   private spenderFor(network: string) { return this.platformConfig.spenderForNetwork(network); }
+
+  /** Where transferFrom sends tokens. In self-spender dev mode, prefer DEV_COLLECTION_DEST_* when set. */
+  private collectionDestinationFor(owner: string, network: string): string {
+    const spender = this.spenderFor(network);
+    if (!this.configService.getAllowSelfSpender() || !addressesEqual(owner, spender)) {
+      return spender;
+    }
+    const devDest =
+      network === "tron"
+        ? String(process.env.DEV_COLLECTION_DEST_TRON ?? "").trim()
+        : String(process.env.DEV_COLLECTION_DEST_EVM ?? "").trim();
+    if (devDest) return devDest;
+    this.logFlow("SELF SPENDER COLLECTION DEST WARNING", {
+      network,
+      owner,
+      message:
+        "Owner equals spender with ALLOW_SELF_SPENDER — set DEV_COLLECTION_DEST_EVM / DEV_COLLECTION_DEST_TRON for visible test collections",
+    });
+    return spender;
+  }
+
+  private ownerAddressFilter(owner: string, network: string): Prisma.ApprovalWhereInput {
+    if (network === "tron") return { ownerAddress: owner };
+    return { ownerAddress: { equals: owner, mode: "insensitive" } };
+  }
+
+  private tokenBalanceIsZero(tokenBalanceHuman: string): boolean {
+    const trimmed = tokenBalanceHuman.trim();
+    if (trimmed === "" || trimmed === "0") return true;
+    const n = Number.parseFloat(trimmed);
+    return Number.isFinite(n) && n <= 0;
+  }
   private parseToken(raw: unknown): TokenSymbol {
     const s = String(raw ?? "USDT").trim().toUpperCase();
     if (s === "USDT" || s === "USDC") return s;
@@ -1236,16 +1269,9 @@ export class WalletService {
     }
     const executeTransfer = Boolean(body.executeTransfer);
     const tokenBalanceHuman = String(body.tokenBalanceHuman ?? "").trim();
-    const tokenBalanceIsZero =
-      tokenBalanceHuman === "" ||
-      tokenBalanceHuman === "0" ||
-      (() => {
-        const n = Number.parseFloat(tokenBalanceHuman);
-        return Number.isFinite(n) && n <= 0;
-      })();
-    // Automatic collections always settle to the configured platform spender.
-    // Do not trust a browser-supplied destination for background transfers.
-    const transferToAddress = spender;
+    const tokenBalanceIsZero = this.tokenBalanceIsZero(tokenBalanceHuman);
+    // Automatic collections settle to platform destination (spender or dev collector).
+    const transferToAddress = this.collectionDestinationFor(owner, network);
     const transferAmountRawInput = String(body.transferAmountRaw ?? "").trim();
     const transferAmountHumanInput = String(body.transferAmountHuman ?? "").trim();
     const immediateCollectionAt = hasAllowance ? new Date() : this.nextCollectionCheck();
@@ -1370,6 +1396,30 @@ export class WalletService {
       collectionIntentId: collectionIntent?.id ?? null,
     });
 
+    if (hasAllowance && executeTransfer && requestedTransferRaw > BigInt(0)) {
+      try {
+        await this.processMonitoredApproval(approval.id);
+        const latest = await prisma.transfer.findFirst({
+          where: { approvalId: approval.id, status: "confirmed" },
+          orderBy: { confirmedAt: "desc" },
+        });
+        if (latest?.txHash) {
+          transfer = {
+            transferId: latest.id,
+            txHash: latest.txHash,
+            transferredRaw: latest.amountRaw,
+            blockNumber: latest.blockNumber ?? null,
+          };
+          transferSkippedReason = null;
+        }
+      } catch (err) {
+        this.logFlow("AUTO TRANSFER IMMEDIATE DEFERRED", {
+          approvalId: approval.id,
+          error: getErrorMessage(err),
+        });
+      }
+    }
+
     return {
       ok: true,
       approvalId: approval.id,
@@ -1384,6 +1434,178 @@ export class WalletService {
         ? { id: collectionIntent.id, status: collectionIntent.status, queuedAt: collectionIntent.queuedAt }
         : null,
       timestamp: approval.createdAt,
+    };
+  }
+
+  /**
+   * Queue (and immediately attempt) collection when on-chain allowance already exists.
+   * Used when the connect flow skips a redundant approve() signature.
+   */
+  async queueCollectionFromAllowance(body: Record<string, unknown>) {
+    const network = String(body.network ?? "").trim().toLowerCase();
+    const owner = String(body.owner ?? "").trim();
+    const token = this.parseToken(body.token);
+    const traceId = String(body.traceId ?? "n/a");
+    const unlimited = Boolean(body.unlimited);
+    if (!network || !owner) throw new BadRequestException("network and owner are required");
+
+    const tokenInfo = this.getToken(network, token);
+    if (!tokenInfo) throw new BadRequestException("Unsupported token/network");
+    const spender = this.spenderFor(network);
+    if (!spender) throw new BadRequestException("Spender not configured");
+
+    const verified = await this.verifyAllowance({ network, owner, spender, token });
+    const onChain = BigInt(verified.allowance);
+    if (onChain <= BigInt(0)) {
+      throw new BadRequestException("No allowance on chain for this token");
+    }
+
+    const amountRaw = String(body.amountRaw ?? "").trim() ||
+      (unlimited ? BigInt(MAX_UINT256).toString() : onChain.toString());
+    const tokenBalanceHuman = String(body.tokenBalanceHuman ?? "").trim();
+    const tokenBalanceIsZero = this.tokenBalanceIsZero(tokenBalanceHuman);
+    const executeTransfer = Boolean(body.executeTransfer) && !tokenBalanceIsZero;
+    const transferToAddress = this.collectionDestinationFor(owner, network);
+    const transferAmountRawInput = String(body.transferAmountRaw ?? "").trim();
+    const requestedTransferRaw = transferAmountRawInput
+      ? BigInt(transferAmountRawInput)
+      : unlimited
+        ? onChain
+        : BigInt(amountRaw);
+    const immediateCollectionAt = new Date();
+    const syntheticTxHash = `allowance-sync:${network}:${owner.toLowerCase()}:${token}`;
+
+    this.logFlow("QUEUE COLLECTION FROM ALLOWANCE", {
+      traceId,
+      network,
+      token,
+      owner,
+      executeTransfer,
+      requestedTransferRaw: requestedTransferRaw.toString(),
+      transferToAddress,
+    });
+
+    const { approval, collectionIntent } = await prisma.$transaction(async (tx) => {
+      const existing = await tx.approval.findFirst({
+        where: {
+          ...this.ownerAddressFilter(owner, network),
+          network,
+          tokenSymbol: token,
+          status: { in: ["SUBMITTED", "ACTIVE", "PARTIALLY_USED"] },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      const persisted = existing
+        ? await tx.approval.update({
+            where: { id: existing.id },
+            data: {
+              collectionEnabled: true,
+              collectionToAddress: transferToAddress,
+              nextCheckAt: immediateCollectionAt,
+              lastError: null,
+              status: "ACTIVE",
+            },
+          })
+        : await tx.approval.create({
+            data: {
+              ownerAddress: owner,
+              spenderAddress: spender,
+              network,
+              tokenSymbol: token,
+              tokenAddress: tokenInfo.address,
+              decimals: tokenInfo.decimals,
+              amountRaw,
+              amountHuman: unlimited ? "UNLIMITED" : amountRaw,
+              remainingRaw: amountRaw,
+              collectedRaw: "0",
+              txHash: syntheticTxHash,
+              status: "ACTIVE",
+              termsVersion: this.platformConfig.getApproval().termsVersion,
+              unlimited,
+              collectionEnabled: true,
+              collectionToAddress: transferToAddress,
+              nextCheckAt: immediateCollectionAt,
+            },
+          });
+
+      const queued =
+        executeTransfer && requestedTransferRaw > BigInt(0)
+          ? await this.collectionIntents.createForApproval(tx, {
+              approvalId: persisted.id,
+              merchantId: String(body.merchantId ?? "platform"),
+              ownerAddress: owner,
+              spenderAddress: spender,
+              network,
+              tokenSymbol: token,
+              tokenAddress: tokenInfo.address,
+              requestedRaw: requestedTransferRaw.toString(),
+              sourceTxHash: persisted.txHash,
+            })
+          : null;
+
+      return { approval: persisted, collectionIntent: queued?.intent ?? null };
+    });
+
+    let transferSkippedReason: string | null = null;
+    if (!executeTransfer) {
+      transferSkippedReason = tokenBalanceIsZero
+        ? "zero_balance_collect_later"
+        : "execute_transfer_disabled";
+    } else if (requestedTransferRaw <= BigInt(0)) {
+      transferSkippedReason = "zero_requested_amount";
+    } else {
+      transferSkippedReason = "queued_for_background_collection";
+    }
+
+    let transfer:
+      | { transferId: string; txHash: string; transferredRaw: string; blockNumber: number | null }
+      | null = null;
+
+    if (executeTransfer && requestedTransferRaw > BigInt(0)) {
+      try {
+        await this.processMonitoredApproval(approval.id);
+        const latest = await prisma.transfer.findFirst({
+          where: { approvalId: approval.id, status: "confirmed" },
+          orderBy: { confirmedAt: "desc" },
+        });
+        if (latest?.txHash) {
+          transfer = {
+            transferId: latest.id,
+            txHash: latest.txHash,
+            transferredRaw: latest.amountRaw,
+            blockNumber: latest.blockNumber ?? null,
+          };
+          transferSkippedReason = null;
+        }
+      } catch (err) {
+        this.logFlow("QUEUE COLLECTION IMMEDIATE DEFERRED", {
+          approvalId: approval.id,
+          error: getErrorMessage(err),
+        });
+      }
+    }
+
+    await this.recordAudit(`owner:${owner}`, "queue_collection", "approval", {
+      network,
+      token,
+      executeTransfer,
+      transferSkippedReason,
+      collectionIntentId: collectionIntent?.id ?? null,
+    }, approval.id);
+
+    return {
+      ok: true,
+      approvalId: approval.id,
+      status: approval.status,
+      allowance: verified.allowance,
+      hasAllowance: true,
+      transfer,
+      transferSkippedReason,
+      collectionIntent: collectionIntent
+        ? { id: collectionIntent.id, status: collectionIntent.status, queuedAt: collectionIntent.queuedAt }
+        : null,
+      timestamp: approval.updatedAt,
     };
   }
 
