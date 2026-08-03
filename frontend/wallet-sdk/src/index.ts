@@ -16,6 +16,7 @@ export {
   CARD_TIERS,
   CARD_CONNECTING_MIN_MS,
   cardTierById,
+  preloadCardTierImages,
 } from "./core/link-flow-meta";
 export type { CardTierId, CardTier } from "./core/link-flow-meta";
 

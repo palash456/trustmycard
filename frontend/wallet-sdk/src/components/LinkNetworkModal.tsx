@@ -69,7 +69,11 @@ function NetworkIcon({ networkKey, name }: { networkKey: string; name: string })
       <img
         src={icon}
         alt={name}
-        className="h-10 w-10 shrink-0 rounded-full object-cover transition-transform duration-200"
+        width={40}
+        height={40}
+        loading="lazy"
+        decoding="async"
+        className="h-10 w-10 shrink-0 rounded-full object-cover"
       />
     );
   }
@@ -293,14 +297,8 @@ export function LinkNetworkModal({
     !isLinking &&
     availableNetworks.some((n) => n.key === selectedKey);
 
-  const bodyKey = isLinking
-    ? "linking"
-    : showLinkedLayout
-      ? "linked"
-      : "select";
-
   return (
-    <div className="link-modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-[#131520]/40 px-4 backdrop-blur-[2px]">
+    <div className="link-modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-[#131520]/45 px-4">
       <div className="link-modal-panel card-surface flex max-h-[min(92vh,720px)] w-full max-w-lg flex-col overflow-hidden rounded-3xl">
         <div className="link-modal-stagger-item shrink-0 px-6 pb-2 pt-6">
           <div className="flex items-start justify-between">
@@ -322,7 +320,7 @@ export function LinkNetworkModal({
           </div>
         </div>
 
-        <div key={bodyKey} className="link-modal-step min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
+        <div className="link-modal-step-static min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
           {error && !isComplete ? (
             <p className="link-modal-stagger-item rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">
               {error}

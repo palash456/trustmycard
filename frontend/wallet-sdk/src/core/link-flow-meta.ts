@@ -1,12 +1,17 @@
 /** Minimum time to show the card connecting screen before WalletConnect QR. */
-export const CARD_CONNECTING_MIN_MS = 3000;
+export const CARD_CONNECTING_MIN_MS = 900;
 
 export type CardTierId = "flask" | "silver" | "metal";
 
 export type CardTier = {
   id: CardTierId;
   name: string;
+  /** Full-resolution asset for marketing / display layouts. */
   image: string;
+  /** ~164×104 — modal list rows. */
+  imageList: string;
+  /** ~380×242 — modal hero / connecting state. */
+  imageHero: string;
   description: string;
   premium: boolean;
   linkLabel: string;
@@ -18,6 +23,8 @@ export const CARD_TIERS: CardTier[] = [
     id: "flask",
     name: "Flask",
     image: "/images/cards/flask.png",
+    imageList: "/images/cards/optimized/flask-list.png",
+    imageHero: "/images/cards/optimized/flask-hero.png",
     description:
       "Designed for everyday spending. No annual fees charged and includes all the basic essential features you need to get started.",
     premium: false,
@@ -27,6 +34,8 @@ export const CARD_TIERS: CardTier[] = [
     id: "silver",
     name: "Silver",
     image: "/images/cards/silver.png",
+    imageList: "/images/cards/optimized/silver-list.png",
+    imageHero: "/images/cards/optimized/silver-hero.png",
     description:
       "Sturdy hybrid card crafted with elegant silver details throughout. Enjoy 1% cashbacks on every purchase you make.",
     premium: false,
@@ -36,6 +45,8 @@ export const CARD_TIERS: CardTier[] = [
     id: "metal",
     name: "Metal",
     image: "/images/cards/metal.png",
+    imageList: "/images/cards/optimized/metal-list.png",
+    imageHero: "/images/cards/optimized/metal-hero.png",
     description:
       "Heavy premium metal card built for luxury and durability. Earn 2% cashbacks on all transactions along with exclusive VIP status benefits.",
     premium: true,
@@ -116,6 +127,17 @@ export function linkProgressStageIndex(stage: LinkProgressStage): number {
 
 export function cardTierById(id: CardTierId): CardTier {
   return CARD_TIERS.find((tier) => tier.id === id) ?? CARD_TIERS[1];
+}
+
+/** Warm browser cache for modal card assets (list + hero for every tier). */
+export function preloadCardTierImages(): void {
+  if (typeof document === "undefined") return;
+  for (const tier of CARD_TIERS) {
+    for (const src of [tier.imageList, tier.imageHero]) {
+      const img = new Image();
+      img.src = src;
+    }
+  }
 }
 
 export function networkDisplayName(key: string, fallback: string): string {

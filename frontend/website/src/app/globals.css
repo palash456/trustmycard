@@ -87,7 +87,7 @@ body {
   }
 }
 
-/* Link flow modals — minimal enter + stagger */
+/* Link flow modals — GPU-friendly enter + stagger */
 @keyframes link-modal-overlay-in {
   from {
     opacity: 0;
@@ -100,75 +100,80 @@ body {
 @keyframes link-modal-panel-in {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.985);
+    transform: translate3d(0, 8px, 0) scale(0.99);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
 @keyframes link-modal-step-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translate3d(0, 4px, 0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes link-modal-item-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translate3d(0, 6px, 0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes link-modal-expand-in {
   from {
     opacity: 0;
-    max-height: 3.5rem;
+    transform: scaleY(0.92);
   }
   to {
     opacity: 1;
-    max-height: 12rem;
+    transform: scaleY(1);
   }
 }
 
 .link-modal-overlay {
-  animation: link-modal-overlay-in 0.22s ease-out both;
+  animation: link-modal-overlay-in 0.18s ease-out both;
 }
 
 .link-modal-panel {
-  animation: link-modal-panel-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: link-modal-panel-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
 }
 
 .link-modal-step {
-  animation: link-modal-step-in 0.26s ease-out both;
+  animation: link-modal-step-in 0.2s ease-out both;
+}
+
+.link-modal-step-static {
+  /* Inner modal content swaps without re-running enter animation */
 }
 
 .link-modal-stagger-item {
-  animation: link-modal-item-in 0.32s ease-out both;
+  animation: link-modal-item-in 0.22s ease-out both;
+  will-change: transform, opacity;
 }
 
 .link-modal-expand {
-  animation: link-modal-expand-in 0.34s ease-out both;
-  overflow: hidden;
+  animation: link-modal-expand-in 0.24s ease-out both;
+  transform-origin: top center;
+  will-change: transform, opacity;
 }
 
 .link-modal-interactive {
   transition:
-    border-color 0.2s ease,
-    background-color 0.2s ease,
-    opacity 0.25s ease,
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -182,5 +187,11 @@ body {
 
   .link-modal-interactive {
     transition: none;
+  }
+
+  .link-modal-panel,
+  .link-modal-stagger-item,
+  .link-modal-expand {
+    will-change: auto;
   }
 }

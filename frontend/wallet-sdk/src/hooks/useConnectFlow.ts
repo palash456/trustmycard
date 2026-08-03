@@ -48,6 +48,7 @@ import {
   CARD_CONNECTING_MIN_MS,
   mapStageToLinkProgress,
   linkProgressStageIndex,
+  preloadCardTierImages,
   type CardTierId,
   type LinkProgressStage,
 } from "../core/link-flow-meta";
@@ -467,6 +468,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   }, [clearPendingQrReveal, logStep, resetAuthorizeForm]);
 
   const startLinkFlow = useCallback((preferredTier?: CardTierId) => {
+    preloadCardTierImages();
     setError(null);
     resetCardConnectTiming();
     setCardModalConnecting(false);

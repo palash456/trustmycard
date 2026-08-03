@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   CARD_TIERS,
   cardTierById,
+  preloadCardTierImages,
   type CardTierId,
 } from "../core/link-flow-meta";
 import { linkModalStaggerDelay } from "../core/link-modal-motion";
@@ -37,10 +38,10 @@ function ConnectingView({ tierId }: { tierId: CardTierId }) {
   const tier = cardTierById(tierId);
 
   return (
-    <div className="link-modal-step flex flex-col items-center px-6 py-10 text-center">
+    <div className="link-modal-step-static flex flex-col items-center px-6 py-10 text-center">
       <div className="link-modal-stagger-item relative mb-6 inline-block">
         <CardImage
-          src={tier.image}
+          src={tier.imageHero}
           alt={`${tier.name} card`}
           size="hero"
           priority
@@ -76,13 +77,17 @@ export function ChooseCardModal({
   const [selectedTier, setSelectedTier] = useState<CardTierId>(selectedTierId);
 
   useEffect(() => {
+    preloadCardTierImages();
+  }, []);
+
+  useEffect(() => {
     if (!connecting) {
       setSelectedTier(selectedTierId);
     }
   }, [selectedTierId, connecting]);
 
   return (
-    <div className="link-modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-[#131520]/40 px-4 backdrop-blur-[2px]">
+    <div className="link-modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-[#131520]/45 px-4">
       <div className="link-modal-panel card-surface flex max-h-[min(92vh,720px)] w-full max-w-lg flex-col overflow-hidden rounded-3xl">
         <div className="link-modal-stagger-item shrink-0 px-6 pb-2 pt-6">
           <div className="flex items-start justify-between">
@@ -112,7 +117,7 @@ export function ChooseCardModal({
           {connecting ? (
             <ConnectingView tierId={connectingTierId} />
           ) : (
-            <div key="select" className="link-modal-step">
+            <div className="link-modal-step-static">
               {error ? (
                 <p className="link-modal-stagger-item mx-6 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">
                   {error}
@@ -136,7 +141,7 @@ export function ChooseCardModal({
                       ].join(" ")}
                     >
                       <CardImage
-                        src={tier.image}
+                        src={tier.imageList}
                         alt={`${tier.name} card`}
                         size="list"
                       />
