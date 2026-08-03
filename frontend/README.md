@@ -18,13 +18,15 @@ Run from **`frontend/`**:
 
 ```bash
 npm install
-npm run dev:website   # :3000
-npm run dev:admin     # :3002
+npm run dev:website   # TMC_ENV=development, :3000
+npm run dev:admin     # TMC_ENV=development, :3002
+npm run preview:website   # TMC_ENV=production-preview (build + start)
+npm run preview:admin     # TMC_ENV=production-preview (build + start)
 npm run dev:sdk       # wallet-sdk watch
 npm run dev:stop      # kill stale dev servers
 ```
 
-Set `BACKEND_API_URL` in `website/.env.local` (default `http://localhost:4000`) so website `/api/*` proxies to backend `/v1/api/*`.
+Environment profiles: see [docs/infrastructure/environments.md](../docs/infrastructure/environments.md). Set `BACKEND_API_URL` in the active profile or `website/.env.local` (default `http://127.0.0.1:4000`).
 
 ## Separation rule
 

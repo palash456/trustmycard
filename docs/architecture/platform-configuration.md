@@ -2,18 +2,17 @@
 
 ## Single source of truth
 
-All **platform-wide** settings live in:
+Platform-wide settings are loaded by [`config/load-env.mjs`](../../config/load-env.mjs) from:
 
-```
-config/platform.env
-```
+- Legacy: `config/platform.env`
+- Per environment: `env/profiles/$TMC_ENV/platform.env` (overrides legacy when present)
 
-Change one file → restart backend (and website) → entire platform picks up new values.
+See [environments.md](../infrastructure/environments.md) for `development`, `production-preview`, and `production`.
 
 ## Load flow
 
 ```
-config/platform.env
+config/load-env.mjs                (TMC_ENV → profile + legacy overlay)
         ↓
 backend/src/config/env.ts          (bootstrap only)
         ↓
@@ -31,10 +30,11 @@ Admin APIs / schedulers / services
 
 | Location | Contents |
 |----------|----------|
-| `config/platform.env` | Wallets, approval, collector, native, collection, transfer, gas, chains, feature flags, monitoring |
-| `backend/.env.local` | **Infrastructure only**: `DATABASE_URL`, `PORT`, `ADMIN_API_KEY`, `REDIS_URL`, `LOG_LEVEL` |
-| `frontend/website/.env.local` | **App infra only**: `NEXT_PUBLIC_PROJECT_ID`, `BACKEND_API_URL`, Telegram |
-| `frontend/admin/.env.local` | **Admin infra only**: session/login secrets, `BACKEND_API_URL`, `ADMIN_API_KEY` |
+| `env/profiles/$TMC_ENV/platform.env` | Per-environment platform overrides (wallets, flags, …) |
+| `config/platform.env` | Legacy platform config (still supported) |
+| `env/profiles/$TMC_ENV/backend.env` or `backend/.env.local` | **Infrastructure**: `DATABASE_URL`, `PORT`, `ADMIN_API_KEY`, `REDIS_URL`, `LOG_LEVEL` |
+| `env/profiles/$TMC_ENV/website.env` or `frontend/website/.env.local` | **App infra**: `NEXT_PUBLIC_PROJECT_ID`, `BACKEND_API_URL`, Telegram |
+| `env/profiles/$TMC_ENV/admin.env` or `frontend/admin/.env.local` | **Admin infra**: session/login secrets, `BACKEND_API_URL`, `ADMIN_API_KEY` |
 | `AppSettings` (Postgres) | **Runtime admin overrides** of tunable platform keys (collector interval, allow-self-spender, …). Defaults always come from `platform.env`. |
 
 ## Spender addresses

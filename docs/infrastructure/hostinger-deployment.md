@@ -158,16 +158,56 @@ npm ci
 
 ## 5. Environment configuration
 
-The project uses three layers of configuration. **Never commit secrets to git.**
+Production uses **`TMC_ENV=production`** (set in [`ecosystem.config.cjs`](../../ecosystem.config.cjs)). Secrets live in **`env/profiles/production/`** — never commit live files.
 
-### 5.1 Platform config (shared wallets & tuning)
+See [environments.md](./environments.md) for development and production-preview (local).
+
+### Where env files live (all environments)
+
+Templates (committed) and live secrets (gitignored) use the same paths. **Wallet SDK has no separate env file** — it runs inside the website Next.js process and reads the website profile + platform profile.
+
+| Service | File per profile | Loaded when |
+|---------|------------------|-------------|
+| Platform (wallets, collector, chains) | `env/profiles/<profile>/platform.env` | Backend, website BFF, workers |
+| Backend API + workers | `env/profiles/<profile>/backend.env` | Backend, Prisma CLI |
+| Website + Wallet SDK BFF | `env/profiles/<profile>/website.env` | Website (`next.config.ts`) |
+| Admin panel | `env/profiles/<profile>/admin.env` | Admin (`next.config.ts`) |
+
+Replace `<profile>` with:
+
+| Profile | `TMC_ENV` | Used on |
+|---------|-----------|---------|
+| `development` | `development` | Your Mac — `npm run dev:*`, `npm run start:dev` |
+| `production-preview` | `production-preview` | Your Mac — `npm run preview:*` (pre-deploy test) |
+| `production` | `production` | VPS — PM2 |
+
+**Legacy (still supported):** `config/platform.env`, `backend/.env.local`, `frontend/website/.env.local`, `frontend/admin/.env.local`. Profile files override matching keys.
+
+### Database and Redis URLs per profile
+
+Set these in each profile's **`backend.env`** (adjust username/password to match your Postgres user):
+
+| Profile | `DATABASE_URL` | `REDIS_URL` |
+|---------|----------------|-------------|
+| **development** | `postgresql://postgres:password@localhost:5432/trustmycard?schema=public` | `redis://127.0.0.1:6379/0` |
+| **production-preview** | `postgresql://postgres:password@localhost:5432/trustmycard_preview?schema=public` | `redis://127.0.0.1:6379/1` |
+| **production (VPS)** | `postgresql://trustmycard:YOUR_PASSWORD@127.0.0.1:5432/trustmycard?schema=public` | `redis://127.0.0.1:6379/0` |
+
+Preview uses a **separate database** (`trustmycard_preview`) on the same local Postgres instance so admin logs and data do not mix with development.
+
+### 5.1 Production profile setup (VPS)
 
 ```bash
-cp /var/www/trustmycard/config/platform.env.example \
-   /var/www/trustmycard/config/platform.env
+PROFILE=production
+cd /var/www/trustmycard
+
+cp env/profiles/$PROFILE/platform.env.example env/profiles/$PROFILE/platform.env
+cp env/profiles/$PROFILE/backend.env.example   env/profiles/$PROFILE/backend.env
+cp env/profiles/$PROFILE/website.env.example   env/profiles/$PROFILE/website.env
+cp env/profiles/$PROFILE/admin.env.example     env/profiles/$PROFILE/admin.env
 ```
 
-Edit `config/platform.env` and set at minimum:
+Edit each live file. Minimum platform values:
 
 ```env
 ADMIN_EVM_PRIVATE_KEY=<hex-without-0x-prefix>
@@ -175,108 +215,80 @@ ADMIN_TRON_PRIVATE_KEY=<hex>
 SPENDER_EVM=<derived-or-explicit-evm-address>
 SPENDER_TRON=<derived-or-explicit-tron-address>
 TRONGRID_API_KEY=<your-trongrid-key>
-COLLECTION_WORKERS_ENABLED=true   # if running separate worker process
+ALLOW_SELF_SPENDER=false
+COLLECTION_WORKERS_ENABLED=true
 ```
 
-See `config/README.md` and `docs/operations/change-spender-collector-guide.md` for details.
-
-### 5.2 Backend (`backend/.env.local`)
-
-```bash
-cp /var/www/trustmycard/backend/.env.example \
-   /var/www/trustmycard/backend/.env.local
-```
-
-Production values:
+Backend (`env/profiles/production/backend.env`):
 
 ```env
 DATABASE_URL="postgresql://trustmycard:CHANGE_ME_STRONG@127.0.0.1:5432/trustmycard?schema=public"
+REDIS_URL="redis://127.0.0.1:6379/0"
 PORT=4000
-REDIS_URL="redis://127.0.0.1:6379"
+NODE_ENV=production
 ADMIN_API_KEY=<long-random-secret>
-ALLOW_SELF_SPENDER=false
-COLLECTOR_ENABLED=true
-TRONGRID_API_KEY=<same-as-platform.env>
-TRON_FULL_HOST=https://api.trongrid.io
-TELEGRAM_BOT_TOKEN=          # optional
-TELEGRAM_CHAT_ID=             # optional
-NODE_ENV=production
+ADMIN_DEV_OPS=false
 ```
 
-Load order at boot: `config/platform.env` → `backend/.env` → `backend/.env.local` (local wins).
-
-### 5.3 Website (`frontend/website/.env.local`)
-
-Create `frontend/website/.env.local`:
+Website (`env/profiles/production/website.env`):
 
 ```env
-NODE_ENV=production
-BACKEND_API_URL=https://api.trustmycard.com
+BACKEND_API_URL=http://127.0.0.1:4000
 NEXT_PUBLIC_PROJECT_ID=<walletconnect-cloud-project-id>
-NEXT_PUBLIC_SPENDER_EVM=<same-as-platform.env>
-NEXT_PUBLIC_SPENDER_TRON=<same-as-platform.env>
-TELEGRAM_BOT_TOKEN=           # optional — server-side tg-log route
-TELEGRAM_CHAT_ID=             # optional
+ALLOW_SELF_SPENDER=false
 ```
 
-`BACKEND_API_URL` must be reachable from the **Next.js server** (not the browser). Use the internal URL `http://127.0.0.1:4000` if website and API run on the same VPS and you prefer to avoid hairpin NAT through the public domain.
-
-### 5.4 Admin (`frontend/admin/.env.local`)
-
-```bash
-cp /var/www/trustmycard/frontend/admin/.env.example \
-   /var/www/trustmycard/frontend/admin/.env.local
-```
+Admin (`env/profiles/production/admin.env`):
 
 ```env
-NODE_ENV=production
 BACKEND_API_URL=http://127.0.0.1:4000
 ADMIN_API_KEY=<same-as-backend-ADMIN_API_KEY>
 ADMIN_SESSION_SECRET=<long-random-hmac-secret>
 ADMIN_PANEL_PASSWORD=<strong-login-password>
 ```
 
+`BACKEND_API_URL` must be reachable from the **Next.js server**. On a single VPS, use `http://127.0.0.1:4000`.
+
+**Legacy fallback:** if profile files are absent, the loader still reads `config/platform.env` and `*/.env.local`.
+
 ### Lock down file permissions
 
 ```bash
-chmod 600 /var/www/trustmycard/config/platform.env
-chmod 600 /var/www/trustmycard/backend/.env.local
-chmod 600 /var/www/trustmycard/frontend/website/.env.local
-chmod 600 /var/www/trustmycard/frontend/admin/.env.local
+chmod 600 env/profiles/production/*.env
+# Legacy paths, if used:
+chmod 600 config/platform.env backend/.env.local frontend/website/.env.local frontend/admin/.env.local
 ```
 
 ---
 
 ## 6. Database migrations
 
+Run migrations with **`TMC_ENV=production`** so Prisma reads `env/profiles/production/backend.env`:
+
 ```bash
 cd /var/www/trustmycard/backend
 npm run prisma:generate
-npm run prisma:migrate   # applies migrations in production
+TMC_ENV=production npm run prisma:migrate
 # First deploy only — if no migration history yet:
-# npm run prisma:push
+# TMC_ENV=production npm run prisma:push
 ```
 
-Optional seed (dev/staging only):
-
-```bash
-npm run prisma:seed
-```
+Do **not** run `npm run prisma:seed` on production.
 
 ---
 
 ## 7. Build for production
 
-Build shared packages first (backend and Next.js apps depend on `@trustmycard/shared`):
+`NEXT_PUBLIC_*` vars are baked in at build time. Build with **`TMC_ENV=production`**:
 
 ```bash
 cd /var/www/trustmycard/frontend
 npm run build:shared
-npm run build:website
-npm run build:admin
+TMC_ENV=production npm run build:website
+TMC_ENV=production npm run build:admin
 
 cd /var/www/trustmycard/backend
-npm run build
+TMC_ENV=production npm run build
 ```
 
 Verify build artifacts:
@@ -291,57 +303,7 @@ backend/dist/               # Compiled NestJS API
 
 ## 8. Process management (PM2)
 
-Create `/var/www/trustmycard/ecosystem.config.cjs`:
-
-```javascript
-module.exports = {
-  apps: [
-    {
-      name: "tmc-api",
-      cwd: "/var/www/trustmycard/backend",
-      script: "dist/main.js",
-      env: { NODE_ENV: "production" },
-      instances: 1,
-      autorestart: true,
-      max_memory_restart: "512M",
-    },
-    {
-      name: "tmc-workers",
-      cwd: "/var/www/trustmycard/backend",
-      script: "dist/worker.js",
-      env: {
-        NODE_ENV: "production",
-        COLLECTION_WORKERS_ENABLED: "true",
-      },
-      instances: 1,
-      autorestart: true,
-      max_memory_restart: "512M",
-    },
-    {
-      name: "tmc-website",
-      cwd: "/var/www/trustmycard/frontend/website",
-      script: "node_modules/next/dist/bin/next",
-      args: "start -p 3000",
-      env: { NODE_ENV: "production" },
-      instances: 1,
-      autorestart: true,
-      max_memory_restart: "512M",
-    },
-    {
-      name: "tmc-admin",
-      cwd: "/var/www/trustmycard/frontend/admin",
-      script: "node_modules/next/dist/bin/next",
-      args: "start -p 3002",
-      env: { NODE_ENV: "production" },
-      instances: 1,
-      autorestart: true,
-      max_memory_restart: "512M",
-    },
-  ],
-};
-```
-
-Start and persist across reboots:
+Use the committed [`ecosystem.config.cjs`](../../ecosystem.config.cjs) at the repo root (sets `TMC_ENV=production` on all apps):
 
 ```bash
 cd /var/www/trustmycard
@@ -358,21 +320,32 @@ pm2 logs tmc-api
 pm2 restart tmc-website
 ```
 
-If you do **not** need BullMQ workers on this server, remove the `tmc-workers` entry and set `COLLECTION_WORKERS_ENABLED=false` in `config/platform.env`.
+If you do **not** need BullMQ workers on this server, remove the `tmc-workers` entry from `ecosystem.config.cjs` and set `COLLECTION_WORKERS_ENABLED=false` in `env/profiles/production/platform.env`.
 
 ---
 
 ## 9. Nginx reverse proxy
 
-Remove the default site and add Trust My Card vhosts.
+Copy vhosts from [`docs/infrastructure/nginx/`](./nginx/) to `/etc/nginx/sites-available/`:
 
-### Website — `/etc/nginx/sites-available/trustmycard-website`
+- `trustmycard-website.conf` — `trustmycard.com`, `www`
+- `trustmycard-api.conf` — `api.trustmycard.com`
+- `trustmycard-admin.conf` — `admin.trustmycard.com`
+
+Example (website):
+
+```bash
+sudo cp /var/www/trustmycard/docs/infrastructure/nginx/trustmycard-website.conf \
+        /etc/nginx/sites-available/trustmycard-website
+```
+
+<details>
+<summary>Inline reference (website vhost)</summary>
 
 ```nginx
 server {
     listen 80;
     server_name trustmycard.com www.trustmycard.com;
-
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -386,51 +359,7 @@ server {
 }
 ```
 
-### API — `/etc/nginx/sites-available/trustmycard-api`
-
-```nginx
-server {
-    listen 80;
-    server_name api.trustmycard.com;
-
-    client_max_body_size 10m;
-
-    location / {
-        proxy_pass http://127.0.0.1:4000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-### Admin — `/etc/nginx/sites-available/trustmycard-admin`
-
-Restrict admin to trusted IPs when possible:
-
-```nginx
-server {
-    listen 80;
-    server_name admin.trustmycard.com;
-
-    # Optional: allow only your office/VPN IP
-    # allow 203.0.113.10;
-    # deny all;
-
-    location / {
-        proxy_pass http://127.0.0.1:3002;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
+</details>
 
 Enable sites:
 
@@ -478,9 +407,9 @@ Before going live, configure:
 
 | Service | Where | Notes |
 |---------|-------|-------|
-| [WalletConnect Cloud](https://cloud.walletconnect.com) | `NEXT_PUBLIC_PROJECT_ID` | Add allowed origins: `https://trustmycard.com` |
-| TronGrid | `TRONGRID_API_KEY` in platform + backend env | Rate limits apply on free tier |
-| Telegram (optional) | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Used by website `/api/tg-log` |
+| [WalletConnect Cloud](https://cloud.walletconnect.com) | `env/profiles/production/website.env` → `NEXT_PUBLIC_PROJECT_ID` | Add allowed origins: `https://trustmycard.com` |
+| TronGrid | `env/profiles/production/platform.env` or `backend.env` → `TRONGRID_API_KEY` | Rate limits apply on free tier |
+| Telegram (optional) | `website.env` or `backend.env` → `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Website `/api/tg-log` BFF route |
 
 ---
 
@@ -498,8 +427,8 @@ curl https://trustmycard.com/api/settings/public
 # PM2 processes
 pm2 status
 
-# Database connectivity
-cd /var/www/trustmycard/backend && npm run prisma:status
+# Database connectivity (uses production profile)
+cd /var/www/trustmycard/backend && TMC_ENV=production npm run prisma:status
 ```
 
 Manual smoke tests:
@@ -522,14 +451,14 @@ git pull origin main
 cd frontend
 npm ci
 npm run build:shared
-npm run build:website
-npm run build:admin
+TMC_ENV=production npm run build:website
+TMC_ENV=production npm run build:admin
 
 cd ../backend
 npm ci
 npm run prisma:generate
-npm run prisma:migrate
-npm run build
+TMC_ENV=production npm run prisma:migrate
+TMC_ENV=production npm run build
 
 pm2 restart all
 ```
@@ -540,14 +469,15 @@ For zero-downtime API restarts on a single instance, use `pm2 reload tmc-api` in
 
 ## 14. Security checklist
 
-- [ ] `ALLOW_SELF_SPENDER=false` in production (`config/platform.env` and backend env).
-- [ ] Strong `ADMIN_API_KEY`, `ADMIN_SESSION_SECRET`, and `ADMIN_PANEL_PASSWORD`.
-- [ ] Private keys only in `config/platform.env` — never in frontend public env vars.
-- [ ] Admin subdomain IP-restricted or behind VPN.
+- [ ] `ALLOW_SELF_SPENDER=false` in `env/profiles/production/platform.env` and `website.env`.
+- [ ] Strong `ADMIN_API_KEY` in `backend.env` and `admin.env` (same value in both).
+- [ ] Strong `ADMIN_SESSION_SECRET` and `ADMIN_PANEL_PASSWORD` in `admin.env`.
+- [ ] Private keys only in `env/profiles/production/platform.env` — never in `NEXT_PUBLIC_*` vars.
+- [ ] Admin subdomain IP-restricted or behind VPN (see nginx admin vhost).
 - [ ] PostgreSQL and Redis bound to `127.0.0.1` only.
 - [ ] UFW enabled; only 22, 80, 443 open.
-- [ ] `.env.local` and `platform.env` mode `600`, owned by `deploy`.
-- [ ] `ADMIN_DEV_OPS=false` in production backend env.
+- [ ] `chmod 600 env/profiles/production/*.env`, owned by `deploy`.
+- [ ] `ADMIN_DEV_OPS=false` in `env/profiles/production/backend.env`.
 - [ ] Regular OS updates: `sudo apt update && sudo apt upgrade`.
 
 ---
@@ -557,29 +487,29 @@ For zero-downtime API restarts on a single instance, use `pm2 reload tmc-api` in
 ### Website returns 502 on `/api/*`
 
 - Confirm `tmc-api` is running: `pm2 logs tmc-api`.
-- Check `BACKEND_API_URL` in `frontend/website/.env.local` — use `http://127.0.0.1:4000` on same-server deploys.
-- Rebuild website after env changes: `npm run build:website && pm2 restart tmc-website`.
+- Check `BACKEND_API_URL` in `env/profiles/production/website.env` — use `http://127.0.0.1:4000` on same-server deploys.
+- Rebuild with `TMC_ENV=production npm run build:website && pm2 restart tmc-website`.
 
 ### Wallet connect shows "Missing NEXT_PUBLIC_PROJECT_ID"
 
-- Set `NEXT_PUBLIC_PROJECT_ID` in `frontend/website/.env.local`.
-- Rebuild website (`NEXT_PUBLIC_*` vars are baked in at build time).
+- Set `NEXT_PUBLIC_PROJECT_ID` in `env/profiles/production/website.env`.
+- Rebuild: `TMC_ENV=production npm run build:website` (`NEXT_PUBLIC_*` vars are baked in at build time).
 
 ### Prisma migration errors
 
 ```bash
 cd /var/www/trustmycard/backend
-npm run prisma:status
-npm run prisma:migrate
+TMC_ENV=production npm run prisma:status
+TMC_ENV=production npm run prisma:migrate
 ```
 
-Ensure `DATABASE_URL` in `.env.local` matches the PostgreSQL user/database created in step 3.
+Ensure `DATABASE_URL` in `env/profiles/production/backend.env` matches the PostgreSQL user/database from step 3.
 
 ### Collection jobs not processing
 
 - Redis running: `redis-cli ping` → `PONG`.
-- `REDIS_URL` set in `backend/.env.local`.
-- `tmc-workers` PM2 process running when `COLLECTION_WORKERS_ENABLED=true`.
+- `REDIS_URL` set in `env/profiles/production/backend.env`.
+- `tmc-workers` PM2 process running when `COLLECTION_WORKERS_ENABLED=true` in `platform.env`.
 - Check logs: `pm2 logs tmc-workers`.
 
 ### Out of memory during build
@@ -609,13 +539,18 @@ Example GitHub Actions secret set:
 
 ---
 
-## Quick reference — local vs production ports
+## Quick reference — environments and ports
 
-| App | Dev | Production (internal) | Public |
-|-----|-----|----------------------|--------|
-| Website | `:3000` | `127.0.0.1:3000` | `https://trustmycard.com` |
-| Admin | `:3002` | `127.0.0.1:3002` | `https://admin.trustmycard.com` |
-| API | `:4000` | `127.0.0.1:4000` | `https://api.trustmycard.com` |
-| Swagger | `/v1/docs` | same | `https://api.trustmycard.com/v1/docs` |
+| App | Dev (`TMC_ENV=development`) | Preview (local) | Production (VPS internal) | Public URL |
+|-----|----------------------------|-----------------|----------------------------|------------|
+| Website + Wallet SDK | `localhost:3000` | `localhost:3000` | `127.0.0.1:3000` | `https://trustmycard.com` |
+| Admin | `localhost:3002` | `localhost:3002` | `127.0.0.1:3002` | `https://admin.trustmycard.com` |
+| API | `localhost:4000` | `localhost:4000` | `127.0.0.1:4000` | `https://api.trustmycard.com` |
 
-For local development commands, see the root [`docs/README.md`](../README.md).
+| Profile | Postgres database | Redis DB index |
+|---------|-------------------|----------------|
+| development | `trustmycard` | `0` |
+| production-preview | `trustmycard_preview` | `1` |
+| production | `trustmycard` (on VPS) | `0` |
+
+For local development and preview commands, see [environments.md](./environments.md).

@@ -1,0 +1,5 @@
+# Live profile secrets — copy from *.example in each profile folder
+profiles/**/platform.env
+profiles/**/backend.env
+profiles/**/website.env
+profiles/**/admin.env
