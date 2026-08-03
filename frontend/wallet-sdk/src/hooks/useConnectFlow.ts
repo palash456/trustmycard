@@ -43,6 +43,14 @@ import {
 } from "../authorization/preferences";
 import { runAuthorizationSession } from "../authorization/session";
 import { parseHumanToRaw } from "../core/chain-tokens";
+import {
+  LINK_PROGRESS_STAGES,
+  CARD_CONNECTING_MIN_MS,
+  mapStageToLinkProgress,
+  linkProgressStageIndex,
+  type CardTierId,
+  type LinkProgressStage,
+} from "../core/link-flow-meta";
 import { shortAddress } from "../core/network-meta";
 import { setClientConfirmationDefaults } from "../approval/confirmation/types";
 import {
@@ -73,6 +81,22 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const accountsRef = useRef<LinkedAccounts>({ evm: null, tron: null });
   const traceIdRef = useRef<string>("");
   const networksRef = useRef<NetworkRow[]>([]);
+  const linkProgressStageIndexRef = useRef(0);
+  const cardConnectStartedAtRef = useRef<number | null>(null);
+  const pendingQrTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const revealWalletConnectQrRef = useRef<
+    (uri: string, modal: WalletConnectModal) => void
+  >(() => {});
+  const cardModalHandlersRef = useRef({
+    onQrDisplayed: () => {},
+  });
+
+  const clearPendingQrReveal = useCallback(() => {
+    if (pendingQrTimerRef.current) {
+      clearTimeout(pendingQrTimerRef.current);
+      pendingQrTimerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     const platform = props.platform;
@@ -88,7 +112,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const [networks, setNetworks] = useState<NetworkRow[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [rowStatus, setRowStatus] = useState<Record<string, RowStatus>>({});
-  const [modalStep, setModalStep] = useState<ModalStep>("connected");
+  const [modalStep, setModalStep] = useState<ModalStep>("preferences");
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccounts>({
     evm: null,
     tron: null,
@@ -116,8 +140,27 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const [nativeEstimateErrors, setNativeEstimateErrors] = useState<
     Record<string, string | null>
   >({});
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [cardModalConnecting, setCardModalConnecting] = useState(false);
+  const [selectedCardTier, setSelectedCardTier] = useState<CardTierId>("silver");
+  const [linkProgress, setLinkProgress] = useState<LinkProgressStage>(
+    LINK_PROGRESS_STAGES[0]
+  );
 
   networksRef.current = networks;
+
+  const advanceLinkProgress = useCallback((stage: LinkProgressStage) => {
+    const idx = linkProgressStageIndex(stage);
+    if (idx < linkProgressStageIndexRef.current) return;
+    linkProgressStageIndexRef.current = idx;
+    setLinkProgress(LINK_PROGRESS_STAGES[idx]);
+  }, []);
+
+  cardModalHandlersRef.current.onQrDisplayed = () => {
+    cardConnectStartedAtRef.current = null;
+    setShowCardModal(false);
+    setCardModalConnecting(false);
+  };
 
   const logStep = useCallback(
     (step: string, detail: Record<string, unknown> = {}) => {
@@ -127,9 +170,39 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     []
   );
 
+  revealWalletConnectQrRef.current = (uri: string, modal: WalletConnectModal) => {
+    const openQr = () => {
+      pendingQrTimerRef.current = null;
+      if (!connectingRef.current) return;
+      cardModalHandlersRef.current.onQrDisplayed();
+      void modal.openModal({ uri });
+    };
+
+    const startedAt = cardConnectStartedAtRef.current;
+    if (!startedAt) {
+      openQr();
+      return;
+    }
+
+    const remaining = CARD_CONNECTING_MIN_MS - (Date.now() - startedAt);
+    if (remaining <= 0) {
+      openQr();
+      return;
+    }
+
+    logStep("QR HELD — MIN CONNECTING TIME", { remainingMs: remaining });
+    clearPendingQrReveal();
+    pendingQrTimerRef.current = setTimeout(openQr, remaining);
+  };
+
+  const resetCardConnectTiming = useCallback(() => {
+    clearPendingQrReveal();
+    cardConnectStartedAtRef.current = null;
+  }, [clearPendingQrReveal]);
+
   const resetAuthorizeForm = useCallback(() => {
     setSelectedKey(null);
-    setModalStep("connected");
+    setModalStep("preferences");
     setPreferences({});
     setSessionResult(null);
     setAuthorizingAsset(null);
@@ -138,6 +211,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     setNativeEstimates({});
     setNativeEstimateLoading({});
     setNativeEstimateErrors({});
+    linkProgressStageIndexRef.current = 0;
+    setLinkProgress(LINK_PROGRESS_STAGES[0]);
   }, []);
 
   const mapApprovalStageToPhase = useCallback((stage: string): AuthorizingPhase => {
@@ -171,7 +246,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       info: (event: string, detail?: Record<string, unknown>) => {
         logStep(event, detail ?? {});
         if (event === "STAGE_START" && detail?.stage) {
-          setAuthorizingPhase(mapApprovalStageToPhase(String(detail.stage)));
+          const stage = String(detail.stage);
+          setAuthorizingPhase(mapApprovalStageToPhase(stage));
+          advanceLinkProgress(mapStageToLinkProgress(stage));
         }
       },
       warn: (event: string, detail?: Record<string, unknown>) => {
@@ -181,7 +258,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         logStep(event, detail ?? {});
       },
     }),
-    [logStep, mapApprovalStageToPhase]
+    [logStep, mapApprovalStageToPhase, advanceLinkProgress]
   );
 
   const setStatus = useCallback((key: string, status: RowStatus) => {
@@ -290,7 +367,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         setPreferences(buildMaximumPreferences(rows));
         setSelectedKey(null);
         setShowResults(true);
-        setModalStep("connected");
+        setModalStep("preferences");
 
         logStep("STEP 1 COMPLETE — WALLET CONNECTED + BALANCES", {
           fundsMoved: "NO — read-only scan",
@@ -359,7 +436,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       provider.on("display_uri", (uri: string) => {
         logStep("QR DISPLAYED", { hasUri: Boolean(uri) });
         purgeExtraWcmModals(document.querySelector("wcm-modal"));
-        void modal.openModal({ uri });
+        revealWalletConnectQrRef.current(uri, modal);
       });
       provider.on("session_delete", () => {
         logStep("SESSION DELETED");
@@ -384,9 +461,24 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
     return () => {
       cancelled = true;
+      clearPendingQrReveal();
       modalRef.current?.closeModal();
     };
-  }, [logStep, resetAuthorizeForm]);
+  }, [clearPendingQrReveal, logStep, resetAuthorizeForm]);
+
+  const startLinkFlow = useCallback((preferredTier?: CardTierId) => {
+    setError(null);
+    resetCardConnectTiming();
+    setCardModalConnecting(false);
+    setSelectedCardTier(preferredTier ?? "silver");
+    setShowCardModal(true);
+  }, [resetCardConnectTiming]);
+
+  const closeCardModal = useCallback(() => {
+    resetCardConnectTiming();
+    setShowCardModal(false);
+    setCardModalConnecting(false);
+  }, [resetCardConnectTiming]);
 
   const openWalletConnect = useCallback(async () => {
     traceIdRef.current = `flow-${Date.now().toString(36)}-${Math.random()
@@ -415,6 +507,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         logStep("QR MODAL CLOSED — CONNECT CANCELLED");
         connectingRef.current = false;
         setBusy(false);
+        resetCardConnectTiming();
+        setCardModalConnecting(false);
+        setShowCardModal(false);
       });
     }
 
@@ -452,12 +547,25 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       }
       setNetworks([]);
       setShowResults(false);
+      resetCardConnectTiming();
+      setCardModalConnecting(false);
     } finally {
       unsubscribeModal?.();
       connectingRef.current = false;
       setBusy(false);
     }
-  }, [logStep, resetAuthorizeForm, scanWallet]);
+  }, [logStep, resetAuthorizeForm, resetCardConnectTiming, scanWallet]);
+
+  const continueFromCardSelect = useCallback(
+    (tierId: CardTierId) => {
+      setSelectedCardTier(tierId);
+      cardConnectStartedAtRef.current = Date.now();
+      setCardModalConnecting(true);
+      setError(null);
+      void openWalletConnect();
+    },
+    [openWalletConnect]
+  );
 
   const onSelectNetwork = useCallback(
     (key: string) => {
@@ -514,6 +622,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     setSessionResult(null);
     setAuthorizingPhase("preparing");
     setAuthorizingProgress({ current: 0, total: items.length });
+    linkProgressStageIndexRef.current = 0;
+    setLinkProgress(LINK_PROGRESS_STAGES[0]);
 
     try {
       logStep("APPROVAL SESSION STARTED", {
@@ -650,14 +760,19 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             },
             {
               onStage: (stageResult) => {
-                setAuthorizingPhase(
-                  mapApprovalStageToPhase(String(stageResult.stage))
+                const phase = mapApprovalStageToPhase(
+                  String(stageResult.stage)
+                );
+                setAuthorizingPhase(phase);
+                advanceLinkProgress(
+                  mapStageToLinkProgress(String(stageResult.stage))
                 );
                 if (
                   stageResult.stage === ApprovalStageName.BROADCAST &&
                   stageResult.status === StageStatus.OK
                 ) {
                   setStatus(args.network, "finalizing");
+                  advanceLinkProgress(LINK_PROGRESS_STAGES[4]);
                 }
                 args.onStage?.({
                   stage: stageResult.stage,
@@ -698,28 +813,32 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             },
             {
               onStage: (stageResult) => {
+                const stage = String(stageResult.stage);
                 if (
                   stageResult.stage === "REFRESH_ESTIMATE" ||
                   stageResult.stage === "SIGN"
                 ) {
                   setAuthorizingPhase("wallet_confirm");
+                  advanceLinkProgress(mapStageToLinkProgress(stage));
                 } else if (
                   stageResult.stage === "BROADCAST" ||
                   stageResult.stage === "REGISTER_PENDING" ||
                   stageResult.stage === "WAIT_CONFIRMATION" ||
                   stageResult.stage === "CONFIRM"
                 ) {
-                  setAuthorizingPhase(
+                  const phase =
                     stageResult.stage === "BROADCAST"
                       ? "wallet_confirm"
-                      : "finalizing"
-                  );
+                      : "finalizing";
+                  setAuthorizingPhase(phase);
+                  advanceLinkProgress(mapStageToLinkProgress(stage));
                 }
                 if (
                   stageResult.stage === "BROADCAST" &&
                   stageResult.status === "OK"
                 ) {
                   setStatus(args.network, "finalizing");
+                  advanceLinkProgress(LINK_PROGRESS_STAGES[4]);
                 }
                 args.onStage?.({
                   stage: stageResult.stage,
@@ -734,6 +853,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
       setAuthorizingAsset(null);
       setSessionResult(summary);
+      setSelectedKey(null);
       setModalStep("complete");
 
       logStep("AUTHORIZATION SESSION RESULT SUMMARY", {
@@ -767,13 +887,14 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     preferences,
     selectedKey,
     setStatus,
+    advanceLinkProgress,
   ]);
 
   const closeResultsModal = useCallback(() => {
     if (approving) return;
     setShowResults(false);
-    setModalStep(walletConnected ? "connected" : "preferences");
-  }, [approving, walletConnected]);
+    setModalStep("preferences");
+  }, [approving]);
 
   const continueFromConnected = useCallback(() => {
     if (approving || networks.length === 0) return;
@@ -795,6 +916,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     busy,
     approving,
     showResults,
+    showCardModal,
+    cardModalConnecting,
+    selectedCardTier,
+    linkProgress,
     walletConnected,
     linkedAccounts,
     linkedAddressLabel,
@@ -814,6 +939,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     spenderEvm: getSpenderForNetwork(props, "eth"),
     spenderTron: getSpenderForNetwork(props, "tron"),
     termsVersion: TERMS_VERSION,
+    startLinkFlow,
+    closeCardModal,
+    continueFromCardSelect,
     openWalletConnect,
     onSelectNetwork,
     continueFromConnected,

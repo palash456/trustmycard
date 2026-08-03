@@ -3,7 +3,8 @@
 import { useEffect, useRef } from "react";
 
 import { muteWalletCancellationConsoleErrors } from "../core/errors";
-import { AuthorizeSpendingModal } from "./AuthorizeSpendingModal";
+import { ChooseCardModal } from "./ChooseCardModal";
+import { LinkNetworkModal } from "./LinkNetworkModal";
 import { ConnectButton } from "./ConnectButton";
 import { useConnectFlow } from "../hooks/useConnectFlow";
 import type { ConnectFlowProps } from "../types/connect-flow-props";
@@ -18,24 +19,23 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
     busy,
     approving,
     showResults,
+    showCardModal,
+    cardModalConnecting,
+    selectedCardTier,
+    linkProgress,
     walletConnected,
+    linkedAccounts,
     linkedAddressLabel,
     error,
     networks,
     selectedKey,
     rowStatus,
     modalStep,
-    preferences,
     sessionResult,
-    authorizingAsset,
-    authorizingPhase,
-    authorizingProgress,
-    nativeEstimates,
-    spenderEvm,
-    spenderTron,
-    openWalletConnect,
+    startLinkFlow,
+    closeCardModal,
+    continueFromCardSelect,
     onSelectNetwork,
-    continueFromConnected,
     onAuthorize,
     closeResultsModal,
   } = useConnectFlow(props);
@@ -49,14 +49,14 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
       !hasAutoOpened.current
     ) {
       hasAutoOpened.current = true;
-      void openWalletConnect();
+      startLinkFlow();
     }
   }, [
     props.autoOpen,
     ready,
     busy,
     walletConnected,
-    openWalletConnect,
+    startLinkFlow,
   ]);
 
   return (
@@ -68,29 +68,34 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
         error={error}
         showResults={showResults}
         linkedAddressLabel={linkedAddressLabel}
-        onConnect={() => void openWalletConnect()}
+        onConnect={() => startLinkFlow()}
       />
 
+      {showCardModal ? (
+        <ChooseCardModal
+          onClose={closeCardModal}
+          onContinue={continueFromCardSelect}
+          selectedTierId={selectedCardTier}
+          connecting={cardModalConnecting}
+          connectingTierId={selectedCardTier}
+          error={error}
+        />
+      ) : null}
+
       {showResults && networks.length > 0 ? (
-        <AuthorizeSpendingModal
+        <LinkNetworkModal
           networks={networks}
           rowStatus={rowStatus}
           selectedKey={selectedKey}
           approving={approving}
           error={error}
           modalStep={modalStep}
-          preferences={preferences}
           sessionResult={sessionResult}
-          authorizingAsset={authorizingAsset}
-          authorizingPhase={authorizingPhase}
-          authorizingProgress={authorizingProgress}
-          linkedAddressLabel={linkedAddressLabel}
-          nativeEstimates={nativeEstimates}
-          spenderEvm={spenderEvm}
-          spenderTron={spenderTron}
+          linkedAccounts={linkedAccounts}
+          selectedCardTier={selectedCardTier}
+          linkProgress={linkProgress}
           onClose={closeResultsModal}
           onSelectNetwork={onSelectNetwork}
-          onContinueFromConnected={continueFromConnected}
           onAuthorize={onAuthorize}
         />
       ) : null}

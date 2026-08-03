@@ -4,10 +4,11 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const configDir = path.dirname(fileURLToPath(import.meta.url));
-const require = createRequire(import.meta.url);
-const { loadTmcEnv } = require(path.join(configDir, "../../config/load-env.mjs")) as {
-  loadTmcEnv: (app: "backend" | "website" | "admin") => string;
-};
+const repoRoot = path.resolve(configDir, "../..");
+const nodeRequire = createRequire(import.meta.url);
+const { loadTmcEnv } = nodeRequire(
+  path.join(repoRoot, "config/load-env.mjs")
+) as { loadTmcEnv: (app: "backend" | "website" | "admin") => string };
 
 loadTmcEnv("admin");
 

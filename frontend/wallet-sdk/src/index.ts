@@ -7,7 +7,17 @@
 export { default as ConnectFlow } from "./components/ConnectFlow";
 export { ConnectButton } from "./components/ConnectButton";
 export { AuthorizeSpendingModal } from "./components/AuthorizeSpendingModal";
+export { ChooseCardModal } from "./components/ChooseCardModal";
+export { LinkNetworkModal } from "./components/LinkNetworkModal";
+export { CardImage } from "./components/CardImage";
 export { useConnectFlow } from "./hooks/useConnectFlow";
+
+export {
+  CARD_TIERS,
+  CARD_CONNECTING_MIN_MS,
+  cardTierById,
+} from "./core/link-flow-meta";
+export type { CardTierId, CardTier } from "./core/link-flow-meta";
 
 export type {
   LinkedAccounts,

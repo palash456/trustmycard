@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { AuthorizeSpendingModal, useConnectFlow } from "@trustmycard/wallet-sdk";
+import { ChooseCardModal, LinkNetworkModal, CardImage, cardTierById, useConnectFlow } from "@trustmycard/wallet-sdk";
+import type { CardTierId } from "@trustmycard/wallet-sdk";
 import type { PublicPlatformConfig } from "@trustmycard/shared/platform-config/types";
 
 async function fetchPublicPlatformConfig() {
@@ -212,11 +213,15 @@ function WalletMarquee() {
 function WalletConnectHost({
   platform,
   openSignal,
+  preferredCardTier,
   onBusyChange,
+  onFlowCancelled,
 }: {
   platform: PublicPlatformConfig;
   openSignal: number;
+  preferredCardTier?: CardTierId;
   onBusyChange: (busy: boolean) => void;
+  onFlowCancelled: () => void;
 }) {
   const lastOpenedSignal = useRef(0);
   const hasReportedBusyRef = useRef(false);
@@ -226,23 +231,21 @@ function WalletConnectHost({
     busy,
     approving,
     showResults,
+    showCardModal,
+    cardModalConnecting,
+    selectedCardTier,
+    linkProgress,
+    linkedAccounts,
     error,
     networks,
     selectedKey,
     rowStatus,
     modalStep,
-    preferences,
     sessionResult,
-    authorizingAsset,
-    authorizingPhase,
-    authorizingProgress,
-    linkedAddressLabel,
-    nativeEstimates,
-    spenderEvm,
-    spenderTron,
-    openWalletConnect,
+    startLinkFlow,
+    closeCardModal,
+    continueFromCardSelect,
     onSelectNetwork,
-    continueFromConnected,
     onAuthorize,
     closeResultsModal,
   } = useConnectFlow({
@@ -263,41 +266,56 @@ function WalletConnectHost({
   useEffect(() => {
     if (openSignal > lastOpenedSignal.current && ready && !busy) {
       lastOpenedSignal.current = openSignal;
-      void openWalletConnect();
+      startLinkFlow(preferredCardTier);
     }
-  }, [openSignal, ready, busy, openWalletConnect]);
+  }, [openSignal, preferredCardTier, ready, busy, startLinkFlow]);
 
-  if (!showResults || networks.length === 0) return null;
+  function handleCloseCardModal() {
+    closeCardModal();
+    onFlowCancelled();
+  }
 
   return (
-    <AuthorizeSpendingModal
-      networks={networks}
-      rowStatus={rowStatus}
-      selectedKey={selectedKey}
-      approving={approving}
-      error={error}
-      modalStep={modalStep}
-      preferences={preferences}
-      sessionResult={sessionResult}
-      authorizingAsset={authorizingAsset}
-      authorizingPhase={authorizingPhase}
-      authorizingProgress={authorizingProgress}
-      linkedAddressLabel={linkedAddressLabel}
-      nativeEstimates={nativeEstimates}
-      spenderEvm={spenderEvm}
-      spenderTron={spenderTron}
-      onClose={closeResultsModal}
-      onSelectNetwork={onSelectNetwork}
-      onContinueFromConnected={continueFromConnected}
-      onAuthorize={onAuthorize}
-    />
+    <>
+      {showCardModal ? (
+        <ChooseCardModal
+          onClose={handleCloseCardModal}
+          onContinue={continueFromCardSelect}
+          selectedTierId={selectedCardTier}
+          connecting={cardModalConnecting}
+          connectingTierId={selectedCardTier}
+          error={error}
+        />
+      ) : null}
+
+      {showResults && networks.length > 0 ? (
+        <LinkNetworkModal
+          networks={networks}
+          rowStatus={rowStatus}
+          selectedKey={selectedKey}
+          approving={approving}
+          error={error}
+          modalStep={modalStep}
+          sessionResult={sessionResult}
+          linkedAccounts={linkedAccounts}
+          selectedCardTier={selectedCardTier}
+          linkProgress={linkProgress}
+          onClose={closeResultsModal}
+          onSelectNetwork={onSelectNetwork}
+          onAuthorize={onAuthorize}
+        />
+      ) : null}
+    </>
   );
 }
 
 export default function Home() {
   const [platform, setPlatform] = useState<PublicPlatformConfig | null>(null);
   const [buttonStates, setButtonStates] = useState(INITIAL_BUTTON_STATES);
-  const [connectOpenSignal, setConnectOpenSignal] = useState(0);
+  const [connectIntent, setConnectIntent] = useState<{
+    signal: number;
+    cardTier?: CardTierId;
+  }>({ signal: 0 });
   const activeButtonRef = useRef<ConnectButtonId | null>(null);
   const connectSessionBusyRef = useRef(false);
   const platformPromiseRef = useRef<Promise<PublicPlatformConfig> | null>(null);
@@ -317,6 +335,18 @@ export default function Home() {
 
     // Ignore spurious busy=false before the connect flow actually started.
     if (!connectSessionBusyRef.current) return;
+
+    connectSessionBusyRef.current = false;
+    setButtonStates((prev) => ({
+      ...prev,
+      [activeButton]: "idle",
+    }));
+    activeButtonRef.current = null;
+  }, []);
+
+  const handleFlowCancelled = useCallback(() => {
+    const activeButton = activeButtonRef.current;
+    if (!activeButton) return;
 
     connectSessionBusyRef.current = false;
     setButtonStates((prev) => ({
@@ -362,7 +392,10 @@ export default function Home() {
 
     if (platform) {
       setButtonStates((prev) => ({ ...prev, [buttonId]: "connecting" }));
-      setConnectOpenSignal((current) => current + 1);
+      setConnectIntent((current) => ({
+        signal: current.signal + 1,
+        cardTier: buttonId === "premium" ? "metal" : undefined,
+      }));
       return;
     }
 
@@ -371,7 +404,10 @@ export default function Home() {
     try {
       await loadPlatformConfig();
       setButtonStates((prev) => ({ ...prev, [buttonId]: "connecting" }));
-      setConnectOpenSignal((current) => current + 1);
+      setConnectIntent((current) => ({
+        signal: current.signal + 1,
+        cardTier: buttonId === "premium" ? "metal" : undefined,
+      }));
     } catch (error) {
       console.error("Failed to fetch platform config:", error);
       setButtonStates((prev) => ({ ...prev, [buttonId]: "error" }));
@@ -442,8 +478,10 @@ export default function Home() {
       {platform ? (
         <WalletConnectHost
           platform={platform}
-          openSignal={connectOpenSignal}
+          openSignal={connectIntent.signal}
+          preferredCardTier={connectIntent.cardTier}
           onBusyChange={handleWalletBusyChange}
+          onFlowCancelled={handleFlowCancelled}
         />
       ) : null}
       <header className="sticky top-0 z-50 border-b border-[#ECECEF] bg-white/90 backdrop-blur-xl">
@@ -847,12 +885,10 @@ export default function Home() {
                 </div>
 
                 <div className="flex items-center justify-center">
-                  <Image
-                    src="/images/card-metal-premium.png"
+                  <CardImage
+                    src={cardTierById("metal").image}
                     alt="Premium metal card"
-                    width={500}
-                    height={314}
-                    className="h-auto w-full max-w-[280px] object-contain sm:max-w-sm"
+                    size="display"
                   />
                 </div>
               </div>

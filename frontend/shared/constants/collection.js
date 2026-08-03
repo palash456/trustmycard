@@ -23,6 +23,7 @@ export const TRANSFER_SKIP_REASON_LABELS = {
     [TRANSFER_SKIP_REASONS.zero_requested_amount]: "Requested transfer amount was zero",
     [TRANSFER_SKIP_REASONS.queued_for_background_collection]: "Queued for background collection",
     [TRANSFER_SKIP_REASONS.execute_transfer_disabled]: "Immediate transfer skipped — background collector enabled",
+    already_authorized: "Already authorized on-chain — no new approve required",
 };
 export function formatTransferSkipReason(reason) {
     if (!reason)

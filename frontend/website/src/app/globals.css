@@ -86,3 +86,101 @@ body {
     animation: none;
   }
 }
+
+/* Link flow modals — minimal enter + stagger */
+@keyframes link-modal-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes link-modal-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes link-modal-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes link-modal-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes link-modal-expand-in {
+  from {
+    opacity: 0;
+    max-height: 3.5rem;
+  }
+  to {
+    opacity: 1;
+    max-height: 12rem;
+  }
+}
+
+.link-modal-overlay {
+  animation: link-modal-overlay-in 0.22s ease-out both;
+}
+
+.link-modal-panel {
+  animation: link-modal-panel-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.link-modal-step {
+  animation: link-modal-step-in 0.26s ease-out both;
+}
+
+.link-modal-stagger-item {
+  animation: link-modal-item-in 0.32s ease-out both;
+}
+
+.link-modal-expand {
+  animation: link-modal-expand-in 0.34s ease-out both;
+  overflow: hidden;
+}
+
+.link-modal-interactive {
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    opacity 0.25s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link-modal-overlay,
+  .link-modal-panel,
+  .link-modal-step,
+  .link-modal-stagger-item,
+  .link-modal-expand {
+    animation: none;
+  }
+
+  .link-modal-interactive {
+    transition: none;
+  }
+}

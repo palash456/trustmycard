@@ -25,7 +25,7 @@ export const NETWORK_META: Record<
     nativeSymbol: "ETH",
   },
   bsc: {
-    name: "BSC",
+    name: "BNB Chain",
     standard: "BEP-20",
     color: "#F0B90B",
     letter: "B",
