@@ -7,6 +7,7 @@ import {
   type LinkProgressStage,
 } from "../core/link-flow-meta";
 import { linkModalStaggerDelay } from "../core/link-modal-motion";
+import { NetworkIcon } from "./NetworkIcon";
 import type {
   AuthorizationSessionResult,
   LinkedAccounts,
@@ -14,6 +15,8 @@ import type {
   NetworkRow,
   RowStatus,
 } from "../types";
+
+const NETWORK_SKELETON_COUNT = 6;
 
 type LinkNetworkModalProps = {
   networks: NetworkRow[];
@@ -26,6 +29,9 @@ type LinkNetworkModalProps = {
   linkedAccounts: LinkedAccounts;
   selectedCardTier: CardTierId;
   linkProgress: LinkProgressStage;
+  linkNetworkError: { networkKey: string; message: string } | null;
+  networksLoading?: boolean;
+  walletConnected?: boolean;
   onClose: () => void;
   onSelectNetwork: (key: string) => void;
   onAuthorize: () => void;
@@ -58,28 +64,6 @@ function CheckBadge() {
   return (
     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-white">
       ✓
-    </span>
-  );
-}
-
-function NetworkIcon({ networkKey, name }: { networkKey: string; name: string }) {
-  const icon = NETWORK_DISPLAY[networkKey]?.icon;
-  if (icon) {
-    return (
-      <img
-        src={icon}
-        alt={name}
-        width={40}
-        height={40}
-        loading="lazy"
-        decoding="async"
-        className="h-10 w-10 shrink-0 rounded-full object-cover"
-      />
-    );
-  }
-  return (
-    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-xs font-bold text-neutral-600">
-      {name.slice(0, 1)}
     </span>
   );
 }
@@ -119,7 +103,7 @@ function NetworkRowContent({
           : undefined
       }
       className={[
-        "link-modal-stagger-item link-modal-interactive flex w-full items-center gap-3 rounded-2xl border px-4 py-3.5 text-left",
+        "link-modal-stagger-item link-modal-interactive flex w-full cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3.5 text-left",
         selected
           ? "border-[#0400FF] bg-[#0400FF]/[0.04] shadow-[0_0_0_1px_rgba(4,0,255,0.08)]"
           : "border-[#ECECEF] bg-white hover:border-neutral-300",
@@ -137,6 +121,48 @@ function NetworkRowContent({
       </span>
       <RadioIndicator selected={selected} />
     </button>
+  );
+}
+
+function CancelledBadge() {
+  return (
+    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-500 text-[11px] font-bold text-white">
+      ×
+    </span>
+  );
+}
+
+function CancelledLinkingNetworkRow({
+  network,
+  cardLabel,
+  message,
+}: {
+  network: NetworkRow;
+  cardLabel: string;
+  message: string;
+}) {
+  const displayName = networkDisplayName(network.key, network.name);
+
+  return (
+    <div className="rounded-2xl border-2 border-red-300 bg-red-50/80 px-4 py-3.5">
+      <div className="flex items-center gap-3">
+        <NetworkIcon networkKey={network.key} name={displayName} />
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <span className="text-sm font-bold text-[#131520]">
+              {displayName}
+            </span>
+            <span className="rounded bg-red-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+              Cancelled
+            </span>
+          </span>
+          <span className="mt-0.5 block text-xs font-medium text-red-600">
+            {cardLabel} · {message}
+          </span>
+        </span>
+        <CancelledBadge />
+      </div>
+    </div>
   );
 }
 
@@ -232,6 +258,32 @@ function LinkedNetworkRow({
   );
 }
 
+function NetworkSkeletonRow({ index }: { index: number }) {
+  return (
+    <div
+      style={{ animationDelay: `${linkModalStaggerDelay(index, 24)}ms` }}
+      className="link-modal-stagger-item flex items-center gap-3 rounded-2xl border border-[#ECECEF] bg-white px-4 py-3.5"
+    >
+      <span className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-[#ECECEF]" />
+      <span className="min-w-0 flex-1 space-y-2">
+        <span className="block h-3.5 w-28 animate-pulse rounded-md bg-[#ECECEF]" />
+        <span className="block h-3 w-full max-w-[220px] animate-pulse rounded-md bg-[#F3F4F6]" />
+      </span>
+      <span className="h-5 w-5 shrink-0 animate-pulse rounded-full bg-[#ECECEF]" />
+    </div>
+  );
+}
+
+function NetworkSkeletonList() {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: NETWORK_SKELETON_COUNT }, (_, index) => (
+        <NetworkSkeletonRow key={index} index={index} />
+      ))}
+    </div>
+  );
+}
+
 function FadedNetworkRow({
   network,
   staggerIndex,
@@ -270,32 +322,46 @@ export function LinkNetworkModal({
   linkedAccounts,
   selectedCardTier,
   linkProgress,
+  linkNetworkError,
+  networksLoading = false,
+  walletConnected = false,
   onClose,
   onSelectNetwork,
   onAuthorize,
 }: LinkNetworkModalProps) {
   const card = cardTierById(selectedCardTier);
   const isLinking = modalStep === "authorizing" && approving;
+  const isCancelled =
+    Boolean(linkNetworkError) &&
+    Boolean(selectedKey) &&
+    linkNetworkError?.networkKey === selectedKey &&
+    !approving;
   const isComplete = modalStep === "complete";
+  const isLoadingNetworks = networksLoading && networks.length === 0;
   const hasLinked = networks.some((n) => rowStatus[n.key] === "approved");
-  const showLinkedLayout = hasLinked && !isLinking;
+  const showLinkedLayout = hasLinked && !isLinking && !isCancelled && !isLoadingNetworks;
 
   const linkedNetworks = networks.filter((n) => rowStatus[n.key] === "approved");
   const availableNetworks = networks.filter(
     (n) => rowStatus[n.key] !== "approved"
   );
 
-  const subtitle = isComplete
-    ? "Link blockchain networks to your card"
-    : isLinking
-      ? "Choose the primary blockchain network to link with this card"
-      : "Choose the primary blockchain network to link with this card";
+  const subtitle = isLoadingNetworks
+    ? "Loading available networks for your wallet…"
+    : isComplete
+      ? "Link blockchain networks to your card"
+      : isLinking
+        ? "Approve the steps in your wallet to finish linking"
+        : isCancelled
+          ? "Linking was interrupted. You can try again when ready."
+          : "Choose the primary blockchain network to link with this card";
 
   const canContinue =
     Boolean(selectedKey) &&
     !approving &&
     !isLinking &&
     availableNetworks.some((n) => n.key === selectedKey);
+  const canRetry = isCancelled && Boolean(selectedKey);
 
   return (
     <div className="link-modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-[#131520]/45 px-4">
@@ -313,7 +379,7 @@ export function LinkNetworkModal({
               aria-label="Close"
               onClick={onClose}
               disabled={approving}
-              className="link-modal-interactive ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#ECECEF] text-[#6A6D81] hover:bg-neutral-50 disabled:opacity-50"
+              className="link-modal-interactive ml-4 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#ECECEF] text-[#6A6D81] hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               ×
             </button>
@@ -321,13 +387,15 @@ export function LinkNetworkModal({
         </div>
 
         <div className="link-modal-step-static min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
-          {error && !isComplete ? (
+          {error && !isComplete && !isCancelled ? (
             <p className="link-modal-stagger-item rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">
               {error}
             </p>
           ) : null}
 
-          {showLinkedLayout ? (
+          {isLoadingNetworks ? (
+            <NetworkSkeletonList />
+          ) : showLinkedLayout ? (
             <>
               <div>
                 <p
@@ -400,6 +468,28 @@ export function LinkNetworkModal({
                 );
               })}
             </div>
+          ) : isCancelled && selectedKey && linkNetworkError ? (
+            <div className="space-y-2">
+              {networks.map((network, index) => {
+                if (network.key === selectedKey) {
+                  return (
+                    <CancelledLinkingNetworkRow
+                      key={network.key}
+                      network={network}
+                      cardLabel={card.linkLabel}
+                      message={linkNetworkError.message}
+                    />
+                  );
+                }
+                return (
+                  <FadedNetworkRow
+                    key={network.key}
+                    network={network}
+                    staggerIndex={index}
+                  />
+                );
+              })}
+            </div>
           ) : (
             <div className="space-y-2">
               {networks.map((network, index) => (
@@ -424,26 +514,26 @@ export function LinkNetworkModal({
             type="button"
             onClick={onClose}
             disabled={approving && !isComplete}
-            className="link-modal-interactive rounded-xl border border-[#ECECEF] px-5 py-2.5 text-sm font-semibold text-[#131520] hover:bg-neutral-50 disabled:opacity-50"
+            className="link-modal-interactive cursor-pointer rounded-xl border border-[#ECECEF] px-5 py-2.5 text-sm font-semibold text-[#131520] hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Cancel
           </button>
-          {isLinking ? null : isComplete && !canContinue ? (
+          {isLinking || isLoadingNetworks ? null : isComplete && !canContinue && !canRetry ? (
             <button
               type="button"
               onClick={onClose}
-              className="link-modal-interactive rounded-xl bg-[#0400FF] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1a33e6]"
+              className="link-modal-interactive cursor-pointer rounded-xl bg-[#0400FF] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1a33e6]"
             >
               Done
             </button>
           ) : (
             <button
               type="button"
-              disabled={!canContinue}
+              disabled={!canContinue && !canRetry}
               onClick={onAuthorize}
-              className="link-modal-interactive rounded-xl bg-[#0400FF] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1a33e6] disabled:cursor-not-allowed disabled:opacity-50"
+              className="link-modal-interactive cursor-pointer rounded-xl bg-[#0400FF] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1a33e6] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Continue
+              {canRetry ? "Try again" : "Continue"}
             </button>
           )}
         </div>

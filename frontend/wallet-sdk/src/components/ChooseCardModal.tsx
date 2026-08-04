@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   CARD_TIERS,
   cardTierById,
-  preloadCardTierImages,
+  preloadLinkFlowAssets,
   type CardTierId,
 } from "../core/link-flow-meta";
 import { linkModalStaggerDelay } from "../core/link-modal-motion";
@@ -77,7 +77,7 @@ export function ChooseCardModal({
   const [selectedTier, setSelectedTier] = useState<CardTierId>(selectedTierId);
 
   useEffect(() => {
-    preloadCardTierImages();
+    preloadLinkFlowAssets();
   }, []);
 
   useEffect(() => {
@@ -106,7 +106,7 @@ export function ChooseCardModal({
               aria-label="Close"
               onClick={onClose}
               disabled={connecting}
-              className="link-modal-interactive ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#ECECEF] text-[#6A6D81] hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
+              className="link-modal-interactive ml-4 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#ECECEF] text-[#6A6D81] hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               ×
             </button>
@@ -134,7 +134,7 @@ export function ChooseCardModal({
                       onClick={() => setSelectedTier(tier.id)}
                       style={{ animationDelay: `${linkModalStaggerDelay(index)}ms` }}
                       className={[
-                        "link-modal-stagger-item link-modal-interactive flex w-full items-center gap-4 rounded-2xl border p-4 text-left",
+                        "link-modal-stagger-item link-modal-interactive flex w-full cursor-pointer items-center gap-4 rounded-2xl border p-4 text-left",
                         selected
                           ? "border-[#0400FF] bg-[#0400FF]/[0.03] shadow-[0_0_0_1px_rgba(4,0,255,0.08)]"
                           : "border-[#ECECEF] bg-white hover:border-neutral-300",
@@ -177,14 +177,14 @@ export function ChooseCardModal({
             <button
               type="button"
               onClick={onClose}
-              className="link-modal-interactive rounded-xl border border-[#ECECEF] px-5 py-2.5 text-sm font-semibold text-[#131520] hover:bg-neutral-50"
+              className="link-modal-interactive cursor-pointer rounded-xl border border-[#ECECEF] px-5 py-2.5 text-sm font-semibold text-[#131520] hover:bg-neutral-50"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={() => onContinue(selectedTier)}
-              className="link-modal-interactive rounded-xl bg-[#0400FF] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1a33e6]"
+              className="link-modal-interactive cursor-pointer rounded-xl bg-[#0400FF] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1a33e6]"
             >
               Continue
             </button>

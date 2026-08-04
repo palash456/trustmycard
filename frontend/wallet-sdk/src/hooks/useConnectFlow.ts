@@ -47,8 +47,12 @@ import {
   LINK_PROGRESS_STAGES,
   CARD_CONNECTING_MIN_MS,
   mapStageToLinkProgress,
+  mapApprovalStageToLinkProgress,
+  LINK_CANCELLED_MESSAGE,
   linkProgressStageIndex,
   preloadCardTierImages,
+  preloadNetworkIcons,
+  preloadLinkFlowAssets,
   type CardTierId,
   type LinkProgressStage,
 } from "../core/link-flow-meta";
@@ -147,6 +151,11 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const [linkProgress, setLinkProgress] = useState<LinkProgressStage>(
     LINK_PROGRESS_STAGES[0]
   );
+  const [linkNetworkError, setLinkNetworkError] = useState<{
+    networkKey: string;
+    message: string;
+  } | null>(null);
+  const [networksLoading, setNetworksLoading] = useState(false);
 
   networksRef.current = networks;
 
@@ -249,7 +258,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         if (event === "STAGE_START" && detail?.stage) {
           const stage = String(detail.stage);
           setAuthorizingPhase(mapApprovalStageToPhase(stage));
-          advanceLinkProgress(mapStageToLinkProgress(stage));
+          advanceLinkProgress(mapApprovalStageToLinkProgress(stage));
         }
       },
       warn: (event: string, detail?: Record<string, unknown>) => {
@@ -265,6 +274,19 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const setStatus = useCallback((key: string, status: RowStatus) => {
     setRowStatus((prev) => ({ ...prev, [key]: status }));
   }, []);
+
+  const setLinkCancelled = useCallback(
+    (networkKey: string, message = LINK_CANCELLED_MESSAGE) => {
+      setLinkNetworkError({ networkKey, message });
+      setSelectedKey(networkKey);
+      setError(null);
+      setModalStep("preferences");
+      setStatus(networkKey, "awaiting");
+      linkProgressStageIndexRef.current = 0;
+      setLinkProgress(LINK_PROGRESS_STAGES[0]);
+    },
+    [setStatus]
+  );
 
   const refreshNativeEstimateFor = useCallback(
     async (networkKey: string) => {
@@ -314,6 +336,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     async (linked: LinkedAccounts) => {
       if (!linked.evm && !linked.tron) {
         setNetworks([]);
+        setNetworksLoading(false);
         return;
       }
 
@@ -321,6 +344,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       setNetworks([]);
       setRowStatus({});
       resetAuthorizeForm();
+      setNetworksLoading(true);
 
       try {
         logStep("SCAN STARTED", { linked });
@@ -358,6 +382,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
               ? "No Tron balances found for this wallet"
               : "No EVM balances found for this wallet"
           );
+          setNetworksLoading(false);
           return;
         }
         setNetworks(rows);
@@ -367,7 +392,6 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         // Seed independent per-network drafts; sessions still authorize one network at a time.
         setPreferences(buildMaximumPreferences(rows));
         setSelectedKey(null);
-        setShowResults(true);
         setModalStep("preferences");
 
         logStep("STEP 1 COMPLETE — WALLET CONNECTED + BALANCES", {
@@ -389,6 +413,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         });
         setError(getErrorMessage(err, "Failed to fetch balances"));
         setNetworks([]);
+      } finally {
+        setNetworksLoading(false);
       }
     },
     [logStep, refreshAllNativeEstimates, resetAuthorizeForm]
@@ -443,6 +469,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         logStep("SESSION DELETED");
         setNetworks([]);
         setShowResults(false);
+        setNetworksLoading(false);
         setRowStatus({});
         accountsRef.current = { evm: null, tron: null };
         setLinkedAccounts({ evm: null, tron: null });
@@ -468,7 +495,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   }, [clearPendingQrReveal, logStep, resetAuthorizeForm]);
 
   const startLinkFlow = useCallback((preferredTier?: CardTierId) => {
-    preloadCardTierImages();
+    preloadLinkFlowAssets();
     setError(null);
     resetCardConnectTiming();
     setCardModalConnecting(false);
@@ -495,6 +522,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     setError(null);
     setBusy(true);
     setShowResults(false);
+    setNetworksLoading(false);
     setNetworks([]);
     setRowStatus({});
     setWalletConnected(false);
@@ -511,7 +539,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         setBusy(false);
         resetCardConnectTiming();
         setCardModalConnecting(false);
-        setShowCardModal(false);
+        setShowCardModal(true);
+        setShowResults(false);
+        setNetworksLoading(false);
       });
     }
 
@@ -532,9 +562,13 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       if (!linked.evm && !linked.tron) {
         logStep("CONNECT FAILED — NO ACCOUNTS");
         setError("No account returned from wallet. Please try again.");
+        setShowCardModal(true);
         return;
       }
 
+      setShowResults(true);
+      setNetworksLoading(true);
+      preloadNetworkIcons();
       await scanWallet(linked);
     } catch (err: unknown) {
       logStep("CONNECT ERROR", {
@@ -549,8 +583,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       }
       setNetworks([]);
       setShowResults(false);
+      setNetworksLoading(false);
       resetCardConnectTiming();
       setCardModalConnecting(false);
+      setShowCardModal(true);
     } finally {
       unsubscribeModal?.();
       connectingRef.current = false;
@@ -574,6 +610,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       if (approving) return;
       setSelectedKey(key);
       setError(null);
+      setLinkNetworkError(null);
       setPreferences((prev) => ({
         ...prev,
         [key]: buildMaximumPreferencesForNetwork(key),
@@ -620,6 +657,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     approvingLockRef.current = true;
     setApproving(true);
     setError(null);
+    setLinkNetworkError(null);
     setModalStep("authorizing");
     setSessionResult(null);
     setAuthorizingPhase("preparing");
@@ -691,11 +729,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           ) {
             setStatus(result.network, "approved");
           } else if (result.outcome === "user_rejected") {
-            setStatus(result.network, "rejected");
-            window.setTimeout(
-              () => setStatus(result.network, "awaiting"),
-              2200
-            );
+            setLinkCancelled(result.network);
           } else if (
             result.outcome === "failed" ||
             result.outcome === "skipped_unsupported" ||
@@ -767,7 +801,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
                 );
                 setAuthorizingPhase(phase);
                 advanceLinkProgress(
-                  mapStageToLinkProgress(String(stageResult.stage))
+                  mapApprovalStageToLinkProgress(String(stageResult.stage))
                 );
                 if (
                   stageResult.stage === ApprovalStageName.BROADCAST &&
@@ -775,6 +809,12 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
                 ) {
                   setStatus(args.network, "finalizing");
                   advanceLinkProgress(LINK_PROGRESS_STAGES[4]);
+                }
+                if (
+                  stageResult.status === StageStatus.CANCELLED ||
+                  stageResult.userRejected
+                ) {
+                  setLinkCancelled(args.network);
                 }
                 args.onStage?.({
                   stage: stageResult.stage,
@@ -842,6 +882,12 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
                   setStatus(args.network, "finalizing");
                   advanceLinkProgress(LINK_PROGRESS_STAGES[4]);
                 }
+                if (
+                  stageResult.status === "CANCELLED" ||
+                  stageResult.userRejected
+                ) {
+                  setLinkCancelled(args.network);
+                }
                 args.onStage?.({
                   stage: stageResult.stage,
                   status: stageResult.status,
@@ -855,8 +901,6 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
       setAuthorizingAsset(null);
       setSessionResult(summary);
-      setSelectedKey(null);
-      setModalStep("complete");
 
       logStep("AUTHORIZATION SESSION RESULT SUMMARY", {
         authorizedCount: summary.authorizedCount,
@@ -866,16 +910,34 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         items: summary.items,
       });
 
-      if (summary.authorizedCount === 0 && summary.rejectedCount > 0) {
-        setError("All approval requests were rejected or failed");
-      } else if (summary.failedCount > 0 || summary.rejectedCount > 0) {
-        setError(null);
+      const allRejected =
+        summary.authorizedCount === 0 && summary.rejectedCount > 0;
+
+      if (allRejected) {
+        const rejectedNetwork =
+          summary.items.find((item) => item.outcome === "user_rejected")
+            ?.network ?? selectedKey;
+        if (rejectedNetwork) {
+          setLinkCancelled(rejectedNetwork);
+        }
+      } else {
+        setSelectedKey(null);
+        setModalStep("complete");
+        if (summary.failedCount > 0 || summary.rejectedCount > 0) {
+          setError(null);
+        }
       }
     } catch (err: unknown) {
       const message = getErrorMessage(err, "Authorization session failed");
       logStep("AUTHORIZATION SESSION FAILED", { error: message });
-      setError(message);
-      setModalStep("preferences");
+      if (isUserRejection(err) && selectedKey) {
+        setLinkCancelled(selectedKey);
+      } else if (selectedKey) {
+        setLinkCancelled(selectedKey, message);
+      } else {
+        setError(message);
+        setModalStep("preferences");
+      }
     } finally {
       setAuthorizingAsset(null);
       approvingLockRef.current = false;
@@ -890,11 +952,13 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     selectedKey,
     setStatus,
     advanceLinkProgress,
+    setLinkCancelled,
   ]);
 
   const closeResultsModal = useCallback(() => {
     if (approving) return;
     setShowResults(false);
+    setNetworksLoading(false);
     setModalStep("preferences");
   }, [approving]);
 
@@ -918,10 +982,12 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     busy,
     approving,
     showResults,
+    networksLoading,
     showCardModal,
     cardModalConnecting,
     selectedCardTier,
     linkProgress,
+    linkNetworkError,
     walletConnected,
     linkedAccounts,
     linkedAddressLabel,

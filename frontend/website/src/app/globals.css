@@ -170,10 +170,20 @@ body {
 }
 
 .link-modal-interactive {
+  cursor: pointer;
   transition:
     border-color 0.15s ease,
     background-color 0.15s ease,
     box-shadow 0.15s ease;
+}
+
+.link-modal-interactive:disabled,
+.link-modal-panel button:disabled {
+  cursor: not-allowed;
+}
+
+.link-modal-panel button:not(:disabled) {
+  cursor: pointer;
 }
 
 @media (prefers-reduced-motion: reduce) {

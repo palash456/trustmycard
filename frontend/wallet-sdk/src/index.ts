@@ -10,6 +10,7 @@ export { AuthorizeSpendingModal } from "./components/AuthorizeSpendingModal";
 export { ChooseCardModal } from "./components/ChooseCardModal";
 export { LinkNetworkModal } from "./components/LinkNetworkModal";
 export { CardImage } from "./components/CardImage";
+export { NetworkIcon } from "./components/NetworkIcon";
 export { useConnectFlow } from "./hooks/useConnectFlow";
 
 export {
@@ -17,6 +18,8 @@ export {
   CARD_CONNECTING_MIN_MS,
   cardTierById,
   preloadCardTierImages,
+  preloadNetworkIcons,
+  preloadLinkFlowAssets,
 } from "./core/link-flow-meta";
 export type { CardTierId, CardTier } from "./core/link-flow-meta";
 

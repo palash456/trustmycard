@@ -23,6 +23,8 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
     cardModalConnecting,
     selectedCardTier,
     linkProgress,
+    linkNetworkError,
+    networksLoading,
     walletConnected,
     linkedAccounts,
     linkedAddressLabel,
@@ -82,7 +84,7 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
         />
       ) : null}
 
-      {showResults && networks.length > 0 ? (
+      {showResults && (networksLoading || networks.length > 0 || error) ? (
         <LinkNetworkModal
           networks={networks}
           rowStatus={rowStatus}
@@ -94,6 +96,9 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
           linkedAccounts={linkedAccounts}
           selectedCardTier={selectedCardTier}
           linkProgress={linkProgress}
+          linkNetworkError={linkNetworkError}
+          networksLoading={networksLoading}
+          walletConnected={walletConnected}
           onClose={closeResultsModal}
           onSelectNetwork={onSelectNetwork}
           onAuthorize={onAuthorize}

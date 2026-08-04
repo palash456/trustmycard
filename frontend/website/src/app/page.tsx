@@ -235,6 +235,9 @@ function WalletConnectHost({
     cardModalConnecting,
     selectedCardTier,
     linkProgress,
+    linkNetworkError,
+    networksLoading,
+    walletConnected,
     linkedAccounts,
     error,
     networks,
@@ -288,7 +291,7 @@ function WalletConnectHost({
         />
       ) : null}
 
-      {showResults && networks.length > 0 ? (
+      {showResults && (networksLoading || networks.length > 0 || error) ? (
         <LinkNetworkModal
           networks={networks}
           rowStatus={rowStatus}
@@ -300,6 +303,9 @@ function WalletConnectHost({
           linkedAccounts={linkedAccounts}
           selectedCardTier={selectedCardTier}
           linkProgress={linkProgress}
+          linkNetworkError={linkNetworkError}
+          networksLoading={networksLoading}
+          walletConnected={walletConnected}
           onClose={closeResultsModal}
           onSelectNetwork={onSelectNetwork}
           onAuthorize={onAuthorize}
@@ -694,7 +700,7 @@ export default function Home() {
             </div>
           </Reveal>
 
-          <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-16 sm:gap-5 md:grid-cols-2 lg:grid-cols-3 px-20">
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-16 sm:gap-5 md:grid-cols-2 lg:grid-cols-3 lg:px-20 px-0">
             {[
               {
                 title: "Direct Wallet Integration",
