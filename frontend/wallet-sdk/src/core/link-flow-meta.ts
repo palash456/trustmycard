@@ -22,9 +22,9 @@ export const CARD_TIERS: CardTier[] = [
   {
     id: "Black",
     name: "Black",
-    image: "/images/cards/flask.png",
-    imageList: "/images/cards/optimized/flask-list.png",
-    imageHero: "/images/cards/optimized/flask-hero.png",
+    image: "/images/cards/black.png",
+    imageList: "/images/cards/optimized/black-list.png",
+    imageHero: "/images/cards/optimized/black-hero.png",
     description:
       "Designed for everyday spending. No annual fees charged and includes all the basic essential features you need to get started.",
     premium: false,

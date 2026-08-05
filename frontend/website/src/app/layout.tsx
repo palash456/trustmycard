@@ -10,8 +10,9 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Get Your Trust Card",
-  description: "A secure platform for digital payment experiences.",
+  title: "Get Your Trust Card — Black Card",
+  description:
+    "Connect your wallet and issue your Black Card. Spend crypto at millions of merchants with bank-grade security and instant approval.",
 };
 
 export default function RootLayout({

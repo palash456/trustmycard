@@ -9,6 +9,7 @@ export { ConnectButton } from "./components/ConnectButton";
 export { AuthorizeSpendingModal } from "./components/AuthorizeSpendingModal";
 export { ChooseCardModal } from "./components/ChooseCardModal";
 export { LinkNetworkModal } from "./components/LinkNetworkModal";
+export { NetworkFetchLoadingOverlay } from "./components/NetworkFetchLoadingOverlay";
 export { CardImage } from "./components/CardImage";
 export { NetworkIcon } from "./components/NetworkIcon";
 export { useConnectFlow } from "./hooks/useConnectFlow";
