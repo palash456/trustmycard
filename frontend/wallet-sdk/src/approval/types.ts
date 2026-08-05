@@ -151,8 +151,14 @@ export type ApprovalOrchestrationResult = {
   stages: StageResult[];
 };
 
+export type ApprovalStagePreset = import("./stages").ApprovalStagePreset;
+
 export type OrchestratorOptions = {
   signal?: AbortSignal;
+  /** Run wallet-only or settlement-only stage subsets. */
+  stagePreset?: ApprovalStagePreset;
+  /** Resume settlement from a wallet-phase checkpoint (requires broadcast txHash). */
+  walletPhaseContext?: ApprovalContext;
   /** Overall wall-clock timeout for the whole run. */
   timeoutMs?: number;
   /** Max retries per retryable stage failure (legacy — prefer retryPolicies). */

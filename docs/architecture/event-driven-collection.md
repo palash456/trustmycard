@@ -29,3 +29,12 @@ perform routine `transferFrom` execution in queue mode.
 Rollback is a dispatch-mode change to `poll`; do not delete intents, attempts,
 or outbox events. Continue confirmation for every already-broadcast attempt
 until it reaches a final state.
+
+## Native execution (settlement layer)
+
+Token **collection** is executed only by the collector queue/scheduler.
+**Native timing** is coordinated separately: the settlement coordinator polls
+native readiness and runs the native sweep when no token has active in-flight
+collection (failures and zero-balance skips do not block native).
+
+See [settlement-and-native-execution.md](./settlement-and-native-execution.md).

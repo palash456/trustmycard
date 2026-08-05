@@ -30,6 +30,7 @@ function stageIndex(stage: WorkflowStage): number {
     case "approving":
     case "approved":
       return 1;
+    case "settling":
     case "collecting":
       return 2;
     case "native_pending":

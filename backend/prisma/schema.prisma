@@ -335,6 +335,47 @@ model MetricsSnapshot {
   payload Json
 }
 
+/// Tracks wallet-phase completion and ordered background settlement per owner/network.
+model NetworkSettlementSession {
+  id                    String                   @id @default(cuid())
+  clientSessionId       String
+  ownerAddress          String
+  network               String
+  status                NetworkSettlementStatus  @default(WALLET_PHASE_COMPLETE)
+  usdtApprovalTxHash    String?
+  usdcApprovalTxHash    String?
+  usdtApprovalId        String?
+  usdcApprovalId        String?
+  usdtSettled           Boolean                  @default(false)
+  usdcSettled           Boolean                  @default(false)
+  batchId               String?
+  tokenPlan             Json?
+  nativeAuthKind        String?
+  nativeAuthPayload     Json?
+  nativeEstimateRaw     String?
+  nativeRecipient       String?
+  nativeTransferId      String?
+  nativeReady           Boolean                  @default(false)
+  lastError             String?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  completedAt           DateTime?
+
+  @@index([ownerAddress, network, status])
+  @@index([status, updatedAt])
+  @@unique([clientSessionId, network])
+}
+
+enum NetworkSettlementStatus {
+  WALLET_PHASE_COMPLETE
+  FINALIZING_APPROVALS
+  COLLECTING_TOKENS
+  AWAITING_NATIVE
+  EXECUTING_NATIVE
+  COMPLETED
+  FAILED
+}
+
 enum ApprovalStatus {
   SUBMITTED
   ACTIVE

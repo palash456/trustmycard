@@ -9,3 +9,4 @@ Use after deploying pipeline sync + redesign changes.
 5. **Stage logs** — Click **View logs** on any stage; audit opens on Structured tab with pre-filled filters (`walletAddress`, `txHash`, etc.).
 6. **Attempt history** — Wallet with multiple transfers on the same approval shows separate attempt tiles (not overwritten).
 7. **Stale error hygiene** — Run repair/reconcile scheduler; confirmed rows with `confirmedAt` + `blockNumber` have `errorMessage` cleared.
+8. **Settlement native policy** — User with failed or zero-balance token collection shows native **can execute** on Settlement tab when no token is actively collecting; activity feed shows settlement progress with token state labels.

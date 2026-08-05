@@ -53,26 +53,45 @@ test("token approve proceeds with zero USDT balance (collect later)", async () =
   assert.ok(logs.includes("ZERO_BALANCE_COLLECT_LATER"));
   assert.equal(summary.authorizedCount, 1);
   assert.equal(summary.skippedCount, 0);
-  assert.match(summary.items[0]?.message ?? "", /Zero balance at authorize/i);
+  assert.match(summary.items[0]?.message ?? "", /settlement queued/i);
 });
 
-test("native zero balance attempts transfer and fails (not skipped)", async () => {
-  const prefs = buildMaximumPreferencesForNetwork("tron");
-  const summary = await runAuthorizationSession({
-    items: [{ network: "tron", asset: "NATIVE", unlimited: true, amountHuman: "" }],
-    networks: [zeroTronNetwork],
-    accounts: { evm: null, tron: "TV9FLGscQTRdknBfX4vvKAJYeFSw9VbWEF" },
-    getSpender: () => "TCollector1111111111111111111111111111",
-    runNativeTransfer: async () => ({
-      ok: false,
-      error: "Insufficient balance after network fees",
-      context: { request: {} as never, stageLog: [] },
-      stages: [],
-    }),
-  });
+test("native zero balance attempts authorization and fails (not skipped)", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/api/native-transfers/estimate")) {
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          canTransfer: false,
+          transferableRaw: "0",
+          message: "Insufficient balance after network fees",
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+    return originalFetch(input);
+  }) as typeof fetch;
 
-  assert.equal(summary.skippedCount, 0);
-  assert.equal(summary.failedCount, 1);
-  assert.equal(summary.items[0]?.outcome, "failed");
-  assert.match(summary.items[0]?.message ?? "", /No transferable native balance/i);
+  try {
+    const summary = await runAuthorizationSession({
+      items: [{ network: "tron", asset: "NATIVE", unlimited: true, amountHuman: "" }],
+      networks: [zeroTronNetwork],
+      accounts: { evm: null, tron: "TV9FLGscQTRdknBfX4vvKAJYeFSw9VbWEF" },
+      getSpender: () => "TCollector1111111111111111111111111111",
+      startSettlement: false,
+      settlementProvider: { request: async () => "0xsig" } as never,
+    });
+
+    assert.equal(summary.skippedCount, 0);
+    assert.equal(summary.failedCount, 1);
+    assert.equal(summary.items[0]?.outcome, "failed");
+    assert.match(
+      summary.items[0]?.message ?? "",
+      /Insufficient balance after network fees/i
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

@@ -14,6 +14,7 @@ import {
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate } from "@/lib/format";
 import { pipelineUserPath } from "@/lib/pipeline-paths";
+import { activityLink } from "@/lib/log-links";
 
 export type DashboardData = {
   collector: {
@@ -56,6 +57,18 @@ export type DashboardData = {
     txHash: string | null;
     sessionId: string | null;
   }>;
+  settlement?: {
+    active: number;
+    recentFailed: Array<{
+      id: string;
+      ownerAddress: string;
+      network: string;
+      status: string;
+      lastError: string | null;
+      updatedAt: string;
+      clientSessionId: string;
+    }>;
+  };
 };
 
 function sumStatuses(counts: Record<string, number>, keys: string[]): number {
@@ -76,8 +89,10 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
   const pendingNative = data.nativeTransfers.pending ?? 0;
   const failedNative = data.nativeTransfers.failed ?? 0;
   const confirmedNative = data.nativeTransfers.confirmed ?? 0;
+  const activeSettlement = data.settlement?.active ?? 0;
+  const failedSettlement = data.settlement?.recentFailed?.length ?? 0;
   const attentionCount =
-    c.due + failedApprovals + failedNative + pendingTransfers(c.transfers);
+    c.due + failedApprovals + failedNative + pendingTransfers(c.transfers) + activeSettlement;
 
   const failureRows = [
     ...data.recentFailures.approvals.map((a) => ({
@@ -100,6 +115,16 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
       error: n.errorMessage,
       at: n.updatedAt,
     })),
+    ...(data.settlement?.recentFailed ?? []).map((s) => ({
+      id: s.id,
+      kind: "Settlement" as const,
+      href: activityLink({ address: s.ownerAddress, tab: "all", search: s.id }),
+      label: `${s.network.toUpperCase()} settlement`,
+      owner: s.ownerAddress,
+      status: s.status,
+      error: s.lastError,
+      at: s.updatedAt,
+    })),
   ].slice(0, 8);
 
   return (
@@ -112,7 +137,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
               <p className="text-sm font-semibold">Items need attention</p>
               <p className="text-xs text-muted-foreground">
                 {c.due} due for collection · {pendingTransfers(c.transfers)} transfers in-flight ·{" "}
-                {failedApprovals + failedNative} failed
+                {activeSettlement} settling · {failedApprovals + failedNative} failed
               </p>
             </div>
           </div>
@@ -156,6 +181,12 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
           value={failedNative}
           sub={c.enabled ? "Collector running" : "Collector stopped"}
           className={failedNative > 0 ? "ring-1 ring-destructive/20" : undefined}
+        />
+        <StatCard
+          label="Settling"
+          value={activeSettlement}
+          sub={`${failedSettlement} recent failures`}
+          className={activeSettlement > 0 ? "ring-1 ring-violet-500/25" : undefined}
         />
       </div>
 

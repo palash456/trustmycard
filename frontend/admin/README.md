@@ -37,6 +37,7 @@ cd frontend && npm run dev:admin   # http://localhost:3002
 - **Refresh** — manual + SSE auto-refresh via `/api/admin/stream`
 - **Reload logout** — full page refresh signs you out (client session guard)
 - **Wallet timeline** — merged activity on wallet detail
+- **Settlement sessions** — user detail tab with USDT/USDC state labels and native readiness
 - **Approval controls** — toggle collection, edit destination on approval detail
 
 ## Architecture
@@ -51,8 +52,8 @@ cd frontend && npm run dev:admin   # http://localhost:3002
 |------|-------------|
 | `/dashboard` | Pipeline overview |
 | `/approvals`, `/transfers`, `/native-transfers` | Lists + detail |
-| `/wallets` | Address-centric activity |
-| `/audit`, `/events` | Logs and telemetry |
+| `/wallets` | Address-centric activity + settlement sessions |
+| `/audit`, `/events` | Logs and telemetry (includes `settlement` module) |
 | `/settings`, `/settings/collector` | Runtime configuration |
 | `/system` | Ops and dev tools |
 

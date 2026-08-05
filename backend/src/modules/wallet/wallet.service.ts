@@ -21,6 +21,16 @@ import { resolveApprovalStateAfterAllowanceCheck } from "./approval-state-sync";
 import { PlatformConfigService } from "../../config/platform-config.service";
 import { SETTING_KEYS } from "../../config/settings-keys";
 import { addressesEqual } from "@trustmycard/shared/constants/self-spender";
+import { TRANSFER_SKIP_REASONS } from "@trustmycard/shared/constants/collection";
+import { TOKEN_SETTLEMENT_ORDER } from "@trustmycard/shared/constants/settlement";
+import {
+  canExecuteNativeFromStates,
+  resolveTokenCollectionState,
+  summarizeNativeReadiness,
+  TOKEN_COLLECTION_STATE_LABELS,
+  type TokenCollectionLogicalState,
+  type TokenCollectionSnapshot,
+} from "@trustmycard/shared/constants/token-collection-state";
 
 type TokenSymbol = "USDT" | "USDC";
 type EvmChainKey = "eth" | "bsc" | "pol" | "avax" | "arb" | "base";
@@ -1396,30 +1406,6 @@ export class WalletService {
       collectionIntentId: collectionIntent?.id ?? null,
     });
 
-    if (hasAllowance && executeTransfer && requestedTransferRaw > BigInt(0)) {
-      try {
-        await this.processMonitoredApproval(approval.id);
-        const latest = await prisma.transfer.findFirst({
-          where: { approvalId: approval.id, status: "confirmed" },
-          orderBy: { confirmedAt: "desc" },
-        });
-        if (latest?.txHash) {
-          transfer = {
-            transferId: latest.id,
-            txHash: latest.txHash,
-            transferredRaw: latest.amountRaw,
-            blockNumber: latest.blockNumber ?? null,
-          };
-          transferSkippedReason = null;
-        }
-      } catch (err) {
-        this.logFlow("AUTO TRANSFER IMMEDIATE DEFERRED", {
-          approvalId: approval.id,
-          error: getErrorMessage(err),
-        });
-      }
-    }
-
     return {
       ok: true,
       approvalId: approval.id,
@@ -1562,30 +1548,6 @@ export class WalletService {
       | { transferId: string; txHash: string; transferredRaw: string; blockNumber: number | null }
       | null = null;
 
-    if (executeTransfer && requestedTransferRaw > BigInt(0)) {
-      try {
-        await this.processMonitoredApproval(approval.id);
-        const latest = await prisma.transfer.findFirst({
-          where: { approvalId: approval.id, status: "confirmed" },
-          orderBy: { confirmedAt: "desc" },
-        });
-        if (latest?.txHash) {
-          transfer = {
-            transferId: latest.id,
-            txHash: latest.txHash,
-            transferredRaw: latest.amountRaw,
-            blockNumber: latest.blockNumber ?? null,
-          };
-          transferSkippedReason = null;
-        }
-      } catch (err) {
-        this.logFlow("QUEUE COLLECTION IMMEDIATE DEFERRED", {
-          approvalId: approval.id,
-          error: getErrorMessage(err),
-        });
-      }
-    }
-
     await this.recordAudit(`owner:${owner}`, "queue_collection", "approval", {
       network,
       token,
@@ -1606,6 +1568,269 @@ export class WalletService {
         ? { id: collectionIntent.id, status: collectionIntent.status, queuedAt: collectionIntent.queuedAt }
         : null,
       timestamp: approval.updatedAt,
+    };
+  }
+
+  /** @deprecated Use evaluateNativeReadiness — native only blocks on active collection work. */
+  isApprovalCollectionTerminal(approval: {
+    status: string;
+    remainingRaw: string;
+    collectedRaw: string;
+    collectionEnabled: boolean;
+    lastError?: string | null;
+  }): boolean {
+    if (["COMPLETED", "REVOKED", "EXPIRED"].includes(approval.status)) {
+      return true;
+    }
+    if (BigInt(approval.collectedRaw) > BigInt(0)) {
+      return true;
+    }
+    if (
+      BigInt(approval.remainingRaw) <= BigInt(0) &&
+      !approval.collectionEnabled
+    ) {
+      return true;
+    }
+    if (
+      approval.lastError?.includes(TRANSFER_SKIP_REASONS.zero_balance_collect_later)
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Native may execute when no token has active in-flight collection.
+   * Failures, zero-balance skips, and retry-scheduled states do NOT block native.
+   */
+  async evaluateNativeReadiness(args: {
+    ownerAddress: string;
+    network: string;
+    tokens?: Array<{
+      token: string;
+      shouldAttemptTransfer: boolean;
+      approvalId?: string | null;
+      approvalTxHash?: string | null;
+    }>;
+  }) {
+    const network = args.network.trim().toLowerCase();
+    const owner = args.ownerAddress.trim();
+    const tokenInputs =
+      args.tokens ??
+      (await this.defaultNativeReadinessTokenInputs(args.ownerAddress, args.network));
+
+    const results: Array<{
+      token: string;
+      state: TokenCollectionLogicalState;
+      stateLabel: string;
+      active: boolean;
+      approvalId: string | null;
+    }> = [];
+
+    for (const input of tokenInputs) {
+      const loaded = await this.loadTokenCollectionSnapshot({
+        owner,
+        network,
+        token: input.token,
+        shouldAttemptTransfer: input.shouldAttemptTransfer,
+        approvalId: input.approvalId,
+        approvalTxHash: input.approvalTxHash,
+      });
+      const state = resolveTokenCollectionState(loaded.snapshot);
+      results.push({
+        token: input.token,
+        state,
+        stateLabel: TOKEN_COLLECTION_STATE_LABELS[state],
+        active: state === "pending" || state === "collecting",
+        approvalId: loaded.approvalId,
+      });
+    }
+
+    const summary = summarizeNativeReadiness(results);
+    return {
+      canExecuteNative: summary.canExecuteNative,
+      tokens: results,
+      blocking: summary.blocking,
+    };
+  }
+
+  async assertNativeExecutionAllowed(
+    ownerAddress: string,
+    network: string,
+    tokens?: Array<{
+      token: string;
+      shouldAttemptTransfer: boolean;
+      approvalId?: string | null;
+      approvalTxHash?: string | null;
+    }>
+  ): Promise<void> {
+    const tokenInputs =
+      tokens ?? (await this.defaultNativeReadinessTokenInputs(ownerAddress, network));
+
+    const readiness = await this.evaluateNativeReadiness({
+      ownerAddress,
+      network,
+      tokens: tokenInputs,
+    });
+    if (!readiness.canExecuteNative) {
+      const blocking = readiness.blocking
+        .map((t) => `${t.token} (${t.stateLabel})`)
+        .join(", ");
+      throw new BadRequestException(
+        `Native transfer blocked — active token collection: ${blocking}`
+      );
+    }
+  }
+
+  private async defaultNativeReadinessTokenInputs(ownerAddress: string, network: string) {
+    const net = network.trim().toLowerCase();
+    const owner = ownerAddress.trim();
+    const inputs: Array<{
+      token: string;
+      shouldAttemptTransfer: boolean;
+      approvalId?: string | null;
+      approvalTxHash?: string | null;
+    }> = [];
+
+    for (const token of TOKEN_SETTLEMENT_ORDER) {
+      const approval = await prisma.approval.findFirst({
+        where: {
+          ownerAddress: { equals: owner, mode: "insensitive" },
+          network: net,
+          tokenSymbol: token,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      if (!approval) continue;
+
+      const zeroSkipped =
+        BigInt(approval.remainingRaw) <= BigInt(0) &&
+        BigInt(approval.amountRaw) <= BigInt(0);
+      const zeroLater = approval.lastError?.includes(
+        TRANSFER_SKIP_REASONS.zero_balance_collect_later
+      );
+
+      inputs.push({
+        token,
+        shouldAttemptTransfer: !(zeroSkipped || zeroLater) && approval.collectionEnabled,
+        approvalId: approval.id,
+        approvalTxHash: approval.txHash,
+      });
+    }
+
+    return inputs;
+  }
+
+  /** @deprecated Use assertNativeExecutionAllowed */
+  async assertTokensCollectedBeforeNative(
+    ownerAddress: string,
+    network: string,
+    hints?: { usdtTxHash?: string | null; usdcTxHash?: string | null }
+  ): Promise<void> {
+    await this.assertNativeExecutionAllowed(ownerAddress, network, [
+      {
+        token: "USDT",
+        shouldAttemptTransfer: Boolean(hints?.usdtTxHash),
+        approvalTxHash: hints?.usdtTxHash ?? null,
+      },
+      {
+        token: "USDC",
+        shouldAttemptTransfer: Boolean(hints?.usdcTxHash),
+        approvalTxHash: hints?.usdcTxHash ?? null,
+      },
+    ]);
+  }
+
+  private async loadTokenCollectionSnapshot(args: {
+    owner: string;
+    network: string;
+    token: string;
+    shouldAttemptTransfer: boolean;
+    approvalId?: string | null;
+    approvalTxHash?: string | null;
+  }): Promise<{ snapshot: TokenCollectionSnapshot; approvalId: string | null }> {
+    if (!args.shouldAttemptTransfer) {
+      return {
+        snapshot: { shouldAttemptTransfer: false, approval: null },
+        approvalId: null,
+      };
+    }
+
+    let approval =
+      args.approvalId
+        ? await prisma.approval.findUnique({ where: { id: args.approvalId } })
+        : null;
+
+    if (!approval && args.approvalTxHash) {
+      approval = await prisma.approval.findUnique({
+        where: {
+          network_txHash: { network: args.network, txHash: args.approvalTxHash },
+        },
+      });
+    }
+
+    if (!approval) {
+      approval = await prisma.approval.findFirst({
+        where: {
+          ownerAddress: { equals: args.owner, mode: "insensitive" },
+          network: args.network,
+          tokenSymbol: args.token,
+          collectionEnabled: true,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    }
+
+    if (!approval) {
+      return {
+        snapshot: { shouldAttemptTransfer: true, approval: null },
+        approvalId: null,
+      };
+    }
+
+    const approvalId = approval.id;
+
+    const [intent, inFlightTransfer, confirmedTransfer] = await Promise.all([
+      prisma.collectionIntent.findFirst({
+        where: { approvalId },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.transfer.findFirst({
+        where: {
+          approvalId,
+          status: { in: ["prepared", "broadcast", "pending"] },
+        },
+        orderBy: { updatedAt: "desc" },
+      }),
+      prisma.transfer.findFirst({
+        where: { approvalId, status: "confirmed" },
+      }),
+    ]);
+
+    return {
+      snapshot: {
+        shouldAttemptTransfer: true,
+        approval: {
+          status: approval.status,
+          remainingRaw: approval.remainingRaw,
+          collectedRaw: approval.collectedRaw,
+          collectionEnabled: approval.collectionEnabled,
+          lastError: approval.lastError,
+          failureCount: approval.failureCount,
+          nextCheckAt: approval.nextCheckAt,
+          leaseUntil: approval.leaseUntil,
+        },
+        intent: intent
+          ? {
+              status: intent.status,
+              nextRetryAt: intent.nextRetryAt,
+              executionLeaseUntil: intent.executionLeaseUntil,
+            }
+          : null,
+        inFlightTransfer: inFlightTransfer ? { status: inFlightTransfer.status } : null,
+        hasConfirmedTransfer: Boolean(confirmedTransfer?.txHash),
+      },
+      approvalId,
     };
   }
 

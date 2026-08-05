@@ -103,6 +103,24 @@ Automatic redaction via `redactContext()` for keys matching sensitive patterns.
 
 Admin UI deep links: see [admin-observability-migration.md](./admin-observability-migration.md).
 
+## Settlement module
+
+Background two-phase authorization emits structured logs with `module: "settlement"`:
+
+| Operation | When |
+|-----------|------|
+| `state_transition` | `NetworkSettlementSession` status changes |
+| `token_settled` | Per-token collection outcome (includes `stateLabel` when known) |
+
+Client-side settlement progress uses `module: "connect"` with operations
+`settlement_progress`, `native_readiness_poll`, `settlement_complete`.
+
+Token logical states (`Collecting / in progress`, `Skipped — zero balance`,
+`Failed — retry scheduled`, etc.) come from
+`@trustmycard/shared/constants/token-collection-state`.
+
+See [settlement-and-native-execution.md](./architecture/settlement-and-native-execution.md).
+
 ## CI guardrail
 
 Run from repo root:

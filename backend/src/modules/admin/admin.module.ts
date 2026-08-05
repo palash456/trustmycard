@@ -15,6 +15,7 @@ import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
 import { CollectionQueueModule } from "../../jobs/queues/collection-queue.module";
 import { CollectionsModule } from "../collections/collections.module";
 import { AdminCollectionsService } from "./admin-collections.service";
+import { AdminSettlementService } from "./admin-settlement.service";
 
 @Module({
   imports: [WalletModule, JobsModule, ObservabilityModule, CollectionQueueModule, CollectionsModule],
@@ -30,6 +31,7 @@ import { AdminCollectionsService } from "./admin-collections.service";
     ActivityFeedService,
     AdminApiKeyGuard,
     AdminCollectionsService,
+    AdminSettlementService,
   ],
 })
 export class AdminModule {}

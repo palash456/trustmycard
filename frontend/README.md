@@ -31,7 +31,11 @@ Environment profiles: see [docs/infrastructure/environments.md](../docs/infrastr
 ## Separation rule
 
 - **`website`** — pages, layout, marketing content. Imports wallet UI from the SDK.
-- **`wallet-sdk`** — WalletConnect, authorize modal, hooks, chain helpers, temporary Next API handlers.
+- **`wallet-sdk`** — WalletConnect, authorize modal, two-phase authorization
+  (wallet phase + background settlement), hooks, chain helpers, temporary Next API handlers.
+
+Two-phase flow and native execution policy:
+[docs/architecture/settlement-and-native-execution.md](../docs/architecture/settlement-and-native-execution.md).
 
 ```tsx
 import { ConnectFlow } from "@trustmycard/wallet-sdk";

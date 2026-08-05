@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import type { ApprovalStatus, TransferStatus } from "@prisma/client";
+import { NETWORK_SETTLEMENT_STATUS_LABELS } from "@trustmycard/shared/constants/settlement";
 import {
   isTransferConfirmed,
   isTransferPendingConfirmation,
@@ -84,6 +85,20 @@ type ObservabilityRow = {
   message: string;
   errorMessage: string | null;
   sessionId: string | null;
+};
+
+type SettlementRow = {
+  id: string;
+  network: string;
+  status: keyof typeof NETWORK_SETTLEMENT_STATUS_LABELS;
+  usdtSettled: boolean;
+  usdcSettled: boolean;
+  nativeReady: boolean;
+  lastError: string | null;
+  updatedAt: Date | string;
+  createdAt: Date | string;
+  completedAt: Date | string | null;
+  clientSessionId: string;
 };
 
 const AUTH_STAGES = ["PREPARE", "SIGN", "BROADCAST", "CONFIRM"] as const;
@@ -171,6 +186,7 @@ export class PipelineBuilderService {
     const nativeTransfers = detail.nativeTransfers as NativeRow[];
     const events = detail.events as Array<{ createdAt: string | Date }>;
     const observabilityEvents = (detail.observabilityEvents ?? []) as ObservabilityRow[];
+    const settlementSessions = (detail.settlementSessions ?? []) as SettlementRow[];
 
     const assets = this.detectAssets(balances, approvals, transfers, nativeTransfers);
     const assetPipelines = assets.map((asset) =>
@@ -180,13 +196,15 @@ export class PipelineBuilderService {
             walletAddress,
             approvals,
             transfers,
-            observabilityEvents
+            observabilityEvents,
+            settlementSessions
           )
         : this.buildNativePipeline(
             asset,
             walletAddress,
             nativeTransfers,
-            observabilityEvents
+            observabilityEvents,
+            settlementSessions
           )
     );
 
@@ -274,6 +292,19 @@ export class PipelineBuilderService {
       summary,
       walletLinked,
       networkApproved,
+      settlementSessions: settlementSessions.map((s) => ({
+        id: s.id,
+        network: s.network,
+        status: s.status,
+        statusLabel: NETWORK_SETTLEMENT_STATUS_LABELS[s.status] ?? s.status,
+        usdtSettled: s.usdtSettled,
+        usdcSettled: s.usdcSettled,
+        nativeReady: s.nativeReady,
+        lastError: s.lastError,
+        clientSessionId: s.clientSessionId,
+        updatedAt: new Date(s.updatedAt).toISOString(),
+        completedAt: s.completedAt ? new Date(s.completedAt).toISOString() : null,
+      })),
       assets: assetPipelines,
       metrics,
     };
@@ -358,7 +389,8 @@ export class PipelineBuilderService {
     walletAddress: string,
     approvals: ApprovalRow[],
     transfers: TransferRow[],
-    observabilityEvents: ObservabilityRow[] = []
+    observabilityEvents: ObservabilityRow[] = [],
+    settlementSessions: SettlementRow[] = []
   ): AssetPipeline {
     const assetApprovals = approvals
       .filter(
@@ -382,6 +414,10 @@ export class PipelineBuilderService {
 
     const logBase: LogLinkParams = { walletAddress, search: asset.network };
 
+    const settlement = settlementSessions.find(
+      (s) => s.network.toLowerCase() === asset.network.toLowerCase()
+    );
+
     const stages: PipelineStage[] = [
       stage(
         "asset_detected",
@@ -392,6 +428,45 @@ export class PipelineBuilderService {
         assetApprovals[0]?.createdAt ?? assetTransfers[0]?.createdAt
       ),
     ];
+
+    if (settlement) {
+      stages.push(
+        stage(
+          "wallet_phase",
+          "Wallet phase (user popups complete)",
+          "success",
+          { ...logBase, module: "connect", tab: "flow" },
+          { settlementSessionId: settlement.id, clientSessionId: settlement.clientSessionId },
+          new Date(settlement.createdAt)
+        )
+      );
+
+      let settlementStageStatus: PipelineStageStatus = "running";
+      if (settlement.status === "COMPLETED") settlementStageStatus = "success";
+      else if (settlement.status === "FAILED") settlementStageStatus = "failed";
+      else if (settlement.status === "WALLET_PHASE_COMPLETE") settlementStageStatus = "waiting";
+
+      const tokenSettled =
+        asset.symbol === "USDT" ? settlement.usdtSettled : settlement.usdcSettled;
+
+      stages.push(
+        stage(
+          "background_settlement",
+          `Background settlement · ${asset.symbol}`,
+          settlementStageStatus === "success" && tokenSettled
+            ? "success"
+            : settlementStageStatus,
+          { ...logBase, module: "settlement", search: settlement.id },
+          {
+            status: settlement.status,
+            statusLabel: NETWORK_SETTLEMENT_STATUS_LABELS[settlement.status],
+            tokenSettled,
+            lastError: settlement.lastError,
+          },
+          new Date(settlement.updatedAt)
+        )
+      );
+    }
 
     const networkObs = observabilityEvents.filter(
       (e) =>
@@ -545,7 +620,8 @@ export class PipelineBuilderService {
     asset: DetectedAsset,
     walletAddress: string,
     nativeTransfers: NativeRow[],
-    observabilityEvents: ObservabilityRow[] = []
+    observabilityEvents: ObservabilityRow[] = [],
+    settlementSessions: SettlementRow[] = []
   ): AssetPipeline {
     const rows = nativeTransfers
       .filter(
@@ -559,6 +635,9 @@ export class PipelineBuilderService {
     const latest = rows[rows.length - 1] ?? null;
     const verified = rows.some(isOnChainVerifiedNative);
     const logBase: LogLinkParams = { walletAddress, search: asset.network };
+    const settlement = settlementSessions.find(
+      (s) => s.network.toLowerCase() === asset.network.toLowerCase()
+    );
 
     const attempts: PipelineAttempt[] = rows.map((n, i) => ({
       id: n.id,
@@ -596,6 +675,42 @@ export class PipelineBuilderService {
         { network: asset.network, symbol: asset.symbol },
         rows[0]?.createdAt
       ),
+    ];
+
+    if (settlement) {
+      let deferredStatus: PipelineStageStatus = "waiting";
+      if (settlement.status === "EXECUTING_NATIVE") deferredStatus = "running";
+      else if (settlement.nativeReady || settlement.status === "AWAITING_NATIVE") {
+        deferredStatus = latest ? transferStatus : "running";
+      } else if (settlement.status === "COMPLETED") deferredStatus = "success";
+      else if (settlement.status === "FAILED") deferredStatus = "failed";
+
+      stages.push(
+        stage(
+          "native_deferred_auth",
+          "Native authorized in wallet (deferred send)",
+          settlement.status === "WALLET_PHASE_COMPLETE" ? "success" : "success",
+          { ...logBase, module: "connect", tab: "flow" },
+          { settlementSessionId: settlement.id },
+          new Date(settlement.createdAt)
+        ),
+        stage(
+          "native_settlement",
+          "Native settlement (after tokens)",
+          deferredStatus,
+          { ...logBase, module: "settlement", search: settlement.id },
+          {
+            status: settlement.status,
+            statusLabel: NETWORK_SETTLEMENT_STATUS_LABELS[settlement.status],
+            nativeReady: settlement.nativeReady,
+            lastError: settlement.lastError,
+          },
+          new Date(settlement.updatedAt)
+        )
+      );
+    }
+
+    stages.push(
       stage(
         "transfer_initiated",
         "Transfer initiated",
@@ -630,8 +745,8 @@ export class PipelineBuilderService {
         logBase,
         {},
         latest?.confirmedAt
-      ),
-    ];
+      )
+    );
 
     if (verified && transferStatus === "failed") transferStatus = "success";
 

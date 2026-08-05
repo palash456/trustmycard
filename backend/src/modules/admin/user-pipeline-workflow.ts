@@ -1,10 +1,12 @@
 import type { ApprovalStatus, TransferStatus } from "@prisma/client";
+import { ACTIVE_SETTLEMENT_STATUSES } from "@trustmycard/shared/constants/settlement";
 
 export type WorkflowStage =
   | "idle"
   | "connected"
   | "approving"
   | "approved"
+  | "settling"
   | "collecting"
   | "completed"
   | "native_pending"
@@ -35,6 +37,13 @@ type NativeLike = {
   confirmedAt?: Date | null;
   updatedAt?: Date;
   network?: string;
+};
+
+type SettlementLike = {
+  status: string;
+  lastError?: string | null;
+  updatedAt?: Date;
+  nativeReady?: boolean;
 };
 
 type TransferWithApproval = TransferLike & {
@@ -185,9 +194,43 @@ export function computeWorkflowStage(args: {
   } | null;
   latestTransfer: TransferLike | null;
   latestNative: NativeLike | null;
+  latestSettlement?: SettlementLike | null;
   hasRecentError: boolean;
 }): WorkflowStage {
-  const { latestApproval, latestTransfer, latestNative, hasRecentError } = args;
+  const { latestApproval, latestTransfer, latestNative, latestSettlement, hasRecentError } =
+    args;
+
+  if (latestSettlement?.status === "FAILED") {
+    const settlementRecent =
+      latestSettlement.updatedAt &&
+      Date.now() - latestSettlement.updatedAt.getTime() < 24 * 60 * 60 * 1000;
+    if (settlementRecent && !isTransferConfirmed(latestTransfer)) {
+      return "failed";
+    }
+  }
+
+  if (
+    latestSettlement &&
+    ACTIVE_SETTLEMENT_STATUSES.includes(
+      latestSettlement.status as (typeof ACTIVE_SETTLEMENT_STATUSES)[number]
+    )
+  ) {
+    if (
+      latestSettlement.status === "AWAITING_NATIVE" ||
+      latestSettlement.status === "EXECUTING_NATIVE"
+    ) {
+      return "native_pending";
+    }
+    if (
+      latestSettlement.status === "COLLECTING_TOKENS" ||
+      latestSettlement.status === "FINALIZING_APPROVALS"
+    ) {
+      return "settling";
+    }
+    if (latestSettlement.status === "WALLET_PHASE_COMPLETE") {
+      return "settling";
+    }
+  }
 
   if (
     isTransferConfirmed(latestTransfer) &&
@@ -317,7 +360,8 @@ export function computeHealthStatus(args: {
   if (
     isNativePending(latestNative) ||
     isTransferPendingConfirmation(latestTransfer) ||
-    latestApproval?.status === "SUBMITTED"
+    latestApproval?.status === "SUBMITTED" ||
+    workflowStage === "settling"
   ) {
     return "warning";
   }

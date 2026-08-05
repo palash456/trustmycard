@@ -23,7 +23,7 @@ export class AdminService {
   async getDashboard() {
     const now = new Date();
     const collector = await this.walletService.getCollectorStatus();
-    const [nativeCounts, recentFailures] = await Promise.all([
+    const [nativeCounts, recentFailures, settlementSummary] = await Promise.all([
       prisma.nativeTransfer.groupBy({
         by: ["status"],
         _count: { _all: true },
@@ -68,6 +68,35 @@ export class AdminService {
           },
         }),
       ]),
+      Promise.all([
+        prisma.networkSettlementSession.count({
+          where: {
+            status: {
+              in: [
+                "WALLET_PHASE_COMPLETE",
+                "FINALIZING_APPROVALS",
+                "COLLECTING_TOKENS",
+                "AWAITING_NATIVE",
+                "EXECUTING_NATIVE",
+              ],
+            },
+          },
+        }),
+        prisma.networkSettlementSession.findMany({
+          where: { status: "FAILED" },
+          orderBy: { updatedAt: "desc" },
+          take: 5,
+          select: {
+            id: true,
+            ownerAddress: true,
+            network: true,
+            status: true,
+            lastError: true,
+            updatedAt: true,
+            clientSessionId: true,
+          },
+        }),
+      ]),
     ]);
 
     const [approvalErrors, nativeErrors, recentObservabilityErrors] =
@@ -99,6 +128,13 @@ export class AdminService {
       nativeTransfers: Object.fromEntries(
         nativeCounts.map((row) => [row.status, row._count._all])
       ),
+      settlement: {
+        active: settlementSummary[0],
+        recentFailed: settlementSummary[1].map((s) => ({
+          ...s,
+          updatedAt: s.updatedAt.toISOString(),
+        })),
+      },
       recentFailures: {
         approvals: approvalErrors,
         nativeTransfers: nativeErrors,

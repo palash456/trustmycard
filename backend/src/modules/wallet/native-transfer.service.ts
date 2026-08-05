@@ -27,6 +27,7 @@ import { SETTING_KEYS } from "../../config/settings-keys";
 import { safeCreateAuditLog } from "../../common/audit/safe-audit";
 import { AdminEventsService } from "../../infrastructure/admin-events/admin-events.service";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
+import { WalletService } from "./wallet.service";
 import {
   applyGasLimitBuffer,
   computeEvmActualFee,
@@ -63,7 +64,8 @@ export class NativeTransferService {
     private readonly configService: ConfigService,
     private readonly platformConfig: PlatformConfigService,
     private readonly logger: StructuredLoggerService,
-    private readonly adminEvents: AdminEventsService
+    private readonly adminEvents: AdminEventsService,
+    private readonly walletService: WalletService
   ) {}
 
   private rpcTimeoutMs(): number {
@@ -499,6 +501,8 @@ export class NativeTransferService {
       );
     }
 
+    await this.walletService.assertNativeExecutionAllowed(owner, network);
+
     try {
       let result;
       if (network === "tron") {
@@ -895,6 +899,8 @@ export class NativeTransferService {
         network === "tron" ? "Set NEXT_PUBLIC_SPENDER_TRON" : "Set NEXT_PUBLIC_SPENDER_EVM"
       );
     }
+
+    await this.walletService.assertNativeExecutionAllowed(owner, network);
 
     const existing = await prisma.nativeTransfer.findUnique({ where: { txHash } });
     if (existing) {

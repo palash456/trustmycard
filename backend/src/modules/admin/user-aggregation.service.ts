@@ -22,6 +22,7 @@ import {
   walletAddressFilter,
 } from "../../common/utils/wallet-address";
 import { ActivityFeedService } from "./activity-feed.service";
+import { NETWORK_SETTLEMENT_STATUS_LABELS } from "@trustmycard/shared/constants/settlement";
 
 export type { HealthStatus, WorkflowStage } from "./user-pipeline-workflow";
 
@@ -166,6 +167,7 @@ export class UserAggregationService {
       resourceSponsorships,
       observabilityEvents,
       sessionTimelines,
+      settlementSessions,
     ] = await Promise.all([
       prisma.approval.findMany({
         where: { ownerAddress: ownerFilter },
@@ -223,6 +225,11 @@ export class UserAggregationService {
         orderBy: { ts: "desc" },
         take: 50,
       }),
+      prisma.networkSettlementSession.findMany({
+        where: { ownerAddress: ownerFilter },
+        orderBy: { updatedAt: "desc" },
+        take: 50,
+      }),
     ]);
 
     if (
@@ -230,7 +237,8 @@ export class UserAggregationService {
       transfers.length === 0 &&
       nativeTransfers.length === 0 &&
       events.length === 0 &&
-      observabilityEvents.length === 0
+      observabilityEvents.length === 0 &&
+      settlementSessions.length === 0
     ) {
       throw new NotFoundException("User not found");
     }
@@ -254,6 +262,7 @@ export class UserAggregationService {
         ...nativeTransfers.map((n) => n.createdAt),
         ...events.map((e) => e.createdAt),
         ...observabilityEvents.map((e) => e.ts),
+        ...settlementSessions.map((s) => s.updatedAt),
       ]),
       lastActivity: this.maxDate([
         ...approvals.map((a) => a.updatedAt),
@@ -261,6 +270,7 @@ export class UserAggregationService {
         ...nativeTransfers.map((n) => n.updatedAt),
         ...events.map((e) => e.createdAt),
         ...observabilityEvents.map((e) => e.ts),
+        ...settlementSessions.map((s) => s.updatedAt),
       ]),
     };
 
@@ -332,6 +342,65 @@ export class UserAggregationService {
         ...t,
         ts: t.ts.toISOString(),
       })),
+      settlementSessions: await Promise.all(
+        settlementSessions.map(async (s) => {
+          let tokenReadiness: {
+            canExecuteNative: boolean;
+            tokens: Array<{
+              token: string;
+              state: string;
+              stateLabel: string;
+              active: boolean;
+            }>;
+          } | null = null;
+          try {
+            const plan = s.tokenPlan as
+              | Record<string, { shouldAttemptTransfer?: boolean; txHash?: string | null }>
+              | null;
+            const hasPlan = Boolean(plan && typeof plan === "object" && Object.keys(plan).length > 0);
+            const tokens = hasPlan
+              ? (["USDT", "USDC"] as const).map((token) => {
+                  const entry = plan?.[token];
+                  const txHash =
+                    entry?.txHash ??
+                    (token === "USDT" ? s.usdtApprovalTxHash : s.usdcApprovalTxHash);
+                  return {
+                    token,
+                    shouldAttemptTransfer: Boolean(entry?.shouldAttemptTransfer),
+                    approvalTxHash: txHash,
+                  };
+                })
+              : undefined;
+
+            const readiness = await this.walletService.evaluateNativeReadiness({
+              ownerAddress: s.ownerAddress,
+              network: s.network,
+              tokens,
+            });
+            tokenReadiness = {
+              canExecuteNative: readiness.canExecuteNative,
+              tokens: readiness.tokens.map((t) => ({
+                token: t.token,
+                state: t.state,
+                stateLabel: t.stateLabel,
+                active: t.active,
+              })),
+            };
+          } catch {
+            tokenReadiness = null;
+          }
+
+          return {
+            ...s,
+            statusLabel: NETWORK_SETTLEMENT_STATUS_LABELS[s.status] ?? s.status,
+            createdAt: s.createdAt.toISOString(),
+            updatedAt: s.updatedAt.toISOString(),
+            completedAt: s.completedAt?.toISOString() ?? null,
+            tokenReadiness,
+            nativeReady: tokenReadiness?.canExecuteNative ?? s.nativeReady,
+          };
+        })
+      ),
       activityFeed: activityFeedResult.items,
       activityFeedTotal: activityFeedResult.total,
       resourceSponsorships,
@@ -484,6 +553,11 @@ export class UserAggregationService {
           }),
         ]);
 
+    const settlementRow = await prisma.networkSettlementSession.findFirst({
+      where: { ownerAddress: address },
+      orderBy: { updatedAt: "desc" },
+    });
+
     const latestApproval = approvals[0] ?? null;
     const representativeTransfer = pickRepresentativeTransfer(transfers);
     const latestTransfer = representativeTransfer ?? transfers[0] ?? null;
@@ -574,6 +648,14 @@ export class UserAggregationService {
             errorMessage: latestNative.errorMessage,
             confirmedAt: latestNative.confirmedAt,
             updatedAt: latestNative.updatedAt,
+          }
+        : null,
+      latestSettlement: settlementRow
+        ? {
+            status: settlementRow.status,
+            lastError: settlementRow.lastError,
+            updatedAt: settlementRow.updatedAt,
+            nativeReady: settlementRow.nativeReady,
           }
         : null,
       hasRecentError,

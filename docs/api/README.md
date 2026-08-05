@@ -50,3 +50,30 @@ List responses: `{ items, total, page, limit, totalPages }`. Detail responses: `
 Runtime settings keys live in `AppSettings` (Prisma): `collector.*`, `collection.*`, `native.reconcile.*`.
 
 `GET /v1/api/approvals/debug` is protected by `AdminApiKeyGuard`.
+
+## Wallet API (`/v1/api/*`, wallet session auth)
+
+Requires `Authorization: Bearer <wallet-session-token>` where noted.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/token-collection/native-readiness` | Whether native can run (blocks only on active collection) |
+| POST | `/network-settlement/register` | Register wallet-phase completion + `tokenPlan` |
+| POST | `/network-settlement/register-native-authorization` | Tron deferred native payload |
+| POST | `/network-settlement/process` | Run settlement step (Tron broadcast) |
+| GET | `/network-settlement/:id/status` | Session status, `canExecuteNative`, token states |
+| POST | `/network-settlement/:id/native-complete` | Mark EVM native complete |
+| POST | `/native-transfers/estimate` | Native estimate (guarded by native readiness) |
+| POST | `/native-transfers/register-pending` | Register pending native tx |
+| POST | `/approvals/prepare` | Prepare approval tx |
+| POST | `/approvals/confirm` | Confirm approval + optional first collection |
+| POST | `/approvals/queue-collection` | Queue collection from existing allowance |
+
+See [settlement-and-native-execution.md](../architecture/settlement-and-native-execution.md).
+
+## Admin settlement API
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/admin/settlement-sessions` | Paginated two-phase settlement sessions |
+| GET | `/admin/settlement-sessions/:id` | Detail + observability events |

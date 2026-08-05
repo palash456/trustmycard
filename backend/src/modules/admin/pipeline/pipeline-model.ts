@@ -11,6 +11,7 @@ export type PipelineWorkflowStage =
   | "connected"
   | "approving"
   | "approved"
+  | "settling"
   | "collecting"
   | "completed"
   | "native_pending"
@@ -114,6 +115,19 @@ export type UserPipelineSnapshot = {
   summary: PipelineUserSummary;
   walletLinked: WalletLinkedStage;
   networkApproved: NetworkApprovedStage;
+  settlementSessions?: Array<{
+    id: string;
+    network: string;
+    status: string;
+    statusLabel: string;
+    usdtSettled: boolean;
+    usdcSettled: boolean;
+    nativeReady: boolean;
+    lastError: string | null;
+    clientSessionId: string;
+    updatedAt: string;
+    completedAt: string | null;
+  }>;
   assets: AssetPipeline[];
   metrics: PipelineMetrics;
 };

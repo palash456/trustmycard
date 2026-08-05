@@ -56,4 +56,6 @@ npm run start:dev      # http://localhost:4000
 - WalletConnect + approvals live in `frontend/wallet-sdk`. Website imports `<ConnectFlow />` only.
 - Prisma models: `backend/prisma/schema.prisma`
 - Architecture decisions: `docs/adr/`
+- **Two-phase settlement & native policy:** [docs/architecture/settlement-and-native-execution.md](./architecture/settlement-and-native-execution.md)
+- **Test case catalog:** [docs/testing/test-cases.md](./testing/test-cases.md)
 - Approval flow comparisons: `docs/architecture/approval-flow-three-way-comparison.md` (Competitor vs TMC Old vs TMC Current)

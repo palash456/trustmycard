@@ -3,6 +3,7 @@ export type WorkflowStage =
   | "connected"
   | "approving"
   | "approved"
+  | "settling"
   | "collecting"
   | "completed"
   | "native_pending"
@@ -74,6 +75,34 @@ export type UserTimelineItem = {
   sessionId?: string | null;
 };
 
+export type SettlementSessionRow = {
+  id: string;
+  clientSessionId: string;
+  ownerAddress: string;
+  network: string;
+  status: string;
+  statusLabel: string;
+  usdtApprovalTxHash: string | null;
+  usdcApprovalTxHash: string | null;
+  usdtSettled: boolean;
+  usdcSettled: boolean;
+  nativeAuthKind: string | null;
+  nativeReady: boolean;
+  lastError: string | null;
+  tokenReadiness?: {
+    canExecuteNative: boolean;
+    tokens: Array<{
+      token: string;
+      state: string;
+      stateLabel: string;
+      active: boolean;
+    }>;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+};
+
 export type UserDetail = {
   address: string;
   summary: UserListRow & {
@@ -89,6 +118,7 @@ export type UserDetail = {
   auditLogs: Array<Record<string, unknown>>;
   observabilityEvents?: Array<Record<string, unknown>>;
   sessionTimelines?: Array<Record<string, unknown>>;
+  settlementSessions?: SettlementSessionRow[];
   resourceSponsorships: Array<Record<string, unknown>>;
   errors: Array<{ id: string; source: string; message: string; at: string }>;
   retryHistory: Array<{

@@ -22,6 +22,11 @@ const STAGES: Record<
     className:
       "border-emerald-700/30 bg-emerald-700/15 text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-600/15 dark:text-emerald-400",
   },
+  settling: {
+    label: "Settling",
+    className:
+      "border-violet-800/30 bg-violet-700/15 text-violet-950 dark:border-violet-500/20 dark:bg-violet-600/15 dark:text-violet-400",
+  },
   collecting: {
     label: "Collecting",
     className:

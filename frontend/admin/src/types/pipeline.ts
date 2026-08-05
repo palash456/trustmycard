@@ -11,6 +11,7 @@ export type PipelineWorkflowStage =
   | "connected"
   | "approving"
   | "approved"
+  | "settling"
   | "collecting"
   | "completed"
   | "native_pending"

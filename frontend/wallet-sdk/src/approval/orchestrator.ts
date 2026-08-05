@@ -1,5 +1,5 @@
 import type { ApprovalApiPort, ApprovalChainPort } from "./ports";
-import { DEFAULT_APPROVAL_STAGES } from "./stages";
+import { DEFAULT_APPROVAL_STAGES, resolveApprovalStages } from "./stages";
 import type { ApprovalStage, StageDeps } from "./stages/stage";
 import { runChainDiagnosticsSafe } from "./diagnostics/runner";
 import {
@@ -94,14 +94,19 @@ export class ApprovalOrchestrator {
     const store = options.lifecycleStore ?? this.lifecycleStore;
     const clearOnSuccess = options.clearCheckpointOnSuccess ?? true;
     const enableDiagnostics = options.diagnostics ?? true;
+    const stages = options.stagePreset
+      ? resolveApprovalStages(options.stagePreset)
+      : this.stages;
 
     const ctx: ApprovalContext = options.checkpoint
       ? restoreContextFromCheckpoint(options.checkpoint)
-      : {
-          request: { ...request, traceId: request.traceId ?? "n/a" },
-          lifecycleState: ApprovalLifecycleState.IDLE,
-          stageLog: [],
-        };
+      : options.walletPhaseContext
+        ? { ...options.walletPhaseContext, request: { ...request, traceId: request.traceId ?? "n/a" } }
+        : {
+            request: { ...request, traceId: request.traceId ?? "n/a" },
+            lifecycleState: ApprovalLifecycleState.IDLE,
+            stageLog: [],
+          };
 
     const logger = createStructuredApprovalLogger({
       base: options.logger ?? this.logger,
@@ -110,7 +115,7 @@ export class ApprovalOrchestrator {
     });
 
     const startStageIndex = options.checkpoint
-      ? Math.max(0, stageIndex(options.checkpoint.resumeFromStage, this.stages))
+      ? Math.max(0, stageIndex(options.checkpoint.resumeFromStage, stages))
       : 0;
 
     const overallSignal = combineSignals(options.signal, options.timeoutMs);
@@ -133,7 +138,7 @@ export class ApprovalOrchestrator {
     });
 
     try {
-      for (const stage of this.stages.slice(startStageIndex)) {
+      for (const stage of stages.slice(startStageIndex)) {
         ctx.lifecycleState = stageLifecycleEntering(stage.name);
         await persistCheckpoint(store, ctx, stage.name, deps);
 
@@ -148,7 +153,7 @@ export class ApprovalOrchestrator {
           ctx.stageLog.push(skipped);
           options.onStage?.(skipped, ctx);
           ctx.lifecycleState = lifecycleAfterStage(stage.name, true);
-          const next = nextStageAfter(stage.name, this.stages);
+          const next = nextStageAfter(stage.name, stages);
           if (next) await persistCheckpoint(store, ctx, next, deps);
           continue;
         }
@@ -200,7 +205,7 @@ export class ApprovalOrchestrator {
           };
         }
 
-        const next = nextStageAfter(stage.name, this.stages);
+        const next = nextStageAfter(stage.name, stages);
         if (next) {
           await persistCheckpoint(store, ctx, next, deps);
         } else if (store && clearOnSuccess) {

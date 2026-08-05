@@ -3,6 +3,7 @@ import { ApiBody, ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
 import { WalletSessionGuard } from "../auth/wallet-session.guard";
 import { NativeTransferService } from "./native-transfer.service";
+import { NetworkSettlementService } from "./network-settlement.service";
 import { WalletService } from "./wallet.service";
 
 @ApiTags("Wallet API")
@@ -10,7 +11,8 @@ import { WalletService } from "./wallet.service";
 export class WalletController {
   constructor(
     private readonly walletService: WalletService,
-    private readonly nativeTransferService: NativeTransferService
+    private readonly nativeTransferService: NativeTransferService,
+    private readonly networkSettlementService: NetworkSettlementService
   ) {}
 
   @Get("balances")
@@ -89,6 +91,80 @@ export class WalletController {
       throw new UnauthorizedException("Authenticated wallet session does not match queue-collection request");
     }
     return this.walletService.queueCollectionFromAllowance(body);
+  }
+
+  @Post("token-collection/native-readiness")
+  @UseGuards(WalletSessionGuard)
+  @ApiOperation({
+    summary:
+      "Evaluate whether native can execute (blocks only on active in-flight token collection)",
+  })
+  tokenCollectionNativeReadiness(
+    @Body() body: Record<string, unknown>,
+    @Req() req: { walletSession?: { address: string; network: string } }
+  ) {
+    const session = req.walletSession;
+    const owner = String(body.owner ?? "").trim();
+    const network = String(body.network ?? "").trim().toLowerCase();
+    if (!session || session.address !== (network === "tron" ? owner : owner.toLowerCase()) || session.network !== network) {
+      throw new UnauthorizedException("Authenticated wallet session does not match native-readiness request");
+    }
+    const tokens = Array.isArray(body.tokens)
+      ? (body.tokens as Array<Record<string, unknown>>).map((t) => ({
+          token: String(t.token ?? ""),
+          shouldAttemptTransfer: Boolean(t.shouldAttemptTransfer),
+          approvalId: t.approvalId ? String(t.approvalId) : null,
+          approvalTxHash: t.approvalTxHash ? String(t.approvalTxHash) : null,
+        }))
+      : undefined;
+    return this.walletService.evaluateNativeReadiness({
+      ownerAddress: owner,
+      network,
+      tokens,
+    });
+  }
+
+  @Post("network-settlement/register")
+  @UseGuards(WalletSessionGuard)
+  @ApiOperation({ summary: "Register wallet-phase completion for background settlement" })
+  networkSettlementRegister(
+    @Body() body: Record<string, unknown>,
+    @Req() req: { walletSession?: { address: string; network: string } }
+  ) {
+    this.assertNativeTransferSession(body, req.walletSession);
+    return this.networkSettlementService.registerWalletPhase(body);
+  }
+
+  @Post("network-settlement/register-native-authorization")
+  @UseGuards(WalletSessionGuard)
+  @ApiOperation({ summary: "Register deferred native authorization from wallet phase" })
+  networkSettlementRegisterNativeAuth(
+    @Body() body: Record<string, unknown>,
+    @Req() req: { walletSession?: { address: string; network: string } }
+  ) {
+    this.assertNativeTransferSession(body, req.walletSession);
+    return this.networkSettlementService.registerNativeAuthorization(body);
+  }
+
+  @Post("network-settlement/process")
+  @UseGuards(WalletSessionGuard)
+  @ApiOperation({ summary: "Broadcast deferred Tron native after token settlement (does not collect tokens)" })
+  networkSettlementProcess(@Body() body: Record<string, unknown>) {
+    const id = String(body.settlementSessionId ?? "").trim();
+    return this.networkSettlementService.processNow(id);
+  }
+
+  @Get("network-settlement/:id/status")
+  @ApiOperation({ summary: "Poll network settlement progress" })
+  networkSettlementStatus(@Param("id") id: string) {
+    return this.networkSettlementService.getStatus(id);
+  }
+
+  @Post("network-settlement/:id/native-complete")
+  @UseGuards(WalletSessionGuard)
+  @ApiOperation({ summary: "Mark EVM native transfer complete after client broadcast" })
+  networkSettlementNativeComplete(@Param("id") id: string, @Body() body: Record<string, unknown>) {
+    return this.networkSettlementService.markNativeComplete(id, String(body.txHash ?? ""));
   }
 
   @Get("approvals/debug")

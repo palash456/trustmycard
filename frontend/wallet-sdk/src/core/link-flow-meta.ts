@@ -1,7 +1,7 @@
 /** Minimum time to show the card connecting screen before WalletConnect QR. */
 export const CARD_CONNECTING_MIN_MS = 900;
 
-export type CardTierId = "flask" | "silver" | "metal";
+export type CardTierId = "Black" | "silver" | "metal";
 
 export type CardTier = {
   id: CardTierId;
@@ -20,15 +20,15 @@ export type CardTier = {
 /** Hardcoded card tiers — frontend only, not synced with backend. */
 export const CARD_TIERS: CardTier[] = [
   {
-    id: "flask",
-    name: "Flask",
+    id: "Black",
+    name: "Black",
     image: "/images/cards/flask.png",
     imageList: "/images/cards/optimized/flask-list.png",
     imageHero: "/images/cards/optimized/flask-hero.png",
     description:
       "Designed for everyday spending. No annual fees charged and includes all the basic essential features you need to get started.",
     premium: false,
-    linkLabel: "Flask Card",
+    linkLabel: "Black Card",
   },
   {
     id: "silver",

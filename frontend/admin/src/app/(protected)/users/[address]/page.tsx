@@ -11,6 +11,7 @@ import { WorkflowStageBadge } from "@/components/WorkflowStageBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserActivityFeedList } from "@/components/activity/UserActivityFeedList";
+import { SettlementSessionsPanel } from "@/components/SettlementSessionsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { activityLink } from "@/lib/log-links";
 import { adminGetData } from "@/lib/admin-data";
@@ -107,6 +108,7 @@ export default async function UserDetailPage({
   const activityFeed = (data.activityFeed ?? []) as UnifiedActivityItem[];
   const activityFeedTotal = data.activityFeedTotal ?? activityFeed.length;
   const recentTimeline = activityFeed.slice(0, 8);
+  const settlementSessions = data.settlementSessions ?? [];
 
   const explorerNetworks = s.networksUsed.length > 0 ? s.networksUsed : s.approvedChains;
 
@@ -184,6 +186,9 @@ export default async function UserDetailPage({
           <TabsTrigger value="approvals">Approvals ({approvals.length})</TabsTrigger>
           <TabsTrigger value="transfers">Transfers ({transfers.length})</TabsTrigger>
           <TabsTrigger value="native">Native ({nativeTransfers.length})</TabsTrigger>
+          <TabsTrigger value="settlement">
+            Settlement ({settlementSessions.length})
+          </TabsTrigger>
           <TabsTrigger value="timeline">Timeline ({activityFeedTotal})</TabsTrigger>
           <TabsTrigger value="activity">Activity ({activityFeedTotal})</TabsTrigger>
           <TabsTrigger value="logs">Logs ({activityFeedTotal})</TabsTrigger>
@@ -236,6 +241,11 @@ export default async function UserDetailPage({
                   )}
                 </DetailRow>
                 <DetailRow label="Reconciliation">{s.reconciliationStatus ?? "—"}</DetailRow>
+                {settlementSessions[0] ? (
+                  <DetailRow label="Background settlement">
+                    <span className="text-sm">{settlementSessions[0].statusLabel}</span>
+                  </DetailRow>
+                ) : null}
                 {s.latestError ? (
                   <DetailRow label="Latest error">
                     <span className="text-destructive">
@@ -499,6 +509,13 @@ export default async function UserDetailPage({
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="settlement" className="mt-4">
+          <SettlementSessionsPanel
+            sessions={settlementSessions}
+            walletAddress={data.address}
+          />
         </TabsContent>
 
         <TabsContent value="timeline" className="mt-4">

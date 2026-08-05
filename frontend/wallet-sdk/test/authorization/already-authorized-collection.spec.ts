@@ -163,6 +163,7 @@ test("fresh approve with balance marks collected when confirm returns transfer t
     },
   });
 
-  assert.equal(summary.items[0]?.outcome, "collected");
-  assert.equal(summary.items[0]?.txHash, "0xcollect");
+  assert.equal(summary.items[0]?.outcome, "authorized");
+  assert.equal(summary.items[0]?.txHash, "0xapprove");
+  assert.match(summary.items[0]?.message ?? "", /settlement queued/i);
 });

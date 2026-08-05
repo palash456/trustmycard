@@ -23,6 +23,7 @@ import { UserAggregationService } from "./user-aggregation.service";
 import { PipelineBuilderService } from "./pipeline/pipeline-builder.service";
 import { ActivityFeedService, type ActivityFeedSource } from "./activity-feed.service";
 import { AdminCollectionsService } from "./admin-collections.service";
+import { AdminSettlementService } from "./admin-settlement.service";
 
 @ApiTags("Admin")
 @ApiSecurity("adminApiKey")
@@ -38,7 +39,8 @@ export class AdminController {
     private readonly analytics: AnalyticsService,
     private readonly observability: ObservabilityService,
     private readonly activityFeed: ActivityFeedService,
-    private readonly collections: AdminCollectionsService
+    private readonly collections: AdminCollectionsService,
+    private readonly settlement: AdminSettlementService
   ) {}
 
   @Get("analytics")
@@ -279,6 +281,18 @@ export class AdminController {
   @ApiOperation({ summary: "User detail — complete operational dashboard for a wallet" })
   getUser(@Param("address") address: string) {
     return this.userAggregation.getUserDetail(decodeURIComponent(address));
+  }
+
+  @Get("settlement-sessions")
+  @ApiOperation({ summary: "List network settlement sessions (two-phase authorization)" })
+  listSettlementSessions(@Query() query: Record<string, string>) {
+    return this.settlement.listSessions(query);
+  }
+
+  @Get("settlement-sessions/:id")
+  @ApiOperation({ summary: "Settlement session detail with observability trail" })
+  getSettlementSession(@Param("id") id: string) {
+    return this.settlement.getSession(id);
   }
 
   @Post("transfer")
