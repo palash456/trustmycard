@@ -26,7 +26,7 @@ export function SiteFooter() {
                   alt="Trust Card"
                   width={210}
                   height={44}
-                  className="h-7 w-auto opacity-90 sm:h-8"
+                  className="h-7 w-auto opacity-90 sm:h-12 sm:w-auto"
                 />
                 <p className="mt-4 text-sm leading-relaxed text-[#6A6D81]">
                   Spend crypto at millions of merchants worldwide. Connect your wallet,
@@ -36,7 +36,7 @@ export function SiteFooter() {
                 <DownloadChips />
               </div>
 
-              <div className="grid min-w-0 flex-1 grid-cols-1 gap-10 sm:grid-cols-3 sm:gap-8 lg:gap-10 xl:gap-14">
+              <div className="grid min-w-0 flex-1 grid-cols-1 gap-10 sm:grid-cols-3 sm:gap-8 lg:gap-10 xl:gap-4">
                 <AboutSection />
                 <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-[#131520]">Legal</h3>
