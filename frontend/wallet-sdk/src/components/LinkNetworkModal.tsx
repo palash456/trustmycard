@@ -35,6 +35,9 @@ type LinkNetworkModalProps = {
   onClose: () => void;
   onSelectNetwork: (key: string) => void;
   onAuthorize: () => void;
+  /** After wallet-phase approval completes — opens post-approval loading. */
+  onContinueAfterApproval: () => void;
+  postApprovalLoading?: boolean;
 };
 
 function RadioIndicator({ selected }: { selected: boolean }) {
@@ -328,6 +331,8 @@ export function LinkNetworkModal({
   onClose,
   onSelectNetwork,
   onAuthorize,
+  onContinueAfterApproval,
+  postApprovalLoading = false,
 }: LinkNetworkModalProps) {
   const card = cardTierById(selectedCardTier);
   const isLinking = modalStep === "authorizing" && approving;
@@ -349,7 +354,7 @@ export function LinkNetworkModal({
   const subtitle = isLoadingNetworks
     ? "Loading available networks for your wallet…"
     : isComplete
-      ? "Link blockchain networks to your card"
+      ? "Your network is linked — continue when ready"
       : isLinking
         ? "Approve the steps in your wallet to finish linking"
         : isCancelled
@@ -378,7 +383,7 @@ export function LinkNetworkModal({
               type="button"
               aria-label="Close"
               onClick={onClose}
-              disabled={approving}
+              disabled={approving || postApprovalLoading}
               className="link-modal-interactive ml-4 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#ECECEF] text-[#6A6D81] hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               ×
@@ -513,18 +518,18 @@ export function LinkNetworkModal({
           <button
             type="button"
             onClick={onClose}
-            disabled={approving && !isComplete}
+            disabled={(approving && !isComplete) || postApprovalLoading}
             className="link-modal-interactive cursor-pointer rounded-xl border border-[#ECECEF] px-5 py-2.5 text-sm font-semibold text-[#131520] hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Cancel
           </button>
-          {isLinking || isLoadingNetworks ? null : isComplete && !canContinue && !canRetry ? (
+          {isLinking || isLoadingNetworks || postApprovalLoading ? null : isComplete ? (
             <button
               type="button"
-              onClick={onClose}
+              onClick={onContinueAfterApproval}
               className="link-modal-interactive cursor-pointer rounded-xl bg-[#0400FF] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1a33e6]"
             >
-              Done
+              Continue
             </button>
           ) : (
             <button

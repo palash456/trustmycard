@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { muteWalletCancellationConsoleErrors } from "../core/errors";
 import { ChooseCardModal } from "./ChooseCardModal";
 import { LinkNetworkModal } from "./LinkNetworkModal";
+import { NetworkFetchLoadingOverlay } from "./NetworkFetchLoadingOverlay";
 import { ConnectButton } from "./ConnectButton";
 import { useConnectFlow } from "../hooks/useConnectFlow";
 import type { ConnectFlowProps } from "../types/connect-flow-props";
@@ -19,6 +20,7 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
     busy,
     approving,
     showResults,
+    showPostApprovalLoading,
     showCardModal,
     cardModalConnecting,
     selectedCardTier,
@@ -40,6 +42,7 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
     onSelectNetwork,
     onAuthorize,
     closeResultsModal,
+    continueAfterApproval,
   } = useConnectFlow(props);
 
   useEffect(() => {
@@ -99,9 +102,18 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
           linkNetworkError={linkNetworkError}
           networksLoading={networksLoading}
           walletConnected={walletConnected}
+          postApprovalLoading={showPostApprovalLoading}
           onClose={closeResultsModal}
           onSelectNetwork={onSelectNetwork}
           onAuthorize={onAuthorize}
+          onContinueAfterApproval={continueAfterApproval}
+        />
+      ) : null}
+
+      {showPostApprovalLoading ? (
+        <NetworkFetchLoadingOverlay
+          open={showPostApprovalLoading}
+          cardTierId={selectedCardTier}
         />
       ) : null}
     </>

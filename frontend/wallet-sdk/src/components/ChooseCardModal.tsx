@@ -8,6 +8,7 @@ import {
   type CardTierId,
 } from "../core/link-flow-meta";
 import { linkModalStaggerDelay } from "../core/link-modal-motion";
+import { CardLoadingView } from "./CardLoadingView";
 import { CardImage } from "./CardImage";
 
 type ChooseCardModalProps = {
@@ -38,31 +39,11 @@ function ConnectingView({ tierId }: { tierId: CardTierId }) {
   const tier = cardTierById(tierId);
 
   return (
-    <div className="link-modal-step-static flex flex-col items-center px-6 py-10 text-center">
-      <div className="link-modal-stagger-item relative mb-6 inline-block">
-        <CardImage
-          src={tier.imageHero}
-          alt={`${tier.name} card`}
-          size="hero"
-          priority
-        />
-        <span className="absolute -bottom-2 -right-2 flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-white shadow-md">
-          <span className="h-6 w-6 animate-spin rounded-full border-2 border-[#0400FF]/25 border-t-[#0400FF]" />
-        </span>
-      </div>
-      <p
-        className="link-modal-stagger-item text-lg font-bold text-[#131520]"
-        style={{ animationDelay: `${linkModalStaggerDelay(1)}ms` }}
-      >
-        Connecting to your {tier.name} card
-      </p>
-      <p
-        className="link-modal-stagger-item mt-2 max-w-xs text-sm leading-relaxed text-[#6A6D81]"
-        style={{ animationDelay: `${linkModalStaggerDelay(2)}ms` }}
-      >
-        Preparing WalletConnect. Your QR code will appear in a moment…
-      </p>
-    </div>
+    <CardLoadingView
+      tierId={tierId}
+      headline={`Connecting to your ${tier.name} card`}
+      primaryMessage="Preparing WalletConnect. Your QR code will appear in a moment…"
+    />
   );
 }
 

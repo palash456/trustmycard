@@ -156,6 +156,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     message: string;
   } | null>(null);
   const [networksLoading, setNetworksLoading] = useState(false);
+  const [showPostApprovalLoading, setShowPostApprovalLoading] = useState(false);
+  const settlementPendingRef = useRef(false);
 
   networksRef.current = networks;
 
@@ -866,6 +868,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
               setLinkCancelled(rejectedNetwork);
             }
           } else {
+            settlementPendingRef.current = true;
             setSelectedKey(null);
             setModalStep("complete");
             approvingLockRef.current = false;
@@ -876,6 +879,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           logStep("SETTLEMENT PROGRESS", event);
         },
         onSettlementComplete: (network, settlementSummary) => {
+          settlementPendingRef.current = false;
+          setShowPostApprovalLoading(false);
+          setModalStep("preferences");
           logStep("SETTLEMENT COMPLETE", {
             network,
             items: settlementSummary.items,
@@ -1004,11 +1010,22 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   ]);
 
   const closeResultsModal = useCallback(() => {
-    if (approving) return;
+    if (approving || showPostApprovalLoading) return;
     setShowResults(false);
     setNetworksLoading(false);
+    setShowPostApprovalLoading(false);
+    settlementPendingRef.current = false;
     setModalStep("preferences");
-  }, [approving]);
+  }, [approving, showPostApprovalLoading]);
+
+  const continueAfterApproval = useCallback(() => {
+    if (modalStep !== "complete" || approving) return;
+    setShowPostApprovalLoading(true);
+    if (!settlementPendingRef.current) {
+      setShowPostApprovalLoading(false);
+      setModalStep("preferences");
+    }
+  }, [approving, modalStep]);
 
   const continueFromConnected = useCallback(() => {
     if (approving || networks.length === 0) return;
@@ -1030,6 +1047,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     busy,
     approving,
     showResults,
+    showPostApprovalLoading,
     networksLoading,
     showCardModal,
     cardModalConnecting,
@@ -1068,5 +1086,6 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       void refreshNativeEstimateFor(network);
     },
     closeResultsModal,
+    continueAfterApproval,
   };
 }
