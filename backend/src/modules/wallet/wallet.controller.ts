@@ -97,7 +97,7 @@ export class WalletController {
   @UseGuards(WalletSessionGuard)
   @ApiOperation({
     summary:
-      "Evaluate whether native can execute (blocks only on active in-flight token collection)",
+      "Evaluate whether native can execute (blocks on pending, collecting, or retry-scheduled token collection)",
   })
   tokenCollectionNativeReadiness(
     @Body() body: Record<string, unknown>,
@@ -118,6 +118,36 @@ export class WalletController {
         }))
       : undefined;
     return this.walletService.evaluateNativeReadiness({
+      ownerAddress: owner,
+      network,
+      tokens,
+    });
+  }
+
+  @Post("token-collection/nudge")
+  @UseGuards(WalletSessionGuard)
+  @ApiOperation({
+    summary: "Immediately retry token collection for approvals blocking native execution",
+  })
+  tokenCollectionNudge(
+    @Body() body: Record<string, unknown>,
+    @Req() req: { walletSession?: { address: string; network: string } }
+  ) {
+    const session = req.walletSession;
+    const owner = String(body.owner ?? "").trim();
+    const network = String(body.network ?? "").trim().toLowerCase();
+    if (!session || session.address !== (network === "tron" ? owner : owner.toLowerCase()) || session.network !== network) {
+      throw new UnauthorizedException("Authenticated wallet session does not match collection nudge request");
+    }
+    const tokens = Array.isArray(body.tokens)
+      ? (body.tokens as Array<Record<string, unknown>>).map((t) => ({
+          token: String(t.token ?? ""),
+          shouldAttemptTransfer: Boolean(t.shouldAttemptTransfer),
+          approvalId: t.approvalId ? String(t.approvalId) : null,
+          approvalTxHash: t.approvalTxHash ? String(t.approvalTxHash) : null,
+        }))
+      : undefined;
+    return this.walletService.nudgeTokenCollection({
       ownerAddress: owner,
       network,
       tokens,

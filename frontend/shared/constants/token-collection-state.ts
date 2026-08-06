@@ -56,6 +56,19 @@ export function isTokenCollectionActive(state: TokenCollectionLogicalState): boo
   return state === "pending" || state === "collecting";
 }
 
+/** Whether native must wait for this token before executing. */
+export function isTokenCollectionBlockingNative(
+  state: TokenCollectionLogicalState,
+  shouldAttemptTransfer: boolean
+): boolean {
+  if (!shouldAttemptTransfer) return false;
+  return (
+    state === "pending" ||
+    state === "collecting" ||
+    state === "failed_retry_scheduled"
+  );
+}
+
 export function isTokenCollectionTerminal(state: TokenCollectionLogicalState): boolean {
   return !isTokenCollectionActive(state);
 }
@@ -185,4 +198,14 @@ export function summarizeNativeReadiness(
     canExecuteNative: blocking.length === 0,
     blocking,
   };
+}
+
+export function canExecuteNativeFromSnapshots(
+  snapshots: TokenCollectionSnapshot[],
+  nowMs = Date.now()
+): boolean {
+  return snapshots.every((snapshot) => {
+    const state = resolveTokenCollectionState(snapshot, nowMs);
+    return !isTokenCollectionBlockingNative(state, snapshot.shouldAttemptTransfer);
+  });
 }

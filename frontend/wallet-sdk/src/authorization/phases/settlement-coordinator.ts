@@ -19,6 +19,30 @@ import type { WalletPhaseTokenCapture } from "./types";
 const SETTLEMENT_POLL_MS = 2_000;
 const NATIVE_READINESS_WAIT_MS = 120_000;
 
+async function nudgeTokenCollection(args: {
+  apiBaseUrl?: string;
+  owner: string;
+  network: string;
+  tokenCaptures: WalletPhaseTokenCapture[];
+  walletSessionToken?: string;
+}): Promise<void> {
+  await fetch(resolveApiUrl(args.apiBaseUrl, "/api/token-collection/nudge"), {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      ...(args.walletSessionToken
+        ? { authorization: `Bearer ${args.walletSessionToken}` }
+        : {}),
+    },
+    body: JSON.stringify({
+      owner: args.owner,
+      network: args.network,
+      tokens: buildNativeReadinessTokenInputs(args.tokenCaptures),
+    }),
+    cache: "no-store",
+  }).catch(() => undefined);
+}
+
 export type NativeReadinessToken = {
   token: string;
   state: string;
@@ -190,6 +214,7 @@ export async function waitForNativeExecutionAllowed(args: {
   };
 
   while (Date.now() < deadline) {
+    await nudgeTokenCollection(args);
     last = await fetchNativeReadiness(args);
     args.onPoll?.(last);
     if (last.canExecuteNative) {

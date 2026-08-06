@@ -16,7 +16,7 @@ export function formatPipelineErrorMessage(raw: string | null | undefined): stri
   if (!raw?.trim()) return null;
   const text = raw.trim();
 
-  const gasMatch = text.match(/gas required exceeds allowance/i);
+  const gasMatch = text.match(/gas required exceeds allowance|insufficient funds for intrinsic transaction cost|insufficient funds for transfer|INSUFFICIENT_FUNDS/i);
   if (gasMatch) {
     const chain = inferChainName(text);
     return `Collector wallet has insufficient native gas for transferFrom on ${chain}.`;

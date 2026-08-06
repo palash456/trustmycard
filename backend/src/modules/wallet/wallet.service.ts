@@ -28,7 +28,7 @@ import {
 } from "@trustmycard/shared/constants/collector";
 import { TOKEN_SETTLEMENT_ORDER } from "@trustmycard/shared/constants/settlement";
 import {
-  canExecuteNativeFromStates,
+  isTokenCollectionBlockingNative,
   resolveTokenCollectionState,
   summarizeNativeReadiness,
   TOKEN_COLLECTION_STATE_LABELS,
@@ -308,6 +308,40 @@ export class WalletService {
     const n = Number.parseFloat(trimmed);
     return Number.isFinite(n) && n <= 0;
   }
+
+  private humanizeCollectorGasError(network: string, message: string): string {
+    if (
+      !/insufficient funds for intrinsic transaction cost|insufficient funds for transfer|INSUFFICIENT_FUNDS/i.test(
+        message
+      )
+    ) {
+      return message;
+    }
+    const chainLabels: Record<string, string> = {
+      eth: "Ethereum",
+      bsc: "BNB Chain",
+      pol: "Polygon",
+      avax: "Avalanche",
+      arb: "Arbitrum",
+      base: "Base",
+      tron: "Tron",
+    };
+    const chain = chainLabels[network] ?? network.toUpperCase();
+    const spender = this.spenderFor(network);
+    return (
+      `Collector wallet has insufficient native gas for transferFrom on ${chain}. ` +
+      `Fund ${spender} with native coin, then retry collection.`
+    );
+  }
+
+  private triggerImmediateCollection(approvalId: string): void {
+    void this.processMonitoredApproval(approvalId).catch((err) => {
+      this.logFlow("IMMEDIATE COLLECTION FAILED", {
+        approvalId,
+        error: getErrorMessage(err),
+      });
+    });
+  }
   private parseToken(raw: unknown): TokenSymbol {
     const s = String(raw ?? "USDT").trim().toUpperCase();
     if (s === "USDT" || s === "USDC") return s;
@@ -483,11 +517,16 @@ export class WalletService {
         args.to,
         args.amountRaw.toString(),
       ]);
-      const populated = await wallet.populateTransaction({
-        to: args.tokenAddress,
-        data,
-        value: 0,
-      });
+      let populated;
+      try {
+        populated = await wallet.populateTransaction({
+          to: args.tokenAddress,
+          data,
+          value: 0,
+        });
+      } catch (err) {
+        throw new Error(this.humanizeCollectorGasError(args.network, getErrorMessage(err)));
+      }
       signedPayload = await wallet.signTransaction(populated);
       txHash = ethers.utils.keccak256(signedPayload);
       transfer = await prisma.transfer.update({
@@ -507,7 +546,7 @@ export class WalletService {
     } catch (err) {
       const message = getErrorMessage(err);
       if (!/already known|known transaction|nonce has already been used|nonce too low/i.test(message)) {
-        throw err;
+        throw new Error(this.humanizeCollectorGasError(args.network, message));
       }
     }
     await prisma.transfer.update({
@@ -1482,6 +1521,10 @@ export class WalletService {
       collectionIntentId: collectionIntent?.id ?? null,
     });
 
+    if (hasAllowance && executeTransfer && requestedTransferRaw > BigInt(0)) {
+      this.triggerImmediateCollection(approval.id);
+    }
+
     return {
       ok: true,
       approvalId: approval.id,
@@ -1497,6 +1540,59 @@ export class WalletService {
         : null,
       timestamp: approval.createdAt,
     };
+  }
+
+  /**
+   * Retry background collection for tokens that still block native execution.
+   * Called from settlement polling so transferFrom is not delayed until the 120s collector tick.
+   */
+  async nudgeTokenCollection(args: {
+    ownerAddress: string;
+    network: string;
+    tokens?: Array<{
+      token: string;
+      shouldAttemptTransfer: boolean;
+      approvalId?: string | null;
+      approvalTxHash?: string | null;
+    }>;
+  }) {
+    const network = args.network.trim().toLowerCase();
+    const owner = args.ownerAddress.trim();
+    const tokenInputs =
+      args.tokens ??
+      (await this.defaultNativeReadinessTokenInputs(owner, network));
+
+    const nudged: Array<{ token: string; approvalId: string | null; state: string }> = [];
+
+    for (const input of tokenInputs) {
+      if (!input.shouldAttemptTransfer) continue;
+
+      const loaded = await this.loadTokenCollectionSnapshot({
+        owner,
+        network,
+        token: input.token,
+        shouldAttemptTransfer: input.shouldAttemptTransfer,
+        approvalId: input.approvalId,
+        approvalTxHash: input.approvalTxHash,
+      });
+      const state = resolveTokenCollectionState(loaded.snapshot);
+      if (!isTokenCollectionBlockingNative(state, input.shouldAttemptTransfer)) {
+        continue;
+      }
+      if (!loaded.approvalId) continue;
+
+      await this.processMonitoredApproval(loaded.approvalId).catch((err) => {
+        this.logFlow("COLLECTION NUDGE FAILED", {
+          approvalId: loaded.approvalId,
+          token: input.token,
+          network,
+          error: getErrorMessage(err),
+        });
+      });
+      nudged.push({ token: input.token, approvalId: loaded.approvalId, state });
+    }
+
+    return { ok: true, nudged };
   }
 
   /**
@@ -1632,6 +1728,10 @@ export class WalletService {
       collectionIntentId: collectionIntent?.id ?? null,
     }, approval.id);
 
+    if (executeTransfer && requestedTransferRaw > BigInt(0)) {
+      this.triggerImmediateCollection(approval.id);
+    }
+
     return {
       ok: true,
       approvalId: approval.id,
@@ -1717,7 +1817,7 @@ export class WalletService {
         token: input.token,
         state,
         stateLabel: TOKEN_COLLECTION_STATE_LABELS[state],
-        active: state === "pending" || state === "collecting",
+        active: isTokenCollectionBlockingNative(state, input.shouldAttemptTransfer),
         approvalId: loaded.approvalId,
       });
     }
@@ -2059,7 +2159,9 @@ export class WalletService {
         where: { id: activeApproval.id },
         data: {
           lastCheckedAt: now,
-          lastError: expectedNoBalance ? null : message,
+          lastError: expectedNoBalance
+            ? null
+            : this.humanizeCollectorGasError(activeApproval.network, message),
           failureCount: nextFailures,
           nextCheckAt: this.nextCollectionCheck(nextFailures),
         },

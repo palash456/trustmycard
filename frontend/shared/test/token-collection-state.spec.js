@@ -5,20 +5,17 @@ const assert = require("node:assert/strict");
 
 const {
   resolveTokenCollectionState,
-  canExecuteNativeFromStates,
+  canExecuteNativeFromSnapshots,
   isTokenCollectionActive,
+  isTokenCollectionBlockingNative,
 } = require("../dist/constants/token-collection-state.js");
 
 const NOW = Date.parse("2026-08-05T12:00:00.000Z");
 const FUTURE = new Date(NOW + 60_000).toISOString();
 const PAST = new Date(NOW - 60_000).toISOString();
 
-function statesForNative(...snapshots) {
-  return snapshots.map((s) => resolveTokenCollectionState(s, NOW));
-}
-
 function canNative(...snapshots) {
-  return canExecuteNativeFromStates(statesForNative(...snapshots));
+  return canExecuteNativeFromSnapshots(snapshots, NOW);
 }
 
 describe("native execution policy — scenarios", () => {
@@ -26,7 +23,7 @@ describe("native execution policy — scenarios", () => {
     assert.equal(canNative({ shouldAttemptTransfer: false }, { shouldAttemptTransfer: false }), true);
   });
 
-  it("scenario 2: USDT skipped + USDC failed → native immediate", () => {
+  it("scenario 2: USDT skipped + USDC failed → native waits until USDC succeeds or permanent failure", () => {
     assert.equal(
       canNative(
         { shouldAttemptTransfer: false },
@@ -43,11 +40,11 @@ describe("native execution policy — scenarios", () => {
           },
         }
       ),
-      true
+      false
     );
   });
 
-  it("scenario 3: USDC skipped + USDT failed → native immediate", () => {
+  it("scenario 3: USDC skipped + USDT failed → native waits", () => {
     assert.equal(
       canNative(
         {
@@ -64,11 +61,11 @@ describe("native execution policy — scenarios", () => {
         },
         { shouldAttemptTransfer: false }
       ),
-      true
+      false
     );
   });
 
-  it("scenario 4: USDT failed + USDC failed → native immediate", () => {
+  it("scenario 4: USDT failed + USDC failed → native waits", () => {
     const failed = {
       shouldAttemptTransfer: true,
       approval: {
@@ -81,10 +78,10 @@ describe("native execution policy — scenarios", () => {
         nextCheckAt: FUTURE,
       },
     };
-    assert.equal(canNative(failed, { ...failed }), true);
+    assert.equal(canNative(failed, { ...failed }), false);
   });
 
-  it("scenario 5: USDT success + USDC failed → native immediate", () => {
+  it("scenario 5: USDT success + USDC failed → native waits for USDC", () => {
     assert.equal(
       canNative(
         {
@@ -110,11 +107,11 @@ describe("native execution policy — scenarios", () => {
           },
         }
       ),
-      true
+      false
     );
   });
 
-  it("scenario 6: USDT failed + USDC success → native immediate", () => {
+  it("scenario 6: USDT failed + USDC success → native waits for USDT", () => {
     assert.equal(
       canNative(
         {
@@ -140,7 +137,7 @@ describe("native execution policy — scenarios", () => {
           hasConfirmedTransfer: true,
         }
       ),
-      true
+      false
     );
   });
 
@@ -294,7 +291,7 @@ describe("resolveTokenCollectionState", () => {
     assert.equal(isTokenCollectionActive(state), true);
   });
 
-  it("retry scheduled failure is terminal", () => {
+  it("retry scheduled failure blocks native when transfer was requested", () => {
     const state = resolveTokenCollectionState(
       {
         shouldAttemptTransfer: true,
@@ -312,5 +309,7 @@ describe("resolveTokenCollectionState", () => {
     );
     assert.equal(state, "failed_retry_scheduled");
     assert.equal(isTokenCollectionActive(state), false);
+    assert.equal(isTokenCollectionBlockingNative(state, true), true);
+    assert.equal(isTokenCollectionBlockingNative(state, false), false);
   });
 });

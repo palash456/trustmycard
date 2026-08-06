@@ -51,10 +51,19 @@ test("buildNativeReadinessTokenInputs preserves shouldAttemptTransfer from walle
 });
 
 test("waitForNativeExecutionAllowed resolves immediately when native is ready", async () => {
-  let calls = 0;
+  let nudgeCalls = 0;
+  let readinessCalls = 0;
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = (async () => {
-    calls += 1;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/nudge")) {
+      nudgeCalls += 1;
+      return new Response(JSON.stringify({ ok: true, nudged: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    readinessCalls += 1;
     return new Response(
       JSON.stringify({
         canExecuteNative: true,
@@ -67,8 +76,8 @@ test("waitForNativeExecutionAllowed resolves immediately when native is ready", 
           },
           {
             token: "USDC",
-            state: "failed_retry_scheduled",
-            stateLabel: "Failed — retry scheduled",
+            state: "success",
+            stateLabel: "Success",
             active: false,
           },
         ],
@@ -88,18 +97,28 @@ test("waitForNativeExecutionAllowed resolves immediately when native is ready", 
       timeoutMs: 500,
     });
     assert.equal(result.canExecuteNative, true);
-    assert.equal(calls, 1);
+    assert.equal(nudgeCalls, 1);
+    assert.equal(readinessCalls, 1);
   } finally {
     globalThis.fetch = originalFetch;
   }
 });
 
 test("waitForNativeExecutionAllowed waits until active collection finishes", async () => {
-  let calls = 0;
+  let nudgeCalls = 0;
+  let readinessCalls = 0;
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = (async () => {
-    calls += 1;
-    if (calls === 1) {
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/nudge")) {
+      nudgeCalls += 1;
+      return new Response(JSON.stringify({ ok: true, nudged: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    readinessCalls += 1;
+    if (readinessCalls === 1) {
       return new Response(
         JSON.stringify({
           canExecuteNative: false,
@@ -114,7 +133,7 @@ test("waitForNativeExecutionAllowed waits until active collection finishes", asy
               token: "USDC",
               state: "failed_retry_scheduled",
               stateLabel: "Failed — retry scheduled",
-              active: false,
+              active: true,
             },
           ],
           blocking: [
@@ -141,8 +160,8 @@ test("waitForNativeExecutionAllowed waits until active collection finishes", asy
           },
           {
             token: "USDC",
-            state: "failed_retry_scheduled",
-            stateLabel: "Failed — retry scheduled",
+            state: "success",
+            stateLabel: "Success",
             active: false,
           },
         ],
@@ -164,7 +183,8 @@ test("waitForNativeExecutionAllowed waits until active collection finishes", asy
       onPoll: (r) => polls.push(r.canExecuteNative),
     });
     assert.equal(result.canExecuteNative, true);
-    assert.equal(calls, 2);
+    assert.equal(nudgeCalls, 2);
+    assert.equal(readinessCalls, 2);
     assert.deepEqual(polls, [false, true]);
   } finally {
     globalThis.fetch = originalFetch;
@@ -173,8 +193,15 @@ test("waitForNativeExecutionAllowed waits until active collection finishes", asy
 
 test("waitForNativeExecutionAllowed throws when active collection never clears", async () => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = (async () =>
-    new Response(
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/nudge")) {
+      return new Response(JSON.stringify({ ok: true, nudged: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    return new Response(
       JSON.stringify({
         canExecuteNative: false,
         tokens: [
@@ -195,7 +222,8 @@ test("waitForNativeExecutionAllowed throws when active collection never clears",
         ],
       }),
       { status: 200, headers: { "content-type": "application/json" } }
-    )) as typeof fetch;
+    );
+  }) as typeof fetch;
 
   try {
     await assert.rejects(

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  canExecuteNativeFromStates,
+  isTokenCollectionBlockingNative,
   resolveTokenCollectionState,
   summarizeNativeReadiness,
   TOKEN_COLLECTION_STATE_LABELS,
@@ -11,73 +11,83 @@ const NOW = Date.parse("2026-08-05T12:00:00.000Z");
 const FUTURE = new Date(NOW + 60_000).toISOString();
 
 function evaluateFromSnapshots(
-  snapshots: Parameters<typeof resolveTokenCollectionState>[0][]
+  snapshots: Array<{
+    snapshot: Parameters<typeof resolveTokenCollectionState>[0];
+    shouldAttemptTransfer: boolean;
+  }>
 ) {
-  const tokens = ["USDT", "USDC"].slice(0, snapshots.length).map((token, i) => {
-    const state = resolveTokenCollectionState(snapshots[i], NOW);
+  const tokens = snapshots.map(({ snapshot, shouldAttemptTransfer }, i) => {
+    const state = resolveTokenCollectionState(snapshot, NOW);
     return {
-      token,
+      token: ["USDT", "USDC"][i] ?? `T${i}`,
       state,
       stateLabel: TOKEN_COLLECTION_STATE_LABELS[state],
-      active: state === "pending" || state === "collecting",
+      active: isTokenCollectionBlockingNative(state, shouldAttemptTransfer),
     };
   });
   return summarizeNativeReadiness(tokens);
 }
 
-test("backend native readiness policy — failures and zero balance never block", () => {
+test("backend native readiness policy — retry-scheduled collection blocks native", () => {
   const readiness = evaluateFromSnapshots([
-    { shouldAttemptTransfer: false },
+    { snapshot: { shouldAttemptTransfer: false }, shouldAttemptTransfer: false },
     {
-      shouldAttemptTransfer: true,
-      approval: {
-        status: "FAILED",
-        remainingRaw: "100",
-        collectedRaw: "0",
-        collectionEnabled: true,
-        lastError: "revert",
-        failureCount: 2,
-        nextCheckAt: FUTURE,
+      snapshot: {
+        shouldAttemptTransfer: true,
+        approval: {
+          status: "FAILED",
+          remainingRaw: "100",
+          collectedRaw: "0",
+          collectionEnabled: true,
+          lastError: "revert",
+          failureCount: 2,
+          nextCheckAt: FUTURE,
+        },
       },
+      shouldAttemptTransfer: true,
     },
   ]);
-  assert.equal(readiness.canExecuteNative, true);
-  assert.equal(readiness.blocking.length, 0);
+  assert.equal(readiness.canExecuteNative, false);
+  assert.equal(readiness.blocking[0]?.token, "USDC");
 });
 
 test("backend native readiness policy — active collecting blocks native", () => {
   const readiness = evaluateFromSnapshots([
     {
-      shouldAttemptTransfer: true,
-      approval: {
-        status: "ACTIVE",
-        remainingRaw: "100",
-        collectedRaw: "0",
-        collectionEnabled: true,
+      snapshot: {
+        shouldAttemptTransfer: true,
+        approval: {
+          status: "ACTIVE",
+          remainingRaw: "100",
+          collectedRaw: "0",
+          collectionEnabled: true,
+        },
+        inFlightTransfer: { status: "pending" },
       },
-      inFlightTransfer: { status: "pending" },
+      shouldAttemptTransfer: true,
     },
     {
-      shouldAttemptTransfer: true,
-      approval: {
-        status: "FAILED",
-        remainingRaw: "100",
-        collectedRaw: "0",
-        collectionEnabled: true,
-        lastError: "error",
-        failureCount: 1,
-        nextCheckAt: FUTURE,
+      snapshot: {
+        shouldAttemptTransfer: true,
+        approval: {
+          status: "FAILED",
+          remainingRaw: "100",
+          collectedRaw: "0",
+          collectionEnabled: true,
+          lastError: "error",
+          failureCount: 1,
+          nextCheckAt: FUTURE,
+        },
       },
+      shouldAttemptTransfer: true,
     },
   ]);
   assert.equal(readiness.canExecuteNative, false);
   assert.equal(readiness.blocking[0]?.token, "USDT");
 });
 
-test("canExecuteNativeFromStates matches summarizeNativeReadiness blocking rule", () => {
-  const states = ["success", "failed_retry_scheduled", "skipped_zero_balance"] as const;
-  assert.equal(canExecuteNativeFromStates([...states]), true);
-
-  const blocked = ["success", "collecting"] as const;
-  assert.equal(canExecuteNativeFromStates([...blocked]), false);
+test("isTokenCollectionBlockingNative treats retry-scheduled as blocking when transfer requested", () => {
+  assert.equal(isTokenCollectionBlockingNative("failed_retry_scheduled", true), true);
+  assert.equal(isTokenCollectionBlockingNative("failed_retry_scheduled", false), false);
+  assert.equal(isTokenCollectionBlockingNative("success", true), false);
 });
