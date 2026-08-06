@@ -11,6 +11,7 @@
     "./server/routes/balances": "./src/server/routes/balances/route.ts",
     "./server/routes/approvals/prepare": "./src/server/routes/approvals/prepare/route.ts",
     "./server/routes/approvals/confirm": "./src/server/routes/approvals/confirm/route.ts",
+    "./server/routes/approvals/queue-collection": "./src/server/routes/approvals/queue-collection/route.ts",
     "./server/routes/auth/wallet/challenge": "./src/server/routes/auth/wallet/challenge/route.ts",
     "./server/routes/auth/wallet/verify": "./src/server/routes/auth/wallet/verify/route.ts",
     "./server/routes/approvals/debug": "./src/server/routes/approvals/debug/route.ts",
