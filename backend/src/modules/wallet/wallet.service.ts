@@ -468,23 +468,26 @@ export class WalletService {
     await this.processMonitoredApproval(approvalId);
   }
 
+  private pendingCollectionIntentStatuses(): CollectionIntentStatus[] {
+    return [
+      CollectionIntentStatus.CREATED,
+      CollectionIntentStatus.QUEUED,
+      CollectionIntentStatus.EXECUTING,
+      CollectionIntentStatus.BROADCAST,
+      CollectionIntentStatus.CONFIRMING,
+      CollectionIntentStatus.FAILED,
+      CollectionIntentStatus.BLOCKED,
+    ];
+  }
+
+  /** Fixed-amount approvals with nothing left to collect — stop monitoring permanently. */
   private async markCollectionNothingToCollect(approvalId: string, reason: string): Promise<void> {
     const now = new Date();
     await prisma.$transaction([
       prisma.collectionIntent.updateMany({
         where: {
           approvalId,
-          status: {
-            in: [
-              CollectionIntentStatus.CREATED,
-              CollectionIntentStatus.QUEUED,
-              CollectionIntentStatus.EXECUTING,
-              CollectionIntentStatus.BROADCAST,
-              CollectionIntentStatus.CONFIRMING,
-              CollectionIntentStatus.FAILED,
-              CollectionIntentStatus.BLOCKED,
-            ],
-          },
+          status: { in: this.pendingCollectionIntentStatuses() },
         },
         data: { status: CollectionIntentStatus.CANCELLED },
       }),
@@ -495,6 +498,54 @@ export class WalletService {
           lastCheckedAt: now,
           lastError: reason,
           nextCheckAt: null,
+          leaseOwner: null,
+          leaseUntil: null,
+        },
+      }),
+    ]);
+  }
+
+  /**
+   * Unlimited approvals keep monitoring after a zero balance — schedule the next
+   * collector tick and settle or cancel settlement intents without disabling collection.
+   */
+  private async scheduleUnlimitedDepositWatch(
+    approvalId: string,
+    args: { collectedRaw: bigint; failureCount: number }
+  ): Promise<void> {
+    const now = new Date();
+    const pendingIntentFilter = {
+      approvalId,
+      status: { in: this.pendingCollectionIntentStatuses() },
+    };
+    const intentUpdate =
+      args.collectedRaw > BigInt(0)
+        ? prisma.collectionIntent.updateMany({
+            where: pendingIntentFilter,
+            data: {
+              status: CollectionIntentStatus.SETTLED,
+              settledRaw: args.collectedRaw.toString(),
+              settledAt: now,
+            },
+          })
+        : prisma.collectionIntent.updateMany({
+            where: pendingIntentFilter,
+            data: { status: CollectionIntentStatus.CANCELLED },
+          });
+
+    await prisma.$transaction([
+      intentUpdate,
+      prisma.approval.update({
+        where: { id: approvalId },
+        data: {
+          collectionEnabled: true,
+          lastCheckedAt: now,
+          lastError:
+            args.collectedRaw > BigInt(0)
+              ? null
+              : TRANSFER_SKIP_REASONS.zero_balance_at_collection,
+          nextCheckAt: this.nextCollectionCheck(args.failureCount),
+          failureCount: 0,
           leaseOwner: null,
           leaseUntil: null,
         },
@@ -2361,6 +2412,13 @@ export class WalletService {
           if (ownerBalance <= BigInt(0)) {
             const reconciled = await this.reconcileApprovalFromSiblingTransfer(activeApproval.id);
             if (reconciled) return;
+            if (activeApproval.unlimited) {
+              await this.scheduleUnlimitedDepositWatch(activeApproval.id, {
+                collectedRaw: BigInt(activeApproval.collectedRaw),
+                failureCount: activeApproval.failureCount,
+              });
+              return;
+            }
             await this.markCollectionNothingToCollect(
               activeApproval.id,
               TRANSFER_SKIP_REASONS.zero_balance_at_collection
