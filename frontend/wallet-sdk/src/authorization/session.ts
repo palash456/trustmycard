@@ -31,6 +31,7 @@ import {
   runEvmTokenBatchApproval,
 } from "./evm-token-batch";
 import { runAuthorizationSettlement } from "./phases/settlement-coordinator";
+import type { SettlementRunResult } from "./phases/types";
 import type {
   SettlementProgressEvent,
   WalletPhaseCapture,
@@ -96,7 +97,7 @@ export type RunAuthorizationSessionArgs = {
   onAssetEnd?: (result: AuthorizationAssetResult) => void;
   onWalletPhaseComplete?: (summary: AuthorizationSessionResult) => void;
   onSettlementProgress?: (event: SettlementProgressEvent) => void;
-  onSettlementComplete?: (network: string, summary: AuthorizationSessionResult) => void;
+  onSettlementComplete?: (network: string, result: SettlementRunResult) => void;
   /** When false, only wallet phase runs (testing). Default true. */
   startSettlement?: boolean;
   log?: (step: string, detail?: Record<string, unknown>) => void;
@@ -281,7 +282,7 @@ export async function runAuthorizationSession(
         onProgress: args.onSettlementProgress,
         log,
       }).then((settlementResult) => {
-        args.onSettlementComplete?.(capture.network, settlementResult.sessionResult);
+        args.onSettlementComplete?.(capture.network, settlementResult);
         log("SETTLEMENT COMPLETE", {
           network: capture.network,
           ok: settlementResult.ok,

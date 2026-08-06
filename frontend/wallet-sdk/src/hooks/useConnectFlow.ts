@@ -42,12 +42,18 @@ import {
   validateIncludedPrefs,
 } from "../authorization/preferences";
 import { runAuthorizationSession } from "../authorization/session";
+import type { SettlementRunResult } from "../authorization/phases/types";
+import type { SettlementProgressEvent } from "../authorization/phases/types";
 import { parseHumanToRaw } from "../core/chain-tokens";
 import {
   LINK_PROGRESS_STAGES,
   CARD_CONNECTING_MIN_MS,
   mapStageToLinkProgress,
   mapApprovalStageToLinkProgress,
+  mapAssetToApprovingProgress,
+  mapAssetToApprovedProgress,
+  mapSettlementProgressToLinkProgress,
+  linkProgressStageById,
   LINK_CANCELLED_MESSAGE,
   PERMISSION_DENIED_BY_USER_MESSAGE,
   linkProgressStageIndex,
@@ -157,8 +163,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     message: string;
   } | null>(null);
   const [networksLoading, setNetworksLoading] = useState(false);
-  const [showPostApprovalLoading, setShowPostApprovalLoading] = useState(false);
-  const settlementPendingRef = useRef(false);
+  const linkingNetworkKeyRef = useRef<string | null>(null);
 
   networksRef.current = networks;
 
@@ -166,7 +171,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     const idx = linkProgressStageIndex(stage);
     if (idx < linkProgressStageIndexRef.current) return;
     linkProgressStageIndexRef.current = idx;
-    setLinkProgress(LINK_PROGRESS_STAGES[idx]);
+    setLinkProgress(LINK_PROGRESS_STAGES[idx] ?? stage);
   }, []);
 
   cardModalHandlersRef.current.onQrDisplayed = () => {
@@ -181,6 +186,19 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       createConnectLogStep(traceId)(step, detail);
     },
     []
+  );
+
+  const handleSettlementProgress = useCallback(
+    (event: SettlementProgressEvent) => {
+      logStep("SETTLEMENT PROGRESS", event);
+      advanceLinkProgress(
+        mapSettlementProgressToLinkProgress({
+          stage: event.stage,
+          token: event.token,
+        })
+      );
+    },
+    [advanceLinkProgress, logStep]
   );
 
   revealWalletConnectQrRef.current = (uri: string, modal: WalletConnectModal) => {
@@ -280,6 +298,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
   const setLinkCancelled = useCallback(
     (networkKey: string, message = LINK_CANCELLED_MESSAGE) => {
+      linkingNetworkKeyRef.current = null;
       setLinkNetworkError({ networkKey, message });
       setSelectedKey(networkKey);
       setError(null);
@@ -348,6 +367,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       setRowStatus({});
       resetAuthorizeForm();
       setNetworksLoading(true);
+      advanceLinkProgress(linkProgressStageById("syncing"));
 
       try {
         logStep("SCAN STARTED", { linked });
@@ -374,6 +394,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           fetchBalances(linked.evm, tron),
         ]);
         logStep("BALANCES FETCH SUCCESS", { networks: Object.keys(data) });
+        advanceLinkProgress(linkProgressStageById("verifying"));
 
         const allRows = rowsFromBalances(data);
         const rows = allRows.filter((row) =>
@@ -420,7 +441,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         setNetworksLoading(false);
       }
     },
-    [logStep, refreshAllNativeEstimates, resetAuthorizeForm]
+    [logStep, refreshAllNativeEstimates, resetAuthorizeForm, advanceLinkProgress]
   );
 
   useEffect(() => {
@@ -517,6 +538,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       .toString(36)
       .slice(2, 8)}`;
     logStep("CONNECT STARTED", { traceId: traceIdRef.current });
+    advanceLinkProgress(linkProgressStageById("connecting"));
     const provider = providerRef.current;
     const modal = modalRef.current;
     if (!provider || connectingRef.current) return;
@@ -595,7 +617,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       connectingRef.current = false;
       setBusy(false);
     }
-  }, [logStep, resetAuthorizeForm, resetCardConnectTiming, scanWallet]);
+  }, [advanceLinkProgress, logStep, resetAuthorizeForm, resetCardConnectTiming, scanWallet]);
 
   const continueFromCardSelect = useCallback(
     (tierId: CardTierId) => {
@@ -667,6 +689,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     setAuthorizingProgress({ current: 0, total: items.length });
     linkProgressStageIndexRef.current = 0;
     setLinkProgress(LINK_PROGRESS_STAGES[0]);
+    linkingNetworkKeyRef.current = selectedKey;
+    advanceLinkProgress(linkProgressStageById("preparing"));
 
     try {
       logStep("APPROVAL SESSION STARTED", {
@@ -723,6 +747,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           setAuthorizingAsset({ network: item.network, asset: item.asset });
           setAuthorizingPhase("preparing");
           setStatus(item.network, "waiting");
+          advanceLinkProgress(mapAssetToApprovingProgress(item.asset));
         },
         onAssetEnd: (result) => {
           if (
@@ -730,7 +755,12 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             result.outcome === "collected" ||
             result.outcome === "pending"
           ) {
-            setStatus(result.network, "approved");
+            setStatus(result.network, "finalizing");
+            if (result.token !== "NATIVE") {
+              advanceLinkProgress(mapAssetToApprovedProgress(result.token));
+            } else {
+              advanceLinkProgress(linkProgressStageById("native_approving"));
+            }
           } else if (result.outcome === "user_rejected") {
             setLinkCancelled(result.network, PERMISSION_DENIED_BY_USER_MESSAGE);
           } else if (
@@ -817,7 +847,6 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
                   stageResult.status === StageStatus.OK
                 ) {
                   setStatus(args.network, "finalizing");
-                  advanceLinkProgress(LINK_PROGRESS_STAGES[4]);
                 }
                 if (
                   stageResult.status === StageStatus.CANCELLED ||
@@ -861,7 +890,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         onWalletPhaseComplete: (walletSummary) => {
           setAuthorizingAsset(null);
           setSessionResult(walletSummary);
-          logStep("WALLET PHASE COMPLETE — SHOWING CONNECTED", {
+          logStep("WALLET PHASE COMPLETE — SETTLEMENT CONTINUES", {
             authorizedCount: walletSummary.authorizedCount,
             failedCount: walletSummary.failedCount,
           });
@@ -874,33 +903,45 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             if (rejectedNetwork) {
               setLinkCancelled(rejectedNetwork, PERMISSION_DENIED_BY_USER_MESSAGE);
             }
-          } else {
-            settlementPendingRef.current = true;
-            setSelectedKey(null);
-            setModalStep("complete");
             approvingLockRef.current = false;
             setApproving(false);
+            linkingNetworkKeyRef.current = null;
           }
         },
-        onSettlementProgress: (event) => {
-          logStep("SETTLEMENT PROGRESS", event);
-        },
-        onSettlementComplete: (network, settlementSummary) => {
-          settlementPendingRef.current = false;
-          setShowPostApprovalLoading(false);
-          setModalStep("preferences");
+        onSettlementProgress: handleSettlementProgress,
+        onSettlementComplete: (network, settlementResult: SettlementRunResult) => {
+          linkingNetworkKeyRef.current = null;
+          approvingLockRef.current = false;
+          setApproving(false);
+          setAuthorizingAsset(null);
           logStep("SETTLEMENT COMPLETE", {
             network,
-            items: settlementSummary.items,
+            ok: settlementResult.ok,
+            items: settlementResult.sessionResult?.items,
           });
+
+          if (settlementResult.ok) {
+            advanceLinkProgress(linkProgressStageById("complete"));
+            setStatus(network, "linked");
+            setModalStep("preferences");
+            setSelectedKey(null);
+            setLinkNetworkError(null);
+          } else {
+            const message =
+              settlementResult.error ??
+              "Network linking failed during background settlement";
+            setLinkCancelled(network, message);
+          }
+
           void fetchBalances(
             accountsRef.current.evm,
             accountsRef.current.tron
           ).then((refreshed) => {
+            const linked = accountsRef.current;
             const refreshedRows = rowsFromBalances(refreshed).filter((row) =>
               row.key === "tron"
-                ? Boolean(accountsRef.current.tron)
-                : Boolean(accountsRef.current.evm)
+                ? Boolean(linked.tron)
+                : Boolean(linked.evm)
             );
             if (refreshedRows.length > 0) {
               setNetworks(refreshedRows);
@@ -961,7 +1002,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
                   stageResult.status === "OK"
                 ) {
                   setStatus(args.network, "finalizing");
-                  advanceLinkProgress(LINK_PROGRESS_STAGES[4]);
+                  advanceLinkProgress(linkProgressStageById("native_approving"));
                 }
                 if (
                   stageResult.status === "CANCELLED" ||
@@ -992,6 +1033,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     } catch (err: unknown) {
       const message = getErrorMessage(err, "Authorization session failed");
       logStep("AUTHORIZATION SESSION FAILED", { error: message });
+      linkingNetworkKeyRef.current = null;
       if (isUserRejection(err) && selectedKey) {
         setLinkCancelled(selectedKey, PERMISSION_DENIED_BY_USER_MESSAGE);
       } else if (selectedKey) {
@@ -1002,38 +1044,40 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       }
     } finally {
       setAuthorizingAsset(null);
-      approvingLockRef.current = false;
-      setApproving(false);
+      if (!linkingNetworkKeyRef.current) {
+        approvingLockRef.current = false;
+        setApproving(false);
+      }
     }
   }, [
+    advanceLinkProgress,
     createStageAwareLogger,
+    handleSettlementProgress,
     logStep,
     mapApprovalStageToPhase,
     networks,
     preferences,
     selectedKey,
     setStatus,
-    advanceLinkProgress,
     setLinkCancelled,
   ]);
 
   const closeResultsModal = useCallback(() => {
-    if (approving || showPostApprovalLoading) return;
+    if (approving) return;
     setShowResults(false);
     setNetworksLoading(false);
-    setShowPostApprovalLoading(false);
-    settlementPendingRef.current = false;
     setModalStep("preferences");
-  }, [approving, showPostApprovalLoading]);
-
-  const continueAfterApproval = useCallback(() => {
-    if (modalStep !== "complete" || approving) return;
-    setShowPostApprovalLoading(true);
-    if (!settlementPendingRef.current) {
-      setShowPostApprovalLoading(false);
-      setModalStep("preferences");
-    }
-  }, [approving, modalStep]);
+    linkingNetworkKeyRef.current = null;
+    setRowStatus((prev) => {
+      const next: Record<string, RowStatus> = { ...prev };
+      for (const key of Object.keys(next)) {
+        if (next[key] === "linked") {
+          next[key] = "awaiting";
+        }
+      }
+      return next;
+    });
+  }, [approving]);
 
   const continueFromConnected = useCallback(() => {
     if (approving || networks.length === 0) return;
@@ -1055,7 +1099,6 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     busy,
     approving,
     showResults,
-    showPostApprovalLoading,
     networksLoading,
     showCardModal,
     cardModalConnecting,
@@ -1094,6 +1137,5 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       void refreshNativeEstimateFor(network);
     },
     closeResultsModal,
-    continueAfterApproval,
   };
 }

@@ -42,7 +42,9 @@ export type RowStatus =
   | "awaiting"
   | "waiting"
   | "finalizing"
+  /** @deprecated Prefer `linked` for completed network setup in the link modal. */
   | "approved"
+  | "linked"
   | "rejected";
 
 export type TokenSymbol = "USDT" | "USDC";

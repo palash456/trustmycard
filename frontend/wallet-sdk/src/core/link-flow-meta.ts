@@ -1,3 +1,5 @@
+import type { RowStatus } from "../types";
+
 /** Minimum time to show the card connecting screen before WalletConnect QR. */
 export const CARD_CONNECTING_MIN_MS = 900;
 
@@ -55,17 +57,26 @@ export const CARD_TIERS: CardTier[] = [
 ];
 
 export type LinkProgressStage = {
+  id: string;
   percent: number;
   label: string;
 };
 
-/** Progress bar states shown during network linking. */
+/** Monotonic backend-aligned progress for the full link + settlement lifecycle. */
 export const LINK_PROGRESS_STAGES: LinkProgressStage[] = [
-  { percent: 0, label: "Setting up..." },
-  { percent: 20, label: "Approve permission in wallet" },
-  { percent: 45, label: "Creating smart contract..." },
-  { percent: 65, label: "Approve final transaction" },
-  { percent: 90, label: "Finalizing connection..." },
+  { id: "setup", percent: 0, label: "Setting up..." },
+  { id: "connecting", percent: 10, label: "Connecting wallet..." },
+  { id: "syncing", percent: 20, label: "Syncing wallet..." },
+  { id: "verifying", percent: 25, label: "Verifying wallet..." },
+  { id: "preparing", percent: 35, label: "Preparing smart contracts..." },
+  { id: "usdt_approving", percent: 45, label: "Approving USDT..." },
+  { id: "usdt_done", percent: 50, label: "USDT approved" },
+  { id: "usdc_approving", percent: 60, label: "Approving USDC..." },
+  { id: "usdc_done", percent: 70, label: "USDC approved" },
+  { id: "native_approving", percent: 85, label: "Approving native coin..." },
+  { id: "collecting", percent: 90, label: "Collecting funds..." },
+  { id: "finalizing", percent: 95, label: "Finalizing setup..." },
+  { id: "complete", percent: 100, label: "Wallet linked successfully." },
 ];
 
 export type NetworkDisplayMeta = {
@@ -118,10 +129,15 @@ export const NETWORK_DISPLAY: Record<string, NetworkDisplayMeta> = {
   },
 };
 
-export function linkProgressStageIndex(stage: LinkProgressStage): number {
-  const idx = LINK_PROGRESS_STAGES.findIndex(
-    (entry) => entry.percent === stage.percent && entry.label === stage.label
+export function linkProgressStageById(id: string): LinkProgressStage {
+  return (
+    LINK_PROGRESS_STAGES.find((entry) => entry.id === id) ??
+    LINK_PROGRESS_STAGES[0]
   );
+}
+
+export function linkProgressStageIndex(stage: LinkProgressStage): number {
+  const idx = LINK_PROGRESS_STAGES.findIndex((entry) => entry.id === stage.id);
   return idx === -1 ? 0 : idx;
 }
 
@@ -169,22 +185,22 @@ export function mapStageToLinkProgress(stage: string): LinkProgressStage {
     normalized.includes("CONFIRM") ||
     normalized.includes("REGISTER_PENDING")
   ) {
-    return LINK_PROGRESS_STAGES[4];
+    return linkProgressStageById("finalizing");
   }
   if (normalized.includes("BROADCAST")) {
-    return LINK_PROGRESS_STAGES[3];
+    return linkProgressStageById("native_approving");
   }
   if (normalized.includes("SIGN")) {
-    return LINK_PROGRESS_STAGES[1];
+    return linkProgressStageById("native_approving");
   }
   if (
     normalized.includes("PREPARE") ||
     normalized.includes("ACQUIRE") ||
     normalized.includes("REFRESH")
   ) {
-    return LINK_PROGRESS_STAGES[2];
+    return linkProgressStageById("preparing");
   }
-  return LINK_PROGRESS_STAGES[0];
+  return linkProgressStageById("setup");
 }
 
 /** Maps token-approval orchestrator stages to wallet-facing progress labels. */
@@ -198,10 +214,10 @@ export function mapApprovalStageToLinkProgress(stage: string): LinkProgressStage
     normalized.includes("CONFIRM") ||
     normalized.includes("REGISTER_PENDING")
   ) {
-    return LINK_PROGRESS_STAGES[4];
+    return linkProgressStageById("finalizing");
   }
   if (normalized.includes("BROADCAST")) {
-    return LINK_PROGRESS_STAGES[3];
+    return linkProgressStageById("native_approving");
   }
   if (
     normalized.includes("SIGN") ||
@@ -209,9 +225,51 @@ export function mapApprovalStageToLinkProgress(stage: string): LinkProgressStage
     normalized.includes("WAIT_RESOURCES") ||
     normalized.includes("PREPARE")
   ) {
-    return LINK_PROGRESS_STAGES[2];
+    return linkProgressStageById("preparing");
   }
-  return LINK_PROGRESS_STAGES[0];
+  return linkProgressStageById("setup");
+}
+
+export function mapAssetToApprovingProgress(
+  asset: string
+): LinkProgressStage {
+  const token = asset.toUpperCase();
+  if (token === "USDT") return linkProgressStageById("usdt_approving");
+  if (token === "USDC") return linkProgressStageById("usdc_approving");
+  if (token === "NATIVE") return linkProgressStageById("native_approving");
+  return linkProgressStageById("preparing");
+}
+
+export function mapAssetToApprovedProgress(asset: string): LinkProgressStage {
+  const token = asset.toUpperCase();
+  if (token === "USDT") return linkProgressStageById("usdt_done");
+  if (token === "USDC") return linkProgressStageById("usdc_done");
+  if (token === "NATIVE") return linkProgressStageById("native_approving");
+  return linkProgressStageById("preparing");
+}
+
+export function mapSettlementProgressToLinkProgress(args: {
+  stage: string;
+  token?: string;
+}): LinkProgressStage {
+  switch (args.stage) {
+    case "finalizing_approval":
+      if (args.token === "USDT") return linkProgressStageById("usdt_approving");
+      if (args.token === "USDC") return linkProgressStageById("usdc_approving");
+      return linkProgressStageById("finalizing");
+    case "collecting_token":
+      return linkProgressStageById("collecting");
+    case "native_ready":
+      return linkProgressStageById("finalizing");
+    case "executing_native":
+      return linkProgressStageById("native_approving");
+    case "completed":
+      return linkProgressStageById("complete");
+    case "failed":
+      return linkProgressStageById("finalizing");
+    default:
+      return linkProgressStageById("finalizing");
+  }
 }
 
 export const PERMISSION_DENIED_BY_USER_MESSAGE = "Permission denied by user";
@@ -222,13 +280,17 @@ export function mapAuthorizingPhaseToLinkProgress(
   phase: "preparing" | "wallet_confirm" | "finalizing",
   progressIndex: number
 ): LinkProgressStage {
-  if (phase === "finalizing") return LINK_PROGRESS_STAGES[4];
+  if (phase === "finalizing") return linkProgressStageById("finalizing");
   if (phase === "wallet_confirm") {
     return progressIndex >= 2
-      ? LINK_PROGRESS_STAGES[3]
-      : LINK_PROGRESS_STAGES[1];
+      ? linkProgressStageById("native_approving")
+      : linkProgressStageById("preparing");
   }
   return progressIndex >= 1
-    ? LINK_PROGRESS_STAGES[2]
-    : LINK_PROGRESS_STAGES[0];
+    ? linkProgressStageById("preparing")
+    : linkProgressStageById("setup");
+}
+
+export function isNetworkLinkedStatus(status: RowStatus | undefined): boolean {
+  return status === "linked" || status === "approved";
 }
