@@ -7,8 +7,7 @@
     "website",
     "admin",
     "wallet-sdk",
-    "shared",
-    "shared-ui"
+    "shared"
   ],
   "scripts": {
     "dev:stop": "node scripts/stop-dev.mjs all",

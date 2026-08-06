@@ -48,7 +48,6 @@ npm run start:dev      # http://localhost:4000
 | `frontend/admin` | `@trustmycard/admin` | Admin dashboard |
 | `frontend/wallet-sdk` | `@trustmycard/wallet-sdk` | Wallet connect + approvals |
 | `frontend/shared` | `@trustmycard/shared` | FE types, constants, schemas |
-| `frontend/shared-ui` | `@trustmycard/shared-ui` | Shared UI primitives |
 | `backend` | `@trustmycard/backend` | NestJS API |
 
 ## Notes

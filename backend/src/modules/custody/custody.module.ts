@@ -6,7 +6,7 @@ import {
 import { COLLECTION_SIGNER } from "./signer";
 
 /**
- * Custody — key management, vault, signers, and spending policies.
+ * Custody — collection signing and key handling.
  * Isolate and tightly permission everything in this module.
  */
 @Module({

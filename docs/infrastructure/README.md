@@ -1,6 +1,6 @@
 # Infrastructure
 
-Nginx, CI, and Terraform assets for Trust My Card deployments.
+Nginx configs and deployment guides for Trust My Card.
 
 ## Guides
 

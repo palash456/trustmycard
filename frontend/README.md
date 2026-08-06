@@ -8,7 +8,6 @@ frontend/
 ├── admin/           # @trustmycard/admin — admin dashboard
 ├── wallet-sdk/      # @trustmycard/wallet-sdk — wallet integration
 ├── shared/          # @trustmycard/shared — types, constants, schemas
-├── shared-ui/       # @trustmycard/shared-ui — shared UI primitives
 └── scripts/         # dev helpers (stop-dev)
 ```
 

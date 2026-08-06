@@ -1,6 +1,5 @@
 /**
  * Chain-agnostic blockchain provider interfaces.
- * Concrete adapters live under providers/<chain>/<vendor>/.
  */
 
 export interface RpcProvider {
