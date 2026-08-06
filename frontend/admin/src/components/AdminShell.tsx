@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Activity,
   BarChart3,
+  FlaskConical,
   GitBranch,
   LayoutDashboard,
   ScrollText,
@@ -69,7 +70,10 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: "Administration",
-    items: [{ href: "/system", label: "System", icon: Server }],
+    items: [
+      { href: "/system", label: "System", icon: Server },
+      { href: "/developer-test", label: "Developer Test", icon: FlaskConical },
+    ],
   },
 ];
 

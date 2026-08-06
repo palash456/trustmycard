@@ -24,6 +24,7 @@ import { PipelineBuilderService } from "./pipeline/pipeline-builder.service";
 import { ActivityFeedService, type ActivityFeedSource } from "./activity-feed.service";
 import { AdminCollectionsService } from "./admin-collections.service";
 import { AdminSettlementService } from "./admin-settlement.service";
+import { DeveloperTestsService } from "./developer-tests.service";
 
 @ApiTags("Admin")
 @ApiSecurity("adminApiKey")
@@ -40,7 +41,8 @@ export class AdminController {
     private readonly observability: ObservabilityService,
     private readonly activityFeed: ActivityFeedService,
     private readonly collections: AdminCollectionsService,
-    private readonly settlement: AdminSettlementService
+    private readonly settlement: AdminSettlementService,
+    private readonly developerTests: DeveloperTestsService
   ) {}
 
   @Get("analytics")
@@ -323,6 +325,27 @@ export class AdminController {
   @ApiOperation({ summary: "Release stuck collector leases" })
   releaseLeases() {
     return this.adminOps.releaseLeases();
+  }
+
+  @Get("developer-tests")
+  @ApiOperation({ summary: "Discover all monorepo test suites (dev only)" })
+  listDeveloperTests() {
+    return this.developerTests.getCatalog();
+  }
+
+  @Post("developer-tests/run")
+  @ApiOperation({ summary: "Run a single test suite by id (dev only)" })
+  runDeveloperTest(@Body() body: { suiteId?: string }) {
+    if (!body.suiteId?.trim()) {
+      throw new NotFoundException("suiteId is required");
+    }
+    return this.developerTests.runSuite(body.suiteId.trim());
+  }
+
+  @Post("developer-tests/run-all")
+  @ApiOperation({ summary: "Run every discovered test suite (dev only)" })
+  runAllDeveloperTests() {
+    return this.developerTests.runAll();
   }
 
   @Post("dev/restart-backend")
