@@ -63,6 +63,17 @@ export type TestRunCaseResult = {
   error?: string;
 };
 
+export type ConnectFlowRunSummary = {
+  platformEnvSource: string;
+  spenderEvm: string | null;
+  spenderTron: string | null;
+  enabledNetworks: string[];
+  testUserEvm: string | null;
+  testUserTron: string | null;
+  collectorTransferCount: number;
+  summary: string;
+};
+
 export type TestRunResult = {
   suiteId: string;
   ok: boolean;
@@ -77,6 +88,7 @@ export type TestRunResult = {
     total: number;
     cases: TestRunCaseResult[];
   };
+  connectFlowSummary?: ConnectFlowRunSummary;
 };
 
 type PackageConfig = {
@@ -297,15 +309,7 @@ export class DeveloperTestsService {
       });
       const durationMs = Date.now() - started;
       const report = parseTapOutput(stdout);
-      return {
-        suiteId,
-        ok: true,
-        exitCode: 0,
-        durationMs,
-        stdout,
-        stderr,
-        report,
-      };
+      return this.finalizeRunResult(suiteId, true, 0, durationMs, stdout, stderr, report);
     } catch (err: unknown) {
       const durationMs = Date.now() - started;
       const execErr = err as {
@@ -317,16 +321,45 @@ export class DeveloperTestsService {
       const stdout = execErr.stdout ?? "";
       const stderr = [execErr.stderr, execErr.message].filter(Boolean).join("\n");
       const report = parseTapOutput(stdout);
-      return {
+      return this.finalizeRunResult(
         suiteId,
-        ok: false,
-        exitCode: typeof execErr.code === "number" ? execErr.code : 1,
+        false,
+        typeof execErr.code === "number" ? execErr.code : 1,
         durationMs,
         stdout,
         stderr,
-        report,
-      };
+        report
+      );
     }
+  }
+
+  private finalizeRunResult(
+    suiteId: string,
+    ok: boolean,
+    exitCode: number,
+    durationMs: number,
+    stdout: string,
+    stderr: string,
+    report: TestRunResult["report"]
+  ): TestRunResult {
+    const result: TestRunResult = {
+      suiteId,
+      ok,
+      exitCode,
+      durationMs,
+      stdout,
+      stderr,
+      report,
+    };
+
+    if (ok && suiteId === FULL_E2E_SUITE_ID) {
+      const connectFlowSummary = parseConnectFlowRunSummary(stdout);
+      if (connectFlowSummary) {
+        result.connectFlowSummary = connectFlowSummary;
+      }
+    }
+
+    return result;
   }
 
   async runAll(): Promise<{ results: TestRunResult[]; summary: TestRunResult["report"] }> {
@@ -830,6 +863,81 @@ function matchesDefaultScript(relFile: string, patterns: string[]): boolean {
     }
     return normalized === p || normalized.endsWith(`/${p}`);
   });
+}
+
+function parseConnectFlowRunSummary(stdout: string): ConnectFlowRunSummary | undefined {
+  const normalized = stdout.replace(/\\n/g, "\n");
+  const chunks = normalized.split("=== Connect flow test report ===").slice(1);
+  if (chunks.length === 0) return undefined;
+
+  const clean = (value: string | undefined): string | null => {
+    if (!value) return null;
+    const trimmed = value.replace(/\\+$/g, "").trim();
+    return trimmed && trimmed !== "(unset)" ? trimmed : null;
+  };
+
+  let spenderEvm: string | null = null;
+  let spenderTron: string | null = null;
+  let platformEnvSource = "platform.env";
+  let enabledNetworks: string[] = [];
+  let collectorTransferCount = 0;
+  const userAddresses = new Set<string>();
+
+  for (const chunk of chunks) {
+    spenderEvm = spenderEvm ?? clean(chunk.match(/spenderEvm:\s*(\S+)/)?.[1]);
+    spenderTron = spenderTron ?? clean(chunk.match(/spenderTron:\s*(\S+)/)?.[1]);
+    if (!platformEnvSource || platformEnvSource === "platform.env") {
+      platformEnvSource = clean(chunk.match(/platform\.env:\s*(.+)/)?.[1]) ?? platformEnvSource;
+    }
+    if (enabledNetworks.length === 0) {
+      enabledNetworks =
+        chunk
+          .match(/enabledNetworks:\s*(.+)/)?.[1]
+          ?.split(",")
+          .map((n) => clean(n))
+          .filter((n): n is string => Boolean(n)) ?? [];
+    }
+
+    for (const match of chunk.matchAll(/\bfrom=([0-9a-zA-Z]+)/g)) {
+      userAddresses.add(match[1]!.replace(/\\+$/g, ""));
+    }
+
+    const transfers = (chunk.match(/\[[\w]+\/[\w]+\] tx=/g) ?? []).length;
+    if (transfers > collectorTransferCount) {
+      collectorTransferCount = transfers;
+    }
+  }
+
+  let testUserEvm: string | null = null;
+  let testUserTron: string | null = null;
+  for (const addr of userAddresses) {
+    if (addr.startsWith("T")) testUserTron = addr;
+    else if (addr.startsWith("0x")) testUserEvm = addr;
+  }
+
+  const summaryParts = [
+    "All checks passed.",
+    `Settings loaded from ${platformEnvSource}.`,
+    spenderEvm ? `Platform spender (EVM networks): ${spenderEvm}.` : null,
+    spenderTron ? `Platform spender (TRON): ${spenderTron}.` : null,
+    testUserEvm ? `Mock user wallet (EVM): ${testUserEvm}.` : null,
+    testUserTron ? `Mock user wallet (TRON): ${testUserTron}.` : null,
+    enabledNetworks.length > 0 ? `Networks covered: ${enabledNetworks.join(", ")}.` : null,
+    collectorTransferCount > 0
+      ? `${collectorTransferCount} simulated collector transfer(s) moved tokens from user wallets to the platform spender.`
+      : "Wallet approvals were verified against the platform spender addresses.",
+  ].filter(Boolean);
+
+  return {
+    platformEnvSource,
+    spenderEvm,
+    spenderTron,
+    enabledNetworks,
+    testUserEvm,
+    testUserTron,
+    collectorTransferCount,
+    summary: summaryParts.join(" "),
+  };
 }
 
 function parseTapOutput(stdout: string): TestRunResult["report"] {

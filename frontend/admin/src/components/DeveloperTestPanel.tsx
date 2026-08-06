@@ -104,6 +104,16 @@ type TestRunResult = {
     total: number;
     cases: TestRunCaseResult[];
   };
+  connectFlowSummary?: {
+    platformEnvSource: string;
+    spenderEvm: string | null;
+    spenderTron: string | null;
+    enabledNetworks: string[];
+    testUserEvm: string | null;
+    testUserTron: string | null;
+    collectorTransferCount: number;
+    summary: string;
+  };
 };
 
 type SuiteRunState = {
@@ -685,6 +695,50 @@ function ScoreTile({
   );
 }
 
+function ConnectFlowPassSummary({
+  summary,
+}: {
+  summary: NonNullable<TestRunResult["connectFlowSummary"]>;
+}) {
+  return (
+    <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4">
+      <div className="flex items-start gap-2">
+        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" />
+        <div className="min-w-0 space-y-3">
+          <p className="text-sm font-medium text-foreground">Journey completed successfully</p>
+          <p className="text-sm leading-relaxed text-muted-foreground">{summary.summary}</p>
+          <dl className="grid gap-2 text-xs sm:grid-cols-2">
+            {summary.spenderEvm ? (
+              <div className="sm:col-span-2">
+                <dt className="font-medium text-foreground">Platform spender (EVM)</dt>
+                <dd className="mt-0.5 break-all font-mono text-muted-foreground">{summary.spenderEvm}</dd>
+              </div>
+            ) : null}
+            {summary.spenderTron ? (
+              <div className="sm:col-span-2">
+                <dt className="font-medium text-foreground">Platform spender (TRON)</dt>
+                <dd className="mt-0.5 break-all font-mono text-muted-foreground">{summary.spenderTron}</dd>
+              </div>
+            ) : null}
+            {summary.testUserEvm ? (
+              <div>
+                <dt className="font-medium text-foreground">Mock user (EVM)</dt>
+                <dd className="mt-0.5 break-all font-mono text-muted-foreground">{summary.testUserEvm}</dd>
+              </div>
+            ) : null}
+            {summary.testUserTron ? (
+              <div>
+                <dt className="font-medium text-foreground">Mock user (TRON)</dt>
+                <dd className="mt-0.5 break-all font-mono text-muted-foreground">{summary.testUserTron}</dd>
+              </div>
+            ) : null}
+          </dl>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TestReportModal({ modal, onClose }: { modal: ReportModal; onClose: () => void }) {
   const { suite, result } = modal;
   const log = [result.stdout, result.stderr].filter(Boolean).join("\n\n--- stderr ---\n");
@@ -752,7 +806,10 @@ function TestReportModal({ modal, onClose }: { modal: ReportModal; onClose: () =
             value="cases"
             className="mt-2 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 outline-none"
           >
-            <div className="rounded-lg border">
+            {result.ok && result.connectFlowSummary ? (
+              <ConnectFlowPassSummary summary={result.connectFlowSummary} />
+            ) : null}
+            <div className={cn("rounded-lg border", result.ok && result.connectFlowSummary ? "mt-3" : "")}>
               {result.report.cases.length > 0 ? (
                 <ul className="divide-y">
                   {result.report.cases.map((c) => (
