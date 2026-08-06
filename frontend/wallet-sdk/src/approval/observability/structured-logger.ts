@@ -26,16 +26,26 @@ export function createStructuredApprovalLogger(
     detail?: Record<string, unknown>
   ) => {
     const ctx = options.getContext?.();
+    const userDenied =
+      detail?.userRejected === true ||
+      detail?.failureKind === "USER_REJECTION" ||
+      /USER_REJECTED|USER_REJECTION|PERMISSION_DENIED/i.test(event);
+    const effectiveLevel = userDenied ? "warn" : level;
     const merged = compactLogDetail({
       event,
       ...(ctx ? buildApprovalLogContext(ctx) : {}),
       ...(detail ?? {}),
     });
-    options.base[level](event, merged);
+    options.base[effectiveLevel](event, merged);
 
     if (ctx) {
-      const logLevel = level === "error" ? "error" : level === "warn" ? "warn" : "info";
-      const isFailure = level === "error";
+      const logLevel =
+        effectiveLevel === "error"
+          ? "error"
+          : effectiveLevel === "warn"
+            ? "warn"
+            : "info";
+      const isFailure = effectiveLevel === "error";
       createLogger({
         module: "approval",
         context: {
@@ -49,8 +59,8 @@ export function createStructuredApprovalLogger(
         level: logLevel,
         operation: event.toLowerCase().replace(/\s+/g, "_"),
         stage: event,
-        status: isFailure ? "failure" : "in_progress",
-        message: event,
+        status: userDenied ? "cancelled" : isFailure ? "failure" : "in_progress",
+        message: userDenied ? "Permission denied by user" : event,
         context: merged,
         token: ctx.request.token,
         txHash: (detail?.txHash as string | undefined) ?? ctx.broadcast?.txHash ?? undefined,

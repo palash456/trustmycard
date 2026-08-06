@@ -16,10 +16,12 @@ import { createStructuredApprovalLogger } from "./observability/structured-logge
 import {
   computeBackoffDelay,
   isStageRetryAllowed,
+  isUserDeniedStageResult,
   resolveRetryPolicy,
   sleepMs,
   stageHasArtifact,
 } from "./resilience";
+import { PERMISSION_DENIED_BY_USER_MESSAGE } from "../core/link-flow-meta";
 import {
   ApprovalStageName,
   StageStatus,
@@ -183,21 +185,30 @@ export class ApprovalOrchestrator {
 
         if (!isStageSuccess(result)) {
           await persistCheckpoint(store, ctx, stage.name, deps, result.error);
-          logger.error("APPROVAL_ORCHESTRATION_FAILED", {
+          const userDenied = isUserDeniedStageResult(result);
+          const failureDetail = {
             stage: result.stage,
             status: result.status,
             failureKind: result.failureKind ?? null,
             error: result.error,
-            userRejected: result.userRejected ?? false,
+            userRejected: userDenied,
             attempt: result.attempt ?? null,
-          });
+          };
+
+          if (userDenied) {
+            logger.warn("APPROVAL_ORCHESTRATION_USER_REJECTED", failureDetail);
+          } else {
+            logger.error("APPROVAL_ORCHESTRATION_FAILED", failureDetail);
+          }
 
           return {
             ok: false,
             status: result.status,
             failedStage: result.stage,
-            error: result.error,
-            userRejected: result.userRejected,
+            error: userDenied
+              ? PERMISSION_DENIED_BY_USER_MESSAGE
+              : result.error,
+            userRejected: userDenied,
             context: ctx,
             txHash: ctx.broadcast?.txHash,
             approvalId: ctx.persisted?.approvalId ?? null,

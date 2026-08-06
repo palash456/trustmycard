@@ -156,7 +156,7 @@ function CancelledLinkingNetworkRow({
               {displayName}
             </span>
             <span className="rounded bg-red-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-              Cancelled
+              Denied
             </span>
           </span>
           <span className="mt-0.5 block text-xs font-medium text-red-600">

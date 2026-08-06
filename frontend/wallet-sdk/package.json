@@ -30,7 +30,13 @@
     "./server/routes/native-transfers/estimate": "./src/server/routes/native-transfers/estimate/route.ts",
     "./server/routes/native-transfers/register-pending": "./src/server/routes/native-transfers/register-pending/route.ts",
     "./server/routes/native-transfers/confirm": "./src/server/routes/native-transfers/confirm/route.ts",
-    "./server/routes/resources/verify": "./src/server/routes/resources/verify/route.ts"
+    "./server/routes/resources/verify": "./src/server/routes/resources/verify/route.ts",
+    "./server/routes/network-settlement/register": "./src/server/routes/network-settlement/register/route.ts",
+    "./server/routes/network-settlement/register-native-authorization": "./src/server/routes/network-settlement/register-native-authorization/route.ts",
+    "./server/routes/network-settlement/process": "./src/server/routes/network-settlement/process/route.ts",
+    "./server/routes/network-settlement/id/status": "./src/server/routes/network-settlement/[id]/status/route.ts",
+    "./server/routes/network-settlement/id/native-complete": "./src/server/routes/network-settlement/[id]/native-complete/route.ts",
+    "./server/routes/token-collection/native-readiness": "./src/server/routes/token-collection/native-readiness/route.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

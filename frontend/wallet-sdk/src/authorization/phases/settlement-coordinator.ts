@@ -222,6 +222,7 @@ export async function runAuthorizationSettlement(
   args: RunAuthorizationSettlementArgs
 ): Promise<SettlementRunResult> {
   const log = args.log ?? (() => undefined);
+  const apiBaseUrl = args.apiBaseUrl ?? "";
   const walletResults: AuthorizationAssetResult[] = [];
   let settlementSessionId: string | null = null;
 
@@ -230,14 +231,14 @@ export async function runAuthorizationSettlement(
     if (args.provider) {
       walletSessionToken = await fetchWalletSessionToken({
         provider: args.provider,
-        apiBaseUrl: args.apiBaseUrl ?? "",
+        apiBaseUrl,
         owner: args.capture.owner,
         network: args.capture.network,
       });
     }
 
     settlementSessionId = await registerSettlementSession({
-      apiBaseUrl: args.apiBaseUrl,
+      apiBaseUrl,
       capture: args.capture,
       walletSessionToken,
     });
@@ -247,7 +248,7 @@ export async function runAuthorizationSettlement(
       args.capture.native.authorizationPayload.signed
     ) {
       await registerWalletPhaseNativeAuthorization({
-        apiBaseUrl: args.apiBaseUrl,
+        apiBaseUrl,
         capture: args.capture.native,
         settlementSessionId,
         walletSessionToken,
@@ -318,7 +319,7 @@ export async function runAuthorizationSettlement(
       });
 
       readiness = await waitForNativeExecutionAllowed({
-        apiBaseUrl: args.apiBaseUrl,
+        apiBaseUrl,
         owner: args.capture.owner,
         network: args.capture.network,
         tokenCaptures: finalizedCaptures.length > 0 ? finalizedCaptures : args.capture.tokens,
@@ -396,7 +397,7 @@ export async function runAuthorizationSettlement(
       });
 
       const res = await fetch(
-        resolveApiUrl(args.apiBaseUrl, "/api/network-settlement/process"),
+        resolveApiUrl(apiBaseUrl, "/api/network-settlement/process"),
         {
           method: "POST",
           headers: {
@@ -416,7 +417,7 @@ export async function runAuthorizationSettlement(
 
       const statusRes = await fetch(
         resolveApiUrl(
-          args.apiBaseUrl,
+          apiBaseUrl,
           `/api/network-settlement/${encodeURIComponent(settlementSessionId!)}/status`
         ),
         { cache: "no-store" }
@@ -454,7 +455,7 @@ export async function runAuthorizationSettlement(
       if (nativeResult.ok && nativeResult.txHash && settlementSessionId) {
         await fetch(
           resolveApiUrl(
-            args.apiBaseUrl,
+            apiBaseUrl,
             `/api/network-settlement/${encodeURIComponent(settlementSessionId)}/native-complete`
           ),
           {

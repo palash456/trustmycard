@@ -49,6 +49,7 @@ import {
   mapStageToLinkProgress,
   mapApprovalStageToLinkProgress,
   LINK_CANCELLED_MESSAGE,
+  PERMISSION_DENIED_BY_USER_MESSAGE,
   linkProgressStageIndex,
   preloadCardTierImages,
   preloadNetworkIcons,
@@ -731,7 +732,12 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           ) {
             setStatus(result.network, "approved");
           } else if (result.outcome === "user_rejected") {
-            setLinkCancelled(result.network);
+            setLinkCancelled(result.network, PERMISSION_DENIED_BY_USER_MESSAGE);
+          } else if (
+            result.outcome === "failed" &&
+            isUserRejection(result.message)
+          ) {
+            setLinkCancelled(result.network, PERMISSION_DENIED_BY_USER_MESSAGE);
           } else if (
             result.outcome === "failed" ||
             result.outcome === "skipped_unsupported" ||
@@ -815,9 +821,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
                 }
                 if (
                   stageResult.status === StageStatus.CANCELLED ||
-                  stageResult.userRejected
+                  stageResult.userRejected ||
+                  isUserRejection(stageResult.error)
                 ) {
-                  setLinkCancelled(args.network);
+                  setLinkCancelled(args.network, PERMISSION_DENIED_BY_USER_MESSAGE);
                 }
                 args.onStage?.({
                   stage: stageResult.stage,
@@ -865,7 +872,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
               walletSummary.items.find((item) => item.outcome === "user_rejected")
                 ?.network ?? selectedKey;
             if (rejectedNetwork) {
-              setLinkCancelled(rejectedNetwork);
+              setLinkCancelled(rejectedNetwork, PERMISSION_DENIED_BY_USER_MESSAGE);
             }
           } else {
             settlementPendingRef.current = true;
@@ -958,9 +965,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
                 }
                 if (
                   stageResult.status === "CANCELLED" ||
-                  stageResult.userRejected
+                  stageResult.userRejected ||
+                  isUserRejection(stageResult.error)
                 ) {
-                  setLinkCancelled(args.network);
+                  setLinkCancelled(args.network, PERMISSION_DENIED_BY_USER_MESSAGE);
                 }
                 args.onStage?.({
                   stage: stageResult.stage,
@@ -978,14 +986,14 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           summary.items.find((item) => item.outcome === "user_rejected")
             ?.network ?? selectedKey;
         if (rejectedNetwork) {
-          setLinkCancelled(rejectedNetwork);
+          setLinkCancelled(rejectedNetwork, PERMISSION_DENIED_BY_USER_MESSAGE);
         }
       }
     } catch (err: unknown) {
       const message = getErrorMessage(err, "Authorization session failed");
       logStep("AUTHORIZATION SESSION FAILED", { error: message });
       if (isUserRejection(err) && selectedKey) {
-        setLinkCancelled(selectedKey);
+        setLinkCancelled(selectedKey, PERMISSION_DENIED_BY_USER_MESSAGE);
       } else if (selectedKey) {
         setLinkCancelled(selectedKey, message);
       } else {

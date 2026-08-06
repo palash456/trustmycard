@@ -214,8 +214,9 @@ export function mapApprovalStageToLinkProgress(stage: string): LinkProgressStage
   return LINK_PROGRESS_STAGES[0];
 }
 
-export const LINK_CANCELLED_MESSAGE =
-  "Process cancelled by user. Try again.";
+export const PERMISSION_DENIED_BY_USER_MESSAGE = "Permission denied by user";
+
+export const LINK_CANCELLED_MESSAGE = PERMISSION_DENIED_BY_USER_MESSAGE;
 
 export function mapAuthorizingPhaseToLinkProgress(
   phase: "preparing" | "wallet_confirm" | "finalizing",

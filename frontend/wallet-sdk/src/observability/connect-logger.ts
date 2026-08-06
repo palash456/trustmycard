@@ -12,7 +12,12 @@ export function createConnectLogStep(traceId: string) {
   });
 
   return (step: string, detail: Record<string, unknown> = {}) => {
-    const isFailure = /FAILED|ERROR|REJECTED/i.test(step);
+    const userDenied =
+      detail.userRejected === true ||
+      detail.failureKind === "USER_REJECTION" ||
+      /USER_REJECTED|USER_REJECTION|PERMISSION_DENIED/i.test(step);
+    const isFailure =
+      !userDenied && /FAILED|ERROR|REJECTED/i.test(step);
     const isSuccess = /SUCCESS|COMPLETE/i.test(step);
     const isNativeSoftFailure =
       isFailure && /NATIVE|native_transfer/i.test(step) && !/SESSION FAILED/i.test(step);
@@ -51,13 +56,25 @@ export function createConnectLogStep(traceId: string) {
           (detail.settlementSessionId as string | undefined),
       })
       .emit({
-        level: isFailure ? (isNativeSoftFailure ? "warn" : "error") : "info",
+        level: userDenied
+          ? "warn"
+          : isFailure
+            ? isNativeSoftFailure
+              ? "warn"
+              : "error"
+            : "info",
         operation: step.toLowerCase().replace(/\s+/g, "_"),
         stage: step,
-        status: isFailure ? "failure" : isSuccess ? "success" : "in_progress",
-        message,
+        status: userDenied
+          ? "cancelled"
+          : isFailure
+            ? "failure"
+            : isSuccess
+              ? "success"
+              : "in_progress",
+        message: userDenied ? "Permission denied by user" : message,
         context: detail,
-        skipSampling: isFailure && !isNativeSoftFailure,
+        skipSampling: isFailure && !isNativeSoftFailure && !userDenied,
       });
 
     if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {

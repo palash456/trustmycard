@@ -132,8 +132,30 @@ export function getErrorCode(err) {
         return String(serialized.status);
     return null;
 }
+const USER_REJECTION_MESSAGE_RE = /user rejected|rejected by user|permission denied by user|user denied|user canceled|user cancelled|cancelled by user|canceled by user|request rejected|request aborted|wallet request canceled|wallet request cancelled|disapproved|closed modal|action rejected|transaction was rejected|signature rejected|denied transaction/i;
+/** Standard EIP-1193 / wallet error codes when the user dismisses a prompt. */
+const USER_REJECTION_CODES = new Set([
+    "4001",
+    "5000",
+    "4100",
+    "ACTION_REJECTED",
+    "USER_REJECTED",
+    "USER_DENIED",
+]);
+function isUserRejectionFromMessageOrCode(message, code) {
+    if (code != null && USER_REJECTION_CODES.has(String(code)))
+        return true;
+    return USER_REJECTION_MESSAGE_RE.test(message);
+}
 /** True when the user closed/rejected the wallet permission prompt. */
 export function isUserRejection(err) {
-    const message = getErrorMessage(err, "");
-    return /user rejected|rejected by user|permission denied by user|user denied|user canceled|user cancelled|cancelled by user|canceled by user|request rejected|request aborted|wallet request canceled|wallet request cancelled/i.test(message);
+    const code = getErrorCode(err);
+    if (code && USER_REJECTION_CODES.has(code))
+        return true;
+    const serialized = serializeError(err);
+    if (serialized.cause &&
+        isUserRejectionFromMessageOrCode(serialized.cause.message, serialized.cause.code)) {
+        return true;
+    }
+    return isUserRejectionFromMessageOrCode(serialized.message, serialized.code);
 }

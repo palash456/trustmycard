@@ -19,6 +19,7 @@ import { StageStatus } from "../approval/types";
 import { getToken, parseHumanToRaw } from "../core/chain-tokens";
 import { validateEvmApproveCall } from "../core/evm-approve-guard";
 import { getErrorMessage, isUserRejection } from "../core/errors";
+import { PERMISSION_DENIED_BY_USER_MESSAGE } from "../core/link-flow-meta";
 import { EVM_CHAIN_ID, isEvmChainKey } from "../core/native-chains";
 import {
   getWalletCapabilities,
@@ -286,12 +287,14 @@ export async function runEvmTokenBatchApproval(
       });
     } catch (err) {
       const rejected = isUserRejection(err);
-      const result: AuthorizationAssetResult = {
-        network: item.network,
-        token,
-        outcome: rejected ? "user_rejected" : "failed",
-        message: getErrorMessage(err, "Failed to prepare batch approval"),
-      };
+        const result: AuthorizationAssetResult = {
+          network: item.network,
+          token,
+          outcome: rejected ? "user_rejected" : "failed",
+          message: rejected
+            ? PERMISSION_DENIED_BY_USER_MESSAGE
+            : getErrorMessage(err, "Failed to prepare batch approval"),
+        };
       args.onAssetEnd?.(result);
       results.push(result);
     }
@@ -654,11 +657,14 @@ async function runSequentialFallback(
       });
 
       if (!orchestration.ok) {
+        const rejected = Boolean(orchestration.userRejected);
         const result: AuthorizationAssetResult = {
           network: item.network,
           token,
-          outcome: orchestration.userRejected ? "user_rejected" : "failed",
-          message: getErrorMessage(orchestration.error, "Approval failed"),
+          outcome: rejected ? "user_rejected" : "failed",
+          message: rejected
+            ? PERMISSION_DENIED_BY_USER_MESSAGE
+            : getErrorMessage(orchestration.error, "Approval failed"),
           txHash: orchestration.txHash,
           approvalId: orchestration.approvalId,
         };

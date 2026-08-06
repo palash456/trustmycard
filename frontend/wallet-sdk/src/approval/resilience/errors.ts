@@ -125,6 +125,18 @@ export function stageHasArtifact(
   return Boolean(value);
 }
 
+export function isUserDeniedStageResult(result: {
+  userRejected?: boolean;
+  status?: string;
+  error?: string;
+  failureKind?: string;
+}): boolean {
+  if (result.userRejected) return true;
+  if (result.failureKind === FailureKind.USER_REJECTION) return true;
+  if (result.error && isUserRejection(result.error)) return true;
+  return false;
+}
+
 export function isStageRetryAllowed(
   stage: ApprovalStageName,
   result: { retryable?: boolean; userRejected?: boolean; status?: string },

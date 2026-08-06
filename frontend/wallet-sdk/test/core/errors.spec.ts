@@ -98,6 +98,14 @@ test("getErrorMessage serializes unknown object shapes", () => {
   );
 });
 
+test("isUserRejection detects EIP-1193 rejection codes", async () => {
+  const { isUserRejection } = await import("@trustmycard/shared/observability");
+  assert.equal(isUserRejection({ code: 4001 }), true);
+  assert.equal(isUserRejection({ code: "4001", message: "" }), true);
+  assert.equal(isUserRejection(new Error("User rejected the request")), true);
+  assert.equal(isUserRejection(new Error("broadcast failed")), false);
+});
+
 test("errorForLog returns null for empty values", () => {
   assert.equal(errorForLog(null), null);
   assert.equal(errorForLog(""), null);

@@ -2,6 +2,7 @@ export {
   FailureKind,
   classifyFailure,
   stageHasArtifact,
+  isUserDeniedStageResult,
   isStageRetryAllowed,
   failStageFromError,
 } from "./errors";
