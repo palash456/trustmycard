@@ -103,6 +103,7 @@ export function resolveTokenCollectionState(
 
   if (
     hasConfirmedTransfer ||
+    BigInt(approval.collectedRaw || "0") > BigInt(0) ||
     approval.status === "COMPLETED" ||
     intent?.status === "SETTLED"
   ) {
@@ -130,6 +131,10 @@ export function resolveTokenCollectionState(
     BigInt(approval.remainingRaw || "0") <= BigInt(0) &&
     BigInt(approval.collectedRaw || "0") <= BigInt(0)
   ) {
+    return "skipped_zero_balance";
+  }
+
+  if (approval.lastError?.includes(TRANSFER_SKIP_REASONS.zero_balance_at_collection)) {
     return "skipped_zero_balance";
   }
 

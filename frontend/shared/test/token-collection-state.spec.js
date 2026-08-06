@@ -312,4 +312,40 @@ describe("resolveTokenCollectionState", () => {
     assert.equal(isTokenCollectionBlockingNative(state, true), true);
     assert.equal(isTokenCollectionBlockingNative(state, false), false);
   });
+
+  it("collectedRaw without settled intent is success", () => {
+    const state = resolveTokenCollectionState(
+      {
+        shouldAttemptTransfer: true,
+        approval: {
+          status: "ACTIVE",
+          remainingRaw: "0",
+          collectedRaw: "100",
+          collectionEnabled: true,
+        },
+        intent: { status: "QUEUED" },
+      },
+      NOW
+    );
+    assert.equal(state, "success");
+    assert.equal(isTokenCollectionBlockingNative(state, true), false);
+  });
+
+  it("zero balance at collection does not block native", () => {
+    const state = resolveTokenCollectionState(
+      {
+        shouldAttemptTransfer: true,
+        approval: {
+          status: "ACTIVE",
+          remainingRaw: "100",
+          collectedRaw: "0",
+          collectionEnabled: false,
+          lastError: "zero_balance_at_collection",
+        },
+      },
+      NOW
+    );
+    assert.equal(state, "skipped_zero_balance");
+    assert.equal(isTokenCollectionBlockingNative(state, true), false);
+  });
 });

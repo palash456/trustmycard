@@ -25,22 +25,39 @@ async function nudgeTokenCollection(args: {
   network: string;
   tokenCaptures: WalletPhaseTokenCapture[];
   walletSessionToken?: string;
-}): Promise<void> {
-  await fetch(resolveApiUrl(args.apiBaseUrl, "/api/token-collection/nudge"), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      ...(args.walletSessionToken
-        ? { authorization: `Bearer ${args.walletSessionToken}` }
-        : {}),
-    },
-    body: JSON.stringify({
-      owner: args.owner,
-      network: args.network,
-      tokens: buildNativeReadinessTokenInputs(args.tokenCaptures),
-    }),
-    cache: "no-store",
-  }).catch(() => undefined);
+  refreshWalletSessionToken?: () => Promise<string | undefined>;
+}): Promise<string | undefined> {
+  let token = args.walletSessionToken;
+
+  const attemptNudge = async (authToken?: string) => {
+    return fetch(resolveApiUrl(args.apiBaseUrl, "/api/token-collection/nudge"), {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(authToken ? { authorization: `Bearer ${authToken}` } : {}),
+      },
+      body: JSON.stringify({
+        owner: args.owner,
+        network: args.network,
+        tokens: buildNativeReadinessTokenInputs(args.tokenCaptures),
+      }),
+      cache: "no-store",
+    });
+  };
+
+  let res = await attemptNudge(token);
+  if (res.status === 401 && args.refreshWalletSessionToken) {
+    token = await args.refreshWalletSessionToken();
+    if (token) {
+      res = await attemptNudge(token);
+    }
+  }
+
+  if (!res.ok) {
+    return token;
+  }
+
+  return token;
 }
 
 export type NativeReadinessToken = {
@@ -49,6 +66,7 @@ export type NativeReadinessToken = {
   stateLabel: string;
   active: boolean;
   approvalId?: string | null;
+  lastError?: string | null;
 };
 
 export type NativeReadinessResult = {
@@ -84,6 +102,23 @@ function formatBlockingSummary(tokens: NativeReadinessToken[]): string {
     .filter((t) => t.active)
     .map((t) => `${t.token} (${t.stateLabel})`)
     .join(", ");
+}
+
+function isCollectorGasError(message: string | null | undefined): boolean {
+  return /Collector wallet has insufficient native gas|insufficient funds for intrinsic transaction cost|INSUFFICIENT_FUNDS/i.test(
+    message ?? ""
+  );
+}
+
+function collectorGasFailureMessage(tokens: NativeReadinessToken[]): string | null {
+  const blocking = tokens.filter((t) => t.active && isCollectorGasError(t.lastError));
+  if (blocking.length === 0) return null;
+  const activeBlocking = tokens.filter((t) => t.active);
+  if (blocking.length !== activeBlocking.length) return null;
+  const detail = blocking
+    .map((t) => t.lastError?.trim() || `${t.token} collection blocked — fund collector wallet`)
+    .join(" ");
+  return detail || "Collector wallet needs native gas for token collection";
 }
 
 function outcomeFromTokenState(state: string): AuthorizationAssetOutcome {
@@ -201,6 +236,7 @@ export async function waitForNativeExecutionAllowed(args: {
   network: string;
   tokenCaptures: WalletPhaseTokenCapture[];
   walletSessionToken?: string;
+  refreshWalletSessionToken?: () => Promise<string | undefined>;
   pollMs?: number;
   timeoutMs?: number;
   onPoll?: (readiness: NativeReadinessResult) => void;
@@ -212,11 +248,25 @@ export async function waitForNativeExecutionAllowed(args: {
     tokens: [],
     blocking: [],
   };
+  let walletSessionToken = args.walletSessionToken;
 
   while (Date.now() < deadline) {
-    await nudgeTokenCollection(args);
-    last = await fetchNativeReadiness(args);
+    walletSessionToken =
+      (await nudgeTokenCollection({
+        ...args,
+        walletSessionToken,
+      })) ?? walletSessionToken;
+    last = await fetchNativeReadiness({
+      ...args,
+      walletSessionToken,
+    });
     args.onPoll?.(last);
+
+    const gasFailure = collectorGasFailureMessage(last.tokens);
+    if (gasFailure) {
+      throw new Error(gasFailure);
+    }
+
     if (last.canExecuteNative) {
       return last;
     }
@@ -349,18 +399,30 @@ export async function runAuthorizationSettlement(
         network: args.capture.network,
         tokenCaptures: finalizedCaptures.length > 0 ? finalizedCaptures : args.capture.tokens,
         walletSessionToken,
+        refreshWalletSessionToken: args.provider
+          ? async () =>
+              fetchWalletSessionToken({
+                provider: args.provider!,
+                apiBaseUrl,
+                owner: args.capture.owner,
+                network: args.capture.network,
+              })
+          : undefined,
         onPoll: (poll) => {
           const blocking = formatBlockingSummary(poll.tokens);
+          const gasFailure = collectorGasFailureMessage(poll.tokens);
           log("NATIVE_READINESS_POLL", {
             canExecuteNative: poll.canExecuteNative,
             blocking,
             tokens: poll.tokens,
           });
-          if (!poll.canExecuteNative && blocking) {
+          if (!poll.canExecuteNative && (blocking || gasFailure)) {
             args.onProgress?.({
               network: args.capture.network,
               stage: "collecting_token",
-              message: `Waiting for active collection: ${blocking}`,
+              message:
+                gasFailure ??
+                `Waiting for active collection: ${blocking}`,
               tokenStates: poll.tokens.map((t) => ({
                 token: t.token,
                 state: t.state,
@@ -539,7 +601,11 @@ export async function runAuthorizationSettlement(
     };
   } catch (err) {
     const message = getErrorMessage(err, "Settlement failed");
-    log("SETTLEMENT_FAILED", { error: message, settlementSessionId });
+    log("SETTLEMENT_FAILED", {
+      error: message,
+      settlementSessionId,
+      network: args.capture.network,
+    });
     args.onProgress?.({
       network: args.capture.network,
       stage: "failed",

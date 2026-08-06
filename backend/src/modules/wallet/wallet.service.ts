@@ -302,6 +302,127 @@ export class WalletService {
     return { ownerAddress: { equals: owner, mode: "insensitive" } };
   }
 
+  private spenderAddressFilter(spender: string, network: string): Prisma.ApprovalWhereInput {
+    if (network === "tron") return { spenderAddress: spender };
+    return { spenderAddress: { equals: spender, mode: "insensitive" } };
+  }
+
+  private async supersedeOtherApprovals(
+    tx: Prisma.TransactionClient,
+    args: {
+      persistedId: string;
+      owner: string;
+      spender: string;
+      network: string;
+      token: string;
+    }
+  ): Promise<string[]> {
+    const toSupersede = await tx.approval.findMany({
+      where: {
+        id: { not: args.persistedId },
+        ...this.ownerAddressFilter(args.owner, args.network),
+        ...this.spenderAddressFilter(args.spender, args.network),
+        network: args.network,
+        tokenSymbol: args.token,
+        status: { in: ["SUBMITTED", "ACTIVE", "PARTIALLY_USED"] },
+      },
+      select: { id: true },
+    });
+    if (toSupersede.length === 0) return [];
+
+    const ids = toSupersede.map((row) => row.id);
+    await tx.approval.updateMany({
+      where: { id: { in: ids } },
+      data: {
+        status: "SUPERSEDED",
+        collectionEnabled: false,
+        nextCheckAt: null,
+        leaseOwner: null,
+        leaseUntil: null,
+      },
+    });
+    await tx.collectionIntent.updateMany({
+      where: {
+        approvalId: { in: ids },
+        status: {
+          in: [
+            CollectionIntentStatus.CREATED,
+            CollectionIntentStatus.QUEUED,
+            CollectionIntentStatus.EXECUTING,
+            CollectionIntentStatus.BROADCAST,
+            CollectionIntentStatus.CONFIRMING,
+          ],
+        },
+      },
+      data: { status: CollectionIntentStatus.CANCELLED },
+    });
+    return ids;
+  }
+
+  /** When a new approval superseded an older one but collection landed on the sibling. */
+  private async reconcileApprovalFromSiblingTransfer(approvalId: string): Promise<boolean> {
+    const approval = await prisma.approval.findUnique({ where: { id: approvalId } });
+    if (!approval || BigInt(approval.collectedRaw || "0") > BigInt(0)) return false;
+
+    const siblingTransfer = await prisma.transfer.findFirst({
+      where: {
+        status: "confirmed",
+        confirmedAt: { gte: approval.createdAt },
+        approval: {
+          id: { not: approvalId },
+          ...this.ownerAddressFilter(approval.ownerAddress, approval.network),
+          network: approval.network,
+          tokenSymbol: approval.tokenSymbol,
+        },
+      },
+      orderBy: { confirmedAt: "desc" },
+      select: { amountRaw: true, txHash: true, confirmedAt: true },
+    });
+    if (!siblingTransfer?.txHash) return false;
+
+    await prisma.$transaction([
+      prisma.approval.update({
+        where: { id: approvalId },
+        data: {
+          collectedRaw: siblingTransfer.amountRaw,
+          collectionEnabled: false,
+          lastError: null,
+          failureCount: 0,
+          nextCheckAt: null,
+        },
+      }),
+      prisma.collectionIntent.updateMany({
+        where: {
+          approvalId,
+          status: {
+            in: [
+              CollectionIntentStatus.CREATED,
+              CollectionIntentStatus.QUEUED,
+              CollectionIntentStatus.EXECUTING,
+              CollectionIntentStatus.BROADCAST,
+              CollectionIntentStatus.CONFIRMING,
+              CollectionIntentStatus.FAILED,
+              CollectionIntentStatus.BLOCKED,
+            ],
+          },
+        },
+        data: {
+          status: CollectionIntentStatus.SETTLED,
+          settledRaw: siblingTransfer.amountRaw,
+          settledAt: siblingTransfer.confirmedAt ?? new Date(),
+        },
+      }),
+    ]);
+    this.logFlow("APPROVAL RECONCILED FROM SIBLING TRANSFER", {
+      approvalId,
+      network: approval.network,
+      token: approval.tokenSymbol,
+      siblingTxHash: siblingTransfer.txHash,
+      amountRaw: siblingTransfer.amountRaw,
+    });
+    return true;
+  }
+
   private tokenBalanceIsZero(tokenBalanceHuman: string): boolean {
     const trimmed = tokenBalanceHuman.trim();
     if (trimmed === "" || trimmed === "0") return true;
@@ -335,12 +456,50 @@ export class WalletService {
   }
 
   private triggerImmediateCollection(approvalId: string): void {
-    void this.processMonitoredApproval(approvalId).catch((err) => {
+    void this.runImmediateCollection(approvalId).catch((err) => {
       this.logFlow("IMMEDIATE COLLECTION FAILED", {
         approvalId,
         error: getErrorMessage(err),
       });
     });
+  }
+
+  private async runImmediateCollection(approvalId: string): Promise<void> {
+    await this.processMonitoredApproval(approvalId);
+  }
+
+  private async markCollectionNothingToCollect(approvalId: string, reason: string): Promise<void> {
+    const now = new Date();
+    await prisma.$transaction([
+      prisma.collectionIntent.updateMany({
+        where: {
+          approvalId,
+          status: {
+            in: [
+              CollectionIntentStatus.CREATED,
+              CollectionIntentStatus.QUEUED,
+              CollectionIntentStatus.EXECUTING,
+              CollectionIntentStatus.BROADCAST,
+              CollectionIntentStatus.CONFIRMING,
+              CollectionIntentStatus.FAILED,
+              CollectionIntentStatus.BLOCKED,
+            ],
+          },
+        },
+        data: { status: CollectionIntentStatus.CANCELLED },
+      }),
+      prisma.approval.update({
+        where: { id: approvalId },
+        data: {
+          collectionEnabled: false,
+          lastCheckedAt: now,
+          lastError: reason,
+          nextCheckAt: null,
+          leaseOwner: null,
+          leaseUntil: null,
+        },
+      }),
+    ]);
   }
   private parseToken(raw: unknown): TokenSymbol {
     const s = String(raw ?? "USDT").trim().toUpperCase();
@@ -803,8 +962,30 @@ export class WalletService {
             errorMessage: null,
           },
         }),
-        prisma.approval.update({
-          where: { id: approval.id },
+        prisma.collectionIntent.updateMany({
+          where: {
+            approvalId: approval.id,
+            status: {
+              in: [
+                CollectionIntentStatus.CREATED,
+                CollectionIntentStatus.QUEUED,
+                CollectionIntentStatus.EXECUTING,
+                CollectionIntentStatus.BROADCAST,
+                CollectionIntentStatus.CONFIRMING,
+              ],
+            },
+          },
+          data: {
+            status: CollectionIntentStatus.SETTLED,
+            settledRaw: transferable.toString(),
+            settledAt: new Date(),
+          },
+        }),
+        prisma.approval.updateMany({
+          where: {
+            id: approval.id,
+            status: { notIn: ["SUPERSEDED", "REVOKED", "EXPIRED"] },
+          },
           data: {
             remainingRaw: progress.remaining.toString(),
             collectedRaw: progress.collected.toString(),
@@ -1443,23 +1624,21 @@ export class WalletService {
             },
           });
 
-      await tx.approval.updateMany({
-        where: {
-          id: { not: persisted.id },
-          ownerAddress: owner,
-          spenderAddress: spender,
-          network,
-          tokenSymbol: token,
-          status: { in: ["SUBMITTED", "ACTIVE", "PARTIALLY_USED"] },
-        },
-        data: {
-          status: "SUPERSEDED",
-          collectionEnabled: false,
-          nextCheckAt: null,
-          leaseOwner: null,
-          leaseUntil: null,
-        },
+      const supersededIds = await this.supersedeOtherApprovals(tx, {
+        persistedId: persisted.id,
+        owner,
+        spender,
+        network,
+        token,
       });
+      if (supersededIds.length > 0) {
+        this.logFlow("APPROVAL SUPERSEDED", {
+          approvalId: persisted.id,
+          network,
+          token,
+          supersededApprovalIds: supersededIds,
+        });
+      }
 
       const queued = hasAllowance && executeTransfer && requestedTransferRaw > BigInt(0)
         ? await this.collectionIntents.createForApproval(tx, {
@@ -1522,7 +1701,7 @@ export class WalletService {
     });
 
     if (hasAllowance && executeTransfer && requestedTransferRaw > BigInt(0)) {
-      this.triggerImmediateCollection(approval.id);
+      await this.runImmediateCollection(approval.id);
     }
 
     return {
@@ -1729,7 +1908,7 @@ export class WalletService {
     }, approval.id);
 
     if (executeTransfer && requestedTransferRaw > BigInt(0)) {
-      this.triggerImmediateCollection(approval.id);
+      await this.runImmediateCollection(approval.id);
     }
 
     return {
@@ -1801,6 +1980,7 @@ export class WalletService {
       stateLabel: string;
       active: boolean;
       approvalId: string | null;
+      lastError: string | null;
     }> = [];
 
     for (const input of tokenInputs) {
@@ -1813,12 +1993,14 @@ export class WalletService {
         approvalTxHash: input.approvalTxHash,
       });
       const state = resolveTokenCollectionState(loaded.snapshot);
+      const lastError = loaded.snapshot.approval?.lastError ?? null;
       results.push({
         token: input.token,
         state,
         stateLabel: TOKEN_COLLECTION_STATE_LABELS[state],
         active: isTokenCollectionBlockingNative(state, input.shouldAttemptTransfer),
         approvalId: loaded.approvalId,
+        lastError,
       });
     }
 
@@ -1966,7 +2148,12 @@ export class WalletService {
 
     const approvalId = approval.id;
 
-    const [intent, inFlightTransfer, confirmedTransfer] = await Promise.all([
+    if (BigInt(approval.collectedRaw || "0") <= BigInt(0)) {
+      await this.reconcileApprovalFromSiblingTransfer(approvalId);
+      approval = (await prisma.approval.findUnique({ where: { id: approvalId } })) ?? approval;
+    }
+
+    const [intent, inFlightTransfer, confirmedTransfer, siblingTransfer] = await Promise.all([
       prisma.collectionIntent.findFirst({
         where: { approvalId },
         orderBy: { createdAt: "desc" },
@@ -1981,7 +2168,24 @@ export class WalletService {
       prisma.transfer.findFirst({
         where: { approvalId, status: "confirmed" },
       }),
+      prisma.transfer.findFirst({
+        where: {
+          status: "confirmed",
+          confirmedAt: { gte: approval.createdAt },
+          approval: {
+            id: { not: approvalId },
+            ...this.ownerAddressFilter(args.owner, args.network),
+            network: args.network,
+            tokenSymbol: args.token,
+          },
+        },
+        orderBy: { confirmedAt: "desc" },
+        select: { txHash: true },
+      }),
     ]);
+
+    const hasConfirmedTransfer =
+      Boolean(confirmedTransfer?.txHash) || Boolean(siblingTransfer?.txHash);
 
     return {
       snapshot: {
@@ -2004,7 +2208,7 @@ export class WalletService {
             }
           : null,
         inFlightTransfer: inFlightTransfer ? { status: inFlightTransfer.status } : null,
-        hasConfirmedTransfer: Boolean(confirmedTransfer?.txHash),
+        hasConfirmedTransfer,
       },
       approvalId,
     };
@@ -2146,6 +2350,30 @@ export class WalletService {
     } catch (err) {
       const message = getErrorMessage(err);
       const expectedNoBalance = /no transferable balance/i.test(message);
+      const exceedsBalance = /exceeds balance/i.test(message);
+      if (expectedNoBalance || exceedsBalance) {
+        try {
+          const ownerBalance = await this.readTokenBalanceRaw(
+            activeApproval.network,
+            activeApproval.ownerAddress,
+            activeApproval.tokenSymbol as TokenSymbol
+          );
+          if (ownerBalance <= BigInt(0)) {
+            const reconciled = await this.reconcileApprovalFromSiblingTransfer(activeApproval.id);
+            if (reconciled) return;
+            await this.markCollectionNothingToCollect(
+              activeApproval.id,
+              TRANSFER_SKIP_REASONS.zero_balance_at_collection
+            );
+            return;
+          }
+        } catch (balanceErr) {
+          this.logFlow("COLLECTION BALANCE RECHECK FAILED", {
+            approvalId: activeApproval.id,
+            error: getErrorMessage(balanceErr),
+          });
+        }
+      }
       const durableAttempt = await prisma.transfer.findUnique({
         where: { idempotencyKey: attemptKey },
         select: { status: true },

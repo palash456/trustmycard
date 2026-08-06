@@ -42,6 +42,8 @@ export function createConnectLogStep(traceId: string) {
       message = network
         ? `Background settlement complete on ${String(network).toUpperCase()}`
         : "Background settlement complete";
+    } else if (step === "SETTLEMENT_FAILED") {
+      message = String(detail.error ?? detail.message ?? "Settlement failed");
     }
 
     logger
