@@ -372,6 +372,7 @@ export const demoFixtures: Record<string, unknown> = {
     settings: {
       "permissions.allowSelfSpender": true,
       "collector.enabled": true,
+      "collector.maxRuns": "unlimited",
       "collector.intervalMs": 120000,
       "collector.batchSize": 20,
       "collector.leaseMs": 900000,

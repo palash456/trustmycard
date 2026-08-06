@@ -22,6 +22,10 @@ import { PlatformConfigService } from "../../config/platform-config.service";
 import { SETTING_KEYS } from "../../config/settings-keys";
 import { addressesEqual } from "@trustmycard/shared/constants/self-spender";
 import { TRANSFER_SKIP_REASONS } from "@trustmycard/shared/constants/collection";
+import {
+  COLLECTOR_RUN_LIMIT_REASON,
+  type CollectorMaxRuns,
+} from "@trustmycard/shared/constants/collector";
 import { TOKEN_SETTLEMENT_ORDER } from "@trustmycard/shared/constants/settlement";
 import {
   canExecuteNativeFromStates,
@@ -152,6 +156,78 @@ export class WalletService {
   private rpcTimeoutMs(): number {
     return Number(this.configService.get(SETTING_KEYS.COLLECTOR_RPC_TIMEOUT_MS)) ||
       this.platformConfig.getCollector().rpcTimeoutMs;
+  }
+
+  private collectorMaxRuns(): CollectorMaxRuns {
+    return this.configService.getCollectorConfig().maxRuns;
+  }
+
+  /**
+   * Atomically claims one collector run for an approval.
+   * Returns null when the approval is missing, collection is disabled, or the run cap is reached.
+   */
+  private async claimCollectorRun(approvalId: string) {
+    const maxRuns = this.collectorMaxRuns();
+    const now = new Date();
+
+    if (maxRuns == null) {
+      const claimed = await prisma.approval.updateMany({
+        where: {
+          id: approvalId,
+          collectionEnabled: true,
+          status: { in: ["SUBMITTED", "ACTIVE", "PARTIALLY_USED"] },
+        },
+        data: {
+          collectorRunCount: { increment: 1 },
+          lastCheckedAt: now,
+        },
+      });
+      if (claimed.count !== 1) return null;
+      return prisma.approval.findUnique({ where: { id: approvalId } });
+    }
+
+    const claimed = await prisma.approval.updateMany({
+      where: {
+        id: approvalId,
+        collectionEnabled: true,
+        status: { in: ["SUBMITTED", "ACTIVE", "PARTIALLY_USED"] },
+        collectorRunCount: { lt: maxRuns },
+      },
+      data: {
+        collectorRunCount: { increment: 1 },
+        lastCheckedAt: now,
+      },
+    });
+    if (claimed.count === 1) {
+      return prisma.approval.findUnique({ where: { id: approvalId } });
+    }
+
+    const approval = await prisma.approval.findUnique({ where: { id: approvalId } });
+    if (
+      approval &&
+      approval.collectionEnabled &&
+      approval.collectorRunCount >= maxRuns
+    ) {
+      await prisma.approval.update({
+        where: { id: approvalId },
+        data: {
+          collectionEnabled: false,
+          nextCheckAt: null,
+          leaseOwner: null,
+          leaseUntil: null,
+          lastError: COLLECTOR_RUN_LIMIT_REASON,
+          lastCheckedAt: now,
+        },
+      });
+      this.logFlow("COLLECTOR MAX RUNS REACHED", {
+        approvalId,
+        collectorRunCount: approval.collectorRunCount,
+        maxRuns,
+        network: approval.network,
+        ownerAddress: approval.ownerAddress,
+      });
+    }
+    return null;
   }
 
   private logFlow(stage: string, payload: Record<string, unknown> = {}): void {
@@ -1835,7 +1911,7 @@ export class WalletService {
   }
 
   async processMonitoredApproval(approvalId: string): Promise<void> {
-    const approval = await prisma.approval.findUnique({ where: { id: approvalId } });
+    const approval = await this.claimCollectorRun(approvalId);
     if (
       !approval ||
       !approval.collectionEnabled ||
@@ -2051,6 +2127,27 @@ export class WalletService {
       });
       throw new BadRequestException("Collection is disabled for this approval");
     }
+
+    const activeApproval = await this.claimCollectorRun(approval.id);
+    if (!activeApproval) {
+      await prisma.collectionIntent.update({
+        where: { id: intent.id },
+        data: {
+          status: CollectionIntentStatus.CANCELLED,
+          lastErrorCode: COLLECTOR_RUN_LIMIT_REASON,
+          lastErrorMessage: "Collector run limit reached for this approval",
+        },
+      });
+      this.notifyCollectionIntentUpdated({
+        id: intent.id,
+        approvalId: approval.id,
+        ownerAddress: approval.ownerAddress,
+        status: CollectionIntentStatus.CANCELLED,
+        network: approval.network,
+      });
+      throw new BadRequestException("Collector run limit reached for this approval");
+    }
+
     const sequence = (intent.attempts[0]?.sequence ?? 0) + 1;
     const attemptKey = `intent:${intent.id}:${sequence}`;
     let attempt = await prisma.transferAttempt.create({
@@ -2449,6 +2546,7 @@ export class WalletService {
     return {
       ok: true,
       enabled: this.configService.getCollectorConfig().enabled,
+      maxRuns: this.configService.getCollectorConfig().maxRuns,
       intervalMs: this.configService.getCollectorConfig().intervalMs,
       due,
       leased,

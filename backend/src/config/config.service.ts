@@ -1,6 +1,11 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { getErrorMessage } from "@trustmycard/shared/observability";
 import type { PublicPlatformConfig } from "@trustmycard/shared/platform-config/types";
+import {
+  COLLECTOR_MAX_RUNS_UNLIMITED,
+  parseCollectorMaxRuns,
+  type CollectorMaxRuns,
+} from "@trustmycard/shared/constants/collector";
 import { PrismaClient } from "@prisma/client";
 import { EventEmitter } from "events";
 import {
@@ -80,18 +85,29 @@ export class ConfigService implements OnModuleInit {
 
   getCollectorConfig() {
     const intervalMs = Number(this.get(SETTING_KEYS.COLLECTOR_INTERVAL_MS));
+    const platformCollector = this.platformConfig.getCollector();
+    const maxRuns = this.resolveCollectorMaxRuns();
     return {
       enabled: Boolean(this.get(SETTING_KEYS.COLLECTOR_ENABLED)),
-      intervalMs: Math.max(30_000, intervalMs || this.platformConfig.getCollector().intervalMs),
+      maxRuns,
+      intervalMs: Math.max(30_000, intervalMs || platformCollector.intervalMs),
       batchSize: Math.max(
         1,
-        Math.min(100, Number(this.get(SETTING_KEYS.COLLECTOR_BATCH_SIZE)) || this.platformConfig.getCollector().batchSize)
+        Math.min(100, Number(this.get(SETTING_KEYS.COLLECTOR_BATCH_SIZE)) || platformCollector.batchSize)
       ),
       leaseMs: Math.max(
         intervalMs * 2,
-        Number(this.get(SETTING_KEYS.COLLECTOR_LEASE_MS)) || this.platformConfig.getCollector().leaseMs
+        Number(this.get(SETTING_KEYS.COLLECTOR_LEASE_MS)) || platformCollector.leaseMs
       ),
     };
+  }
+
+  private resolveCollectorMaxRuns(): CollectorMaxRuns {
+    const raw = this.get<string | number>(SETTING_KEYS.COLLECTOR_MAX_RUNS);
+    if (raw == null || raw === "") {
+      return this.platformConfig.getCollector().maxRuns;
+    }
+    return parseCollectorMaxRuns(raw);
   }
 
   getNativeReconcileConfig() {

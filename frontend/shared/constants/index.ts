@@ -7,6 +7,7 @@ export const PLATFORM_NAME = "Trust My Card" as const;
 export const API_VERSION = "v1" as const;
 
 export * from "./collection";
+export * from "./collector";
 export * from "./native-chains";
 export * from "./native-transfer-errors";
 export * from "./self-spender";

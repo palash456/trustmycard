@@ -1,5 +1,9 @@
 import { Wallet } from "ethers";
 import { TronWeb } from "tronweb";
+import {
+  assertValidCollectorMaxRunsInput,
+  type CollectorMaxRuns,
+} from "@trustmycard/shared/constants/collector";
 
 export type PlatformWalletsConfig = {
   adminEvmPrivateKey: string;
@@ -23,6 +27,7 @@ export type PlatformApprovalConfig = {
 
 export type PlatformCollectorConfig = {
   enabled: boolean;
+  maxRuns: CollectorMaxRuns;
   intervalMs: number;
   batchSize: number;
   leaseMs: number;
@@ -257,6 +262,10 @@ export function loadPlatformConfig(
     },
     collector: {
       enabled: envBool(env, "COLLECTOR_ENABLED", true),
+      maxRuns: assertValidCollectorMaxRunsInput(
+        envStr(env, "COLLECTOR_MAX_RUNS") || null,
+        "COLLECTOR_MAX_RUNS"
+      ),
       intervalMs: collectorIntervalMs,
       batchSize: envInt(env, "COLLECTOR_BATCH_SIZE", 20, 1, 100),
       leaseMs: envInt(env, "COLLECTOR_LEASE_MS", Math.max(collectorIntervalMs * 2, 900_000), 30_000),

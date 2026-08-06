@@ -49,6 +49,7 @@ export type PublicPlatformConfig = {
   };
   featureFlags: {
     collectorEnabled: boolean;
+    collectorMaxRuns: number | null;
     nativeReconcileEnabled: boolean;
     resourceSponsorEnabled: boolean;
   };

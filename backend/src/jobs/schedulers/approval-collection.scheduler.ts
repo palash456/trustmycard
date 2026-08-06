@@ -52,6 +52,7 @@ export class ApprovalCollectionScheduler
       runtimeEnabled: this.runtimeEnabled,
       configEnabled: cfg.enabled,
       effectiveEnabled: cfg.enabled && this.runtimeEnabled,
+      maxRuns: cfg.maxRuns,
       intervalMs: cfg.intervalMs,
       batchSize: cfg.batchSize,
       leaseMs: cfg.leaseMs,

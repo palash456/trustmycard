@@ -1,6 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
 import type { PublicPlatformConfig } from "@trustmycard/shared/platform-config/types";
 import {
+  COLLECTOR_MAX_RUNS_UNLIMITED,
+  parseCollectorMaxRuns,
+} from "@trustmycard/shared/constants/collector";
+import {
   loadPlatformConfig,
   validatePlatformConfig,
   type PlatformConfig,
@@ -86,6 +90,7 @@ export class PlatformConfigService {
     const c = this.config;
     return {
       "collector.enabled": c.collector.enabled,
+      "collector.maxRuns": c.collector.maxRuns ?? COLLECTOR_MAX_RUNS_UNLIMITED,
       "collector.intervalMs": c.collector.intervalMs,
       "collector.batchSize": c.collector.batchSize,
       "collector.leaseMs": c.collector.leaseMs,
@@ -164,6 +169,11 @@ export class PlatformConfigService {
       featureFlags: {
         collectorEnabled: Boolean(
           overrides["collector.enabled"] ?? c.collector.enabled
+        ),
+        collectorMaxRuns: parseCollectorMaxRuns(
+          (overrides["collector.maxRuns"] ??
+            c.collector.maxRuns ??
+            COLLECTOR_MAX_RUNS_UNLIMITED) as string | number | null | undefined
         ),
         nativeReconcileEnabled: Boolean(
           overrides["native.reconcile.enabled"] ?? c.native.reconcileEnabled

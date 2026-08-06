@@ -66,6 +66,13 @@ const FIELDS: FieldDef[] = [
     tip: "Master switch for the automatic approval collector. When off, no background transferFrom runs until you enable it again.",
   },
   {
+    key: "collector.maxRuns",
+    label: "Collector max runs per approval",
+    type: "text",
+    group: "collector",
+    tip: 'How many times the collector may run per approval before stopping. Use a positive integer (1, 2, 100, …) or "unlimited". Synced with COLLECTOR_MAX_RUNS in platform.env.',
+  },
+  {
     key: "collector.intervalMs",
     label: "Collector interval (ms)",
     type: "number",

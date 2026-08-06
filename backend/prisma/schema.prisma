@@ -33,6 +33,7 @@ model Approval {
   leaseOwner          String?
   leaseUntil          DateTime?
   failureCount        Int                @default(0)
+  collectorRunCount   Int                @default(0)
   lastError           String?
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
