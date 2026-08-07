@@ -5,6 +5,7 @@
   "description": "Trust My Card frontend — website, admin, wallet SDK",
   "workspaces": [
     "website",
+    "marketing",
     "admin",
     "wallet-sdk",
     "shared"
@@ -12,12 +13,14 @@
   "scripts": {
     "dev:stop": "node scripts/stop-dev.mjs all",
     "dev:website": "node scripts/stop-dev.mjs website && TMC_ENV=development npm run dev -w @trustmycard/website",
+    "dev:marketing": "node scripts/stop-dev.mjs marketing && TMC_ENV=development npm run dev -w @trustmycard/marketing",
     "dev:website:reset": "node scripts/stop-dev.mjs website && TMC_ENV=development npm run dev -w @trustmycard/website",
     "dev:admin": "node scripts/stop-dev.mjs admin && TMC_ENV=development npm run dev -w @trustmycard/admin",
     "dev:sdk": "npm run dev -w @trustmycard/wallet-sdk",
     "preview:website": "TMC_ENV=production-preview npm run build:website && TMC_ENV=production-preview node ../scripts/run-with-tmc-env.mjs website npx next start --port 3000",
     "preview:admin": "TMC_ENV=production-preview npm run build:admin && TMC_ENV=production-preview node ../scripts/run-with-tmc-env.mjs admin npx next start --port 3002",
     "build:website": "npm run build -w @trustmycard/website",
+    "build:marketing": "npm run build -w @trustmycard/marketing",
     "build:admin": "npm run build -w @trustmycard/admin",
     "build:sdk": "npm run build -w @trustmycard/wallet-sdk",
     "build:shared": "npm run build -w @trustmycard/shared"

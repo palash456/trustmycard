@@ -1,0 +1,145 @@
+# Trust My Card — Render blueprint (core stack)
+# Marketing static site deploys separately to Hostinger — see docs/infrastructure/render-hostinger-production.md
+
+databases:
+  - name: tmc-postgres
+    plan: starter
+    databaseName: trustmycard
+    user: trustmycard
+
+services:
+  - type: redis
+    name: tmc-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+
+  - type: web
+    name: tmc-api
+    runtime: node
+    plan: starter
+    buildCommand: chmod +x scripts/render-build-api.sh && ./scripts/render-build-api.sh
+    startCommand: cd backend && SERVICE_ROLE=api COLLECTION_SIGNING_ENABLED=false node dist/main.js
+    healthCheckPath: /v1/api/settings/public
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TMC_ENV
+        value: production
+      - key: SERVICE_ROLE
+        value: api
+      - key: COLLECTION_SIGNING_ENABLED
+        value: "false"
+      - key: COLLECTION_WORKERS_ENABLED
+        value: "false"
+      - key: SWAGGER_ENABLED
+        value: "false"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tmc-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: tmc-redis
+          property: connectionString
+      - key: ADMIN_API_KEY
+        generateValue: true
+      - key: APP_ORIGIN
+        sync: false
+      - key: ADMIN_ORIGIN
+        sync: false
+      - key: SPENDER_EVM
+        sync: false
+      - key: SPENDER_TRON
+        sync: false
+      - key: TRON_ENERGY_DELEGATOR_PRIVATE_KEY
+        sync: false
+      - key: TRONGRID_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_PROJECT_ID
+        sync: false
+
+  - type: worker
+    name: tmc-workers
+    runtime: node
+    plan: starter
+    buildCommand: chmod +x scripts/render-build-worker.sh && ./scripts/render-build-worker.sh
+    startCommand: cd backend && SERVICE_ROLE=worker COLLECTION_SIGNING_ENABLED=true COLLECTION_WORKERS_ENABLED=true node dist/worker.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TMC_ENV
+        value: production
+      - key: SERVICE_ROLE
+        value: worker
+      - key: COLLECTION_SIGNING_ENABLED
+        value: "true"
+      - key: COLLECTION_WORKERS_ENABLED
+        value: "true"
+      - key: COLLECTION_DISPATCH_MODE
+        value: queue
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tmc-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: tmc-redis
+          property: connectionString
+      - key: ADMIN_EVM_PRIVATE_KEY
+        sync: false
+      - key: ADMIN_TRON_PRIVATE_KEY
+        sync: false
+      - key: SPENDER_EVM
+        sync: false
+      - key: SPENDER_TRON
+        sync: false
+      - key: TRONGRID_API_KEY
+        sync: false
+
+  - type: web
+    name: tmc-wallet-app
+    runtime: node
+    plan: starter
+    buildCommand: chmod +x scripts/render-build-wallet.sh && ./scripts/render-build-wallet.sh
+    startCommand: cd frontend/website && TMC_ENV=production npx next start -p $PORT
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TMC_ENV
+        value: production
+      - key: BACKEND_API_URL
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: NEXT_PUBLIC_MARKETING_URL
+        sync: false
+      - key: NEXT_PUBLIC_PROJECT_ID
+        sync: false
+
+  - type: web
+    name: tmc-admin
+    runtime: node
+    plan: starter
+    buildCommand: chmod +x scripts/render-build-admin.sh && ./scripts/render-build-admin.sh
+    startCommand: cd frontend/admin && TMC_ENV=production npx next start -p $PORT
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TMC_ENV
+        value: production
+      - key: BACKEND_API_URL
+        sync: false
+      - key: ADMIN_API_KEY
+        fromService:
+          type: web
+          name: tmc-api
+          envVarKey: ADMIN_API_KEY
+      - key: ADMIN_SESSION_SECRET
+        generateValue: true
+      - key: ADMIN_PANEL_PASSWORD
+        sync: false
+      - key: ADMIN_IDENTITY_HEADER
+        sync: false

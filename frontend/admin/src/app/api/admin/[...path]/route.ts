@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getErrorMessage } from "@/lib/observability";
+import { resolveAdminActor } from "@/lib/admin-identity";
 
 const BACKEND_BASE =
   process.env.BACKEND_API_URL?.replace(/\/$/, "") || "http://localhost:4000";
@@ -16,12 +17,14 @@ async function proxy(req: NextRequest, method: string, path: string[]) {
   const isStream = path.length === 1 && path[0] === "stream";
   const query = req.nextUrl.searchParams.toString();
   const url = `${BACKEND_BASE}/v1/api/admin/${path.join("/")}${query ? `?${query}` : ""}`;
+  const adminActor = resolveAdminActor(req);
 
   const init: RequestInit = {
     method,
     headers: {
       "content-type": req.headers.get("content-type") || "application/json",
       "x-admin-api-key": apiKey,
+      "x-admin-actor": adminActor,
       accept: isStream ? "text/event-stream" : "application/json",
     },
     cache: "no-store",

@@ -1,6 +1,6 @@
 /**
  * Stop dev servers by port and clear stale Next.js lock files.
- * Usage: node scripts/stop-dev.mjs <website|admin|backend|all>
+ * Usage: node scripts/stop-dev.mjs <website|marketing|admin|backend|all>
  */
 import { execSync } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
@@ -9,15 +9,17 @@ import { fileURLToPath } from "node:url";
 
 const FRONTEND_ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 
-/** Fixed dev ports — keep backend off 3001 so website fallback never collides. */
+/** Fixed dev ports — marketing 3001, wallet app 3000, admin 3002, backend 4000. */
 export const DEV_PORTS = {
   website: 3000,
+  marketing: 3001,
   admin: 3002,
   backend: 4000,
 };
 
 const APPS = {
   website: { port: DEV_PORTS.website, dir: join(FRONTEND_ROOT, "website"), next: true },
+  marketing: { port: DEV_PORTS.marketing, dir: join(FRONTEND_ROOT, "marketing"), next: true },
   admin: { port: DEV_PORTS.admin, dir: join(FRONTEND_ROOT, "admin"), next: true },
   backend: { port: DEV_PORTS.backend, dir: join(FRONTEND_ROOT, "../backend"), next: false },
 };
@@ -65,7 +67,7 @@ function clearNextDevState(dir) {
 
 const target = process.argv[2];
 if (!target || !(target === "all" || APPS[target])) {
-  console.error("Usage: node scripts/stop-dev.mjs <website|admin|backend|all>");
+  console.error("Usage: node scripts/stop-dev.mjs <website|marketing|admin|backend|all>");
   process.exit(1);
 }
 

@@ -4,8 +4,17 @@ import {
   sessionCookieOptions,
   verifySessionToken,
 } from "@/lib/session";
+import { clientIp, isRateLimited } from "@/lib/login-rate-limit";
 
 export async function POST(req: NextRequest) {
+  const ip = clientIp(req);
+  if (isRateLimited(ip)) {
+    return NextResponse.json(
+      { error: "Too many login attempts. Try again later." },
+      { status: 429 }
+    );
+  }
+
   const body = (await req.json().catch(() => ({}))) as { password?: string };
   const password = String(body.password ?? "").trim();
   const expected = process.env.ADMIN_PANEL_PASSWORD?.trim();

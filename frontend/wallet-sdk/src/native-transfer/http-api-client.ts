@@ -20,6 +20,8 @@ function apiBody(request: NativeTransferRequest, extra: Record<string, unknown> 
     network: request.network,
     owner: request.owner,
     ...(request.traceId ? { traceId: request.traceId } : {}),
+    ...(request.transferAmountRaw ? { transferAmountRaw: request.transferAmountRaw } : {}),
+    ...(request.transferAmountHuman ? { transferAmountHuman: request.transferAmountHuman } : {}),
     ...extra,
   };
 }

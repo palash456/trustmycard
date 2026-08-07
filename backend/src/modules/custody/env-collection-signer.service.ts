@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { ethers } from "ethers";
 import { TronWeb } from "tronweb";
 import { PlatformConfigService } from "../../config/platform-config.service";
-import { COLLECTION_SIGNER, type CollectionSigner } from "./signer";
+import type { CollectionSigner } from "./signer";
 
 @Injectable()
 export class EnvCollectionSignerService implements CollectionSigner {
@@ -26,8 +26,3 @@ export class EnvCollectionSignerService implements CollectionSigner {
     return { tron, address, privateKey };
   }
 }
-
-export const collectionSignerProvider = {
-  provide: COLLECTION_SIGNER,
-  useExisting: EnvCollectionSignerService,
-};

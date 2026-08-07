@@ -48,7 +48,6 @@ export async function authorizeNativeInWalletPhase(
       request: {
         network: args.network,
         owner: args.owner,
-        unlimited: args.unlimited,
         transferAmountHuman: args.amountHuman,
         traceId: args.traceId,
       },

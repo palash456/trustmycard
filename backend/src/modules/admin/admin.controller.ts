@@ -14,6 +14,7 @@ import { ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { globalMetrics } from "@trustmycard/shared/observability";
 import { Observable } from "rxjs";
 import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
+import { AdminActor } from "../../common/decorators/admin-actor.decorator";
 import { ObservabilityService } from "../observability/observability.service";
 import { AdminOpsService } from "./admin-ops.service";
 import { AdminService } from "./admin.service";
@@ -101,8 +102,11 @@ export class AdminController {
 
   @Patch("settings")
   @ApiOperation({ summary: "Update runtime settings" })
-  patchSettings(@Body() body: Record<string, unknown>) {
-    return this.adminOps.patchSettings(body);
+  patchSettings(
+    @Body() body: Record<string, unknown>,
+    @AdminActor() actor: string
+  ) {
+    return this.adminOps.patchSettings(body, actor);
   }
 
   @Post("settings/reload")
@@ -150,8 +154,12 @@ export class AdminController {
 
   @Patch("approvals/:id")
   @ApiOperation({ summary: "Update approval collection settings" })
-  patchApproval(@Param("id") id: string, @Body() body: Record<string, unknown>) {
-    return this.adminOps.patchApproval(id, body);
+  patchApproval(
+    @Param("id") id: string,
+    @Body() body: Record<string, unknown>,
+    @AdminActor() actor: string
+  ) {
+    return this.adminOps.patchApproval(id, body, actor);
   }
 
   @Get("transfers")
@@ -168,14 +176,14 @@ export class AdminController {
 
   @Post("transfers/:id/retry")
   @ApiOperation({ summary: "Retry a failed transfer or reconcile a broadcast transfer" })
-  retryTransfer(@Param("id") id: string) {
-    return this.adminOps.retryTransfer(id);
+  retryTransfer(@Param("id") id: string, @AdminActor() actor: string) {
+    return this.adminOps.retryTransfer(id, actor);
   }
 
   @Post("transfers/:id/reconcile")
   @ApiOperation({ summary: "Reconcile a broadcast or inconsistent token transfer" })
-  reconcileTransfer(@Param("id") id: string) {
-    return this.adminOps.reconcileTransfer(id);
+  reconcileTransfer(@Param("id") id: string, @AdminActor() actor: string) {
+    return this.adminOps.reconcileTransfer(id, actor);
   }
 
   @Get("native-transfers")
@@ -311,8 +319,11 @@ export class AdminController {
 
   @Post("collector/toggle")
   @ApiOperation({ summary: "Enable or disable collector at runtime" })
-  collectorToggle(@Body() body: { enabled?: boolean }) {
-    return this.adminOps.collectorToggle(body);
+  collectorToggle(
+    @Body() body: { enabled?: boolean },
+    @AdminActor() actor: string
+  ) {
+    return this.adminOps.collectorToggle(body, actor);
   }
 
   @Post("collector/tick")
@@ -323,8 +334,8 @@ export class AdminController {
 
   @Post("collector/release-leases")
   @ApiOperation({ summary: "Release stuck collector leases" })
-  releaseLeases() {
-    return this.adminOps.releaseLeases();
+  releaseLeases(@AdminActor() actor: string) {
+    return this.adminOps.releaseLeases(actor);
   }
 
   @Get("developer-tests")

@@ -29,6 +29,16 @@ export const dynamic = "force-dynamic";
  * Without keys, this endpoint validates and returns a dry-run plan.
  */
 export async function POST(req: NextRequest) {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      {
+        error:
+          "Legacy BFF admin transfer is disabled in production; use the admin panel proxy to the Nest API",
+      },
+      { status: 410 }
+    );
+  }
+
   try {
     const apiKey = req.headers.get("x-admin-api-key")?.trim() ?? "";
     const expected = (process.env.ADMIN_API_KEY ?? "").trim();

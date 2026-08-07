@@ -16,9 +16,10 @@ trustmycard/
 ```bash
 cd frontend
 npm install
-npm run dev:website    # http://localhost:3000
-npm run dev:admin      # http://localhost:3002
-npm run dev:sdk        # wallet-sdk watch/build
+npm run dev:marketing   # http://localhost:3001 (marketing home)
+npm run dev:website     # http://localhost:3000 (wallet /connect)
+npm run dev:admin       # http://localhost:3002
+npm run dev:sdk         # wallet-sdk watch/build
 ```
 
 If a dev server gets stuck:

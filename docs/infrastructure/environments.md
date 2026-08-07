@@ -100,9 +100,9 @@ cd frontend && npm run preview:admin
 
 Uses production-like flags and isolated DB/Redis while still on localhost. Website/admin run `next start` (production build), not dev hot-reload.
 
-### Production (VPS)
+### Production (Render + Hostinger)
 
-See [hostinger-deployment.md](./hostinger-deployment.md). PM2 sets `TMC_ENV=production` on all processes. Fill `env/profiles/production/` on the server.
+See [docs/infrastructure/render-hostinger-production.md](../docs/infrastructure/render-hostinger-production.md). PM2 [`ecosystem.config.cjs`](../../ecosystem.config.cjs) remains for local/VPS all-in-one.
 
 ## Verify isolation
 

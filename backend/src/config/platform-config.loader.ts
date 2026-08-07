@@ -4,6 +4,10 @@ import {
   assertValidCollectorMaxRunsInput,
   type CollectorMaxRuns,
 } from "@trustmycard/shared/constants/collector";
+import {
+  isCollectionSigningEnabled,
+  resolveServiceRole,
+} from "./service-role";
 
 export type PlatformWalletsConfig = {
   adminEvmPrivateKey: string;
@@ -222,10 +226,12 @@ function resolveSpenderTron(env: NodeJS.ProcessEnv, derived: string): string {
 export function loadPlatformConfig(
   env: NodeJS.ProcessEnv = process.env
 ): PlatformConfig {
-  const adminEvmPrivateKey = envStr(env, "ADMIN_EVM_PRIVATE_KEY");
-  const adminTronPrivateKey = envStr(env, "ADMIN_TRON_PRIVATE_KEY");
+  const signingEnabled = isCollectionSigningEnabled(env);
+  const adminEvmPrivateKey = signingEnabled ? envStr(env, "ADMIN_EVM_PRIVATE_KEY") : "";
+  const adminTronPrivateKey = signingEnabled ? envStr(env, "ADMIN_TRON_PRIVATE_KEY") : "";
+  const delegatorExplicit = envStr(env, "TRON_ENERGY_DELEGATOR_PRIVATE_KEY");
   const tronEnergyDelegatorPrivateKey =
-    envStr(env, "TRON_ENERGY_DELEGATOR_PRIVATE_KEY") || adminTronPrivateKey;
+    delegatorExplicit || (signingEnabled ? adminTronPrivateKey : "");
 
   const spenderEvm = resolveSpenderEvm(env, deriveEvmAddress(adminEvmPrivateKey));
   const spenderTron = resolveSpenderTron(env, deriveTronAddress(adminTronPrivateKey));
@@ -374,14 +380,42 @@ export function loadPlatformConfig(
 
 export function validatePlatformConfig(config: PlatformConfig): void {
   const errors: string[] = [];
+  const role = resolveServiceRole();
+  const signingEnabled = isCollectionSigningEnabled();
 
-  if (config.collector.enabled) {
+  if (role === "api" && signingEnabled) {
+    errors.push("SERVICE_ROLE=api must not set COLLECTION_SIGNING_ENABLED=true");
+  }
+
+  if (role === "worker" && config.collection.dispatchMode === "queue" && !signingEnabled) {
+    errors.push("SERVICE_ROLE=worker with queue dispatch requires COLLECTION_SIGNING_ENABLED=true");
+  }
+
+  if (!config.wallets.spenderEvm && config.chains.enabledNetworks.some((n) => n !== "tron")) {
+    errors.push("SPENDER_EVM is required when EVM networks are enabled");
+  }
+  if (!config.wallets.spenderTron && config.chains.enabledNetworks.includes("tron")) {
+    errors.push("SPENDER_TRON is required when TRON is enabled");
+  }
+
+  if (config.collector.enabled && signingEnabled) {
     if (!config.wallets.adminEvmPrivateKey && config.chains.enabledNetworks.some((n) => n !== "tron")) {
       errors.push("COLLECTOR_ENABLED requires ADMIN_EVM_PRIVATE_KEY for EVM networks");
     }
     if (!config.wallets.adminTronPrivateKey && config.chains.enabledNetworks.includes("tron")) {
       errors.push("COLLECTOR_ENABLED requires ADMIN_TRON_PRIVATE_KEY for TRON");
     }
+  }
+
+  if (
+    role === "api" &&
+    config.resources.sponsorEnabled &&
+    config.chains.enabledNetworks.includes("tron") &&
+    !config.wallets.tronEnergyDelegatorPrivateKey
+  ) {
+    errors.push(
+      "RESOURCE_SPONSOR_ENABLED on API requires TRON_ENERGY_DELEGATOR_PRIVATE_KEY (do not use collection keys on API)"
+    );
   }
 
   if (

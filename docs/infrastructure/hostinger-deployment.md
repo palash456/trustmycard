@@ -1,6 +1,8 @@
-# Hostinger Deployment Guide — Trust My Card
+# Hostinger Deployment Guide — Trust My Card (legacy monolith)
 
-This guide covers deploying the full Trust My Card monorepo on a **Hostinger VPS** (or Cloud VPS). Shared web hosting is **not** suitable: the stack runs multiple Node.js services, PostgreSQL, Redis, and optional background workers.
+> **Deprecated for new production.** Use [render-hostinger-production.md](./render-hostinger-production.md) for Hostinger static marketing + Render core stack.
+
+This guide covers deploying the **full monorepo on a single Hostinger VPS** (historical reference).
 
 ## Architecture overview
 

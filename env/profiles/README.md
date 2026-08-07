@@ -4,47 +4,53 @@
 
 ```
 env/profiles/
-  development/           TMC_ENV=development
-  production-preview/    TMC_ENV=production-preview
-  production/            TMC_ENV=production
-    platform.env.example   → copy to platform.env   (wallets, collector, chains)
-    backend.env.example    → copy to backend.env    (DATABASE_URL, REDIS_URL, ADMIN_API_KEY)
-    website.env.example    → copy to website.env    (BACKEND_API_URL, NEXT_PUBLIC_*)
-    admin.env.example      → copy to admin.env      (BACKEND_API_URL, admin login secrets)
+  development/
+  production-preview/
+  production/
+    platform.env.example
+    backend.env.example         # local / VPS monolith
+    backend-api.env.example     # Render API (no collection keys)
+    backend-worker.env.example  # Render workers (signing)
+    website.env.example         # wallet app (app.*)
+    marketing.env.example       # static marketing build
+    admin.env.example
 ```
 
-**Wallet SDK** has no separate env file. It runs inside the website and uses `website.env` + `platform.env`.
+**Wallet SDK** has no separate env file — it runs inside the wallet app.
 
-## Database URLs (set in `backend.env`)
+## Split backend roles (production)
 
-| Profile | DATABASE_URL |
-|---------|--------------|
-| development | `postgresql://postgres:password@localhost:5432/trustmycard?schema=public` |
-| production-preview | `postgresql://postgres:password@localhost:5432/trustmycard_preview?schema=public` |
-| production | `postgresql://trustmycard:YOUR_PASSWORD@127.0.0.1:5432/trustmycard?schema=public` |
+| `SERVICE_ROLE` | Overlay file | Collection keys |
+|----------------|--------------|-----------------|
+| `api` | `backend-api.env` | not allowed |
+| `worker` | `backend-worker.env` | required |
+| `all` | `backend.env` | optional (local dev) |
+
+See [docs/infrastructure/secrets.md](../../docs/infrastructure/secrets.md).
 
 ## Setup
 
 ```bash
-PROFILE=development   # or production-preview, production
+PROFILE=production   # or development, production-preview
 
 cp env/profiles/$PROFILE/platform.env.example env/profiles/$PROFILE/platform.env
 cp env/profiles/$PROFILE/backend.env.example   env/profiles/$PROFILE/backend.env
 cp env/profiles/$PROFILE/website.env.example   env/profiles/$PROFILE/website.env
 cp env/profiles/$PROFILE/admin.env.example     env/profiles/$PROFILE/admin.env
-# Edit live files — never commit them
+# Production split deploy also:
+cp env/profiles/$PROFILE/backend-api.env.example env/profiles/$PROFILE/backend-api.env
+cp env/profiles/$PROFILE/backend-worker.env.example env/profiles/$PROFILE/backend-worker.env
+cp env/profiles/$PROFILE/marketing.env.example env/profiles/$PROFILE/marketing.env
 ```
 
 ## Switch environments
 
-Run the matching npm script (sets `TMC_ENV` automatically):
-
 | Goal | Commands |
 |------|----------|
-| Development | `npm run start:dev`, `npm run dev:website`, `npm run dev:admin` |
+| Development | `npm run start:dev`, `npm run dev:website`, `npm run dev:marketing`, `npm run dev:admin` |
 | Production preview | `npm run preview`, `npm run preview:website`, `npm run preview:admin` |
-| Production (VPS) | PM2 + `ecosystem.config.cjs` |
+| Production | [render-hostinger-production.md](../../docs/infrastructure/render-hostinger-production.md) |
 
-Loader: [`config/load-env.mjs`](../../config/load-env.mjs). Legacy `config/platform.env` and `*/.env.local` still work; profile files override matching keys.
+Loader: [`config/load-env.mjs`](../../config/load-env.mjs).
 
 See [docs/infrastructure/environments.md](../../docs/infrastructure/environments.md).

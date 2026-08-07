@@ -21,6 +21,10 @@ const LEGACY_APP_PATHS = {
     cwd: resolve(repoRoot, "frontend/website"),
     files: [".env", ".env.local"],
   },
+  marketing: {
+    cwd: resolve(repoRoot, "frontend/marketing"),
+    files: [".env", ".env.local"],
+  },
   admin: {
     cwd: resolve(repoRoot, "frontend/admin"),
     files: [".env", ".env.local"],
@@ -63,13 +67,13 @@ function loadEnvFile(path, override) {
  *
  * Legacy-only setups behave exactly as before. Profile files override for isolation.
  *
- * @param {"backend" | "website" | "admin"} app
+ * @param {"backend" | "website" | "marketing" | "admin"} app
  * @returns {string} resolved TMC_ENV
  */
 export function loadTmcEnv(app) {
   if (!LEGACY_APP_PATHS[app]) {
     throw new Error(
-      `loadTmcEnv: invalid app "${app}" (expected backend, website, or admin)`
+      `loadTmcEnv: invalid app "${app}" (expected backend, website, marketing, or admin)`
     );
   }
 
@@ -84,6 +88,16 @@ export function loadTmcEnv(app) {
     loadEnvFile(resolve(legacy.cwd, name), name === ".env.local");
   }
   loadEnvFile(resolve(profileDir, `${app}.env`), true);
+
+  // Role-specific backend overlays (production split deploy)
+  if (app === "backend") {
+    const role = (process.env.SERVICE_ROLE ?? "").trim().toLowerCase();
+    if (role === "api") {
+      loadEnvFile(resolve(profileDir, "backend-api.env"), true);
+    } else if (role === "worker") {
+      loadEnvFile(resolve(profileDir, "backend-worker.env"), true);
+    }
+  }
 
   if (!process.env.TMC_ENV) {
     process.env.TMC_ENV = tmcEnv;

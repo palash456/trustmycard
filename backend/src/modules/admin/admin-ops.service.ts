@@ -39,10 +39,10 @@ export class AdminOpsService {
     };
   }
 
-  async patchSettings(body: Record<string, unknown>) {
+  async patchSettings(body: Record<string, unknown>, actor = "admin") {
     const updates = (body.settings ?? body) as Record<string, unknown>;
-    const changed = await this.configService.setMany(updates, "admin");
-    await this.recordAudit("settings.update", "settings", null, { changed, updates });
+    const changed = await this.configService.setMany(updates, actor);
+    await this.recordAudit(actor, "settings.update", "settings", null, { changed, updates });
     await this.configService.reload();
     this.collectorScheduler.updateFromConfig();
     this.nativeScheduler.updateFromConfig();
@@ -115,7 +115,7 @@ export class AdminOpsService {
     };
   }
 
-  async patchApproval(id: string, body: Record<string, unknown>) {
+  async patchApproval(id: string, body: Record<string, unknown>, actor = "admin") {
     const approval = await prisma.approval.findUnique({ where: { id } });
     if (!approval) throw new NotFoundException("Approval not found");
 
@@ -141,7 +141,7 @@ export class AdminOpsService {
       where: { id },
       data,
     });
-    await this.recordAudit("approval.update", "approval", id, {
+    await this.recordAudit(actor, "approval.update", "approval", id, {
       before: {
         collectionEnabled: approval.collectionEnabled,
         collectionToAddress: approval.collectionToAddress,
@@ -159,7 +159,7 @@ export class AdminOpsService {
     return { ok: true, item: updated };
   }
 
-  async retryTransfer(id: string) {
+  async retryTransfer(id: string, actor = "admin") {
     const transfer = await prisma.transfer.findUnique({
       where: { id },
       include: { approval: true },
@@ -167,7 +167,7 @@ export class AdminOpsService {
     if (!transfer) throw new NotFoundException("Transfer not found");
     if (transfer.status === "broadcast") {
       const result = await this.walletService.reconcileTransfer(id);
-      await this.recordAudit("transfer.reconcile", "approval", transfer.approvalId, {
+      await this.recordAudit(actor, "transfer.reconcile", "approval", transfer.approvalId, {
         transferId: id,
         previousStatus: transfer.status,
       });
@@ -189,16 +189,16 @@ export class AdminOpsService {
       where: { id },
       data: { retryCount: { increment: 1 } },
     });
-    await this.recordAudit("transfer.retry", "approval", transfer.approvalId, {
+    await this.recordAudit(actor, "transfer.retry", "approval", transfer.approvalId, {
       transferId: id,
       idempotencyKey,
     });
     return result;
   }
 
-  async reconcileTransfer(id: string) {
+  async reconcileTransfer(id: string, actor = "admin") {
     const result = await this.walletService.reconcileTransfer(id);
-    await this.recordAudit("transfer.reconcile", "approval", result.item.approvalId, {
+    await this.recordAudit(actor, "transfer.reconcile", "approval", result.item.approvalId, {
       transferId: id,
       status: result.item.status,
       repaired: "repaired" in result ? result.repaired : false,
@@ -212,15 +212,15 @@ export class AdminOpsService {
     return { item };
   }
 
-  async collectorToggle(body: { enabled?: boolean }) {
+  async collectorToggle(body: { enabled?: boolean }, actor = "admin") {
     if (typeof body.enabled === "boolean") {
       this.collectorScheduler.setRuntimeEnabled(body.enabled);
       await this.configService.setMany(
         { [SETTING_KEYS.COLLECTOR_ENABLED]: body.enabled },
-        "admin"
+        actor
       );
     }
-    await this.recordAudit("collector.toggle", "collector", null, body);
+    await this.recordAudit(actor, "collector.toggle", "collector", null, body);
     this.streamService.emit("collector.updated", this.collectorScheduler.getStatus());
     return { ok: true, status: this.collectorScheduler.getStatus() };
   }
@@ -231,21 +231,21 @@ export class AdminOpsService {
     return { ok: true, message: "Collector tick completed" };
   }
 
-  async releaseLeases() {
+  async releaseLeases(actor = "admin") {
     const released = await this.collectorScheduler.releaseLeases();
-    await this.recordAudit("collector.release_leases", "collector", null, { released });
+    await this.recordAudit(actor, "collector.release_leases", "collector", null, { released });
     return { ok: true, released };
   }
 
-  restartBackend() {
+  restartBackend(actor = "admin") {
     const result = this.devOpsService.restartBackend();
-    this.recordAudit("dev.restart_backend", "system", null, {});
+    this.recordAudit(actor, "dev.restart_backend", "system", null, {});
     return result;
   }
 
-  restartWebsite() {
+  restartWebsite(actor = "admin") {
     const result = this.devOpsService.restartWebsite();
-    this.recordAudit("dev.restart_website", "system", null, {});
+    this.recordAudit(actor, "dev.restart_website", "system", null, {});
     return result;
   }
 
@@ -263,6 +263,7 @@ export class AdminOpsService {
   }
 
   private async recordAudit(
+    actor: string,
     action: string,
     entityType: string,
     entityId: string | null,
@@ -271,7 +272,7 @@ export class AdminOpsService {
     const ok = await safeCreateAuditLog(
       prisma,
       {
-        actor: "admin",
+        actor,
         action,
         entityType,
         entityId,

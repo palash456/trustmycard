@@ -1,11 +1,13 @@
-import { Controller, Get, Header } from "@nestjs/common";
+import { Controller, Get, Header, UseGuards } from "@nestjs/common";
 import {
   formatPrometheusText,
   globalMetrics,
   type MetricsSnapshot,
 } from "@trustmycard/shared/observability";
+import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
 
 @Controller("admin/metrics")
+@UseGuards(AdminApiKeyGuard)
 export class MetricsController {
   @Get()
   getSnapshot(): MetricsSnapshot {

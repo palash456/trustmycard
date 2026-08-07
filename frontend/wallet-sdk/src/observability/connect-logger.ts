@@ -68,7 +68,7 @@ export function createConnectLogStep(traceId: string) {
         operation: step.toLowerCase().replace(/\s+/g, "_"),
         stage: step,
         status: userDenied
-          ? "cancelled"
+          ? "user_rejection"
           : isFailure
             ? "failure"
             : isSuccess

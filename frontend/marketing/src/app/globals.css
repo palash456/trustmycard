@@ -1,0 +1,207 @@
+@import "tailwindcss";
+@source "../../../wallet-sdk/src/**/*.{js,ts,jsx,tsx}";
+
+:root {
+  --background: #ffffff;
+  --foreground: #131520;
+  --brand-blue: #0400FF;
+  --brand-blue-hover: #1a33e6;
+  --muted: #6a6d81;
+  --surface: #f9fafb;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes progress-fill {
+  from {
+    width: 0;
+  }
+}
+
+.progress-animate {
+  animation: progress-fill 1.2s ease-out forwards;
+}
+
+/* Minimal card surfaces — soft border + light shadow sitewide */
+.card-surface {
+  border: 1px solid #ececef;
+  background: #ffffff;
+  box-shadow:
+    0 1px 2px rgba(19, 21, 32, 0.03),
+    0 4px 14px rgba(19, 21, 32, 0.04);
+}
+
+.card-surface-sm {
+  border: 1px solid #ececef;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(19, 21, 32, 0.04);
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 36s linear infinite;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+
+/* Link flow modals — GPU-friendly enter + stagger */
+@keyframes link-modal-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes link-modal-panel-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes link-modal-step-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 4px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes link-modal-item-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes link-modal-expand-in {
+  from {
+    opacity: 0;
+    transform: scaleY(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+.link-modal-overlay {
+  animation: link-modal-overlay-in 0.18s ease-out both;
+}
+
+.link-modal-panel {
+  animation: link-modal-panel-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+.link-modal-step {
+  animation: link-modal-step-in 0.2s ease-out both;
+}
+
+.link-modal-step-static {
+  /* Inner modal content swaps without re-running enter animation */
+}
+
+.link-modal-stagger-item {
+  animation: link-modal-item-in 0.22s ease-out both;
+  will-change: transform, opacity;
+}
+
+.link-modal-expand {
+  animation: link-modal-expand-in 0.24s ease-out both;
+  transform-origin: top center;
+  will-change: transform, opacity;
+}
+
+.link-modal-interactive {
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.link-modal-interactive:disabled,
+.link-modal-panel button:disabled {
+  cursor: not-allowed;
+}
+
+.link-modal-panel button:not(:disabled) {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link-modal-overlay,
+  .link-modal-panel,
+  .link-modal-step,
+  .link-modal-stagger-item,
+  .link-modal-expand {
+    animation: none;
+  }
+
+  .link-modal-interactive {
+    transition: none;
+  }
+
+  .link-modal-panel,
+  .link-modal-stagger-item,
+  .link-modal-expand {
+    will-change: auto;
+  }
+}

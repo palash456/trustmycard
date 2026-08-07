@@ -11,7 +11,6 @@ import {
 import {
   ChooseCardModal,
   LinkNetworkModal,
-  NetworkFetchLoadingOverlay,
   useConnectFlow,
 } from "@trustmycard/wallet-sdk";
 import type { CardTierId } from "@trustmycard/wallet-sdk";
@@ -74,7 +73,6 @@ function WalletConnectHost({
     busy,
     approving,
     showResults,
-    showPostApprovalLoading,
     showCardModal,
     cardModalConnecting,
     selectedCardTier,
@@ -95,7 +93,6 @@ function WalletConnectHost({
     onSelectNetwork,
     onAuthorize,
     closeResultsModal,
-    continueAfterApproval,
   } = useConnectFlow({
     platform,
     spenderEvm: platform.wallets.spenderEvm,
@@ -148,18 +145,9 @@ function WalletConnectHost({
           linkNetworkError={linkNetworkError}
           networksLoading={networksLoading}
           walletConnected={walletConnected}
-          postApprovalLoading={showPostApprovalLoading}
           onClose={closeResultsModal}
           onSelectNetwork={onSelectNetwork}
           onAuthorize={onAuthorize}
-          onContinueAfterApproval={continueAfterApproval}
-        />
-      ) : null}
-
-      {showPostApprovalLoading ? (
-        <NetworkFetchLoadingOverlay
-          open={showPostApprovalLoading}
-          cardTierId={selectedCardTier}
         />
       ) : null}
     </>

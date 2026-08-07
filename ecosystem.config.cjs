@@ -1,3 +1,11 @@
+/**
+ * PM2 process list for single-VPS / local all-in-one production.
+ *
+ * For split production (Hostinger marketing + Render core), use render.yaml instead:
+ *   docs/infrastructure/render-hostinger-production.md
+ *
+ * Set env in env/profiles/production/ before starting.
+ */
 module.exports = {
   apps: [
     {
@@ -7,6 +15,8 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         TMC_ENV: "production",
+        SERVICE_ROLE: "api",
+        COLLECTION_SIGNING_ENABLED: "false",
       },
       instances: 1,
       autorestart: true,
@@ -19,6 +29,8 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         TMC_ENV: "production",
+        SERVICE_ROLE: "worker",
+        COLLECTION_SIGNING_ENABLED: "true",
         COLLECTION_WORKERS_ENABLED: "true",
       },
       instances: 1,
@@ -26,7 +38,7 @@ module.exports = {
       max_memory_restart: "512M",
     },
     {
-      name: "tmc-website",
+      name: "tmc-wallet-app",
       cwd: "/var/www/trustmycard/frontend/website",
       script: "node_modules/next/dist/bin/next",
       args: "start -p 3000",

@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { createHash, randomUUID } from "crypto";
+import { isCollectionSigningEnabled } from "../../config/service-role";
 import { AdminEventsService } from "../../infrastructure/admin-events/admin-events.service";
 import { PrismaService } from "../../infrastructure/database/prisma.service";
 import { ConfigService } from "../../config/config.service";
@@ -71,7 +72,14 @@ export class AdminCollectionsService {
 
   async adminTransfer(body: Record<string, unknown>) {
     const mode = this.config.getCollectionWorkerConfig().mode;
-    if (mode === "poll") return this.wallet.adminTransfer(body);
+    if (mode === "poll") {
+      if (isCollectionSigningEnabled()) {
+        return this.wallet.adminTransfer(body);
+      }
+      throw new BadRequestException(
+        "Poll-mode admin transfer requires collection signing on this process; set COLLECTION_DISPATCH_MODE=queue for API-only deploys"
+      );
+    }
 
     const approvalId = String(body.approvalId ?? "").trim();
     const amountRaw = String(body.amountRaw ?? "").trim();

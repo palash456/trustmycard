@@ -59,7 +59,7 @@ export function createStructuredApprovalLogger(
         level: logLevel,
         operation: event.toLowerCase().replace(/\s+/g, "_"),
         stage: event,
-        status: userDenied ? "cancelled" : isFailure ? "failure" : "in_progress",
+        status: userDenied ? "user_rejection" : isFailure ? "failure" : "in_progress",
         message: userDenied ? "Permission denied by user" : event,
         context: merged,
         token: ctx.request.token,

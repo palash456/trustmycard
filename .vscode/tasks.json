@@ -58,6 +58,34 @@
       }
     },
     {
+      "label": "Dev: Marketing",
+      "type": "shell",
+      "command": "npm run dev:marketing",
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "nextjs",
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "(Ready in|✓ Ready|started server on|Local:\\s+http)"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "dev-servers"
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
+    },
+    {
       "label": "Dev: Admin",
       "type": "shell",
       "command": "npm run dev:admin",
@@ -87,7 +115,7 @@
     },
     {
       "label": "Start All",
-      "dependsOn": ["Dev: Backend", "Dev: Website", "Dev: Admin"],
+      "dependsOn": ["Dev: Backend", "Dev: Marketing", "Dev: Website", "Dev: Admin"],
       "dependsOrder": "parallel",
       "problemMatcher": []
     },
