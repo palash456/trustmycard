@@ -8,6 +8,7 @@ import {
   type LinkProgressStage,
 } from "../core/link-flow-meta";
 import { linkModalStaggerDelay } from "../core/link-modal-motion";
+import { CardLoadingView } from "./CardLoadingView";
 import { NetworkIcon } from "./NetworkIcon";
 import type {
   AuthorizationSessionResult,
@@ -313,6 +314,26 @@ function FadedNetworkRow({
   );
 }
 
+function WalletSetupProgress({
+  cardLabel,
+  cardTierId,
+  linkProgress,
+}: {
+  cardLabel: string;
+  cardTierId: CardTierId;
+  linkProgress: LinkProgressStage;
+}) {
+  return (
+    <CardLoadingView
+      tierId={cardTierId}
+      headline="Setting up your wallet"
+      primaryMessage={linkProgress.label}
+      helperMessage={`${cardLabel} · Complete the steps below to link your first network`}
+      progressPercent={linkProgress.percent}
+    />
+  );
+}
+
 export function LinkNetworkModal({
   networks,
   rowStatus,
@@ -338,8 +359,10 @@ export function LinkNetworkModal({
     linkNetworkError?.networkKey === selectedKey &&
     !approving;
   const isLoadingNetworks = networksLoading && networks.length === 0;
+  const isWalletSetup = isLoadingNetworks && walletConnected;
   const hasLinked = networks.some((n) => isNetworkLinkedStatus(rowStatus[n.key]));
-  const showLinkedLayout = hasLinked && !isLinking && !isCancelled && !isLoadingNetworks;
+  const showLinkedLayout =
+    hasLinked && !isLinking && !isCancelled && !isLoadingNetworks;
 
   const linkedNetworks = networks.filter((n) =>
     isNetworkLinkedStatus(rowStatus[n.key])
@@ -348,10 +371,14 @@ export function LinkNetworkModal({
     (n) => !isNetworkLinkedStatus(rowStatus[n.key])
   );
 
-  const subtitle = isLoadingNetworks
+  const subtitle = isWalletSetup
+    ? "Syncing balances and preparing networks for your wallet…"
+    : isLoadingNetworks
     ? "Loading available networks for your wallet…"
     : hasLinked && !isLinking
-      ? "Your network is linked — you can link another or close when ready"
+      ? availableNetworks.length > 0
+        ? "Select another network to link, or close when ready"
+        : "All available networks are linked — close when ready"
       : isLinking
         ? "Complete the steps in your wallet to link this network"
         : isCancelled
@@ -362,8 +389,14 @@ export function LinkNetworkModal({
     Boolean(selectedKey) &&
     availableNetworks.some((n) => n.key === selectedKey);
   const canContinueToLink = selectedIsAvailable && !approving && !isLinking;
+  const allNetworksLinked =
+    networks.length > 0 && availableNetworks.length === 0;
   const canFinishLinked =
-    hasLinked && !approving && !isLinking && !selectedIsAvailable;
+    allNetworksLinked &&
+    hasLinked &&
+    !approving &&
+    !isLinking &&
+    !isWalletSetup;
   const canContinue = canContinueToLink || canFinishLinked;
   const canRetry = isCancelled && Boolean(selectedKey);
 
@@ -407,7 +440,13 @@ export function LinkNetworkModal({
             </p>
           ) : null}
 
-          {isLoadingNetworks ? (
+          {isWalletSetup ? (
+            <WalletSetupProgress
+              cardLabel={card.linkLabel}
+              cardTierId={selectedCardTier}
+              linkProgress={linkProgress}
+            />
+          ) : isLoadingNetworks ? (
             <NetworkSkeletonList />
           ) : showLinkedLayout ? (
             <>
@@ -539,7 +578,11 @@ export function LinkNetworkModal({
               onClick={handleContinue}
               className="link-modal-interactive cursor-pointer rounded-xl bg-[#0400FF] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1a33e6] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {canRetry ? "Try again" : canFinishLinked ? "Done" : "Continue"}
+              {canRetry
+                ? "Try again"
+                : canFinishLinked
+                  ? "Done"
+                  : "Continue"}
             </button>
           )}
         </div>

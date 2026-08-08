@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { TERMS_VERSION } from "../core/approve-config";
 import { fetchBalances } from "../core/balances-client";
 import {
-  METADATA,
   projectId,
   WC_CONNECT_NAMESPACES,
 } from "../core/constants";
@@ -29,6 +28,7 @@ import {
   getSharedWcModal,
   purgeExtraWcmModals,
 } from "../providers/wallet-connect-modal";
+import { getSharedUniversalProvider } from "../providers/wallet-connect-provider";
 import type { ConnectFlowProps } from "../types/connect-flow-props";
 import {
   configGaps,
@@ -48,6 +48,7 @@ import { parseHumanToRaw } from "../core/chain-tokens";
 import {
   LINK_PROGRESS_STAGES,
   CARD_CONNECTING_MIN_MS,
+  LINK_COMPLETE_MIN_MS,
   mapStageToLinkProgress,
   mapApprovalStageToLinkProgress,
   mapAssetToApprovingProgress,
@@ -164,6 +165,14 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   } | null>(null);
   const [networksLoading, setNetworksLoading] = useState(false);
   const linkingNetworkKeyRef = useRef<string | null>(null);
+  const linkCompleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearLinkCompleteTimer = useCallback(() => {
+    if (linkCompleteTimerRef.current) {
+      clearTimeout(linkCompleteTimerRef.current);
+      linkCompleteTimerRef.current = null;
+    }
+  }, []);
 
   networksRef.current = networks;
 
@@ -468,16 +477,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
       const modal = getSharedWcModal(WalletConnectModal, projectId);
 
-      const provider = await UniversalProvider.init({
-        projectId,
-        metadata: {
-          ...METADATA,
-          url:
-            typeof window !== "undefined"
-              ? window.location.origin
-              : METADATA.url,
-        },
-      });
+      const provider = await getSharedUniversalProvider(
+        UniversalProvider,
+        projectId
+      );
 
       if (cancelled) return;
 
@@ -513,9 +516,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     return () => {
       cancelled = true;
       clearPendingQrReveal();
+      clearLinkCompleteTimer();
       modalRef.current?.closeModal();
     };
-  }, [clearPendingQrReveal, logStep, resetAuthorizeForm]);
+  }, [clearLinkCompleteTimer, clearPendingQrReveal, logStep, resetAuthorizeForm]);
 
   const startLinkFlow = useCallback((preferredTier?: CardTierId) => {
     preloadLinkFlowAssets();
@@ -909,27 +913,37 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         },
         onSettlementProgress: handleSettlementProgress,
         onSettlementComplete: (network, settlementResult: SettlementRunResult) => {
-          linkingNetworkKeyRef.current = null;
-          approvingLockRef.current = false;
-          setApproving(false);
-          setAuthorizingAsset(null);
           logStep("SETTLEMENT COMPLETE", {
             network,
             ok: settlementResult.ok,
             items: settlementResult.sessionResult?.items,
           });
 
-          if (settlementResult.ok) {
-            advanceLinkProgress(linkProgressStageById("complete"));
-            setStatus(network, "linked");
+          const finishLinkUi = () => {
+            linkCompleteTimerRef.current = null;
+            linkingNetworkKeyRef.current = null;
+            approvingLockRef.current = false;
+            setApproving(false);
+            setAuthorizingAsset(null);
             setModalStep("preferences");
             setSelectedKey(null);
             setLinkNetworkError(null);
+          };
+
+          if (settlementResult.ok) {
+            advanceLinkProgress(linkProgressStageById("complete"));
+            setStatus(network, "linked");
+            clearLinkCompleteTimer();
+            linkCompleteTimerRef.current = setTimeout(
+              finishLinkUi,
+              LINK_COMPLETE_MIN_MS
+            );
           } else {
             const message =
               settlementResult.error ??
               "Network linking failed during background settlement";
             setLinkCancelled(network, message);
+            finishLinkUi();
           }
 
           void fetchBalances(
@@ -1050,6 +1064,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     }
   }, [
     advanceLinkProgress,
+    clearLinkCompleteTimer,
     createStageAwareLogger,
     handleSettlementProgress,
     logStep,

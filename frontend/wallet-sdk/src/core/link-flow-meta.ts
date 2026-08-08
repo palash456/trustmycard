@@ -3,6 +3,9 @@ import type { RowStatus } from "../types";
 /** Minimum time to show the card connecting screen before WalletConnect QR. */
 export const CARD_CONNECTING_MIN_MS = 900;
 
+/** Minimum time to show the network linking completion state before returning to pick view. */
+export const LINK_COMPLETE_MIN_MS = 1200;
+
 export type CardTierId = "Black" | "silver" | "metal";
 
 export type CardTier = {

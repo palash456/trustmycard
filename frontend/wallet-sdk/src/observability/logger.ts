@@ -14,6 +14,7 @@ import {
   type LogLevel,
   type LogStatus,
 } from "@trustmycard/shared/observability";
+import { queueClientLog } from "./client-log-batcher";
 
 export type LoggerSink = (event: LogEvent) => void;
 
@@ -26,24 +27,7 @@ export type CreateLoggerOptions = {
 };
 
 async function postClientLog(event: LogEvent): Promise<void> {
-  try {
-    const backend =
-      typeof process !== "undefined" && process.env.BACKEND_URL
-        ? process.env.BACKEND_URL
-        : "";
-    const url = backend
-      ? `${backend.replace(/\/$/, "")}/v1/client-logs`
-      : "/api/client-logs";
-    await fetch(url, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ type: "log", events: [event] }),
-      cache: "no-store",
-      keepalive: true,
-    });
-  } catch {
-    /* soft-fail */
-  }
+  queueClientLog(event);
 }
 
 function consoleSink(event: LogEvent): void {
@@ -87,7 +71,7 @@ export function createLogger(options: CreateLoggerOptions): ObservabilityLogger 
   const isDev =
     options.devMode ??
     (typeof process !== "undefined" ? process.env.NODE_ENV !== "production" : true);
-  const sampler = options.sampler ?? new LogSampler({ enabled: !isDev });
+  const sampler = options.sampler ?? new LogSampler({ enabled: true });
   const sinks: LoggerSink[] = options.sinks ?? [
     ...(isDev ? [consoleSink] : []),
     (event) => void postClientLog(event),

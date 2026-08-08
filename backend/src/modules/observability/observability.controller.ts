@@ -1,3 +1,4 @@
+import { SkipThrottle } from "@nestjs/throttler";
 import {
   Body,
   Controller,
@@ -7,6 +8,7 @@ import {
 import type { LogEvent, SessionTimeline } from "@trustmycard/shared/observability";
 import { ObservabilityService } from "./observability.service";
 
+@SkipThrottle()
 @Controller()
 export class ObservabilityController {
   constructor(private readonly observability: ObservabilityService) {}
