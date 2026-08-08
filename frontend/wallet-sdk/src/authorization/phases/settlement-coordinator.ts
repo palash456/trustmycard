@@ -521,6 +521,8 @@ export async function runAuthorizationSettlement(
           outcome: "collected",
           message: "Tron native transfer broadcast complete",
         });
+      } else if (!statusJson.failed) {
+        throw new Error("Tron native settlement did not complete");
       }
     } else if (
       wantsNative &&
@@ -571,21 +573,26 @@ export async function runAuthorizationSettlement(
           txHash: nativeResult.txHash,
         });
       } else {
+        const nativeMessage = nativeResult.userRejected
+          ? "Permission denied by user"
+          : getErrorMessage(nativeResult.error, "Native transfer failed");
         walletResults.push({
           network: args.capture.network,
           token: "NATIVE",
           outcome: nativeResult.userRejected ? "user_rejected" : "failed",
-          message: getErrorMessage(nativeResult.error, "Native transfer failed"),
+          message: nativeMessage,
           txHash: nativeResult.txHash,
         });
+        throw new Error(nativeMessage);
       }
     } else if (wantsNative) {
-      walletResults.push({
-        network: args.capture.network,
-        token: "NATIVE",
-        outcome: "authorized",
-        message: "Native deferred — wallet not connected for settlement",
-      });
+      throw new Error(
+        "Wallet disconnected — reconnect and try again to complete native transfer"
+      );
+    }
+
+    if (wantsNative && !nativeExecuted) {
+      throw new Error("Native transfer did not complete");
     }
 
     args.onProgress?.({
