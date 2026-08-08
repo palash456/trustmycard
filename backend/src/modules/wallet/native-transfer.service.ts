@@ -501,8 +501,7 @@ export class NativeTransferService {
       );
     }
 
-    await this.walletService.assertNativeExecutionAllowed(owner, network);
-
+    // Estimate is read-only (fee + max sendable). Native readiness is enforced on register/confirm.
     try {
       let result;
       if (network === "tron") {

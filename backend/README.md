@@ -45,8 +45,8 @@ Two-phase authorization uses `NetworkSettlementService` and
 | `POST /v1/api/network-settlement/process` | Tron deferred broadcast / EVM ready |
 | `GET /v1/api/network-settlement/:id/status` | Session + per-token logical states |
 
-Native estimate/register paths call `assertNativeExecutionAllowed()` with the
-same policy. Full behavior:
+Native estimate/register paths call `assertNativeExecutionAllowed()` on register and
+confirm (not on read-only estimate). Full behavior:
 [docs/architecture/settlement-and-native-execution.md](../docs/architecture/settlement-and-native-execution.md).
 
 Run `npx prisma migrate deploy` (or `db push` in dev) for `NetworkSettlementSession.tokenPlan`.

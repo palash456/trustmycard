@@ -355,13 +355,6 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     []
   );
 
-  const refreshAllNativeEstimates = useCallback(
-    async (rows: NetworkRow[]) => {
-      await Promise.all(rows.map((row) => refreshNativeEstimateFor(row.key)));
-    },
-    [refreshNativeEstimateFor]
-  );
-
   const scanWallet = useCallback(
     async (linked: LinkedAccounts) => {
       if (!linked.evm && !linked.tron) {
@@ -438,7 +431,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           })),
         });
 
-        void refreshAllNativeEstimates(rows);
+        // Native fee estimates are fetched during authorization when needed (not on network pick).
       } catch (err: unknown) {
         logStep("BALANCES FETCH FAILED", {
           error: getErrorMessage(err, "scan failed"),
@@ -449,7 +442,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         setNetworksLoading(false);
       }
     },
-    [logStep, refreshAllNativeEstimates, resetAuthorizeForm, advanceLinkProgress]
+    [logStep, resetAuthorizeForm, advanceLinkProgress]
   );
 
   useEffect(() => {
@@ -643,9 +636,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         ...prev,
         [key]: buildMaximumPreferencesForNetwork(key),
       }));
-      void refreshNativeEstimateFor(key);
     },
-    [approving, refreshNativeEstimateFor]
+    [approving]
   );
 
   const requestAuthorizeSession = useCallback(async () => {
