@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { ReconcileButton } from "@/components/ReconcileButton";
 import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
 import { DetailList, DetailRow } from "@/components/DetailList";
@@ -41,7 +42,25 @@ export default async function TransferDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const data = await adminGetData<Detail>(`/admin/transfers/${id}`).catch(() => null);
+  let data: Detail | null = null;
+  let error: string | null = null;
+  try {
+    data = await adminGetData<Detail>(`/admin/transfers/${id}`);
+  } catch (err) {
+    error = err instanceof Error ? err.message : "Failed to load transfer";
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <ErrorAlert message={error} />
+        <Link href="/transfers" className="text-sm text-primary hover:underline">
+          Back to transfers
+        </Link>
+      </div>
+    );
+  }
+
   if (!data) {
     return <p className="text-destructive">Transfer not found</p>;
   }

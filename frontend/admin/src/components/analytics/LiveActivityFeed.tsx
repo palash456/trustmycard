@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { readAdminProxyError } from "@/lib/admin-proxy-client";
 import type { AnalyticsActivityItem } from "@/types/analytics";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -42,7 +43,9 @@ export function LiveActivityFeed({ className }: { className?: string }) {
     try {
       setLoading(true);
       const res = await fetch("/api/admin/analytics/activity?limit=50");
-      if (!res.ok) throw new Error(`Failed to load activity (${res.status})`);
+      if (!res.ok) {
+        throw new Error(await readAdminProxyError(res, `Failed to load activity (${res.status})`));
+      }
       const data = (await res.json()) as { items: AnalyticsActivityItem[] };
       setItems(data.items ?? []);
       setError(null);

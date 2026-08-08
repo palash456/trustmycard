@@ -4,9 +4,10 @@ import { ActivityErrorCell } from "@/components/activity/ActivityErrorCell";
 import { ActivityStatusChip } from "@/components/activity/ActivityStatusChip";
 import { CopyButton } from "@/components/CopyButton";
 import { DetailList, DetailRow } from "@/components/DetailList";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { adminGetLogData } from "@/lib/admin-data";
+import { adminGetData } from "@/lib/admin-data";
 import { activityLink, timelineDetailLink } from "@/lib/log-links";
 import { formatDate } from "@/lib/format";
 import type { ActivityFeedSource, UnifiedActivityItem } from "@/types/activity-feed";
@@ -29,9 +30,26 @@ export default async function ActivityDetailPage({
   const sp = await searchParams;
   const source = (sp.source ?? "tg") as ActivityFeedSource;
 
-  const data = await adminGetLogData<DetailResponse>(
-    `/admin/activity/feed/${encodeURIComponent(source)}/${encodeURIComponent(id)}`
-  ).catch(() => null);
+  let data: DetailResponse | null = null;
+  let error: string | null = null;
+  try {
+    data = await adminGetData<DetailResponse>(
+      `/admin/activity/feed/${encodeURIComponent(source)}/${encodeURIComponent(id)}`
+    );
+  } catch (err) {
+    error = err instanceof Error ? err.message : "Failed to load activity event";
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <ErrorAlert message={error} />
+        <Link href="/activity" className="text-sm text-primary hover:underline">
+          Back to activity
+        </Link>
+      </div>
+    );
+  }
 
   if (!data) {
     return (

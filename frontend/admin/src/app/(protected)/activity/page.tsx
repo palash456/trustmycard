@@ -1,4 +1,5 @@
 import { ActivityFeedRow } from "@/components/activity/ActivityFeedRow";
+import { ActivityRefreshClient } from "@/components/activity/ActivityRefreshClient";
 import {
   ACTIVITY_COL,
   ACTIVITY_HEAD_CELL,
@@ -23,7 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { adminGetLogData, buildQuery } from "@/lib/admin-data";
+import { adminGetData, buildQuery } from "@/lib/admin-data";
 import type { ActivityFeedResponse } from "@/types/activity-feed";
 
 const FILTER_FIELDS = [
@@ -93,7 +94,7 @@ export default async function ActivityPage({
   let error: string | null = null;
 
   try {
-    feedData = await adminGetLogData<ActivityFeedResponse>(
+    feedData = await adminGetData<ActivityFeedResponse>(
       `/admin/activity/feed${feedQuery}`
     );
   } catch (err) {
@@ -127,6 +128,7 @@ export default async function ActivityPage({
 
   return (
     <ListPageLayout className="space-y-4">
+      <ActivityRefreshClient />
       <PageHeader
         title="Activity"
         description="Real user journeys only — connect, scan, authorize, and pay. Internal and test logs live under Audit."

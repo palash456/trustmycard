@@ -471,6 +471,12 @@ export class UserAggregationService {
             UNION ALL
             SELECT address, 0, 0, 0, 1, "createdAt", "createdAt"
             FROM "TgLogEvent" WHERE address ILIKE ${searchPattern}
+            UNION ALL
+            SELECT "walletAddress" AS address, 0 AS approval_count, 0 AS transfer_count, 0 AS native_count, 0 AS event_count,
+                   ts AS first_seen, ts AS last_activity
+            FROM "ObservabilityEvent"
+            WHERE "walletAddress" IS NOT NULL AND "walletAddress" <> ''
+              AND "walletAddress" ILIKE ${searchPattern}
           ) combined
           GROUP BY address
         `
@@ -492,6 +498,11 @@ export class UserAggregationService {
             SELECT "ownerAddress", 0, 0, 1, 0, "createdAt", "updatedAt" FROM "NativeTransfer"
             UNION ALL
             SELECT address, 0, 0, 0, 1, "createdAt", "createdAt" FROM "TgLogEvent"
+            UNION ALL
+            SELECT "walletAddress" AS address, 0 AS approval_count, 0 AS transfer_count, 0 AS native_count, 0 AS event_count,
+                   ts AS first_seen, ts AS last_activity
+            FROM "ObservabilityEvent"
+            WHERE "walletAddress" IS NOT NULL AND "walletAddress" <> ''
           ) combined
           GROUP BY address
         `;

@@ -6,14 +6,16 @@ import { LogEnvBanner } from "@/components/LogEnvBanner";
 import { LogEnvProvider } from "@/components/LogEnvProvider";
 import { PageTransitionShell } from "@/components/PageTransitionShell";
 import { RefreshProvider } from "@/components/RefreshProvider";
-import { isProductionLogBackendConfigured } from "@/lib/admin-backend";
+import { isProductionBackendConfigured } from "@/lib/admin-backend";
+
+export const dynamic = "force-dynamic";
 
 export default function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const logEnvToggleEnabled = isProductionLogBackendConfigured();
+  const logEnvToggleEnabled = isProductionBackendConfigured();
 
   return (
     <DemoProvider>

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useDemo } from "@/components/DemoProvider";
 import { useLogEnv } from "@/components/LogEnvProvider";
+import { safeRouterRefresh } from "@/lib/safe-router-refresh";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,22 +35,22 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
   const router = useRouter();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { demo, setDemo } = useDemo();
-  const { logEnv, setLogEnv, toggleEnabled: logEnvToggleEnabled, isProduction } =
-    useLogEnv();
+  const { setLogEnv, toggleEnabled: logEnvToggleEnabled, isProduction } = useLogEnv();
   const isDark = (resolvedTheme ?? theme) === "dark";
 
   function refresh() {
-    router.refresh();
+    safeRouterRefresh(router);
   }
 
   function toggleDemo(checked: boolean) {
     setDemo(checked);
-    router.refresh();
+    safeRouterRefresh(router);
   }
 
   function toggleLogEnv(checked: boolean) {
     setLogEnv(checked ? "production" : "dev");
-    router.refresh();
+    // Full reload ensures every server + client section picks up the new backend cookie.
+    window.location.reload();
   }
 
   return (
@@ -73,7 +74,7 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
             )}
             aria-hidden
           />
-          {isProduction ? "Prod logs" : "Dev logs"}
+          {isProduction ? "Production" : "Development"}
         </Badge>
       ) : null}
 
@@ -123,8 +124,8 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
                   {demo
                     ? "Viewing demo fixtures"
                     : isProduction
-                      ? "Viewing production logs"
-                      : "Connected to live data"}
+                      ? "Connected to production"
+                      : "Connected to local backend"}
                 </span>
               </div>
             </DropdownMenuLabel>
@@ -151,10 +152,10 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
               <DropdownMenuCheckboxItem
                 checked={isProduction}
                 onCheckedChange={toggleLogEnv}
-                label="Production logs"
+                label="Production environment"
               >
                 <ScrollTextIcon />
-                Production logs
+                Production environment
               </DropdownMenuCheckboxItem>
             ) : null}
 

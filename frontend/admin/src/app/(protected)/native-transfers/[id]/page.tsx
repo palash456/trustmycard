@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { DetailList, DetailRow } from "@/components/DetailList";
 import { ReconcileButton } from "@/components/ReconcileButton";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -37,7 +38,25 @@ export default async function NativeTransferDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const data = await adminGetData<Detail>(`/admin/native-transfers/${id}`).catch(() => null);
+  let data: Detail | null = null;
+  let error: string | null = null;
+  try {
+    data = await adminGetData<Detail>(`/admin/native-transfers/${id}`);
+  } catch (err) {
+    error = err instanceof Error ? err.message : "Failed to load native transfer";
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <ErrorAlert message={error} />
+        <Link href="/native-transfers" className="text-sm text-primary hover:underline">
+          Back to native transfers
+        </Link>
+      </div>
+    );
+  }
+
   if (!data) {
     return <p className="text-destructive">Native transfer not found</p>;
   }

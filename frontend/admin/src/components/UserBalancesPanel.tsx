@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { readAdminProxyError } from "@/lib/admin-proxy-client";
 import type { UserBalances } from "@/types/users";
 
 const DEMO_BALANCES: UserBalances = {
@@ -41,8 +42,7 @@ export function UserBalancesPanel({ address }: { address: string }) {
         { cache: "no-store" }
       );
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { message?: string };
-        throw new Error(body.message ?? `HTTP ${res.status}`);
+        throw new Error(await readAdminProxyError(res, `HTTP ${res.status}`));
       }
       setBalances((await res.json()) as UserBalances);
     } catch (err) {

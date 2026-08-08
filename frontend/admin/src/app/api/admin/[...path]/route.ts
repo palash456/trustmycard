@@ -1,21 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  getDefaultAdminBackend,
-  isLogApiPath,
-  resolveLogBackend,
+  backendUnreachableHint,
+  describeAdminBackend,
+  resolveProxyBackend,
 } from "@/lib/admin-backend";
 import { getErrorMessage } from "@/lib/observability";
 import { resolveAdminActor } from "@/lib/admin-identity";
 
 async function proxy(req: NextRequest, method: string, path: string[]) {
-  const useLogBackend = method === "GET" && isLogApiPath(path);
-  const backend = useLogBackend
-    ? resolveLogBackend(req.headers.get("cookie") ?? undefined)
-    : getDefaultAdminBackend();
+  const backend = resolveProxyBackend(req.cookies, path);
   const apiKey = backend.apiKey.trim();
+  const backendLabel = describeAdminBackend(backend);
+
   if (!apiKey) {
     return NextResponse.json(
-      { error: "ADMIN_API_KEY is not configured" },
+      {
+        error: `Admin API key is not configured for the ${backendLabel}.`,
+        env: backend.env,
+      },
       { status: 500 }
     );
   }
@@ -60,11 +62,14 @@ async function proxy(req: NextRequest, method: string, path: string[]) {
       headers: { "content-type": res.headers.get("content-type") || "application/json" },
     });
   } catch (err) {
-    console.error("[admin-proxy]", getErrorMessage(err, "Backend proxy failed"), { url });
+    const message = `Cannot reach ${backendLabel} at ${backend.baseUrl}.${backendUnreachableHint(backend)}`;
+    console.error("[admin-proxy]", getErrorMessage(err, message), { url, env: backend.env });
     return NextResponse.json(
       {
-        error: getErrorMessage(err, "Backend proxy failed"),
-        url,
+        error: message,
+        detail: getErrorMessage(err, "connection failed"),
+        env: backend.env,
+        url: backend.baseUrl,
       },
       { status: 502 }
     );

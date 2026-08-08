@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { safeRouterRefresh } from "@/lib/safe-router-refresh";
 
 const REFRESH_EVENTS = new Set([
   "settings.updated",
@@ -49,7 +50,11 @@ export function useAdminStream(enabled = true, scopeAddress?: string) {
     if (!enabled) return;
     const es = new EventSource("/api/admin/stream");
     es.onopen = () => setConnected(true);
-    es.onerror = () => setConnected(false);
+    es.onerror = () => {
+      setConnected(false);
+      // Stop EventSource auto-reconnect when backend is unreachable (avoids 502 spam).
+      es.close();
+    };
     es.onmessage = (msg) => {
       try {
         const event = JSON.parse(msg.data) as { type?: string; payload?: unknown };
@@ -57,7 +62,7 @@ export function useAdminStream(enabled = true, scopeAddress?: string) {
         if (scopeAddress) {
           if (!eventMatchesScope(event, scopeAddress)) return;
         }
-        routerRef.current.refresh();
+        safeRouterRefresh(routerRef.current);
       } catch {
         // ignore malformed events
       }

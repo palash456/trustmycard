@@ -1,18 +1,27 @@
-import { getDefaultAdminBackend, type AdminBackendConfig } from "./admin-backend";
+import {
+  backendUnreachableHint,
+  describeAdminBackend,
+  getDevBackend,
+  type AdminBackendConfig,
+} from "./admin-backend";
 import { getErrorMessage } from "./observability";
 
 export async function adminFetch<T = unknown>(
   path: string,
   init: RequestInit = {},
-  backend: AdminBackendConfig = getDefaultAdminBackend()
+  backend: AdminBackendConfig = getDevBackend()
 ): Promise<T> {
   const apiKey = backend.apiKey.trim();
   if (!apiKey) {
-    throw new Error("ADMIN_API_KEY is not configured on the admin server");
+    const label = describeAdminBackend(backend);
+    throw new Error(
+      `Admin API key is not configured for the ${label}. Check frontend/admin/.env.local.`
+    );
   }
 
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const url = `${backend.baseUrl}/v1/api${normalized}`;
+  const backendLabel = describeAdminBackend(backend);
 
   const headers = new Headers(init.headers);
   headers.set("x-admin-api-key", apiKey);
@@ -20,25 +29,33 @@ export async function adminFetch<T = unknown>(
     headers.set("content-type", "application/json");
   }
 
-  const res = await fetch(url, {
-    ...init,
-    headers,
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...init,
+      headers,
+      cache: "no-store",
+    });
+  } catch (err) {
+    throw new Error(
+      `Cannot reach ${backendLabel} at ${backend.baseUrl}.${backendUnreachableHint(backend)} (${getErrorMessage(err, "connection failed")})`
+    );
+  }
 
   const text = await res.text();
   let json: T;
   try {
     json = text ? (JSON.parse(text) as T) : ({} as T);
   } catch {
-    throw new Error(`Invalid JSON from backend (${res.status}): ${text.slice(0, 200)}`);
+    throw new Error(
+      `[${backendLabel}] Invalid JSON (${res.status}) from ${backend.baseUrl}: ${text.slice(0, 200)}`
+    );
   }
 
   if (!res.ok) {
     const err = json as { message?: string | string[]; error?: string | { message?: string } };
-    throw new Error(
-      getErrorMessage(err.message ?? err.error ?? err, `Backend error ${res.status}`)
-    );
+    const detail = getErrorMessage(err.message ?? err.error ?? err, `HTTP ${res.status}`);
+    throw new Error(`[${backendLabel}] ${detail}`);
   }
 
   return json;

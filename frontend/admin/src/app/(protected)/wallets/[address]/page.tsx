@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,9 +56,25 @@ export default async function WalletDetailPage({
 }) {
   const { address } = await params;
   const decoded = decodeURIComponent(address);
-  const data = await adminGetData<WalletDetail>(
-    `/admin/wallets/${encodeURIComponent(decoded)}`
-  ).catch(() => null);
+  let data: WalletDetail | null = null;
+  let error: string | null = null;
+  try {
+    data = await adminGetData<WalletDetail>(`/admin/wallets/${encodeURIComponent(decoded)}`);
+  } catch (err) {
+    error = err instanceof Error ? err.message : "Failed to load wallet";
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" size="sm" className="-ml-2 w-fit" render={<Link href="/wallets" />}>
+          <ChevronLeft className="size-4" />
+          Back to wallets
+        </Button>
+        <ErrorAlert message={error} />
+      </div>
+    );
+  }
 
   if (!data) {
     return <p className="text-destructive">Wallet not found</p>;

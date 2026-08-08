@@ -1,6 +1,7 @@
 import { formatPipelineErrorMessage } from "@/lib/format-pipeline-error";
 import Link from "next/link";
 import { ChevronLeft, ExternalLink } from "lucide-react";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { CopyButton } from "@/components/CopyButton";
 import { DetailList, DetailRow } from "@/components/DetailList";
 import { StatCard } from "@/components/StatCard";
@@ -89,9 +90,25 @@ export default async function UserDetailPage({
 }) {
   const { address } = await params;
   const decoded = decodeURIComponent(address);
-  const data = await adminGetData<UserDetail>(
-    `/admin/users/${encodeURIComponent(decoded)}`
-  ).catch(() => null);
+  let data: UserDetail | null = null;
+  let error: string | null = null;
+  try {
+    data = await adminGetData<UserDetail>(`/admin/users/${encodeURIComponent(decoded)}`);
+  } catch (err) {
+    error = err instanceof Error ? err.message : "Failed to load user";
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" size="sm" className="-ml-2 w-fit" render={<Link href="/users" />}>
+          <ChevronLeft className="size-4" />
+          Back to users
+        </Button>
+        <ErrorAlert message={error} />
+      </div>
+    );
+  }
 
   if (!data) {
     return <p className="text-destructive">User not found</p>;
