@@ -51,10 +51,12 @@ export SERVICE_ROLE=api
 
 ### `tmc-backend` env (set in Render dashboard)
 
+**Required** — deploy will fail without these:
+
 | Variable | Example |
 |----------|---------|
-| `DATABASE_URL` | Neon connection string |
-| `REDIS_URL` | Upstash `rediss://...` |
+| `DATABASE_URL` | Neon connection string (`postgresql://...?sslmode=require`) |
+| `REDIS_URL` | Upstash `rediss://default:PASSWORD@HOST:6379` |
 | `APP_ORIGIN` | `https://trustvisa.cards` |
 | `ADMIN_ORIGIN` | `https://admin.trustvisa.cards` (or localhost for local admin) |
 | `SPENDER_EVM` / `SPENDER_TRON` | Public spender addresses |

@@ -1,5 +1,5 @@
 import { createRequire } from "module";
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -27,7 +27,7 @@ function requireDotenv() {
   );
 }
 
-const { config } = requireDotenv();
+const { config, parse } = requireDotenv();
 
 const VALID_ENVS = ["development", "production-preview", "production"];
 
@@ -72,7 +72,18 @@ export function getTmcEnv() {
  */
 function loadEnvFile(path, override) {
   if (!existsSync(path)) return false;
-  config({ path, override });
+  if (!override) {
+    config({ path, override: false });
+    return true;
+  }
+  // Profile overlays fill missing keys only — never stomp Render/host secrets.
+  const parsed = parse(readFileSync(path));
+  for (const [key, value] of Object.entries(parsed)) {
+    const current = process.env[key];
+    if (current === undefined || current === "") {
+      process.env[key] = value;
+    }
+  }
   return true;
 }
 
@@ -85,7 +96,7 @@ function loadEnvFile(path, override) {
  * 3. app legacy .env / .env.local
  * 4. env/profiles/$TMC_ENV/${app}.env (profile, if present)
  *
- * Legacy-only setups behave exactly as before. Profile files override for isolation.
+ * Legacy-only setups behave exactly as before. Profile files fill gaps; host env wins.
  *
  * @param {"backend" | "website" | "marketing" | "admin"} app
  * @returns {string} resolved TMC_ENV

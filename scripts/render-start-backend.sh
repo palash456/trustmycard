@@ -4,6 +4,16 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT/backend"
 
+missing=()
+[[ -z "${DATABASE_URL:-}" ]] && missing+=("DATABASE_URL")
+[[ -z "${REDIS_URL:-}" ]] && missing+=("REDIS_URL")
+if ((${#missing[@]} > 0)); then
+  echo "[render] ERROR: Set on tmc-backend in Render dashboard: ${missing[*]}" >&2
+  echo "[render]   DATABASE_URL = Neon Postgres connection string" >&2
+  echo "[render]   REDIS_URL    = Upstash Redis URL (rediss://...)" >&2
+  exit 1
+fi
+
 WORKER_PID=""
 
 cleanup() {

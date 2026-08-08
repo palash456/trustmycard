@@ -16,7 +16,16 @@ import {
 /** Infrastructure-only — not platform business config. */
 function redisUrl(): string {
   const value = (process.env.REDIS_URL ?? "").trim();
-  return value || "redis://127.0.0.1:6379";
+  if (value) return value;
+
+  const tmcEnv = (process.env.TMC_ENV ?? "development").trim();
+  if (tmcEnv === "production" || tmcEnv === "production-preview") {
+    throw new Error(
+      "REDIS_URL is required in production (set Upstash rediss://... on Render tmc-backend)"
+    );
+  }
+
+  return "redis://127.0.0.1:6379";
 }
 
 @Injectable()
