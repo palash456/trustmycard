@@ -21,6 +21,8 @@ services:
         value: production
       - key: COLLECTION_DISPATCH_MODE
         value: queue
+      - key: BUDGET_COMBINED_BACKEND
+        value: "true"
       - key: SWAGGER_ENABLED
         value: "false"
       - key: DATABASE_URL

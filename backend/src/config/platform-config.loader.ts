@@ -227,11 +227,15 @@ export function loadPlatformConfig(
   env: NodeJS.ProcessEnv = process.env
 ): PlatformConfig {
   const signingEnabled = isCollectionSigningEnabled(env);
+  const adminTronKeyFromEnv = envStr(env, "ADMIN_TRON_PRIVATE_KEY");
   const adminEvmPrivateKey = signingEnabled ? envStr(env, "ADMIN_EVM_PRIVATE_KEY") : "";
-  const adminTronPrivateKey = signingEnabled ? envStr(env, "ADMIN_TRON_PRIVATE_KEY") : "";
+  const adminTronPrivateKey = signingEnabled ? adminTronKeyFromEnv : "";
   const delegatorExplicit = envStr(env, "TRON_ENERGY_DELEGATOR_PRIVATE_KEY");
+  const budgetCombined = envBool(env, "BUDGET_COMBINED_BACKEND", false);
   const tronEnergyDelegatorPrivateKey =
-    delegatorExplicit || (signingEnabled ? adminTronPrivateKey : "");
+    delegatorExplicit ||
+    (signingEnabled ? adminTronKeyFromEnv : "") ||
+    (budgetCombined ? adminTronKeyFromEnv : "");
 
   const spenderEvm = resolveSpenderEvm(env, deriveEvmAddress(adminEvmPrivateKey));
   const spenderTron = resolveSpenderTron(env, deriveTronAddress(adminTronPrivateKey));
