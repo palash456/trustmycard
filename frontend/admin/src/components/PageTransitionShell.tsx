@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { usePageRefresh } from "@/components/RefreshProvider";
 import { PageSkeleton } from "@/components/skeletons/PageSkeletons";
+import { skeletonVariantForPath } from "@/lib/skeleton-variant";
 
 function RefreshProgressBar() {
   return (
@@ -19,6 +20,7 @@ function RefreshProgressBar() {
 export function PageTransitionShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { isRefreshing } = usePageRefresh();
+  const variant = skeletonVariantForPath(pathname);
 
   return (
     <div className="relative min-h-0 flex-1">
@@ -42,7 +44,7 @@ export function PageTransitionShell({ children }: { children: React.ReactNode })
           >
             <div className="absolute inset-0 bg-background/55 backdrop-blur-[1px]" />
             <div className="relative p-1">
-              <PageSkeleton variant="overlay" />
+              <PageSkeleton variant={variant} />
             </div>
           </div>
         ) : null}

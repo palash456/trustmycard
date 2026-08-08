@@ -13,6 +13,7 @@ import {
   Sun,
 } from "lucide-react";
 import { useDemo } from "@/components/DemoProvider";
+import { useBackendStatus } from "@/components/BackendStatusProvider";
 import { useLogEnv } from "@/components/LogEnvProvider";
 import { safeRouterRefresh } from "@/lib/safe-router-refresh";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +36,8 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
   const router = useRouter();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { demo, setDemo } = useDemo();
-  const { setLogEnv, toggleEnabled: logEnvToggleEnabled, isProduction } = useLogEnv();
+  const { toggleEnabled: logEnvToggleEnabled, isProduction } = useLogEnv();
+  const { switchEnvironment, switchToDemo } = useBackendStatus();
   const isDark = (resolvedTheme ?? theme) === "dark";
 
   function refresh() {
@@ -43,14 +45,16 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
   }
 
   function toggleDemo(checked: boolean) {
-    setDemo(checked);
+    if (checked) {
+      switchToDemo();
+      return;
+    }
+    setDemo(false);
     safeRouterRefresh(router);
   }
 
   function toggleLogEnv(checked: boolean) {
-    setLogEnv(checked ? "production" : "dev");
-    // Full reload ensures every server + client section picks up the new backend cookie.
-    window.location.reload();
+    switchEnvironment(checked ? "production" : "dev");
   }
 
   return (

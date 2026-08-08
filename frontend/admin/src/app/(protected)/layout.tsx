@@ -1,5 +1,7 @@
 import { AdminShell } from "@/components/AdminShell";
 import { AdminLiveRefresh } from "@/components/AdminLiveRefresh";
+import { BackendEnvironmentGate } from "@/components/BackendEnvironmentGate";
+import { BackendStatusProvider } from "@/components/BackendStatusProvider";
 import { DemoBanner } from "@/components/DemoBanner";
 import { DemoProvider } from "@/components/DemoProvider";
 import { LogEnvBanner } from "@/components/LogEnvBanner";
@@ -21,12 +23,16 @@ export default function ProtectedLayout({
     <DemoProvider>
       <LogEnvProvider toggleEnabled={logEnvToggleEnabled}>
         <RefreshProvider>
-          <AdminShell>
-            <AdminLiveRefresh />
-            <DemoBanner />
-            <LogEnvBanner />
-            <PageTransitionShell>{children}</PageTransitionShell>
-          </AdminShell>
+          <BackendStatusProvider>
+            <AdminShell>
+              <AdminLiveRefresh />
+              <DemoBanner />
+              <LogEnvBanner />
+              <BackendEnvironmentGate>
+                <PageTransitionShell>{children}</PageTransitionShell>
+              </BackendEnvironmentGate>
+            </AdminShell>
+          </BackendStatusProvider>
         </RefreshProvider>
       </LogEnvProvider>
     </DemoProvider>
