@@ -6,8 +6,28 @@ import { fileURLToPath } from "url";
 const configDir = dirname(fileURLToPath(import.meta.url));
 export const repoRoot = resolve(configDir, "..");
 
-const require = createRequire(resolve(repoRoot, "backend/package.json"));
-const { config } = require("dotenv");
+/** Resolve dotenv from frontend or backend install (wallet/marketing builds do not install backend). */
+function requireDotenv() {
+  const bases = [
+    resolve(repoRoot, "frontend/package.json"),
+    resolve(repoRoot, "backend/package.json"),
+  ];
+  let lastError;
+  for (const base of bases) {
+    try {
+      const require = createRequire(base);
+      return require("dotenv");
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw new Error(
+    "[trustmycard] Cannot find the dotenv package. Install it in frontend/ or backend/.",
+    { cause: lastError }
+  );
+}
+
+const { config } = requireDotenv();
 
 const VALID_ENVS = ["development", "production-preview", "production"];
 
