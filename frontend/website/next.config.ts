@@ -14,9 +14,12 @@ loadTmcEnv("website");
 
 const frontendRoot = path.join(configDir, "..");
 
+const isProductionBuild = process.env.NODE_ENV === "production";
+
 const nextConfig: NextConfig = {
   transpilePackages: ["@trustmycard/wallet-sdk", "@trustmycard/shared"],
   outputFileTracingRoot: frontendRoot,
+  compiler: isProductionBuild ? { removeConsole: true } : undefined,
   images: {
     remotePatterns: [
       {

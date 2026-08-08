@@ -23,7 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { adminGetData, buildQuery } from "@/lib/admin-data";
+import { adminGetLogData, buildQuery } from "@/lib/admin-data";
 import type { ActivityFeedResponse } from "@/types/activity-feed";
 
 const FILTER_FIELDS = [
@@ -93,7 +93,7 @@ export default async function ActivityPage({
   let error: string | null = null;
 
   try {
-    feedData = await adminGetData<ActivityFeedResponse>(
+    feedData = await adminGetLogData<ActivityFeedResponse>(
       `/admin/activity/feed${feedQuery}`
     );
   } catch (err) {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 
+import { ProductionConsoleGuard } from "@/components/ProductionConsoleGuard";
 import "./globals.css";
 
 const geist = Geist({
@@ -23,6 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable} font-sans`} suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
+        <ProductionConsoleGuard />
         {children}
       </body>
     </html>

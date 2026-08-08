@@ -5,7 +5,7 @@ import { ErrorAlert } from "@/components/ErrorAlert";
 import { ListPageLayout } from "@/components/ListPageLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { adminGetData } from "@/lib/admin-data";
+import { adminGetLogData } from "@/lib/admin-data";
 import { auditTimelineLink } from "@/lib/log-links";
 import type { SessionTimeline } from "@/lib/observability";
 
@@ -20,7 +20,7 @@ export default async function AuditTimelineDetailPage({
   let timeline: SessionTimeline | null = null;
   let error: string | null = null;
   try {
-    timeline = await adminGetData<SessionTimeline>(
+    timeline = await adminGetLogData<SessionTimeline>(
       `/admin/sessions/${encodeURIComponent(decoded)}/timeline`
     );
   } catch (err) {

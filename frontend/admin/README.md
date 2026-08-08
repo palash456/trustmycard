@@ -16,6 +16,8 @@ cp .env.example .env.local
 |----------|---------|
 | `BACKEND_API_URL` | Nest base URL (default `http://localhost:4000`) |
 | `ADMIN_API_KEY` | Must match backend `ADMIN_API_KEY`; server-side proxy only |
+| `PRODUCTION_BACKEND_API_URL` | Optional — production API for log toggle (local dev only) |
+| `PRODUCTION_ADMIN_API_KEY` | Optional — production admin key paired with above |
 | `ADMIN_SESSION_SECRET` | Signs httpOnly `admin_session` cookie |
 | `ADMIN_PANEL_PASSWORD` | Login screen password |
 
@@ -33,6 +35,7 @@ cd frontend && npm run dev:admin   # http://localhost:3002
 - **Settings** — DB-backed runtime config with hot-reload (`/settings`, `/settings/collector`)
 - **System** — secrets metadata (no key material), worker status, dev restart (`/system`)
 - **Demo mode** — header toggle; cookie-backed fixtures for all pages (no live API writes)
+- **Dev / Prod logs** — when `PRODUCTION_BACKEND_API_URL` + `PRODUCTION_ADMIN_API_KEY` are set, toggle between local and production log data on Audit & Activity pages
 - **Light/dark theme** — header toggle
 - **Refresh** — manual + SSE auto-refresh via `/api/admin/stream`
 - **Reload logout** — full page refresh signs you out (client session guard)
@@ -43,6 +46,7 @@ cd frontend && npm run dev:admin   # http://localhost:3002
 ## Architecture
 
 - SSR pages use `adminGetData()` → Nest (or demo fixtures when demo cookie set)
+- Log pages use `adminGetLogData()` → local or production Nest per header toggle
 - Client mutations → `/api/admin/*` proxy → Nest with `x-admin-api-key`
 - Settings PATCH → `AppSettings` table → `ConfigService` → schedulers hot-reload → SSE broadcast
 

@@ -1,19 +1,18 @@
+import { getDefaultAdminBackend, type AdminBackendConfig } from "./admin-backend";
 import { getErrorMessage } from "./observability";
-
-const BACKEND_BASE =
-  process.env.BACKEND_API_URL?.replace(/\/$/, "") || "http://127.0.0.1:4000";
 
 export async function adminFetch<T = unknown>(
   path: string,
-  init: RequestInit = {}
+  init: RequestInit = {},
+  backend: AdminBackendConfig = getDefaultAdminBackend()
 ): Promise<T> {
-  const apiKey = process.env.ADMIN_API_KEY?.trim();
+  const apiKey = backend.apiKey.trim();
   if (!apiKey) {
     throw new Error("ADMIN_API_KEY is not configured on the admin server");
   }
 
   const normalized = path.startsWith("/") ? path : `/${path}`;
-  const url = `${BACKEND_BASE}/v1/api${normalized}`;
+  const url = `${backend.baseUrl}/v1/api${normalized}`;
 
   const headers = new Headers(init.headers);
   headers.set("x-admin-api-key", apiKey);

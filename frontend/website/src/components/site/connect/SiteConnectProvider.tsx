@@ -244,7 +244,6 @@ export function SiteConnectProvider({ children }: { children: React.ReactNode })
         cardTier: buttonId === "premium" ? "metal" : undefined,
       }));
     } catch (err) {
-      console.error("Failed to fetch platform config:", err);
       setButtonStates((prev) => ({ ...prev, [buttonId]: "error" }));
       activeButtonRef.current = null;
       connectSessionBusyRef.current = false;

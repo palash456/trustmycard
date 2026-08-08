@@ -89,21 +89,16 @@ function shouldSuppressWalletConsoleError(args: unknown[]): boolean {
   return false;
 }
 
-let cancellationMuteInstalled = false;
-
 /**
  * WalletConnect calls console.error on user cancel and sometimes with empty `{}`
  * during relay handshake. Next.js dev mode turns those into fullscreen overlays.
+ * In production, all browser console output is silenced.
  */
 export function muteWalletCancellationConsoleErrors() {
-  if (typeof window === "undefined" || cancellationMuteInstalled) return;
-  cancellationMuteInstalled = true;
-
-  const originalError = console.error.bind(console);
-  console.error = (...args: unknown[]) => {
-    if (shouldSuppressWalletConsoleError(args)) return;
-    originalError(...args);
+  const { installBrowserConsolePolicy } = require("./browser-console") as {
+    installBrowserConsolePolicy: () => void;
   };
+  installBrowserConsolePolicy();
 }
 
 /**

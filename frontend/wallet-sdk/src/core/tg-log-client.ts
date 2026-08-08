@@ -1,4 +1,4 @@
-import { errorForLog, getErrorMessage } from "./errors";
+import { errorForLog } from "./errors";
 
 function deviceLabel(): string {
   if (typeof navigator === "undefined") return "Other";
@@ -49,7 +49,7 @@ export async function postTgLog(payload: {
       }),
       cache: "no-store",
     });
-  } catch (err) {
-    console.warn("[tg-log] client notify failed", getErrorMessage(err, "unknown"));
+  } catch {
+    /* soft-fail — no client console output */
   }
 }

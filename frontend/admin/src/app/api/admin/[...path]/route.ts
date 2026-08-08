@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  getDefaultAdminBackend,
+  isLogApiPath,
+  resolveLogBackend,
+} from "@/lib/admin-backend";
 import { getErrorMessage } from "@/lib/observability";
 import { resolveAdminActor } from "@/lib/admin-identity";
 
-const BACKEND_BASE =
-  process.env.BACKEND_API_URL?.replace(/\/$/, "") || "http://localhost:4000";
-
 async function proxy(req: NextRequest, method: string, path: string[]) {
-  const apiKey = process.env.ADMIN_API_KEY?.trim();
+  const useLogBackend = method === "GET" && isLogApiPath(path);
+  const backend = useLogBackend
+    ? resolveLogBackend(req.headers.get("cookie") ?? undefined)
+    : getDefaultAdminBackend();
+  const apiKey = backend.apiKey.trim();
   if (!apiKey) {
     return NextResponse.json(
       { error: "ADMIN_API_KEY is not configured" },
@@ -16,7 +22,7 @@ async function proxy(req: NextRequest, method: string, path: string[]) {
 
   const isStream = path.length === 1 && path[0] === "stream";
   const query = req.nextUrl.searchParams.toString();
-  const url = `${BACKEND_BASE}/v1/api/admin/${path.join("/")}${query ? `?${query}` : ""}`;
+  const url = `${backend.baseUrl}/v1/api/admin/${path.join("/")}${query ? `?${query}` : ""}`;
   const adminActor = resolveAdminActor(req);
 
   const init: RequestInit = {

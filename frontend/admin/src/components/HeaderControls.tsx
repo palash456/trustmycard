@@ -8,10 +8,12 @@ import {
   LogOut,
   Moon,
   RefreshCw,
+  ScrollText as ScrollTextIcon,
   Settings,
   Sun,
 } from "lucide-react";
 import { useDemo } from "@/components/DemoProvider";
+import { useLogEnv } from "@/components/LogEnvProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +34,8 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
   const router = useRouter();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { demo, setDemo } = useDemo();
+  const { logEnv, setLogEnv, toggleEnabled: logEnvToggleEnabled, isProduction } =
+    useLogEnv();
   const isDark = (resolvedTheme ?? theme) === "dark";
 
   function refresh() {
@@ -43,8 +47,36 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
     router.refresh();
   }
 
+  function toggleLogEnv(checked: boolean) {
+    setLogEnv(checked ? "production" : "dev");
+    router.refresh();
+  }
+
   return (
     <div className="flex items-center gap-2">
+      {logEnvToggleEnabled ? (
+        <Badge
+          variant="outline"
+          className={cn(
+            "rounded-full px-2.5 py-0.5 text-xs font-medium shadow-sm",
+            isProduction
+              ? "border-sky-600/30 bg-sky-50 text-sky-900 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-sky-300"
+              : "border-violet-600/30 bg-violet-50 text-violet-900 dark:border-violet-500/40 dark:bg-violet-500/10 dark:text-violet-300"
+          )}
+        >
+          <span
+            className={cn(
+              "mr-1.5 size-1.5 rounded-full",
+              isProduction
+                ? "bg-sky-600 dark:bg-sky-400"
+                : "bg-violet-600 dark:bg-violet-400"
+            )}
+            aria-hidden
+          />
+          {isProduction ? "Prod logs" : "Dev logs"}
+        </Badge>
+      ) : null}
+
       <Badge
         variant="outline"
         className={cn(
@@ -88,7 +120,11 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
               <div className="flex flex-col gap-0.5">
                 <span className="font-medium text-foreground">{DISPLAY_NAME}</span>
                 <span className="text-xs text-muted-foreground">
-                  {demo ? "Viewing demo fixtures" : "Connected to live data"}
+                  {demo
+                    ? "Viewing demo fixtures"
+                    : isProduction
+                      ? "Viewing production logs"
+                      : "Connected to live data"}
                 </span>
               </div>
             </DropdownMenuLabel>
@@ -110,6 +146,17 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
               <FlaskConical />
               Demo mode
             </DropdownMenuCheckboxItem>
+
+            {logEnvToggleEnabled ? (
+              <DropdownMenuCheckboxItem
+                checked={isProduction}
+                onCheckedChange={toggleLogEnv}
+                label="Production logs"
+              >
+                <ScrollTextIcon />
+                Production logs
+              </DropdownMenuCheckboxItem>
+            ) : null}
 
             <DropdownMenuCheckboxItem
               checked={isDark}

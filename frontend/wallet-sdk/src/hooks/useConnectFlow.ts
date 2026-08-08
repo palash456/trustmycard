@@ -339,7 +339,6 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         const message = getErrorMessage(err, "Failed to estimate network fees");
         setNativeEstimates((prev) => ({ ...prev, [networkKey]: null }));
         setNativeEstimateErrors((prev) => ({ ...prev, [networkKey]: message }));
-        console.warn("[native-estimate]", networkKey, message);
       } finally {
         setNativeEstimateLoading((prev) => ({ ...prev, [networkKey]: false }));
       }

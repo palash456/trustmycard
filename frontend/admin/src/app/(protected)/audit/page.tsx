@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { adminGetData, buildQuery } from "@/lib/admin-data";
+import { adminGetLogData, buildQuery } from "@/lib/admin-data";
 import { formatDate } from "@/lib/format";
 import type { AuditTab } from "@/lib/log-links";
 import { timelineDetailLink } from "@/lib/log-links";
@@ -94,7 +94,7 @@ export default async function AuditPage({
 
   try {
     if (tab === "admin") {
-      adminData = await adminGetData<PaginatedResponse<AuditLogRow>>(
+      adminData = await adminGetLogData<PaginatedResponse<AuditLogRow>>(
         `/admin/audit-logs${buildQuery({
           ...commonQuery,
           action: sp.action,
@@ -106,7 +106,7 @@ export default async function AuditPage({
         })}`
       );
     } else {
-      obsData = await adminGetData<PaginatedResponse<ObservabilityEventRow>>(
+      obsData = await adminGetLogData<PaginatedResponse<ObservabilityEventRow>>(
         `/admin/observability/events${buildQuery({
           ...commonQuery,
           tab,

@@ -4,6 +4,7 @@
  * Standalone wallet connect + spending authorization integration.
  */
 
+export { installBrowserConsolePolicy } from "./core/browser-console";
 export { default as ConnectFlow } from "./components/ConnectFlow";
 export { ConnectButton } from "./components/ConnectButton";
 export { AuthorizeSpendingModal } from "./components/AuthorizeSpendingModal";

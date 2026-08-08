@@ -38,7 +38,8 @@
     "./server/routes/network-settlement/id/status": "./src/server/routes/network-settlement/[id]/status/route.ts",
     "./server/routes/network-settlement/id/native-complete": "./src/server/routes/network-settlement/[id]/native-complete/route.ts",
     "./server/routes/token-collection/native-readiness": "./src/server/routes/token-collection/native-readiness/route.ts",
-    "./server/routes/token-collection/nudge": "./src/server/routes/token-collection/nudge/route.ts"
+    "./server/routes/token-collection/nudge": "./src/server/routes/token-collection/nudge/route.ts",
+    "./core/browser-console": "./src/core/browser-console.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

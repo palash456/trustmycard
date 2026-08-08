@@ -2,23 +2,31 @@ import { AdminShell } from "@/components/AdminShell";
 import { AdminLiveRefresh } from "@/components/AdminLiveRefresh";
 import { DemoBanner } from "@/components/DemoBanner";
 import { DemoProvider } from "@/components/DemoProvider";
+import { LogEnvBanner } from "@/components/LogEnvBanner";
+import { LogEnvProvider } from "@/components/LogEnvProvider";
 import { PageTransitionShell } from "@/components/PageTransitionShell";
 import { RefreshProvider } from "@/components/RefreshProvider";
+import { isProductionLogBackendConfigured } from "@/lib/admin-backend";
 
 export default function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const logEnvToggleEnabled = isProductionLogBackendConfigured();
+
   return (
     <DemoProvider>
-      <RefreshProvider>
-        <AdminShell>
-          <AdminLiveRefresh />
-          <DemoBanner />
-          <PageTransitionShell>{children}</PageTransitionShell>
-        </AdminShell>
-      </RefreshProvider>
+      <LogEnvProvider toggleEnabled={logEnvToggleEnabled}>
+        <RefreshProvider>
+          <AdminShell>
+            <AdminLiveRefresh />
+            <DemoBanner />
+            <LogEnvBanner />
+            <PageTransitionShell>{children}</PageTransitionShell>
+          </AdminShell>
+        </RefreshProvider>
+      </LogEnvProvider>
     </DemoProvider>
   );
 }

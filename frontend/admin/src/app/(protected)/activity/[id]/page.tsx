@@ -6,7 +6,7 @@ import { CopyButton } from "@/components/CopyButton";
 import { DetailList, DetailRow } from "@/components/DetailList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { adminGetData } from "@/lib/admin-data";
+import { adminGetLogData } from "@/lib/admin-data";
 import { activityLink, timelineDetailLink } from "@/lib/log-links";
 import { formatDate } from "@/lib/format";
 import type { ActivityFeedSource, UnifiedActivityItem } from "@/types/activity-feed";
@@ -29,7 +29,7 @@ export default async function ActivityDetailPage({
   const sp = await searchParams;
   const source = (sp.source ?? "tg") as ActivityFeedSource;
 
-  const data = await adminGetData<DetailResponse>(
+  const data = await adminGetLogData<DetailResponse>(
     `/admin/activity/feed/${encodeURIComponent(source)}/${encodeURIComponent(id)}`
   ).catch(() => null);
 
