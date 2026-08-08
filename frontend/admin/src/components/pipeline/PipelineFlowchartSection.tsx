@@ -140,8 +140,11 @@ function StageHoverContent({ stage }: { stage: FlowchartStage }) {
       ) : null}
       {stage.details.length > 0 ? (
         <dl className="grid max-h-[50vh] gap-2 overflow-y-auto sm:grid-cols-2">
-          {stage.details.map((d) => (
-            <div key={`${d.label}-${d.value}`} className="rounded-md border bg-muted/40 px-2.5 py-2">
+          {stage.details.map((d, index) => (
+            <div
+              key={`${stage.key}-detail-${index}`}
+              className="rounded-md border bg-muted/40 px-2.5 py-2"
+            >
               <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {d.label}
               </dt>

@@ -611,7 +611,9 @@ export function buildAssetFlowchart(
             value: `${pipelineStageStatusLabel(a.status)} · ${formatDate(a.at)}`,
           },
           ...(a.txHash ? [{ label: "Tx", value: a.txHash }] : []),
-          ...(a.error ? [{ label: "Error", value: a.error }] : []),
+          ...(a.error
+            ? [{ label: `Attempt #${a.attemptNumber} error`, value: a.error }]
+            : []),
         ])
       : [{ label: "Attempts", value: "None yet" }];
 
