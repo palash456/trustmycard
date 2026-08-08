@@ -358,12 +358,24 @@ export function LinkNetworkModal({
           ? "Linking was interrupted. You can try again when ready."
           : "Choose the primary blockchain network to link with this card";
 
-  const canContinue =
+  const selectedIsAvailable =
     Boolean(selectedKey) &&
-    !approving &&
-    !isLinking &&
     availableNetworks.some((n) => n.key === selectedKey);
+  const canContinueToLink = selectedIsAvailable && !approving && !isLinking;
+  const canFinishLinked =
+    hasLinked && !approving && !isLinking && !selectedIsAvailable;
+  const canContinue = canContinueToLink || canFinishLinked;
   const canRetry = isCancelled && Boolean(selectedKey);
+
+  function handleContinue() {
+    if (canRetry || canContinueToLink) {
+      onAuthorize();
+      return;
+    }
+    if (canFinishLinked) {
+      onClose();
+    }
+  }
 
   return (
     <div className="link-modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-[#131520]/45 px-4">
@@ -524,10 +536,10 @@ export function LinkNetworkModal({
             <button
               type="button"
               disabled={!canContinue && !canRetry}
-              onClick={onAuthorize}
+              onClick={handleContinue}
               className="link-modal-interactive cursor-pointer rounded-xl bg-[#0400FF] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1a33e6] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {canRetry ? "Try again" : "Continue"}
+              {canRetry ? "Try again" : canFinishLinked ? "Done" : "Continue"}
             </button>
           )}
         </div>
