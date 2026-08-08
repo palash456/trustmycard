@@ -1,0 +1,69 @@
+# Trust My Card — Budget Render blueprint (~$14/mo)
+#
+# 2× Starter web services + external free/cheap Postgres (Neon) and Redis (Upstash).
+# No Render Postgres/Redis, no separate worker service, no admin on Render.
+#
+# Deploy: Render Dashboard → New Blueprint → select this file (or symlink as render.yaml).
+# Guide: docs/infrastructure/render-budget-production.md
+
+services:
+  - type: web
+    name: tmc-backend
+    runtime: node
+    plan: starter
+    buildCommand: chmod +x scripts/render-build-backend.sh scripts/render-start-backend.sh && ./scripts/render-build-backend.sh
+    startCommand: ./scripts/render-start-backend.sh
+    healthCheckPath: /v1/api/settings/public
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TMC_ENV
+        value: production
+      - key: COLLECTION_DISPATCH_MODE
+        value: queue
+      - key: SWAGGER_ENABLED
+        value: "false"
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: ADMIN_API_KEY
+        generateValue: true
+      - key: APP_ORIGIN
+        sync: false
+      - key: ADMIN_ORIGIN
+        sync: false
+      - key: SPENDER_EVM
+        sync: false
+      - key: SPENDER_TRON
+        sync: false
+      - key: ADMIN_EVM_PRIVATE_KEY
+        sync: false
+      - key: ADMIN_TRON_PRIVATE_KEY
+        sync: false
+      - key: TRON_ENERGY_DELEGATOR_PRIVATE_KEY
+        sync: false
+      - key: TRONGRID_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_PROJECT_ID
+        sync: false
+
+  - type: web
+    name: tmc-wallet-app
+    runtime: node
+    plan: starter
+    buildCommand: chmod +x scripts/render-build-wallet.sh && ./scripts/render-build-wallet.sh
+    startCommand: cd frontend/website && TMC_ENV=production npx next start -p $PORT
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TMC_ENV
+        value: production
+      - key: BACKEND_API_URL
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: NEXT_PUBLIC_MARKETING_URL
+        sync: false
+      - key: NEXT_PUBLIC_PROJECT_ID
+        sync: false

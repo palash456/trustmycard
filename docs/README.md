@@ -72,7 +72,8 @@ npm run start:dev      # http://localhost:4000
 | Workers | Render | (no public HTTP) |
 | Admin | Render | `admin.trustmycard.com` |
 
-Deploy guide: [infrastructure/render-hostinger-production.md](./infrastructure/render-hostinger-production.md)
+Deploy guide (budget): [infrastructure/render-budget-production.md](./infrastructure/render-budget-production.md)  
+Deploy guide (full): [infrastructure/render-hostinger-production.md](./infrastructure/render-hostinger-production.md)
 
 ## Documentation index
 
@@ -93,7 +94,8 @@ Deploy guide: [infrastructure/render-hostinger-production.md](./infrastructure/r
 | Doc | Description |
 |-----|-------------|
 | [infrastructure/README.md](./infrastructure/README.md) | Index |
-| [render-hostinger-production.md](./infrastructure/render-hostinger-production.md) | **Primary deploy guide** |
+| [render-budget-production.md](./infrastructure/render-budget-production.md) | **Budget deploy ~$14/mo** |
+| [render-hostinger-production.md](./infrastructure/render-hostinger-production.md) | Full deploy ~$60/mo |
 | [production-architecture.md](./infrastructure/production-architecture.md) | Blast-radius zones |
 | [environments.md](./infrastructure/environments.md) | `TMC_ENV` profiles |
 | [secrets.md](./infrastructure/secrets.md) | Env var matrix per service |

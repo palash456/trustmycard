@@ -4,3 +4,4 @@ profiles/**/backend.env
 profiles/**/website.env
 profiles/**/admin.env
 profiles/**/marketing.env
+profiles/**/backend-budget.env

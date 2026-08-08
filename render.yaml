@@ -1,5 +1,7 @@
 # Trust My Card — Render blueprint (core stack)
 # Marketing static site deploys separately to Hostinger — see docs/infrastructure/render-hostinger-production.md
+#
+# Budget alternative (~$14/mo): render-budget.yaml + docs/infrastructure/render-budget-production.md
 
 databases:
   - name: tmc-postgres

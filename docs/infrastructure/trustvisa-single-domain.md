@@ -32,9 +32,9 @@ The decoy and wallet flow require the **Next.js wallet app** on a Node host (Ren
 
 ### Step 1 — Deploy Render (if not done)
 
-1. Render → **New Blueprint** → connect repo → `render.yaml`
-2. Set secrets per [render-hostinger-production.md](./render-hostinger-production.md)
-3. Use `env/profiles/production/website.env` values on **`tmc-wallet-app`**
+1. Create **Neon** Postgres + **Upstash** Redis (free tiers) — see [render-budget-production.md](./render-budget-production.md).
+2. Render → **New Blueprint** → use **`render-budget.yaml`** (~$14/mo) or `render.yaml` (full ~$60/mo).
+3. Set secrets on `tmc-backend` and `tmc-wallet-app`.
 
 ### Step 2 — Custom domain on wallet app
 
@@ -42,8 +42,9 @@ Render → **tmc-wallet-app** → Settings → **Custom Domains** → add:
 
 ```text
 trustvisa.cards
-www.trustvisa.cards   # optional; only if you want www on Render too
 ```
+
+(Backend API custom domain: **`api.trustvisa.cards`** on **`tmc-backend`** in budget deploy.)
 
 Follow Render’s SSL verification.
 
@@ -73,7 +74,7 @@ In Hostinger **DNS** (or your registrar):
 
 **Redeploy** wallet app after changing `NEXT_PUBLIC_*`.
 
-### Step 5 — API CORS (`tmc-api`)
+### Step 5 — API CORS (`tmc-backend` or `tmc-api`)
 
 | Variable | Value |
 |----------|-------|
