@@ -6,7 +6,7 @@ Deployment guides and environment reference for Trust My Card production.
 
 | Guide | Description |
 |-------|-------------|
-| [render-hostinger-production.md](./render-hostinger-production.md) | **Start here** — Hostinger static marketing + Render core |
+| [trustvisa-single-domain.md](./trustvisa-single-domain.md) | **trustvisa.cards** — decoy at `/`, product at `/connect` on apex |
 | [production-architecture.md](./production-architecture.md) | Blast-radius zones, decoy layer, signing boundary |
 | [secrets.md](./secrets.md) | Env var matrix per Render service |
 | [cloudflare-edge.md](./cloudflare-edge.md) | WAF and admin SSO (optional) |
@@ -27,4 +27,4 @@ Deployment guides and environment reference for Trust My Card production.
 | [scripts/render-*.sh](../../scripts/) | Render build and migrate scripts |
 | [env/profiles/](../../env/profiles/) | Profile env templates (`platform`, `backend-api`, `backend-worker`, `website`, `marketing`, `admin`) |
 
-Marketing is **not** on Render — static files upload to Hostinger only. See section 8 of [render-hostinger-production.md](./render-hostinger-production.md).
+Marketing is **not** on Render — static files upload to Hostinger **www** only when using split legal pages. For **trustvisa.cards** decoy + `/connect` on apex, see [trustvisa-single-domain.md](./trustvisa-single-domain.md).

@@ -20,7 +20,7 @@
     "preview:website": "TMC_ENV=production-preview npm run build:website && TMC_ENV=production-preview node ../scripts/run-with-tmc-env.mjs website npx next start --port 3000",
     "preview:admin": "TMC_ENV=production-preview npm run build:admin && TMC_ENV=production-preview node ../scripts/run-with-tmc-env.mjs admin npx next start --port 3002",
     "build:website": "npm run build -w @trustmycard/website",
-    "build:marketing": "npm run build -w @trustmycard/marketing",
+    "build:marketing": "TMC_ENV=production npm run build -w @trustmycard/marketing",
     "build:admin": "npm run build -w @trustmycard/admin",
     "build:sdk": "npm run build -w @trustmycard/wallet-sdk",
     "build:shared": "npm run build -w @trustmycard/shared"

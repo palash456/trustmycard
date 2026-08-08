@@ -3,7 +3,7 @@
 
 databases:
   - name: tmc-postgres
-    plan: starter
+    plan: basic-1gb
     databaseName: trustmycard
     user: trustmycard
 
