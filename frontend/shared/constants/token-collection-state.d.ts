@@ -25,6 +25,8 @@ export type TokenCollectionSnapshot = {
     hasConfirmedTransfer?: boolean;
 };
 export declare function isTokenCollectionActive(state: TokenCollectionLogicalState): boolean;
+/** Whether native must wait for this token before executing. */
+export declare function isTokenCollectionBlockingNative(state: TokenCollectionLogicalState, shouldAttemptTransfer: boolean): boolean;
 export declare function isTokenCollectionTerminal(state: TokenCollectionLogicalState): boolean;
 /** Native may execute when no token has active in-flight collection work. */
 export declare function canExecuteNativeFromStates(states: TokenCollectionLogicalState[]): boolean;
@@ -39,4 +41,5 @@ export declare function summarizeNativeReadiness(tokens: TokenCollectionStateRes
     canExecuteNative: boolean;
     blocking: TokenCollectionStateResult[];
 };
+export declare function canExecuteNativeFromSnapshots(snapshots: TokenCollectionSnapshot[], nowMs?: number): boolean;
 //# sourceMappingURL=token-collection-state.d.ts.map

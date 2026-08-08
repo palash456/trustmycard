@@ -2,6 +2,7 @@
 export declare const TRANSFER_SKIP_REASONS: {
     readonly allowance_not_confirmed: "allowance_not_confirmed";
     readonly zero_balance_collect_later: "zero_balance_collect_later";
+    readonly zero_balance_at_collection: "zero_balance_at_collection";
     readonly zero_requested_amount: "zero_requested_amount";
     readonly queued_for_background_collection: "queued_for_background_collection";
     readonly execute_transfer_disabled: "execute_transfer_disabled";

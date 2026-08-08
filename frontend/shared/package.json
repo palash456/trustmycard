@@ -53,6 +53,7 @@
     "test": "npm run build && node --test test/observability.spec.js test/collection.spec.js test/token-collection-state.spec.js"
   },
   "devDependencies": {
+    "@types/node": "^20",
     "typescript": "^5",
     "zod": "^3.24.0"
   },

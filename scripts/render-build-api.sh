@@ -3,6 +3,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT/backend"
 npm ci
-npm run build --prefix ../frontend/shared
+# Shared is built outside the frontend workspace on this service; install its compiler + types locally.
+npm install --prefix "$ROOT/frontend/shared" --include=dev
+npm run build --prefix "$ROOT/frontend/shared"
 npx prisma generate
 npm run build

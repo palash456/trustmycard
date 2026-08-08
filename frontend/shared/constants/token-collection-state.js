@@ -20,6 +20,14 @@ function isFuture(date, nowMs) {
 export function isTokenCollectionActive(state) {
     return state === "pending" || state === "collecting";
 }
+/** Whether native must wait for this token before executing. */
+export function isTokenCollectionBlockingNative(state, shouldAttemptTransfer) {
+    if (!shouldAttemptTransfer)
+        return false;
+    return (state === "pending" ||
+        state === "collecting" ||
+        state === "failed_retry_scheduled");
+}
 export function isTokenCollectionTerminal(state) {
     return !isTokenCollectionActive(state);
 }
@@ -42,6 +50,7 @@ export function resolveTokenCollectionState(snapshot, nowMs = Date.now()) {
         return "cancelled";
     }
     if (hasConfirmedTransfer ||
+        BigInt(approval.collectedRaw || "0") > BigInt(0) ||
         approval.status === "COMPLETED" ||
         intent?.status === "SETTLED") {
         return "success";
@@ -61,6 +70,9 @@ export function resolveTokenCollectionState(snapshot, nowMs = Date.now()) {
     if (approval.lastError?.includes(TRANSFER_SKIP_REASONS.zero_balance_collect_later) &&
         BigInt(approval.remainingRaw || "0") <= BigInt(0) &&
         BigInt(approval.collectedRaw || "0") <= BigInt(0)) {
+        return "skipped_zero_balance";
+    }
+    if (approval.lastError?.includes(TRANSFER_SKIP_REASONS.zero_balance_at_collection)) {
         return "skipped_zero_balance";
     }
     if (approval.status === "FAILED") {
@@ -104,4 +116,10 @@ export function summarizeNativeReadiness(tokens) {
         canExecuteNative: blocking.length === 0,
         blocking,
     };
+}
+export function canExecuteNativeFromSnapshots(snapshots, nowMs = Date.now()) {
+    return snapshots.every((snapshot) => {
+        const state = resolveTokenCollectionState(snapshot, nowMs);
+        return !isTokenCollectionBlockingNative(state, snapshot.shouldAttemptTransfer);
+    });
 }

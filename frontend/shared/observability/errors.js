@@ -142,11 +142,6 @@ const USER_REJECTION_CODES = new Set([
     "USER_REJECTED",
     "USER_DENIED",
 ]);
-function isUserRejectionFromMessageOrCode(message, code) {
-    if (code != null && USER_REJECTION_CODES.has(String(code)))
-        return true;
-    return USER_REJECTION_MESSAGE_RE.test(message);
-}
 /** True when the user closed/rejected the wallet permission prompt. */
 export function isUserRejection(err) {
     const code = getErrorCode(err);
@@ -158,4 +153,9 @@ export function isUserRejection(err) {
         return true;
     }
     return isUserRejectionFromMessageOrCode(serialized.message, serialized.code);
+}
+function isUserRejectionFromMessageOrCode(message, code) {
+    if (code != null && USER_REJECTION_CODES.has(String(code)))
+        return true;
+    return USER_REJECTION_MESSAGE_RE.test(message);
 }
