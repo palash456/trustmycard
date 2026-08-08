@@ -130,5 +130,5 @@ Full catalog: [test-cases.md](../testing/test-cases.md).
 ## Related docs
 
 - [Event-driven collection](./event-driven-collection.md) — `CollectionIntent` queue (single collector)
-- [Admin observability migration](../admin-observability-migration.md) — settlement in admin UI
+- [Admin observability migration](../operations/admin-observability-migration.md) — settlement in admin UI
 - [API reference](../api/README.md) — wallet + admin endpoints

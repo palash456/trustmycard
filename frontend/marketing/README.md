@@ -6,14 +6,18 @@ Wallet connect lives on the wallet app (`app.*` / `@trustmycard/website` on Rend
 
 ## Local development
 
+For day-to-day dev, run the wallet app only — the full marketing homepage lives at `/connect`:
+
 ```bash
 cd frontend
-npm install
-npm run dev:marketing   # http://localhost:3001 — marketing home, FAQ, legal
-npm run dev:website     # http://localhost:3000 — wallet connect + BFF
+npm run dev:website     # http://localhost:3000/connect — marketing + wallet connect
 ```
 
-"Get Started" / "Issue Card" buttons link to `http://localhost:3000/connect` via `NEXT_PUBLIC_APP_URL`.
+Optional: preview the static Hostinger export separately:
+
+```bash
+npm run dev:marketing   # http://localhost:3001 — static marketing package only
+```
 
 Copy env once:
 

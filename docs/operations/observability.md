@@ -119,7 +119,7 @@ Token logical states (`Collecting / in progress`, `Skipped — zero balance`,
 `Failed — retry scheduled`, etc.) come from
 `@trustmycard/shared/constants/token-collection-state`.
 
-See [settlement-and-native-execution.md](./architecture/settlement-and-native-execution.md).
+See [settlement-and-native-execution.md](../architecture/settlement-and-native-execution.md).
 
 ## CI guardrail
 

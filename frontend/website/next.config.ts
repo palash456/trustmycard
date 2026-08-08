@@ -17,6 +17,15 @@ const frontendRoot = path.join(configDir, "..");
 const nextConfig: NextConfig = {
   transpilePackages: ["@trustmycard/wallet-sdk", "@trustmycard/shared"],
   outputFileTracingRoot: frontendRoot,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

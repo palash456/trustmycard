@@ -128,7 +128,7 @@ In WalletConnect Cloud, add allowed origin:
 https://app.trustmycard.com
 ```
 
-Do **not** add marketing domain (no wallet there).
+Do **not** add marketing domain (no wallet there). The decoy page at `https://app.trustmycard.com/` does not load WalletConnect — only `/connect` does.
 
 ## 8. Build and deploy marketing (Hostinger)
 
@@ -229,7 +229,3 @@ TMC_ENV=production-preview npm run preview:website
 | Wallet 502 on `/api/*` | `BACKEND_API_URL` correct; API service healthy |
 | CORS errors | Set `APP_ORIGIN` on API to exact wallet URL |
 | Marketing CTA wrong URL | Rebuild marketing with `NEXT_PUBLIC_APP_URL` |
-
-## Legacy monolith VPS
-
-The all-in-one Hostinger VPS guide remains at [hostinger-deployment.md](./hostinger-deployment.md) for reference. New production should use this split guide.

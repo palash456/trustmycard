@@ -43,7 +43,7 @@ Two-phase authorization surfaces in admin via:
 - **Dashboard** — active/failed settlement session counts
 - **API** — `GET /admin/settlement-sessions`, `GET /admin/settlement-sessions/:id`
 
-Policy reference: [settlement-and-native-execution.md](./architecture/settlement-and-native-execution.md).
+Policy reference: [settlement-and-native-execution.md](../architecture/settlement-and-native-execution.md).
 
 ## Intentionally unchanged
 

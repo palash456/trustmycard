@@ -588,7 +588,7 @@ Additional policy tests:
 
 ## Manual validation (non-automated)
 
-See [admin-pipeline-validation.md](../admin-pipeline-validation.md) for
+See [admin-pipeline-validation.md](../operations/admin-pipeline-validation.md) for
 post-deploy checklist items including settlement native policy UX.
 
 ---

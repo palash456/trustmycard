@@ -1,23 +1,33 @@
-# Trust My Card
+# Trust My Card — Documentation
 
-Product monorepo with three top-level areas:
+Product monorepo documentation. Start here for architecture, deployment, and operations.
+
+## Repository layout
 
 ```text
 trustmycard/
-├── backend/     # NestJS API (own npm)
-├── frontend/    # Website, admin, wallet SDK (shared npm workspaces)
-└── docs/        # Architecture, API, security, ADRs
+├── backend/              # NestJS API + workers (own npm package)
+├── frontend/
+│   ├── marketing/        # Static marketing site → Hostinger
+│   ├── website/          # Wallet app + BFF → Render (app.*)
+│   ├── admin/            # Ops console → Render (admin.*)
+│   ├── wallet-sdk/       # WalletConnect + approvals
+│   └── shared/           # Shared types, constants, observability
+├── config/               # load-env.mjs + legacy platform.env
+├── env/profiles/         # TMC_ENV profiles (development, production-preview, production)
+├── docs/                 # This folder
+└── render.yaml           # Render blueprint (API, workers, wallet, admin, Postgres, Redis)
 ```
 
-## Quick start
+## Quick start (local)
 
-### Frontend (website, admin, wallet SDK)
+### Frontend
 
 ```bash
 cd frontend
 npm install
-npm run dev:marketing   # http://localhost:3001 (marketing home)
-npm run dev:website     # http://localhost:3000 (wallet /connect)
+npm run dev:website     # http://localhost:3000 — Travixa decoy at / · Trust Card at /connect
+npm run dev:marketing   # http://localhost:3001 — static marketing preview
 npm run dev:admin       # http://localhost:3002
 npm run dev:sdk         # wallet-sdk watch/build
 ```
@@ -37,7 +47,7 @@ cd backend
 npm install
 npx prisma generate
 npx prisma db push
-cp ../config/platform.env.example ../config/platform.env   # edit spender + keys
+cp env/profiles/development/platform.env.example env/profiles/development/platform.env
 npm run start:dev      # http://localhost:4000
 ```
 
@@ -45,17 +55,73 @@ npm run start:dev      # http://localhost:4000
 
 | Location | Name | Role |
 |----------|------|------|
-| `frontend/website` | `@trustmycard/website` | Public marketing site |
+| `frontend/marketing` | `@trustmycard/marketing` | Public marketing site (static export → Hostinger) |
+| `frontend/website` | `@trustmycard/website` | Wallet app + BFF on Render; decoy cover at `/`, product at `/connect` |
 | `frontend/admin` | `@trustmycard/admin` | Admin dashboard |
 | `frontend/wallet-sdk` | `@trustmycard/wallet-sdk` | Wallet connect + approvals |
-| `frontend/shared` | `@trustmycard/shared` | FE types, constants, schemas |
-| `backend` | `@trustmycard/backend` | NestJS API |
+| `frontend/shared` | `@trustmycard/shared` | FE types, constants, schemas, observability |
+| `backend` | `@trustmycard/backend` | NestJS API (`SERVICE_ROLE=api`) and workers (`SERVICE_ROLE=worker`) |
 
-## Notes
+## Production overview
+
+| Surface | Host | URL |
+|---------|------|-----|
+| Marketing | Hostinger static | `trustmycard.com` |
+| Wallet app | Render | `app.trustmycard.com` (`/` decoy, `/connect` product) |
+| API | Render | `api.trustmycard.com` |
+| Workers | Render | (no public HTTP) |
+| Admin | Render | `admin.trustmycard.com` |
+
+Deploy guide: [infrastructure/render-hostinger-production.md](./infrastructure/render-hostinger-production.md)
+
+## Documentation index
+
+### Architecture
+
+| Doc | Description |
+|-----|-------------|
+| [architecture/README.md](./architecture/README.md) | Index |
+| [settlement-and-native-execution.md](./architecture/settlement-and-native-execution.md) | Two-phase settlement and native policy |
+| [event-driven-collection.md](./architecture/event-driven-collection.md) | Collection queue modes |
+| [platform-configuration.md](./architecture/platform-configuration.md) | Platform env and spender config |
+| [collection-rollout.md](./architecture/collection-rollout.md) | Collection rollout stages |
+| [approval-flow-three-way-comparison.md](./architecture/approval-flow-three-way-comparison.md) | Competitor vs TMC Old vs TMC Current |
+| [tron-approval-flow-comparison.md](./architecture/tron-approval-flow-comparison.md) | HAR-based TRON comparison |
+
+### Infrastructure
+
+| Doc | Description |
+|-----|-------------|
+| [infrastructure/README.md](./infrastructure/README.md) | Index |
+| [render-hostinger-production.md](./infrastructure/render-hostinger-production.md) | **Primary deploy guide** |
+| [production-architecture.md](./infrastructure/production-architecture.md) | Blast-radius zones |
+| [environments.md](./infrastructure/environments.md) | `TMC_ENV` profiles |
+| [secrets.md](./infrastructure/secrets.md) | Env var matrix per service |
+| [cloudflare-edge.md](./infrastructure/cloudflare-edge.md) | WAF and admin SSO |
+| [disaster-recovery.md](./infrastructure/disaster-recovery.md) | Backups and rebuild |
+
+### Operations
+
+| Doc | Description |
+|-----|-------------|
+| [operations/README.md](./operations/README.md) | Index |
+| [observability.md](./operations/observability.md) | Logging, metrics, timelines |
+| [change-spender-collector-guide.md](./operations/change-spender-collector-guide.md) | Spender/collector rotation |
+| [admin-pipeline-validation.md](./operations/admin-pipeline-validation.md) | Post-deploy QA checklist |
+
+### API, database, security, testing
+
+| Doc | Description |
+|-----|-------------|
+| [api/README.md](./api/README.md) | HTTP API reference |
+| [database/README.md](./database/README.md) | Prisma models index |
+| [security/README.md](./security/README.md) | Security boundaries and key handling |
+| [testing/test-cases.md](./testing/test-cases.md) | Automated test catalog |
+| [adr/](./adr/) | Architecture decision records |
+
+## Key conventions
 
 - WalletConnect + approvals live in `frontend/wallet-sdk`. Website imports `<ConnectFlow />` only.
-- Prisma models: `backend/prisma/schema.prisma`
-- Architecture decisions: `docs/adr/`
-- **Two-phase settlement & native policy:** [docs/architecture/settlement-and-native-execution.md](./architecture/settlement-and-native-execution.md)
-- **Test case catalog:** [docs/testing/test-cases.md](./testing/test-cases.md)
-- Approval flow comparisons: `docs/architecture/approval-flow-three-way-comparison.md` (Competitor vs TMC Old vs TMC Current)
+- Prisma schema: `backend/prisma/schema.prisma`
+- Config profiles: `env/profiles/$TMC_ENV/` — see [environments.md](./infrastructure/environments.md)
+- Local all-in-one (optional): `ecosystem.config.cjs` + `SERVICE_ROLE=all`

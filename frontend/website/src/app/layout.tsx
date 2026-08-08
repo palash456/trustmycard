@@ -10,9 +10,11 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Connect Wallet | Trust Card",
-  description:
-    "Connect your crypto wallet and issue your Trust Card. Secure wallet authorization and instant approval.",
+  title: {
+    default: "Travixa",
+    template: "%s · Travixa",
+  },
+  description: "International travel and immigration documentation guidance.",
 };
 
 export default function RootLayout({

@@ -1,21 +1,23 @@
 # Environments — Development, Production Preview, Production
 
-Trust My Card uses one codebase and three configuration profiles. The active profile is selected by **`TMC_ENV`**, set explicitly on each npm script or in PM2 — never by copying files.
+Trust My Card uses one codebase and three configuration profiles. The active profile is selected by **`TMC_ENV`**, set explicitly on each npm script or in Render/PM2 — never by copying files between apps.
 
 | `TMC_ENV` | Purpose | How to run |
 |-----------|---------|------------|
-| `development` | Daily feature work | `npm run start:dev` (backend), `npm run dev:website`, `npm run dev:admin` |
+| `development` | Daily feature work | `npm run start:dev` (backend), `npm run dev:website`, `npm run dev:marketing`, `npm run dev:admin` |
 | `production-preview` | Test prod config locally before deploy | `npm run preview` (backend), `npm run preview:website`, `npm run preview:admin` |
-| `production` | Live VPS | PM2 via [`ecosystem.config.cjs`](../../ecosystem.config.cjs) |
+| `production` | Live stack | Render services + Hostinger static marketing |
 
 ## How loading works
 
 [`config/load-env.mjs`](../../config/load-env.mjs) reads, in order (later overrides earlier):
 
-1. `config/platform.env` (legacy)
+1. `config/platform.env` (legacy fallback)
 2. `env/profiles/$TMC_ENV/platform.env` (if present)
 3. App legacy `.env` / `.env.local`
-4. `env/profiles/$TMC_ENV/{backend|website|admin}.env` (if present)
+4. `env/profiles/$TMC_ENV/{backend|backend-api|backend-worker|website|marketing|admin}.env` (if present)
+
+For Render, `SERVICE_ROLE=api` loads `backend-api.env`; `SERVICE_ROLE=worker` loads `backend-worker.env`.
 
 ## One-time profile setup
 
@@ -28,7 +30,11 @@ cp env/profiles/$PROFILE/platform.env.example env/profiles/$PROFILE/platform.env
 cp env/profiles/$PROFILE/backend.env.example   env/profiles/$PROFILE/backend.env
 cp env/profiles/$PROFILE/website.env.example   env/profiles/$PROFILE/website.env
 cp env/profiles/$PROFILE/admin.env.example     env/profiles/$PROFILE/admin.env
-# Edit each live file with your secrets
+cp env/profiles/$PROFILE/marketing.env.example env/profiles/$PROFILE/marketing.env
+
+# Production Render split (production profile only):
+cp env/profiles/$PROFILE/backend-api.env.example   env/profiles/$PROFILE/backend-api.env
+cp env/profiles/$PROFILE/backend-worker.env.example env/profiles/$PROFILE/backend-worker.env
 ```
 
 ### Production preview database (once)
@@ -40,54 +46,37 @@ TMC_ENV=production-preview npm run prisma:migrate --prefix backend
 
 ## Resource isolation
 
-| Resource | development | production-preview | production (VPS) |
-|----------|-------------|--------------------|------------------|
-| PostgreSQL | `trustmycard` | `trustmycard_preview` | `trustmycard` |
-| Redis | `127.0.0.1:6379/0` | `127.0.0.1:6379/1` | VPS `127.0.0.1:6379/0` |
-| Wallet keys | Dev/test | Prod keys (local) | Prod keys |
+| Resource | development | production-preview | production |
+|----------|-------------|--------------------|------------|
+| PostgreSQL | local `trustmycard` | local `trustmycard_preview` | Render managed Postgres |
+| Redis | `127.0.0.1:6379/0` | `127.0.0.1:6379/1` | Render managed Redis |
+| Wallet keys | Dev/test | Prod keys (local only) | Worker service only |
 | `ALLOW_SELF_SPENDER` | optional `true` | `false` | `false` |
-| Admin logs/data | Dev DB only | Preview DB only | VPS DB only |
+| Admin data | Dev DB | Preview DB | Production DB |
 
 Admin always reads from the backend pointed to by `BACKEND_API_URL` in its profile — no in-app environment switch.
 
-## Admin: development vs production-preview vs production logs
+## Admin: development vs production-preview vs production
 
 Admin does **not** have a dropdown to switch environments. It shows data from whichever backend its active profile connects to.
 
-| What you run | Admin URL | Backend | Database | What you see |
-|--------------|-----------|---------|----------|--------------|
-| `npm run dev:admin` | `http://localhost:3002` | dev backend (`start:dev`) | `trustmycard` | Development logs, users, pipeline |
-| `npm run preview:admin` | `http://localhost:3002` | preview backend (`preview`) | `trustmycard_preview` | Preview logs only (isolated from dev) |
-| PM2 on VPS | `https://admin.trustmycard.com` | production API | VPS `trustmycard` | Live production data only |
+| What you run | Admin URL | Backend | Database |
+|--------------|-----------|---------|----------|
+| `npm run dev:admin` | `http://localhost:3002` | dev backend (`start:dev`) | `trustmycard` |
+| `npm run preview:admin` | `http://localhost:3002` | preview backend (`preview`) | `trustmycard_preview` |
+| Render `tmc-admin` | `https://admin.trustmycard.com` | `tmc-api` | Render Postgres |
 
-**To compare dev vs preview locally:**
-
-1. Terminal A — development stack:
-   ```bash
-   cd backend && npm run start:dev
-   cd frontend && npm run dev:admin
-   ```
-   Open `http://localhost:3002` → Activity / Audit tabs show **development** data.
-
-2. Stop dev admin (or use a different port is not supported — stop one stack before starting the other). Terminal B — preview stack:
-   ```bash
-   cd backend && npm run preview
-   cd frontend && npm run preview:admin
-   ```
-   Open `http://localhost:3002` → same UI, but **preview** database (empty or separate test data).
-
-Both use port 3002 — run **one stack at a time**. The environment is determined by which npm scripts you used to start backend + admin, not by a setting inside the admin UI.
-
-Structured logs (Audit → Structured), timelines, activity feed, and pipeline data all come from the backend's PostgreSQL for that profile.
+**To compare dev vs preview locally:** run one stack at a time (both use port 3002).
 
 ## Workflows
 
-### Development (unchanged UX)
+### Development
 
 ```bash
 cd backend && npm run start:dev
-cd frontend && npm run dev:website
-cd frontend && npm run dev:admin
+cd frontend && npm run dev:website    # :3000 — decoy / + /connect
+cd frontend && npm run dev:marketing  # :3001 — marketing static preview
+cd frontend && npm run dev:admin      # :3002
 ```
 
 ### Production preview
@@ -102,7 +91,9 @@ Uses production-like flags and isolated DB/Redis while still on localhost. Websi
 
 ### Production (Render + Hostinger)
 
-See [docs/infrastructure/render-hostinger-production.md](../docs/infrastructure/render-hostinger-production.md). PM2 [`ecosystem.config.cjs`](../../ecosystem.config.cjs) remains for local/VPS all-in-one.
+See [render-hostinger-production.md](./render-hostinger-production.md).
+
+`ecosystem.config.cjs` remains for optional local all-in-one (`SERVICE_ROLE=all`) — not the recommended production path.
 
 ## Verify isolation
 
@@ -113,5 +104,5 @@ See [docs/infrastructure/render-hostinger-production.md](../docs/infrastructure/
 ## Related docs
 
 - [Platform configuration](../architecture/platform-configuration.md)
-- [Hostinger deployment](./hostinger-deployment.md)
+- [Secrets matrix](./secrets.md)
 - [Profile templates](../../env/profiles/README.md)
