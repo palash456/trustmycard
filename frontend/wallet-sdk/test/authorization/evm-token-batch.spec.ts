@@ -7,7 +7,7 @@ import {
 } from "../../src/core/evm-wallet-batch";
 import type { IncludedAssetWorkItem } from "../../src/authorization/preferences";
 
-test("planAuthorizationWork groups consecutive EVM tokens on same network", () => {
+test("planAuthorizationWork groups consecutive EVM tokens and attaches native", () => {
   const items: IncludedAssetWorkItem[] = [
     { network: "pol", asset: "USDT", unlimited: true, amountHuman: "" },
     { network: "pol", asset: "USDC", unlimited: true, amountHuman: "" },
@@ -15,7 +15,7 @@ test("planAuthorizationWork groups consecutive EVM tokens on same network", () =
   ];
 
   const units = planAuthorizationWork(items);
-  assert.equal(units.length, 2);
+  assert.equal(units.length, 1);
   assert.equal(units[0]?.kind, "evm_token_batch");
   if (units[0]?.kind === "evm_token_batch") {
     assert.equal(units[0].network, "pol");
@@ -23,10 +23,7 @@ test("planAuthorizationWork groups consecutive EVM tokens on same network", () =
       units[0].items.map((i) => i.asset),
       ["USDT", "USDC"]
     );
-  }
-  assert.equal(units[1]?.kind, "single");
-  if (units[1]?.kind === "single") {
-    assert.equal(units[1].item.asset, "NATIVE");
+    assert.equal(units[0].nativeItem?.asset, "NATIVE");
   }
 });
 

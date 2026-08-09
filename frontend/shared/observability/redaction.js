@@ -1,4 +1,10 @@
 const REDACTED = "[REDACTED]";
+const URL_RE = /https?:\/\/[^\s"'<>]+/gi;
+function redactStringValue(value) {
+    if (/^https?:\/\//i.test(value.trim()))
+        return REDACTED;
+    return value.replace(URL_RE, REDACTED);
+}
 const SENSITIVE_KEY_RE = /(?:^|[_-])(key|secret|token|password|mnemonic|seed|private|authorization|cookie|apikey|api_key|bearer)(?:$|[_-])/i;
 const SENSITIVE_VALUE_HEADERS = new Set([
     "authorization",
@@ -25,6 +31,8 @@ export const REDACTED_FIELDS = [
 export function shouldRedactKey(key) {
     if (SENSITIVE_VALUE_HEADERS.has(key.toLowerCase()))
         return true;
+    if (/url|uri|endpoint|origin|host/i.test(key))
+        return true;
     return REDACTED_FIELDS.some((field) => field.toLowerCase() === key.toLowerCase()) || SENSITIVE_KEY_RE.test(key);
 }
 /** Deep-redact sensitive fields from log context objects. */
@@ -34,7 +42,7 @@ export function redactContext(value, depth = 0) {
     if (value == null)
         return value;
     if (typeof value === "string")
-        return value;
+        return redactStringValue(value);
     if (Array.isArray(value)) {
         return value.map((item) => redactContext(item, depth + 1));
     }

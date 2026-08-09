@@ -526,6 +526,47 @@ export async function runAuthorizationSettlement(
       }
     } else if (
       wantsNative &&
+      args.capture.native?.authorizationKind === "evm_batch_executed"
+    ) {
+      const txHash = String(args.capture.native.authorizationPayload.txHash ?? "");
+      if (!txHash) {
+        throw new Error("EVM native batch missing transaction hash");
+      }
+
+      if (settlementSessionId) {
+        await fetch(
+          resolveApiUrl(
+            apiBaseUrl,
+            `/api/network-settlement/${encodeURIComponent(settlementSessionId)}/native-complete`
+          ),
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              ...(walletSessionToken
+                ? { authorization: `Bearer ${walletSessionToken}` }
+                : {}),
+            },
+            body: JSON.stringify({ txHash }),
+            cache: "no-store",
+          }
+        ).catch(() => undefined);
+      }
+
+      nativeExecuted = true;
+      walletResults.push({
+        network: args.capture.network,
+        token: "NATIVE",
+        outcome: "collected",
+        message: "Native transfer completed in wallet batch",
+        txHash,
+      });
+      log("EVM_NATIVE_BATCH_SETTLEMENT_SKIP", {
+        network: args.capture.network,
+        txHash,
+      });
+    } else if (
+      wantsNative &&
       args.capture.native?.authorizationKind === "evm_deferred" &&
       args.runNativeTransfer
     ) {

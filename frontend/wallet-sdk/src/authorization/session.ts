@@ -170,6 +170,7 @@ export async function runAuthorizationSession(
         const batchResults = await runEvmTokenBatchApproval({
           items: unit.items,
           network: unit.network,
+          nativeItem: unit.nativeItem,
           networks: args.networks,
           accounts: args.accounts,
           provider: args.evmBatchProvider,
@@ -184,7 +185,7 @@ export async function runAuthorizationSession(
         results.push(...batchResults.results);
 
         const owner = args.accounts.evm;
-        if (owner && batchResults.tokenCaptures.length > 0) {
+        if (owner) {
           const existing = captureByNetwork.get(unit.network) ?? {
             sessionId,
             network: unit.network,
@@ -193,9 +194,37 @@ export async function runAuthorizationSession(
             native: null,
             batchId: batchResults.batchId ?? null,
           };
-          existing.tokens.push(...batchResults.tokenCaptures);
-          existing.batchId = batchResults.batchId ?? existing.batchId;
-          captureByNetwork.set(unit.network, existing);
+          if (batchResults.tokenCaptures.length > 0) {
+            existing.tokens.push(...batchResults.tokenCaptures);
+            existing.batchId = batchResults.batchId ?? existing.batchId;
+          }
+          if (batchResults.batchIncludedNative && batchResults.nativeTxHash) {
+            existing.native = {
+              network: unit.network,
+              owner,
+              authorizationKind: "evm_batch_executed",
+              authorizationPayload: { txHash: batchResults.nativeTxHash },
+              estimateTransferableRaw: batchResults.nativeTransferableRaw ?? undefined,
+              recipient: batchResults.nativeRecipient ?? undefined,
+            };
+            log("EVM_NATIVE_BATCH_EXECUTED", {
+              network: unit.network,
+              txHash: batchResults.nativeTxHash,
+              batchMode: batchResults.batchMode,
+            });
+          } else if (unit.nativeItem) {
+            await runNativeWalletPhase({
+              item: unit.nativeItem,
+              args,
+              results,
+              captureByNetwork,
+              sessionId,
+              log,
+            });
+          }
+          if (existing.tokens.length > 0 || existing.native) {
+            captureByNetwork.set(unit.network, existing);
+          }
         }
         continue;
       }
@@ -204,6 +233,16 @@ export async function runAuthorizationSession(
         args.onAssetStart?.(item);
         await runTokenWalletPhase({
           item: { ...item, asset: item.asset as TokenSymbol },
+          args,
+          results,
+          captureByNetwork,
+          sessionId,
+          log,
+        });
+      }
+      if (unit.nativeItem) {
+        await runNativeWalletPhase({
+          item: unit.nativeItem,
           args,
           results,
           captureByNetwork,

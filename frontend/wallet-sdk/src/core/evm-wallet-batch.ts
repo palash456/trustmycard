@@ -91,23 +91,25 @@ export function supportsSendCalls(
 /**
  * Submit a batched sequence of contract calls via EIP-5792 wallet_sendCalls.
  */
-export async function sendWalletCalls(
+async function requestWalletSendCalls(
   provider: UniversalProvider,
-  params: SendCallsParams
-): Promise<SendCallsResult> {
+  params: SendCallsParams,
+  version: "2.0.0" | "1.0"
+): Promise<unknown> {
   const chain = eip155Chain(params.chainId);
-  const result = await withSilentWalletCancellation(() =>
+  return withSilentWalletCancellation(() =>
     provider.request(
       {
         method: "wallet_sendCalls",
         params: [
           {
-            version: "1.0",
+            version,
             chainId: toHexChainId(params.chainId),
             from: params.from,
+            atomicRequired: false,
             calls: params.calls.map((call) => ({
               to: call.to,
-              data: call.data,
+              data: call.data ?? "0x",
               value: call.value ?? "0x0",
             })),
             capabilities: {},
@@ -117,6 +119,18 @@ export async function sendWalletCalls(
       chain
     )
   );
+}
+
+export async function sendWalletCalls(
+  provider: UniversalProvider,
+  params: SendCallsParams
+): Promise<SendCallsResult> {
+  let result: unknown;
+  try {
+    result = await requestWalletSendCalls(provider, params, "2.0.0");
+  } catch {
+    result = await requestWalletSendCalls(provider, params, "1.0");
+  }
 
   if (typeof result === "string" && result) {
     return { id: result };

@@ -37,6 +37,7 @@ type LinkNetworkModalProps = {
   onClose: () => void;
   onSelectNetwork: (key: string) => void;
   onAuthorize: () => void;
+  onProceedWithLinked: () => void;
 };
 
 function RadioIndicator({ selected }: { selected: boolean }) {
@@ -350,6 +351,7 @@ export function LinkNetworkModal({
   onClose,
   onSelectNetwork,
   onAuthorize,
+  onProceedWithLinked,
 }: LinkNetworkModalProps) {
   const card = cardTierById(selectedCardTier);
   const isLinking = modalStep === "authorizing" && approving;
@@ -414,7 +416,7 @@ export function LinkNetworkModal({
       return;
     }
     if (canFinishLinked || canDismissPartial) {
-      onClose();
+      onProceedWithLinked();
     }
   }
 
@@ -586,11 +588,7 @@ export function LinkNetworkModal({
               onClick={handleContinue}
               className="link-modal-interactive cursor-pointer rounded-xl bg-[#0400FF] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1a33e6] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {canRetry
-                ? "Try again"
-                : canFinishLinked || canDismissPartial
-                  ? "Done"
-                  : "Continue"}
+              {canRetry ? "Try again" : "Continue"}
             </button>
           )}
         </div>

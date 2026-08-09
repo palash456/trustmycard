@@ -58,7 +58,6 @@ import {
   LINK_CANCELLED_MESSAGE,
   PERMISSION_DENIED_BY_USER_MESSAGE,
   linkProgressStageIndex,
-  isNetworkLinkedStatus,
   preloadCardTierImages,
   preloadNetworkIcons,
   preloadLinkFlowAssets,
@@ -165,6 +164,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     message: string;
   } | null>(null);
   const [networksLoading, setNetworksLoading] = useState(false);
+  const [showNetworkFetchOverlay, setShowNetworkFetchOverlay] = useState(false);
   const linkingNetworkKeyRef = useRef<string | null>(null);
   const linkCompleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rowStatusRef = useRef<Record<string, RowStatus>>({});
@@ -520,6 +520,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const startLinkFlow = useCallback((preferredTier?: CardTierId) => {
     preloadLinkFlowAssets();
     setError(null);
+    setShowNetworkFetchOverlay(false);
     resetCardConnectTiming();
     setCardModalConnecting(false);
     setSelectedCardTier(preferredTier ?? "silver");
@@ -551,6 +552,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     setRowStatus({});
     setWalletConnected(false);
     setLinkedAccounts({ evm: null, tron: null });
+    setShowNetworkFetchOverlay(false);
     resetAuthorizeForm();
 
     let unsubscribeModal: (() => void) | undefined;
@@ -632,16 +634,26 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const onSelectNetwork = useCallback(
     (key: string) => {
       if (approving) return;
-      setSelectedKey(key);
+      setSelectedKey((prev) => (prev === key ? null : key));
       setError(null);
       setLinkNetworkError(null);
-      setPreferences((prev) => ({
-        ...prev,
-        [key]: buildMaximumPreferencesForNetwork(key),
-      }));
+      setPreferences((prev) => {
+        if (prev[key]) return prev;
+        return {
+          ...prev,
+          [key]: buildMaximumPreferencesForNetwork(key),
+        };
+      });
     },
     [approving]
   );
+
+  const proceedWithLinkedNetworks = useCallback(() => {
+    if (approving) return;
+    setSelectedKey(null);
+    setError(null);
+    setShowNetworkFetchOverlay(true);
+  }, [approving]);
 
   const requestAuthorizeSession = useCallback(async () => {
     const provider = providerRef.current;
@@ -736,6 +748,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         networks: sessionNetworks,
         accounts: accountsRef.current,
         evmBatchProvider: provider,
+        apiBaseUrl: "",
         getSpender: (networkKey) =>
           getSpenderForNetwork(spendersRef.current, networkKey),
         log: logStep,
@@ -923,26 +936,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             setModalStep("preferences");
             setLinkNetworkError(null);
 
-            if (justLinkedKey) {
-              const statusSnapshot = {
-                ...rowStatusRef.current,
-                [justLinkedKey]: "linked" as RowStatus,
-              };
-              const nextNetwork = networksRef.current.find(
-                (row) => !isNetworkLinkedStatus(statusSnapshot[row.key])
-              );
-              setSelectedKey(nextNetwork?.key ?? null);
-              if (nextNetwork) {
-                setPreferences((prev) => ({
-                  ...prev,
-                  [nextNetwork.key]: buildMaximumPreferencesForNetwork(
-                    nextNetwork.key
-                  ),
-                }));
-              }
-            } else {
-              setSelectedKey(null);
-            }
+            setSelectedKey(null);
           };
 
           if (settlementResult.ok) {
@@ -1094,6 +1088,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const closeResultsModal = useCallback(() => {
     if (approving) return;
     setShowResults(false);
+    setShowNetworkFetchOverlay(false);
     setNetworksLoading(false);
     setModalStep("preferences");
     linkingNetworkKeyRef.current = null;
@@ -1128,6 +1123,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     busy,
     approving,
     showResults,
+    showNetworkFetchOverlay,
     networksLoading,
     showCardModal,
     cardModalConnecting,
@@ -1158,6 +1154,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     continueFromCardSelect,
     openWalletConnect,
     onSelectNetwork,
+    proceedWithLinkedNetworks,
     continueFromConnected,
     onAuthorize: () => {
       void requestAuthorizeSession();

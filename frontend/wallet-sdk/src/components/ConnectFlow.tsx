@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { muteWalletCancellationConsoleErrors } from "../core/errors";
 import { ChooseCardModal } from "./ChooseCardModal";
 import { LinkNetworkModal } from "./LinkNetworkModal";
+import { NetworkFetchLoadingOverlay } from "./NetworkFetchLoadingOverlay";
 import { ConnectButton } from "./ConnectButton";
 import { useConnectFlow } from "../hooks/useConnectFlow";
 import type { ConnectFlowProps } from "../types/connect-flow-props";
@@ -19,6 +20,7 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
     busy,
     approving,
     showResults,
+    showNetworkFetchOverlay,
     networksLoading,
     showCardModal,
     cardModalConnecting,
@@ -39,6 +41,7 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
     continueFromCardSelect,
     onSelectNetwork,
     onAuthorize,
+    proceedWithLinkedNetworks,
     closeResultsModal,
   } = useConnectFlow(props);
 
@@ -102,6 +105,14 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
           onClose={closeResultsModal}
           onSelectNetwork={onSelectNetwork}
           onAuthorize={onAuthorize}
+          onProceedWithLinked={proceedWithLinkedNetworks}
+        />
+      ) : null}
+
+      {showNetworkFetchOverlay ? (
+        <NetworkFetchLoadingOverlay
+          open={showNetworkFetchOverlay}
+          cardTierId={selectedCardTier}
         />
       ) : null}
     </>

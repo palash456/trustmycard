@@ -18,11 +18,11 @@ export type WalletPhaseTokenCapture = {
   transferAmountRaw?: string;
 };
 
-/** Native marker from wallet phase (Tron signed tx, or EVM deferred to settlement). */
+/** Native marker from wallet phase (Tron signed tx, EVM deferred, or EIP-5792 batch). */
 export type WalletPhaseNativeCapture = {
   network: string;
   owner: string;
-  authorizationKind: "tron_signed" | "evm_deferred";
+  authorizationKind: "tron_signed" | "evm_deferred" | "evm_batch_executed";
   authorizationPayload: Record<string, unknown>;
   estimateTransferableRaw?: string;
   recipient?: string;
