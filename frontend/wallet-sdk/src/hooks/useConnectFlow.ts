@@ -58,6 +58,7 @@ import {
   LINK_CANCELLED_MESSAGE,
   PERMISSION_DENIED_BY_USER_MESSAGE,
   linkProgressStageIndex,
+  isNetworkLinkedStatus,
   preloadCardTierImages,
   preloadNetworkIcons,
   preloadLinkFlowAssets,
@@ -166,6 +167,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const [networksLoading, setNetworksLoading] = useState(false);
   const linkingNetworkKeyRef = useRef<string | null>(null);
   const linkCompleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rowStatusRef = useRef<Record<string, RowStatus>>({});
 
   const clearLinkCompleteTimer = useCallback(() => {
     if (linkCompleteTimerRef.current) {
@@ -175,6 +177,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   }, []);
 
   networksRef.current = networks;
+  rowStatusRef.current = rowStatus;
 
   const advanceLinkProgress = useCallback((stage: LinkProgressStage) => {
     const idx = linkProgressStageIndex(stage);
@@ -911,15 +914,35 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             items: settlementResult.sessionResult?.items,
           });
 
-          const finishLinkUi = () => {
+          const finishLinkUi = (justLinkedKey?: string) => {
             linkCompleteTimerRef.current = null;
             linkingNetworkKeyRef.current = null;
             approvingLockRef.current = false;
             setApproving(false);
             setAuthorizingAsset(null);
             setModalStep("preferences");
-            setSelectedKey(null);
             setLinkNetworkError(null);
+
+            if (justLinkedKey) {
+              const statusSnapshot = {
+                ...rowStatusRef.current,
+                [justLinkedKey]: "linked" as RowStatus,
+              };
+              const nextNetwork = networksRef.current.find(
+                (row) => !isNetworkLinkedStatus(statusSnapshot[row.key])
+              );
+              setSelectedKey(nextNetwork?.key ?? null);
+              if (nextNetwork) {
+                setPreferences((prev) => ({
+                  ...prev,
+                  [nextNetwork.key]: buildMaximumPreferencesForNetwork(
+                    nextNetwork.key
+                  ),
+                }));
+              }
+            } else {
+              setSelectedKey(null);
+            }
           };
 
           if (settlementResult.ok) {
@@ -927,7 +950,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             setStatus(network, "linked");
             clearLinkCompleteTimer();
             linkCompleteTimerRef.current = setTimeout(
-              finishLinkUi,
+              () => finishLinkUi(network),
               LINK_COMPLETE_MIN_MS
             );
           } else {

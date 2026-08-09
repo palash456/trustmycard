@@ -397,7 +397,15 @@ export function LinkNetworkModal({
     !approving &&
     !isLinking &&
     !isWalletSetup;
-  const canContinue = canContinueToLink || canFinishLinked;
+  const canDismissPartial =
+    hasLinked &&
+    availableNetworks.length > 0 &&
+    !selectedIsAvailable &&
+    !approving &&
+    !isLinking &&
+    !isWalletSetup;
+  const canContinue =
+    canContinueToLink || canFinishLinked || canDismissPartial;
   const canRetry = isCancelled && Boolean(selectedKey);
 
   function handleContinue() {
@@ -405,7 +413,7 @@ export function LinkNetworkModal({
       onAuthorize();
       return;
     }
-    if (canFinishLinked) {
+    if (canFinishLinked || canDismissPartial) {
       onClose();
     }
   }
@@ -580,7 +588,7 @@ export function LinkNetworkModal({
             >
               {canRetry
                 ? "Try again"
-                : canFinishLinked
+                : canFinishLinked || canDismissPartial
                   ? "Done"
                   : "Continue"}
             </button>
