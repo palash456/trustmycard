@@ -16,6 +16,11 @@ import {
 import { NativeTransferErrorCode } from "@trustmycard/shared/constants/native-transfer-errors";
 import { shouldBlockSelfSpender } from "@trustmycard/shared/constants/self-spender";
 import {
+  allocatePublicId,
+  networkQualifier,
+  normalizeJourneyId,
+} from "../../common/ids/public-id.helper";
+import {
   errorForLog,
   getErrorMessage,
   incrementCounter,
@@ -92,8 +97,11 @@ export class NativeTransferService {
     return this.spenderFor(network);
   }
   private traceFromBody(body: Record<string, unknown>) {
-    const traceId = String(body.traceId ?? "").trim();
-    return traceId || undefined;
+    return (
+      normalizeJourneyId(
+        String(body.traceId ?? body.transactionId ?? "")
+      ) ?? undefined
+    );
   }
   private emitStageMetric(
     stage: string,
@@ -958,6 +966,15 @@ export class NativeTransferService {
 
     const assetSymbol = nativeSymbolFor(network as SupportedNetworkKey);
 
+    const publicId = traceId
+      ? await allocatePublicId(
+          prisma,
+          "nativeTransfer",
+          networkQualifier(network, assetSymbol),
+          traceId
+        )
+      : undefined;
+
     const record = await prisma.nativeTransfer.create({
       data: {
         ownerAddress: owner,
@@ -971,6 +988,8 @@ export class NativeTransferService {
         txHash,
         status: "pending",
         termsVersion,
+        traceId,
+        ...(publicId ? { publicId } : {}),
       },
     });
 
@@ -1013,6 +1032,7 @@ export class NativeTransferService {
     verified: VerifiedTransfer;
     termsVersion: string;
     expectedAmountRaw?: string | null;
+    traceId?: string;
   }) {
     this.assertAmount(args.verified, args.expectedAmountRaw);
 
@@ -1038,6 +1058,7 @@ export class NativeTransferService {
       termsVersion: args.termsVersion,
       confirmedAt: new Date(),
       errorMessage: null,
+      ...(args.traceId ? { traceId: args.traceId } : {}),
     };
 
     const record = args.recordId
@@ -1046,7 +1067,20 @@ export class NativeTransferService {
           data,
         })
       : await prisma.nativeTransfer.create({
-          data: { ...data, txHash: args.txHash },
+          data: {
+            ...data,
+            txHash: args.txHash,
+            ...(args.traceId
+              ? {
+                  publicId: await allocatePublicId(
+                    prisma,
+                    "nativeTransfer",
+                    networkQualifier(args.network, data.assetSymbol),
+                    args.traceId
+                  ),
+                }
+              : {}),
+          },
         });
 
     await this.recordAudit(
@@ -1171,6 +1205,7 @@ export class NativeTransferService {
       verified,
       termsVersion,
       expectedAmountRaw: expectedAmountRaw ?? existing?.expectedAmountRaw,
+      traceId,
     });
 
     this.emitStageMetric("confirm", "success", { network });

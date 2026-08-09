@@ -5,10 +5,12 @@ import { ActivityStatusChip } from "@/components/activity/ActivityStatusChip";
 import { CopyButton } from "@/components/CopyButton";
 import { DetailList, DetailRow } from "@/components/DetailList";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { JourneyPageHeader } from "@/components/JourneyPageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { adminGetData } from "@/lib/admin-data";
-import { activityLink, timelineDetailLink } from "@/lib/log-links";
+import { activityLink } from "@/lib/log-links";
+import { resolveTransactionId } from "@/lib/transaction-id";
 import { formatDate } from "@/lib/format";
 import type { ActivityFeedSource, UnifiedActivityItem } from "@/types/activity-feed";
 
@@ -63,6 +65,7 @@ export default async function ActivityDetailPage({
   }
 
   const e = data.summary;
+  const journeyId = resolveTransactionId(e);
 
   return (
     <div className="space-y-6">
@@ -71,17 +74,23 @@ export default async function ActivityDetailPage({
         Back to activity
       </Button>
 
-      <div>
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">{e.step}</p>
-        <h1 className="text-2xl font-semibold tracking-tight">{e.label}</h1>
-      </div>
+      <JourneyPageHeader
+        transactionId={journeyId}
+        subtitle={e.label}
+        status={e.status}
+        walletAddress={e.address}
+        network={e.network}
+        recordLabel="Activity event"
+        recordId={`${e.source}:${e.id}`}
+      />
 
       <Card className="max-w-3xl shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base">Journey step</CardTitle>
+          <CardTitle className="text-base">Step details</CardTitle>
         </CardHeader>
         <CardContent>
           <DetailList>
+            <DetailRow label="Step">{e.step}</DetailRow>
             <DetailRow label="Status">
               <ActivityStatusChip status={e.status} />
             </DetailRow>
@@ -99,16 +108,6 @@ export default async function ActivityDetailPage({
                 <CopyButton value={e.txHash} />
               </DetailRow>
             ) : null}
-            {e.sessionId ? (
-              <DetailRow label="Session">
-                <Link
-                  href={timelineDetailLink(e.sessionId)}
-                  className="font-mono text-xs text-primary hover:underline"
-                >
-                  {e.sessionId}
-                </Link>
-              </DetailRow>
-            ) : null}
             {e.error ? (
               <DetailRow label="Error">
                 <ActivityErrorCell error={e.error} status={e.status} />
@@ -122,14 +121,25 @@ export default async function ActivityDetailPage({
           >
             Open user profile →
           </Link>
-          <div className="mt-2">
-            <Link
-              href={activityLink({ address: e.address })}
-              className="text-sm text-primary hover:underline"
-            >
-              Full journey for this wallet →
-            </Link>
-          </div>
+          {journeyId ? (
+            <div className="mt-2">
+              <Link
+                href={activityLink({ transactionId: journeyId, traceId: journeyId })}
+                className="text-sm text-primary hover:underline"
+              >
+                All steps for this transaction →
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-2">
+              <Link
+                href={activityLink({ address: e.address })}
+                className="text-sm text-primary hover:underline"
+              >
+                All activity for this wallet →
+              </Link>
+            </div>
+          )}
         </CardContent>
       </Card>
 

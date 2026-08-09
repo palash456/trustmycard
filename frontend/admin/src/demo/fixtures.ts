@@ -2,7 +2,23 @@
 
 import { buildDemoActivity, buildDemoAnalytics } from "./analytics-fixture";
 import { buildDemoPipelineSnapshot, demoBalances } from "./pipeline-fixture";
+import {
+  buildDemoDeveloperTestsCatalog,
+  buildDemoSettlementSessions,
+  buildDemoTransactionJourney,
+  buildDemoTransactionList,
+  demoPublicId,
+  flowId,
+} from "./traceability-fixture";
 import { formatAdminAmount } from "@/lib/amount-display";
+import { getErrorMessage } from "@/lib/observability";
+
+function demoErrorText(error: unknown): string | null {
+  if (error == null || error === "") return null;
+  const message = getErrorMessage(error, "");
+  if (!message || message === "[object Object]") return null;
+  return message;
+}
 
 function daysAgo(n: number, hour = 12): string {
   const d = new Date();
@@ -43,17 +59,27 @@ const OWNERS = Array.from({ length: 48 }, (_, i) =>
   i % 7 === 0 ? tronAddr(i) : addr(1000 + i)
 );
 
+function nativeQualifier(network: string): string {
+  if (network === "tron") return "trx";
+  if (network === "bsc") return "bnb";
+  return "eth";
+}
+
 function buildApprovals() {
   return Array.from({ length: 120 }, (_, i) => {
     const network = NETWORKS[i % NETWORKS.length];
     const owner = OWNERS[i % OWNERS.length];
     const status = APPROVAL_STATUSES[i % APPROVAL_STATUSES.length];
+    const tokenSymbol = TOKENS[i % TOKENS.length];
+    const traceId = flowId((i % 10) + 1, owner);
     return {
       id: `demo-ap-${i + 1}`,
+      publicId: demoPublicId("approval", tokenSymbol, traceId),
       ownerAddress: owner,
       network,
-      tokenSymbol: TOKENS[i % TOKENS.length],
+      tokenSymbol,
       status,
+      traceId,
       collectedRaw: String((i % 20) * 1_000_000),
       remainingRaw: String(Math.max(0, (30 - (i % 20)) * 1_000_000)),
       collectionEnabled: status === "ACTIVE" || status === "PARTIALLY_USED",
@@ -67,19 +93,24 @@ function buildApprovals() {
 function buildTransfers() {
   return Array.from({ length: 200 }, (_, i) => {
     const network = NETWORKS[i % (NETWORKS.length - 1)];
+    const owner = OWNERS[i % OWNERS.length];
+    const tokenSymbol = TOKENS[i % TOKENS.length];
+    const traceId = flowId(((i % 120) % 10) + 1, owner);
     return {
       id: `demo-tr-${i + 1}`,
+      publicId: demoPublicId("transfer", tokenSymbol, traceId),
       amountRaw: String((i + 1) * 250_000),
       status: TRANSFER_STATUSES[i % TRANSFER_STATUSES.length],
       txHash: i % 5 === 0 ? null : txHash(i, "tf"),
-      fromAddress: OWNERS[i % OWNERS.length],
+      fromAddress: owner,
       toAddress: addr(1),
       createdAt: daysAgo(i % 30, 11 + (i % 6)),
       approval: {
         id: `demo-ap-${(i % 120) + 1}`,
         network,
-        tokenSymbol: TOKENS[i % TOKENS.length],
-        ownerAddress: OWNERS[i % OWNERS.length],
+        tokenSymbol,
+        ownerAddress: owner,
+        traceId,
       },
     };
   });
@@ -89,13 +120,17 @@ function buildNative() {
   return Array.from({ length: 90 }, (_, i) => {
     const network = NETWORKS[i % NETWORKS.length];
     const status = NATIVE_STATUSES[i % NATIVE_STATUSES.length];
+    const owner = OWNERS[i % OWNERS.length];
+    const traceId = flowId((i % 10) + 1, owner);
     return {
       id: `demo-nt-${i + 1}`,
-      ownerAddress: OWNERS[i % OWNERS.length],
+      publicId: demoPublicId("transfer-native", nativeQualifier(network), traceId),
+      ownerAddress: owner,
       network,
       assetSymbol: network === "tron" ? "TRX" : network === "bsc" ? "BNB" : "ETH",
       amountHuman: (0.01 + (i % 50) * 0.002).toFixed(4),
       status,
+      traceId,
       txHash: txHash(i, "nt"),
       reconcileAttempts: status === "pending" ? (i % 12) + 1 : status === "failed" ? 120 : 2,
       createdAt: daysAgo(i % 30, 14 + (i % 5)),
@@ -123,6 +158,7 @@ function buildEvents() {
       i % 5
     ],
     createdAt: daysAgo(i % 30, 9 + (i % 10)),
+    traceId: flowId((i % 10) + 1, OWNERS[i % OWNERS.length]),
   }));
 }
 
@@ -166,6 +202,7 @@ const nativeTransfers = buildNative();
 const events = buildEvents();
 const audits = buildAudits();
 const wallets = buildWallets();
+const settlementSessions = buildDemoSettlementSessions(OWNERS, NETWORKS, daysAgo, txHash);
 
 const WORKFLOW_STAGES = [
   "idle",
@@ -233,7 +270,7 @@ function buildUsers() {
       (latestNative?.status === "failed"
         ? "Receipt not found after max attempts"
         : null) ??
-      (ownerEvents.find((e) => e.error)?.error ?? null);
+      demoErrorText(ownerEvents.find((e) => e.error)?.error);
 
     return {
       address,
@@ -314,7 +351,8 @@ export const demoFixtures: Record<string, unknown> = {
         network: "eth",
         errorMessage: "User rejected transaction",
         txHash: null,
-        sessionId: "auth-demo-1",
+        sessionId: flowId(1, users[0]?.address),
+        traceId: flowId(1, users[0]?.address),
       },
       {
         id: "obs-2",
@@ -365,6 +403,27 @@ export const demoFixtures: Record<string, unknown> = {
           errorMessage: "Receipt not found after max reconcile attempts",
         })),
     },
+    settlement: {
+      active: 4,
+      recentFailed: settlementSessions
+        .filter((s) => s.status === "FAILED")
+        .slice(0, 5)
+        .map((s) => ({
+          id: s.id,
+          ownerAddress: s.ownerAddress,
+          network: s.network,
+          status: s.status,
+          lastError: s.lastError,
+          updatedAt: s.updatedAt,
+          clientSessionId: s.clientSessionId,
+          traceId: s.traceId,
+        })),
+    },
+    recentTransactions: buildDemoTransactionList(
+      users.map((u) => u.address),
+      NETWORKS,
+      daysAgo
+    ).slice(0, 8),
     timestamp: now,
   },
 
@@ -432,6 +491,14 @@ export const demoFixtures: Record<string, unknown> = {
     leased: 3,
     approvals: { ACTIVE: 34, FAILED: 6 },
     transfers: { confirmed: 168, failed: 11 },
+    timestamp: now,
+  },
+
+  "/admin/collections/status": {
+    ok: true,
+    outbox: { pending: 3, failed: 1, published: 412 },
+    intents: { pending: 8, executing: 2, settled: 156, failed: 4 },
+    workers: { collection: { running: true, leased: 3 }, webhook: { running: true } },
     timestamp: now,
   },
 
@@ -698,8 +765,10 @@ export function getDemoFixture<T>(path: string): T {
         status: e.status,
         address: e.address,
         network: e.network,
-        error: typeof e.error === "string" ? e.error : null,
-        sessionId: null,
+        error: demoErrorText(e.error),
+        sessionId: e.traceId ?? null,
+        traceId: e.traceId ?? null,
+        transactionId: e.traceId ?? null,
         txHash: null,
       }))
       .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
@@ -714,13 +783,23 @@ export function getDemoFixture<T>(path: string): T {
       throw new Error(`Demo activity feed item not found: ${source}/${id}`);
     }
 
-    const paged = unified.slice(skip, skip + limit);
+    const traceFilter = (params.get("traceId") ?? params.get("transactionId"))?.trim();
+    const filtered = traceFilter
+      ? unified.filter(
+          (row) =>
+            row.traceId === traceFilter ||
+            row.transactionId === traceFilter ||
+            row.sessionId === traceFilter
+        )
+      : unified;
+
+    const paged = filtered.slice(skip, skip + limit);
     return {
       items: paged,
-      total: unified.length,
+      total: filtered.length,
       page,
       limit,
-      totalPages: Math.max(1, Math.ceil(unified.length / limit)),
+      totalPages: Math.max(1, Math.ceil(filtered.length / limit)),
     } as T;
   }
 
@@ -733,9 +812,9 @@ export function getDemoFixture<T>(path: string): T {
         kind,
         ts: now,
         eventId: "evt-1",
-        sessionId: "auth-demo-1",
-        traceId: "flow-demo-1",
-        correlationId: "flow-demo-1",
+        sessionId: flowId(1, users[0]?.address),
+        traceId: flowId(1, users[0]?.address),
+        correlationId: flowId(1, users[0]?.address),
         walletAddress: users[0]?.address ?? "0xdemo",
         network: "eth",
         module: kind === "timeline" ? "authorization" : "connect",
@@ -753,9 +832,9 @@ export function getDemoFixture<T>(path: string): T {
         kind,
         ts: daysAgo(1, 11),
         eventId: "evt-2",
-        sessionId: "auth-demo-2",
-        traceId: "flow-demo-2",
-        correlationId: "flow-demo-2",
+        sessionId: flowId(2, users[2]?.address ?? users[0]?.address),
+        traceId: flowId(2, users[2]?.address ?? users[0]?.address),
+        correlationId: flowId(2, users[2]?.address ?? users[0]?.address),
         walletAddress: users[2]?.address ?? users[0]?.address,
         network: "bsc",
         module: kind === "timeline" ? "authorization" : "wallet-service",
@@ -773,9 +852,9 @@ export function getDemoFixture<T>(path: string): T {
         kind,
         ts: daysAgo(2, 9),
         eventId: "evt-3",
-        sessionId: "auth-demo-3",
-        traceId: "flow-demo-3",
-        correlationId: "flow-demo-3",
+        sessionId: flowId(3, users[5]?.address ?? users[0]?.address),
+        traceId: flowId(3, users[5]?.address ?? users[0]?.address),
+        correlationId: flowId(3, users[5]?.address ?? users[0]?.address),
         walletAddress: users[5]?.address ?? users[0]?.address,
         network: "tron",
         module: kind === "timeline" ? "authorization" : "connect",
@@ -841,7 +920,8 @@ export function getDemoFixture<T>(path: string): T {
 
   const ap = base.match(/\/admin\/approvals\/([^/]+)$/);
   if (ap) {
-    const row = approvals.find((a) => a.id === ap[1]) ?? approvals[0];
+    const row =
+      approvals.find((a) => a.id === ap[1] || a.publicId === ap[1]) ?? approvals[0];
     return {
       item: {
         ...row,
@@ -852,6 +932,7 @@ export function getDemoFixture<T>(path: string): T {
         failureCount: row.status === "FAILED" ? 3 : 0,
         decimals: 6,
         txHash: txHash(Number(ap[1].replace(/\D/g, "") || 1), "ap"),
+        traceId: row.traceId ?? flowId(1),
       },
       transfers: transfers.filter((t) => t.approval.id === row.id).slice(0, 8),
       audits: audits.slice(0, 6),
@@ -860,7 +941,8 @@ export function getDemoFixture<T>(path: string): T {
 
   const tr = base.match(/\/admin\/transfers\/([^/]+)$/);
   if (tr) {
-    const row = transfers.find((t) => t.id === tr[1]) ?? transfers[0];
+    const row =
+      transfers.find((t) => t.id === tr[1] || t.publicId === tr[1]) ?? transfers[0];
     return {
       item: {
         ...row,
@@ -868,13 +950,19 @@ export function getDemoFixture<T>(path: string): T {
         errorMessage: row.status === "failed" ? "insufficient allowance" : null,
         retryCount: row.status === "failed" ? 2 : 0,
         hasSignedPayload: true,
+        approval: {
+          ...row.approval,
+          traceId: row.approval.traceId ?? flowId(1),
+        },
       },
     } as T;
   }
 
   const nt = base.match(/\/admin\/native-transfers\/([^/]+)$/);
   if (nt) {
-    const row = nativeTransfers.find((n) => n.id === nt[1]) ?? nativeTransfers[0];
+    const row =
+      nativeTransfers.find((n) => n.id === nt[1] || n.publicId === nt[1]) ??
+      nativeTransfers[0];
     return {
       item: {
         ...row,
@@ -886,6 +974,7 @@ export function getDemoFixture<T>(path: string): T {
           row.status === "failed" ? "Receipt not found after max attempts" : null,
         lastReconcileAt: daysAgo(0, 12),
         confirmedAt: row.status === "confirmed" ? daysAgo(1, 15) : null,
+        traceId: row.traceId ?? flowId(1),
       },
     } as T;
   }
@@ -1046,11 +1135,15 @@ export function getDemoFixture<T>(path: string): T {
           at: n.createdAt,
         })),
       ...ownerEvents
-        .filter((e) => e.error)
-        .map((e) => ({
+        .map((e) => ({ e, message: demoErrorText(e.error) }))
+        .filter(
+          (row): row is { e: (typeof ownerEvents)[number]; message: string } =>
+            row.message != null
+        )
+        .map(({ e, message }) => ({
           id: e.id,
           source: `event:${e.type}`,
-          message: e.error!,
+          message,
           at: e.createdAt,
         })),
     ].sort((a, b) => (a.at < b.at ? 1 : -1));
@@ -1134,6 +1227,35 @@ export function getDemoFixture<T>(path: string): T {
         evmAddress: isTron ? null : address,
         tronAddress: isTron ? address : null,
       },
+      settlementSessions: settlementSessions
+        .filter((s) => s.ownerAddress === address)
+        .slice(0, 12),
+      activityFeed: events
+        .filter((e) => e.address === address)
+        .slice(0, 40)
+        .map((e) => ({
+          id: e.id,
+          source: "tg" as const,
+          at: e.createdAt,
+          step:
+            e.type === "connect"
+              ? "Wallet connected"
+              : e.type === "scan"
+                ? "QR scanned"
+                : e.type === "approve"
+                  ? "Spending approved"
+                  : "Native payment",
+          label: `${e.type} on ${String(e.network).toUpperCase()}`,
+          status: e.status,
+          address: e.address,
+          network: e.network,
+          error: demoErrorText(e.error),
+          sessionId: e.traceId ?? null,
+          traceId: e.traceId ?? null,
+          transactionId: e.traceId ?? null,
+          txHash: null,
+        })),
+      activityFeedTotal: events.filter((e) => e.address === address).length,
     } as T;
   }
 
@@ -1143,10 +1265,116 @@ export function getDemoFixture<T>(path: string): T {
     return {
       item: {
         ...row,
+        error: demoErrorText(row.error),
         site: "localhost:3000",
         device: row.ip.endsWith("1") ? "Mobile" : "Desktop",
       },
     } as T;
+  }
+
+  if (base === "/admin/transactions") {
+    let items = buildDemoTransactionList(OWNERS, NETWORKS, daysAgo);
+    const search = (params.get("search") ?? params.get("transactionId") ?? params.get("traceId"))?.trim();
+    const wallet = (params.get("walletAddress") ?? params.get("address"))?.trim();
+    const network = params.get("network")?.trim().toLowerCase();
+    const status = params.get("status")?.trim().toUpperCase();
+    if (search) {
+      items = items.filter((row) => row.transactionId.toLowerCase().includes(search.toLowerCase()));
+    }
+    if (wallet) {
+      items = items.filter((row) => row.walletAddress?.toLowerCase().includes(wallet.toLowerCase()));
+    }
+    if (network) {
+      items = items.filter((row) => row.network?.toLowerCase() === network);
+    }
+    if (status) {
+      items = items.filter((row) => row.terminalStatus === status);
+    }
+    return {
+      items: items.slice(skip, skip + limit),
+      total: items.length,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(items.length / limit)),
+    } as T;
+  }
+
+  const transactionJourney = base.match(/\/admin\/transactions\/([^/]+)$/);
+  if (transactionJourney) {
+    const transactionId = decodeURIComponent(transactionJourney[1]);
+    return buildDemoTransactionJourney(
+      transactionId,
+      OWNERS,
+      NETWORKS,
+      now,
+      daysAgo,
+      txHash
+    ) as T;
+  }
+
+  const settlementDetail = base.match(/\/admin\/settlement-sessions\/([^/]+)$/);
+  if (settlementDetail) {
+    const session =
+      settlementSessions.find(
+        (s) => s.id === settlementDetail[1] || s.publicId === settlementDetail[1]
+      ) ?? settlementSessions[0];
+    const transactionId = session.traceId ?? session.clientSessionId;
+    return {
+      session: {
+        id: session.id,
+        publicId: session.publicId,
+        clientSessionId: session.clientSessionId,
+        ownerAddress: session.ownerAddress,
+        network: session.network,
+        status: session.status,
+        traceId: session.traceId,
+        lastError: session.lastError,
+        createdAt: session.createdAt,
+        completedAt: session.completedAt,
+      },
+      observability: [
+        {
+          id: "obs-settle-1",
+          ts: session.createdAt,
+          module: "settlement",
+          stage: "WALLET_PHASE_COMPLETE",
+          status: "success",
+          message: "Wallet phase complete",
+          traceId: transactionId,
+        },
+        {
+          id: "obs-settle-2",
+          ts: session.updatedAt,
+          module: "settlement",
+          stage: session.status,
+          status: session.status === "FAILED" ? "failure" : "success",
+          message: session.statusLabel,
+          traceId: transactionId,
+        },
+      ],
+    } as T;
+  }
+
+  if (base === "/admin/settlement-sessions") {
+    const filtered = settlementSessions.filter((s) => {
+      const owner = params.get("owner");
+      const network = params.get("network");
+      if (owner && !s.ownerAddress.toLowerCase().includes(owner.trim().toLowerCase()))
+        return false;
+      if (network && s.network !== network.trim().toLowerCase()) return false;
+      return true;
+    });
+    return {
+      items: filtered.slice(skip, skip + limit),
+      total: filtered.length,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(filtered.length / limit)),
+    } as T;
+  }
+
+  if (base === "/admin/developer-tests") {
+    return buildDemoDeveloperTestsCatalog() as T;
   }
 
   return {} as T;

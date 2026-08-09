@@ -39,6 +39,8 @@ export type LogLinkParams = {
   tab?: string;
   type?: string;
   sessionId?: string;
+  traceId?: string;
+  transactionId?: string;
   network?: string;
 };
 
@@ -105,12 +107,27 @@ export type NetworkApprovedEntry = {
   logQuery: LogLinkParams;
 };
 
+export type PipelineSettlementSession = {
+  id: string;
+  network: string;
+  status: string;
+  statusLabel: string;
+  usdtSettled: boolean;
+  usdcSettled: boolean;
+  nativeReady: boolean;
+  lastError: string | null;
+  clientSessionId: string;
+  updatedAt: string;
+  completedAt: string | null;
+};
+
 export type UserPipelineSnapshot = {
   address: string;
   generatedAt: string;
   summary: PipelineUserSummary;
   walletLinked: WalletLinkedStage;
   networkApproved: { networks: NetworkApprovedEntry[] };
+  settlementSessions?: PipelineSettlementSession[];
   assets: AssetPipeline[];
   metrics: PipelineMetrics;
 };

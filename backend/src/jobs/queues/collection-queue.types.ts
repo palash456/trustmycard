@@ -6,6 +6,7 @@ export const COLLECTION_DLQ_QUEUE = "collection-dlq";
 export type CollectionExecutionJob = {
   intentId: string;
   outboxEventId: string;
+  traceId?: string;
 };
 
 export type CollectionConfirmationJob = {
@@ -13,11 +14,13 @@ export type CollectionConfirmationJob = {
   attemptId: string;
   txHash: string;
   network: string;
+  traceId?: string;
 };
 
 export type CollectionWebhookJob = {
   eventId: string;
   intentId: string;
+  traceId?: string;
 };
 
 export type CollectionDlqJob = {

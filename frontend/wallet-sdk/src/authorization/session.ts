@@ -1,4 +1,5 @@
 import { formatTransferSkipReason } from "@trustmycard/shared/constants/collection";
+import { generateFlowId } from "@trustmycard/shared/ids";
 import { getToken, parseHumanToRaw } from "../core/chain-tokens";
 import type { ApprovalOrchestrationResult } from "../approval/types";
 import { ApprovalStageName } from "../approval/types";
@@ -103,6 +104,8 @@ export type RunAuthorizationSessionArgs = {
   log?: (step: string, detail?: Record<string, unknown>) => void;
   sessionId?: string;
   authorizationSessionId?: string;
+  /** Canonical journey ID (alias for traceId / sessionId when provided). */
+  transactionId?: string;
   evmBatchProvider?: UniversalProvider;
   /** Provider kept alive for settlement (session auth + EVM native execution). */
   settlementProvider?: UniversalProvider;
@@ -144,10 +147,16 @@ export async function runAuthorizationSession(
   const results: AuthorizationAssetResult[] = [];
   const captures: WalletPhaseCapture[] = [];
   const log = args.log ?? (() => undefined);
+  const walletForJourney = args.accounts.evm || args.accounts.tron;
   const sessionId =
-    args.sessionId ??
-    args.authorizationSessionId ??
-    `auth-${Date.now().toString(36)}`;
+    args.transactionId?.trim() ||
+    args.sessionId?.trim() ||
+    args.authorizationSessionId?.trim() ||
+    (walletForJourney ? generateFlowId({ walletAddress: walletForJourney }) : "");
+  if (!sessionId) {
+    throw new Error("transactionId is required for authorization session");
+  }
+  const transactionId = args.transactionId ?? sessionId;
   const timeline = new SessionTimelineTracker({
     sessionId,
     authorizationSessionId: args.authorizationSessionId ?? sessionId,
@@ -156,6 +165,7 @@ export async function runAuthorizationSession(
 
   log("AUTHORIZATION SESSION STARTED", {
     sessionId,
+    transactionId,
     assetCount: args.items.length,
     assets: args.items.map((i) => `${i.network}:${i.asset}`),
     mode: "wallet_phase_first",
@@ -213,6 +223,9 @@ export async function runAuthorizationSession(
               batchMode: batchResults.batchMode,
             });
           } else if (unit.nativeItem) {
+            // Register before deferred native capture so runNativeWalletPhase
+            // mutates the same object (not overwritten below).
+            captureByNetwork.set(unit.network, existing);
             await runNativeWalletPhase({
               item: unit.nativeItem,
               args,
@@ -428,6 +441,7 @@ async function runTokenWalletPhase(ctx: {
           executeTransfer: shouldAttemptTransfer,
           transferToAddress: spender,
           transferAmountRaw: shouldAttemptTransfer ? transferAmountRaw : undefined,
+          traceId: args.transactionId ?? sessionId,
         };
         const preflightApi = createPreflightApi(args.apiBaseUrl);
         const preflight = await preflightExistingAllowance({
@@ -645,6 +659,7 @@ async function runNativeWalletPhase(ctx: {
     unlimited: item.unlimited,
     amountHuman: item.unlimited ? undefined : item.amountHuman,
     apiBaseUrl: args.apiBaseUrl,
+    traceId: args.transactionId ?? sessionId,
   });
 
   if (!authResult.ok) {

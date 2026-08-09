@@ -136,6 +136,62 @@
       "dependsOn": ["Kill All", "Wait Before Restart", "Start All"],
       "dependsOrder": "sequence",
       "problemMatcher": []
+    },
+    {
+      "label": "Delete Local DB: All Time",
+      "type": "shell",
+      "command": "npm run db:delete-local:all",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "db-maintenance"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Delete Local DB: Today",
+      "type": "shell",
+      "command": "npm run db:delete-local:today",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "db-maintenance"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Delete Local DB: Last Hour",
+      "type": "shell",
+      "command": "npm run db:delete-local:1h",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "db-maintenance"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Delete Local DB: Last 10 Mins",
+      "type": "shell",
+      "command": "npm run db:delete-local:10m",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "db-maintenance"
+      },
+      "problemMatcher": []
     }
   ],
   "inputs": [

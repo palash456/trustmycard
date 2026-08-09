@@ -15,6 +15,8 @@ export type UnifiedActivityItem = {
   network: string | null;
   error: string | null;
   sessionId: string | null;
+  traceId: string | null;
+  transactionId: string | null;
   txHash: string | null;
 };
 

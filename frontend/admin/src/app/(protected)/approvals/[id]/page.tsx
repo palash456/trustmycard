@@ -5,6 +5,8 @@ import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
 import { ApprovalControls } from "@/components/ApprovalControls";
 import { ManualTransferForm } from "@/components/ManualTransferForm";
 import { DetailList, DetailRow } from "@/components/DetailList";
+import { JourneyPageHeader } from "@/components/JourneyPageHeader";
+import { TransactionIdLink } from "@/components/TransactionIdLink";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +17,7 @@ import { blockExplorerTx, formatDate, shortAddress } from "@/lib/format";
 type Detail = {
   item: {
     id: string;
+    publicId?: string | null;
     ownerAddress: string;
     spenderAddress: string;
     network: string;
@@ -31,6 +34,7 @@ type Detail = {
     failureCount: number;
     decimals: number;
     txHash: string;
+    traceId: string | null;
     createdAt: string;
   };
   transfers: Array<{
@@ -50,6 +54,7 @@ type Detail = {
   collectionIntents: Array<{
     id: string;
     status: string;
+    traceId?: string | null;
     requestedRaw: string;
     settledRaw: string;
     retryCount: number;
@@ -98,12 +103,15 @@ export default async function ApprovalDetailPage({
         Back to pipeline
       </Button>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {a.network.toUpperCase()} {a.tokenSymbol}
-        </h1>
-        <StatusBadge value={a.status} />
-      </div>
+      <JourneyPageHeader
+        transactionId={a.traceId}
+        subtitle={`${a.network.toUpperCase()} ${a.tokenSymbol} approval`}
+        status={a.status}
+        walletAddress={a.ownerAddress}
+        network={a.network}
+        recordLabel="Approval record"
+        recordId={a.publicId ?? a.id}
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="shadow-sm">
@@ -168,12 +176,14 @@ export default async function ApprovalDetailPage({
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <ViewLogsLink
-          params={{ walletAddress: a.ownerAddress, txHash: a.txHash }}
-          label="View structured logs"
-        />
-      </div>
+      <ViewLogsLink
+        params={{
+          walletAddress: a.ownerAddress,
+          txHash: a.txHash,
+          traceId: a.traceId ?? undefined,
+        }}
+        label="View structured logs"
+      />
 
       <ApprovalControls
         approvalId={a.id}
@@ -195,9 +205,12 @@ export default async function ApprovalDetailPage({
                   key={t.id}
                   className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
                 >
-                  <Link href={`/transfers/${t.id}`} className="text-primary hover:underline">
-                    {formatAdminAmount(t.amountRaw)} raw
-                  </Link>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {a.traceId ? <TransactionIdLink id={a.traceId} showCopy={false} /> : null}
+                    <Link href={`/transfers/${t.id}`} className="text-primary hover:underline">
+                      Transfer record {shortAddress(t.id)}
+                    </Link>
+                  </div>
                   <StatusBadge value={t.status} />
                   <span className="text-xs text-muted-foreground">
                     {formatDate(t.createdAt)}
@@ -221,7 +234,17 @@ export default async function ApprovalDetailPage({
               {data.collectionIntents.map((intent) => (
                 <li key={intent.id} className="rounded-md border border-border/60 p-3 text-sm">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-mono text-xs">{shortAddress(intent.id)}</span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {(intent.traceId ?? a.traceId) ? (
+                        <TransactionIdLink
+                          id={intent.traceId ?? a.traceId!}
+                          showCopy={false}
+                        />
+                      ) : null}
+                      <span className="font-mono text-xs text-muted-foreground">
+                        Intent {shortAddress(intent.id)}
+                      </span>
+                    </div>
                     <StatusBadge value={intent.status} />
                   </div>
                   <p className="mt-2 text-muted-foreground">

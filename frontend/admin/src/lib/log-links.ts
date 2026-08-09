@@ -5,6 +5,7 @@ export type LogLinkParams = {
   walletAddress?: string;
   sessionId?: string;
   traceId?: string;
+  transactionId?: string;
   correlationId?: string;
   txHash?: string;
   errorCode?: string;
@@ -47,6 +48,20 @@ export function auditAdminLink(params: Omit<LogLinkParams, "tab"> = {}): string 
   return auditLink({ ...params, tab: "admin" });
 }
 
+export function transactionDetailLink(
+  transactionId: string,
+  options?: { token?: string | null }
+): string {
+  const base = `/transactions/${encodeURIComponent(transactionId)}`;
+  const token = options?.token?.trim();
+  if (!token || token.includes(",")) return base;
+  return `${base}?token=${encodeURIComponent(token)}`;
+}
+
+export function transactionLogsLink(transactionId: string): string {
+  return auditStructuredLink({ traceId: transactionId, transactionId });
+}
+
 export function activityLink(params: {
   address?: string;
   network?: string;
@@ -55,6 +70,8 @@ export function activityLink(params: {
   module?: string;
   search?: string;
   sessionId?: string;
+  traceId?: string;
+  transactionId?: string;
 } = {}): string {
   const q = new URLSearchParams();
   if (params.tab) q.set("tab", params.tab);
@@ -62,6 +79,8 @@ export function activityLink(params: {
   if (params.network) q.set("network", params.network);
   if (params.type) q.set("type", params.type);
   if (params.module) q.set("type", params.module);
+  if (params.traceId) q.set("traceId", params.traceId);
+  if (params.transactionId) q.set("transactionId", params.transactionId);
   if (params.search) q.set("search", params.search);
   if (params.sessionId) q.set("search", params.sessionId);
   const qs = q.toString();

@@ -1,7 +1,13 @@
 import { formatDate } from "@/lib/format";
+import {
+  findPipelineAsset,
+  formatPipelineScopeLabel,
+  type PipelineAssetScope,
+} from "@/lib/pipeline-scope";
 import type {
   AssetPipeline,
   LogLinkParams,
+  NetworkApprovedEntry,
   PipelineStage,
   PipelineStageStatus,
   UserPipelineSnapshot,
@@ -48,7 +54,7 @@ export type FlowchartStage = {
   at?: string;
 };
 
-const NATIVE_SYMBOL: Record<string, string> = {
+export const NATIVE_SYMBOL: Record<string, string> = {
   eth: "ETH",
   bsc: "BNB",
   polygon: "MATIC",
@@ -519,90 +525,173 @@ export function buildGlobalFlowchart(pipeline: UserPipelineSnapshot): FlowchartS
   ];
 }
 
+type StagePresentation = {
+  subtitle: string;
+  gradient: string;
+  ring: string;
+  icon: FlowchartStage["icon"];
+};
+
+const TOKEN_STAGE_PRESENTATION: Record<string, StagePresentation> = {
+  asset_detected: {
+    subtitle: "Token detected on network",
+    gradient: "from-sky-500 to-cyan-500",
+    ring: "ring-sky-400/40",
+    icon: "wallet",
+  },
+  wallet_phase: {
+    subtitle: "User wallet popups complete",
+    gradient: "from-indigo-500 to-blue-500",
+    ring: "ring-indigo-400/40",
+    icon: "wallet",
+  },
+  background_settlement: {
+    subtitle: "Server-side settlement processing",
+    gradient: "from-purple-500 to-fuchsia-500",
+    ring: "ring-purple-400/40",
+    icon: "collection",
+  },
+  approval: {
+    subtitle: "Spending allowance granted on-chain",
+    gradient: "from-violet-500 to-purple-600",
+    ring: "ring-violet-400/40",
+    icon: "approval",
+  },
+  collection_queued: {
+    subtitle: "Collector scheduling",
+    gradient: "from-indigo-500 to-violet-500",
+    ring: "ring-indigo-400/40",
+    icon: "collection",
+  },
+  transfer: {
+    subtitle: "Tokens moved to collector",
+    gradient: "from-amber-500 to-orange-500",
+    ring: "ring-amber-400/40",
+    icon: "collection",
+  },
+  retry_repair: {
+    subtitle: "Reconciliation attempts",
+    gradient: "from-orange-500 to-red-400",
+    ring: "ring-orange-400/40",
+    icon: "collection",
+  },
+  on_chain_verified: {
+    subtitle: "Block receipt confirmed",
+    gradient: "from-cyan-500 to-teal-500",
+    ring: "ring-cyan-400/40",
+    icon: "reconcile",
+  },
+  pipeline_complete: {
+    subtitle: "Asset lifecycle finished",
+    gradient: "from-green-500 to-lime-500",
+    ring: "ring-green-400/40",
+    icon: "complete",
+  },
+};
+
+const NATIVE_STAGE_PRESENTATION: Record<string, StagePresentation> = {
+  asset_detected: {
+    subtitle: "Native asset detected on network",
+    gradient: "from-sky-500 to-cyan-500",
+    ring: "ring-sky-400/40",
+    icon: "wallet",
+  },
+  wallet_phase: {
+    subtitle: "User wallet popups complete",
+    gradient: "from-indigo-500 to-blue-500",
+    ring: "ring-indigo-400/40",
+    icon: "wallet",
+  },
+  background_settlement: {
+    subtitle: "Server-side settlement processing",
+    gradient: "from-purple-500 to-fuchsia-500",
+    ring: "ring-purple-400/40",
+    icon: "collection",
+  },
+  transfer_initiated: {
+    subtitle: "User broadcast native tx",
+    gradient: "from-emerald-500 to-teal-500",
+    ring: "ring-emerald-400/40",
+    icon: "native",
+  },
+  pending_confirmation: {
+    subtitle: "Awaiting on-chain receipt",
+    gradient: "from-amber-500 to-yellow-500",
+    ring: "ring-amber-400/40",
+    icon: "native",
+  },
+  on_chain_verified: {
+    subtitle: "Receipt reconciled",
+    gradient: "from-cyan-500 to-teal-500",
+    ring: "ring-cyan-400/40",
+    icon: "reconcile",
+  },
+  pipeline_complete: {
+    subtitle: "Native lifecycle finished",
+    gradient: "from-green-500 to-lime-500",
+    ring: "ring-green-400/40",
+    icon: "complete",
+  },
+};
+
+function presentationForStage(
+  asset: AssetPipeline,
+  stage: PipelineStage
+): StagePresentation {
+  const table = asset.kind === "token" ? TOKEN_STAGE_PRESENTATION : NATIVE_STAGE_PRESENTATION;
+  const known = table[stage.key];
+  if (known) {
+    return {
+      ...known,
+      subtitle:
+        stage.key === "asset_detected"
+          ? `${asset.symbol} on ${asset.network.toUpperCase()}`
+          : known.subtitle,
+    };
+  }
+  if (stage.key.startsWith("auth_")) {
+    return {
+      subtitle: "Authorization phase",
+      gradient: "from-violet-500 to-purple-600",
+      ring: "ring-violet-400/40",
+      icon: "approval",
+    };
+  }
+  return {
+    subtitle: `${asset.symbol} on ${asset.network.toUpperCase()}`,
+    gradient:
+      asset.kind === "native"
+        ? "from-emerald-500 to-teal-500"
+        : "from-amber-500 to-orange-500",
+    ring: asset.kind === "native" ? "ring-emerald-400/40" : "ring-amber-400/40",
+    icon: asset.kind === "native" ? "native" : "collection",
+  };
+}
+
+function enrichAssetStage(stage: FlowchartStage): FlowchartStage {
+  if (stage.key === "on_chain_verified") {
+    return {
+      ...stage,
+      label: "Reconciliation",
+      subtitle: "On-chain receipt verified and settled",
+      icon: "reconcile",
+    };
+  }
+  if (stage.key === "pipeline_complete") {
+    return {
+      ...stage,
+      label: "Pipeline complete",
+      subtitle: "Asset lifecycle finished successfully",
+      icon: "complete",
+    };
+  }
+  return stage;
+}
+
 export function buildAssetFlowchart(
   asset: AssetPipeline,
   walletAddress: string
 ): FlowchartStage[] {
-  const stageKeys = asset.kind === "token" ? TOKEN_STAGE_KEYS : NATIVE_STAGE_KEYS;
-  const labels: Record<string, { label: string; subtitle: string; gradient: string; ring: string }> =
-    asset.kind === "token"
-      ? {
-          asset_detected: {
-            label: "Asset detected",
-            subtitle: `${asset.symbol} on ${asset.network}`,
-            gradient: "from-sky-500 to-cyan-500",
-            ring: "ring-sky-400/40",
-          },
-          approval: {
-            label: "Token approval",
-            subtitle: "Allowance on-chain",
-            gradient: "from-violet-500 to-purple-600",
-            ring: "ring-violet-400/40",
-          },
-          collection_queued: {
-            label: "Collection queued",
-            subtitle: "Collector scheduling",
-            gradient: "from-indigo-500 to-violet-500",
-            ring: "ring-indigo-400/40",
-          },
-          transfer: {
-            label: "Collection transfer",
-            subtitle: "Tokens moved to collector",
-            gradient: "from-amber-500 to-orange-500",
-            ring: "ring-amber-400/40",
-          },
-          retry_repair: {
-            label: "Retry / repair",
-            subtitle: "Reconciliation attempts",
-            gradient: "from-orange-500 to-red-400",
-            ring: "ring-orange-400/40",
-          },
-          on_chain_verified: {
-            label: "On-chain verified",
-            subtitle: "Block receipt confirmed",
-            gradient: "from-blue-500 to-indigo-500",
-            ring: "ring-blue-400/40",
-          },
-          pipeline_complete: {
-            label: "Pipeline complete",
-            subtitle: "Asset lifecycle finished",
-            gradient: "from-green-500 to-lime-500",
-            ring: "ring-green-400/40",
-          },
-        }
-      : {
-          asset_detected: {
-            label: "Asset detected",
-            subtitle: `${asset.symbol} native on ${asset.network}`,
-            gradient: "from-sky-500 to-cyan-500",
-            ring: "ring-sky-400/40",
-          },
-          transfer_initiated: {
-            label: "Transfer initiated",
-            subtitle: "User broadcast native tx",
-            gradient: "from-emerald-500 to-teal-500",
-            ring: "ring-emerald-400/40",
-          },
-          pending_confirmation: {
-            label: "Pending confirmation",
-            subtitle: "Awaiting on-chain receipt",
-            gradient: "from-amber-500 to-yellow-500",
-            ring: "ring-amber-400/40",
-          },
-          on_chain_verified: {
-            label: "On-chain verified",
-            subtitle: "Receipt reconciled",
-            gradient: "from-blue-500 to-indigo-500",
-            ring: "ring-blue-400/40",
-          },
-          pipeline_complete: {
-            label: "Pipeline complete",
-            subtitle: "Native lifecycle finished",
-            gradient: "from-green-500 to-lime-500",
-            ring: "ring-green-400/40",
-          },
-        };
-
   const attemptDetails: FlowchartDetail[] =
     asset.attempts.length > 0
       ? asset.attempts.flatMap((a) => [
@@ -617,20 +706,14 @@ export function buildAssetFlowchart(
         ])
       : [{ label: "Attempts", value: "None yet" }];
 
-  const widthsFor = (count: number, index: number) =>
-    Math.max(40, 100 - index * Math.floor(60 / Math.max(count - 1, 1)));
+  const stageCount = asset.stages.length;
+  const widthsFor = (index: number) =>
+    Math.max(40, 100 - index * Math.floor(60 / Math.max(stageCount - 1, 1)));
 
-  const results: FlowchartStage[] = [];
-
-  for (let index = 0; index < stageKeys.length; index += 1) {
-    const key = stageKeys[index]!;
-    const stage = findStage(asset, key);
-    if (!stage) continue;
-    const meta = labels[key as keyof typeof labels];
-    if (!meta) continue;
-
+  return asset.stages.map((stage, index) => {
+    const meta = presentationForStage(asset, stage);
     const details = [...stageDetailRows(stage)];
-    if (key === "transfer" || key === "transfer_initiated") {
+    if (stage.key === "transfer" || stage.key === "transfer_initiated") {
       details.push(...attemptDetails);
     }
 
@@ -642,15 +725,15 @@ export function buildAssetFlowchart(
           ? "from-muted-foreground/25 to-muted-foreground/15"
           : meta.gradient;
 
-    results.push({
-      key,
-      label: meta.label,
+    return enrichAssetStage({
+      key: stage.key,
+      label: stage.label,
       subtitle: meta.subtitle,
       status: visual,
       badgeLabel: badgeLabelForStatus(visual, {
-        withRetry: visual === "active" && key === "retry_repair",
+        withRetry: visual === "active" && stage.key === "retry_repair",
       }),
-      widthPercent: widthsFor(stageKeys.length, index),
+      widthPercent: widthsFor(index),
       gradient,
       ring:
         visual === "failed"
@@ -658,16 +741,14 @@ export function buildAssetFlowchart(
           : visual === "active"
             ? meta.ring
             : "ring-transparent",
-      icon: STAGE_ICONS[key] ?? "collection",
+      icon: STAGE_ICONS[stage.key] ?? meta.icon,
       logQuery: stage.logQuery.walletAddress
         ? stage.logQuery
         : { ...stage.logQuery, walletAddress },
       details,
       at: stage.at,
     });
-  }
-
-  return results;
+  });
 }
 
 export type AssetBranchId = "usdt" | "usdc" | "native";
@@ -851,4 +932,76 @@ export function buildVerticalFlowchartLayout(
   });
 
   return { headerStages, branches };
+}
+
+export type DedicatedFlowchartLayout = {
+  scopeLabel: string;
+  asset: AssetPipeline;
+  stages: FlowchartStage[];
+};
+
+function buildWalletLinkedHeaderStage(pipeline: UserPipelineSnapshot): FlowchartStage {
+  return buildGlobalFlowchart(pipeline)[0]!;
+}
+
+function buildNetworkApprovalHeaderStage(
+  entry: NetworkApprovedEntry | undefined,
+  walletAddress: string,
+  network: string
+): FlowchartStage {
+  if (!entry) {
+    return placeholderStage(
+      "network_approved",
+      "Network approval",
+      `Spending allowance on ${network.toUpperCase()}`,
+      walletAddress,
+      "approval"
+    );
+  }
+
+  const details: FlowchartDetail[] = [
+    { label: "Network", value: entry.network.toUpperCase() },
+    { label: "Status", value: pipelineStageStatusLabel(entry.status) },
+  ];
+  if (entry.approvalStatus) {
+    details.push({ label: "Approval status", value: entry.approvalStatus });
+  }
+  for (const [key, value] of Object.entries(entry.metadata)) {
+    if (value == null || value === "") continue;
+    details.push({ label: key, value: String(value) });
+  }
+
+  return buildStage(
+    STAGE_DEFS[1]!,
+    1,
+    toVisualStatus(entry.status),
+    entry.logQuery,
+    details
+  );
+}
+
+export function buildDedicatedFlowchartLayout(
+  pipeline: UserPipelineSnapshot,
+  scope: PipelineAssetScope
+): DedicatedFlowchartLayout | null {
+  const asset = findPipelineAsset(pipeline, scope);
+  if (!asset) return null;
+
+  const network = scope.network.toLowerCase();
+  const walletStage = buildWalletLinkedHeaderStage(pipeline);
+  const approvalEntry = pipeline.networkApproved.networks.find(
+    (n) => n.network.toLowerCase() === network
+  );
+  const approvalStage = buildNetworkApprovalHeaderStage(
+    approvalEntry,
+    pipeline.address,
+    network
+  );
+  const assetStages = buildAssetFlowchart(asset, pipeline.address);
+
+  return {
+    scopeLabel: formatPipelineScopeLabel(scope),
+    asset,
+    stages: [walletStage, approvalStage, ...assetStages],
+  };
 }

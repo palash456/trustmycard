@@ -8,6 +8,7 @@ import {
   FlaskConical,
   GitBranch,
   LayoutDashboard,
+  Receipt,
   ScrollText,
   Server,
   Users,
@@ -64,6 +65,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "Monitoring",
     items: [
+      { href: "/transactions", label: "Transactions", icon: Receipt },
       { href: "/activity", label: "Activity", icon: Activity },
       { href: "/audit", label: "Audit & logs", icon: ScrollText },
     ],
@@ -89,7 +91,9 @@ function pageTitle(pathname: string): string {
   if (pathname.startsWith("/approvals") || pathname.startsWith("/transfers") || pathname.startsWith("/native-transfers")) {
     return "Pipeline";
   }
+  if (pathname.startsWith("/settlement-sessions")) return "Transactions";
   if (pathname.startsWith("/events")) return "Activity";
+  if (pathname.startsWith("/transactions")) return "Transactions";
   if (pathname.startsWith("/wallets")) return "Users";
   if (pathname.startsWith("/settings")) return "Settings";
 
@@ -116,6 +120,11 @@ function isNavActive(pathname: string, href: string): boolean {
   // Activity absorbs legacy events routes
   if (href === "/activity") {
     return pathname.startsWith("/events");
+  }
+
+  // Transactions absorbs settlement session detail routes
+  if (href === "/transactions") {
+    return pathname.startsWith("/settlement-sessions");
   }
 
   return false;

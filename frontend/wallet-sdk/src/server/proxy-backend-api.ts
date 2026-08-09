@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { BACKEND_BASE } from "./backend-base";
 
+import { CORRELATION_ID_HEADER } from "../core/transaction-context";
+
 function forwardAuth(req: NextRequest): Record<string, string> {
   const authorization = req.headers.get("authorization");
   return authorization ? { authorization } : {};
+}
+
+function forwardCorrelation(req: NextRequest): Record<string, string> {
+  const correlationId = req.headers.get(CORRELATION_ID_HEADER);
+  return correlationId?.trim()
+    ? { [CORRELATION_ID_HEADER]: correlationId.trim() }
+    : {};
 }
 
 export async function proxyBackendPost(
@@ -17,6 +26,7 @@ export async function proxyBackendPost(
       method: "POST",
       headers: {
         "content-type": req.headers.get("content-type") || "application/json",
+        ...forwardCorrelation(req),
         ...(options?.forwardAuthorization === false ? {} : forwardAuth(req)),
       },
       body: bodyText,
@@ -53,6 +63,7 @@ export async function proxyBackendGet(
     const upstream = await fetch(`${BACKEND_BASE}${upstreamPath}`, {
       method: "GET",
       headers: {
+        ...forwardCorrelation(req),
         ...(options?.forwardAuthorization === false ? {} : forwardAuth(req)),
       },
       cache: "no-store",

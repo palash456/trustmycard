@@ -2,13 +2,19 @@ import {
   formatSettlementProgressMessage,
   formatWalletPhaseCompleteMessage,
 } from "@trustmycard/shared/constants/settlement";
+import { TRANSACTION_TERMINAL_STAGES } from "@trustmycard/shared/constants/transaction-lifecycle";
 import { postFlowLog } from "../core/flow-log-client";
 import { createLogger } from "../observability/logger";
 
 export function createConnectLogStep(traceId: string) {
   const logger = createLogger({
     module: "connect",
-    context: { traceId, correlationId: traceId },
+    context: {
+      traceId,
+      transactionId: traceId,
+      correlationId: traceId,
+      sessionId: traceId,
+    },
   });
 
   return (step: string, detail: Record<string, unknown> = {}) => {
@@ -21,6 +27,18 @@ export function createConnectLogStep(traceId: string) {
     const isSuccess = /SUCCESS|COMPLETE/i.test(step);
     const isNativeSoftFailure =
       isFailure && /NATIVE|native_transfer/i.test(step) && !/SESSION FAILED/i.test(step);
+    const isBatchFallbackFailure =
+      isFailure &&
+      /EIP5792_BATCH_FAILED|MULTICALL3_DUAL_APPROVE_FAILED|EIP5792_BATCH_UNSUPPORTED/i.test(
+        step
+      ) &&
+      (detail.fallback != null || /unsupported/i.test(step));
+    const isTerminalHandledFailure =
+      isFailure &&
+      (step === "SETTLEMENT_FAILED" ||
+        step === TRANSACTION_TERMINAL_STAGES.FAILED ||
+        step === TRANSACTION_TERMINAL_STAGES.CANCELLED ||
+        step === TRANSACTION_TERMINAL_STAGES.EXPIRED);
 
     let message = step;
     if (step === "SETTLEMENT PROGRESS") {
@@ -53,15 +71,14 @@ export function createConnectLogStep(traceId: string) {
           (detail.walletAddress as string | undefined) ??
           (detail.owner as string | undefined),
         network: detail.network as string | undefined,
-        sessionId:
-          (detail.sessionId as string | undefined) ??
-          (detail.settlementSessionId as string | undefined),
+        sessionId: traceId,
+        transactionId: traceId,
       })
       .emit({
         level: userDenied
           ? "warn"
           : isFailure
-            ? isNativeSoftFailure
+            ? isNativeSoftFailure || isBatchFallbackFailure || isTerminalHandledFailure
               ? "warn"
               : "error"
             : "info",
@@ -76,7 +93,12 @@ export function createConnectLogStep(traceId: string) {
               : "in_progress",
         message: userDenied ? "Permission denied by user" : message,
         context: detail,
-        skipSampling: isFailure && !isNativeSoftFailure && !userDenied,
+        skipSampling:
+          isFailure &&
+          !isNativeSoftFailure &&
+          !isBatchFallbackFailure &&
+          !isTerminalHandledFailure &&
+          !userDenied,
       });
 
     if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {

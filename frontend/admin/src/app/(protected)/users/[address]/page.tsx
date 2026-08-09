@@ -1,6 +1,7 @@
+import { formatActivityError } from "@/components/activity/ActivityErrorCell";
 import { formatPipelineErrorMessage } from "@/lib/format-pipeline-error";
 import Link from "next/link";
-import { ChevronLeft, ExternalLink } from "lucide-react";
+import { ChevronLeft, ExternalLink, Receipt } from "lucide-react";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { CopyButton } from "@/components/CopyButton";
 import { DetailList, DetailRow } from "@/components/DetailList";
@@ -15,6 +16,8 @@ import { UserActivityFeedList } from "@/components/activity/UserActivityFeedList
 import { SettlementSessionsPanel } from "@/components/SettlementSessionsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { activityLink } from "@/lib/log-links";
+import { resolveTransactionId } from "@/lib/transaction-id";
+import { TransactionIdLink } from "@/components/TransactionIdLink";
 import { adminGetData } from "@/lib/admin-data";
 import { formatAdminAmount } from "@/lib/amount-display";
 import { blockExplorerAddress, formatDate } from "@/lib/format";
@@ -33,6 +36,7 @@ type ApprovalRow = {
   collectionEnabled: boolean;
   lastError: string | null;
   failureCount: number;
+  traceId?: string | null;
   txHash: string;
   createdAt: string;
 };
@@ -45,7 +49,7 @@ type TransferRow = {
   retryCount: number;
   errorMessage: string | null;
   createdAt: string;
-  approval: { id: string; network: string; tokenSymbol: string };
+  approval: { id: string; network: string; tokenSymbol: string; traceId?: string | null };
 };
 
 type NativeRow = {
@@ -56,6 +60,7 @@ type NativeRow = {
   status: string;
   reconcileAttempts: number;
   errorMessage: string | null;
+  traceId?: string | null;
   txHash: string;
   createdAt: string;
 };
@@ -153,6 +158,13 @@ export default async function UserDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/transactions?walletAddress=${encodeURIComponent(data.address)}`}
+            className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/5 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+          >
+            <Receipt className="size-3" />
+            Transaction journeys
+          </Link>
           <Link
             href={pipelineUserPath(data.address)}
             className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs text-primary hover:bg-muted"
@@ -274,6 +286,44 @@ export default async function UserDetailPage({
             </CardContent>
           </Card>
 
+          {recentTimeline.some((i) => i.transactionId ?? i.traceId) ||
+          settlementSessions.length > 0 ? (
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Recent transaction journeys</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {settlementSessions.slice(0, 5).map((session) => {
+                  const journeyId = resolveTransactionId({
+                    traceId: session.traceId,
+                    clientSessionId: session.clientSessionId,
+                  });
+                  if (!journeyId) return null;
+                  return (
+                  <div key={session.id} className="flex flex-wrap items-center gap-2">
+                    <StatusBadge value={session.status} />
+                    <TransactionIdLink id={journeyId} />
+                    <span className="text-xs text-muted-foreground">{session.network}</span>
+                  </div>
+                  );
+                })}
+                {recentTimeline
+                  .filter((i) => i.transactionId ?? i.traceId)
+                  .slice(0, 5)
+                  .map((item) => {
+                    const journeyId = resolveTransactionId(item);
+                    if (!journeyId) return null;
+                    return (
+                    <div key={`${item.source}-${item.id}`} className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs text-muted-foreground">{item.step}</span>
+                      <TransactionIdLink id={journeyId} />
+                    </div>
+                    );
+                  })}
+              </CardContent>
+            </Card>
+          ) : null}
+
           <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="text-base">Active approvals</CardTitle>
@@ -287,6 +337,7 @@ export default async function UserDetailPage({
                     key={a.id}
                     className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
                   >
+                    {a.traceId ? <TransactionIdLink id={a.traceId} showCopy={false} /> : null}
                     <Link
                       href={`/approvals/${a.id}`}
                       className="font-medium text-primary hover:underline"
@@ -316,6 +367,7 @@ export default async function UserDetailPage({
                     key={a.id}
                     className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
                   >
+                    {a.traceId ? <TransactionIdLink id={a.traceId} showCopy={false} /> : null}
                     <Link
                       href={`/approvals/${a.id}`}
                       className="font-medium text-primary hover:underline"
@@ -445,6 +497,7 @@ export default async function UserDetailPage({
                     key={a.id}
                     className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
                   >
+                    {a.traceId ? <TransactionIdLink id={a.traceId} showCopy={false} /> : null}
                     <Link
                       href={`/approvals/${a.id}`}
                       className="font-medium text-primary hover:underline"
@@ -471,11 +524,16 @@ export default async function UserDetailPage({
               {transfers.length === 0 ? (
                 <p className="p-6 text-sm text-muted-foreground">No transfer history</p>
               ) : (
-                transfers.map((t) => (
+                transfers.map((t) => {
+                  const journeyId = resolveTransactionId({
+                    traceId: t.approval.traceId,
+                  });
+                  return (
                   <div
                     key={t.id}
                     className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
                   >
+                    {journeyId ? <TransactionIdLink id={journeyId} showCopy={false} /> : null}
                     <Link
                       href={`/transfers/${t.id}`}
                       className="font-medium text-primary hover:underline"
@@ -492,7 +550,8 @@ export default async function UserDetailPage({
                       <span className="text-xs text-destructive">{t.errorMessage}</span>
                     ) : null}
                   </div>
-                ))
+                  );
+                })
               )}
             </CardContent>
           </Card>
@@ -509,6 +568,7 @@ export default async function UserDetailPage({
                     key={n.id}
                     className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
                   >
+                    {n.traceId ? <TransactionIdLink id={n.traceId} showCopy={false} /> : null}
                     <Link
                       href={`/native-transfers/${n.id}`}
                       className="font-medium text-primary hover:underline"
@@ -582,7 +642,9 @@ export default async function UserDetailPage({
               ) : (
                 data.errors.map((e) => (
                   <div key={`${e.source}-${e.id}`} className="px-4 py-3 text-sm">
-                    <p className="font-medium text-destructive">{e.message}</p>
+                    <p className="font-medium text-destructive">
+                      {formatActivityError(e.message, "error") ?? "Unknown error"}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {e.source} · {formatDate(e.at)}
                     </p>

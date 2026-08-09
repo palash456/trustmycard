@@ -35,10 +35,15 @@ export class MerchantWebhookWorker implements OnModuleInit, OnModuleDestroy {
           where: { eventId: job.data.eventId, collectionIntentId: job.data.intentId },
         });
         if (!delivery || delivery.status === "DELIVERED") return;
+        const payload = delivery.payload as Record<string, unknown> | null;
+        const traceId =
+          job.data.traceId ??
+          (typeof payload?.traceId === "string" ? payload.traceId : undefined);
         const body = JSON.stringify({
           id: delivery.eventId,
           type: delivery.eventType,
           collectionIntentId: delivery.collectionIntentId,
+          traceId: traceId ?? null,
           data: delivery.payload,
         });
         const secret = this.platformConfig.getMonitoring().merchantWebhookSecret;
@@ -47,6 +52,7 @@ export class MerchantWebhookWorker implements OnModuleInit, OnModuleDestroy {
           headers: {
             "content-type": "application/json",
             "x-trustmycard-event-id": delivery.eventId,
+            ...(traceId ? { "x-trustmycard-trace-id": traceId } : {}),
             ...(secret
               ? {
                   "x-trustmycard-signature": createHmac("sha256", secret)

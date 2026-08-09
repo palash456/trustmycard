@@ -17,6 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { JourneyTableCell } from "@/components/JourneyPageHeader";
+import { pipelineUserPath } from "@/lib/pipeline-paths";
 import { formatAdminAmount } from "@/lib/amount-display";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
 import { formatDate, shortAddress } from "@/lib/format";
@@ -32,6 +34,7 @@ type Approval = {
   collectionEnabled: boolean;
   nextCheckAt: string | null;
   lastError: string | null;
+  traceId?: string | null;
   createdAt: string;
 };
 
@@ -100,7 +103,8 @@ export default async function ApprovalsPage({
     <ListPageLayout>
       <PageHeader
         title="Approvals"
-        tip="All token allowances recorded after users approve USDT/USDC (and similar). Filter by network, status, or owner; open a row for manual transfer and collection controls."
+        description="Token allowance records — each row belongs to a transaction journey (flow-* ID)"
+        tip="Search by transaction ID on the Transactions page. Open a row for approval controls and linked journey."
       >
         <PageToolbar>
           <PageRefreshButton />
@@ -114,6 +118,7 @@ export default async function ApprovalsPage({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Transaction ID</TableHead>
               <TableHead>Network</TableHead>
               <TableHead>Token</TableHead>
               <TableHead>Owner</TableHead>
@@ -126,18 +131,21 @@ export default async function ApprovalsPage({
           <TableBody>
             {data.items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                   No approvals found
                 </TableCell>
               </TableRow>
             ) : (
               data.items.map((row) => (
                 <TableRow key={row.id}>
+                  <TableCell>
+                    <JourneyTableCell transactionId={row.traceId} />
+                  </TableCell>
                   <TableCell className="font-medium uppercase">{row.network}</TableCell>
                   <TableCell>{row.tokenSymbol}</TableCell>
                   <TableCell className="font-mono text-xs">
                     <Link
-                      href={`/wallets/${encodeURIComponent(row.ownerAddress)}`}
+                      href={pipelineUserPath(row.ownerAddress)}
                       className="text-primary hover:underline"
                     >
                       {shortAddress(row.ownerAddress)}

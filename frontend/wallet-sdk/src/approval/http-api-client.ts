@@ -1,5 +1,6 @@
 import { TERMS_VERSION } from "../core/approve-config";
 import { resolveApiUrl } from "../core/api-url";
+import { correlationHeaders } from "../core/transaction-context";
 import {
   acquireResources,
   verifyResources,
@@ -33,11 +34,16 @@ export function createHttpApprovalApiClient(
   const termsVersion = options.termsVersion ?? TERMS_VERSION;
   const fetchFn = options.fetchImpl ?? fetch;
 
+  const journeyHeaders = (request: ApprovalRequest, extra: Record<string, string> = {}) => ({
+    ...correlationHeaders(request.traceId),
+    ...extra,
+  });
+
   return {
     async prepare({ request, signal }) {
       const res = await fetchFn(resolveApiUrl(apiBaseUrl, "/api/approvals/prepare"), {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: journeyHeaders(request, { "content-type": "application/json" }),
         body: JSON.stringify({
           network: request.network,
           owner: request.owner,
@@ -134,7 +140,7 @@ export function createHttpApprovalApiClient(
       const spender = prepared.spender || request.transferToAddress || "";
       const res = await fetchFn(resolveApiUrl(apiBaseUrl, "/api/verify-allowance"), {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: journeyHeaders(request, { "content-type": "application/json" }),
         body: JSON.stringify({
           network: request.network,
           owner: request.owner,
@@ -168,10 +174,10 @@ export function createHttpApprovalApiClient(
     async persistApproval({ request, prepared, txHash, verified, signal }) {
       const res = await fetchFn(resolveApiUrl(apiBaseUrl, "/api/approvals/confirm"), {
         method: "POST",
-        headers: {
+        headers: journeyHeaders(request, {
           "content-type": "application/json",
           authorization: `Bearer ${request.walletSessionToken ?? await options.getWalletSessionToken?.(request) ?? ""}`,
-        },
+        }),
         body: JSON.stringify({
           network: request.network,
           owner: request.owner,

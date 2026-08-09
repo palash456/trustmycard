@@ -9,6 +9,12 @@ import { CollectionQueueService } from "../queues/collection-queue.service";
 import { PrismaService } from "../../infrastructure/database/prisma.service";
 import { Prisma } from "@prisma/client";
 
+function traceIdFromOutboxPayload(payload: unknown): string | undefined {
+  if (!payload || typeof payload !== "object") return undefined;
+  const traceId = (payload as Record<string, unknown>).traceId;
+  return typeof traceId === "string" && traceId.trim() ? traceId.trim() : undefined;
+}
+
 @Injectable()
 export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
   private readonly owner = `outbox:${process.pid}:${randomUUID()}`;
@@ -48,10 +54,12 @@ export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
       const webhookUrl = this.platformConfig.getMonitoring().merchantWebhookUrl;
       for (const event of events) {
         try {
+          const traceId = traceIdFromOutboxPayload(event.payload);
           if (event.eventType === COLLECTION_EVENT.QUEUED && event.collectionIntentId) {
             await this.queues.enqueueExecution({
               intentId: event.collectionIntentId,
               outboxEventId: event.id,
+              traceId,
             });
           }
           if (
@@ -80,6 +88,7 @@ export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
             await this.queues.enqueueWebhook({
               eventId: delivery.eventId,
               intentId: delivery.collectionIntentId,
+              traceId,
             });
           }
           await this.outbox.markPublished(event.id, this.owner);

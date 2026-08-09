@@ -67,8 +67,8 @@ export default async function WalletsPage({
     <ListPageLayout>
       <PageHeader
         title="Wallets"
-        description="Wallet addresses with activity — not login accounts"
-        tip="Distinct owner addresses seen across approvals, native transfers, and flow events — not login accounts. Open an address for a full activity timeline."
+        description="Legacy wallet list — use Users and Transactions for journey-centric views"
+        tip="Prefer the Users page for profiles and Transactions for flow-* journey IDs. This list remains for backward compatibility."
       >
         <PageToolbar>
           <PageRefreshButton />
@@ -99,7 +99,7 @@ export default async function WalletsPage({
                 <TableRow key={row.address}>
                   <TableCell className="font-mono text-xs">
                     <Link
-                      href={`/wallets/${encodeURIComponent(row.address)}`}
+                      href={`/users/${encodeURIComponent(row.address)}`}
                       className="text-primary hover:underline"
                     >
                       {shortAddress(row.address, 8, 6)}

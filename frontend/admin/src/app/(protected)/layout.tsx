@@ -2,9 +2,7 @@ import { AdminShell } from "@/components/AdminShell";
 import { AdminLiveRefresh } from "@/components/AdminLiveRefresh";
 import { BackendEnvironmentGate } from "@/components/BackendEnvironmentGate";
 import { BackendStatusProvider } from "@/components/BackendStatusProvider";
-import { DemoBanner } from "@/components/DemoBanner";
 import { DemoProvider } from "@/components/DemoProvider";
-import { LogEnvBanner } from "@/components/LogEnvBanner";
 import { LogEnvProvider } from "@/components/LogEnvProvider";
 import { PageTransitionShell } from "@/components/PageTransitionShell";
 import { RefreshProvider } from "@/components/RefreshProvider";
@@ -26,8 +24,6 @@ export default function ProtectedLayout({
           <BackendStatusProvider>
             <AdminShell>
               <AdminLiveRefresh />
-              <DemoBanner />
-              <LogEnvBanner />
               <BackendEnvironmentGate>
                 <PageTransitionShell>{children}</PageTransitionShell>
               </BackendEnvironmentGate>

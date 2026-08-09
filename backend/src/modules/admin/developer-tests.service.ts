@@ -118,6 +118,7 @@ const AREA_LABELS: Record<string, string> = {
   "Admin / pipeline": "Admin dashboard & user pipeline",
   "Native execution policy": "When native sends are allowed",
   Observability: "Logging, errors & monitoring",
+  "Transaction traceability": "Transaction ID & journey tracing",
   "Core / server": "App wiring & API routes",
   "Shared utilities": "Shared helpers",
   Backend: "General server logic",
@@ -210,6 +211,49 @@ const SUITE_FRIENDLY_COPY: Array<{
     purpose: "Makes sure the platform can pay for network fees when users transact.",
     expectedResult: "Resources are acquired, used, and released in the right order.",
     why: "Without resources, TRON and EVM transactions fail silently or cost too much.",
+  },
+  {
+    match: /transaction-context/i,
+    title: "Transaction context (client journey ID)",
+    description:
+      "Tests flow-* ID generation, sessionStorage resume/expiry, and x-correlation-id headers on the wallet client.",
+    purpose: "Ensures one user attempt keeps the same ID across refresh and API calls.",
+    expectedResult: "Stable transactionId in sessionStorage; correlation header on outbound requests.",
+    why: "Lost client context makes every production incident impossible to trace.",
+  },
+  {
+    match: /transaction-journey/i,
+    title: "Admin transaction journey hub",
+    description:
+      "Tests GET /admin/transactions/:id aggregates approvals, settlement, logs, and terminal status by traceId.",
+    purpose: "Validates the admin debugging hub returns a complete lifecycle slice.",
+    expectedResult: "Hub resolves wallet, network, timeline, and child entities for a flow-* ID.",
+    why: "Support and ops rely on this page as the single pane of glass per payment attempt.",
+  },
+  {
+    match: /transaction-lifecycle/i,
+    title: "Transaction terminal lifecycle",
+    description: "Tests SUCCESS / FAILED / CANCELLED / EXPIRED terminal stage constants and mappings.",
+    purpose: "Keeps terminal closure semantics consistent across client, server, and admin.",
+    expectedResult: "Terminal stages map to the correct outcome status everywhere.",
+    why: "Ambiguous terminal states break dashboards and retry logic.",
+  },
+  {
+    match: /settlement-observability/i,
+    title: "Settlement log correlation",
+    description:
+      "Tests settlement observability uses client journey ID (flow-*) — not settlement DB PK — for trace fields.",
+    purpose: "Prevents settlement logs from becoming orphaned from the connect flow.",
+    expectedResult: "traceId/sessionId = clientSessionId; settlementSessionId only in context.",
+    why: "Mixing settlement row IDs with journey IDs was a major traceability gap.",
+  },
+  {
+    match: /connect-logger/i,
+    title: "Connect flow log correlation",
+    description: "Tests connect logger emits unified sessionId/traceId/transactionId on every step.",
+    purpose: "Guards against sessionId/traceId conflation regressions in connect observability.",
+    expectedResult: "All connect log events share one journey ID; wallet address stays separate.",
+    why: "Connect is the first mile — bad IDs here poison every downstream system.",
   },
 ];
 
@@ -806,6 +850,7 @@ function inferArea(packageId: string, relFile: string): string {
 
   if (packageId === "shared") {
     if (normalized.includes("token-collection-state")) return "Native execution policy";
+    if (normalized.includes("transaction-lifecycle")) return "Transaction traceability";
     if (normalized.includes("observability")) return "Observability";
     if (normalized.includes("collection")) return "Collection (shared)";
     if (normalized.includes("collector")) return "Collection (shared)";
@@ -817,6 +862,7 @@ function inferArea(packageId: string, relFile: string): string {
     if (normalized.includes("/authorization/")) return "Authorization / wallet phase";
     if (normalized.includes("/native-transfer/")) return "Native transfer";
     if (normalized.includes("/connect-flow/")) return "Connect flow";
+    if (normalized.includes("transaction-context")) return "Transaction traceability";
     if (normalized.includes("/observability/")) return "Observability";
     if (normalized.includes("/server/")) return "Core / server";
     if (normalized.includes("/core/")) return "Core / server";
@@ -828,6 +874,8 @@ function inferArea(packageId: string, relFile: string): string {
   if (normalized.includes("collection")) return "Collection (backend)";
   if (normalized.includes("native")) return "Native transfer";
   if (normalized.includes("pipeline") || normalized.includes("user-")) return "Admin / pipeline";
+  if (normalized.includes("transaction-journey") || normalized.includes("settlement-observability"))
+    return "Transaction traceability";
   if (normalized.includes("admin") || normalized.includes("approval-state")) return "Admin / pipeline";
   if (normalized.includes("safe-audit") || normalized.includes("error-message")) return "Observability";
   if (normalized.includes("network-settlement")) return "Native execution policy";

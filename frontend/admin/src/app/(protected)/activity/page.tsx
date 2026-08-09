@@ -41,6 +41,7 @@ const FILTER_FIELDS = [
     options: ["success", "in_progress", "error", "failed", "failure", "rejected"],
   },
   { name: "search", label: "Search", placeholder: "Message or tx hash" },
+  { name: "transactionId", label: "Transaction ID", placeholder: "flow-…" },
   { name: "from", label: "From", placeholder: "YYYY-MM-DD" },
   { name: "to", label: "To", placeholder: "YYYY-MM-DD" },
 ] as const;
@@ -77,6 +78,8 @@ export default async function ActivityPage({
   const tab = parseTab(sp.tab);
   const activityQuery = { ...sp, tab: tab === "all" ? undefined : tab };
 
+  const transactionId = sp.transactionId?.trim() || sp.traceId?.trim() || undefined;
+
   const feedQuery = buildQuery({
     page: sp.page ?? "1",
     limit: sp.limit ?? "25",
@@ -86,6 +89,8 @@ export default async function ActivityPage({
     type: sp.type,
     status: sp.status,
     search: sp.search,
+    traceId: transactionId,
+    transactionId,
     from: sp.from,
     to: sp.to,
   });
@@ -150,6 +155,7 @@ export default async function ActivityPage({
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className={headClass("time")}>Time</TableHead>
+              <TableHead className={headClass("transactionId")}>Transaction ID</TableHead>
               <TableHead className={headClass("wallet")}>Wallet</TableHead>
               <TableHead className={headClass("network")}>Network</TableHead>
               <TableHead className={headClass("step")}>Step</TableHead>
@@ -165,7 +171,7 @@ export default async function ActivityPage({
             {data.items.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={showErrorCol ? 8 : 7}
+                  colSpan={showErrorCol ? 9 : 8}
                   className="h-24 px-5 text-center text-muted-foreground"
                 >
                   No user journey activity found

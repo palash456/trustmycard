@@ -12,6 +12,7 @@ import {
 import { useRouter } from "next/navigation";
 import type { BackendHealthResult } from "@/lib/backend-health";
 import type { LogEnv } from "@/lib/log-env-cookie";
+import type { AdminDataMode } from "@/lib/admin-data-mode";
 import { useDemo } from "@/components/DemoProvider";
 import { useLogEnv } from "@/components/LogEnvProvider";
 import { safeRouterRefresh } from "@/lib/safe-router-refresh";
@@ -30,6 +31,7 @@ type BackendStatusContextValue = {
   recheckHealth: () => Promise<void>;
   switchEnvironment: (env: LogEnv) => void;
   switchToDemo: () => void;
+  switchDataMode: (mode: AdminDataMode) => void;
 };
 
 const BackendStatusContext = createContext<BackendStatusContextValue | null>(null);
@@ -115,6 +117,17 @@ export function BackendStatusProvider({ children }: { children: ReactNode }) {
     }, 150);
   }, [router, setDemo]);
 
+  const switchDataMode = useCallback(
+    (mode: AdminDataMode) => {
+      if (mode === "demo") {
+        switchToDemo();
+        return;
+      }
+      switchEnvironment(mode === "production" ? "production" : "dev");
+    },
+    [switchEnvironment, switchToDemo]
+  );
+
   return (
     <BackendStatusContext.Provider
       value={{
@@ -124,6 +137,7 @@ export function BackendStatusProvider({ children }: { children: ReactNode }) {
         recheckHealth,
         switchEnvironment,
         switchToDemo,
+        switchDataMode,
       }}
     >
       {children}

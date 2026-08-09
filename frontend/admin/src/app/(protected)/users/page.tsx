@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Receipt } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
+import { formatActivityError } from "@/components/activity/ActivityErrorCell";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { PageFilters } from "@/components/FilterForm";
 import { ListPageLayout } from "@/components/ListPageLayout";
@@ -124,7 +125,7 @@ export default async function UsersPage({
       <ListPageLayout>
         <PageHeader
           title="Users"
-          tip="Each wallet address is treated as a user. This view aggregates the full transaction lifecycle — approvals, collections, native transfers, events, and errors — in one place."
+          tip="Each wallet is a user profile. Use Transactions to search by flow-* journey ID across all wallets."
         />
         <ErrorAlert message={err instanceof Error ? err.message : "Failed to load"} />
       </ListPageLayout>
@@ -139,10 +140,17 @@ export default async function UsersPage({
       <PageHeader
         className="shrink-0"
         title="Users"
-        description="Each wallet address is a user — search by full or partial address to investigate the complete lifecycle"
-        tip="Each wallet address is treated as a user. This view aggregates the full transaction lifecycle — approvals, collections, native transfers, events, and errors — in one place."
+        description="Wallet addresses grouped by activity — open a user or browse their transaction journeys"
+        tip="Each wallet is a user profile. Use Transactions to search by flow-* journey ID across all wallets."
       >
         <PageToolbar>
+          <Link
+            href="/transactions"
+            className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-primary hover:bg-muted"
+          >
+            <Receipt className="size-3.5" />
+            All transactions
+          </Link>
           <PageRefreshButton />
           <PageFilters action="/users" values={sp} fields={[...FILTER_FIELDS]} />
         </PageToolbar>
@@ -185,6 +193,7 @@ export default async function UsersPage({
                   : row.networksUsed[0]
                     ? blockExplorerAddress(row.networksUsed[0], row.address)
                     : null;
+                const latestErrorMessage = formatActivityError(row.latestError, "error");
                 return (
                   <TableRow key={row.address} className="[&_[data-slot=table-cell]]:py-5">
                     <TableCell className="min-w-[140px] font-mono text-xs">
@@ -196,6 +205,13 @@ export default async function UsersPage({
                           {shortAddress(row.address, 8, 6)}
                         </Link>
                         <CopyButton value={row.address} label="Copy" />
+                        <Link
+                          href={`/transactions?walletAddress=${encodeURIComponent(row.address)}`}
+                          className="text-[10px] text-primary hover:underline"
+                          title="View transaction journeys"
+                        >
+                          journeys
+                        </Link>
                       </div>
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
@@ -250,8 +266,8 @@ export default async function UsersPage({
                       {row.eventCount}
                     </TableCell>
                     <TableCell className="max-w-[120px] text-xs text-muted-foreground">
-                      {row.latestError ? (
-                        <span className="truncate text-destructive">{row.latestError}</span>
+                      {latestErrorMessage ? (
+                        <span className="truncate text-destructive">{latestErrorMessage}</span>
                       ) : (
                         "No error"
                       )}

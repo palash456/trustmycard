@@ -49,8 +49,7 @@ export function shouldAttemptEip5792(
   capabilities: WalletCapabilities | null,
   chainId: number
 ): boolean {
-  if (supportsSendCalls(capabilities, chainId)) return true;
-  return capabilities === null;
+  return supportsSendCalls(capabilities, chainId);
 }
 
 function walletPhaseTokenCapture(
@@ -370,6 +369,7 @@ export async function executeMulticall3Batch(args: {
       network: runArgs.network,
       error: message,
       userRejected: rejected,
+      fallback: rejected ? null : "sequential",
     });
     if (rejected) {
       const rejectedResults = jobs.map((job) => {

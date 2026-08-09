@@ -182,12 +182,15 @@ export class AdminService {
   }
 
   async getApproval(id: string) {
-    const approval = await prisma.approval.findUnique({ where: { id } });
+    const approval = await prisma.approval.findFirst({
+      where: { OR: [{ id }, { publicId: id }] },
+    });
     if (!approval) throw new NotFoundException("Approval not found");
+    const resolvedId = approval.id;
 
     const [transfers, audits, collectionIntents] = await Promise.all([
       prisma.transfer.findMany({
-        where: { approvalId: id },
+        where: { approvalId: resolvedId },
         orderBy: { createdAt: "desc" },
         take: 50,
         select: {
@@ -208,12 +211,12 @@ export class AdminService {
         },
       }),
       prisma.auditLog.findMany({
-        where: { entityId: id },
+        where: { entityId: resolvedId },
         orderBy: { createdAt: "desc" },
         take: 20,
       }),
       prisma.collectionIntent.findMany({
-        where: { approvalId: id },
+        where: { approvalId: resolvedId },
         include: { attempts: { orderBy: { sequence: "desc" } } },
         orderBy: { createdAt: "desc" },
       }),
@@ -256,6 +259,7 @@ export class AdminService {
               ownerAddress: true,
               tokenSymbol: true,
               status: true,
+              traceId: true,
             },
           },
         },
@@ -275,8 +279,8 @@ export class AdminService {
   }
 
   async getTransfer(id: string) {
-    const transfer = await prisma.transfer.findUnique({
-      where: { id },
+    const transfer = await prisma.transfer.findFirst({
+      where: { OR: [{ id }, { publicId: id }] },
       include: {
         approval: true,
       },
@@ -324,7 +328,9 @@ export class AdminService {
   }
 
   async getNativeTransfer(id: string) {
-    const item = await prisma.nativeTransfer.findUnique({ where: { id } });
+    const item = await prisma.nativeTransfer.findFirst({
+      where: { OR: [{ id }, { publicId: id }] },
+    });
     if (!item) throw new NotFoundException("Native transfer not found");
     return { item };
   }

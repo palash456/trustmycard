@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
+import { TransactionIdLink } from "@/components/TransactionIdLink";
 import { DashboardCharts } from "@/components/charts/DashboardCharts";
 import { StatCard } from "@/components/StatCard";
 import { buttonVariants } from "@/components/ui/button";
@@ -11,10 +12,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { formatActivityError } from "@/components/activity/ActivityErrorCell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate } from "@/lib/format";
 import { pipelineUserPath } from "@/lib/pipeline-paths";
-import { activityLink } from "@/lib/log-links";
+import { activityLink, transactionDetailLink } from "@/lib/log-links";
+import type { TransactionListItem } from "@/types/transaction-journey";
 
 export type DashboardData = {
   collector: {
@@ -56,6 +59,7 @@ export type DashboardData = {
     errorMessage: string | null;
     txHash: string | null;
     sessionId: string | null;
+    traceId?: string | null;
   }>;
   settlement?: {
     active: number;
@@ -67,8 +71,10 @@ export type DashboardData = {
       lastError: string | null;
       updatedAt: string;
       clientSessionId: string;
+      traceId?: string | null;
     }>;
   };
+  recentTransactions?: TransactionListItem[];
 };
 
 function sumStatuses(counts: Record<string, number>, keys: string[]): number {
@@ -118,7 +124,8 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
     ...(data.settlement?.recentFailed ?? []).map((s) => ({
       id: s.id,
       kind: "Settlement" as const,
-      href: activityLink({ address: s.ownerAddress, tab: "all", search: s.id }),
+      href: `/settlement-sessions/${encodeURIComponent(s.id)}`,
+      journeyId: s.traceId ?? s.clientSessionId,
       label: `${s.network.toUpperCase()} settlement`,
       owner: s.ownerAddress,
       status: s.status,
@@ -256,6 +263,64 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
         </Card>
       </div>
 
+      {(data.recentTransactions?.length ?? 0) > 0 ? (
+        <Card className="border-0">
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
+            <div>
+              <CardTitle className="font-brand text-base">Recent transactions</CardTitle>
+              <CardDescription>Latest end-to-end user journeys by flow-* ID</CardDescription>
+            </div>
+            <Link href="/transactions" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              View all
+              <ArrowRight className="size-4" />
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs text-muted-foreground">
+                    <th className="pb-2 pr-3 font-medium">Transaction ID</th>
+                    <th className="pb-2 pr-3 font-medium">Status</th>
+                    <th className="pb-2 pr-3 font-medium">Wallet</th>
+                    <th className="pb-2 pr-3 font-medium">Network</th>
+                    <th className="pb-2 font-medium">Last activity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.recentTransactions?.map((row) => (
+                    <tr key={row.transactionId} className="border-b border-border/40">
+                      <td className="py-2.5 pr-3">
+                        <TransactionIdLink id={row.transactionId} showCopy={false} />
+                      </td>
+                      <td className="py-2.5 pr-3">
+                        <StatusBadge value={row.terminalStatus} />
+                      </td>
+                      <td className="max-w-[140px] truncate py-2.5 pr-3 font-mono text-xs">
+                        {row.walletAddress ? (
+                          <Link
+                            href={pipelineUserPath(row.walletAddress)}
+                            className="text-primary hover:underline"
+                          >
+                            {row.walletAddress}
+                          </Link>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="py-2.5 pr-3 text-xs uppercase">{row.network ?? "—"}</td>
+                      <td className="py-2.5 text-xs text-muted-foreground">
+                        {formatDate(row.lastActivityAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card className="border-0">
         <CardHeader>
           <CardTitle className="font-brand text-base">Recent issues</CardTitle>
@@ -273,6 +338,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                   <tr className="border-b text-left text-xs text-muted-foreground">
                     <th className="pb-2 pr-3 font-medium">Type</th>
                     <th className="pb-2 pr-3 font-medium">Asset</th>
+                    <th className="pb-2 pr-3 font-medium">Transaction</th>
                     <th className="pb-2 pr-3 font-medium">Wallet</th>
                     <th className="pb-2 pr-3 font-medium">Status</th>
                     <th className="pb-2 font-medium">Error</th>
@@ -287,6 +353,13 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                           {row.label}
                         </Link>
                       </td>
+                      <td className="py-2.5 pr-3 font-mono text-xs">
+                        {"journeyId" in row && row.journeyId ? (
+                          <TransactionIdLink id={row.journeyId} showCopy={false} />
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                       <td className="max-w-[140px] truncate py-2.5 pr-3 font-mono text-xs">
                         <Link
                           href={pipelineUserPath(row.owner)}
@@ -299,7 +372,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                         <StatusBadge value={row.status} />
                       </td>
                       <td className="max-w-[280px] truncate py-2.5 text-xs text-destructive">
-                        {row.error ?? "—"}
+                        {formatActivityError(row.error, row.status) ?? "—"}
                       </td>
                     </tr>
                   ))}
@@ -335,13 +408,25 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                     ) : null}
                   </div>
                 </div>
-                <ViewLogsLink
-                  params={{
-                    walletAddress: e.walletAddress ?? undefined,
-                    txHash: e.txHash ?? undefined,
-                    search: e.message,
-                  }}
-                />
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <ViewLogsLink
+                    params={{
+                      walletAddress: e.walletAddress ?? undefined,
+                      txHash: e.txHash ?? undefined,
+                      sessionId: e.sessionId ?? undefined,
+                      traceId: e.traceId ?? e.sessionId ?? undefined,
+                      search: e.message,
+                    }}
+                  />
+                  {e.traceId ?? e.sessionId ? (
+                    <Link
+                      href={transactionDetailLink(e.traceId ?? e.sessionId!)}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Transaction journey
+                    </Link>
+                  ) : null}
+                </div>
               </div>
             ))}
           </CardContent>

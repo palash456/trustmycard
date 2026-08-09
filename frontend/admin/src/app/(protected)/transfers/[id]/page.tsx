@@ -4,7 +4,7 @@ import { ErrorAlert } from "@/components/ErrorAlert";
 import { ReconcileButton } from "@/components/ReconcileButton";
 import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
 import { DetailList, DetailRow } from "@/components/DetailList";
-import { StatusBadge } from "@/components/StatusBadge";
+import { JourneyPageHeader } from "@/components/JourneyPageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatAdminAmount } from "@/lib/amount-display";
@@ -14,6 +14,7 @@ import { blockExplorerTx, formatDate, shortAddress } from "@/lib/format";
 type Detail = {
   item: {
     id: string;
+    publicId?: string | null;
     idempotencyKey: string;
     amountRaw: string;
     fromAddress: string;
@@ -32,6 +33,7 @@ type Detail = {
       network: string;
       tokenSymbol: string;
       ownerAddress: string;
+      traceId: string | null;
     };
   };
 };
@@ -75,10 +77,15 @@ export default async function TransferDetailPage({
         Back to pipeline
       </Button>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Transfer</h1>
-        <StatusBadge value={t.status} />
-      </div>
+      <JourneyPageHeader
+        transactionId={t.approval.traceId}
+        subtitle={`${t.approval.network.toUpperCase()} ${t.approval.tokenSymbol} collection transfer`}
+        status={t.status}
+        walletAddress={t.approval.ownerAddress}
+        network={t.approval.network}
+        recordLabel="Transfer record"
+        recordId={t.publicId ?? t.id}
+      />
 
       <Card className="max-w-3xl shadow-sm">
         <CardHeader>
@@ -86,9 +93,9 @@ export default async function TransferDetailPage({
         </CardHeader>
         <CardContent>
           <DetailList>
-            <DetailRow label="Approval">
+            <DetailRow label="Approval record">
               <Link href={`/approvals/${t.approval.id}`} className="text-primary hover:underline">
-                {t.approval.network} {t.approval.tokenSymbol}
+                {t.approval.network} {t.approval.tokenSymbol} · {shortAddress(t.approval.id)}
               </Link>
             </DetailRow>
             <DetailRow label="Amount raw">
@@ -113,7 +120,7 @@ export default async function TransferDetailPage({
                 (t.txHash ?? "—")
               )}
             </DetailRow>
-            <DetailRow label="Idempotency">
+            <DetailRow label="Idempotency key">
               <span className="font-mono text-xs">{t.idempotencyKey}</span>
             </DetailRow>
             <DetailRow label="Retries">{t.retryCount}</DetailRow>
@@ -139,8 +146,9 @@ export default async function TransferDetailPage({
         params={{
           walletAddress: t.approval.ownerAddress,
           txHash: t.txHash ?? undefined,
+          traceId: t.approval.traceId ?? undefined,
         }}
-        label="View related structured logs"
+        label="View structured logs"
       />
     </div>
   );

@@ -10,6 +10,9 @@ test("shouldSuppressWalletConsoleErrorForTest mutes empty WalletConnect payloads
   assert.equal(shouldSuppressWalletConsoleErrorForTest([]), true);
   assert.equal(shouldSuppressWalletConsoleErrorForTest([{}]), true);
   assert.equal(shouldSuppressWalletConsoleErrorForTest([{ message: "" }]), true);
+  assert.equal(shouldSuppressWalletConsoleErrorForTest([new Error("{}")]), true);
+  assert.equal(shouldSuppressWalletConsoleErrorForTest([new Error("")]), true);
+  assert.equal(shouldSuppressWalletConsoleErrorForTest(["{}"]), true);
   assert.equal(
     shouldSuppressWalletConsoleErrorForTest(["User rejected the request"]),
     true

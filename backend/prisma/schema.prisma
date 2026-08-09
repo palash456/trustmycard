@@ -10,6 +10,7 @@ datasource db {
 
 model Approval {
   id                  String             @id @default(cuid())
+  publicId            String?            @unique
   ownerAddress        String
   spenderAddress      String
   network             String
@@ -35,6 +36,7 @@ model Approval {
   failureCount        Int                @default(0)
   collectorRunCount   Int                @default(0)
   lastError           String?
+  traceId             String?
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
   audits              AuditLog[]
@@ -44,6 +46,7 @@ model Approval {
   @@unique([network, txHash])
   @@index([collectionEnabled, status, nextCheckAt])
   @@index([network, collectionEnabled, status])
+  @@index([traceId])
 }
 
 model AuditLog {
@@ -59,6 +62,7 @@ model AuditLog {
 
 model Transfer {
   id             String            @id @default(cuid())
+  publicId       String?           @unique
   approvalId     String
   escrowIntentId String?
   idempotencyKey String            @unique
@@ -85,6 +89,7 @@ model Transfer {
 
 model CollectionIntent {
   id                  String                    @id @default(cuid())
+  publicId            String?                   @unique
   approvalId          String
   merchantId          String                    @default("platform")
   merchantReference   String?
@@ -107,6 +112,7 @@ model CollectionIntent {
   queuedAt            DateTime?
   broadcastAt         DateTime?
   settledAt           DateTime?
+  traceId             String?
   createdAt           DateTime                  @default(now())
   updatedAt           DateTime                  @updatedAt
   approval            Approval                  @relation(fields: [approvalId], references: [id], onDelete: Cascade)
@@ -118,6 +124,7 @@ model CollectionIntent {
   @@index([status, createdAt])
   @@index([network, status, nextRetryAt])
   @@index([approvalId, createdAt])
+  @@index([traceId])
 }
 
 model TransferAttempt {
@@ -226,13 +233,18 @@ model TgLogEvent {
   location  String?
   site      String?
   device    String?
+  traceId   String?
   createdAt DateTime @default(now())
+
+  @@index([traceId])
+  @@index([address, createdAt])
 }
 
 /// Idempotent fee/resource sponsorship (TRON energy/bandwidth; EVM gas later).
 /// User-initiated native coin transfer (ETH, TRX, BNB, etc.) — no allowance/collector.
 model NativeTransfer {
   id                String         @id @default(cuid())
+  publicId          String?        @unique
   ownerAddress      String
   toAddress         String
   network           String
@@ -253,10 +265,12 @@ model NativeTransfer {
   lastReconcileAt   DateTime?
   reconcileAttempts Int            @default(0)
   evmNonce          String?
+  traceId           String?
 
   @@index([ownerAddress, network, status])
   @@index([network, status, createdAt])
   @@index([status, lastReconcileAt])
+  @@index([traceId])
 }
 
 model ResourceSponsorship {
@@ -339,6 +353,7 @@ model MetricsSnapshot {
 /// Tracks wallet-phase completion and ordered background settlement per owner/network.
 model NetworkSettlementSession {
   id                    String                   @id @default(cuid())
+  publicId              String?                  @unique
   clientSessionId       String
   ownerAddress          String
   network               String
@@ -358,12 +373,14 @@ model NetworkSettlementSession {
   nativeTransferId      String?
   nativeReady           Boolean                  @default(false)
   lastError             String?
+  traceId               String?
   createdAt             DateTime                 @default(now())
   updatedAt             DateTime                 @updatedAt
   completedAt           DateTime?
 
   @@index([ownerAddress, network, status])
   @@index([status, updatedAt])
+  @@index([traceId])
   @@unique([clientSessionId, network])
 }
 

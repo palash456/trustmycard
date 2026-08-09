@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { JourneyTableCell } from "@/components/JourneyPageHeader";
 import { formatAdminAmount } from "@/lib/amount-display";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
 import { formatDate, shortAddress } from "@/lib/format";
@@ -34,6 +35,7 @@ type Transfer = {
     network: string;
     tokenSymbol: string;
     ownerAddress: string;
+    traceId?: string | null;
   };
 };
 
@@ -86,7 +88,8 @@ export default async function TransfersPage({
     <ListPageLayout>
       <PageHeader
         title="Token transfers"
-        tip="Token transferFrom executions pulled by the collector or admin. Each row links to the parent approval and on-chain tx when available."
+        description="Collection transferFrom executions — each row links to its transaction journey (flow-* ID)"
+        tip="Search by transaction ID on the Transactions page. Open a row for transfer detail and linked journey."
       >
         <PageToolbar>
           <PageRefreshButton />
@@ -100,6 +103,7 @@ export default async function TransfersPage({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Transaction ID</TableHead>
               <TableHead>Network</TableHead>
               <TableHead>Token</TableHead>
               <TableHead>Amount</TableHead>
@@ -111,13 +115,16 @@ export default async function TransfersPage({
           <TableBody>
             {data.items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                   No transfers found
                 </TableCell>
               </TableRow>
             ) : (
               data.items.map((row) => (
                 <TableRow key={row.id}>
+                  <TableCell>
+                    <JourneyTableCell transactionId={row.approval.traceId} />
+                  </TableCell>
                   <TableCell className="font-medium uppercase">{row.approval.network}</TableCell>
                   <TableCell>{row.approval.tokenSymbol}</TableCell>
                   <TableCell className="font-mono text-xs">{formatAdminAmount(row.amountRaw)}</TableCell>

@@ -15,11 +15,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { PipelineStageLogsLink } from "@/components/pipeline/PipelineStageLogsLink";
+import { TransactionIdLink } from "@/components/TransactionIdLink";
 import { activityLink } from "@/lib/log-links";
+import { resolveTransactionId } from "@/lib/transaction-id";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { UserPipelineSnapshot } from "@/types/pipeline";
+import type { PipelineAssetScope } from "@/lib/pipeline-scope";
 import {
+  buildDedicatedFlowchartLayout,
   buildFlowchartMetadata,
   buildVerticalFlowchartLayout,
   type AssetBranchSlot,
@@ -115,9 +120,22 @@ function BalanceGroupsPanel({ groups }: { groups: FlowchartBalanceGroup[] }) {
 
 function StageHoverContent({ stage }: { stage: FlowchartStage }) {
   const showBalancePanel = stage.key === "wallet_linked";
+  const transactionId = resolveTransactionId(stage.logQuery, Object.fromEntries(
+    stage.details.map((d) => [d.label, d.value])
+  ));
 
   return (
     <div className="space-y-3 p-1">
+      {transactionId ? (
+        <div className="rounded-md border border-primary/20 bg-primary/5 px-2.5 py-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Transaction ID
+          </p>
+          <div className="mt-1">
+            <TransactionIdLink id={transactionId} truncate={false} />
+          </div>
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-sm font-semibold">{stage.label}</p>
@@ -156,17 +174,22 @@ function StageHoverContent({ stage }: { stage: FlowchartStage }) {
       {showBalancePanel ? (
         <BalanceGroupsPanel groups={stage.balanceGroups ?? []} />
       ) : null}
-      <Link
-        href={activityLink({
-          address: stage.logQuery.walletAddress,
-          network: stage.logQuery.network ?? stage.logQuery.search,
-          tab: stage.logQuery.tab ?? "all",
-          type: stage.logQuery.type ?? stage.logQuery.module ?? stage.logQuery.action,
-        })}
-        className="inline-flex text-xs font-semibold text-primary hover:underline"
-      >
-        View full logs →
-      </Link>
+      <div className="flex flex-wrap gap-3 border-t pt-2">
+        <PipelineStageLogsLink logQuery={stage.logQuery} className="text-xs font-semibold text-primary hover:underline" />
+        <Link
+          href={activityLink({
+            address: stage.logQuery.walletAddress,
+            network: stage.logQuery.network ?? stage.logQuery.search,
+            tab: stage.logQuery.tab ?? "all",
+            type: stage.logQuery.type ?? stage.logQuery.module ?? stage.logQuery.action,
+            traceId: stage.logQuery.traceId ?? stage.logQuery.transactionId ?? transactionId ?? undefined,
+            transactionId: stage.logQuery.transactionId ?? stage.logQuery.traceId ?? transactionId ?? undefined,
+          })}
+          className="text-xs font-semibold text-primary hover:underline"
+        >
+          Filter activity →
+        </Link>
+      </div>
     </div>
   );
 }
@@ -346,19 +369,52 @@ function MetadataBar({
 
 export function PipelineFlowchartSection({
   pipeline,
+  assetScope,
 }: {
   pipeline: UserPipelineSnapshot;
+  assetScope?: PipelineAssetScope | null;
 }) {
-  const layout = useMemo(() => buildVerticalFlowchartLayout(pipeline), [pipeline]);
+  const dedicatedLayout = useMemo(
+    () => (assetScope ? buildDedicatedFlowchartLayout(pipeline, assetScope) : null),
+    [pipeline, assetScope]
+  );
+  const layout = useMemo(
+    () => (dedicatedLayout ? null : buildVerticalFlowchartLayout(pipeline)),
+    [pipeline, dedicatedLayout]
+  );
   const metadata = buildFlowchartMetadata(pipeline);
   const profileHref = `/users/${encodeURIComponent(pipeline.address)}`;
-  const headerWidths = [100, 88];
+  const headerWidths = [100, 88, 76, 64, 52, 40];
+
+  if (dedicatedLayout) {
+    return (
+      <TooltipProvider delay={0}>
+        <div className="py-4">
+          <div className="mx-auto flex max-w-lg flex-col items-center">
+            {dedicatedLayout.stages.map((stage, i) => {
+              const nodeKey = `dedicated:${stage.key}:${i}`;
+              return (
+                <div key={nodeKey} className="flex w-full flex-col items-center">
+                  <FlowNode
+                    stage={stage}
+                    widthPercent={headerWidths[i] ?? 40}
+                  />
+                  {i < dedicatedLayout.stages.length - 1 ? <VerticalConnector tall /> : null}
+                </div>
+              );
+            })}
+          </div>
+          <MetadataBar metadata={metadata} profileHref={profileHref} />
+        </div>
+      </TooltipProvider>
+    );
+  }
 
   return (
     <TooltipProvider delay={0}>
       <div className="py-4">
         <div className="mx-auto flex max-w-lg flex-col items-center">
-          {layout.headerStages.map((stage, i) => {
+          {layout!.headerStages.map((stage, i) => {
             const nodeKey = `header:${stage.key}`;
             return (
               <div key={nodeKey} className="flex w-full flex-col items-center">
@@ -376,7 +432,7 @@ export function PipelineFlowchartSection({
         <BranchSplitRail />
 
         <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 md:grid-cols-3 md:gap-4">
-          {layout.branches.map((branch) => (
+          {layout!.branches.map((branch) => (
             <AssetBranchColumn key={branch.id} branch={branch} />
           ))}
         </div>

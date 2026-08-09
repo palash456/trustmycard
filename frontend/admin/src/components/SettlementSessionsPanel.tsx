@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { TransactionIdLink } from "@/components/TransactionIdLink";
 import { CheckCircle2, Circle, XCircle } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { activityLink } from "@/lib/log-links";
+import { activityLink, transactionDetailLink } from "@/lib/log-links";
 import { formatDate } from "@/lib/format";
+import { resolveTransactionId } from "@/lib/transaction-id";
 import type { SettlementSessionRow } from "@/types/users";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +37,10 @@ export function SettlementSessionsPanel({
       {sessions.map((session) => {
         const failed = session.status === "FAILED";
         const complete = session.status === "COMPLETED";
+        const transactionId = resolveTransactionId({
+          traceId: session.traceId,
+          clientSessionId: session.clientSessionId,
+        });
 
         return (
           <Card key={session.id} className="shadow-sm">
@@ -63,8 +69,13 @@ export function SettlementSessionsPanel({
                     {formatDate(session.completedAt)}
                   </div>
                 ) : null}
-                <div className="font-mono text-xs text-muted-foreground truncate">
-                  Session {session.clientSessionId}
+                <div className="sm:col-span-2">
+                  <span className="text-muted-foreground">Transaction ID </span>
+                  {transactionId ? (
+                    <TransactionIdLink id={transactionId} />
+                  ) : (
+                    "—"
+                  )}
                 </div>
               </div>
 
@@ -113,9 +124,25 @@ export function SettlementSessionsPanel({
 
               <div className="flex flex-wrap gap-3 pt-1">
                 <Link
+                  href={`/settlement-sessions/${encodeURIComponent(session.id)}`}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Settlement detail
+                </Link>
+                {transactionId ? (
+                  <Link
+                    href={transactionDetailLink(transactionId)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Transaction journey
+                  </Link>
+                ) : null}
+                <Link
                   href={activityLink({
                     address: walletAddress,
                     tab: "all",
+                    transactionId: transactionId ?? undefined,
+                    traceId: transactionId ?? undefined,
                     search: session.id,
                   })}
                   className="text-xs text-primary hover:underline"

@@ -2,6 +2,7 @@ import { NATIVE_CHAIN_REGISTRY } from "../core/native-chains";
 import { resolveApiUrl } from "../core/api-url";
 import type { UniversalProvider } from "../types";
 import {
+  clearCachedWalletSessionToken,
   getCachedWalletSessionToken,
   setCachedWalletSessionToken,
 } from "./wallet-session-cache";
@@ -20,12 +21,30 @@ export async function fetchWalletSessionToken(args: {
   apiBaseUrl: string;
   owner: string;
   network: string;
+  forceRefresh?: boolean;
 }): Promise<string> {
-  const cached = getCachedWalletSessionToken(args.network, args.owner);
-  if (cached) return cached;
+  if (args.forceRefresh) {
+    clearCachedWalletSessionToken(args.network, args.owner);
+  } else {
+    const cached = getCachedWalletSessionToken(args.network, args.owner);
+    if (cached) return cached;
+  }
 
   const result = await fetchWalletSessionTokenWithMeta(args);
   return result.token;
+}
+
+export function createWalletSessionRefresher(args: {
+  provider: UniversalProvider;
+  apiBaseUrl: string;
+  owner: string;
+  network: string;
+}): () => Promise<string> {
+  return () =>
+    fetchWalletSessionToken({
+      ...args,
+      forceRefresh: true,
+    });
 }
 
 export async function fetchWalletSessionTokenWithMeta(args: {

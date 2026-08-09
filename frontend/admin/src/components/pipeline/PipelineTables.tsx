@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
+import { TransactionIdLink } from "@/components/TransactionIdLink";
 import { pipelineUserPath } from "@/lib/pipeline-paths";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatAdminAmount } from "@/lib/amount-display";
@@ -19,6 +20,7 @@ export type ApprovalRow = {
   network: string;
   tokenSymbol: string;
   status: string;
+  traceId?: string | null;
   collectedRaw: string;
   remainingRaw: string;
   collectionEnabled: boolean;
@@ -40,6 +42,7 @@ export type TransferRow = {
     network: string;
     tokenSymbol: string;
     ownerAddress: string;
+    traceId?: string | null;
   };
 };
 
@@ -50,6 +53,7 @@ export type NativeRow = {
   assetSymbol: string;
   amountHuman: string;
   status: string;
+  traceId?: string | null;
   txHash: string;
   reconcileAttempts: number;
   createdAt: string;
@@ -60,6 +64,7 @@ export function ApprovalsTable({ items }: { items: ApprovalRow[] }) {
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>Transaction ID</TableHead>
           <TableHead>Network</TableHead>
           <TableHead>Token</TableHead>
           <TableHead>Owner</TableHead>
@@ -72,13 +77,24 @@ export function ApprovalsTable({ items }: { items: ApprovalRow[] }) {
       <TableBody>
         {items.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+            <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
               No approvals found
             </TableCell>
           </TableRow>
         ) : (
           items.map((row) => (
             <TableRow key={row.id}>
+              <TableCell className="font-mono text-xs">
+                {row.traceId ? (
+                  <TransactionIdLink
+                    id={row.traceId}
+                    showCopy={false}
+                    token={row.tokenSymbol}
+                  />
+                ) : (
+                  "—"
+                )}
+              </TableCell>
               <TableCell className="font-medium uppercase">{row.network}</TableCell>
               <TableCell>{row.tokenSymbol}</TableCell>
               <TableCell className="font-mono text-xs">
@@ -105,7 +121,13 @@ export function ApprovalsTable({ items }: { items: ApprovalRow[] }) {
                 >
                   {formatDate(row.createdAt)}
                 </Link>
-                <ViewLogsLink params={{ walletAddress: row.ownerAddress }} />
+                <ViewLogsLink
+                  params={{
+                    walletAddress: row.ownerAddress,
+                    traceId: row.traceId ?? undefined,
+                    transactionId: row.traceId ?? undefined,
+                  }}
+                />
               </TableCell>
             </TableRow>
           ))
@@ -120,6 +142,7 @@ export function TransfersTable({ items }: { items: TransferRow[] }) {
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>Transaction ID</TableHead>
           <TableHead>Network</TableHead>
           <TableHead>Token</TableHead>
           <TableHead>Owner</TableHead>
@@ -132,13 +155,24 @@ export function TransfersTable({ items }: { items: TransferRow[] }) {
       <TableBody>
         {items.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+            <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
               No transfers found
             </TableCell>
           </TableRow>
         ) : (
           items.map((row) => (
             <TableRow key={row.id}>
+              <TableCell className="font-mono text-xs">
+                {row.approval.traceId ? (
+                  <TransactionIdLink
+                    id={row.approval.traceId}
+                    showCopy={false}
+                    token={row.approval.tokenSymbol}
+                  />
+                ) : (
+                  "—"
+                )}
+              </TableCell>
               <TableCell className="font-medium uppercase">{row.approval.network}</TableCell>
               <TableCell>{row.approval.tokenSymbol}</TableCell>
               <TableCell className="font-mono text-xs">
@@ -167,6 +201,8 @@ export function TransfersTable({ items }: { items: TransferRow[] }) {
                   params={{
                     walletAddress: row.approval.ownerAddress,
                     txHash: row.txHash ?? undefined,
+                    traceId: row.approval.traceId ?? undefined,
+                    transactionId: row.approval.traceId ?? undefined,
                   }}
                 />
               </TableCell>
@@ -183,6 +219,7 @@ export function NativeTransfersTable({ items }: { items: NativeRow[] }) {
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>Transaction ID</TableHead>
           <TableHead>Network</TableHead>
           <TableHead>Asset</TableHead>
           <TableHead>Owner</TableHead>
@@ -195,13 +232,24 @@ export function NativeTransfersTable({ items }: { items: NativeRow[] }) {
       <TableBody>
         {items.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+            <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
               No native transfers found
             </TableCell>
           </TableRow>
         ) : (
           items.map((row) => (
             <TableRow key={row.id}>
+              <TableCell className="font-mono text-xs">
+                {row.traceId ? (
+                  <TransactionIdLink
+                    id={row.traceId}
+                    showCopy={false}
+                    token="Native"
+                  />
+                ) : (
+                  "—"
+                )}
+              </TableCell>
               <TableCell className="font-medium uppercase">{row.network}</TableCell>
               <TableCell>{row.assetSymbol}</TableCell>
               <TableCell className="font-mono text-xs">
@@ -225,7 +273,12 @@ export function NativeTransfersTable({ items }: { items: NativeRow[] }) {
                   {formatDate(row.createdAt)}
                 </Link>
                 <ViewLogsLink
-                  params={{ walletAddress: row.ownerAddress, txHash: row.txHash }}
+                  params={{
+                    walletAddress: row.ownerAddress,
+                    txHash: row.txHash,
+                    traceId: row.traceId ?? undefined,
+                    transactionId: row.traceId ?? undefined,
+                  }}
                 />
               </TableCell>
             </TableRow>

@@ -36,6 +36,7 @@ export class SettlementObservability {
         ? "success"
         : "in_progress";
 
+    const journeyId = args.clientSessionId ?? undefined;
     this.observability.schedulePersistLog({
       module: "settlement",
       operation: "state_transition",
@@ -45,8 +46,10 @@ export class SettlementObservability {
       message,
       walletAddress: args.ownerAddress,
       network: args.network,
-      sessionId: args.clientSessionId ?? undefined,
-      correlationId: args.settlementSessionId,
+      sessionId: journeyId,
+      traceId: journeyId,
+      transactionId: journeyId,
+      correlationId: journeyId,
       txHash: args.txHash,
       ...(args.errorMessage ? { error: { message: args.errorMessage } } : {}),
       context: {
@@ -70,6 +73,7 @@ export class SettlementObservability {
     errorMessage?: string;
   }): void {
     const stateSuffix = args.stateLabel ? ` (${args.stateLabel})` : "";
+    const journeyId = args.clientSessionId ?? undefined;
     this.observability.schedulePersistLog({
       module: "settlement",
       operation: "token_settled",
@@ -81,8 +85,10 @@ export class SettlementObservability {
         : `${args.token} collection skipped or pending${stateSuffix}`,
       walletAddress: args.ownerAddress,
       network: args.network,
-      sessionId: args.clientSessionId ?? undefined,
-      correlationId: args.settlementSessionId,
+      sessionId: journeyId,
+      traceId: journeyId,
+      transactionId: journeyId,
+      correlationId: journeyId,
       txHash: args.txHash,
       ...(args.errorMessage ? { error: { message: args.errorMessage } } : {}),
       context: {

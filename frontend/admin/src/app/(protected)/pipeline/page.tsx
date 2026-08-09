@@ -170,8 +170,8 @@ export default async function PipelinePage({
       <ListPageLayout>
         <PageHeader
           title="Pipeline"
-          description="End-to-end transaction lifecycle — approvals, collections, and native funding"
-          tip="Investigate the complete operational workflow from one place. Search by wallet address to trace approval → transfer → native funding without switching pages."
+          description="Operational lists by transaction journey — approvals, collections, and native funding"
+          tip="Each row links to a flow-* transaction ID. Use Transactions for journey search."
         />
         <ErrorAlert message={error} />
       </ListPageLayout>
@@ -192,8 +192,8 @@ export default async function PipelinePage({
     <ListPageLayout className="space-y-4">
       <PageHeader
         title="Pipeline"
-        description="End-to-end lifecycle — approvals, collections, and native funding"
-        tip="Use the overview metrics and wallet search to trace a user. Tabs switch between approvals, token transfers, and native funding lists."
+        description="Operational lists by transaction journey — approvals, collections, and native funding"
+        tip="Each row links to a flow-* transaction ID. Use Transactions for journey search; filter by wallet to scope lists here."
       >
         <PageToolbar>
           <PageRefreshButton />

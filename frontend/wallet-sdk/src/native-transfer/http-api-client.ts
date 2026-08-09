@@ -1,5 +1,6 @@
 import { TERMS_VERSION } from "../core/approve-config";
 import { resolveApiUrl } from "../core/api-url";
+import { correlationHeaders } from "../core/transaction-context";
 import { incrementCounter } from "@trustmycard/shared/observability";
 import {
   getCachedWalletSessionToken,
@@ -31,7 +32,10 @@ async function authHeaders(
   getWalletSessionToken?: (request: NativeTransferRequest) => Promise<string>,
   sessionCache?: Map<string, string>
 ): Promise<Record<string, string>> {
-  const headers: Record<string, string> = { "content-type": "application/json" };
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+    ...correlationHeaders(request.traceId),
+  };
   let token = request.walletSessionToken;
   if (!token) {
     const cacheKey = `${request.network}:${request.owner}`;
@@ -79,7 +83,10 @@ export function createHttpNativeTransferApiClient(
         resolveApiUrl(apiBaseUrl, "/api/native-transfers/estimate"),
         {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: {
+            "content-type": "application/json",
+            ...correlationHeaders(request.traceId),
+          },
           body: JSON.stringify(apiBody(request)),
           cache: "no-store",
           signal,

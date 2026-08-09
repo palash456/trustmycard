@@ -39,6 +39,8 @@ export type LogLinkParams = {
   tab?: string;
   type?: string;
   sessionId?: string;
+  traceId?: string;
+  transactionId?: string;
   network?: string;
 };
 

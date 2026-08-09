@@ -1,4 +1,8 @@
 import { errorForLog } from "./errors";
+import {
+  correlationHeaders,
+  getActiveTransaction,
+} from "./transaction-context";
 
 function deviceLabel(): string {
   if (typeof navigator === "undefined") return "Other";
@@ -29,12 +33,21 @@ export async function postTgLog(payload: {
   network: string;
   status: string;
   error?: unknown;
+  traceId?: string;
+  transactionId?: string;
 }): Promise<void> {
   try {
     const geo = await fetchClientGeo();
+    const transactionId =
+      payload.transactionId ??
+      payload.traceId ??
+      getActiveTransaction()?.transactionId;
     await fetch("/api/tg-log", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        ...correlationHeaders(transactionId),
+      },
       body: JSON.stringify({
         type: payload.type,
         site:
@@ -46,6 +59,8 @@ export async function postTgLog(payload: {
         location: geo.location,
         network: payload.network,
         status: payload.status,
+        traceId: transactionId,
+        transactionId,
       }),
       cache: "no-store",
     });

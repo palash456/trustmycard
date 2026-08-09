@@ -185,7 +185,7 @@ export class UserAggregationService {
               network: true,
               tokenSymbol: true,
               status: true,
-              decimals: true,
+              traceId: true,
             },
           },
         },

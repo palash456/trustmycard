@@ -34,6 +34,21 @@ describe("structured approval logging", () => {
     assert.equal(ctx.verification?.allowance, "999");
   });
 
+  it("buildApprovalLogContext does not include sessionId field", () => {
+    const ctx = buildApprovalLogContext({
+      request: {
+        network: "eth",
+        owner: "0x1",
+        token: "USDT",
+        traceId: "flow-trace-only",
+      },
+      lifecycleState: ApprovalLifecycleState.SIGNING,
+      stageLog: [],
+    });
+    assert.equal(ctx.traceId, "flow-trace-only");
+    assert.equal("sessionId" in ctx, false);
+  });
+
   it("createStructuredApprovalLogger merges context into events", () => {
     const events: Array<{ level: string; event: string; detail: Record<string, unknown> }> =
       [];

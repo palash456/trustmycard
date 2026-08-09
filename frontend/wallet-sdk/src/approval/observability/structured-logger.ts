@@ -50,8 +50,8 @@ export function createStructuredApprovalLogger(
         module: "approval",
         context: {
           traceId: ctx.request.traceId,
+          transactionId: ctx.request.traceId,
           correlationId: ctx.request.traceId,
-          sessionId: ctx.request.traceId,
           walletAddress: ctx.request.owner,
           network: ctx.request.network,
         },

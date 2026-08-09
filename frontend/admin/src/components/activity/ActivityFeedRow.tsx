@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { ActivityErrorCell } from "@/components/activity/ActivityErrorCell";
 import { ActivityStatusChip } from "@/components/activity/ActivityStatusChip";
+import { TransactionIdLink } from "@/components/TransactionIdLink";
 import { TableCell } from "@/components/ui/table";
 import { activityDetailLink } from "@/lib/log-links";
+import { resolveTransactionId } from "@/lib/transaction-id";
 import { cn } from "@/lib/utils";
 import { formatDate, shortAddress } from "@/lib/format";
 import type { UnifiedActivityItem } from "@/types/activity-feed";
@@ -31,10 +33,19 @@ export function ActivityFeedRow({
   row: UnifiedActivityItem;
   showError?: boolean;
 }) {
+  const journeyId = resolveTransactionId(row);
+
   return (
     <>
       <TableCell className={cellClass("time", "text-xs text-muted-foreground")}>
         <span className="block truncate">{formatDate(row.at)}</span>
+      </TableCell>
+      <TableCell className={cellClass("transactionId")}>
+        {journeyId ? (
+          <TransactionIdLink id={journeyId} showCopy={false} />
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
       </TableCell>
       <TableCell className={cellClass("wallet", "font-mono text-xs")}>
         {row.address ? (

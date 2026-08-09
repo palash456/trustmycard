@@ -9,6 +9,9 @@ frontend/shared/
 │   ├── collection.ts              # skip reasons, collection helpers
 │   ├── settlement.ts              # TOKEN_SETTLEMENT_ORDER, status labels
 │   └── token-collection-state.ts  # native execution policy (logical states)
+├── ids/
+│   ├── flow-id.ts                 # journey IDs (flow-*)
+│   └── public-id.ts               # child publicIds (approval-usdt-*, …)
 └── schemas/
 ```
 
@@ -52,5 +55,11 @@ npm install
 ```
 
 See [settlement-and-native-execution.md](../../docs/architecture/settlement-and-native-execution.md).
+
+## Semantic IDs
+
+`ids/` is the **single source of truth** for journey (`flow-*`) and child (`publicId`) formats.
+
+See [ids/README.md](./ids/README.md) and [docs/architecture/semantic-ids.md](../../docs/architecture/semantic-ids.md).
 
 Test catalog: [docs/testing/test-cases.md](../../docs/testing/test-cases.md).

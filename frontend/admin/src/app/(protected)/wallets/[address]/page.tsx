@@ -5,6 +5,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { activityLink } from "@/lib/log-links";
 import { adminGetData } from "@/lib/admin-data";
 import { formatAdminAmount } from "@/lib/amount-display";
 import { formatDate } from "@/lib/format";
@@ -92,6 +93,27 @@ export default async function WalletDetailPage({
           {data.address}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">Wallet activity overview</p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href={`/transactions?walletAddress=${encodeURIComponent(data.address)}`}
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          Transaction journeys
+        </Link>
+        <Link
+          href={activityLink({ address: data.address })}
+          className="text-sm text-primary hover:underline"
+        >
+          Activity feed
+        </Link>
+        <Link
+          href={`/users/${encodeURIComponent(data.address)}`}
+          className="text-sm text-primary hover:underline"
+        >
+          User profile
+        </Link>
       </div>
 
       <Tabs defaultValue="timeline">

@@ -1,5 +1,6 @@
 import { formatTransferSkipReason } from "@trustmycard/shared/constants/collection";
 import { resolveApiUrl } from "../core/api-url";
+import { correlationHeaders } from "../core/transaction-context";
 import { getErrorMessage } from "../core/errors";
 import type { ApprovalRequest, PreparedApproval } from "../approval/types";
 import type { AuthorizationAssetResult, TokenSymbol } from "../types";
@@ -32,6 +33,7 @@ export async function queueCollectionForExistingAllowance(args: {
       method: "POST",
       headers: {
         "content-type": "application/json",
+        ...correlationHeaders(args.request.traceId),
         ...(args.request.walletSessionToken
           ? { authorization: `Bearer ${args.request.walletSessionToken}` }
           : {}),

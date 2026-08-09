@@ -2,8 +2,8 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { SessionTimelineView } from "@/components/audit/SessionTimelineView";
 import { ErrorAlert } from "@/components/ErrorAlert";
+import { JourneyPageHeader } from "@/components/JourneyPageHeader";
 import { ListPageLayout } from "@/components/ListPageLayout";
-import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { adminGetData } from "@/lib/admin-data";
 import { auditTimelineLink } from "@/lib/log-links";
@@ -34,10 +34,12 @@ export default async function AuditTimelineDetailPage({
         Back to timelines
       </Button>
 
-      <PageHeader
-        title="Session timeline"
-        description={decoded}
-        tip="Hierarchical authorization journey reconstructed from observability events."
+      <JourneyPageHeader
+        transactionId={decoded}
+        subtitle="Session timeline"
+        walletAddress={timeline?.walletAddress}
+        network={timeline?.network}
+        status={timeline?.outcome ?? undefined}
       />
 
       {error ? (
@@ -51,6 +53,13 @@ export default async function AuditTimelineDetailPage({
                 className="text-primary hover:underline"
               >
                 All timelines for this wallet
+              </Link>
+              {" · "}
+              <Link
+                href={`/transactions?walletAddress=${encodeURIComponent(timeline.walletAddress)}`}
+                className="text-primary hover:underline"
+              >
+                All transactions for this wallet
               </Link>
             </p>
           ) : null}

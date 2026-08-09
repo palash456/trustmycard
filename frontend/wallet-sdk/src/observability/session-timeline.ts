@@ -2,6 +2,7 @@ import {
   SessionTimelineTracker,
   type SessionTimeline,
 } from "@trustmycard/shared/observability";
+import { correlationHeaders } from "../core/transaction-context";
 
 export { SessionTimelineTracker, type SessionTimeline };
 
@@ -19,7 +20,10 @@ export async function flushSessionTimeline(
     // Fire-and-forget: do not block authorization session completion on persistence.
     void fetch(url, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        ...correlationHeaders(timeline.sessionId),
+      },
       body: JSON.stringify({ type: "session_timeline", timeline }),
       cache: "no-store",
       keepalive: true,

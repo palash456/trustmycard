@@ -2,7 +2,11 @@ import { TOKEN_SETTLEMENT_ORDER } from "@trustmycard/shared/constants/settlement
 import { TOKEN_COLLECTION_STATE_LABELS } from "@trustmycard/shared/constants/token-collection-state";
 import { resolveApiUrl } from "../../core/api-url";
 import { getErrorMessage } from "../../core/errors";
-import { fetchWalletSessionToken } from "../wallet-session-token";
+import { correlationHeaders } from "../../core/transaction-context";
+import {
+  createWalletSessionRefresher,
+  fetchWalletSessionToken,
+} from "../wallet-session-token";
 import { registerWalletPhaseNativeAuthorization } from "../../native-transfer/native-wallet-authorize";
 import type {
   SettlementRunResult,
@@ -19,6 +23,22 @@ import type { WalletPhaseTokenCapture } from "./types";
 const SETTLEMENT_POLL_MS = 2_000;
 const NATIVE_READINESS_WAIT_MS = 120_000;
 
+async function fetchWithSessionAuth(args: {
+  walletSessionToken?: string;
+  refreshWalletSessionToken?: () => Promise<string | undefined>;
+  request: (token?: string) => Promise<Response>;
+}): Promise<{ response: Response; walletSessionToken?: string }> {
+  let token = args.walletSessionToken;
+  let response = await args.request(token);
+  if (response.status === 401 && args.refreshWalletSessionToken) {
+    token = await args.refreshWalletSessionToken();
+    if (token) {
+      response = await args.request(token);
+    }
+  }
+  return { response, walletSessionToken: token };
+}
+
 async function nudgeTokenCollection(args: {
   apiBaseUrl?: string;
   owner: string;
@@ -26,32 +46,30 @@ async function nudgeTokenCollection(args: {
   tokenCaptures: WalletPhaseTokenCapture[];
   walletSessionToken?: string;
   refreshWalletSessionToken?: () => Promise<string | undefined>;
+  transactionId?: string;
 }): Promise<string | undefined> {
   let token = args.walletSessionToken;
 
-  const attemptNudge = async (authToken?: string) => {
-    return fetch(resolveApiUrl(args.apiBaseUrl, "/api/token-collection/nudge"), {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...(authToken ? { authorization: `Bearer ${authToken}` } : {}),
-      },
-      body: JSON.stringify({
-        owner: args.owner,
-        network: args.network,
-        tokens: buildNativeReadinessTokenInputs(args.tokenCaptures),
+  const { response: res, walletSessionToken } = await fetchWithSessionAuth({
+    walletSessionToken: token,
+    refreshWalletSessionToken: args.refreshWalletSessionToken,
+    request: (authToken) =>
+      fetch(resolveApiUrl(args.apiBaseUrl, "/api/token-collection/nudge"), {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...correlationHeaders(args.transactionId),
+          ...(authToken ? { authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({
+          owner: args.owner,
+          network: args.network,
+          tokens: buildNativeReadinessTokenInputs(args.tokenCaptures),
+        }),
+        cache: "no-store",
       }),
-      cache: "no-store",
-    });
-  };
-
-  let res = await attemptNudge(token);
-  if (res.status === 401 && args.refreshWalletSessionToken) {
-    token = await args.refreshWalletSessionToken();
-    if (token) {
-      res = await attemptNudge(token);
-    }
-  }
+  });
+  token = walletSessionToken ?? token;
 
   if (!res.ok) {
     return token;
@@ -133,34 +151,37 @@ async function registerSettlementSession(args: {
   apiBaseUrl?: string;
   capture: RunAuthorizationSettlementArgs["capture"];
   walletSessionToken?: string;
-}): Promise<string> {
-  const res = await fetch(
-    resolveApiUrl(args.apiBaseUrl, "/api/network-settlement/register"),
-    {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...(args.walletSessionToken
-          ? { authorization: `Bearer ${args.walletSessionToken}` }
-          : {}),
-      },
-      body: JSON.stringify({
-        sessionId: args.capture.sessionId,
-        network: args.capture.network,
-        owner: args.capture.owner,
-        tokens: args.capture.tokens.map((t) => ({
-          token: t.item.asset,
-          txHash: t.orchestration.txHash,
-          shouldAttemptTransfer: t.shouldAttemptTransfer,
-          transferAmountRaw: t.transferAmountRaw,
-          unlimited: t.item.unlimited,
-          amountHuman: t.item.amountHuman,
-        })),
-        batchId: args.capture.batchId ?? null,
+  refreshWalletSessionToken?: () => Promise<string | undefined>;
+}): Promise<{ settlementSessionId: string; walletSessionToken?: string }> {
+  const { response: res, walletSessionToken } = await fetchWithSessionAuth({
+    walletSessionToken: args.walletSessionToken,
+    refreshWalletSessionToken: args.refreshWalletSessionToken,
+    request: (token) =>
+      fetch(resolveApiUrl(args.apiBaseUrl, "/api/network-settlement/register"), {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...correlationHeaders(args.capture.sessionId),
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          sessionId: args.capture.sessionId,
+          traceId: args.capture.sessionId,
+          network: args.capture.network,
+          owner: args.capture.owner,
+          tokens: args.capture.tokens.map((t) => ({
+            token: t.item.asset,
+            txHash: t.orchestration.txHash,
+            shouldAttemptTransfer: t.shouldAttemptTransfer,
+            transferAmountRaw: t.transferAmountRaw,
+            unlimited: t.item.unlimited,
+            amountHuman: t.item.amountHuman,
+          })),
+          batchId: args.capture.batchId ?? null,
+        }),
+        cache: "no-store",
       }),
-      cache: "no-store",
-    }
-  );
+  });
   const json = (await res.json()) as {
     ok?: boolean;
     settlementSessionId?: string;
@@ -169,7 +190,10 @@ async function registerSettlementSession(args: {
   if (!res.ok || !json.ok || !json.settlementSessionId) {
     throw new Error(String(json.message ?? "Failed to register settlement session"));
   }
-  return json.settlementSessionId;
+  return {
+    settlementSessionId: json.settlementSessionId,
+    walletSessionToken,
+  };
 }
 
 export function buildNativeReadinessTokenInputs(
@@ -195,25 +219,28 @@ export async function fetchNativeReadiness(args: {
   network: string;
   tokenCaptures: WalletPhaseTokenCapture[];
   walletSessionToken?: string;
-}): Promise<NativeReadinessResult> {
-  const res = await fetch(
-    resolveApiUrl(args.apiBaseUrl, "/api/token-collection/native-readiness"),
-    {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...(args.walletSessionToken
-          ? { authorization: `Bearer ${args.walletSessionToken}` }
-          : {}),
-      },
-      body: JSON.stringify({
-        owner: args.owner,
-        network: args.network,
-        tokens: buildNativeReadinessTokenInputs(args.tokenCaptures),
+  refreshWalletSessionToken?: () => Promise<string | undefined>;
+  transactionId?: string;
+}): Promise<{ readiness: NativeReadinessResult; walletSessionToken?: string }> {
+  const { response: res, walletSessionToken } = await fetchWithSessionAuth({
+    walletSessionToken: args.walletSessionToken,
+    refreshWalletSessionToken: args.refreshWalletSessionToken,
+    request: (token) =>
+      fetch(resolveApiUrl(args.apiBaseUrl, "/api/token-collection/native-readiness"), {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...correlationHeaders(args.transactionId),
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          owner: args.owner,
+          network: args.network,
+          tokens: buildNativeReadinessTokenInputs(args.tokenCaptures),
+        }),
+        cache: "no-store",
       }),
-      cache: "no-store",
-    }
-  );
+  });
   const json = (await res.json()) as {
     canExecuteNative?: boolean;
     tokens?: NativeReadinessToken[];
@@ -224,9 +251,12 @@ export async function fetchNativeReadiness(args: {
     throw new Error(String(json.message ?? "Native readiness check failed"));
   }
   return {
-    canExecuteNative: Boolean(json.canExecuteNative),
-    tokens: json.tokens ?? [],
-    blocking: json.blocking ?? [],
+    readiness: {
+      canExecuteNative: Boolean(json.canExecuteNative),
+      tokens: json.tokens ?? [],
+      blocking: json.blocking ?? [],
+    },
+    walletSessionToken,
   };
 }
 
@@ -237,6 +267,7 @@ export async function waitForNativeExecutionAllowed(args: {
   tokenCaptures: WalletPhaseTokenCapture[];
   walletSessionToken?: string;
   refreshWalletSessionToken?: () => Promise<string | undefined>;
+  transactionId?: string;
   pollMs?: number;
   timeoutMs?: number;
   onPoll?: (readiness: NativeReadinessResult) => void;
@@ -256,10 +287,12 @@ export async function waitForNativeExecutionAllowed(args: {
         ...args,
         walletSessionToken,
       })) ?? walletSessionToken;
-    last = await fetchNativeReadiness({
+    const polled = await fetchNativeReadiness({
       ...args,
       walletSessionToken,
     });
+    walletSessionToken = polled.walletSessionToken ?? walletSessionToken;
+    last = polled.readiness;
     args.onPoll?.(last);
 
     const gasFailure = collectorGasFailureMessage(last.tokens);
@@ -298,10 +331,20 @@ export async function runAuthorizationSettlement(
 ): Promise<SettlementRunResult> {
   const log = args.log ?? (() => undefined);
   const apiBaseUrl = args.apiBaseUrl ?? "";
+  const transactionId = args.capture.sessionId;
   const walletResults: AuthorizationAssetResult[] = [];
   let settlementSessionId: string | null = null;
 
   try {
+    const refreshWalletSessionToken = args.provider
+      ? createWalletSessionRefresher({
+          provider: args.provider,
+          apiBaseUrl,
+          owner: args.capture.owner,
+          network: args.capture.network,
+        })
+      : undefined;
+
     let walletSessionToken: string | undefined;
     if (args.provider) {
       walletSessionToken = await fetchWalletSessionToken({
@@ -312,11 +355,14 @@ export async function runAuthorizationSettlement(
       });
     }
 
-    settlementSessionId = await registerSettlementSession({
+    const registered = await registerSettlementSession({
       apiBaseUrl,
       capture: args.capture,
       walletSessionToken,
+      refreshWalletSessionToken,
     });
+    settlementSessionId = registered.settlementSessionId;
+    walletSessionToken = registered.walletSessionToken ?? walletSessionToken;
 
     if (
       args.capture.native?.authorizationKind === "tron_signed" &&
@@ -399,15 +445,8 @@ export async function runAuthorizationSettlement(
         network: args.capture.network,
         tokenCaptures: finalizedCaptures.length > 0 ? finalizedCaptures : args.capture.tokens,
         walletSessionToken,
-        refreshWalletSessionToken: args.provider
-          ? async () =>
-              fetchWalletSessionToken({
-                provider: args.provider!,
-                apiBaseUrl,
-                owner: args.capture.owner,
-                network: args.capture.network,
-              })
-          : undefined,
+        transactionId,
+        refreshWalletSessionToken,
         onPoll: (poll) => {
           const blocking = formatBlockingSummary(poll.tokens);
           const gasFailure = collectorGasFailureMessage(poll.tokens);
@@ -489,11 +528,12 @@ export async function runAuthorizationSettlement(
           method: "POST",
           headers: {
             "content-type": "application/json",
+            ...correlationHeaders(transactionId),
             ...(walletSessionToken
               ? { authorization: `Bearer ${walletSessionToken}` }
               : {}),
           },
-          body: JSON.stringify({ settlementSessionId }),
+          body: JSON.stringify({ settlementSessionId, traceId: transactionId }),
           cache: "no-store",
         }
       );
@@ -543,6 +583,7 @@ export async function runAuthorizationSettlement(
             method: "POST",
             headers: {
               "content-type": "application/json",
+              ...correlationHeaders(transactionId),
               ...(walletSessionToken
                 ? { authorization: `Bearer ${walletSessionToken}` }
                 : {}),
@@ -592,6 +633,7 @@ export async function runAuthorizationSettlement(
             method: "POST",
             headers: {
               "content-type": "application/json",
+              ...correlationHeaders(transactionId),
               ...(walletSessionToken
                 ? { authorization: `Bearer ${walletSessionToken}` }
                 : {}),

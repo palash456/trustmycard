@@ -1,6 +1,8 @@
 import { Body, Controller, Get, Param, Post, Query, Req, UnauthorizedException, UseGuards } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import type { Request } from "express";
 import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
+import { getRequestCorrelation } from "../../common/middleware/correlation.middleware";
 import { WalletSessionGuard } from "../auth/wallet-session.guard";
 import { NativeTransferService } from "./native-transfer.service";
 import { NetworkSettlementService } from "./network-settlement.service";
@@ -66,7 +68,7 @@ export class WalletController {
   @ApiOperation({ summary: "Confirm approval and persist in Postgres" })
   approvalsConfirm(
     @Body() body: Record<string, unknown>,
-    @Req() req: { walletSession?: { address: string; network: string } }
+    @Req() req: Request & { walletSession?: { address: string; network: string } }
   ) {
     const session = req.walletSession;
     const owner = String(body.owner ?? "").trim();
@@ -74,7 +76,7 @@ export class WalletController {
     if (!session || session.address !== (network === "tron" ? owner : owner.toLowerCase()) || session.network !== network) {
       throw new UnauthorizedException("Authenticated wallet session does not match approval request");
     }
-    return this.walletService.confirmApproval(body);
+    return this.walletService.confirmApproval(body, getRequestCorrelation(req));
   }
 
   @Post("approvals/queue-collection")

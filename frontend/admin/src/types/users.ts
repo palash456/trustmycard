@@ -73,11 +73,14 @@ export type UserTimelineItem = {
   error?: string | null;
   network?: string | null;
   sessionId?: string | null;
+  traceId?: string | null;
+  transactionId?: string | null;
 };
 
 export type SettlementSessionRow = {
   id: string;
   clientSessionId: string;
+  traceId?: string | null;
   ownerAddress: string;
   network: string;
   status: string;

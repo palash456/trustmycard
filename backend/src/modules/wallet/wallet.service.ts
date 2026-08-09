@@ -8,6 +8,12 @@ import {
   computeTransferable,
 } from "../../jobs/processors/collection-policy";
 import { safeCreateAuditLog } from "../../common/audit/safe-audit";
+import {
+  allocatePublicId,
+  journeyWriteFields,
+  normalizeJourneyId,
+  tokenQualifier,
+} from "../../common/ids/public-id.helper";
 import { errorForLog, getErrorMessage } from "../../common/utils/error-message";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 import { AdminEventsService } from "../../infrastructure/admin-events/admin-events.service";
@@ -15,6 +21,7 @@ import type { LogStatus } from "@trustmycard/shared/observability";
 import { incrementCounter } from "@trustmycard/shared/observability";
 import { ResourceManager } from "../resources/resource-manager.service";
 import { CollectionIntentService } from "../collections/collection-intent.service";
+import { ObservabilityService } from "../observability/observability.service";
 import { COLLECTION_SIGNER, type CollectionSigner } from "../custody/signer";
 import { ConfigService } from "../../config/config.service";
 import { resolveApprovalStateAfterAllowanceCheck } from "./approval-state-sync";
@@ -134,11 +141,19 @@ function humanizeTronBroadcastError(args: {
   return "Tron broadcast rejected";
 }
 
+const WALLET_SERVICE_JOURNEY_STAGES = [
+  "APPROVAL CONFIRM",
+  "AUTO TRANSFER",
+  "FRONTEND FLOW",
+  "TRON BROADCAST",
+] as const;
+
 @Injectable()
 export class WalletService {
   constructor(
     private readonly resourceManager: ResourceManager,
     private readonly logger: StructuredLoggerService,
+    private readonly observability: ObservabilityService,
     private readonly adminEvents: AdminEventsService,
     private readonly collectionIntents: CollectionIntentService,
     private readonly configService: ConfigService,
@@ -249,6 +264,8 @@ export class WalletService {
     const isFailure = /FAILED|BLOCKED|ERROR/i.test(stage);
     const status = (payload.status as LogStatus | undefined) ??
       (isFailure ? "failure" : stage.includes("SUCCESS") || stage.includes("COMPLETE") || stage.includes("RESPONSE") ? "success" : "in_progress");
+    const traceId = payload.traceId as string | undefined;
+    const requestId = payload.requestId as string | undefined;
 
     this.logger.emit({
       level: isFailure ? "error" : "info",
@@ -257,15 +274,40 @@ export class WalletService {
       stage,
       status,
       message: stage,
-      walletAddress: payload.ownerAddress as string | undefined ?? payload.address as string | undefined,
+      walletAddress: payload.ownerAddress as string | undefined ?? payload.address as string | undefined ?? payload.owner as string | undefined,
       network: payload.network as string | undefined,
       token: payload.token as string | undefined,
       txHash: payload.txHash as string | undefined,
-      traceId: payload.traceId as string | undefined,
+      traceId,
+      requestId,
       context: payload,
       err: isFailure ? payload.error : undefined,
       skipSampling: isFailure,
     });
+
+    const isJourneyStage = WALLET_SERVICE_JOURNEY_STAGES.some((prefix) =>
+      stage.toUpperCase().startsWith(prefix)
+    );
+    if (isJourneyStage && traceId) {
+      this.observability.schedulePersistLog({
+        module: "wallet-service",
+        operation: String(payload.operation ?? stage.toLowerCase().replace(/\s+/g, "_")),
+        stage,
+        status,
+        level: isFailure ? "error" : "info",
+        message: stage,
+        walletAddress: payload.owner as string | undefined ?? payload.ownerAddress as string | undefined,
+        network: payload.network as string | undefined,
+        token: payload.token as string | undefined,
+        txHash: payload.txHash as string | undefined,
+        traceId,
+        transactionId: traceId,
+        sessionId: traceId,
+        correlationId: traceId,
+        requestId,
+        context: payload,
+      });
+    }
 
     if (stage.includes("TRANSFER COMPLETED") || stage.includes("TRANSFER SUCCESS")) {
       incrementCounter("collector.transfers.completed", {
@@ -961,6 +1003,7 @@ export class WalletService {
       collectedRaw: string;
       unlimited: boolean;
       failureCount: number;
+      traceId?: string | null;
     };
     transferToAddress: string;
     requestedRaw: bigint;
@@ -1037,6 +1080,16 @@ export class WalletService {
             fromAddress: approval.ownerAddress,
             toAddress: transferToAddress,
             status: "pending",
+            ...(approval.traceId
+              ? {
+                  publicId: await allocatePublicId(
+                    prisma,
+                    "transfer",
+                    tokenQualifier(approval.tokenSymbol),
+                    approval.traceId
+                  ),
+                }
+              : {}),
           },
         });
 
@@ -1648,14 +1701,25 @@ export class WalletService {
     }
   }
 
-  async confirmApproval(body: Record<string, unknown>) {
+  async confirmApproval(
+    body: Record<string, unknown>,
+    correlation?: { correlationId?: string; requestId?: string }
+  ) {
     const network = String(body.network ?? "").trim().toLowerCase();
     const owner = String(body.owner ?? "").trim();
     const txHash = String(body.txHash ?? "").trim();
     const amountRaw = String(body.amountRaw ?? "").trim();
     const token = this.parseToken(body.token);
-    const traceId = String(body.traceId ?? "n/a");
-    this.logFlow("APPROVAL CONFIRM REQUEST", { traceId, network, token, owner, txHash });
+    const traceIdRaw = String(body.traceId ?? correlation?.correlationId ?? "").trim();
+    const traceId = normalizeJourneyId(traceIdRaw);
+    this.logFlow("APPROVAL CONFIRM REQUEST", {
+      traceId: traceId ?? undefined,
+      network,
+      token,
+      owner,
+      txHash,
+      requestId: correlation?.requestId,
+    });
     if (!network || !owner || !txHash || !amountRaw) throw new BadRequestException("network, owner, txHash, amountRaw required");
     const spender = this.spenderFor(network);
     const tokenInfo = this.getToken(network, token);
@@ -1705,6 +1769,9 @@ export class WalletService {
         ? this.toRawFromHuman(transferAmountHumanInput, tokenInfo.decimals)
         : expected;
     const { approval, collectionIntent } = await prisma.$transaction(async (tx) => {
+      const journeyFields = traceId
+        ? await journeyWriteFields(tx, "approval", tokenQualifier(token), traceId, owner)
+        : {};
       const existingApproval = await tx.approval.findUnique({
         where: { network_txHash: { network, txHash } },
       });
@@ -1717,6 +1784,23 @@ export class WalletService {
               collectionEnabled: !["COMPLETED", "REVOKED", "EXPIRED", "SUPERSEDED"].includes(existingApproval.status),
               nextCheckAt: immediateCollectionAt,
               lastError: errorForLog(verifyError),
+              ...(traceId
+                ? {
+                    traceId: existingApproval.traceId ?? traceId,
+                    ...(!existingApproval.publicId
+                      ? {
+                          publicId:
+                            journeyFields.publicId ??
+                            (await allocatePublicId(
+                              tx,
+                              "approval",
+                              tokenQualifier(token),
+                              traceId
+                            )),
+                        }
+                      : {}),
+                  }
+                : {}),
             },
           })
         : await tx.approval.create({
@@ -1739,6 +1823,7 @@ export class WalletService {
               collectionToAddress: transferToAddress,
               nextCheckAt: immediateCollectionAt,
               lastError: errorForLog(verifyError),
+              ...journeyFields,
             },
           });
 
@@ -1770,6 +1855,7 @@ export class WalletService {
             tokenAddress: tokenInfo.address,
             requestedRaw: requestedTransferRaw.toString(),
             sourceTxHash: txHash,
+            traceId: traceId ?? persisted.traceId ?? undefined,
           })
         : null;
       return { approval: persisted, collectionIntent: queued?.intent ?? null };
@@ -1796,6 +1882,7 @@ export class WalletService {
     await this.recordAudit(`owner:${owner}`, "confirm", "approval", {
       network,
       txHash,
+      traceId,
       allowance: verified?.allowance ?? "0",
       confirmed: hasAllowance,
       executeTransfer,
@@ -1900,7 +1987,7 @@ export class WalletService {
     const network = String(body.network ?? "").trim().toLowerCase();
     const owner = String(body.owner ?? "").trim();
     const token = this.parseToken(body.token);
-    const traceId = String(body.traceId ?? "n/a");
+    const traceId = normalizeJourneyId(String(body.traceId ?? ""));
     const unlimited = Boolean(body.unlimited);
     if (!network || !owner) throw new BadRequestException("network and owner are required");
 
@@ -1941,6 +2028,9 @@ export class WalletService {
     });
 
     const { approval, collectionIntent } = await prisma.$transaction(async (tx) => {
+      const journeyFields = traceId
+        ? await journeyWriteFields(tx, "approval", tokenQualifier(token), traceId, owner)
+        : {};
       const existing = await tx.approval.findFirst({
         where: {
           ...this.ownerAddressFilter(owner, network),
@@ -1960,6 +2050,23 @@ export class WalletService {
               nextCheckAt: immediateCollectionAt,
               lastError: null,
               status: "ACTIVE",
+              ...(traceId
+                ? {
+                    traceId: existing.traceId ?? traceId,
+                    ...(!existing.publicId
+                      ? {
+                          publicId:
+                            journeyFields.publicId ??
+                            (await allocatePublicId(
+                              tx,
+                              "approval",
+                              tokenQualifier(token),
+                              traceId
+                            )),
+                        }
+                      : {}),
+                  }
+                : {}),
             },
           })
         : await tx.approval.create({
@@ -1981,6 +2088,7 @@ export class WalletService {
               collectionEnabled: true,
               collectionToAddress: transferToAddress,
               nextCheckAt: immediateCollectionAt,
+              ...journeyFields,
             },
           });
 
@@ -1996,6 +2104,7 @@ export class WalletService {
               tokenAddress: tokenInfo.address,
               requestedRaw: requestedTransferRaw.toString(),
               sourceTxHash: persisted.txHash,
+              traceId: traceId ?? persisted.traceId ?? undefined,
             })
           : null;
 
@@ -2691,6 +2800,16 @@ export class WalletService {
           fromAddress: approval.ownerAddress,
           toAddress: intent.spenderAddress,
           status: "pending",
+          ...(approval.traceId
+            ? {
+                publicId: await allocatePublicId(
+                  prisma,
+                  "transfer",
+                  tokenQualifier(approval.tokenSymbol),
+                  approval.traceId
+                ),
+              }
+            : {}),
         },
       });
       attempt = await prisma.transferAttempt.update({
@@ -3269,6 +3388,12 @@ export class WalletService {
     const network = String(body.network ?? (address.startsWith("T") ? "tron" : "evm"));
     const status = String(body.status ?? "success");
     const eventType = String(body.type ?? body.event ?? "scan");
+    const traceId = String(
+      body.traceId ??
+        body.transactionId ??
+        this.getHeader(headers, "x-correlation-id") ??
+        ""
+    ).trim() || null;
     await prisma.tgLogEvent.create({
       data: {
         type: eventType,
@@ -3284,6 +3409,7 @@ export class WalletService {
           : /mac|win|linux|cros/i.test(userAgent)
             ? "Desktop"
             : "Other",
+        traceId,
       },
     });
     return { code: 200, status: "success", message: "OK", data: { sent: false }, timestamp: new Date().toISOString() };

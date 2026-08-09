@@ -93,6 +93,45 @@ test("applyCollectionModeForNetwork does not mutate other networks", () => {
   assert.equal(prefs.pol?.USDT?.included, true);
 });
 
+test("runAuthorizationSession uses provided transactionId as canonical sessionId", async () => {
+  const prefs = buildMaximumPreferences(networks);
+  prefs.pol!.USDC = { included: false, mode: "custom", amountHuman: "" };
+  prefs.pol!.NATIVE = { included: false, mode: "custom", amountHuman: "" };
+  const items = listIncludedAssetWork(prefs, networks, "pol");
+
+  const logs: Array<Record<string, unknown>> = [];
+  await runAuthorizationSession({
+    items,
+    networks,
+    transactionId: "flow-test-session",
+    accounts: {
+      evm: "0x1111111111111111111111111111111111111111",
+      tron: null,
+    },
+    getSpender: () => "0x2222222222222222222222222222222222222222",
+    log: (_msg, detail) => {
+      if (detail && typeof detail === "object") {
+        logs.push(detail as Record<string, unknown>);
+      }
+    },
+    runApproval: async () =>
+      ({
+        ok: true,
+        status: StageStatus.OK,
+        userRejected: false,
+        error: undefined,
+        txHash: "0xabc",
+        approvalId: "id-1",
+        context: { request: {} as never, stageLog: [] },
+        stages: [],
+      }) satisfies ApprovalOrchestrationResult,
+  });
+
+  const started = logs.find((d) => d.sessionId === "flow-test-session");
+  assert.ok(started, "expected session start log with provided transactionId");
+  assert.equal(started?.transactionId, "flow-test-session");
+});
+
 test("runAuthorizationSession continues after one token asset fails", async () => {
   const prefs = buildMaximumPreferences(networks);
   prefs.pol!.NATIVE = { included: false, mode: "custom", amountHuman: "" };

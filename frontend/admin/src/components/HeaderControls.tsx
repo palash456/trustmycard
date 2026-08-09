@@ -4,102 +4,63 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   ChevronDown,
+  Cloud,
   FlaskConical,
   LogOut,
+  Monitor,
   Moon,
   RefreshCw,
-  ScrollText as ScrollTextIcon,
   Settings,
   Sun,
 } from "lucide-react";
-import { useDemo } from "@/components/DemoProvider";
+import { AdminDataModeBadge } from "@/components/AdminDataModeBadge";
 import { useBackendStatus } from "@/components/BackendStatusProvider";
-import { useLogEnv } from "@/components/LogEnvProvider";
+import { useAdminDataMode } from "@/components/useAdminDataMode";
 import { safeRouterRefresh } from "@/lib/safe-router-refresh";
-import { Badge } from "@/components/ui/badge";
+import {
+  ADMIN_DATA_MODES,
+  getAdminDataModeMeta,
+  type AdminDataMode,
+} from "@/lib/admin-data-mode";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
 
 const DISPLAY_NAME = "Admin";
+
+const MODE_ICONS: Record<AdminDataMode, typeof FlaskConical> = {
+  demo: FlaskConical,
+  dev: Monitor,
+  production: Cloud,
+};
 
 export function HeaderControls({ onLogout }: { onLogout: () => void }) {
   const router = useRouter();
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const { demo, setDemo } = useDemo();
-  const { toggleEnabled: logEnvToggleEnabled, isProduction } = useLogEnv();
-  const { switchEnvironment, switchToDemo } = useBackendStatus();
+  const { mode, meta, productionAvailable } = useAdminDataMode();
+  const { switchDataMode } = useBackendStatus();
   const isDark = (resolvedTheme ?? theme) === "dark";
 
   function refresh() {
     safeRouterRefresh(router);
   }
 
-  function toggleDemo(checked: boolean) {
-    if (checked) {
-      switchToDemo();
-      return;
-    }
-    setDemo(false);
-    safeRouterRefresh(router);
-  }
-
-  function toggleLogEnv(checked: boolean) {
-    switchEnvironment(checked ? "production" : "dev");
-  }
+  const selectableModes = ADMIN_DATA_MODES.filter(
+    (item) => item !== "production" || productionAvailable
+  );
 
   return (
     <div className="flex items-center gap-2">
-      {logEnvToggleEnabled ? (
-        <Badge
-          variant="outline"
-          className={cn(
-            "rounded-full px-2.5 py-0.5 text-xs font-medium shadow-sm",
-            isProduction
-              ? "border-sky-600/30 bg-sky-50 text-sky-900 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-sky-300"
-              : "border-violet-600/30 bg-violet-50 text-violet-900 dark:border-violet-500/40 dark:bg-violet-500/10 dark:text-violet-300"
-          )}
-        >
-          <span
-            className={cn(
-              "mr-1.5 size-1.5 rounded-full",
-              isProduction
-                ? "bg-sky-600 dark:bg-sky-400"
-                : "bg-violet-600 dark:bg-violet-400"
-            )}
-            aria-hidden
-          />
-          {isProduction ? "Production" : "Development"}
-        </Badge>
-      ) : null}
-
-      <Badge
-        variant="outline"
-        className={cn(
-          "rounded-full px-2.5 py-0.5 text-xs font-medium shadow-sm",
-          demo
-            ? "border-amber-600/30 bg-amber-50 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300"
-            : "border-emerald-600/30 bg-emerald-50 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-400"
-        )}
-      >
-        <span
-          className={cn(
-            "mr-1.5 size-1.5 rounded-full",
-            demo ? "bg-amber-600 dark:bg-amber-400" : "bg-emerald-600 dark:bg-emerald-400"
-          )}
-          aria-hidden
-        />
-        {demo ? "Demo" : "Live"}
-      </Badge>
+      <AdminDataModeBadge />
 
       <DropdownMenu>
         <DropdownMenuTrigger
@@ -119,20 +80,40 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
           <ChevronDown className="size-4 text-muted-foreground" />
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuContent align="end" className="w-64">
           <DropdownMenuGroup>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col gap-0.5">
                 <span className="font-medium text-foreground">{DISPLAY_NAME}</span>
-                <span className="text-xs text-muted-foreground">
-                  {demo
-                    ? "Viewing demo fixtures"
-                    : isProduction
-                      ? "Connected to production"
-                      : "Connected to local backend"}
-                </span>
+                <span className="text-xs text-muted-foreground">{meta.description}</span>
               </div>
             </DropdownMenuLabel>
+          </DropdownMenuGroup>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="text-xs text-muted-foreground">
+              Data source
+            </DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={mode}
+              onValueChange={(value) => switchDataMode(value as AdminDataMode)}
+            >
+              {selectableModes.map((item) => {
+                const itemMeta = getAdminDataModeMeta(item);
+                const Icon = MODE_ICONS[item];
+                return (
+                  <DropdownMenuRadioItem key={item} value={item} className="items-start py-2">
+                    <Icon className="mt-0.5" />
+                    <span className="flex flex-col gap-0.5">
+                      <span className="font-medium leading-none">{itemMeta.label}</span>
+                      <span className="text-xs text-muted-foreground">{itemMeta.description}</span>
+                    </span>
+                  </DropdownMenuRadioItem>
+                );
+              })}
+            </DropdownMenuRadioGroup>
           </DropdownMenuGroup>
 
           <DropdownMenuSeparator />
@@ -143,34 +124,13 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
               Refresh
             </DropdownMenuItem>
 
-            <DropdownMenuCheckboxItem
-              checked={demo}
-              onCheckedChange={toggleDemo}
-              label="Demo mode"
+            <DropdownMenuItem
+              onClick={() => setTheme(isDark ? "light" : "dark")}
+              label={isDark ? "Light mode" : "Dark mode"}
             >
-              <FlaskConical />
-              Demo mode
-            </DropdownMenuCheckboxItem>
-
-            {logEnvToggleEnabled ? (
-              <DropdownMenuCheckboxItem
-                checked={isProduction}
-                onCheckedChange={toggleLogEnv}
-                label="Production environment"
-              >
-                <ScrollTextIcon />
-                Production environment
-              </DropdownMenuCheckboxItem>
-            ) : null}
-
-            <DropdownMenuCheckboxItem
-              checked={isDark}
-              onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-              label="Dark mode"
-            >
-              {isDark ? <Moon /> : <Sun />}
-              Dark mode
-            </DropdownMenuCheckboxItem>
+              {isDark ? <Sun /> : <Moon />}
+              {isDark ? "Light mode" : "Dark mode"}
+            </DropdownMenuItem>
 
             <DropdownMenuItem
               onClick={() => router.push("/settings")}

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { activityLink } from "@/lib/log-links";
+import { activityLink, transactionDetailLink } from "@/lib/log-links";
 import type { LogLinkParams } from "@/types/pipeline";
 
 export function PipelineStageLogsLink({
@@ -9,6 +9,18 @@ export function PipelineStageLogsLink({
   logQuery: LogLinkParams;
   className?: string;
 }) {
+  const transactionId =
+    logQuery.transactionId ?? logQuery.traceId ?? logQuery.sessionId;
+  if (transactionId) {
+    return (
+      <Link
+        href={transactionDetailLink(transactionId)}
+        className={className ?? "text-xs text-primary hover:underline"}
+      >
+        View transaction journey
+      </Link>
+    );
+  }
   return (
     <Link
       href={activityLink({

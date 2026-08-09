@@ -34,13 +34,16 @@ function consoleSink(event: LogEvent): void {
   try {
     const line = `[${event.module}] ${event.operation}/${event.stage ?? "-"} ${event.status}: ${event.message}`;
     const payload = compactLogDetail(redactContext(event) as Record<string, unknown>);
+    const hasPayload = Object.keys(payload).length > 0;
     switch (event.level) {
       case "error":
       case "fatal":
-        console.error(line, payload);
+        if (hasPayload) console.error(line, payload);
+        else console.error(line);
         break;
       case "warn":
-        console.warn(line, payload);
+        if (hasPayload) console.warn(line, payload);
+        else console.warn(line);
         break;
       case "debug":
       case "trace":

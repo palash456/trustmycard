@@ -1,7 +1,7 @@
 export const UINT256_MAX =
   "115792089237316195423570985008687907853269984665640564039457584007913129639935";
 
-export const UINT256_UNLIMITED_LABEL = "uint256 (unlimited)";
+export const UINT256_UNLIMITED_LABEL = "Unlimited";
 
 export function isUint256Unlimited(value: string | number | bigint | null | undefined): boolean {
   if (value == null) return false;

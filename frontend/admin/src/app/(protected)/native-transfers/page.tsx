@@ -16,6 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { JourneyTableCell } from "@/components/JourneyPageHeader";
+import { pipelineUserPath } from "@/lib/pipeline-paths";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
 import { formatDate, shortAddress } from "@/lib/format";
 
@@ -28,6 +30,7 @@ type NativeTransfer = {
   status: string;
   txHash: string;
   reconcileAttempts: number;
+  traceId?: string | null;
   createdAt: string;
 };
 
@@ -80,7 +83,8 @@ export default async function NativeTransfersPage({
     <ListPageLayout>
       <PageHeader
         title="Native transfers"
-        tip="User-signed native coin transfers (ETH, TRX, BNB, …) registered after broadcast. Pending rows can be reconciled manually from the detail page."
+        description="User-signed native coin transfers — each row belongs to a transaction journey (flow-* ID)"
+        tip="Search by transaction ID on the Transactions page. Pending rows can be reconciled from the detail page."
       >
         <PageToolbar>
           <PageRefreshButton />
@@ -92,6 +96,7 @@ export default async function NativeTransfersPage({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Transaction ID</TableHead>
               <TableHead>Network</TableHead>
               <TableHead>Asset</TableHead>
               <TableHead>Owner</TableHead>
@@ -104,17 +109,25 @@ export default async function NativeTransfersPage({
           <TableBody>
             {data.items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                   No native transfers found
                 </TableCell>
               </TableRow>
             ) : (
               data.items.map((row) => (
                 <TableRow key={row.id}>
+                  <TableCell>
+                    <JourneyTableCell transactionId={row.traceId} />
+                  </TableCell>
                   <TableCell className="font-medium uppercase">{row.network}</TableCell>
                   <TableCell>{row.assetSymbol}</TableCell>
                   <TableCell className="font-mono text-xs">
-                    {shortAddress(row.ownerAddress)}
+                    <Link
+                      href={pipelineUserPath(row.ownerAddress)}
+                      className="text-primary hover:underline"
+                    >
+                      {shortAddress(row.ownerAddress)}
+                    </Link>
                   </TableCell>
                   <TableCell>{row.amountHuman}</TableCell>
                   <TableCell>

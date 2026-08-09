@@ -1,13 +1,13 @@
+import { formatInstantIst } from "@trustmycard/shared/ids";
+
 export function shortAddress(value: string, head = 6, tail = 4): string {
   if (value.length <= head + tail + 2) return value;
   return `${value.slice(0, head)}…${value.slice(-tail)}`;
 }
 
+/** Admin/human-facing timestamps in India Standard Time (storage remains UTC). */
 export function formatDate(value: string | Date | null | undefined): string {
-  if (!value) return "—";
-  const d = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString();
+  return formatInstantIst(value);
 }
 
 const EXPLORERS: Record<string, (tx: string) => string> = {

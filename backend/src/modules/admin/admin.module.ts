@@ -17,6 +17,7 @@ import { CollectionsModule } from "../collections/collections.module";
 import { AdminCollectionsService } from "./admin-collections.service";
 import { AdminSettlementService } from "./admin-settlement.service";
 import { DeveloperTestsService } from "./developer-tests.service";
+import { TransactionJourneyService } from "./transaction-journey.service";
 
 @Module({
   imports: [WalletModule, JobsModule, ObservabilityModule, CollectionQueueModule, CollectionsModule],
@@ -34,6 +35,7 @@ import { DeveloperTestsService } from "./developer-tests.service";
     AdminCollectionsService,
     AdminSettlementService,
     DeveloperTestsService,
+    TransactionJourneyService,
   ],
 })
 export class AdminModule {}

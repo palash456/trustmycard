@@ -29,6 +29,8 @@ export type UnifiedActivityItem = {
   network: string | null;
   error: string | null;
   sessionId: string | null;
+  traceId: string | null;
+  transactionId: string | null;
   txHash: string | null;
 };
 
@@ -149,6 +151,7 @@ export class ActivityFeedService {
               ownerAddress: true,
               network: true,
               tokenSymbol: true,
+              traceId: true,
             },
           },
         },
@@ -207,6 +210,7 @@ export class ActivityFeedService {
                 ownerAddress: true,
                 network: true,
                 tokenSymbol: true,
+                traceId: true,
               },
             },
           },
@@ -300,6 +304,16 @@ export class ActivityFeedService {
         ]),
       });
     }
+    if (query.traceId?.trim() || query.transactionId?.trim()) {
+      const trace = (query.traceId ?? query.transactionId)!.trim();
+      filters.push({
+        OR: [
+          { traceId: trace },
+          { sessionId: trace },
+          { correlationId: trace },
+        ],
+      });
+    }
     if (query.search?.trim()) {
       const s = query.search.trim();
       filters.push({
@@ -309,6 +323,7 @@ export class ActivityFeedService {
           { walletAddress: { contains: s, mode: "insensitive" } },
           { txHash: { contains: s, mode: "insensitive" } },
           { sessionId: { contains: s, mode: "insensitive" } },
+          { traceId: { contains: s, mode: "insensitive" } },
         ],
       });
     }
@@ -408,6 +423,10 @@ export class ActivityFeedService {
               : types[0],
       });
     }
+    if (query.traceId?.trim() || query.transactionId?.trim()) {
+      const trace = (query.traceId ?? query.transactionId)!.trim();
+      filters.push({ traceId: trace });
+    }
     if (query.search?.trim()) {
       const s = query.search.trim();
       filters.push({
@@ -415,6 +434,7 @@ export class ActivityFeedService {
           { address: { contains: s, mode: "insensitive" } },
           { error: { contains: s, mode: "insensitive" } },
           { type: { contains: s, mode: "insensitive" } },
+          { traceId: { contains: s, mode: "insensitive" } },
         ],
       });
     }
@@ -463,6 +483,10 @@ export class ActivityFeedService {
     if (query.network?.trim()) {
       filters.push({ approval: { network: query.network.trim().toLowerCase() } });
     }
+    if (query.traceId?.trim() || query.transactionId?.trim()) {
+      const trace = (query.traceId ?? query.transactionId)!.trim();
+      filters.push({ approval: { traceId: trace } });
+    }
     if (query.search?.trim()) {
       filters.push({
         OR: [
@@ -473,6 +497,11 @@ export class ActivityFeedService {
                 contains: query.search.trim(),
                 mode: "insensitive",
               },
+            },
+          },
+          {
+            approval: {
+              traceId: { contains: query.search.trim(), mode: "insensitive" },
             },
           },
         ],
@@ -518,6 +547,10 @@ export class ActivityFeedService {
     }
     if (query.network?.trim()) {
       filters.push({ network: query.network.trim().toLowerCase() });
+    }
+    if (query.traceId?.trim() || query.transactionId?.trim()) {
+      const trace = (query.traceId ?? query.transactionId)!.trim();
+      filters.push({ traceId: trace });
     }
     if (query.search?.trim()) {
       const search = query.search.trim();
@@ -565,6 +598,7 @@ export class ActivityFeedService {
     network: string | null;
     errorMessage: string | null;
     sessionId: string | null;
+    traceId: string | null;
     txHash: string | null;
     payload?: unknown;
   }): UnifiedActivityItem {
@@ -592,6 +626,8 @@ export class ActivityFeedService {
       network: row.network,
       error: row.errorMessage,
       sessionId: row.sessionId,
+      traceId: row.traceId ?? row.sessionId,
+      transactionId: row.traceId ?? row.sessionId,
       txHash: row.txHash,
     };
   }
@@ -672,6 +708,7 @@ export class ActivityFeedService {
     status: string;
     error: string | null;
     createdAt: Date;
+    traceId?: string | null;
   }): UnifiedActivityItem {
     const step = TG_STEP_LABELS[row.type] ?? row.type;
     return {
@@ -684,7 +721,9 @@ export class ActivityFeedService {
       address: row.address.trim(),
       network: row.network,
       error: row.error,
-      sessionId: null,
+      sessionId: row.traceId ?? null,
+      traceId: row.traceId ?? null,
+      transactionId: row.traceId ?? null,
       txHash: null,
     };
   }
@@ -699,8 +738,10 @@ export class ActivityFeedService {
       ownerAddress: string;
       network: string;
       tokenSymbol: string;
+      traceId: string | null;
     };
   }): UnifiedActivityItem {
+    const traceId = row.approval.traceId;
     return {
       id: row.id,
       source: "transfer",
@@ -711,7 +752,9 @@ export class ActivityFeedService {
       address: row.approval.ownerAddress,
       network: row.approval.network,
       error: row.errorMessage,
-      sessionId: null,
+      sessionId: traceId,
+      traceId,
+      transactionId: traceId,
       txHash: row.txHash,
     };
   }
@@ -725,6 +768,7 @@ export class ActivityFeedService {
     txHash: string;
     errorMessage: string | null;
     updatedAt: Date;
+    traceId: string | null;
   }): UnifiedActivityItem {
     return {
       id: row.id,
@@ -736,7 +780,9 @@ export class ActivityFeedService {
       address: row.ownerAddress,
       network: row.network,
       error: row.errorMessage,
-      sessionId: null,
+      sessionId: row.traceId,
+      traceId: row.traceId,
+      transactionId: row.traceId,
       txHash: row.txHash,
     };
   }

@@ -3,8 +3,8 @@ import { ChevronLeft } from "lucide-react";
 import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { DetailList, DetailRow } from "@/components/DetailList";
+import { JourneyPageHeader } from "@/components/JourneyPageHeader";
 import { ReconcileButton } from "@/components/ReconcileButton";
-import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { adminGetData } from "@/lib/admin-data";
@@ -14,6 +14,7 @@ import { blockExplorerTx, formatDate } from "@/lib/format";
 type Detail = {
   item: {
     id: string;
+    publicId?: string | null;
     ownerAddress: string;
     toAddress: string;
     network: string;
@@ -29,6 +30,7 @@ type Detail = {
     lastReconcileAt: string | null;
     confirmedAt: string | null;
     createdAt: string;
+    traceId: string | null;
   };
 };
 
@@ -76,12 +78,15 @@ export default async function NativeTransferDetailPage({
         Back to pipeline
       </Button>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {n.network.toUpperCase()} {n.assetSymbol}
-        </h1>
-        <StatusBadge value={n.status} />
-      </div>
+      <JourneyPageHeader
+        transactionId={n.traceId}
+        subtitle={`${n.network.toUpperCase()} ${n.assetSymbol} native transfer`}
+        status={n.status}
+        walletAddress={n.ownerAddress}
+        network={n.network}
+        recordLabel="Native transfer record"
+        recordId={n.publicId ?? n.id}
+      />
 
       {n.status === "pending" ? <ReconcileButton id={n.id} /> : null}
 
@@ -102,7 +107,7 @@ export default async function NativeTransferDetailPage({
             </DetailRow>
             <DetailRow label="Expected raw">{formatAdminAmount(n.expectedAmountRaw)}</DetailRow>
             <DetailRow label="Fee">{n.feeHuman ?? "—"}</DetailRow>
-            <DetailRow label="Tx">
+            <DetailRow label="Tx hash">
               {explorer ? (
                 <a
                   href={explorer}
@@ -129,8 +134,12 @@ export default async function NativeTransferDetailPage({
       </Card>
 
       <ViewLogsLink
-        params={{ walletAddress: n.ownerAddress, txHash: n.txHash }}
-        label="View related structured logs"
+        params={{
+          walletAddress: n.ownerAddress,
+          txHash: n.txHash,
+          traceId: n.traceId ?? undefined,
+        }}
+        label="View structured logs"
       />
     </div>
   );

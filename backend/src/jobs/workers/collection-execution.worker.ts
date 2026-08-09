@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { Worker } from "bullmq";
 import { ConfigService } from "../../config/config.service";
 import { WalletService } from "../../modules/wallet/wallet.service";
+import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 import { incrementCounter, recordTiming } from "@trustmycard/shared/observability";
 import {
   COLLECTION_EXECUTION_QUEUE,
@@ -16,7 +17,8 @@ export class CollectionExecutionWorker implements OnModuleInit, OnModuleDestroy 
   constructor(
     private readonly config: ConfigService,
     private readonly queues: CollectionQueueService,
-    private readonly wallet: WalletService
+    private readonly wallet: WalletService,
+    private readonly logger: StructuredLoggerService
   ) {}
 
   onModuleInit(): void {
@@ -26,6 +28,21 @@ export class CollectionExecutionWorker implements OnModuleInit, OnModuleDestroy 
       COLLECTION_EXECUTION_QUEUE,
       async (job) => {
         const started = Date.now();
+        if (job.data.traceId) {
+          this.logger.emit({
+            level: "info",
+            module: "collector",
+            operation: "collection_execution",
+            stage: "EXECUTING",
+            status: "in_progress",
+            message: "Collection execution started",
+            traceId: job.data.traceId,
+            transactionId: job.data.traceId,
+            sessionId: job.data.traceId,
+            correlationId: job.data.traceId,
+            context: { intentId: job.data.intentId },
+          });
+        }
         const broadcast = await this.wallet.broadcastCollectionIntent(job.data.intentId);
         incrementCounter("collection.execution.broadcast.total");
         recordTiming("collection.execution.broadcast_ms", Date.now() - started, {});
@@ -34,6 +51,7 @@ export class CollectionExecutionWorker implements OnModuleInit, OnModuleDestroy 
           attemptId: broadcast.attemptId,
           txHash: broadcast.txHash,
           network: "",
+          traceId: job.data.traceId,
         });
       },
       { connection: this.queues.connection, concurrency: config.queueConcurrency }

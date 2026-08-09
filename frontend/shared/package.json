@@ -38,6 +38,14 @@
       "types": "./dist/observability/index.d.ts",
       "default": "./dist/observability/index.js"
     },
+    "./ids": {
+      "types": "./dist/ids/index.d.ts",
+      "default": "./dist/ids/index.js"
+    },
+    "./ids/*": {
+      "types": "./dist/ids/*.d.ts",
+      "default": "./dist/ids/*.js"
+    },
     "./platform-config": {
       "types": "./dist/platform-config/index.d.ts",
       "default": "./dist/platform-config/index.js"
@@ -50,7 +58,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
-    "test": "npm run build && node --test test/observability.spec.js test/collection.spec.js test/token-collection-state.spec.js"
+    "test": "npm run build && node --test test/observability.spec.js test/collection.spec.js test/token-collection-state.spec.js test/transaction-lifecycle.spec.js test/flow-id.spec.js"
   },
   "devDependencies": {
     "@types/node": "^20",

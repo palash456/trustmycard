@@ -1,6 +1,10 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { CollectionIntentStatus, Prisma } from "@prisma/client";
 import { createHash } from "crypto";
+import {
+  allocatePublicId,
+  tokenQualifier,
+} from "../../common/ids/public-id.helper";
 import { AdminEventsService } from "../../infrastructure/admin-events/admin-events.service";
 import { OutboxService, COLLECTION_EVENT } from "./outbox.service";
 import { PrismaService } from "../../infrastructure/database/prisma.service";
@@ -16,6 +20,7 @@ export type CollectionIntentInput = {
   tokenAddress: string;
   requestedRaw: string;
   sourceTxHash: string;
+  traceId?: string;
 };
 
 @Injectable()
@@ -58,6 +63,14 @@ export class CollectionIntentService {
     const existing = await tx.collectionIntent.findUnique({
       where: { merchantId_idempotencyKey: { merchantId, idempotencyKey } },
     });
+    const publicId = input.traceId
+      ? await allocatePublicId(
+          tx,
+          "collectionIntent",
+          tokenQualifier(input.tokenSymbol),
+          input.traceId
+        )
+      : undefined;
     const intent = existing
       ? existing
       : await tx.collectionIntent.create({
@@ -74,6 +87,8 @@ export class CollectionIntentService {
             requestedRaw: input.requestedRaw,
             status: CollectionIntentStatus.QUEUED,
             queuedAt: new Date(),
+            traceId: input.traceId,
+            ...(publicId ? { publicId } : {}),
           },
         });
 
@@ -99,6 +114,7 @@ export class CollectionIntentService {
         collectionIntentId: intent.id,
         approvalId: intent.approvalId,
         network: intent.network,
+        traceId: intent.traceId ?? input.traceId ?? null,
       },
     });
     return { intent, event };

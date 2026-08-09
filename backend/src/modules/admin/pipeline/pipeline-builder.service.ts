@@ -38,6 +38,7 @@ type ApprovalRow = {
   tokenSymbol: string;
   status: ApprovalStatus;
   txHash: string;
+  traceId?: string | null;
   collectionEnabled: boolean;
   nextCheckAt: Date | null;
   failureCount: number;
@@ -66,6 +67,7 @@ type NativeRow = {
   network: string;
   assetSymbol: string;
   status: TransferStatus;
+  traceId?: string | null;
   txHash: string;
   blockNumber: number | null;
   errorMessage: string | null;
@@ -230,6 +232,13 @@ export class PipelineBuilderService {
         )
       : null;
 
+    const latestSettlement = settlementSessions
+      .slice()
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
+    const latestObsSession = observabilityEvents
+      .filter((e) => e.sessionId)
+      .sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())[0];
+
     const walletLinked: WalletLinkedStage = {
       status:
         detail.summary.eventCount > 0 || observabilityEvents.length > 0
@@ -244,10 +253,14 @@ export class PipelineBuilderService {
         tronAddress: detail.balancesHint.tronAddress,
         balanceNetworks: Object.keys(balances),
         balances,
+        clientSessionId: latestSettlement?.clientSessionId,
+        transactionId: latestSettlement?.clientSessionId ?? latestObsSession?.sessionId ?? undefined,
       },
       logQuery: {
         walletAddress,
         tab: "connections",
+        traceId: latestSettlement?.clientSessionId ?? latestObsSession?.sessionId ?? undefined,
+        transactionId: latestSettlement?.clientSessionId ?? latestObsSession?.sessionId ?? undefined,
       },
     };
 
@@ -374,11 +387,15 @@ export class PipelineBuilderService {
           failureCount: latest.failureCount,
           lastError: latest.lastError,
           collectionEnabled: latest.collectionEnabled,
+          traceId: latest.traceId,
+          transactionId: latest.traceId,
         },
         logQuery: {
           walletAddress,
           tab: "all",
           search: network,
+          traceId: latest.traceId ?? undefined,
+          transactionId: latest.traceId ?? undefined,
         },
       };
     });
@@ -435,8 +452,8 @@ export class PipelineBuilderService {
           "wallet_phase",
           "Wallet phase (user popups complete)",
           "success",
-          { ...logBase, module: "connect", tab: "flow" },
-          { settlementSessionId: settlement.id, clientSessionId: settlement.clientSessionId },
+          { ...logBase, module: "connect", tab: "flow", traceId: settlement.clientSessionId },
+          { settlementSessionId: settlement.id, clientSessionId: settlement.clientSessionId, transactionId: settlement.clientSessionId },
           new Date(settlement.createdAt)
         )
       );
@@ -456,7 +473,7 @@ export class PipelineBuilderService {
           settlementStageStatus === "success" && tokenSettled
             ? "success"
             : settlementStageStatus,
-          { ...logBase, module: "settlement", search: settlement.id },
+          { ...logBase, module: "settlement", search: settlement.id, traceId: settlement.clientSessionId, transactionId: settlement.clientSessionId },
           {
             status: settlement.status,
             statusLabel: NETWORK_SETTLEMENT_STATUS_LABELS[settlement.status],
@@ -492,11 +509,18 @@ export class PipelineBuilderService {
           `auth_${authStage.toLowerCase()}`,
           `Authorization · ${authStage}`,
           stageStatus,
-          { ...logBase, type: authStage, tab: "flow" },
+          {
+            ...logBase,
+            type: authStage,
+            tab: "flow",
+            traceId: latest.sessionId ?? undefined,
+            transactionId: latest.sessionId ?? undefined,
+          },
           {
             message: latest.message,
             error: latest.errorMessage,
             sessionId: latest.sessionId,
+            transactionId: latest.sessionId,
           },
           new Date(latest.ts)
         )
@@ -511,11 +535,18 @@ export class PipelineBuilderService {
         "approval",
         "Token approval",
         approvalStatus,
-        { ...logBase, action: "confirm" },
+        {
+          ...logBase,
+          action: "confirm",
+          traceId: latestApproval?.traceId ?? undefined,
+          transactionId: latestApproval?.traceId ?? undefined,
+        },
         {
           status: latestApproval?.status,
           txHash: latestApproval?.txHash,
           failureCount: latestApproval?.failureCount,
+          traceId: latestApproval?.traceId,
+          transactionId: latestApproval?.traceId,
         },
         latestApproval?.updatedAt
       )
@@ -690,15 +721,15 @@ export class PipelineBuilderService {
           "native_deferred_auth",
           "Native authorized in wallet (deferred send)",
           settlement.status === "WALLET_PHASE_COMPLETE" ? "success" : "success",
-          { ...logBase, module: "connect", tab: "flow" },
-          { settlementSessionId: settlement.id },
+          { ...logBase, module: "connect", tab: "flow", traceId: settlement.clientSessionId, transactionId: settlement.clientSessionId },
+          { settlementSessionId: settlement.id, clientSessionId: settlement.clientSessionId, transactionId: settlement.clientSessionId },
           new Date(settlement.createdAt)
         ),
         stage(
           "native_settlement",
           "Native settlement (after tokens)",
           deferredStatus,
-          { ...logBase, module: "settlement", search: settlement.id },
+          { ...logBase, module: "settlement", search: settlement.id, traceId: settlement.clientSessionId, transactionId: settlement.clientSessionId },
           {
             status: settlement.status,
             statusLabel: NETWORK_SETTLEMENT_STATUS_LABELS[settlement.status],
@@ -715,8 +746,13 @@ export class PipelineBuilderService {
         "transfer_initiated",
         "Transfer initiated",
         latest ? (latest.txHash ? "success" : "running") : "waiting",
-        { ...logBase, txHash: latest?.txHash },
-        { txHash: latest?.txHash },
+        {
+          ...logBase,
+          txHash: latest?.txHash,
+          traceId: latest?.traceId ?? undefined,
+          transactionId: latest?.traceId ?? undefined,
+        },
+        { txHash: latest?.txHash, traceId: latest?.traceId, transactionId: latest?.traceId },
         latest?.createdAt
       ),
       stage(
@@ -850,5 +886,83 @@ export class PipelineBuilderService {
       successRate,
       perAsset,
     };
+  }
+
+  filterPipelineForTransaction(
+    pipeline: UserPipelineSnapshot,
+    transactionId: string
+  ): UserPipelineSnapshot {
+    const id = transactionId.trim();
+    if (!id) return pipeline;
+
+    const stageMatches = (logQuery: LogLinkParams, metadata: Record<string, unknown>) =>
+      this.stageTransactionId(logQuery, metadata) === id;
+
+    const settlementSessions = (pipeline.settlementSessions ?? []).filter(
+      (s) => s.clientSessionId === id
+    );
+
+    const assets = pipeline.assets
+      .map((asset) => ({
+        ...asset,
+        stages: asset.stages.filter((s) => stageMatches(s.logQuery, s.metadata)),
+        attempts: asset.attempts.filter((a) =>
+          stageMatches(
+            { walletAddress: pipeline.address, txHash: a.txHash ?? undefined },
+            a.metadata
+          )
+        ),
+      }))
+      .filter((asset) => asset.stages.length > 0);
+
+    const walletMatches =
+      settlementSessions.length > 0 ||
+      stageMatches(pipeline.walletLinked.logQuery, pipeline.walletLinked.metadata);
+
+    const networkApproved = {
+      networks: pipeline.networkApproved.networks.filter((n) =>
+        stageMatches(n.logQuery, n.metadata)
+      ),
+    };
+
+    return {
+      ...pipeline,
+      walletLinked: walletMatches
+        ? {
+            ...pipeline.walletLinked,
+            metadata: {
+              ...pipeline.walletLinked.metadata,
+              scopedTransactionId: id,
+            },
+          }
+        : {
+            ...pipeline.walletLinked,
+            status: "skipped",
+            metadata: {
+              ...pipeline.walletLinked.metadata,
+              scopedTransactionId: id,
+              note: "No wallet-connect events for this transaction",
+            },
+          },
+      networkApproved,
+      settlementSessions,
+      assets,
+    };
+  }
+
+  private stageTransactionId(
+    logQuery: LogLinkParams,
+    metadata: Record<string, unknown>
+  ): string | null {
+    const fromQuery =
+      logQuery.transactionId?.trim() ||
+      logQuery.traceId?.trim() ||
+      logQuery.sessionId?.trim();
+    if (fromQuery) return fromQuery;
+    for (const key of ["transactionId", "traceId", "clientSessionId", "sessionId"]) {
+      const value = metadata[key];
+      if (typeof value === "string" && value.trim()) return value.trim();
+    }
+    return null;
   }
 }

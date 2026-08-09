@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { JourneyTableCell } from "@/components/JourneyPageHeader";
 import { AuditRefreshClient } from "@/components/audit/AuditRefreshClient";
 import { AuditTabsNav } from "@/components/audit/AuditTabsNav";
 import { LogSearchBar } from "@/components/audit/LogSearchBar";
@@ -26,6 +27,7 @@ import { adminGetData, buildQuery } from "@/lib/admin-data";
 import { formatDate } from "@/lib/format";
 import type { AuditTab } from "@/lib/log-links";
 import { timelineDetailLink } from "@/lib/log-links";
+import { resolveTransactionId } from "@/lib/transaction-id";
 import type {
   AuditLogRow,
   ObservabilityEventRow,
@@ -52,8 +54,9 @@ const STRUCTURED_FILTER_FIELDS = [
     options: ["trace", "debug", "info", "warn", "error", "fatal"],
   },
   { name: "walletAddress", label: "Wallet", placeholder: "Address" },
-  { name: "sessionId", label: "Session ID", placeholder: "Session id" },
-  { name: "traceId", label: "Trace ID", placeholder: "Trace id" },
+  { name: "sessionId", label: "Transaction ID", placeholder: "flow-…" },
+  { name: "traceId", label: "Transaction ID (legacy alias)", placeholder: "flow-…" },
+  { name: "correlationId", label: "Correlation ID", placeholder: "Correlation id" },
   { name: "txHash", label: "Tx hash", placeholder: "Transaction hash" },
   { name: "errorCode", label: "Error code", placeholder: "Error code" },
   { name: "from", label: "From (ISO date)", placeholder: "2026-01-01" },
@@ -62,7 +65,7 @@ const STRUCTURED_FILTER_FIELDS = [
 
 const TIMELINE_FILTER_FIELDS = [
   { name: "walletAddress", label: "Wallet", placeholder: "Address" },
-  { name: "sessionId", label: "Session ID", placeholder: "Session id" },
+  { name: "sessionId", label: "Transaction ID", placeholder: "flow-…" },
   { name: "network", label: "Network", placeholder: "e.g. eth" },
   { name: "from", label: "From (ISO date)", placeholder: "2026-01-01" },
   { name: "to", label: "To (ISO date)", placeholder: "2026-12-31" },
@@ -145,8 +148,8 @@ export default async function AuditPage({
       <AuditRefreshClient tab={tab} />
       <PageHeader
         title="Audit & logs"
-        description="Admin mutations, structured observability events, and session timelines"
-        tip="Use Admin actions for panel changes, Structured logs for wallet flow diagnostics, and Session timelines for full authorization journeys."
+        description="Admin mutations, structured observability events, and session timelines — search by flow-* transaction ID"
+        tip="Structured logs and timelines are keyed by transaction journey ID (sessionId / traceId). Use the Transactions page as the primary hub."
       >
         <PageToolbar>
           <PageRefreshButton />
@@ -229,6 +232,7 @@ export default async function AuditPage({
               <TableHeader>
                 <TableRow>
                   <TableHead>Time</TableHead>
+                  <TableHead>Transaction ID</TableHead>
                   <TableHead>Level</TableHead>
                   <TableHead>Module</TableHead>
                   <TableHead>Status</TableHead>
@@ -237,10 +241,18 @@ export default async function AuditPage({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {obsData.items.map((row) => (
+                {obsData.items.map((row) => {
+                  const journeyId = resolveTransactionId({
+                    transactionId: row.sessionId,
+                    traceId: row.traceId,
+                  });
+                  return (
                   <TableRow key={row.id}>
                     <TableCell className="text-xs whitespace-nowrap">
                       {formatDate(row.ts)}
+                    </TableCell>
+                    <TableCell>
+                      <JourneyTableCell transactionId={journeyId} />
                     </TableCell>
                     <TableCell>
                       {row.level ? (
@@ -273,9 +285,9 @@ export default async function AuditPage({
                       ) : (
                         "—"
                       )}
-                      {row.sessionId ? (
+                      {journeyId ? (
                         <Link
-                          href={timelineDetailLink(row.sessionId)}
+                          href={timelineDetailLink(journeyId)}
                           className="ml-1 block text-primary hover:underline"
                         >
                           timeline
@@ -283,7 +295,8 @@ export default async function AuditPage({
                       ) : null}
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

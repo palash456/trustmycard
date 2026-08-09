@@ -1,15 +1,19 @@
-import Link from "next/link";
 import type { SessionTimeline } from "@trustmycard/shared/observability";
+import { TransactionIdLink } from "@/components/TransactionIdLink";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/format";
-import { timelineDetailLink } from "@/lib/log-links";
 
 export function SessionTimelineView({ timeline }: { timeline: SessionTimeline }) {
   return (
     <Card className="border-border/60 shadow-none">
       <CardHeader className="space-y-1 px-4 py-3">
-        <CardTitle className="text-sm font-medium">Session {timeline.sessionId}</CardTitle>
+        <div className="flex flex-wrap items-center gap-2">
+          <CardTitle className="text-sm font-medium">Authorization timeline</CardTitle>
+          {timeline.sessionId ? (
+            <TransactionIdLink id={timeline.sessionId} showCopy={false} />
+          ) : null}
+        </div>
         <p className="text-xs text-muted-foreground">
           {timeline.walletAddress ? `${timeline.walletAddress} · ` : ""}
           {timeline.network ?? "unknown"} · Outcome: {timeline.outcome ?? "—"}
@@ -65,16 +69,14 @@ export function SessionTimelineListRow({
   ts: string;
   durationMs: number | null;
 }) {
-  const id = sessionId ?? "";
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-border/60 px-3 py-2 text-sm">
       <StatusBadge value={status} />
-      <Link
-        href={timelineDetailLink(id)}
-        className="font-medium text-primary hover:underline"
-      >
-        {sessionId ?? "Unknown session"}
-      </Link>
+      {sessionId ? (
+        <TransactionIdLink id={sessionId} />
+      ) : (
+        <span className="font-medium text-muted-foreground">Unknown session</span>
+      )}
       {walletAddress ? (
         <span className="font-mono text-xs text-muted-foreground">{walletAddress}</span>
       ) : null}

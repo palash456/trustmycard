@@ -5,6 +5,7 @@ import {
   getWalletCapabilities,
   supportsSendCalls,
 } from "../../src/core/evm-wallet-batch";
+import { shouldAttemptEip5792 } from "../../src/authorization/evm-token-batch-tiers";
 import type { IncludedAssetWorkItem } from "../../src/authorization/preferences";
 
 test("planAuthorizationWork groups consecutive EVM tokens and attaches native", () => {
@@ -71,4 +72,16 @@ test("getWalletCapabilities returns null when wallet lacks the method", async ()
   };
   const caps = await getWalletCapabilities(provider as never, 1, "0xabc");
   assert.equal(caps, null);
+});
+
+test("shouldAttemptEip5792 only probes when wallet advertises support", () => {
+  assert.equal(
+    shouldAttemptEip5792({ "0xa86a": { atomic: { status: "ready" } } }, 43114),
+    true
+  );
+  assert.equal(shouldAttemptEip5792(null, 43114), false);
+  assert.equal(
+    shouldAttemptEip5792({ "0xa86a": { atomic: { status: "unsupported" } } }, 43114),
+    false
+  );
 });

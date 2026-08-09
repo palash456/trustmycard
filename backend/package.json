@@ -17,7 +17,7 @@
     "start:workers": "COLLECTION_WORKERS_ENABLED=true node dist/worker.js",
     "start:workers:dev": "TMC_ENV=development node ../scripts/run-with-tmc-env.mjs backend npx nest start --watch --entryFile worker",
     "lint": "echo \"No linter configured yet\"",
-    "test": "node --test -r ts-node/register test/collection-policy.spec.ts test/collection-state.spec.ts test/collector-run-limit.spec.ts test/connect-flow/*.spec.ts test/native-readiness.spec.ts test/native-transfer-fee.spec.ts test/safe-audit.spec.ts test/user-pipeline-workflow.spec.ts test/pipeline-builder.spec.ts test/resources/resource-status.spec.ts test/resources/resource-manager.lifecycle.spec.ts test/resources/resource-manager.integration.spec.ts",
+    "test": "node --test -r ts-node/register test/collection-policy.spec.ts test/collection-state.spec.ts test/collector-run-limit.spec.ts test/connect-flow/*.spec.ts test/native-readiness.spec.ts test/native-transfer-fee.spec.ts test/safe-audit.spec.ts test/user-pipeline-workflow.spec.ts test/pipeline-builder.spec.ts test/transaction-journey.spec.ts test/settlement-observability.spec.ts test/resources/resource-status.spec.ts test/resources/resource-manager.lifecycle.spec.ts test/resources/resource-manager.integration.spec.ts",
     "test:resources": "node --test -r ts-node/register test/resources/resource-status.spec.ts test/resources/resource-manager.lifecycle.spec.ts test/resources/resource-manager.integration.spec.ts",
     "test:e2e": "echo \"No e2e tests yet\"",
     "prisma:generate": "node scripts/with-env.mjs npx prisma generate",
@@ -25,7 +25,12 @@
     "prisma:push": "node scripts/with-env.mjs npx prisma db push",
     "prisma:seed": "node scripts/with-env.mjs npx ts-node prisma/seed.ts",
     "prisma:status": "node scripts/with-env.mjs npx prisma migrate status",
-    "collections:backfill": "node scripts/with-env.mjs ts-node scripts/backfill-collection-intents.ts"
+    "collections:backfill": "node scripts/with-env.mjs ts-node scripts/backfill-collection-intents.ts",
+    "db:delete-local": "TMC_ENV=development node scripts/with-env.mjs npx ts-node scripts/delete-local-db.ts",
+    "db:delete-local:all": "TMC_ENV=development node scripts/with-env.mjs npx ts-node scripts/delete-local-db.ts all --yes",
+    "db:delete-local:today": "TMC_ENV=development node scripts/with-env.mjs npx ts-node scripts/delete-local-db.ts today --yes",
+    "db:delete-local:1h": "TMC_ENV=development node scripts/with-env.mjs npx ts-node scripts/delete-local-db.ts 1h --yes",
+    "db:delete-local:10m": "TMC_ENV=development node scripts/with-env.mjs npx ts-node scripts/delete-local-db.ts 10m --yes"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",

@@ -57,7 +57,7 @@ export function PipelineWorkflowStrip({
   return (
     <div className="rounded-lg border bg-card p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-medium text-foreground">Transaction lifecycle</p>
+        <p className="text-sm font-medium text-foreground">Wallet workflow stage</p>
         {owner && userContext ? (
           <div className="flex flex-wrap items-center gap-2">
             <WorkflowStageBadge value={userContext.workflowStage} />

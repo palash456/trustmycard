@@ -5,6 +5,11 @@ import {
   TOKEN_SETTLEMENT_ORDER,
   type NetworkSettlementStatus,
 } from "@trustmycard/shared/constants/settlement";
+import {
+  allocatePublicId,
+  networkQualifier,
+  normalizeJourneyId,
+} from "../../common/ids/public-id.helper";
 import { prisma } from "../../infrastructure/database/prisma-shared";
 import { getErrorMessage } from "../../common/utils/error-message";
 import { ObservabilityService } from "../observability/observability.service";
@@ -13,6 +18,7 @@ import { WalletService } from "./wallet.service";
 
 type RegisterBody = {
   sessionId?: string;
+  traceId?: string;
   network?: string;
   owner?: string;
   tokens?: Array<{
@@ -54,9 +60,10 @@ export class NetworkSettlementService {
   }
 
   async registerWalletPhase(body: RegisterBody) {
-    const clientSessionId = String(body.sessionId ?? "").trim();
+    const clientSessionId = normalizeJourneyId(String(body.sessionId ?? "")) ?? "";
     const network = String(body.network ?? "").trim().toLowerCase();
     const owner = String(body.owner ?? "").trim();
+    const traceId = normalizeJourneyId(String(body.traceId ?? clientSessionId)) ?? null;
     if (!clientSessionId || !network || !owner) {
       return { ok: false, message: "sessionId, network, and owner are required" };
     }
@@ -75,6 +82,15 @@ export class NetworkSettlementService {
       }
     }
 
+    const publicId = traceId
+      ? await allocatePublicId(
+          prisma,
+          "networkSettlementSession",
+          networkQualifier(network),
+          traceId
+        )
+      : undefined;
+
     const session = await prisma.networkSettlementSession.upsert({
       where: { clientSessionId_network: { clientSessionId, network } },
       create: {
@@ -86,6 +102,8 @@ export class NetworkSettlementService {
         usdcApprovalTxHash: usdc?.txHash ?? null,
         batchId: body.batchId ?? null,
         tokenPlan: tokenPlan as Prisma.InputJsonValue,
+        traceId,
+        ...(publicId ? { publicId } : {}),
       },
       update: {
         ownerAddress: owner,
@@ -95,6 +113,7 @@ export class NetworkSettlementService {
         tokenPlan: tokenPlan as Prisma.InputJsonValue,
         status: "WALLET_PHASE_COMPLETE",
         lastError: null,
+        ...(traceId ? { traceId } : {}),
       },
     });
 

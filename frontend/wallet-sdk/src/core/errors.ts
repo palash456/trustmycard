@@ -39,7 +39,30 @@ function consoleArgText(arg: unknown): string {
   return "";
 }
 
+function isWalletConnectEmptyPayload(arg: unknown): boolean {
+  if (typeof arg === "string") {
+    const trimmed = arg.trim();
+    return trimmed === "{}" || trimmed === "[]";
+  }
+  if (arg instanceof Error) {
+    const msg = arg.message?.trim() ?? "";
+    return msg === "" || msg === "{}" || msg === "[]";
+  }
+  if (arg && typeof arg === "object") {
+    const record = arg as Record<string, unknown>;
+    if (Object.keys(record).length === 0) return true;
+    if (
+      Object.keys(record).length === 1 &&
+      record.message === ""
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function hasExtractableConsoleMessage(arg: unknown): boolean {
+  if (isWalletConnectEmptyPayload(arg)) return false;
   if (typeof arg === "string") return arg.trim().length > 0;
   if (typeof arg === "number" || typeof arg === "boolean") return true;
   if (arg instanceof Error) {
@@ -79,6 +102,7 @@ function looksLikeCancellationLog(args: unknown[]): boolean {
 
 function shouldSuppressWalletConsoleError(args: unknown[]): boolean {
   if (args.length === 0) return true;
+  if (args.every(isWalletConnectEmptyPayload)) return true;
   if (looksLikeCancellationLog(args)) return true;
   const joined = args.map(consoleArgText).filter(Boolean).join("\n");
   if (WALLETCONNECT_NOISE_RE.test(joined)) return true;

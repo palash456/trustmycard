@@ -26,6 +26,7 @@ import { ActivityFeedService, type ActivityFeedSource } from "./activity-feed.se
 import { AdminCollectionsService } from "./admin-collections.service";
 import { AdminSettlementService } from "./admin-settlement.service";
 import { DeveloperTestsService } from "./developer-tests.service";
+import { TransactionJourneyService } from "./transaction-journey.service";
 
 @ApiTags("Admin")
 @ApiSecurity("adminApiKey")
@@ -43,7 +44,8 @@ export class AdminController {
     private readonly activityFeed: ActivityFeedService,
     private readonly collections: AdminCollectionsService,
     private readonly settlement: AdminSettlementService,
-    private readonly developerTests: DeveloperTestsService
+    private readonly developerTests: DeveloperTestsService,
+    private readonly transactionJourney: TransactionJourneyService
   ) {}
 
   @Get("analytics")
@@ -60,8 +62,15 @@ export class AdminController {
 
   @Get("dashboard")
   @ApiOperation({ summary: "Admin dashboard aggregates" })
-  dashboard() {
-    return this.adminService.getDashboard();
+  async dashboard() {
+    const [dashboard, recentTransactions] = await Promise.all([
+      this.adminService.getDashboard(),
+      this.transactionJourney.listTransactions({ limit: "8", page: "1" }),
+    ]);
+    return {
+      ...dashboard,
+      recentTransactions: recentTransactions.items,
+    };
   }
 
   @Get("collections/status")
@@ -303,6 +312,20 @@ export class AdminController {
   @ApiOperation({ summary: "Settlement session detail with observability trail" })
   getSettlementSession(@Param("id") id: string) {
     return this.settlement.getSession(id);
+  }
+
+  @Get("transactions")
+  @ApiOperation({ summary: "List and search transaction journeys by flow-* ID" })
+  listTransactions(@Query() query: Record<string, string>) {
+    return this.transactionJourney.listTransactions(query);
+  }
+
+  @Get("transactions/:transactionId")
+  @ApiOperation({ summary: "Transaction journey aggregate by canonical trace/transaction ID" })
+  getTransactionJourney(@Param("transactionId") transactionId: string) {
+    return this.transactionJourney.getByTransactionId(
+      decodeURIComponent(transactionId)
+    );
   }
 
   @Post("transfer")

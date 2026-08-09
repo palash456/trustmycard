@@ -179,7 +179,7 @@ export class ObservabilityService {
       eventId: query.eventId,
       parentEventId: query.parentEventId,
       correlationId: query.correlationId,
-      traceId: query.traceId,
+      traceId: query.traceId ?? query.transactionId,
       requestId: query.requestId,
       txHash: query.txHash,
       token: query.token,
