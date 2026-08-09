@@ -4,13 +4,13 @@ Deploy Trust My Card for **~$14/month** on Render (2× Starter web services) usi
 
 | Service | Render cost | Notes |
 |---------|-------------|--------|
-| `tmc-backend` | $7/mo | API + worker combined |
+| `tmc-backend` | $7/mo | All-in-one API + collection signing (`SERVICE_ROLE=all`) |
 | `tmc-wallet-app` | $7/mo | Decoy `/` + product `/connect` |
 | Postgres (Neon free) | $0 | External `DATABASE_URL` |
 | Redis (Upstash free) | $0 | External `REDIS_URL` |
 | Admin | $0 | Run locally when needed |
 
-**Tradeoff:** API and collection signing run on the **same container** (keys in shared env). Acceptable for launch; upgrade to [render.yaml](../../render.yaml) split deploy later.
+**Tradeoff:** API and collection signing run on the **same process** (`node dist/main.js`, poll-mode collector). Keys live in the same container env. Acceptable for launch; upgrade to [render.yaml](../../render.yaml) split deploy later.
 
 For **trustvisa.cards** DNS (apex → wallet app), see [trustvisa-single-domain.md](./trustvisa-single-domain.md).
 
@@ -140,7 +140,8 @@ When revenue allows, migrate to full split deploy:
 | Issue | Fix |
 |-------|-----|
 | Build fails on `prisma generate` | Ensure `DATABASE_URL` set before migrate; build does not need live DB |
-| Worker not processing queue | Check `tmc-backend` logs for worker startup line; verify `REDIS_URL` |
+| Collection signing disabled | Confirm `SERVICE_ROLE=all`, `COLLECTION_SIGNING_ENABLED=true`, `COLLECTION_DISPATCH_MODE=poll` on `tmc-backend`; redeploy after changing Start Command |
+| `ADMIN_EVM_PRIVATE_KEY does not derive...` | `SPENDER_EVM`/`SPENDER_TRON` must match addresses derived from admin private keys |
 | 502 on wallet `/api/*` | `BACKEND_API_URL` must match `tmc-backend` public URL |
 | CORS errors | `APP_ORIGIN=https://trustvisa.cards` on backend |
 | Neon connection limit | Use Neon pooled connection string |

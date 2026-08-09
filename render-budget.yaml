@@ -19,8 +19,14 @@ services:
         value: production
       - key: TMC_ENV
         value: production
+      - key: SERVICE_ROLE
+        value: all
+      - key: COLLECTION_SIGNING_ENABLED
+        value: "true"
       - key: COLLECTION_DISPATCH_MODE
-        value: queue
+        value: poll
+      - key: COLLECTION_WORKERS_ENABLED
+        value: "false"
       - key: BUDGET_COMBINED_BACKEND
         value: "true"
       - key: SWAGGER_ENABLED
