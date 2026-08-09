@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { DECOY_LOGO_VERSION, decoyLogoSrc } from "./media";
+import { DECOY_LOGO_VERSION, decoyLogoSrc, decoyLogoWhiteSrc } from "./media";
 
 type DecoyLogoProps = {
   variant?: "header" | "footer" | "compact";
@@ -22,13 +22,15 @@ export function DecoyLogo({
   href = "/",
   className = "",
 }: DecoyLogoProps) {
-  const [src, setSrc] = useState(() => decoyLogoSrc());
+  const [src, setSrc] = useState(() =>
+    variant === "footer" ? decoyLogoWhiteSrc() : decoyLogoSrc(),
+  );
 
   useEffect(() => {
     if (process.env.NODE_ENV !== "development") return;
-    // After hydration: bust cache when replacing public/decoy/travixa-logo.png locally.
-    setSrc(decoyLogoSrc(`${DECOY_LOGO_VERSION}-${Date.now()}`));
-  }, []);
+    const srcFn = variant === "footer" ? decoyLogoWhiteSrc : decoyLogoSrc;
+    setSrc(srcFn(`${DECOY_LOGO_VERSION}-${Date.now()}`));
+  }, [variant]);
 
   const image = (
     // eslint-disable-next-line @next/next/no-img-element -- local asset; avoids Next image optimizer cache
