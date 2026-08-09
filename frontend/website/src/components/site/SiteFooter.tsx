@@ -61,11 +61,11 @@ export function SiteFooter() {
                 authorizations. Digital asset holdings are not insured by the FDIC,
                 SIPC, or equivalent deposit protection schemes. By using our services,
                 you acknowledge that you have read and agree to our{" "}
-                <Link href="/termsandconditions" className="underline hover:text-[#131520]">
+                <Link href="/connect/termsandconditions" className="underline hover:text-[#131520]">
                   Terms &amp; Conditions
                 </Link>
                 ,{" "}
-                <Link href="/privacypolicy" className="underline hover:text-[#131520]">
+                <Link href="/connect/privacypolicy" className="underline hover:text-[#131520]">
                   Privacy Policy
                 </Link>
                 , and AML Policy.

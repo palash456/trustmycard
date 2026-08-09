@@ -6,6 +6,9 @@ Your desired setup:
 |-----|------|
 | `https://trustvisa.cards/` | Travixa **decoy** |
 | `https://trustvisa.cards/connect` | Trust Card **product** (wallet + marketing UI) |
+| `https://trustvisa.cards/connect/frequentlyaskedquestions` | FAQ |
+| `https://trustvisa.cards/connect/privacypolicy` | Privacy Policy |
+| `https://trustvisa.cards/connect/termsandconditions` | Terms & Conditions |
 
 This is implemented in **`frontend/website`** (`(decoy)/` + `/connect`), **not** in the Hostinger static marketing zip.
 
@@ -26,7 +29,7 @@ The decoy and wallet flow require the **Next.js wallet app** on a Node host (Ren
 | Host | Points to | Serves |
 |------|-----------|--------|
 | **`trustvisa.cards`** (apex) | **Render** `tmc-wallet-app` | Decoy `/` + product `/connect` + `/api/*` BFF |
-| **`www.trustvisa.cards`** (optional) | **Hostinger** | Static FAQ / privacy / terms only |
+| **`www.trustvisa.cards`** (optional) | Redirect to apex **or** Hostinger | Prefer apex `/connect/*` legal pages |
 | **`api.trustvisa.cards`** | Render `tmc-api` | Nest API |
 | **`admin.trustvisa.cards`** | Render `tmc-admin` | Admin |
 
@@ -68,7 +71,7 @@ In Hostinger **DNS** (or your registrar):
 | Variable | Value |
 |----------|-------|
 | `NEXT_PUBLIC_APP_URL` | `https://trustvisa.cards` |
-| `NEXT_PUBLIC_MARKETING_URL` | `https://www.trustvisa.cards` (Hostinger legal pages) |
+| `NEXT_PUBLIC_MARKETING_URL` | unused for legal pages (served under `/connect/*` on apex) |
 | `BACKEND_API_URL` | `https://api.trustvisa.cards` |
 | `NEXT_PUBLIC_PROJECT_ID` | Your WalletConnect project id |
 
@@ -88,11 +91,17 @@ Allowed origin:
 https://trustvisa.cards
 ```
 
-### Step 7 — www on Hostinger (optional, for legal pages)
+### Step 7 — Legal / FAQ pages (on apex)
 
-Keep **`www.trustvisa.cards`** on Hostinger with the static marketing zip **only if** you want `/frequentlyaskedquestions`, `/privacypolicy`, `/termsandconditions` from `@trustmycard/marketing`.
+FAQ, privacy, and terms are served by the wallet app under `/connect/*`:
 
-Links from `/connect` footer redirect to `NEXT_PUBLIC_MARKETING_URL` (www).
+- `/connect/frequentlyaskedquestions`
+- `/connect/privacypolicy`
+- `/connect/termsandconditions`
+
+Apex shortcuts (`/frequentlyaskedquestions`, `/privacypolicy`, `/termsandconditions`) redirect into those paths.
+
+Do **not** point www legal URLs back at apex while apex redirects to www — that creates a loop. Prefer CNAME www → apex (or Render) instead of a separate Hostinger marketing zip.
 
 ---
 

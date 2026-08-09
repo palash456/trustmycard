@@ -85,7 +85,7 @@ export function FooterLegalLinks() {
     <ul className="mt-4 space-y-3">
       <li>
         <Link
-          href="/frequentlyaskedquestions"
+          href="/connect/frequentlyaskedquestions"
           className="group inline-flex text-sm text-[#6A6D81] transition-colors duration-200 hover:text-[#0400FF]"
         >
           <span className="relative">
@@ -96,7 +96,7 @@ export function FooterLegalLinks() {
       </li>
       <li>
         <Link
-          href="/privacypolicy"
+          href="/connect/privacypolicy"
           className="group inline-flex text-sm text-[#6A6D81] transition-colors duration-200 hover:text-[#0400FF]"
         >
           <span className="relative">
@@ -107,7 +107,7 @@ export function FooterLegalLinks() {
       </li>
       <li>
         <Link
-          href="/termsandconditions"
+          href="/connect/termsandconditions"
           className="group inline-flex text-sm text-[#6A6D81] transition-colors duration-200 hover:text-[#0400FF]"
         >
           <span className="relative">

@@ -43,7 +43,7 @@ export function SiteHeader({ getStartedButton }: SiteHeaderProps) {
               Premium
             </Link>
             <Link
-              href="/frequentlyaskedquestions"
+              href="/connect/frequentlyaskedquestions"
               className="text-[17px] font-medium text-zinc-500 transition hover:text-black"
             >
               FAQ

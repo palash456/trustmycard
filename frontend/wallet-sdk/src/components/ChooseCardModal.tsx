@@ -115,7 +115,7 @@ export function ChooseCardModal({
                       onClick={() => setSelectedTier(tier.id)}
                       style={{ animationDelay: `${linkModalStaggerDelay(index)}ms` }}
                       className={[
-                        "link-modal-stagger-item link-modal-interactive flex w-full cursor-pointer items-center gap-4 rounded-2xl border p-4 text-left",
+                        "link-modal-stagger-item link-modal-interactive flex w-full cursor-pointer items-start gap-0 rounded-2xl border p-4 text-left sm:gap-4",
                         selected
                           ? "border-[#0400FF] bg-[#0400FF]/[0.03] shadow-[0_0_0_1px_rgba(4,0,255,0.08)]"
                           : "border-[#ECECEF] bg-white hover:border-neutral-300",
@@ -125,8 +125,9 @@ export function ChooseCardModal({
                         src={tier.imageList}
                         alt={`${tier.name} card`}
                         size="list"
+                        className="mr-4 w-[3.25rem] sm:mr-0 sm:w-[82px]"
                       />
-                      <span className="min-w-0 flex-1">
+                      <span className="min-w-0 flex-1 mr-2 sm:mr-0">
                         <span className="flex items-center gap-2">
                           <span className="text-base font-bold text-[#131520]">
                             {tier.name}

@@ -31,7 +31,7 @@ export const CARD_TIERS: CardTier[] = [
     imageList: "/images/cards/optimized/black-list.png",
     imageHero: "/images/cards/optimized/black-hero.png",
     description:
-      "Designed for everyday spending. No annual fees charged and includes all the basic essential features you need to get started.",
+      "Earn 1% cashback on every purchase, with no annual fee and straightforward rewards, it's an easy choice for everyday spending.",
     premium: false,
     linkLabel: "Black Card",
   },
@@ -42,7 +42,7 @@ export const CARD_TIERS: CardTier[] = [
     imageList: "/images/cards/optimized/silver-list.png",
     imageHero: "/images/cards/optimized/silver-hero.png",
     description:
-      "Sturdy hybrid card crafted with elegant silver details throughout. Enjoy 1% cashbacks on every purchase you make.",
+      "Get 3% cashback on every purchase, designed for people who want more from their everyday spending, with a premium experience to match.",
     premium: false,
     linkLabel: "Silver Hybrid Card",
   },
@@ -53,7 +53,7 @@ export const CARD_TIERS: CardTier[] = [
     imageList: "/images/cards/optimized/metal-list.png",
     imageHero: "/images/cards/optimized/metal-hero.png",
     description:
-      "Heavy premium metal card built for luxury and durability. Earn 2% cashbacks on all transactions along with exclusive VIP status benefits.",
+      "Earn 5% cashback on every purchase, our most exclusive rewards tier. Only available to members with $50,000+ in wallet assets.",
     premium: true,
     linkLabel: "Metal Premium Card",
   },
