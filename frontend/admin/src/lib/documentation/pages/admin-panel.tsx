@@ -4,7 +4,6 @@ import {
   DocFlow,
   DocLink,
   DocP,
-  DocPre,
   DocTable,
   DocUl,
   DocLi,

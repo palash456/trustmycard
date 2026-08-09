@@ -1,7 +1,6 @@
 import {
   DocCode,
   DocP,
-  DocPre,
   DocTable,
   DocUl,
   DocLi,

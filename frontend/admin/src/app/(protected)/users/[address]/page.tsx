@@ -70,18 +70,6 @@ type NativeRow = {
   createdAt: string;
 };
 
-type EventRow = {
-  id: string;
-  type: string;
-  network: string;
-  status: string;
-  error: string | null;
-  ip: string | null;
-  location: string | null;
-  device: string | null;
-  createdAt: string;
-};
-
 type ResourceRow = {
   id: string;
   network: string;
@@ -137,7 +125,6 @@ export default async function UserDetailPage({
   const revokedApprovals = (data.revokedApprovals as ApprovalRow[]) ?? [];
   const transfers = data.transfers as TransferRow[];
   const nativeTransfers = data.nativeTransfers as NativeRow[];
-  const events = data.events as EventRow[];
   const resources = data.resourceSponsorships as ResourceRow[];
   const activityFeed = (data.activityFeed ?? []) as UnifiedActivityItem[];
   const activityFeedTotal = data.activityFeedTotal ?? activityFeed.length;

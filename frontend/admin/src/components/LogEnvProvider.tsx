@@ -4,8 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
-  useState,
+  useSyncExternalStore,
 } from "react";
 import { LOG_ENV_COOKIE_NAME, type LogEnv } from "@/lib/log-env-cookie";
 
@@ -39,6 +38,19 @@ function writeLogEnvCookie(env: LogEnv) {
       : `${LOG_ENV_COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax`;
 }
 
+let logEnvListeners: Array<() => void> = [];
+
+function subscribeLogEnv(listener: () => void) {
+  logEnvListeners.push(listener);
+  return () => {
+    logEnvListeners = logEnvListeners.filter((l) => l !== listener);
+  };
+}
+
+function notifyLogEnv() {
+  for (const listener of logEnvListeners) listener();
+}
+
 export function LogEnvProvider({
   children,
   toggleEnabled,
@@ -46,17 +58,17 @@ export function LogEnvProvider({
   children: React.ReactNode;
   toggleEnabled: boolean;
 }) {
-  const [logEnv, setLogEnvState] = useState<LogEnv>("dev");
-
-  useEffect(() => {
-    setLogEnvState(readLogEnvCookie());
-  }, []);
+  const logEnv = useSyncExternalStore(
+    subscribeLogEnv,
+    readLogEnvCookie,
+    () => "dev",
+  );
 
   const setLogEnv = useCallback(
     (env: LogEnv) => {
       if (!toggleEnabled && env === "production") return;
       writeLogEnvCookie(env);
-      setLogEnvState(env);
+      notifyLogEnv();
     },
     [toggleEnabled],
   );

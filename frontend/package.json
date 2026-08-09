@@ -23,12 +23,19 @@
     "build:marketing": "TMC_ENV=production npm run build -w @trustmycard/marketing",
     "build:admin": "npm run build -w @trustmycard/admin",
     "build:sdk": "npm run build -w @trustmycard/wallet-sdk",
-    "build:shared": "npm run build -w @trustmycard/shared"
+    "build:shared": "npm run build -w @trustmycard/shared",
+    "format": "prettier --write \"../**/*.{js,jsx,ts,tsx,mjs,cjs,json,md,yml,yaml,css}\" --ignore-path .gitignore --ignore-unknown",
+    "format:check": "prettier --check \"../**/*.{js,jsx,ts,tsx,mjs,cjs,json,md,yml,yaml,css}\" --ignore-path .gitignore --ignore-unknown",
+    "lint": "npm run lint -w @trustmycard/admin && npm run lint -w @trustmycard/website && npm run lint -w @trustmycard/marketing",
+    "lint:admin": "npm run lint -w @trustmycard/admin",
+    "lint:website": "npm run lint -w @trustmycard/website",
+    "lint:marketing": "npm run lint -w @trustmycard/marketing"
   },
   "engines": {
     "node": ">=20"
   },
   "devDependencies": {
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "prettier": "^3.6.2"
   }
 }

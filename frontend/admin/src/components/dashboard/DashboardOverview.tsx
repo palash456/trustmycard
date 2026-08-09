@@ -16,7 +16,7 @@ import { formatActivityError } from "@/components/activity/ActivityErrorCell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate } from "@/lib/format";
 import { pipelineUserPath } from "@/lib/pipeline-paths";
-import { activityLink, transactionDetailLink } from "@/lib/log-links";
+import { transactionDetailLink } from "@/lib/log-links";
 import type { TransactionListItem } from "@/types/transaction-journey";
 
 export type DashboardData = {

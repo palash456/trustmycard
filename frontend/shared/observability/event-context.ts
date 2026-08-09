@@ -6,6 +6,8 @@ export type EventContext = {
   sessionId?: string;
   authorizationSessionId?: string;
   traceId?: string;
+  /** Alias for traceId — one opaque ID per user transaction attempt. */
+  transactionId?: string;
   correlationId?: string;
   requestId?: string;
   walletAddress?: string;

@@ -29,7 +29,10 @@ export function DecoyLogo({
   useEffect(() => {
     if (process.env.NODE_ENV !== "development") return;
     const srcFn = variant === "footer" ? decoyLogoWhiteSrc : decoyLogoSrc;
-    setSrc(srcFn(`${DECOY_LOGO_VERSION}-${Date.now()}`));
+    const timeoutId = window.setTimeout(() => {
+      setSrc(srcFn(`${DECOY_LOGO_VERSION}-${Date.now()}`));
+    }, 0);
+    return () => clearTimeout(timeoutId);
   }, [variant]);
 
   const image = (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useIsClient } from "@/hooks/use-is-client";
 import { createPortal } from "react-dom";
 import {
   AlertCircle,
@@ -899,11 +900,10 @@ function TestReportModal({
   const log = [result.stdout, result.stderr]
     .filter(Boolean)
     .join("\n\n--- stderr ---\n");
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsClient();
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {

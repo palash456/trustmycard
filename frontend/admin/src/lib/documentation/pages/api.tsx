@@ -2,7 +2,6 @@ import {
   DocCallout,
   DocCode,
   DocFlow,
-  DocLink,
   DocLi,
   DocP,
   DocPre,

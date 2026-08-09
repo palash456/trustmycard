@@ -57,9 +57,12 @@ export function LiveActivityFeed({ className }: { className?: string }) {
   }, []);
 
   useEffect(() => {
-    load();
-    const id = setInterval(load, 30_000);
-    return () => clearInterval(id);
+    const initialTimeoutId = window.setTimeout(() => void load(), 0);
+    const id = setInterval(() => void load(), 30_000);
+    return () => {
+      clearTimeout(initialTimeoutId);
+      clearInterval(id);
+    };
   }, [load, pageRefresh?.refreshGeneration]);
 
   return (

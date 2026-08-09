@@ -1,5 +1,4 @@
 import {
-  DocCallout,
   DocCode,
   DocFlow,
   DocLi,

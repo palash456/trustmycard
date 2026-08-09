@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { safeRouterRefresh } from "@/lib/safe-router-refresh";
 
@@ -46,8 +46,6 @@ function eventMatchesScope(
 export function useAdminStream(enabled = true, scopeAddress?: string) {
   const router = useRouter();
   const [connected, setConnected] = useState(false);
-  const routerRef = useRef(router);
-  routerRef.current = router;
 
   useEffect(() => {
     if (!enabled) return;
@@ -68,7 +66,7 @@ export function useAdminStream(enabled = true, scopeAddress?: string) {
         if (scopeAddress) {
           if (!eventMatchesScope(event, scopeAddress)) return;
         }
-        safeRouterRefresh(routerRef.current);
+        safeRouterRefresh(router);
       } catch {
         // ignore malformed events
       }
@@ -77,7 +75,7 @@ export function useAdminStream(enabled = true, scopeAddress?: string) {
       es.close();
       setConnected(false);
     };
-  }, [enabled, scopeAddress]);
+  }, [enabled, scopeAddress, router]);
 
   return { connected };
 }

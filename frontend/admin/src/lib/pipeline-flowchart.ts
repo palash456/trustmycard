@@ -176,24 +176,6 @@ const STAGE_ICONS: Record<string, FlowchartStage["icon"]> = {
   complete: "complete",
 };
 
-const TOKEN_STAGE_KEYS = [
-  "asset_detected",
-  "approval",
-  "collection_queued",
-  "transfer",
-  "retry_repair",
-  "on_chain_verified",
-  "pipeline_complete",
-] as const;
-
-const NATIVE_STAGE_KEYS = [
-  "asset_detected",
-  "transfer_initiated",
-  "pending_confirmation",
-  "on_chain_verified",
-  "pipeline_complete",
-] as const;
-
 export function flowchartStatusLabel(status: FlowchartVisualStatus): string {
   switch (status) {
     case "pending":

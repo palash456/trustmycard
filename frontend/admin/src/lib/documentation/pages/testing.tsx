@@ -1,5 +1,4 @@
 import {
-  DocCode,
   DocP,
   DocPre,
   DocTable,

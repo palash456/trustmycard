@@ -3,11 +3,9 @@ import {
   DocCode,
   DocFlow,
   DocLink,
-  DocLi,
   DocP,
   DocPre,
   DocTable,
-  DocUl,
 } from "@/components/documentation/DocPrimitives";
 import type { DocPage } from "../types";
 

@@ -5,7 +5,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -53,8 +52,6 @@ export function BackendStatusProvider({ children }: { children: ReactNode }) {
   const [isChecking, setIsChecking] = useState(true);
   const [isSwitching, setIsSwitching] = useState(false);
   const [health, setHealth] = useState<EnvHealthResponse | null>(null);
-  const logEnvRef = useRef(logEnv);
-  logEnvRef.current = logEnv;
 
   const recheckHealth = useCallback(async () => {
     if (demo) {
@@ -70,33 +67,33 @@ export function BackendStatusProvider({ children }: { children: ReactNode }) {
   }, [demo]);
 
   useEffect(() => {
-    if (demo) {
-      setIsChecking(false);
-      setHealth(null);
-      return;
-    }
+    if (demo) return;
 
     let cancelled = false;
-    setIsChecking(true);
-    fetchHealth()
-      .then((next) => {
+
+    void (async () => {
+      setIsChecking(true);
+      try {
+        const next = await fetchHealth();
         if (!cancelled) setHealth(next);
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) setHealth(null);
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setIsChecking(false);
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
     };
   }, [demo, logEnv]);
 
+  const displayedIsChecking = demo ? false : isChecking;
+  const displayedHealth = demo ? null : health;
+
   const switchEnvironment = useCallback(
     (env: LogEnv) => {
-      if (env === logEnvRef.current && !demo) return;
+      if (env === logEnv && !demo) return;
       setDemo(false);
       setLogEnv(env);
       setIsSwitching(true);
@@ -106,7 +103,7 @@ export function BackendStatusProvider({ children }: { children: ReactNode }) {
         .catch(() => setHealth(null))
         .finally(() => setIsSwitching(false));
     },
-    [router, setDemo, setLogEnv],
+    [router, setDemo, setLogEnv, logEnv, demo],
   );
 
   const switchToDemo = useCallback(() => {
@@ -133,9 +130,9 @@ export function BackendStatusProvider({ children }: { children: ReactNode }) {
   return (
     <BackendStatusContext.Provider
       value={{
-        isChecking,
+        isChecking: displayedIsChecking,
         isSwitching,
-        health,
+        health: displayedHealth,
         recheckHealth,
         switchEnvironment,
         switchToDemo,

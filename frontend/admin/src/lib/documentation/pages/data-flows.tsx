@@ -1,7 +1,5 @@
 import {
-  DocCode,
   DocFlow,
-  DocP,
   DocPre,
   DocTable,
 } from "@/components/documentation/DocPrimitives";

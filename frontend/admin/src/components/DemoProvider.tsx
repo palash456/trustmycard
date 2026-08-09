@@ -4,8 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
-  useState,
+  useSyncExternalStore,
 } from "react";
 import { DEMO_COOKIE_NAME } from "@/lib/demo-cookie";
 
@@ -34,21 +33,30 @@ function writeDemoCookie(enabled: boolean) {
     : `${DEMO_COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax`;
 }
 
-export function DemoProvider({ children }: { children: React.ReactNode }) {
-  const [demo, setDemoState] = useState(false);
+let demoListeners: Array<() => void> = [];
 
-  useEffect(() => {
-    setDemoState(readDemoCookie());
-  }, []);
+function subscribeDemo(listener: () => void) {
+  demoListeners.push(listener);
+  return () => {
+    demoListeners = demoListeners.filter((l) => l !== listener);
+  };
+}
+
+function notifyDemo() {
+  for (const listener of demoListeners) listener();
+}
+
+export function DemoProvider({ children }: { children: React.ReactNode }) {
+  const demo = useSyncExternalStore(subscribeDemo, readDemoCookie, () => false);
 
   const setDemo = useCallback((enabled: boolean) => {
     writeDemoCookie(enabled);
-    setDemoState(enabled);
+    notifyDemo();
   }, []);
 
   const toggleDemo = useCallback(() => {
-    setDemo(!demo);
-  }, [demo, setDemo]);
+    setDemo(!readDemoCookie());
+  }, [setDemo]);
 
   return (
     <DemoContext.Provider value={{ demo, setDemo, toggleDemo }}>

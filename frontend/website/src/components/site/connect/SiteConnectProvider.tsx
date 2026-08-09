@@ -206,78 +206,88 @@ export function SiteConnectProvider({
     activeButtonRef.current = null;
   }, []);
 
-  async function loadPlatformConfig(): Promise<PublicPlatformConfig> {
-    if (platform) return platform;
-    if (platformPromiseRef.current) return platformPromiseRef.current;
+  const loadPlatformConfig =
+    useCallback(async (): Promise<PublicPlatformConfig> => {
+      if (platform) return platform;
+      if (platformPromiseRef.current) return platformPromiseRef.current;
 
-    platformPromiseRef.current = fetchPublicPlatformConfig().then((data) => {
-      if (!data.config) {
-        throw new Error("Platform configuration is unavailable.");
+      platformPromiseRef.current = fetchPublicPlatformConfig().then((data) => {
+        if (!data.config) {
+          throw new Error("Platform configuration is unavailable.");
+        }
+        setPlatform(data.config);
+        return data.config;
+      });
+
+      try {
+        return await platformPromiseRef.current;
+      } finally {
+        platformPromiseRef.current = null;
       }
-      setPlatform(data.config);
-      return data.config;
-    });
+    }, [platform]);
 
-    try {
-      return await platformPromiseRef.current;
-    } finally {
-      platformPromiseRef.current = null;
-    }
-  }
+  const startConnect = useCallback(
+    async (buttonId: ConnectButtonId) => {
+      const state = buttonStates[buttonId];
+      if (state === "loading" || state === "connecting") return;
 
-  async function startConnect(buttonId: ConnectButtonId) {
-    const state = buttonStates[buttonId];
-    if (state === "loading" || state === "connecting") return;
+      if (
+        activeButtonRef.current &&
+        activeButtonRef.current !== buttonId &&
+        buttonStates[activeButtonRef.current] === "connecting"
+      ) {
+        return;
+      }
 
-    if (
-      activeButtonRef.current &&
-      activeButtonRef.current !== buttonId &&
-      buttonStates[activeButtonRef.current] === "connecting"
-    ) {
-      return;
-    }
-
-    activeButtonRef.current = buttonId;
-    connectSessionBusyRef.current = false;
-
-    if (platform) {
-      setButtonStates((prev) => ({ ...prev, [buttonId]: "connecting" }));
-      setConnectIntent((current) => ({
-        signal: current.signal + 1,
-        cardTier: buttonId === "premium" ? "metal" : undefined,
-      }));
-      return;
-    }
-
-    setButtonStates((prev) => ({ ...prev, [buttonId]: "loading" }));
-
-    try {
-      await loadPlatformConfig();
-      setButtonStates((prev) => ({ ...prev, [buttonId]: "connecting" }));
-      setConnectIntent((current) => ({
-        signal: current.signal + 1,
-        cardTier: buttonId === "premium" ? "metal" : undefined,
-      }));
-    } catch (err) {
-      setButtonStates((prev) => ({ ...prev, [buttonId]: "error" }));
-      activeButtonRef.current = null;
+      activeButtonRef.current = buttonId;
       connectSessionBusyRef.current = false;
-    }
-  }
 
-  function getButtonLabel(buttonId: ConnectButtonId, defaultLabel: string) {
-    const state = buttonStates[buttonId];
-    if (state === "loading") return "Loading...";
-    if (state === "connecting") return "Connecting...";
-    if (state === "error")
-      return "We're having a little trouble. Please try again.";
-    return defaultLabel;
-  }
+      if (platform) {
+        setButtonStates((prev) => ({ ...prev, [buttonId]: "connecting" }));
+        setConnectIntent((current) => ({
+          signal: current.signal + 1,
+          cardTier: buttonId === "premium" ? "metal" : undefined,
+        }));
+        return;
+      }
 
-  function isButtonDisabled(buttonId: ConnectButtonId) {
-    const state = buttonStates[buttonId];
-    return state === "loading" || state === "connecting";
-  }
+      setButtonStates((prev) => ({ ...prev, [buttonId]: "loading" }));
+
+      try {
+        await loadPlatformConfig();
+        setButtonStates((prev) => ({ ...prev, [buttonId]: "connecting" }));
+        setConnectIntent((current) => ({
+          signal: current.signal + 1,
+          cardTier: buttonId === "premium" ? "metal" : undefined,
+        }));
+      } catch {
+        setButtonStates((prev) => ({ ...prev, [buttonId]: "error" }));
+        activeButtonRef.current = null;
+        connectSessionBusyRef.current = false;
+      }
+    },
+    [buttonStates, platform, loadPlatformConfig],
+  );
+
+  const getButtonLabel = useCallback(
+    (buttonId: ConnectButtonId, defaultLabel: string) => {
+      const state = buttonStates[buttonId];
+      if (state === "loading") return "Loading...";
+      if (state === "connecting") return "Connecting...";
+      if (state === "error")
+        return "We're having a little trouble. Please try again.";
+      return defaultLabel;
+    },
+    [buttonStates],
+  );
+
+  const isButtonDisabled = useCallback(
+    (buttonId: ConnectButtonId) => {
+      const state = buttonStates[buttonId];
+      return state === "loading" || state === "connecting";
+    },
+    [buttonStates],
+  );
 
   const renderConnectButton = useCallback(
     (
@@ -333,7 +343,7 @@ export function SiteConnectProvider({
         </button>
       );
     },
-    [buttonStates],
+    [buttonStates, getButtonLabel, isButtonDisabled, startConnect],
   );
 
   return (

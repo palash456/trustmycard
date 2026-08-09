@@ -1,7 +1,6 @@
 import {
   DocCallout,
   DocCode,
-  DocFlow,
   DocFlowChart,
   DocLayerStack,
   DocLink,

@@ -115,6 +115,8 @@ export function createLogger(
           authorizationSessionId:
             input.authorizationSessionId ?? ctx.authorizationSessionId,
           traceId: input.traceId ?? ctx.traceId,
+          transactionId:
+            input.transactionId ?? ctx.transactionId ?? ctx.traceId,
           correlationId: input.correlationId ?? ctx.correlationId,
           requestId: input.requestId ?? ctx.requestId,
           walletAddress: input.walletAddress ?? ctx.walletAddress,
