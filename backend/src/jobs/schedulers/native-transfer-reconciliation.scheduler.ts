@@ -33,7 +33,18 @@ export class NativeTransferReconciliationScheduler
   ) {}
 
   onModuleInit(): void {
-    void this.walletService.repairInconsistentConfirmedTransfers();
+    void this.walletService.repairInconsistentConfirmedTransfers().catch((err) => {
+      this.logger.emit({
+        level: "error",
+        module: "reconciliation",
+        operation: "repair_inconsistent_transfers",
+        stage: "STARTUP_FAILED",
+        status: "failure",
+        message: getErrorMessage(err, "Startup repair failed"),
+        err,
+        skipSampling: true,
+      });
+    });
     this.configService.events.on("settings.updated", () => {
       this.updateFromConfig();
     });

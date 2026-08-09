@@ -11,7 +11,7 @@ services:
     name: tmc-backend
     runtime: node
     plan: starter
-    buildCommand: chmod +x scripts/render-build-backend.sh scripts/render-start-backend.sh && ./scripts/render-build-backend.sh
+    buildCommand: chmod +x scripts/render-build-backend.sh scripts/render-start-backend.sh scripts/render-migrate.sh && ./scripts/render-build-backend.sh
     startCommand: ./scripts/render-start-backend.sh
     healthCheckPath: /v1/api/settings/public
     envVars:

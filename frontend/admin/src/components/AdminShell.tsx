@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Activity,
   BarChart3,
+  BookOpen,
   FlaskConical,
   GitBranch,
   LayoutDashboard,
@@ -73,6 +74,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "Administration",
     items: [
+      { href: "/documentation", label: "Documentation", icon: BookOpen },
       { href: "/system", label: "System", icon: Server },
       { href: "/developer-test", label: "Developer Test", icon: FlaskConical },
     ],
@@ -96,6 +98,7 @@ function pageTitle(pathname: string): string {
   if (pathname.startsWith("/transactions")) return "Transactions";
   if (pathname.startsWith("/wallets")) return "Users";
   if (pathname.startsWith("/settings")) return "Settings";
+  if (pathname.startsWith("/documentation")) return "Documentation";
 
   return "Admin";
 }
@@ -125,6 +128,10 @@ function isNavActive(pathname: string, href: string): boolean {
   // Transactions absorbs settlement session detail routes
   if (href === "/transactions") {
     return pathname.startsWith("/settlement-sessions");
+  }
+
+  if (href === "/documentation") {
+    return pathname.startsWith("/documentation");
   }
 
   return false;

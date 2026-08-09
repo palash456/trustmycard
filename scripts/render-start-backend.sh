@@ -14,6 +14,9 @@ if ((${#missing[@]} > 0)); then
   exit 1
 fi
 
+echo "[render] applying database migrations..."
+"$ROOT/scripts/render-migrate.sh"
+
 role="${SERVICE_ROLE:-all}"
 signing="${COLLECTION_SIGNING_ENABLED:-true}"
 dispatch="${COLLECTION_DISPATCH_MODE:-poll}"

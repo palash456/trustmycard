@@ -2,6 +2,8 @@
 
 Product monorepo documentation. Start here for architecture, deployment, and operations.
 
+> **Primary developer reference:** The Admin Panel includes a comprehensive, code-verified documentation site at **Admin → Documentation** (`/documentation`). Use that as the single source of truth for KT; this `docs/` folder retains deeper operational runbooks and historical references.
+
 ## Repository layout
 
 ```text
@@ -86,6 +88,7 @@ Deploy guide (full): [infrastructure/render-hostinger-production.md](./infrastru
 | [event-driven-collection.md](./architecture/event-driven-collection.md) | Collection queue modes |
 | [platform-configuration.md](./architecture/platform-configuration.md) | Platform env and spender config |
 | [collection-rollout.md](./architecture/collection-rollout.md) | Collection rollout stages |
+| [semantic-ids.md](./architecture/semantic-ids.md) | Journey `flow-*` IDs and child `publicId` formats |
 | [approval-flow-three-way-comparison.md](./architecture/approval-flow-three-way-comparison.md) | Competitor vs TMC Old vs TMC Current |
 | [tron-approval-flow-comparison.md](./architecture/tron-approval-flow-comparison.md) | HAR-based TRON comparison |
 
