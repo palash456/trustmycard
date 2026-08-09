@@ -18,7 +18,7 @@ const FALLBACK_POLICY: NativeClientPolicy = {
 let activePolicy: NativeClientPolicy = FALLBACK_POLICY;
 
 export function nativeClientPolicyFromPlatform(
-  platform?: PublicPlatformConfig
+  platform?: PublicPlatformConfig,
 ): NativeClientPolicy {
   if (!platform?.native) return FALLBACK_POLICY;
   return {
@@ -59,13 +59,15 @@ export function releaseNativeTransferLock(): void {
 }
 
 function isRetryablePersistenceError(message: string): boolean {
-  return /not found|still pending|still propagating|tx_not_visible/i.test(message);
+  return /not found|still pending|still propagating|tx_not_visible/i.test(
+    message,
+  );
 }
 
 export async function retryRegisterWithBackoff<T>(
   fn: () => Promise<T>,
   signal?: AbortSignal,
-  delaysMs: readonly number[] = policy().registerRetryDelaysMs
+  delaysMs: readonly number[] = policy().registerRetryDelaysMs,
 ): Promise<T> {
   let lastError: unknown;
   for (let i = 0; i <= delaysMs.length; i += 1) {
@@ -86,13 +88,15 @@ export async function retryRegisterWithBackoff<T>(
       throw err;
     }
   }
-  throw lastError instanceof Error ? lastError : new Error("Register retries exhausted");
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Register retries exhausted");
 }
 
 export async function retryConfirmWithBackoff<T>(
   fn: () => Promise<T>,
   signal?: AbortSignal,
-  delaysMs: readonly number[] = policy().confirmRetryDelaysMs
+  delaysMs: readonly number[] = policy().confirmRetryDelaysMs,
 ): Promise<T> {
   let lastError: unknown;
   for (let i = 0; i <= delaysMs.length; i += 1) {
@@ -113,7 +117,9 @@ export async function retryConfirmWithBackoff<T>(
       throw err;
     }
   }
-  throw lastError instanceof Error ? lastError : new Error("Confirm retries exhausted");
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Confirm retries exhausted");
 }
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
@@ -129,7 +135,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
         clearTimeout(t);
         reject(Object.assign(new Error("Cancelled"), { code: "CANCELLED" }));
       },
-      { once: true }
+      { once: true },
     );
   });
 }
@@ -149,7 +155,7 @@ export function assertFreshEstimate(args: {
     (prev * BigInt(10_000 - p.estimateMaxUnderflowBps)) / BigInt(10_000);
   if (fresh < minAcceptable) {
     throw new Error(
-      "Network fees increased significantly since estimate — please retry"
+      "Network fees increased significantly since estimate — please retry",
     );
   }
 }

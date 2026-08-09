@@ -15,12 +15,12 @@ Trust My Card uses a three-pillar observability model:
 
 ## Logs vs metrics
 
-| Use metrics | Use logs |
-|-------------|----------|
+| Use metrics                             | Use logs                              |
+| --------------------------------------- | ------------------------------------- |
 | `collector.transfers.completed` counter | First transfer completion with txHash |
-| `collector.ticks.total` | Tick failure with reason |
-| `rpc.latency_ms` histogram | RPC retry with endpoint + error |
-| Success/failure rates (derived) | User rejection, validation failure |
+| `collector.ticks.total`                 | Tick failure with reason              |
+| `rpc.latency_ms` histogram              | RPC retry with endpoint + error       |
+| Success/failure rates (derived)         | User rejection, validation failure    |
 
 **Rule:** Never emit one log line per counter increment.
 
@@ -29,7 +29,11 @@ Trust My Card uses a three-pillar observability model:
 Always use:
 
 ```typescript
-import { getErrorMessage, serializeError, errorForLog } from "@trustmycard/shared/observability";
+import {
+  getErrorMessage,
+  serializeError,
+  errorForLog,
+} from "@trustmycard/shared/observability";
 ```
 
 Never use:
@@ -60,12 +64,12 @@ Env: `LOG_SAMPLING_ENABLED=false` disables sampling (full dev verbosity).
 
 Log persistence to PostgreSQL is **never on the hot path** for wallet or collector operations:
 
-| Path | Behavior |
-|------|----------|
-| Wallet / collector / schedulers | `StructuredLoggerService.emit()` → Pino stdout only (async, non-blocking) |
-| Browser client logs | `void fetch(..., { keepalive: true })` — fire-and-forget |
-| `POST /v1/client-logs` | Returns **202 Accepted** immediately; DB writes run in background via `schedulePersistLog` / `schedulePersistTimeline` |
-| Timeline flush | `void flushSessionTimeline()` — does not await network or DB |
+| Path                            | Behavior                                                                                                               |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Wallet / collector / schedulers | `StructuredLoggerService.emit()` → Pino stdout only (async, non-blocking)                                              |
+| Browser client logs             | `void fetch(..., { keepalive: true })` — fire-and-forget                                                               |
+| `POST /v1/client-logs`          | Returns **202 Accepted** immediately; DB writes run in background via `schedulePersistLog` / `schedulePersistTimeline` |
+| Timeline flush                  | `void flushSessionTimeline()` — does not await network or DB                                                           |
 
 Background persist failures increment `observability.persist.failed` and emit an error log (also non-blocking).
 
@@ -75,14 +79,14 @@ Timeline nodes are batch-inserted with `createMany` inside a transaction (not on
 
 Observability must **never** break wallet, collector, or API primary flows. Logging/metrics failures are swallowed at every boundary:
 
-| Layer | Protection |
-|-------|------------|
-| `StructuredLoggerService.emit()` | Wrapped in `safeObservability()` — serialization, sampling, and Pino output cannot throw to callers |
-| HTTP interceptor / exception filter | `safeObservability()` around all `emit()` calls |
-| Background DB persist | Failures handled in `.catch()`; `handlePersistError` uses `safeObservability()` |
-| Metrics (`incrementCounter`, `recordTiming`) | try/catch inside helpers |
-| Wallet SDK `createLogger().emit()` | `safeObservability()` + per-sink try/catch |
-| Client log/timeline POST | `void fetch(...).catch()` — fire-and-forget |
+| Layer                                        | Protection                                                                                          |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `StructuredLoggerService.emit()`             | Wrapped in `safeObservability()` — serialization, sampling, and Pino output cannot throw to callers |
+| HTTP interceptor / exception filter          | `safeObservability()` around all `emit()` calls                                                     |
+| Background DB persist                        | Failures handled in `.catch()`; `handlePersistError` uses `safeObservability()`                     |
+| Metrics (`incrementCounter`, `recordTiming`) | try/catch inside helpers                                                                            |
+| Wallet SDK `createLogger().emit()`           | `safeObservability()` + per-sink try/catch                                                          |
+| Client log/timeline POST                     | `void fetch(...).catch()` — fire-and-forget                                                         |
 
 Use `safeObservability()` from `@trustmycard/shared/observability` for any new observability side effects in business code.
 
@@ -107,10 +111,10 @@ Admin UI deep links: see [admin-observability-migration.md](./admin-observabilit
 
 Background two-phase authorization emits structured logs with `module: "settlement"`:
 
-| Operation | When |
-|-----------|------|
-| `state_transition` | `NetworkSettlementSession` status changes |
-| `token_settled` | Per-token collection outcome (includes `stateLabel` when known) |
+| Operation          | When                                                            |
+| ------------------ | --------------------------------------------------------------- |
+| `state_transition` | `NetworkSettlementSession` status changes                       |
+| `token_settled`    | Per-token collection outcome (includes `stateLabel` when known) |
 
 Client-side settlement progress uses `module: "connect"` with operations
 `settlement_progress`, `native_readiness_poll`, `settlement_complete`.

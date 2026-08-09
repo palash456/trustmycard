@@ -16,7 +16,9 @@ export function AnalyticsSection({
   return (
     <section id={id} className={cn("scroll-mt-16 space-y-3", className)}>
       <div className="border-b border-border/60 pb-2">
-        <h2 className="text-sm font-semibold tracking-tight text-foreground">{title}</h2>
+        <h2 className="text-sm font-semibold tracking-tight text-foreground">
+          {title}
+        </h2>
         {description ? (
           <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
         ) : null}
@@ -48,6 +50,8 @@ export function MetricGrid({
 
 export function ChartGrid({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">{children}</div>
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+      {children}
+    </div>
   );
 }

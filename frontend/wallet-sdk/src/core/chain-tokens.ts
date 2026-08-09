@@ -127,7 +127,7 @@ export function formatRawToHuman(raw: bigint, decimals: number): string {
 
 export function getToken(
   networkKey: string,
-  symbol: TokenSymbol
+  symbol: TokenSymbol,
 ): TokenInfo | null {
   if (networkKey === "tron") {
     if (symbol === "USDT") return TRON_USDT;

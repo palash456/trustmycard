@@ -21,7 +21,7 @@ export type TronChainPortOptions = {
  * TRON-specific sign + broadcast. Orchestrator stays chain-agnostic.
  */
 export function createTronApprovalChainPort(
-  options: TronChainPortOptions
+  options: TronChainPortOptions,
 ): ApprovalChainPort {
   const apiBaseUrl = options.apiBaseUrl ?? "";
   const fetchFn = options.fetchImpl ?? fetch;
@@ -33,12 +33,13 @@ export function createTronApprovalChainPort(
     },
     async sign({ prepared, owner, signal }) {
       void signal;
-      const unsigned = prepared.payload.transaction as Record<string, unknown> | undefined;
+      const unsigned = prepared.payload.transaction as
+        Record<string, unknown> | undefined;
       if (!unsigned) {
         throw new Error("Missing Tron transaction from prepare");
       }
       const signRaw = await withSilentWalletCancellation(() =>
-        tronSignTransaction(options.provider, owner, unsigned)
+        tronSignTransaction(options.provider, owner, unsigned),
       );
       const signed = mergeTronSignedResult(unsigned, signRaw);
       return {
@@ -48,13 +49,16 @@ export function createTronApprovalChainPort(
     },
     async broadcast({ signed, signal }) {
       const signedTx = signed.payload.signed as Record<string, unknown>;
-      const res = await fetchFn(resolveApiUrl(apiBaseUrl, "/api/tron-broadcast"), {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(signedTx),
-        cache: "no-store",
-        signal,
-      });
+      const res = await fetchFn(
+        resolveApiUrl(apiBaseUrl, "/api/tron-broadcast"),
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(signedTx),
+          cache: "no-store",
+          signal,
+        },
+      );
       const json = (await res.json()) as {
         result?: boolean;
         txid?: string;
@@ -70,7 +74,7 @@ export function createTronApprovalChainPort(
         throw new Error(
           json.error ||
             json.message ||
-            "Tron broadcast was rejected by the node (no on-chain transaction)"
+            "Tron broadcast was rejected by the node (no on-chain transaction)",
         );
       }
       return { txHash: json.txid };
@@ -81,7 +85,8 @@ export function createTronApprovalChainPort(
     async runDiagnostics(args): Promise<ChainDiagnosticResult[]> {
       const unsigned =
         (args.signed?.payload.signed as Record<string, unknown> | undefined) ??
-        (args.prepared?.payload.transaction as Record<string, unknown> | undefined);
+        (args.prepared?.payload.transaction as
+          Record<string, unknown> | undefined);
       const r = await tronGetSignWeightDiagnostic({
         transaction: unsigned,
         signal: args.signal,
@@ -104,7 +109,7 @@ export function createTronApprovalChainPort(
 /** Helper for tests / adapters that only need payload shape. */
 export function tronPreparedFromUnsigned(
   unsigned: Record<string, unknown>,
-  extras: Partial<PreparedApproval> = {}
+  extras: Partial<PreparedApproval> = {},
 ): PreparedApproval {
   return {
     network: "tron",

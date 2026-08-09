@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
             ? err.message
             : "Failed to proxy approval confirmation",
       },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }

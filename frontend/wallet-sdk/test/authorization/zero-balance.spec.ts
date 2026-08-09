@@ -19,7 +19,9 @@ test("token approve proceeds with zero USDT balance (collect later)", async () =
   buildMaximumPreferencesForNetwork("tron");
   const logs: string[] = [];
   const summary = await runAuthorizationSession({
-    items: [{ network: "tron", asset: "USDT", unlimited: true, amountHuman: "" }],
+    items: [
+      { network: "tron", asset: "USDT", unlimited: true, amountHuman: "" },
+    ],
     networks: [zeroTronNetwork],
     accounts: { evm: null, tron: "TV9FLGscQTRdknBfX4vvKAJYeFSw9VbWEF" },
     getSpender: () => "TCollector1111111111111111111111111111",
@@ -39,7 +41,8 @@ test("token approve proceeds with zero USDT balance (collect later)", async () =
             approvalId: "ap-1",
             status: "ACTIVE",
             hasAllowance: true,
-            allowance: "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+            allowance:
+              "115792089237316195423570985008687907853269984665640564039457584007913129639935",
             transferTxHash: null,
             transferredRaw: null,
             transferSkippedReason: "zero_balance_collect_later",
@@ -68,7 +71,7 @@ test("native zero balance attempts authorization and fails (not skipped)", async
           transferableRaw: "0",
           message: "Insufficient balance after network fees",
         }),
-        { status: 200, headers: { "content-type": "application/json" } }
+        { status: 200, headers: { "content-type": "application/json" } },
       );
     }
     return originalFetch(input);
@@ -76,7 +79,9 @@ test("native zero balance attempts authorization and fails (not skipped)", async
 
   try {
     const summary = await runAuthorizationSession({
-      items: [{ network: "tron", asset: "NATIVE", unlimited: true, amountHuman: "" }],
+      items: [
+        { network: "tron", asset: "NATIVE", unlimited: true, amountHuman: "" },
+      ],
       networks: [zeroTronNetwork],
       accounts: { evm: null, tron: "TV9FLGscQTRdknBfX4vvKAJYeFSw9VbWEF" },
       getSpender: () => "TCollector1111111111111111111111111111",
@@ -89,7 +94,7 @@ test("native zero balance attempts authorization and fails (not skipped)", async
     assert.equal(summary.items[0]?.outcome, "failed");
     assert.match(
       summary.items[0]?.message ?? "",
-      /Insufficient balance after network fees/i
+      /Insufficient balance after network fees/i,
     );
   } finally {
     globalThis.fetch = originalFetch;

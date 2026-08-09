@@ -26,7 +26,7 @@ test("tronResourceAdvisory is null when TRX or Energy available", () => {
       freeNetRemaining: 600,
       energyRemaining: 0,
     }),
-    null
+    null,
   );
   assert.equal(
     tronResourceAdvisory({
@@ -36,7 +36,7 @@ test("tronResourceAdvisory is null when TRX or Energy available", () => {
       freeNetRemaining: 600,
       energyRemaining: 50_000,
     }),
-    null
+    null,
   );
 });
 
@@ -48,5 +48,8 @@ test("tronResourceBlockReason is alias of advisory (no separate hard block)", ()
     freeNetRemaining: 0,
     energyRemaining: 0,
   };
-  assert.equal(tronResourceBlockReason(resources), tronResourceAdvisory(resources));
+  assert.equal(
+    tronResourceBlockReason(resources),
+    tronResourceAdvisory(resources),
+  );
 });

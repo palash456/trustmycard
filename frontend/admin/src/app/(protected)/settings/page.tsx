@@ -19,7 +19,7 @@ export default async function SettingsPage() {
   const [data, recentAudits] = await Promise.all([
     adminGetData<SettingsResponse>("/admin/settings"),
     adminGetData<PaginatedResponse<AuditLogRow>>(
-      `/admin/audit-logs${buildQuery({ entityType: "settings", limit: "5", sort: "createdAt:desc" })}`
+      `/admin/audit-logs${buildQuery({ entityType: "settings", limit: "5", sort: "createdAt:desc" })}`,
     ).catch(() => null),
   ]);
 
@@ -46,14 +46,20 @@ export default async function SettingsPage() {
                 {formatDate(row.createdAt)} · {row.action} · {row.actor}
               </p>
             ))}
-            <Link href={auditAdminLink({ entityType: "settings" })} className="text-primary hover:underline">
+            <Link
+              href={auditAdminLink({ entityType: "settings" })}
+              className="text-primary hover:underline"
+            >
               View all in Audit & logs →
             </Link>
           </CardContent>
         </Card>
       ) : null}
       <p className="text-sm">
-        <Link href="/settings/collector" className="text-primary hover:underline">
+        <Link
+          href="/settings/collector"
+          className="text-primary hover:underline"
+        >
           Collector controls →
         </Link>
       </p>

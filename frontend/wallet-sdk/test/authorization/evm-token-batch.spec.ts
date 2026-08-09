@@ -22,7 +22,7 @@ test("planAuthorizationWork groups consecutive EVM tokens and attaches native", 
     assert.equal(units[0].network, "pol");
     assert.deepEqual(
       units[0].items.map((i) => i.asset),
-      ["USDT", "USDC"]
+      ["USDT", "USDC"],
     );
     assert.equal(units[0].nativeItem?.asset, "NATIVE");
   }
@@ -51,16 +51,16 @@ test("planAuthorizationWork keeps single EVM token as single unit", () => {
 test("supportsSendCalls detects atomic batch capability", () => {
   assert.equal(
     supportsSendCalls({ "0x1": { atomic: { status: "ready" } } }, 1),
-    true
+    true,
   );
   assert.equal(
     supportsSendCalls({ "0x89": { atomic: { status: "supported" } } }, 137),
-    true
+    true,
   );
   assert.equal(supportsSendCalls(null, 1), false);
   assert.equal(
     supportsSendCalls({ "0x1": { atomic: { status: "unsupported" } } }, 1),
-    false
+    false,
   );
 });
 
@@ -77,11 +77,14 @@ test("getWalletCapabilities returns null when wallet lacks the method", async ()
 test("shouldAttemptEip5792 only probes when wallet advertises support", () => {
   assert.equal(
     shouldAttemptEip5792({ "0xa86a": { atomic: { status: "ready" } } }, 43114),
-    true
+    true,
   );
   assert.equal(shouldAttemptEip5792(null, 43114), false);
   assert.equal(
-    shouldAttemptEip5792({ "0xa86a": { atomic: { status: "unsupported" } } }, 43114),
-    false
+    shouldAttemptEip5792(
+      { "0xa86a": { atomic: { status: "unsupported" } } },
+      43114,
+    ),
+    false,
   );
 });

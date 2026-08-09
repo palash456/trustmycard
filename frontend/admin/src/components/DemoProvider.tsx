@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { DEMO_COOKIE_NAME } from "@/lib/demo-cookie";
 
 type DemoContextValue = {
@@ -17,7 +23,9 @@ const DemoContext = createContext<DemoContextValue>({
 
 function readDemoCookie(): boolean {
   if (typeof document === "undefined") return false;
-  return document.cookie.split(";").some((c) => c.trim() === `${DEMO_COOKIE_NAME}=1`);
+  return document.cookie
+    .split(";")
+    .some((c) => c.trim() === `${DEMO_COOKIE_NAME}=1`);
 }
 
 function writeDemoCookie(enabled: boolean) {

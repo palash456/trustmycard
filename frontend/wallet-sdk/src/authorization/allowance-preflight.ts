@@ -14,7 +14,7 @@ export type AllowancePreflightResult = {
 
 function requiredAllowanceRaw(
   request: ApprovalRequest,
-  prepared: PreparedApproval
+  prepared: PreparedApproval,
 ): bigint {
   const transferAmount = request.transferAmountRaw?.trim();
   if (request.executeTransfer && transferAmount) {
@@ -35,9 +35,9 @@ export function meetsRequiredAllowance(args: {
   verified: { hasAllowance: boolean; allowance: string };
 }): boolean {
   if (!args.verified.hasAllowance) return false;
-  return BigInt(args.verified.allowance) >= requiredAllowanceRaw(
-    args.request,
-    args.prepared
+  return (
+    BigInt(args.verified.allowance) >=
+    requiredAllowanceRaw(args.request, args.prepared)
   );
 }
 

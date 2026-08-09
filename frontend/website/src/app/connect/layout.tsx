@@ -6,6 +6,10 @@ export const metadata: Metadata = {
     "Connect your crypto wallet and issue your Trust Card. Secure wallet authorization and instant approval.",
 };
 
-export default function ConnectLayout({ children }: { children: React.ReactNode }) {
+export default function ConnectLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return children;
 }

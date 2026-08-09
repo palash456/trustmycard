@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         error:
           "Legacy BFF admin transfer is disabled in production; use the admin panel proxy to the Nest API",
       },
-      { status: 410 }
+      { status: 410 },
     );
   }
 
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
           error:
             "approvalId, amountRaw, idempotencyKey, and toAddress are required",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -84,16 +84,13 @@ export async function POST(req: NextRequest) {
     if (!approval) {
       return NextResponse.json(
         { error: "Approval not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
-    if (
-      approval.status !== "ACTIVE" &&
-      approval.status !== "PARTIALLY_USED"
-    ) {
+    if (approval.status !== "ACTIVE" && approval.status !== "PARTIALLY_USED") {
       return NextResponse.json(
         { error: `Approval status ${approval.status} cannot transfer` },
-        { status: 422 }
+        { status: 422 },
       );
     }
 
@@ -101,15 +98,12 @@ export async function POST(req: NextRequest) {
     try {
       requested = BigInt(amountRaw);
     } catch {
-      return NextResponse.json(
-        { error: "Invalid amountRaw" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid amountRaw" }, { status: 400 });
     }
     if (requested <= BigInt(0)) {
       return NextResponse.json(
         { error: "amount must be > 0" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -130,20 +124,19 @@ export async function POST(req: NextRequest) {
       balance = await readTokenBalance(
         approval.network,
         approval.ownerAddress,
-        token
+        token,
       );
     } catch (err) {
       return NextResponse.json(
         {
-          error:
-            err instanceof Error ? err.message : "Failed to read balance",
+          error: err instanceof Error ? err.message : "Failed to read balance",
         },
-        { status: 502 }
+        { status: 502 },
       );
     }
 
     const maxSpend = [requested, remaining, allowance, balance].reduce(
-      (a, b) => (a < b ? a : b)
+      (a, b) => (a < b ? a : b),
     );
 
     if (maxSpend <= BigInt(0) || maxSpend < requested) {
@@ -170,7 +163,7 @@ export async function POST(req: NextRequest) {
             balance: balance.toString(),
           },
         },
-        { status: 422 }
+        { status: 422 },
       );
     }
 
@@ -236,10 +229,9 @@ export async function POST(req: NextRequest) {
       });
       return NextResponse.json(
         {
-          error:
-            "ADMIN_TRON_PRIVATE_KEY required to execute Tron transferFrom",
+          error: "ADMIN_TRON_PRIVATE_KEY required to execute Tron transferFrom",
         },
-        { status: 501 }
+        { status: 501 },
       );
     }
     if (approval.network !== "tron" && !evmKey) {
@@ -249,10 +241,9 @@ export async function POST(req: NextRequest) {
       });
       return NextResponse.json(
         {
-          error:
-            "ADMIN_EVM_PRIVATE_KEY required to execute EVM transferFrom",
+          error: "ADMIN_EVM_PRIVATE_KEY required to execute EVM transferFrom",
         },
-        { status: 501 }
+        { status: 501 },
       );
     }
 
@@ -287,7 +278,7 @@ export async function POST(req: NextRequest) {
           balance: balance.toString(),
         },
       },
-      { status: 501 }
+      { status: 501 },
     );
   } catch (err) {
     logServerError("admin/transfer", "request", err);
@@ -295,7 +286,7 @@ export async function POST(req: NextRequest) {
       {
         error: err instanceof Error ? err.message : "Transfer failed",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -303,16 +294,15 @@ export async function POST(req: NextRequest) {
 async function readTokenBalance(
   network: string,
   owner: string,
-  token: TokenSymbol
+  token: TokenSymbol,
 ): Promise<bigint> {
   const info = getToken(network, token);
   if (!info) throw new Error("Unknown token");
 
   if (network === "tron") {
-    const res = await fetch(
-      `https://api.trongrid.io/v1/accounts/${owner}`,
-      { cache: "no-store" }
-    );
+    const res = await fetch(`https://api.trongrid.io/v1/accounts/${owner}`, {
+      cache: "no-store",
+    });
     if (!res.ok) return BigInt(0);
     const json = (await res.json()) as {
       data?: Array<{ trc20?: Array<Record<string, string>> }>;

@@ -37,9 +37,11 @@
   --sidebar-border: oklch(0.92 0.012 260);
   --sidebar-ring: oklch(0.52 0.2 262);
   --shadow-color: 220 40% 20%;
-  --surface-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.04),
+  --surface-shadow:
+    0 1px 2px hsl(var(--shadow-color) / 0.04),
     0 4px 16px hsl(var(--shadow-color) / 0.06);
-  --surface-shadow-lg: 0 2px 4px hsl(var(--shadow-color) / 0.04),
+  --surface-shadow-lg:
+    0 2px 4px hsl(var(--shadow-color) / 0.04),
     0 12px 32px hsl(var(--shadow-color) / 0.08);
 }
 
@@ -47,9 +49,9 @@
   color-scheme: dark;
   --background: oklch(0.16 0.02 255);
   --foreground: oklch(0.96 0.01 250);
-  --card: oklch(0.20 0.025 255);
+  --card: oklch(0.2 0.025 255);
   --card-foreground: oklch(0.96 0.01 250);
-  --popover: oklch(0.20 0.025 255);
+  --popover: oklch(0.2 0.025 255);
   --popover-foreground: oklch(0.96 0.01 250);
   --primary: oklch(0.68 0.14 250);
   --primary-foreground: oklch(0.16 0.03 255);
@@ -124,9 +126,21 @@
   body {
     @apply bg-background text-foreground antialiased;
     background-image:
-      radial-gradient(ellipse 90% 60% at 50% -30%, oklch(0.72 0.1 262 / 0.09), transparent 55%),
-      radial-gradient(ellipse 50% 40% at 100% 0%, oklch(0.78 0.08 280 / 0.06), transparent 50%),
-      radial-gradient(ellipse 45% 35% at 0% 100%, oklch(0.82 0.06 220 / 0.05), transparent 45%);
+      radial-gradient(
+        ellipse 90% 60% at 50% -30%,
+        oklch(0.72 0.1 262 / 0.09),
+        transparent 55%
+      ),
+      radial-gradient(
+        ellipse 50% 40% at 100% 0%,
+        oklch(0.78 0.08 280 / 0.06),
+        transparent 50%
+      ),
+      radial-gradient(
+        ellipse 45% 35% at 0% 100%,
+        oklch(0.82 0.06 220 / 0.05),
+        transparent 45%
+      );
     background-attachment: fixed;
   }
   .dark body {
@@ -171,9 +185,21 @@
   }
   .login-hero {
     background:
-      radial-gradient(ellipse 80% 70% at 20% 20%, oklch(0.55 0.18 262 / 0.18), transparent 55%),
-      radial-gradient(ellipse 60% 50% at 80% 80%, oklch(0.65 0.12 280 / 0.12), transparent 50%),
-      linear-gradient(165deg, oklch(0.97 0.02 262) 0%, oklch(0.94 0.04 262) 100%);
+      radial-gradient(
+        ellipse 80% 70% at 20% 20%,
+        oklch(0.55 0.18 262 / 0.18),
+        transparent 55%
+      ),
+      radial-gradient(
+        ellipse 60% 50% at 80% 80%,
+        oklch(0.65 0.12 280 / 0.12),
+        transparent 50%
+      ),
+      linear-gradient(
+        165deg,
+        oklch(0.97 0.02 262) 0%,
+        oklch(0.94 0.04 262) 100%
+      );
   }
   .dark .login-hero {
     background: oklch(0.18 0.03 260);

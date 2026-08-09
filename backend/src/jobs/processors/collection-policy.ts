@@ -7,7 +7,7 @@ export function computeTransferable(args: {
 }): bigint {
   const cap = args.unlimited ? args.requested : args.remaining;
   return [args.requested, args.allowance, args.balance, cap].reduce(
-    (lowest, value) => (lowest < value ? lowest : value)
+    (lowest, value) => (lowest < value ? lowest : value),
   );
 }
 

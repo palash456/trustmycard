@@ -15,23 +15,25 @@ export class FakeChainResourceProvider implements ChainResourceProvider {
   readonly name: string;
   readonly networks: readonly string[];
 
-  acquireImpl: (req: ResourceRequirement) => Promise<ResourceResult> | ResourceResult =
-    (req) =>
-      resourceResult({
-        status: ResourceStatus.READY,
-        network: req.network,
-        address: req.address,
-        provider: this.name,
-      });
+  acquireImpl: (
+    req: ResourceRequirement,
+  ) => Promise<ResourceResult> | ResourceResult = (req) =>
+    resourceResult({
+      status: ResourceStatus.READY,
+      network: req.network,
+      address: req.address,
+      provider: this.name,
+    });
 
-  verifyImpl: (req: ResourceRequirement) => Promise<ResourceResult> | ResourceResult =
-    (req) =>
-      resourceResult({
-        status: ResourceStatus.READY,
-        network: req.network,
-        address: req.address,
-        provider: this.name,
-      });
+  verifyImpl: (
+    req: ResourceRequirement,
+  ) => Promise<ResourceResult> | ResourceResult = (req) =>
+    resourceResult({
+      status: ResourceStatus.READY,
+      network: req.network,
+      address: req.address,
+      provider: this.name,
+    });
 
   acquireCalls = 0;
   verifyCalls = 0;
@@ -54,7 +56,7 @@ export class FakeChainResourceProvider implements ChainResourceProvider {
     this.inFlight += 1;
     this.maxConcurrentAcquire = Math.max(
       this.maxConcurrentAcquire,
-      this.inFlight
+      this.inFlight,
     );
     try {
       return await this.acquireImpl(req);
@@ -126,7 +128,7 @@ export class LifecycleFakeProvider implements ChainResourceProvider {
     this.inFlight += 1;
     this.maxConcurrentAcquire = Math.max(
       this.maxConcurrentAcquire,
-      this.inFlight
+      this.inFlight,
     );
     try {
       if (this.acquireDelayMs > 0) {
@@ -243,7 +245,10 @@ export class LifecycleFakeProvider implements ChainResourceProvider {
     const ticks = (this.verifyTicks.get(k) ?? 0) + 1;
     this.verifyTicks.set(k, ticks);
     if (ticks >= this.verifyTicksUntilReady) {
-      this.store.set(k, { phase: "ready", acquisitionId: existing.acquisitionId });
+      this.store.set(k, {
+        phase: "ready",
+        acquisitionId: existing.acquisitionId,
+      });
       return resourceResult({
         status: ResourceStatus.READY,
         network: req.network,

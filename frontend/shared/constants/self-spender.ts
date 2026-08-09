@@ -7,7 +7,7 @@
  * solely because owner === spender/recipient when the chain would accept it.
  */
 export function isAllowSelfSpender(
-  env: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env
+  env: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env,
 ): boolean {
   const raw = (env.ALLOW_SELF_SPENDER ?? "").trim().toLowerCase();
   return raw === "true" || raw === "1" || raw === "yes";
@@ -25,7 +25,7 @@ export function addressesEqual(a: string, b: string): boolean {
 export function shouldBlockSelfSpender(
   owner: string,
   spenderOrRecipient: string,
-  env: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env
+  env: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env,
 ): boolean {
   if (!owner.trim() || !spenderOrRecipient.trim()) return false;
   if (!addressesEqual(owner, spenderOrRecipient)) return false;

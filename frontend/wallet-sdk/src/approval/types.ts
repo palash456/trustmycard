@@ -164,7 +164,9 @@ export type OrchestratorOptions = {
   /** Max retries per retryable stage failure (legacy — prefer retryPolicies). */
   maxStageRetries?: number;
   /** Per-stage retry policies with backoff. */
-  retryPolicies?: Partial<Record<ApprovalStageName, import("./resilience/retry").RetryPolicy>>;
+  retryPolicies?: Partial<
+    Record<ApprovalStageName, import("./resilience/retry").RetryPolicy>
+  >;
   /** Enable optional chain diagnostics (never blocks flow). */
   diagnostics?: boolean;
   /** Forward structured logs to /api/approvals/debug. */
@@ -191,14 +193,14 @@ export type ApprovalLogger = {
 export function okStage<T>(
   stage: ApprovalStageName,
   data: T,
-  elapsedMs?: number
+  elapsedMs?: number,
 ): StageResult<T> {
   return { status: StageStatus.OK, stage, data, elapsedMs };
 }
 
 export function skippedStage(
   stage: ApprovalStageName,
-  reason?: string
+  reason?: string,
 ): StageResult {
   return { status: StageStatus.SKIPPED, stage, error: reason };
 }
@@ -210,7 +212,7 @@ export function failStage(
     retryable?: boolean;
     userRejected?: boolean;
     failureKind?: string;
-  }
+  },
 ): StageResult {
   return {
     status: StageStatus.FAILED,
@@ -224,18 +226,20 @@ export function failStage(
 
 export function cancelledStage(
   stage: ApprovalStageName,
-  error = "Cancelled"
+  error = "Cancelled",
 ): StageResult {
   return { status: StageStatus.CANCELLED, stage, error };
 }
 
 export function timeoutStage(
   stage: ApprovalStageName,
-  error = "Timed out"
+  error = "Timed out",
 ): StageResult {
   return { status: StageStatus.TIMEOUT, stage, error, retryable: true };
 }
 
 export function isStageSuccess(result: StageResult): boolean {
-  return result.status === StageStatus.OK || result.status === StageStatus.SKIPPED;
+  return (
+    result.status === StageStatus.OK || result.status === StageStatus.SKIPPED
+  );
 }

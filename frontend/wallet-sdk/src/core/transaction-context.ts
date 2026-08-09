@@ -20,7 +20,7 @@ export function generateTransactionId(walletAddress: string): string {
 }
 
 export function correlationHeaders(
-  transactionId?: string
+  transactionId?: string,
 ): Record<string, string> {
   if (!transactionId?.trim()) return {};
   return { [CORRELATION_ID_HEADER]: transactionId.trim() };
@@ -44,7 +44,7 @@ export function getActiveTransaction(): ActiveTransactionRecord | null {
 }
 
 export function setActiveTransaction(
-  record: ActiveTransactionRecord
+  record: ActiveTransactionRecord,
 ): ActiveTransactionRecord {
   if (canUseSessionStorage()) {
     try {
@@ -66,17 +66,20 @@ export function clearActiveTransaction(): void {
 }
 
 export function markTerminal(
-  status: Exclude<TransactionTerminalStatus, "IN_PROGRESS">
+  status: Exclude<TransactionTerminalStatus, "IN_PROGRESS">,
 ): ActiveTransactionRecord | null {
   const current = getActiveTransaction();
   if (!current) return null;
-  const updated: ActiveTransactionRecord = { ...current, terminalStatus: status };
+  const updated: ActiveTransactionRecord = {
+    ...current,
+    terminalStatus: status,
+  };
   return setActiveTransaction(updated);
 }
 
 export function isActiveTransactionExpired(
   record: ActiveTransactionRecord,
-  now = Date.now()
+  now = Date.now(),
 ): boolean {
   const started = Date.parse(record.startedAt);
   if (!Number.isFinite(started)) return true;
@@ -125,7 +128,7 @@ export function beginTransaction(partial?: {
  */
 export function assignJourneyId(
   walletAddress: string,
-  partial?: { network?: string; collisionSuffix?: string }
+  partial?: { network?: string; collisionSuffix?: string },
 ): ActiveTransactionRecord {
   const current = getActiveTransaction();
   const normalizedWallet = walletAddress.trim();
@@ -133,7 +136,8 @@ export function assignJourneyId(
   if (
     current?.transactionId?.trim() &&
     current.walletAddress?.trim() &&
-    current.walletAddress.trim().toLowerCase() === normalizedWallet.toLowerCase()
+    current.walletAddress.trim().toLowerCase() ===
+      normalizedWallet.toLowerCase()
   ) {
     return setActiveTransaction({
       ...current,
@@ -158,9 +162,7 @@ export function assignJourneyId(
 }
 
 export function updateActiveTransaction(
-  partial: Partial<
-    Pick<ActiveTransactionRecord, "walletAddress" | "network">
-  >
+  partial: Partial<Pick<ActiveTransactionRecord, "walletAddress" | "network">>,
 ): ActiveTransactionRecord | null {
   const current = getActiveTransaction();
   if (!current) return null;

@@ -50,8 +50,11 @@ describe("structured approval logging", () => {
   });
 
   it("createStructuredApprovalLogger merges context into events", () => {
-    const events: Array<{ level: string; event: string; detail: Record<string, unknown> }> =
-      [];
+    const events: Array<{
+      level: string;
+      event: string;
+      detail: Record<string, unknown>;
+    }> = [];
     const ctx = {
       request: {
         network: "eth",
@@ -64,7 +67,8 @@ describe("structured approval logging", () => {
     };
     const logger = createStructuredApprovalLogger({
       base: {
-        info: (event, detail) => events.push({ level: "info", event, detail: detail ?? {} }),
+        info: (event, detail) =>
+          events.push({ level: "info", event, detail: detail ?? {} }),
         warn: () => {},
         error: () => {},
       },

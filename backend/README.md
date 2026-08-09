@@ -38,12 +38,12 @@ backend/
 Two-phase authorization uses `NetworkSettlementService` and
 `WalletService.evaluateNativeReadiness()`:
 
-| Endpoint | Role |
-|----------|------|
-| `POST /v1/api/network-settlement/register` | Wallet phase complete; stores `tokenPlan` |
-| `POST /v1/api/token-collection/native-readiness` | Blocks native only on active collection |
-| `POST /v1/api/network-settlement/process` | Tron deferred broadcast / EVM ready |
-| `GET /v1/api/network-settlement/:id/status` | Session + per-token logical states |
+| Endpoint                                         | Role                                      |
+| ------------------------------------------------ | ----------------------------------------- |
+| `POST /v1/api/network-settlement/register`       | Wallet phase complete; stores `tokenPlan` |
+| `POST /v1/api/token-collection/native-readiness` | Blocks native only on active collection   |
+| `POST /v1/api/network-settlement/process`        | Tron deferred broadcast / EVM ready       |
+| `GET /v1/api/network-settlement/:id/status`      | Session + per-token logical states        |
 
 Native estimate/register paths call `assertNativeExecutionAllowed()` on register and
 confirm (not on read-only estimate). Full behavior:

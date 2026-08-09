@@ -16,7 +16,7 @@ import { COLLECTION_SIGNER } from "./signer";
       provide: COLLECTION_SIGNER,
       useFactory: (
         envSigner: EnvCollectionSignerService,
-        disabled: DisabledCollectionSignerService
+        disabled: DisabledCollectionSignerService,
       ) => (isCollectionSigningEnabled() ? envSigner : disabled),
       inject: [EnvCollectionSignerService, DisabledCollectionSignerService],
     },

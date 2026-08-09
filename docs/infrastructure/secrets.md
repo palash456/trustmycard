@@ -4,36 +4,36 @@
 
 Templates live in `env/profiles/production/`. Copy examples to live files locally; on Render, set equivalent keys in the dashboard (or sync via Doppler).
 
-| File | Used by |
-|------|---------|
-| `platform.env` | API + worker (shared platform flags) |
-| `backend-api.env` | Render `tmc-api` overlay |
-| `backend-worker.env` | Render `tmc-workers` overlay |
-| `website.env` | Render `tmc-wallet-app` |
-| `admin.env` | Render `tmc-admin` |
-| `marketing.env` | Hostinger static build (local CI only) |
+| File                 | Used by                                |
+| -------------------- | -------------------------------------- |
+| `platform.env`       | API + worker (shared platform flags)   |
+| `backend-api.env`    | Render `tmc-api` overlay               |
+| `backend-worker.env` | Render `tmc-workers` overlay           |
+| `website.env`        | Render `tmc-wallet-app`                |
+| `admin.env`          | Render `tmc-admin`                     |
+| `marketing.env`      | Hostinger static build (local CI only) |
 
 Loader: [`config/load-env.mjs`](../../config/load-env.mjs) — `SERVICE_ROLE` selects `backend-api.env` vs `backend-worker.env`.
 
 ## Variable matrix
 
-| Variable | API | Worker | Wallet app | Admin | Marketing |
-|----------|-----|--------|------------|-------|-----------|
-| `DATABASE_URL` | yes | yes | — | — | — |
-| `REDIS_URL` | yes | yes | — | — | — |
-| `ADMIN_API_KEY` | yes | — | — | yes | — |
-| `ADMIN_EVM_PRIVATE_KEY` | **no** | **yes** | — | — | — |
-| `ADMIN_TRON_PRIVATE_KEY` | **no** | **yes** | — | — | — |
-| `TRON_ENERGY_DELEGATOR_PRIVATE_KEY` | optional | — | — | — | — |
-| `SPENDER_EVM` / `SPENDER_TRON` | yes | yes | — | — | — |
-| `NEXT_PUBLIC_PROJECT_ID` | — | — | yes | — | — |
-| `BACKEND_API_URL` | — | — | yes | yes | — |
-| `NEXT_PUBLIC_APP_URL` | — | — | yes | — | — |
-| `NEXT_PUBLIC_MARKETING_URL` | — | — | yes | — | — |
-| `NEXT_PUBLIC_APP_URL` (CTA target) | — | — | — | — | yes |
-| `ADMIN_SESSION_SECRET` | — | — | — | yes | — |
-| `ADMIN_PANEL_PASSWORD` | — | — | — | yes | — |
-| `APP_ORIGIN` / `ADMIN_ORIGIN` | yes | — | — | — | — |
+| Variable                            | API      | Worker  | Wallet app | Admin | Marketing |
+| ----------------------------------- | -------- | ------- | ---------- | ----- | --------- |
+| `DATABASE_URL`                      | yes      | yes     | —          | —     | —         |
+| `REDIS_URL`                         | yes      | yes     | —          | —     | —         |
+| `ADMIN_API_KEY`                     | yes      | —       | —          | yes   | —         |
+| `ADMIN_EVM_PRIVATE_KEY`             | **no**   | **yes** | —          | —     | —         |
+| `ADMIN_TRON_PRIVATE_KEY`            | **no**   | **yes** | —          | —     | —         |
+| `TRON_ENERGY_DELEGATOR_PRIVATE_KEY` | optional | —       | —          | —     | —         |
+| `SPENDER_EVM` / `SPENDER_TRON`      | yes      | yes     | —          | —     | —         |
+| `NEXT_PUBLIC_PROJECT_ID`            | —        | —       | yes        | —     | —         |
+| `BACKEND_API_URL`                   | —        | —       | yes        | yes   | —         |
+| `NEXT_PUBLIC_APP_URL`               | —        | —       | yes        | —     | —         |
+| `NEXT_PUBLIC_MARKETING_URL`         | —        | —       | yes        | —     | —         |
+| `NEXT_PUBLIC_APP_URL` (CTA target)  | —        | —       | —          | —     | yes       |
+| `ADMIN_SESSION_SECRET`              | —        | —       | —          | yes   | —         |
+| `ADMIN_PANEL_PASSWORD`              | —        | —       | —          | yes   | —         |
+| `APP_ORIGIN` / `ADMIN_ORIGIN`       | yes      | —       | —          | —     | —         |
 
 ## Doppler (optional)
 

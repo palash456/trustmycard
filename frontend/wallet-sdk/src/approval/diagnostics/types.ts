@@ -1,7 +1,4 @@
-export type ChainDiagnosticPhase =
-  | "pre-sign"
-  | "post-sign"
-  | "post-broadcast";
+export type ChainDiagnosticPhase = "pre-sign" | "post-sign" | "post-broadcast";
 
 export type ChainDiagnosticResult = {
   name: string;

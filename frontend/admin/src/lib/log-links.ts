@@ -33,24 +33,26 @@ export function auditLink(params: LogLinkParams = {}): string {
 }
 
 export function auditStructuredLink(
-  params: Omit<LogLinkParams, "tab"> = {}
+  params: Omit<LogLinkParams, "tab"> = {},
 ): string {
   return auditLink({ ...params, tab: "structured" });
 }
 
 export function auditTimelineLink(
-  params: Omit<LogLinkParams, "tab"> = {}
+  params: Omit<LogLinkParams, "tab"> = {},
 ): string {
   return auditLink({ ...params, tab: "timelines" });
 }
 
-export function auditAdminLink(params: Omit<LogLinkParams, "tab"> = {}): string {
+export function auditAdminLink(
+  params: Omit<LogLinkParams, "tab"> = {},
+): string {
   return auditLink({ ...params, tab: "admin" });
 }
 
 export function transactionDetailLink(
   transactionId: string,
-  options?: { token?: string | null }
+  options?: { token?: string | null },
 ): string {
   const base = `/transactions/${encodeURIComponent(transactionId)}`;
   const token = options?.token?.trim();
@@ -62,17 +64,19 @@ export function transactionLogsLink(transactionId: string): string {
   return auditStructuredLink({ traceId: transactionId, transactionId });
 }
 
-export function activityLink(params: {
-  address?: string;
-  network?: string;
-  tab?: string;
-  type?: string;
-  module?: string;
-  search?: string;
-  sessionId?: string;
-  traceId?: string;
-  transactionId?: string;
-} = {}): string {
+export function activityLink(
+  params: {
+    address?: string;
+    network?: string;
+    tab?: string;
+    type?: string;
+    module?: string;
+    search?: string;
+    sessionId?: string;
+    traceId?: string;
+    transactionId?: string;
+  } = {},
+): string {
   const q = new URLSearchParams();
   if (params.tab) q.set("tab", params.tab);
   if (params.address) q.set("address", params.address);
@@ -90,7 +94,7 @@ export function activityLink(params: {
 export function activityDetailLink(
   source: string,
   id: string,
-  params: { sessionId?: string } = {}
+  params: { sessionId?: string } = {},
 ): string {
   const q = new URLSearchParams({ source });
   if (params.sessionId) q.set("sessionId", params.sessionId);

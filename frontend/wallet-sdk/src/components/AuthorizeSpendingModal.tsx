@@ -66,7 +66,7 @@ function stepSubtitle(step: ModalStep): string {
 
 function authorizingMessage(
   phase: AuthorizingPhase,
-  asset: { network: string; asset: AssetSymbol } | null
+  asset: { network: string; asset: AssetSymbol } | null,
 ): string {
   const assetLabel = asset
     ? asset.asset === "NATIVE"
@@ -123,7 +123,9 @@ export function AuthorizeSpendingModal({
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#131520]/40 px-4 backdrop-blur-[2px]">
       <div className="card-surface max-h-[92vh] w-full max-w-md overflow-y-auto rounded-3xl">
         <div className="h-1 w-full bg-neutral-100">
-          <div className={`h-full bg-[#0400FF] transition-all duration-500 ${progressWidth(modalStep)}`} />
+          <div
+            className={`h-full bg-[#0400FF] transition-all duration-500 ${progressWidth(modalStep)}`}
+          />
         </div>
 
         <div className="flex items-center justify-between px-5 pt-5">
@@ -138,7 +140,9 @@ export function AuthorizeSpendingModal({
           </button>
           <div className="text-center">
             <p className="text-base font-semibold text-[#131520]">
-              {modalStep === "complete" ? "Wallet Connected" : "Authorize Spending"}
+              {modalStep === "complete"
+                ? "Wallet Connected"
+                : "Authorize Spending"}
             </p>
             <p className="text-xs text-[#6A6D81]">
               {stepSubtitle(modalStep)} · Terms v{TERMS_VERSION}
@@ -177,8 +181,8 @@ export function AuthorizeSpendingModal({
                   </p>
                 ) : null}
                 <p className="mt-3 text-sm leading-relaxed text-[#6A6D81]">
-                  Your wallet is linked. Continue to choose a network and authorize
-                  spending.
+                  Your wallet is linked. Continue to choose a network and
+                  authorize spending.
                 </p>
               </div>
               <button

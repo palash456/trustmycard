@@ -34,7 +34,11 @@ type ListResponse = {
 };
 
 const FILTER_FIELDS = [
-  { name: "search", label: "Address search", placeholder: "Full or partial address" },
+  {
+    name: "search",
+    label: "Address search",
+    placeholder: "Full or partial address",
+  },
 ] as const;
 
 export default async function WalletsPage({
@@ -58,7 +62,9 @@ export default async function WalletsPage({
           title="Wallets"
           tip="Distinct owner addresses seen across approvals, native transfers, and flow events — not login accounts. Open an address for a full activity timeline."
         />
-        <ErrorAlert message={err instanceof Error ? err.message : "Failed to load"} />
+        <ErrorAlert
+          message={err instanceof Error ? err.message : "Failed to load"}
+        />
       </ListPageLayout>
     );
   }
@@ -72,7 +78,11 @@ export default async function WalletsPage({
       >
         <PageToolbar>
           <PageRefreshButton />
-          <PageFilters action="/wallets" values={sp} fields={[...FILTER_FIELDS]} />
+          <PageFilters
+            action="/wallets"
+            values={sp}
+            fields={[...FILTER_FIELDS]}
+          />
         </PageToolbar>
       </PageHeader>
 
@@ -90,7 +100,10 @@ export default async function WalletsPage({
           <TableBody>
             {data.items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={5}
+                  className="h-24 text-center text-muted-foreground"
+                >
                   No wallets match your search
                 </TableCell>
               </TableRow>
@@ -105,10 +118,18 @@ export default async function WalletsPage({
                       {shortAddress(row.address, 8, 6)}
                     </Link>
                   </TableCell>
-                  <TableCell className="tabular-nums">{row.approvalCount}</TableCell>
-                  <TableCell className="tabular-nums">{row.nativeTransferCount}</TableCell>
-                  <TableCell className="tabular-nums">{row.eventCount}</TableCell>
-                  <TableCell className="text-muted-foreground">{formatDate(row.lastSeen)}</TableCell>
+                  <TableCell className="tabular-nums">
+                    {row.approvalCount}
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {row.nativeTransferCount}
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {row.eventCount}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatDate(row.lastSeen)}
+                  </TableCell>
                 </TableRow>
               ))
             )}

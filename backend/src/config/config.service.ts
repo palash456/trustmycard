@@ -49,7 +49,7 @@ export class ConfigService implements OnModuleInit {
       }
     } catch (err) {
       this.logger.warn(
-        `AppSettings table unavailable, using platform.env defaults only: ${getErrorMessage(err)}`
+        `AppSettings table unavailable, using platform.env defaults only: ${getErrorMessage(err)}`,
       );
     }
 
@@ -93,11 +93,16 @@ export class ConfigService implements OnModuleInit {
       intervalMs: Math.max(30_000, intervalMs || platformCollector.intervalMs),
       batchSize: Math.max(
         1,
-        Math.min(100, Number(this.get(SETTING_KEYS.COLLECTOR_BATCH_SIZE)) || platformCollector.batchSize)
+        Math.min(
+          100,
+          Number(this.get(SETTING_KEYS.COLLECTOR_BATCH_SIZE)) ||
+            platformCollector.batchSize,
+        ),
       ),
       leaseMs: Math.max(
         intervalMs * 2,
-        Number(this.get(SETTING_KEYS.COLLECTOR_LEASE_MS)) || platformCollector.leaseMs
+        Number(this.get(SETTING_KEYS.COLLECTOR_LEASE_MS)) ||
+          platformCollector.leaseMs,
       ),
     };
   }
@@ -116,33 +121,54 @@ export class ConfigService implements OnModuleInit {
       enabled: Boolean(this.get(SETTING_KEYS.NATIVE_RECONCILE_ENABLED)),
       intervalMs: Math.max(
         15_000,
-        Number(this.get(SETTING_KEYS.NATIVE_RECONCILE_INTERVAL_MS)) || native.reconcileIntervalMs
+        Number(this.get(SETTING_KEYS.NATIVE_RECONCILE_INTERVAL_MS)) ||
+          native.reconcileIntervalMs,
       ),
       batchSize: Math.max(
         1,
         Math.min(
           50,
-          Number(this.get(SETTING_KEYS.NATIVE_RECONCILE_BATCH_SIZE)) || native.reconcileBatchSize
-        )
+          Number(this.get(SETTING_KEYS.NATIVE_RECONCILE_BATCH_SIZE)) ||
+            native.reconcileBatchSize,
+        ),
       ),
     };
   }
 
   getCollectionWorkerConfig() {
     const collection = this.platformConfig.getCollection();
-    const mode = String(this.get(SETTING_KEYS.COLLECTION_DISPATCH_MODE) ?? collection.dispatchMode);
+    const mode = String(
+      this.get(SETTING_KEYS.COLLECTION_DISPATCH_MODE) ??
+        collection.dispatchMode,
+    );
     return {
-      mode: ["poll", "shadow", "queue"].includes(mode) ? mode as "poll" | "shadow" | "queue" : "poll" as const,
-      queueConcurrency: Math.max(1, Number(this.get(SETTING_KEYS.COLLECTION_QUEUE_CONCURRENCY)) || collection.queueConcurrency),
+      mode: ["poll", "shadow", "queue"].includes(mode)
+        ? (mode as "poll" | "shadow" | "queue")
+        : ("poll" as const),
+      queueConcurrency: Math.max(
+        1,
+        Number(this.get(SETTING_KEYS.COLLECTION_QUEUE_CONCURRENCY)) ||
+          collection.queueConcurrency,
+      ),
       confirmationConcurrency: Math.max(
         1,
-        Number(this.get(SETTING_KEYS.COLLECTION_CONFIRMATION_CONCURRENCY)) || collection.confirmationConcurrency
+        Number(this.get(SETTING_KEYS.COLLECTION_CONFIRMATION_CONCURRENCY)) ||
+          collection.confirmationConcurrency,
       ),
-      attempts: Math.max(1, Number(this.get(SETTING_KEYS.COLLECTION_QUEUE_ATTEMPTS)) || collection.queueAttempts),
-      backoffMs: Math.max(1_000, Number(this.get(SETTING_KEYS.COLLECTION_QUEUE_BACKOFF_MS)) || collection.queueBackoffMs),
+      attempts: Math.max(
+        1,
+        Number(this.get(SETTING_KEYS.COLLECTION_QUEUE_ATTEMPTS)) ||
+          collection.queueAttempts,
+      ),
+      backoffMs: Math.max(
+        1_000,
+        Number(this.get(SETTING_KEYS.COLLECTION_QUEUE_BACKOFF_MS)) ||
+          collection.queueBackoffMs,
+      ),
       outboxPublishIntervalMs: Math.max(
         250,
-        Number(this.get(SETTING_KEYS.OUTBOX_PUBLISH_INTERVAL_MS)) || collection.outboxPublishIntervalMs
+        Number(this.get(SETTING_KEYS.OUTBOX_PUBLISH_INTERVAL_MS)) ||
+          collection.outboxPublishIntervalMs,
       ),
     };
   }
@@ -156,15 +182,18 @@ export class ConfigService implements OnModuleInit {
     return {
       sponsorEnabled: Boolean(this.get(SETTING_KEYS.RESOURCE_SPONSOR_ENABLED)),
       tronEnergyProvider: String(
-        this.get(SETTING_KEYS.TRON_ENERGY_PROVIDER) ?? resources.tronEnergyProvider
+        this.get(SETTING_KEYS.TRON_ENERGY_PROVIDER) ??
+          resources.tronEnergyProvider,
       ),
       tronEnergyTarget: Math.max(
         1,
-        Number(this.get(SETTING_KEYS.TRON_ENERGY_TARGET)) || resources.tronEnergyTarget
+        Number(this.get(SETTING_KEYS.TRON_ENERGY_TARGET)) ||
+          resources.tronEnergyTarget,
       ),
       tronEnergyIdempotencyHours: Math.max(
         1,
-        Number(this.get(SETTING_KEYS.TRON_ENERGY_IDEMPOTENCY_HOURS)) || resources.tronEnergyIdempotencyHours
+        Number(this.get(SETTING_KEYS.TRON_ENERGY_IDEMPOTENCY_HOURS)) ||
+          resources.tronEnergyIdempotencyHours,
       ),
     };
   }
@@ -177,7 +206,7 @@ export class ConfigService implements OnModuleInit {
 
   async setMany(
     updates: Record<string, unknown>,
-    actor = "admin"
+    actor = "admin",
   ): Promise<string[]> {
     const changed: string[] = [];
     for (const [key, value] of Object.entries(updates)) {

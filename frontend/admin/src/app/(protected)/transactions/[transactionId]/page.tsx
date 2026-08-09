@@ -28,7 +28,7 @@ export default async function TransactionDetailPage({
   let data: TransactionJourneyDetail;
   try {
     data = await adminGetData<TransactionJourneyDetail>(
-      `/admin/transactions/${encodeURIComponent(transactionId)}`
+      `/admin/transactions/${encodeURIComponent(transactionId)}`,
     );
   } catch (err) {
     return (
@@ -108,7 +108,10 @@ export default async function TransactionDetailPage({
               </Link>
             </>
           ) : null}
-          <Link href={transactionLogsLink(data.transactionId)} className="text-primary hover:underline">
+          <Link
+            href={transactionLogsLink(data.transactionId)}
+            className="text-primary hover:underline"
+          >
             Structured logs
           </Link>
           <Link
@@ -142,11 +145,16 @@ export default async function TransactionDetailPage({
       {data.settlementSessions.length > 0 ? (
         <Card className="border-border/60 shadow-none">
           <CardHeader className="px-4 py-3">
-            <CardTitle className="text-sm font-medium">Settlement sessions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Settlement sessions
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 px-4 pb-4 text-sm">
             {data.settlementSessions.map((s) => (
-              <div key={s.id} className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2">
+              <div
+                key={s.id}
+                className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2"
+              >
                 <StatusBadge value={s.status} />
                 <Link
                   href={`/settlement-sessions/${encodeURIComponent(s.id)}`}
@@ -154,10 +162,14 @@ export default async function TransactionDetailPage({
                 >
                   Settlement record
                 </Link>
-                <span className="font-mono text-[10px] text-muted-foreground">{s.id}</span>
+                <span className="font-mono text-[10px] text-muted-foreground">
+                  {s.id}
+                </span>
                 <span className="text-muted-foreground">{s.network}</span>
                 {s.completedAt ? (
-                  <span className="text-xs text-muted-foreground">{formatDate(s.completedAt)}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatDate(s.completedAt)}
+                  </span>
                 ) : null}
               </div>
             ))}
@@ -173,7 +185,9 @@ export default async function TransactionDetailPage({
         </CardHeader>
         <CardContent className="space-y-2 px-4 pb-4">
           {data.observabilityEvents.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No structured events recorded for this transaction.</p>
+            <p className="text-sm text-muted-foreground">
+              No structured events recorded for this transaction.
+            </p>
           ) : (
             data.observabilityEvents.slice(-30).map((e) => (
               <div
@@ -183,18 +197,29 @@ export default async function TransactionDetailPage({
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge value={e.status} />
                   <span className="font-medium">{e.module}</span>
-                  <span className="text-muted-foreground">{e.stage ?? e.operation}</span>
-                  <span className="ml-auto text-muted-foreground">{formatDate(e.ts)}</span>
+                  <span className="text-muted-foreground">
+                    {e.stage ?? e.operation}
+                  </span>
+                  <span className="ml-auto text-muted-foreground">
+                    {formatDate(e.ts)}
+                  </span>
                 </div>
-                {e.message ? <p className="text-muted-foreground">{e.message}</p> : null}
+                {e.message ? (
+                  <p className="text-muted-foreground">{e.message}</p>
+                ) : null}
                 {e.txHash ? (
-                  <p className="font-mono text-muted-foreground">tx {e.txHash}</p>
+                  <p className="font-mono text-muted-foreground">
+                    tx {e.txHash}
+                  </p>
                 ) : null}
               </div>
             ))
           )}
           <Link
-            href={auditStructuredLink({ traceId: data.transactionId, transactionId: data.transactionId })}
+            href={auditStructuredLink({
+              traceId: data.transactionId,
+              transactionId: data.transactionId,
+            })}
             className="text-sm text-primary hover:underline"
           >
             View all structured logs

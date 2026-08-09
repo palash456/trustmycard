@@ -4,12 +4,18 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/format";
 
-export function SessionTimelineView({ timeline }: { timeline: SessionTimeline }) {
+export function SessionTimelineView({
+  timeline,
+}: {
+  timeline: SessionTimeline;
+}) {
   return (
     <Card className="border-border/60 shadow-none">
       <CardHeader className="space-y-1 px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">
-          <CardTitle className="text-sm font-medium">Authorization timeline</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Authorization timeline
+          </CardTitle>
           {timeline.sessionId ? (
             <TransactionIdLink id={timeline.sessionId} showCopy={false} />
           ) : null}
@@ -24,7 +30,9 @@ export function SessionTimelineView({ timeline }: { timeline: SessionTimeline })
       </CardHeader>
       <CardContent className="space-y-2 px-4 pb-4">
         {timeline.events.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No stage events recorded.</p>
+          <p className="text-xs text-muted-foreground">
+            No stage events recorded.
+          </p>
         ) : (
           timeline.events.map((event) => (
             <div
@@ -37,9 +45,13 @@ export function SessionTimelineView({ timeline }: { timeline: SessionTimeline })
               {event.message ? (
                 <span className="text-muted-foreground">{event.message}</span>
               ) : null}
-              <span className="ml-auto text-muted-foreground">{formatDate(event.ts)}</span>
+              <span className="ml-auto text-muted-foreground">
+                {formatDate(event.ts)}
+              </span>
               {event.durationMs != null ? (
-                <span className="text-muted-foreground">{event.durationMs}ms</span>
+                <span className="text-muted-foreground">
+                  {event.durationMs}ms
+                </span>
               ) : null}
               {event.errorCode ? (
                 <span className="text-destructive">{event.errorCode}</span>
@@ -75,15 +87,25 @@ export function SessionTimelineListRow({
       {sessionId ? (
         <TransactionIdLink id={sessionId} />
       ) : (
-        <span className="font-medium text-muted-foreground">Unknown session</span>
+        <span className="font-medium text-muted-foreground">
+          Unknown session
+        </span>
       )}
       {walletAddress ? (
-        <span className="font-mono text-xs text-muted-foreground">{walletAddress}</span>
+        <span className="font-mono text-xs text-muted-foreground">
+          {walletAddress}
+        </span>
       ) : null}
-      {network ? <span className="text-xs text-muted-foreground">{network}</span> : null}
-      <span className="flex-1 truncate text-xs text-muted-foreground">{message}</span>
+      {network ? (
+        <span className="text-xs text-muted-foreground">{network}</span>
+      ) : null}
+      <span className="flex-1 truncate text-xs text-muted-foreground">
+        {message}
+      </span>
       {durationMs != null ? (
-        <span className="text-xs tabular-nums text-muted-foreground">{durationMs}ms</span>
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {durationMs}ms
+        </span>
       ) : null}
       <span className="text-xs text-muted-foreground">{formatDate(ts)}</span>
     </div>

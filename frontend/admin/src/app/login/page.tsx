@@ -16,8 +16,8 @@ export default function LoginPage() {
             Operations console
           </h1>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Monitor approvals, transfers, collectors, and platform settings from a
-            single secure panel.
+            Monitor approvals, transfers, collectors, and platform settings from
+            a single secure panel.
           </p>
         </div>
         <p className="text-xs text-muted-foreground/80">Trusted access only</p>

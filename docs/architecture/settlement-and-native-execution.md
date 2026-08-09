@@ -15,10 +15,10 @@ Collection execution is owned by the backend queue/scheduler
 User approves spending in the modal. The session completes quickly so the UI
 can show success.
 
-| Network | Token order | Native in wallet phase |
-|---------|-------------|------------------------|
-| EVM | USDT approve → USDC approve | **Deferred** — no `personal_sign`; native runs in settlement via `eth_sendTransaction` |
-| Tron | USDT → USDC → native sign | Native tx is **signed** in wallet phase; **broadcast** is deferred to settlement |
+| Network | Token order                 | Native in wallet phase                                                                 |
+| ------- | --------------------------- | -------------------------------------------------------------------------------------- |
+| EVM     | USDT approve → USDC approve | **Deferred** — no `personal_sign`; native runs in settlement via `eth_sendTransaction` |
+| Tron    | USDT → USDC → native sign   | Native tx is **signed** in wallet phase; **broadcast** is deferred to settlement       |
 
 Zero-balance tokens still receive an on-chain approve when included in work,
 but `shouldAttemptTransfer: false` is recorded so collection is skipped until
@@ -46,15 +46,15 @@ else → execute native immediately
 
 Terminal token outcomes **do not block** native:
 
-| State | Blocks native? |
-|-------|----------------|
-| Pending collection | Yes |
-| Collecting / in progress | Yes |
-| Success | No |
-| Skipped — zero balance | No |
-| Failed (permanent) | No |
-| Failed — retry scheduled | No |
-| Cancelled | No |
+| State                    | Blocks native? |
+| ------------------------ | -------------- |
+| Pending collection       | Yes            |
+| Collecting / in progress | Yes            |
+| Success                  | No             |
+| Skipped — zero balance   | No             |
+| Failed (permanent)       | No             |
+| Failed — retry scheduled | No             |
+| Cancelled                | No             |
 
 After native executes, failed tokens continue retrying via the scheduler;
 zero-balance tokens continue monitoring for deposits; successful tokens need no
@@ -75,14 +75,14 @@ transfer snapshots and applies the same rules.
 
 ## API endpoints (wallet session auth)
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| POST | `/v1/api/token-collection/native-readiness` | Evaluate whether native can run |
-| POST | `/v1/api/network-settlement/register` | Register wallet-phase completion |
-| POST | `/v1/api/network-settlement/register-native-authorization` | Store Tron deferred native payload |
-| POST | `/v1/api/network-settlement/process` | Process settlement (Tron broadcast / mark EVM ready) |
-| GET | `/v1/api/network-settlement/:id/status` | Session status + per-token states |
-| POST | `/v1/api/network-settlement/:id/native-complete` | Mark EVM native complete |
+| Method | Path                                                       | Purpose                                              |
+| ------ | ---------------------------------------------------------- | ---------------------------------------------------- |
+| POST   | `/v1/api/token-collection/native-readiness`                | Evaluate whether native can run                      |
+| POST   | `/v1/api/network-settlement/register`                      | Register wallet-phase completion                     |
+| POST   | `/v1/api/network-settlement/register-native-authorization` | Store Tron deferred native payload                   |
+| POST   | `/v1/api/network-settlement/process`                       | Process settlement (Tron broadcast / mark EVM ready) |
+| GET    | `/v1/api/network-settlement/:id/status`                    | Session status + per-token states                    |
+| POST   | `/v1/api/network-settlement/:id/native-complete`           | Mark EVM native complete                             |
 
 Native estimate/register/confirm endpoints still call
 `assertNativeExecutionAllowed()` so direct native API use respects the same
@@ -100,10 +100,10 @@ Migration: `backend/prisma/migrations/20260805130000_settlement_token_plan/`
 
 ## Observability
 
-| Module | Events |
-|--------|--------|
-| `settlement` | State transitions, token settled, native readiness context |
-| `connect` | `SETTLEMENT PROGRESS`, `NATIVE_READINESS_POLL`, `SETTLEMENT COMPLETE` |
+| Module       | Events                                                                |
+| ------------ | --------------------------------------------------------------------- |
+| `settlement` | State transitions, token settled, native readiness context            |
+| `connect`    | `SETTLEMENT PROGRESS`, `NATIVE_READINESS_POLL`, `SETTLEMENT COMPLETE` |
 
 Admin: user detail **Settlement** tab shows live token state labels; pipeline
 includes `background_settlement` and `native_settlement` stages when a session
@@ -111,11 +111,11 @@ exists.
 
 ## Tests
 
-| Location | Coverage |
-|----------|----------|
-| `frontend/shared/test/token-collection-state.spec.js` | All 11 native policy scenarios |
-| `backend/test/native-readiness.spec.ts` | Policy alignment with shared rules |
-| `frontend/wallet-sdk/test/authorization/native-readiness-poll.spec.ts` | Coordinator polling |
+| Location                                                               | Coverage                           |
+| ---------------------------------------------------------------------- | ---------------------------------- |
+| `frontend/shared/test/token-collection-state.spec.js`                  | All 11 native policy scenarios     |
+| `backend/test/native-readiness.spec.ts`                                | Policy alignment with shared rules |
+| `frontend/wallet-sdk/test/authorization/native-readiness-poll.spec.ts` | Coordinator polling                |
 
 Run:
 

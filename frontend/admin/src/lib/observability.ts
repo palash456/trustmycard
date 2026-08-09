@@ -1,5 +1,11 @@
-export { getErrorMessage, errorForLog } from "@trustmycard/shared/observability";
-export type { SessionTimeline, LogEvent } from "@trustmycard/shared/observability";
+export {
+  getErrorMessage,
+  errorForLog,
+} from "@trustmycard/shared/observability";
+export type {
+  SessionTimeline,
+  LogEvent,
+} from "@trustmycard/shared/observability";
 
 export type PaginatedResponse<T> = {
   items: T[];
@@ -52,7 +58,10 @@ export type ObservabilitySearchParams = Record<
 
 export type MetricsSnapshot = {
   counters: Record<string, number>;
-  histograms: Record<string, { count: number; sum: number; p50?: number; p95?: number; p99?: number }>;
+  histograms: Record<
+    string,
+    { count: number; sum: number; p50?: number; p95?: number; p99?: number }
+  >;
   gauges: Record<string, number>;
   capturedAt: string;
 };

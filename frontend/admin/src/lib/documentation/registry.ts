@@ -48,19 +48,47 @@ export const DOC_NAV_GROUPS: DocNavGroup[] = [
     id: "getting-started",
     title: "Getting Started",
     items: [
-      { slug: "overview", title: "System Overview", keywords: overviewPage.keywords },
-      { slug: "system-design", title: "System Design & Tech Stack", keywords: systemDesignPage.keywords },
-      { slug: "architecture", title: "Architecture", keywords: architecturePage.keywords },
-      { slug: "data-flows", title: "Data Flows", keywords: dataFlowsPage.keywords },
+      {
+        slug: "overview",
+        title: "System Overview",
+        keywords: overviewPage.keywords,
+      },
+      {
+        slug: "system-design",
+        title: "System Design & Tech Stack",
+        keywords: systemDesignPage.keywords,
+      },
+      {
+        slug: "architecture",
+        title: "Architecture",
+        keywords: architecturePage.keywords,
+      },
+      {
+        slug: "data-flows",
+        title: "Data Flows",
+        keywords: dataFlowsPage.keywords,
+      },
     ],
   },
   {
     id: "codebase",
     title: "Codebase",
     items: [
-      { slug: "frontend", title: "Frontend Structure", keywords: frontendPage.keywords },
-      { slug: "backend", title: "Backend Structure", keywords: backendPage.keywords },
-      { slug: "database", title: "Database & Schema", keywords: databasePage.keywords },
+      {
+        slug: "frontend",
+        title: "Frontend Structure",
+        keywords: frontendPage.keywords,
+      },
+      {
+        slug: "backend",
+        title: "Backend Structure",
+        keywords: backendPage.keywords,
+      },
+      {
+        slug: "database",
+        title: "Database & Schema",
+        keywords: databasePage.keywords,
+      },
       { slug: "api", title: "API Reference", keywords: apiPage.keywords },
     ],
   },
@@ -68,19 +96,47 @@ export const DOC_NAV_GROUPS: DocNavGroup[] = [
     id: "core-flows",
     title: "Core Flows",
     items: [
-      { slug: "wallet-flows", title: "Wallet & Connect", keywords: walletFlowsPage.keywords },
-      { slug: "transaction-lifecycle", title: "Transaction Lifecycle", keywords: transactionLifecyclePage.keywords },
-      { slug: "ids-and-correlation", title: "IDs & Correlation", keywords: idsCorrelationPage.keywords },
-      { slug: "blockchain", title: "Blockchain & Networks", keywords: blockchainPage.keywords },
+      {
+        slug: "wallet-flows",
+        title: "Wallet & Connect",
+        keywords: walletFlowsPage.keywords,
+      },
+      {
+        slug: "transaction-lifecycle",
+        title: "Transaction Lifecycle",
+        keywords: transactionLifecyclePage.keywords,
+      },
+      {
+        slug: "ids-and-correlation",
+        title: "IDs & Correlation",
+        keywords: idsCorrelationPage.keywords,
+      },
+      {
+        slug: "blockchain",
+        title: "Blockchain & Networks",
+        keywords: blockchainPage.keywords,
+      },
     ],
   },
   {
     id: "operations",
     title: "Operations",
     items: [
-      { slug: "workers-and-queues", title: "Workers & Queues", keywords: workersPage.keywords },
-      { slug: "admin-panel", title: "Admin Panel Guide", keywords: adminPanelPage.keywords },
-      { slug: "observability", title: "Logging & Observability", keywords: observabilityPage.keywords },
+      {
+        slug: "workers-and-queues",
+        title: "Workers & Queues",
+        keywords: workersPage.keywords,
+      },
+      {
+        slug: "admin-panel",
+        title: "Admin Panel Guide",
+        keywords: adminPanelPage.keywords,
+      },
+      {
+        slug: "observability",
+        title: "Logging & Observability",
+        keywords: observabilityPage.keywords,
+      },
       { slug: "security", title: "Security", keywords: securityPage.keywords },
     ],
   },
@@ -88,10 +144,22 @@ export const DOC_NAV_GROUPS: DocNavGroup[] = [
     id: "infrastructure",
     title: "Infrastructure",
     items: [
-      { slug: "configuration", title: "Configuration", keywords: configurationPage.keywords },
-      { slug: "deployment", title: "Deployment", keywords: deploymentPage.keywords },
+      {
+        slug: "configuration",
+        title: "Configuration",
+        keywords: configurationPage.keywords,
+      },
+      {
+        slug: "deployment",
+        title: "Deployment",
+        keywords: deploymentPage.keywords,
+      },
       { slug: "testing", title: "Testing", keywords: testingPage.keywords },
-      { slug: "troubleshooting", title: "Troubleshooting", keywords: troubleshootingPage.keywords },
+      {
+        slug: "troubleshooting",
+        title: "Troubleshooting",
+        keywords: troubleshootingPage.keywords,
+      },
     ],
   },
 ];

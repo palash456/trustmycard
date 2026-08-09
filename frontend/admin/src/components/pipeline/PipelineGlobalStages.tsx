@@ -41,7 +41,7 @@ function GlobalStageCard({
           <span
             className={cn(
               "rounded px-2 py-0.5 text-[10px] font-semibold uppercase",
-              statusBadge(status)
+              statusBadge(status),
             )}
           >
             {pipelineStageStatusLabel(status as WalletLinkedStage["status"])}
@@ -71,12 +71,19 @@ function NetworkCard({ entry }: { entry: NetworkApprovedEntry }) {
     <div className="rounded-md border p-3 text-xs">
       <div className="mb-2 flex items-center justify-between">
         <span className="font-semibold uppercase">{entry.network}</span>
-        <span className={cn("rounded px-1.5 py-0.5 text-[10px] uppercase", statusBadge(entry.status))}>
+        <span
+          className={cn(
+            "rounded px-1.5 py-0.5 text-[10px] uppercase",
+            statusBadge(entry.status),
+          )}
+        >
           {pipelineStageStatusLabel(entry.status)}
         </span>
       </div>
       {entry.approvalStatus ? (
-        <p className="text-muted-foreground">Approval: {entry.approvalStatus}</p>
+        <p className="text-muted-foreground">
+          Approval: {entry.approvalStatus}
+        </p>
       ) : null}
       <div className="mt-2">
         <PipelineStageLogsLink logQuery={entry.logQuery} />

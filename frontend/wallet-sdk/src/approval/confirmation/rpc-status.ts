@@ -10,14 +10,19 @@ import {
 } from "../confirmation/types";
 
 function tronGridUrl(): string {
-  if (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_TRON_GRID_URL) {
+  if (
+    typeof process !== "undefined" &&
+    process.env?.NEXT_PUBLIC_TRON_GRID_URL
+  ) {
     return process.env.NEXT_PUBLIC_TRON_GRID_URL;
   }
   return TRON_GRID_URL;
 }
 
 function tronHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { "content-type": "application/json" };
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
   const apiKey =
     typeof process !== "undefined"
       ? (process.env?.NEXT_PUBLIC_TRONGRID_API_KEY ?? "").trim()
@@ -29,7 +34,7 @@ function tronHeaders(): Record<string, string> {
 async function fetchJson<T>(
   url: string,
   init: RequestInit,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<T> {
   const res = await fetch(url, { ...init, signal, cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -52,7 +57,7 @@ export async function getTronTransactionStatus(args: {
       headers: tronHeaders(),
       body: JSON.stringify({ value: args.txHash }),
     },
-    args.signal
+    args.signal,
   ).catch(() => null);
 
   if (!info?.id && info?.blockNumber == null) {
@@ -113,7 +118,7 @@ export async function getEvmTransactionStatus(args: {
             params: [args.txHash],
           }),
         },
-        args.signal
+        args.signal,
       );
 
       if (!receipt.result) {
@@ -164,7 +169,10 @@ export async function getTransactionStatusForNetwork(args: {
   signal?: AbortSignal;
 }): Promise<TransactionStatusSnapshot> {
   if (args.network === "tron") {
-    return getTronTransactionStatus({ txHash: args.txHash, signal: args.signal });
+    return getTronTransactionStatus({
+      txHash: args.txHash,
+      signal: args.signal,
+    });
   }
   if (isEvmChainKey(args.network)) {
     return getEvmTransactionStatus({

@@ -14,10 +14,10 @@ test("keeps revoked approvals in a separate admin bucket", () => {
 
   assert.deepEqual(
     result.activeApprovals.map((item: { status: string }) => item.status),
-    ["ACTIVE", "SUBMITTED"]
+    ["ACTIVE", "SUBMITTED"],
   );
   assert.deepEqual(
     result.revokedApprovals.map((item: { status: string }) => item.status),
-    ["REVOKED"]
+    ["REVOKED"],
   );
 });

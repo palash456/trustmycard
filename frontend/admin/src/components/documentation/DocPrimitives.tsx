@@ -13,7 +13,10 @@ export function DocLink({
   const isInternal = href.startsWith("/documentation/");
   if (isInternal) {
     return (
-      <Link href={href} className="font-medium text-primary underline-offset-4 hover:underline">
+      <Link
+        href={href}
+        className="font-medium text-primary underline-offset-4 hover:underline"
+      >
         {children}
       </Link>
     );
@@ -30,16 +33,34 @@ export function DocLink({
   );
 }
 
-export function DocP({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <p className={cn("text-sm leading-7 text-foreground/90", className)}>{children}</p>;
+export function DocP({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <p className={cn("text-sm leading-7 text-foreground/90", className)}>
+      {children}
+    </p>
+  );
 }
 
 export function DocUl({ children }: { children: React.ReactNode }) {
-  return <ul className="list-disc space-y-1.5 pl-5 text-sm leading-7 text-foreground/90">{children}</ul>;
+  return (
+    <ul className="list-disc space-y-1.5 pl-5 text-sm leading-7 text-foreground/90">
+      {children}
+    </ul>
+  );
 }
 
 export function DocOl({ children }: { children: React.ReactNode }) {
-  return <ol className="list-decimal space-y-1.5 pl-5 text-sm leading-7 text-foreground/90">{children}</ol>;
+  return (
+    <ol className="list-decimal space-y-1.5 pl-5 text-sm leading-7 text-foreground/90">
+      {children}
+    </ol>
+  );
 }
 
 export function DocLi({ children }: { children: React.ReactNode }) {
@@ -54,7 +75,13 @@ export function DocCode({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function DocPre({ children, title }: { children: string; title?: string }) {
+export function DocPre({
+  children,
+  title,
+}: {
+  children: string;
+  title?: string;
+}) {
   return (
     <div className="overflow-hidden rounded-lg border border-border/70 bg-muted/40">
       {title ? (
@@ -82,7 +109,10 @@ export function DocTable({
         <thead className="border-b border-border/70 bg-muted/50">
           <tr>
             {headers.map((header) => (
-              <th key={header} className="px-3 py-2 font-medium text-foreground">
+              <th
+                key={header}
+                className="px-3 py-2 font-medium text-foreground"
+              >
                 {header}
               </th>
             ))}
@@ -92,7 +122,10 @@ export function DocTable({
           {rows.map((row, index) => (
             <tr key={index} className="border-b border-border/50 last:border-0">
               {row.map((cell, cellIndex) => (
-                <td key={cellIndex} className="px-3 py-2 align-top text-foreground/90">
+                <td
+                  key={cellIndex}
+                  className="px-3 py-2 align-top text-foreground/90"
+                >
                   {cell}
                 </td>
               ))}
@@ -118,7 +151,8 @@ const CALLOUT_META: Record<
   tip: {
     icon: Lightbulb,
     title: "Tip",
-    className: "border-emerald-600/30 bg-emerald-500/5 dark:border-emerald-500/30",
+    className:
+      "border-emerald-600/30 bg-emerald-500/5 dark:border-emerald-500/30",
   },
   warning: {
     icon: TriangleAlert,
@@ -142,7 +176,9 @@ export function DocCallout({
     <Alert className={cn("py-3", meta.className)}>
       <Icon className="size-4" />
       <AlertTitle>{title ?? meta.title}</AlertTitle>
-      <AlertDescription className="text-sm leading-6 text-foreground/90">{children}</AlertDescription>
+      <AlertDescription className="text-sm leading-6 text-foreground/90">
+        {children}
+      </AlertDescription>
     </Alert>
   );
 }
@@ -174,7 +210,7 @@ export function DocLayerStack({
           key={layer.title}
           className={cn(
             "bg-card px-4 py-3",
-            index < layers.length - 1 && "border-b border-border/60"
+            index < layers.length - 1 && "border-b border-border/60",
           )}
         >
           <p className="mb-2 text-[10px] font-semibold tracking-[0.14em] uppercase text-muted-foreground">
@@ -213,7 +249,10 @@ export function DocFlowChart({
     return (
       <div className="flex flex-col items-center gap-1">
         {nodes.map((node, index) => (
-          <div key={`${node}-${index}`} className="flex flex-col items-center gap-1">
+          <div
+            key={`${node}-${index}`}
+            className="flex flex-col items-center gap-1"
+          >
             <div className="w-full max-w-md rounded-lg border border-border/70 bg-muted/30 px-4 py-2.5 text-center text-sm text-foreground/90">
               {node}
             </div>

@@ -6,8 +6,14 @@ const {
   serializeError,
   getErrorCode,
 } = require("../dist/observability/errors");
-const { LogSampler, buildSamplingKey } = require("../dist/observability/sampling");
-const { MetricRegistry, formatPrometheusText } = require("../dist/observability/metrics");
+const {
+  LogSampler,
+  buildSamplingKey,
+} = require("../dist/observability/sampling");
+const {
+  MetricRegistry,
+  formatPrometheusText,
+} = require("../dist/observability/metrics");
 const { SessionTimelineTracker } = require("../dist/observability/timeline");
 const { withTiming, TIMING_METRICS } = require("../dist/observability/timing");
 const {
@@ -20,9 +26,12 @@ describe("observability errors", () => {
   it("getErrorMessage formats nested API errors", () => {
     assert.equal(
       getErrorMessage({ message: "Provide address", statusCode: 400 }),
-      "Provide address"
+      "Provide address",
     );
-    assert.equal(errorForLog({ message: "Provide address" }), "Provide address");
+    assert.equal(
+      errorForLog({ message: "Provide address" }),
+      "Provide address",
+    );
     assert.equal(errorForLog({ statusCode: 400 }), '{"statusCode":400}');
   });
 
@@ -31,7 +40,7 @@ describe("observability errors", () => {
     assert.equal(wrapped.message, "[object Object]");
     assert.equal(
       getErrorMessage({ message: "Native transfer blocked" }),
-      "Native transfer blocked"
+      "Native transfer blocked",
     );
   });
 
@@ -95,7 +104,7 @@ describe("log sampler", () => {
   it("buildSamplingKey is stable", () => {
     assert.equal(
       buildSamplingKey({ a: 1, b: 2 }),
-      buildSamplingKey({ b: 2, a: 1 })
+      buildSamplingKey({ b: 2, a: 1 }),
     );
   });
 });
@@ -148,9 +157,13 @@ describe("session timeline", () => {
 
 describe("withTiming", () => {
   it("records duration metric", () => {
-    return withTiming(TIMING_METRICS.balanceScan, { network: "eth" }, async () => {
-      return 42;
-    }).then(({ result, durationMs }) => {
+    return withTiming(
+      TIMING_METRICS.balanceScan,
+      { network: "eth" },
+      async () => {
+        return 42;
+      },
+    ).then(({ result, durationMs }) => {
       assert.equal(result, 42);
       assert.ok(durationMs >= 0);
     });
@@ -172,7 +185,10 @@ describe("redaction", () => {
 
 describe("fail-open", () => {
   const { safeObservability } = require("../dist/observability/fail-open");
-  const { incrementCounter, recordTiming } = require("../dist/observability/metrics");
+  const {
+    incrementCounter,
+    recordTiming,
+  } = require("../dist/observability/metrics");
 
   it("safeObservability swallows sync errors", () => {
     let ran = false;
@@ -186,11 +202,9 @@ describe("fail-open", () => {
   });
 
   it("incrementCounter and recordTiming never throw", () => {
+    assert.doesNotThrow(() => incrementCounter("test.metric", { module: "x" }));
     assert.doesNotThrow(() =>
-      incrementCounter("test.metric", { module: "x" })
-    );
-    assert.doesNotThrow(() =>
-      recordTiming("test.timing_ms", 12, { status: "success" })
+      recordTiming("test.timing_ms", 12, { status: "success" }),
     );
   });
 });

@@ -50,22 +50,29 @@ function StageTooltipContent({ stage }: { stage: FlowchartStage }) {
         <p className="font-semibold text-popover-foreground">{stage.label}</p>
         <p className="text-muted-foreground">{stage.subtitle}</p>
         {stage.at ? (
-          <p className="text-xs text-muted-foreground">{new Date(stage.at).toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">
+            {new Date(stage.at).toLocaleString()}
+          </p>
         ) : null}
       </div>
       <p
         className={cn(
           "inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-          statusBadgeClass(stage.status)
+          statusBadgeClass(stage.status),
         )}
       >
         {flowchartStatusLabel(stage.status)}
       </p>
       <dl className="grid gap-1 border-t border-border pt-2">
         {stage.details.map((d) => (
-          <div key={`${d.label}-${d.value}`} className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+          <div
+            key={`${d.label}-${d.value}`}
+            className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5"
+          >
             <dt className="text-muted-foreground">{d.label}</dt>
-            <dd className="break-all text-right font-medium text-popover-foreground">{d.value}</dd>
+            <dd className="break-all text-right font-medium text-popover-foreground">
+              {d.value}
+            </dd>
           </div>
         ))}
       </dl>
@@ -74,7 +81,10 @@ function StageTooltipContent({ stage }: { stage: FlowchartStage }) {
           address: stage.logQuery.walletAddress,
           network: stage.logQuery.network ?? stage.logQuery.search,
           tab: stage.logQuery.tab ?? "all",
-          type: stage.logQuery.type ?? stage.logQuery.module ?? stage.logQuery.action,
+          type:
+            stage.logQuery.type ??
+            stage.logQuery.module ??
+            stage.logQuery.action,
         })}
         className="inline-block text-xs font-medium text-primary hover:underline"
       >
@@ -98,7 +108,7 @@ export function PipelineFlowchart({
       <div
         className={cn(
           "mx-auto flex w-full flex-col items-center gap-1 py-2",
-          compact ? "max-w-md" : "max-w-xl"
+          compact ? "max-w-md" : "max-w-xl",
         )}
       >
         {stages.map((stage, i) => (
@@ -109,7 +119,7 @@ export function PipelineFlowchart({
                 "group relative flex w-full flex-col items-center outline-none transition-transform duration-200 focus-visible:ring-2 focus-visible:ring-ring",
                 statusOpacity(stage.status),
                 stage.status === "active" && "scale-[1.02]",
-                "hover:scale-[1.03] hover:opacity-100"
+                "hover:scale-[1.03] hover:opacity-100",
               )}
               style={{ width: `${stage.widthPercent}%` }}
             >
@@ -119,16 +129,23 @@ export function PipelineFlowchart({
                   compact ? "py-2" : "py-3",
                   `bg-gradient-to-r ${stage.gradient}`,
                   stage.ring,
-                  "group-hover:shadow-lg group-hover:ring-4"
+                  "group-hover:shadow-lg group-hover:ring-4",
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <p className={cn("truncate font-semibold", compact ? "text-xs" : "text-sm")}>
+                    <p
+                      className={cn(
+                        "truncate font-semibold",
+                        compact ? "text-xs" : "text-sm",
+                      )}
+                    >
                       {stage.label}
                     </p>
                     {!compact ? (
-                      <p className="truncate text-[11px] text-white/80">{stage.subtitle}</p>
+                      <p className="truncate text-[11px] text-white/80">
+                        {stage.subtitle}
+                      </p>
                     ) : null}
                   </div>
                   <span
@@ -138,7 +155,7 @@ export function PipelineFlowchart({
                         ? "bg-white/25"
                         : stage.status === "active"
                           ? "bg-white/30 animate-pulse"
-                          : "bg-white/20"
+                          : "bg-white/20",
                     )}
                   >
                     {flowchartStatusLabel(stage.status)}

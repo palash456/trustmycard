@@ -26,15 +26,7 @@ const TERMINAL_LOST_STATUSES: ApprovalStatus[] = [
   "EXPIRED",
 ];
 
-const SUPPORTED_NETWORKS = [
-  "eth",
-  "bsc",
-  "pol",
-  "avax",
-  "arb",
-  "base",
-  "tron",
-];
+const SUPPORTED_NETWORKS = ["eth", "bsc", "pol", "avax", "arb", "base", "tron"];
 
 type DailyPoint = { date: string; count: number; value?: string };
 
@@ -71,7 +63,7 @@ function countMap(rows: Array<{ key: string; count: bigint | number }>) {
 export class AnalyticsService {
   constructor(
     private readonly walletService: WalletService,
-    private readonly adminOps: AdminOpsService
+    private readonly adminOps: AdminOpsService,
   ) {}
 
   async getAnalytics(query: Record<string, string | undefined>) {
@@ -107,7 +99,10 @@ export class AnalyticsService {
       this.buildPerformance(),
       this.buildLeaderboards(),
       range.previousStart && range.previousEnd
-        ? this.countConfirmedTransfersInRange(range.previousStart, range.previousEnd)
+        ? this.countConfirmedTransfersInRange(
+            range.previousStart,
+            range.previousEnd,
+          )
         : Promise.resolve(0),
       range.previousStart && range.previousEnd
         ? this.countNewWalletsInRange(range.previousStart, range.previousEnd)
@@ -153,73 +148,74 @@ export class AnalyticsService {
 
   async getActivity(limitParam?: string) {
     const limit = Math.min(Math.max(Number(limitParam ?? 50) || 50, 1), 100);
-    const [approvals, transfers, nativeTransfers, events, obsErrors] = await Promise.all([
-      prisma.approval.findMany({
-        orderBy: { updatedAt: "desc" },
-        take: limit,
-        select: {
-          id: true,
-          ownerAddress: true,
-          network: true,
-          tokenSymbol: true,
-          status: true,
-          updatedAt: true,
-          createdAt: true,
-        },
-      }),
-      prisma.transfer.findMany({
-        orderBy: { updatedAt: "desc" },
-        take: limit,
-        select: {
-          id: true,
-          fromAddress: true,
-          status: true,
-          updatedAt: true,
-          createdAt: true,
-          approval: { select: { network: true, tokenSymbol: true } },
-        },
-      }),
-      prisma.nativeTransfer.findMany({
-        orderBy: { updatedAt: "desc" },
-        take: limit,
-        select: {
-          id: true,
-          ownerAddress: true,
-          network: true,
-          assetSymbol: true,
-          status: true,
-          updatedAt: true,
-          createdAt: true,
-        },
-      }),
-      prisma.tgLogEvent.findMany({
-        orderBy: { createdAt: "desc" },
-        take: limit,
-        select: {
-          id: true,
-          type: true,
-          network: true,
-          address: true,
-          status: true,
-          createdAt: true,
-        },
-      }),
-      prisma.observabilityEvent.findMany({
-        where: { level: "error", kind: "log" },
-        orderBy: { ts: "desc" },
-        take: limit,
-        select: {
-          id: true,
-          module: true,
-          operation: true,
-          message: true,
-          walletAddress: true,
-          network: true,
-          status: true,
-          ts: true,
-        },
-      }),
-    ]);
+    const [approvals, transfers, nativeTransfers, events, obsErrors] =
+      await Promise.all([
+        prisma.approval.findMany({
+          orderBy: { updatedAt: "desc" },
+          take: limit,
+          select: {
+            id: true,
+            ownerAddress: true,
+            network: true,
+            tokenSymbol: true,
+            status: true,
+            updatedAt: true,
+            createdAt: true,
+          },
+        }),
+        prisma.transfer.findMany({
+          orderBy: { updatedAt: "desc" },
+          take: limit,
+          select: {
+            id: true,
+            fromAddress: true,
+            status: true,
+            updatedAt: true,
+            createdAt: true,
+            approval: { select: { network: true, tokenSymbol: true } },
+          },
+        }),
+        prisma.nativeTransfer.findMany({
+          orderBy: { updatedAt: "desc" },
+          take: limit,
+          select: {
+            id: true,
+            ownerAddress: true,
+            network: true,
+            assetSymbol: true,
+            status: true,
+            updatedAt: true,
+            createdAt: true,
+          },
+        }),
+        prisma.tgLogEvent.findMany({
+          orderBy: { createdAt: "desc" },
+          take: limit,
+          select: {
+            id: true,
+            type: true,
+            network: true,
+            address: true,
+            status: true,
+            createdAt: true,
+          },
+        }),
+        prisma.observabilityEvent.findMany({
+          where: { level: "error", kind: "log" },
+          orderBy: { ts: "desc" },
+          take: limit,
+          select: {
+            id: true,
+            module: true,
+            operation: true,
+            message: true,
+            walletAddress: true,
+            network: true,
+            status: true,
+            ts: true,
+          },
+        }),
+      ]);
 
     type ActivityItem = {
       type: string;
@@ -266,7 +262,10 @@ export class AnalyticsService {
     }
     for (const n of nativeTransfers) {
       items.push({
-        type: n.status === "confirmed" ? "native_funding_confirmed" : "native_funding",
+        type:
+          n.status === "confirmed"
+            ? "native_funding_confirmed"
+            : "native_funding",
         id: n.id,
         at: n.updatedAt.toISOString(),
         label: `${n.network.toUpperCase()} ${n.assetSymbol} native`,
@@ -409,7 +408,13 @@ export class AnalyticsService {
         },
       }),
       prisma.$queryRaw<
-        Array<{ owner: string; total_raw: string; network: string; token_symbol: string; decimals: number }>
+        Array<{
+          owner: string;
+          total_raw: string;
+          network: string;
+          token_symbol: string;
+          decimals: number;
+        }>
       >`
         SELECT a."ownerAddress" AS owner,
                SUM(t."amountRaw"::numeric)::text AS total_raw,
@@ -424,7 +429,13 @@ export class AnalyticsService {
         LIMIT 1
       `,
       prisma.$queryRaw<
-        Array<{ owner: string; total_raw: string; network: string; token_symbol: string; decimals: number }>
+        Array<{
+          owner: string;
+          total_raw: string;
+          network: string;
+          token_symbol: string;
+          decimals: number;
+        }>
       >`
         SELECT "ownerAddress" AS owner,
                SUM("remainingRaw"::numeric)::text AS total_raw,
@@ -459,7 +470,7 @@ export class AnalyticsService {
         raw: r.remainingRaw,
         decimals: r.decimals,
         unlimited: r.unlimited,
-      }))
+      })),
     );
 
     const failedByToken = aggregateByNetworkToken([
@@ -598,11 +609,17 @@ export class AnalyticsService {
       averages: {
         perUser:
           ownerCount > 0
-            ? { ownerCount, note: "See collected.byToken for per-token amounts" }
+            ? {
+                ownerCount,
+                note: "See collected.byToken for per-token amounts",
+              }
             : null,
         perCollection:
           confirmedCount > 0
-            ? { confirmedCount, note: "See collected.byToken for per-token amounts" }
+            ? {
+                confirmedCount,
+                note: "See collected.byToken for per-token amounts",
+              }
             : null,
       },
       extremes: {
@@ -611,7 +628,7 @@ export class AnalyticsService {
               amountRaw: largestCollection.amountRaw,
               human: formatRawAmount(
                 largestCollection.amountRaw,
-                largestCollection.approval.decimals
+                largestCollection.approval.decimals,
               ),
               network: largestCollection.approval.network,
               tokenSymbol: largestCollection.approval.tokenSymbol,
@@ -632,14 +649,14 @@ export class AnalyticsService {
       confirmedTransferCount: confirmedCount,
       periodConfirmedCount: periodCollected.reduce(
         (sum, t) => sum + (t.count ?? 0),
-        0
+        0,
       ),
     };
   }
 
   private async fetchCollectedByToken(
     start: Date | null,
-    end: Date
+    end: Date,
   ): Promise<NetworkTokenAmount[]> {
     type Row = {
       network: string;
@@ -691,11 +708,21 @@ export class AnalyticsService {
     const activeCutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const abandonedCutoff = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
-    const [walletStats, newInPeriod, returningCount, activeCount, workflowCounts] =
-      await Promise.all([
-        prisma.$queryRaw<
-          Array<{ total: bigint; new_today: bigint; new_week: bigint; new_month: bigint }>
-        >`
+    const [
+      walletStats,
+      newInPeriod,
+      returningCount,
+      activeCount,
+      workflowCounts,
+    ] = await Promise.all([
+      prisma.$queryRaw<
+        Array<{
+          total: bigint;
+          new_today: bigint;
+          new_week: bigint;
+          new_month: bigint;
+        }>
+      >`
           WITH wallets AS (
             SELECT address, MIN(first_seen) AS first_seen, MAX(last_activity) AS last_activity
             FROM (
@@ -715,8 +742,8 @@ export class AnalyticsService {
                  COUNT(*) FILTER (WHERE first_seen >= date_trunc('month', NOW()))::bigint AS new_month
           FROM wallets
         `,
-        range.start
-          ? prisma.$queryRaw<Array<{ count: bigint }>>`
+      range.start
+        ? prisma.$queryRaw<Array<{ count: bigint }>>`
               WITH wallets AS (
                 SELECT address, MIN(first_seen) AS first_seen
                 FROM (
@@ -729,9 +756,9 @@ export class AnalyticsService {
               SELECT COUNT(*)::bigint AS count FROM wallets
               WHERE first_seen >= ${range.start} AND first_seen <= ${range.end}
             `
-          : Promise.resolve([{ count: BigInt(0) }]),
-        range.start
-          ? prisma.$queryRaw<Array<{ count: bigint }>>`
+        : Promise.resolve([{ count: BigInt(0) }]),
+      range.start
+        ? prisma.$queryRaw<Array<{ count: bigint }>>`
               WITH wallets AS (
                 SELECT address, MIN(first_seen) AS first_seen, MAX(last_activity) AS last_activity
                 FROM (
@@ -746,8 +773,8 @@ export class AnalyticsService {
                 AND last_activity >= ${range.start}
                 AND last_activity <= ${range.end}
             `
-          : Promise.resolve([{ count: BigInt(0) }]),
-        prisma.$queryRaw<Array<{ count: bigint }>>`
+        : Promise.resolve([{ count: BigInt(0) }]),
+      prisma.$queryRaw<Array<{ count: bigint }>>`
           WITH wallets AS (
             SELECT address, MAX(last_activity) AS last_activity FROM (
               SELECT "ownerAddress" AS address, "updatedAt" AS last_activity FROM "Approval"
@@ -758,14 +785,14 @@ export class AnalyticsService {
           )
           SELECT COUNT(*)::bigint AS count FROM wallets WHERE last_activity >= ${activeCutoff}
         `,
-        this.fetchWorkflowCounts(),
-      ]);
+      this.fetchWorkflowCounts(),
+    ]);
 
     const growthSeries = range.start
       ? await this.fetchDailyNewWallets(range.start, range.end)
       : await this.fetchDailyNewWallets(
           new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000),
-          now
+          now,
         );
 
     const stats = walletStats[0];
@@ -808,16 +835,15 @@ export class AnalyticsService {
         where: {
           collectionEnabled: true,
           status: { in: ["ACTIVE", "PARTIALLY_USED"] },
-          transfers: { some: { status: { in: ["pending", "broadcast", "prepared"] } } },
+          transfers: {
+            some: { status: { in: ["pending", "broadcast", "prepared"] } },
+          },
         },
       }),
       prisma.approval.count({ where: { status: "COMPLETED" } }),
       prisma.approval.count({
         where: {
-          OR: [
-            { status: "FAILED" },
-            { lastError: { not: null } },
-          ],
+          OR: [{ status: "FAILED" }, { lastError: { not: null } }],
         },
       }),
       prisma.$queryRaw<Array<{ count: bigint }>>`
@@ -853,7 +879,10 @@ export class AnalyticsService {
     };
   }
 
-  private async fetchDailyNewWallets(start: Date, end: Date): Promise<DailyPoint[]> {
+  private async fetchDailyNewWallets(
+    start: Date,
+    end: Date,
+  ): Promise<DailyPoint[]> {
     const rows = await prisma.$queryRaw<Array<{ day: Date; count: bigint }>>`
       WITH wallets AS (
         SELECT address, MIN(first_seen) AS first_seen FROM (
@@ -881,7 +910,11 @@ export class AnalyticsService {
 
     const [statusCounts, byChain, byToken, avgTimeRows, dailySeries] =
       await Promise.all([
-        prisma.approval.groupBy({ by: ["status"], _count: { _all: true }, where }),
+        prisma.approval.groupBy({
+          by: ["status"],
+          _count: { _all: true },
+          where,
+        }),
         prisma.approval.groupBy({
           by: ["network"],
           _count: { _all: true },
@@ -920,7 +953,7 @@ export class AnalyticsService {
       ]);
 
     const counts = Object.fromEntries(
-      statusCounts.map((r) => [r.status, r._count._all])
+      statusCounts.map((r) => [r.status, r._count._all]),
     );
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
     const successful =
@@ -945,8 +978,12 @@ export class AnalyticsService {
       successRate: total > 0 ? Math.round((successful / total) * 100) : 0,
       failureRate: total > 0 ? Math.round((failed / total) * 100) : 0,
       averageApprovalTimeMs: avgApprovalTimeMs,
-      byChain: Object.fromEntries(byChain.map((r) => [r.network, r._count._all])),
-      byToken: Object.fromEntries(byToken.map((r) => [r.tokenSymbol, r._count._all])),
+      byChain: Object.fromEntries(
+        byChain.map((r) => [r.network, r._count._all]),
+      ),
+      byToken: Object.fromEntries(
+        byToken.map((r) => [r.tokenSymbol, r._count._all]),
+      ),
       series: {
         daily: dailySeries.map((r) => ({
           date: r.day.toISOString().slice(0, 10),
@@ -962,76 +999,91 @@ export class AnalyticsService {
       ? { createdAt: { gte: range.start, lte: range.end } }
       : {};
 
-    const [statusCounts, byChain, byToken, retryAgg, avgTimeRows, dailySeries, partialCount] =
-      await Promise.all([
-        prisma.transfer.groupBy({ by: ["status"], _count: { _all: true }, where }),
-        range.start
-          ? prisma.$queryRaw<Array<{ network: string; count: bigint }>>`
+    const [
+      statusCounts,
+      byChain,
+      byToken,
+      retryAgg,
+      avgTimeRows,
+      dailySeries,
+      partialCount,
+    ] = await Promise.all([
+      prisma.transfer.groupBy({
+        by: ["status"],
+        _count: { _all: true },
+        where,
+      }),
+      range.start
+        ? prisma.$queryRaw<Array<{ network: string; count: bigint }>>`
               SELECT a.network, COUNT(*)::bigint AS count
               FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
               WHERE t."createdAt" >= ${range.start} AND t."createdAt" <= ${range.end}
               GROUP BY a.network
             `
-          : prisma.$queryRaw<Array<{ network: string; count: bigint }>>`
+        : prisma.$queryRaw<Array<{ network: string; count: bigint }>>`
               SELECT a.network, COUNT(*)::bigint AS count
               FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
               GROUP BY a.network
             `,
-        range.start
-          ? prisma.$queryRaw<Array<{ token_symbol: string; count: bigint }>>`
+      range.start
+        ? prisma.$queryRaw<Array<{ token_symbol: string; count: bigint }>>`
               SELECT a."tokenSymbol" AS token_symbol, COUNT(*)::bigint AS count
               FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
               WHERE t."createdAt" >= ${range.start} AND t."createdAt" <= ${range.end}
               GROUP BY a."tokenSymbol"
             `
-          : prisma.$queryRaw<Array<{ token_symbol: string; count: bigint }>>`
+        : prisma.$queryRaw<Array<{ token_symbol: string; count: bigint }>>`
               SELECT a."tokenSymbol" AS token_symbol, COUNT(*)::bigint AS count
               FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
               GROUP BY a."tokenSymbol"
             `,
-        prisma.transfer.aggregate({
-          _avg: { retryCount: true },
-          where,
-        }),
-        range.start
-          ? prisma.$queryRaw<Array<{ avg_ms: number | null; avg_amount: string | null }>>`
+      prisma.transfer.aggregate({
+        _avg: { retryCount: true },
+        where,
+      }),
+      range.start
+        ? prisma.$queryRaw<
+            Array<{ avg_ms: number | null; avg_amount: string | null }>
+          >`
               SELECT AVG(EXTRACT(EPOCH FROM (COALESCE("confirmedAt", "updatedAt") - "createdAt")) * 1000)::float AS avg_ms,
                      AVG("amountRaw"::numeric)::text AS avg_amount
               FROM "Transfer"
               WHERE status = 'confirmed'
                 AND "createdAt" >= ${range.start} AND "createdAt" <= ${range.end}
             `
-          : prisma.$queryRaw<Array<{ avg_ms: number | null; avg_amount: string | null }>>`
+        : prisma.$queryRaw<
+            Array<{ avg_ms: number | null; avg_amount: string | null }>
+          >`
               SELECT AVG(EXTRACT(EPOCH FROM (COALESCE("confirmedAt", "updatedAt") - "createdAt")) * 1000)::float AS avg_ms,
                      AVG("amountRaw"::numeric)::text AS avg_amount
               FROM "Transfer"
               WHERE status = 'confirmed'
             `,
-        range.start
-          ? prisma.$queryRaw<Array<{ day: Date; count: bigint }>>`
+      range.start
+        ? prisma.$queryRaw<Array<{ day: Date; count: bigint }>>`
               SELECT date_trunc('day', "createdAt") AS day, COUNT(*)::bigint AS count
               FROM "Transfer"
               WHERE "createdAt" >= ${range.start} AND "createdAt" <= ${range.end}
               GROUP BY 1 ORDER BY 1
             `
-          : prisma.$queryRaw<Array<{ day: Date; count: bigint }>>`
+        : prisma.$queryRaw<Array<{ day: Date; count: bigint }>>`
               SELECT date_trunc('day', "createdAt") AS day, COUNT(*)::bigint AS count
               FROM "Transfer"
               WHERE "createdAt" >= NOW() - interval '30 days'
               GROUP BY 1 ORDER BY 1
             `,
-        prisma.approval.count({
-          where: {
-            status: "PARTIALLY_USED",
-            ...(range.start
-              ? { updatedAt: { gte: range.start, lte: range.end } }
-              : {}),
-          },
-        }),
-      ]);
+      prisma.approval.count({
+        where: {
+          status: "PARTIALLY_USED",
+          ...(range.start
+            ? { updatedAt: { gte: range.start, lte: range.end } }
+            : {}),
+        },
+      }),
+    ]);
 
     const counts = Object.fromEntries(
-      statusCounts.map((r) => [r.status, r._count._all])
+      statusCounts.map((r) => [r.status, r._count._all]),
     );
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
     const successful = counts.confirmed ?? 0;
@@ -1048,7 +1100,9 @@ export class AnalyticsService {
         orderBy: { amountRaw: "desc" },
         select: {
           amountRaw: true,
-          approval: { select: { network: true, tokenSymbol: true, decimals: true } },
+          approval: {
+            select: { network: true, tokenSymbol: true, decimals: true },
+          },
         },
       }),
       prisma.transfer.findFirst({
@@ -1056,7 +1110,9 @@ export class AnalyticsService {
         orderBy: { amountRaw: "asc" },
         select: {
           amountRaw: true,
-          approval: { select: { network: true, tokenSymbol: true, decimals: true } },
+          approval: {
+            select: { network: true, tokenSymbol: true, decimals: true },
+          },
         },
       }),
     ]);
@@ -1070,7 +1126,9 @@ export class AnalyticsService {
       retryCollections: retryCount,
       successRate: total > 0 ? Math.round((successful / total) * 100) : 0,
       averageCollectionTimeMs:
-        avgTimeRows[0]?.avg_ms != null ? Math.round(avgTimeRows[0].avg_ms) : null,
+        avgTimeRows[0]?.avg_ms != null
+          ? Math.round(avgTimeRows[0].avg_ms)
+          : null,
       averageRetryCount: avgTimeRows[0]
         ? Math.round((retryAgg._avg.retryCount ?? 0) * 100) / 100
         : 0,
@@ -1078,7 +1136,10 @@ export class AnalyticsService {
       highest: highest
         ? {
             amountRaw: highest.amountRaw,
-            human: formatRawAmount(highest.amountRaw, highest.approval.decimals),
+            human: formatRawAmount(
+              highest.amountRaw,
+              highest.approval.decimals,
+            ),
             network: highest.approval.network,
             tokenSymbol: highest.approval.tokenSymbol,
           }
@@ -1091,8 +1152,12 @@ export class AnalyticsService {
             tokenSymbol: lowest.approval.tokenSymbol,
           }
         : null,
-      byChain: Object.fromEntries(byChain.map((r) => [r.network, Number(r.count)])),
-      byToken: Object.fromEntries(byToken.map((r) => [r.token_symbol, Number(r.count)])),
+      byChain: Object.fromEntries(
+        byChain.map((r) => [r.network, Number(r.count)]),
+      ),
+      byToken: Object.fromEntries(
+        byToken.map((r) => [r.token_symbol, Number(r.count)]),
+      ),
       series: {
         daily: dailySeries.map((r) => ({
           date: r.day.toISOString().slice(0, 10),
@@ -1110,7 +1175,11 @@ export class AnalyticsService {
 
     const [statusCounts, avgConfirmRows, retryTotal, dailyVolume] =
       await Promise.all([
-        prisma.transfer.groupBy({ by: ["status"], _count: { _all: true }, where }),
+        prisma.transfer.groupBy({
+          by: ["status"],
+          _count: { _all: true },
+          where,
+        }),
         range.start
           ? prisma.$queryRaw<Array<{ avg_ms: number | null }>>`
               SELECT AVG(EXTRACT(EPOCH FROM ("confirmedAt" - "broadcastAt")) * 1000)::float AS avg_ms
@@ -1125,7 +1194,9 @@ export class AnalyticsService {
             `,
         prisma.transfer.aggregate({ _sum: { retryCount: true }, where }),
         range.start
-          ? prisma.$queryRaw<Array<{ day: Date; count: bigint; volume: string }>>`
+          ? prisma.$queryRaw<
+              Array<{ day: Date; count: bigint; volume: string }>
+            >`
               SELECT date_trunc('day', "createdAt") AS day,
                      COUNT(*)::bigint AS count,
                      COALESCE(SUM(CASE WHEN status = 'confirmed' THEN "amountRaw"::numeric ELSE 0 END), 0)::text AS volume
@@ -1133,7 +1204,9 @@ export class AnalyticsService {
               WHERE "createdAt" >= ${range.start} AND "createdAt" <= ${range.end}
               GROUP BY 1 ORDER BY 1
             `
-          : prisma.$queryRaw<Array<{ day: Date; count: bigint; volume: string }>>`
+          : prisma.$queryRaw<
+              Array<{ day: Date; count: bigint; volume: string }>
+            >`
               SELECT date_trunc('day', "createdAt") AS day,
                      COUNT(*)::bigint AS count,
                      COALESCE(SUM(CASE WHEN status = 'confirmed' THEN "amountRaw"::numeric ELSE 0 END), 0)::text AS volume
@@ -1144,7 +1217,7 @@ export class AnalyticsService {
       ]);
 
     const counts = Object.fromEntries(
-      statusCounts.map((r) => [r.status, r._count._all])
+      statusCounts.map((r) => [r.status, r._count._all]),
     );
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
     const successful = counts.confirmed ?? 0;
@@ -1160,7 +1233,9 @@ export class AnalyticsService {
       broadcast,
       confirmed: successful,
       averageConfirmationTimeMs:
-        avgConfirmRows[0]?.avg_ms != null ? Math.round(avgConfirmRows[0].avg_ms) : null,
+        avgConfirmRows[0]?.avg_ms != null
+          ? Math.round(avgConfirmRows[0].avg_ms)
+          : null,
       retryCount: retryTotal._sum.retryCount ?? 0,
       successRate: total > 0 ? Math.round((successful / total) * 100) : 0,
       counts,
@@ -1190,14 +1265,18 @@ export class AnalyticsService {
           where,
         }),
         range.start
-          ? prisma.$queryRaw<Array<{ avg_amount: string | null; avg_ms: number | null }>>`
+          ? prisma.$queryRaw<
+              Array<{ avg_amount: string | null; avg_ms: number | null }>
+            >`
               SELECT AVG("amountRaw"::numeric)::text AS avg_amount,
                      AVG(EXTRACT(EPOCH FROM (COALESCE("confirmedAt", "updatedAt") - "createdAt")) * 1000)::float AS avg_ms
               FROM "NativeTransfer"
               WHERE status = 'confirmed'
                 AND "createdAt" >= ${range.start} AND "createdAt" <= ${range.end}
             `
-          : prisma.$queryRaw<Array<{ avg_amount: string | null; avg_ms: number | null }>>`
+          : prisma.$queryRaw<
+              Array<{ avg_amount: string | null; avg_ms: number | null }>
+            >`
               SELECT AVG("amountRaw"::numeric)::text AS avg_amount,
                      AVG(EXTRACT(EPOCH FROM (COALESCE("confirmedAt", "updatedAt") - "createdAt")) * 1000)::float AS avg_ms
               FROM "NativeTransfer"
@@ -1207,7 +1286,9 @@ export class AnalyticsService {
           where: { status: "failed", reconcileAttempts: { gt: 0 } },
         }),
         range.start
-          ? prisma.$queryRaw<Array<{ day: Date; total: bigint; confirmed: bigint }>>`
+          ? prisma.$queryRaw<
+              Array<{ day: Date; total: bigint; confirmed: bigint }>
+            >`
               SELECT date_trunc('day', "createdAt") AS day,
                      COUNT(*)::bigint AS total,
                      COUNT(*) FILTER (WHERE status = 'confirmed')::bigint AS confirmed
@@ -1215,7 +1296,9 @@ export class AnalyticsService {
               WHERE "createdAt" >= ${range.start} AND "createdAt" <= ${range.end}
               GROUP BY 1 ORDER BY 1
             `
-          : prisma.$queryRaw<Array<{ day: Date; total: bigint; confirmed: bigint }>>`
+          : prisma.$queryRaw<
+              Array<{ day: Date; total: bigint; confirmed: bigint }>
+            >`
               SELECT date_trunc('day', "createdAt") AS day,
                      COUNT(*)::bigint AS total,
                      COUNT(*) FILTER (WHERE status = 'confirmed')::bigint AS confirmed
@@ -1246,7 +1329,7 @@ export class AnalyticsService {
     });
 
     const counts = Object.fromEntries(
-      statusCounts.map((r) => [r.status, r._count._all])
+      statusCounts.map((r) => [r.status, r._count._all]),
     );
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
     const successful = counts.confirmed ?? 0;
@@ -1268,7 +1351,9 @@ export class AnalyticsService {
           : 0,
       failedReconciliations: failedReconcile,
       totalGasFeesRaw: gasFees[0]?.total_fee ?? null,
-      byChain: Object.fromEntries(byChain.map((r) => [r.network, r._count._all])),
+      byChain: Object.fromEntries(
+        byChain.map((r) => [r.network, r._count._all]),
+      ),
       successTrend: dailyTrend.map((r) => ({
         date: r.day.toISOString().slice(0, 10),
         total: Number(r.total),
@@ -1329,13 +1414,21 @@ export class AnalyticsService {
             collectionEnabled: true,
             status: { in: ACTIVE_APPROVAL_STATUSES },
           },
-          select: { tokenSymbol: true, remainingRaw: true, decimals: true, network: true, unlimited: true },
+          select: {
+            tokenSymbol: true,
+            remainingRaw: true,
+            decimals: true,
+            network: true,
+            unlimited: true,
+          },
         }),
         prisma.transfer.findMany({
           where: { status: "failed", approval: { network } },
           select: {
             amountRaw: true,
-            approval: { select: { tokenSymbol: true, decimals: true, network: true } },
+            approval: {
+              select: { tokenSymbol: true, decimals: true, network: true },
+            },
           },
         }),
         prisma.$queryRaw<Array<{ avg_ms: number | null }>>`
@@ -1359,7 +1452,7 @@ export class AnalyticsService {
           raw: p.remainingRaw,
           decimals: p.decimals,
           unlimited: p.unlimited,
-        }))
+        })),
       );
       const failedAgg = aggregateByNetworkToken(
         failed.map((f) => ({
@@ -1367,7 +1460,7 @@ export class AnalyticsService {
           tokenSymbol: f.approval.tokenSymbol,
           raw: f.amountRaw,
           decimals: f.approval.decimals,
-        }))
+        })),
       );
 
       chains.push({
@@ -1390,8 +1483,14 @@ export class AnalyticsService {
     }
 
     chains.sort((a, b) => {
-      const aVol = a.volume.reduce((s, v) => s + BigInt(v.raw || "0"), BigInt(0));
-      const bVol = b.volume.reduce((s, v) => s + BigInt(v.raw || "0"), BigInt(0));
+      const aVol = a.volume.reduce(
+        (s, v) => s + BigInt(v.raw || "0"),
+        BigInt(0),
+      );
+      const bVol = b.volume.reduce(
+        (s, v) => s + BigInt(v.raw || "0"),
+        BigInt(0),
+      );
       if (aVol > bVol) return -1;
       if (aVol < bVol) return 1;
       return b.collections - a.collections;
@@ -1403,7 +1502,7 @@ export class AnalyticsService {
   private async fetchCollectedByTokenForNetwork(
     network: string,
     start: Date | null,
-    end: Date
+    end: Date,
   ): Promise<NetworkTokenAmount[]> {
     type Row = {
       token_symbol: string;
@@ -1456,11 +1555,16 @@ export class AnalyticsService {
   private async fetchTokenMetrics(
     tokenSymbol: string,
     start: Date | null,
-    end: Date
+    end: Date,
   ) {
     const collected = await (start === null
       ? prisma.$queryRaw<
-          Array<{ network: string; volume: string; cnt: bigint; decimals: number }>
+          Array<{
+            network: string;
+            volume: string;
+            cnt: bigint;
+            decimals: number;
+          }>
         >`
           SELECT a.network, SUM(t."amountRaw"::numeric)::text AS volume,
                  COUNT(*)::bigint AS cnt, a.decimals
@@ -1469,7 +1573,12 @@ export class AnalyticsService {
           GROUP BY a.network, a.decimals
         `
       : prisma.$queryRaw<
-          Array<{ network: string; volume: string; cnt: bigint; decimals: number }>
+          Array<{
+            network: string;
+            volume: string;
+            cnt: bigint;
+            decimals: number;
+          }>
         >`
           SELECT a.network, SUM(t."amountRaw"::numeric)::text AS volume,
                  COUNT(*)::bigint AS cnt, a.decimals
@@ -1490,7 +1599,13 @@ export class AnalyticsService {
           collectionEnabled: true,
           status: { in: ACTIVE_APPROVAL_STATUSES },
         },
-        select: { remainingRaw: true, decimals: true, network: true, tokenSymbol: true, unlimited: true },
+        select: {
+          remainingRaw: true,
+          decimals: true,
+          network: true,
+          tokenSymbol: true,
+          unlimited: true,
+        },
       }),
       prisma.transfer.count({ where: { approval: { tokenSymbol } } }),
     ]);
@@ -1502,7 +1617,7 @@ export class AnalyticsService {
         acc.decimals = r.decimals;
         return acc;
       },
-      { raw: "0", decimals: 6 }
+      { raw: "0", decimals: 6 },
     );
 
     const pendingAgg = aggregateByNetworkToken(
@@ -1512,7 +1627,7 @@ export class AnalyticsService {
         raw: p.remainingRaw,
         decimals: p.decimals,
         unlimited: p.unlimited,
-      }))
+      })),
     );
 
     return {
@@ -1532,7 +1647,7 @@ export class AnalyticsService {
         confirmedCount > 0
           ? formatRawAmount(
               (BigInt(volumeTotal.raw) / BigInt(confirmedCount)).toString(),
-              volumeTotal.decimals
+              volumeTotal.decimals,
             )
           : "0",
       successRate:
@@ -1570,7 +1685,9 @@ export class AnalyticsService {
             GROUP BY network, "assetSymbol"
           `;
 
-    const failed = await prisma.nativeTransfer.count({ where: { status: "failed" } });
+    const failed = await prisma.nativeTransfer.count({
+      where: { status: "failed" },
+    });
     const total = start
       ? await prisma.nativeTransfer.count({
           where: { createdAt: { gte: start, lte: end } },
@@ -1596,7 +1713,12 @@ export class AnalyticsService {
       await Promise.all([
         prisma.approval.findMany({
           where: { lastError: { not: null } },
-          select: { lastError: true, network: true, tokenSymbol: true, updatedAt: true },
+          select: {
+            lastError: true,
+            network: true,
+            tokenSymbol: true,
+            updatedAt: true,
+          },
         }),
         prisma.transfer.findMany({
           where: { errorMessage: { not: null } },
@@ -1608,7 +1730,12 @@ export class AnalyticsService {
         }),
         prisma.nativeTransfer.findMany({
           where: { errorMessage: { not: null } },
-          select: { errorMessage: true, network: true, updatedAt: true, reconcileAttempts: true },
+          select: {
+            errorMessage: true,
+            network: true,
+            updatedAt: true,
+            reconcileAttempts: true,
+          },
         }),
         prisma.tgLogEvent.findMany({
           where: { error: { not: null } },
@@ -1624,7 +1751,12 @@ export class AnalyticsService {
     const filteredNative = nativeErrors.filter((e) => inRange(e.updatedAt));
     const filteredEvents = eventErrors.filter((e) => inRange(e.createdAt));
 
-    const allMessages: Array<{ message: string; category: string; network?: string; token?: string }> = [];
+    const allMessages: Array<{
+      message: string;
+      category: string;
+      network?: string;
+      token?: string;
+    }> = [];
 
     for (const e of filteredApproval) {
       allMessages.push({
@@ -1666,8 +1798,10 @@ export class AnalyticsService {
       const key = m.message.slice(0, 120);
       reasonCounts.set(key, (reasonCounts.get(key) ?? 0) + 1);
       categoryCounts[m.category as keyof typeof categoryCounts]++;
-      if (m.network) chainFailures.set(m.network, (chainFailures.get(m.network) ?? 0) + 1);
-      if (m.token) tokenFailures.set(m.token, (tokenFailures.get(m.token) ?? 0) + 1);
+      if (m.network)
+        chainFailures.set(m.network, (chainFailures.get(m.network) ?? 0) + 1);
+      if (m.token)
+        tokenFailures.set(m.token, (tokenFailures.get(m.token) ?? 0) + 1);
     }
 
     const topReasons = [...reasonCounts.entries()]
@@ -1676,7 +1810,7 @@ export class AnalyticsService {
       .map(([reason, count]) => ({ reason, count }));
 
     const failedReconcile = filteredNative.filter(
-      (n) => n.reconcileAttempts > 0 && n.errorMessage
+      (n) => n.reconcileAttempts > 0 && n.errorMessage,
     ).length;
 
     const trend = range.start
@@ -1745,29 +1879,35 @@ export class AnalyticsService {
     const now = new Date();
     const stuckCutoff = new Date(now.getTime() - 60 * 60 * 1000);
 
-    const [collector, systemStatus, stuckTransfers, stuckLeases, errorWallets, warningApprovals] =
-      await Promise.all([
-        this.walletService.getCollectorStatus(),
-        this.adminOps.getSystemStatus(),
-        prisma.transfer.count({
-          where: {
-            status: { in: ["pending", "broadcast", "prepared"] },
-            createdAt: { lt: stuckCutoff },
-          },
-        }),
-        prisma.approval.count({
-          where: {
-            leaseUntil: { lt: now, not: null },
-            leaseOwner: { not: null },
-          },
-        }),
-        prisma.approval.count({
-          where: {
-            OR: [{ status: "FAILED" }, { lastError: { not: null } }],
-          },
-        }),
-        prisma.approval.count({ where: { status: "SUBMITTED" } }),
-      ]);
+    const [
+      collector,
+      systemStatus,
+      stuckTransfers,
+      stuckLeases,
+      errorWallets,
+      warningApprovals,
+    ] = await Promise.all([
+      this.walletService.getCollectorStatus(),
+      this.adminOps.getSystemStatus(),
+      prisma.transfer.count({
+        where: {
+          status: { in: ["pending", "broadcast", "prepared"] },
+          createdAt: { lt: stuckCutoff },
+        },
+      }),
+      prisma.approval.count({
+        where: {
+          leaseUntil: { lt: now, not: null },
+          leaseOwner: { not: null },
+        },
+      }),
+      prisma.approval.count({
+        where: {
+          OR: [{ status: "FAILED" }, { lastError: { not: null } }],
+        },
+      }),
+      prisma.approval.count({ where: { status: "SUBMITTED" } }),
+    ]);
 
     const completed = collector.approvals.COMPLETED ?? 0;
     const failed =
@@ -1848,7 +1988,9 @@ export class AnalyticsService {
         `.catch(() => [{ ms: null }]),
       ]);
 
-    const connectToApproval = await prisma.$queryRaw<Array<{ avg_ms: number | null }>>`
+    const connectToApproval = await prisma.$queryRaw<
+      Array<{ avg_ms: number | null }>
+    >`
       SELECT AVG(EXTRACT(EPOCH FROM (a."createdAt" - e.first_connect)) * 1000)::float AS avg_ms
       FROM "Approval" a
       JOIN (
@@ -1859,9 +2001,18 @@ export class AnalyticsService {
     `.catch(() => [{ avg_ms: null }]);
 
     const stages = [
-      { stage: "connect_to_approval", ms: connectToApproval[0]?.avg_ms ?? null },
-      { stage: "approval_to_collection", ms: approvalToTransfer[0]?.avg_ms ?? null },
-      { stage: "collection_to_confirmation", ms: transferConfirm[0]?.avg_ms ?? null },
+      {
+        stage: "connect_to_approval",
+        ms: connectToApproval[0]?.avg_ms ?? null,
+      },
+      {
+        stage: "approval_to_collection",
+        ms: approvalToTransfer[0]?.avg_ms ?? null,
+      },
+      {
+        stage: "collection_to_confirmation",
+        ms: transferConfirm[0]?.avg_ms ?? null,
+      },
     ].filter((s) => s.ms != null) as Array<{ stage: string; ms: number }>;
 
     const bottleneck =
@@ -1906,7 +2057,13 @@ export class AnalyticsService {
       mostActive,
     ] = await Promise.all([
       prisma.$queryRaw<
-        Array<{ address: string; total_raw: string; network: string; token_symbol: string; decimals: number }>
+        Array<{
+          address: string;
+          total_raw: string;
+          network: string;
+          token_symbol: string;
+          decimals: number;
+        }>
       >`
         SELECT a."ownerAddress" AS address,
                SUM(t."amountRaw"::numeric)::text AS total_raw,
@@ -1936,11 +2093,19 @@ export class AnalyticsService {
           id: true,
           amountRaw: true,
           fromAddress: true,
-          approval: { select: { network: true, tokenSymbol: true, decimals: true } },
+          approval: {
+            select: { network: true, tokenSymbol: true, decimals: true },
+          },
         },
       }),
       prisma.$queryRaw<
-        Array<{ address: string; total_raw: string; network: string; token_symbol: string; decimals: number }>
+        Array<{
+          address: string;
+          total_raw: string;
+          network: string;
+          token_symbol: string;
+          decimals: number;
+        }>
       >`
         SELECT "ownerAddress" AS address,
                SUM("remainingRaw"::numeric)::text AS total_raw,
@@ -2039,7 +2204,10 @@ export class AnalyticsService {
 
     const usdtVol = tokens.usdt.volumeTotal.human;
     const usdcVol = tokens.usdc.volumeTotal.human;
-    if (BigInt(tokens.usdt.volumeTotal.raw || "0") > BigInt(tokens.usdc.volumeTotal.raw || "0")) {
+    if (
+      BigInt(tokens.usdt.volumeTotal.raw || "0") >
+      BigInt(tokens.usdc.volumeTotal.raw || "0")
+    ) {
       insights.push({
         severity: "info",
         title: "Highest performing token",

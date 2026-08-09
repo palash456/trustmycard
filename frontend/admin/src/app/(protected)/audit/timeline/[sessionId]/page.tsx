@@ -21,7 +21,7 @@ export default async function AuditTimelineDetailPage({
   let error: string | null = null;
   try {
     timeline = await adminGetData<SessionTimeline>(
-      `/admin/sessions/${encodeURIComponent(decoded)}/timeline`
+      `/admin/sessions/${encodeURIComponent(decoded)}/timeline`,
     );
   } catch (err) {
     error = err instanceof Error ? err.message : "Failed to load timeline";
@@ -29,7 +29,12 @@ export default async function AuditTimelineDetailPage({
 
   return (
     <ListPageLayout className="space-y-4">
-      <Button variant="ghost" size="sm" className="-ml-2 w-fit" render={<Link href="/audit?tab=timelines" />}>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="-ml-2 w-fit"
+        render={<Link href="/audit?tab=timelines" />}
+      >
         <ChevronLeft className="size-4" />
         Back to timelines
       </Button>
@@ -49,7 +54,9 @@ export default async function AuditTimelineDetailPage({
           {timeline.walletAddress ? (
             <p className="text-sm">
               <Link
-                href={auditTimelineLink({ walletAddress: timeline.walletAddress })}
+                href={auditTimelineLink({
+                  walletAddress: timeline.walletAddress,
+                })}
                 className="text-primary hover:underline"
               >
                 All timelines for this wallet

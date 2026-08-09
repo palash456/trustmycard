@@ -21,9 +21,11 @@ export function currentEventScope(): EventContext | undefined {
 
 export function withEventScope<T>(
   parent: EventContext | undefined,
-  fn: (ctx: EventContext) => T
+  fn: (ctx: EventContext) => T,
 ): T {
-  const ctx = parent ? createChildEventContext(parent) : createRootEventContext();
+  const ctx = parent
+    ? createChildEventContext(parent)
+    : createRootEventContext();
   pushEventScope(ctx);
   try {
     return fn(ctx);

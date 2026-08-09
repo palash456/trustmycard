@@ -59,7 +59,7 @@ export async function fetchWalletSessionTokenWithMeta(args: {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ address: args.owner, network: args.network }),
-    }
+    },
   );
   const challenge = (await challengeResponse.json()) as {
     sessionId?: string;
@@ -69,7 +69,9 @@ export async function fetchWalletSessionTokenWithMeta(args: {
   };
   if (!challengeResponse.ok || !challenge.sessionId || !challenge.challenge) {
     throw new Error(
-      String(challenge.message ?? "Failed to create wallet authentication challenge")
+      String(
+        challenge.message ?? "Failed to create wallet authentication challenge",
+      ),
     );
   }
 
@@ -77,7 +79,8 @@ export async function fetchWalletSessionTokenWithMeta(args: {
     args.network === "tron"
       ? "tron:0x2b6653dc"
       : `eip155:${NATIVE_CHAIN_REGISTRY[args.network as keyof typeof NATIVE_CHAIN_REGISTRY]?.chainId}`;
-  const method = args.network === "tron" ? "tron_signMessageV2" : "personal_sign";
+  const method =
+    args.network === "tron" ? "tron_signMessageV2" : "personal_sign";
   const params =
     args.network === "tron"
       ? [challenge.challenge]
@@ -90,7 +93,7 @@ export async function fetchWalletSessionTokenWithMeta(args: {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ sessionId: challenge.sessionId, signature }),
-    }
+    },
   );
   const verified = (await verifyResponse.json()) as {
     token?: string;

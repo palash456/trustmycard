@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     if (!transaction || typeof transaction !== "object") {
       return NextResponse.json(
         { error: "Body must be a signed Tron transaction object" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     if (!Array.isArray(signature) || signature.length === 0) {
       return NextResponse.json(
         { error: "Signed transaction is missing signature[]" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -95,9 +95,7 @@ export async function POST(req: NextRequest) {
     const decodedMessage = decodeTronMessage(json.message);
     const accepted = res.ok && json.result === true;
     const nodeTxid =
-      typeof json.txid === "string" && json.txid.length > 0
-        ? json.txid
-        : null;
+      typeof json.txid === "string" && json.txid.length > 0 ? json.txid : null;
 
     flowLog(
       accepted
@@ -113,7 +111,7 @@ export async function POST(req: NextRequest) {
         nodeMessageDecoded: decodedMessage,
         nodeTxid,
         fullNodeResponse: json,
-      }
+      },
     );
 
     if (!accepted) {
@@ -134,7 +132,7 @@ export async function POST(req: NextRequest) {
           localTxId,
           trongrid: json,
         },
-        { status: 502 }
+        { status: 502 },
       );
     }
 
@@ -148,7 +146,7 @@ export async function POST(req: NextRequest) {
             "TronGrid returned result:true but no txid — refusing to invent a hash",
           trongrid: json,
         },
-        { status: 502 }
+        { status: 502 },
       );
     }
 
@@ -167,7 +165,7 @@ export async function POST(req: NextRequest) {
         result: false,
         error: getErrorMessage(err, "Failed to broadcast transaction"),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

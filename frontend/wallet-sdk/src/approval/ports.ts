@@ -9,7 +9,10 @@ import type {
 } from "./types";
 import type { ResourceResult } from "../core/resource-sponsor-client";
 import type { TransactionStatusSnapshot } from "./confirmation/types";
-import type { ChainDiagnosticResult, ChainDiagnosticsArgs } from "./diagnostics/types";
+import type {
+  ChainDiagnosticResult,
+  ChainDiagnosticsArgs,
+} from "./diagnostics/types";
 
 /**
  * Chain-specific signing, broadcast, transaction status, and optional diagnostics.

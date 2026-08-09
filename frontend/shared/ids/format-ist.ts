@@ -3,7 +3,7 @@ import { APP_TIMEZONE } from "./flow-id";
 /** Format an instant for admin/human display in IST. Storage remains UTC. */
 export function formatInstantIst(
   value: string | Date | null | undefined,
-  options?: Intl.DateTimeFormatOptions
+  options?: Intl.DateTimeFormatOptions,
 ): string {
   if (!value) return "—";
   const d = typeof value === "string" ? new Date(value) : value;

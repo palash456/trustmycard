@@ -8,7 +8,7 @@ export type TimingResult<T> = {
 export async function withTiming<T>(
   metricName: string,
   labels: MetricLabels,
-  fn: () => Promise<T> | T
+  fn: () => Promise<T> | T,
 ): Promise<TimingResult<T>> {
   const start = nowMs();
   try {

@@ -94,7 +94,11 @@ describe("orchestrator resilience", () => {
     let broadcasts = 0;
     const chain = createFakeChain("tron", {
       confirmationSequence: [
-        { status: TransactionConfirmationStatus.CONFIRMED, txHash: "0xabc", confirmations: 1 },
+        {
+          status: TransactionConfirmationStatus.CONFIRMED,
+          txHash: "0xabc",
+          confirmations: 1,
+        },
       ],
     });
     chain.broadcast = async () => {
@@ -134,7 +138,7 @@ describe("orchestrator resilience", () => {
           updatedAt: new Date().toISOString(),
         },
         confirmation: { pollIntervalMs: 1, maxAttempts: 2 },
-      }
+      },
     );
 
     assert.equal(result.ok, true);

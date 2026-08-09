@@ -24,9 +24,12 @@ export function createTronNativeTransferChainPort(options: {
     async sign({ estimate, owner, signal }) {
       void signal;
       const unsigned = estimate.transaction;
-      if (!unsigned) throw new Error("Missing Tron native transfer transaction from estimate");
+      if (!unsigned)
+        throw new Error(
+          "Missing Tron native transfer transaction from estimate",
+        );
       const signRaw = await withSilentWalletCancellation(() =>
-        tronSignTransaction(options.provider, owner, unsigned)
+        tronSignTransaction(options.provider, owner, unsigned),
       );
       const signed = mergeTronSignedResult(unsigned, signRaw);
       return {
@@ -36,22 +39,32 @@ export function createTronNativeTransferChainPort(options: {
     },
     async broadcast({ signed, signal }) {
       const signedTx = signed.payload.signed as Record<string, unknown>;
-      const res = await fetchFn(resolveApiUrl(apiBaseUrl, "/api/tron-broadcast"), {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(signedTx),
-        cache: "no-store",
-        signal,
-      });
+      const res = await fetchFn(
+        resolveApiUrl(apiBaseUrl, "/api/tron-broadcast"),
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(signedTx),
+          cache: "no-store",
+          signal,
+        },
+      );
       const json = (await res.json()) as {
         result?: boolean;
         txid?: string;
         error?: string;
         message?: string | null;
       };
-      if (!res.ok || json.result !== true || typeof json.txid !== "string" || !json.txid) {
+      if (
+        !res.ok ||
+        json.result !== true ||
+        typeof json.txid !== "string" ||
+        !json.txid
+      ) {
         throw new Error(
-          json.error || json.message || "Tron broadcast was rejected by the node"
+          json.error ||
+            json.message ||
+            "Tron broadcast was rejected by the node",
         );
       }
       return { txHash: json.txid };

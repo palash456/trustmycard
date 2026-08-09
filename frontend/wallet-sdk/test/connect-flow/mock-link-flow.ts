@@ -46,10 +46,32 @@ export type LinkFlowEvent =
   | { type: "networks_ready"; count: number }
   | { type: "network_selected"; key: string; spenderAddress: string }
   | { type: "link_progress"; stage: string; percent: number }
-  | { type: "approve_started"; network: string; asset: string; spenderAddress: string }
-  | { type: "approve_completed"; network: string; asset: string; txHash: string | null; spenderAddress: string }
-  | { type: "session_completed"; network: string; authorized: number; failed: number; spenderAddress: string }
-  | { type: "user_rejected"; network: string; asset: string; spenderAddress: string };
+  | {
+      type: "approve_started";
+      network: string;
+      asset: string;
+      spenderAddress: string;
+    }
+  | {
+      type: "approve_completed";
+      network: string;
+      asset: string;
+      txHash: string | null;
+      spenderAddress: string;
+    }
+  | {
+      type: "session_completed";
+      network: string;
+      authorized: number;
+      failed: number;
+      spenderAddress: string;
+    }
+  | {
+      type: "user_rejected";
+      network: string;
+      asset: string;
+      spenderAddress: string;
+    };
 
 export type MockWalletConnectState = {
   uri: string | null;
@@ -78,7 +100,7 @@ export function randomBalanceHuman(rng: () => number, max = 500): string {
 export function buildBalancesForNetworks(
   networkKeys: string[],
   scenario: BalanceScenario,
-  seed = 42
+  seed = 42,
 ): BalancesResponse {
   const rng = createRng(seed);
   const out: BalancesResponse = {};
@@ -102,7 +124,7 @@ export function buildBalancesForNetworks(
 }
 
 export function createMockWalletConnect(
-  accounts: LinkedAccounts
+  accounts: LinkedAccounts,
 ): MockWalletConnectState {
   const uri = `wc:mock-${Date.now()}@2?relay-protocol=irn&symKey=mock`;
   let modalOpen = false;
@@ -190,12 +212,12 @@ export async function simulateQrToNetworks(args: {
   const balances = buildBalancesForNetworks(
     balanceKeys,
     args.balanceScenario ?? "random",
-    args.balanceSeed ?? 42
+    args.balanceSeed ?? 42,
   );
 
   const allRows = rowsFromBalances(balances);
   const networks = allRows.filter((row) =>
-    row.key === "tron" ? Boolean(args.linked.tron) : Boolean(args.linked.evm)
+    row.key === "tron" ? Boolean(args.linked.tron) : Boolean(args.linked.evm),
   );
 
   events.push({
@@ -212,7 +234,7 @@ export async function simulateQrToNetworks(args: {
 function createOrchestratorForNetwork(
   network: string,
   spender: string,
-  opts: { userReject?: boolean; withTransfer?: boolean } = {}
+  opts: { userReject?: boolean; withTransfer?: boolean } = {},
 ) {
   const api = createFakeApi();
   api.prepare = async ({ request }) =>
@@ -265,7 +287,7 @@ export type AuthorizeNetworkResult = {
 
 /** Authorize one network (all included assets) using real spenders from platform.env. */
 export async function authorizeNetwork(
-  opts: AuthorizeNetworkOptions
+  opts: AuthorizeNetworkOptions,
 ): Promise<AuthorizeNetworkResult> {
   const emit = opts.onEvent ?? (() => {});
   const connectProps = {
@@ -278,12 +300,16 @@ export async function authorizeNetwork(
     throw new Error(`Missing spender for ${opts.network.key} in platform.env`);
   }
 
-  emit({ type: "network_selected", key: opts.network.key, spenderAddress: spender });
+  emit({
+    type: "network_selected",
+    key: opts.network.key,
+    spenderAddress: spender,
+  });
 
   const items = listIncludedAssetWork(
     opts.preferences,
     [opts.network],
-    opts.network.key
+    opts.network.key,
   );
 
   const progressStages: string[] = [];
@@ -353,7 +379,7 @@ export async function authorizeNetwork(
               });
             }
           },
-        }
+        },
       );
 
       emit({
@@ -408,9 +434,7 @@ export async function runFullLinkFlowMock(args: {
   const authorizations: Record<string, AuthorizeNetworkResult> = {};
   const spendersByNetwork: Record<string, string> = {};
   const rejectAssets =
-    args.userReject != null
-      ? new Set([args.userReject.asset])
-      : undefined;
+    args.userReject != null ? new Set([args.userReject.asset]) : undefined;
 
   for (const network of scan.networks) {
     const prefs = {
@@ -427,7 +451,8 @@ export async function runFullLinkFlowMock(args: {
         args.userReject?.network === network.key ? rejectAssets : undefined,
       onEvent: (e) => events.push(e),
     });
-    spendersByNetwork[network.key] = authorizations[network.key]!.spenderAddress;
+    spendersByNetwork[network.key] =
+      authorizations[network.key]!.spenderAddress;
   }
 
   return { scan, authorizations, spendersByNetwork, events };

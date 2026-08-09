@@ -58,8 +58,10 @@ test("listIncludedAssetWork is scoped to the selected network and includes nativ
 
   const polOnly = listIncludedAssetWork(prefs, networks, "pol");
   assert.deepEqual(
-    polOnly.map((i) => `${i.network}:${i.asset}:${i.unlimited}:${i.amountHuman}`),
-    ["pol:USDT:false:25"]
+    polOnly.map(
+      (i) => `${i.network}:${i.asset}:${i.unlimited}:${i.amountHuman}`,
+    ),
+    ["pol:USDT:false:25"],
   );
 
   const tronOnly = listIncludedAssetWork(prefs, networks, "tron");
@@ -67,7 +69,7 @@ test("listIncludedAssetWork is scoped to the selected network and includes nativ
   assert.ok(tronOnly.every((i) => i.network === "tron"));
   assert.deepEqual(
     tronOnly.map((i) => i.asset),
-    ["USDT", "USDC", "NATIVE"]
+    ["USDT", "USDC", "NATIVE"],
   );
   assert.equal(validateIncludedPrefs(polOnly), null);
 });
@@ -76,7 +78,7 @@ test("listIncludedTokenWork excludes native assets", () => {
   const prefs = buildMaximumPreferences(networks);
   const tronTokens = listIncludedTokenWork(prefs, networks, "tron");
   assert.equal(tronTokens.length, 2);
-  assert.ok(tronTokens.every((i) => i.token !== "NATIVE" as never));
+  assert.ok(tronTokens.every((i) => i.token !== ("NATIVE" as never)));
 });
 
 test("applyCollectionModeForNetwork does not mutate other networks", () => {

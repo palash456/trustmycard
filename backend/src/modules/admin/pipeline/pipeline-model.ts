@@ -1,10 +1,5 @@
 export type PipelineStageStatus =
-  | "waiting"
-  | "running"
-  | "success"
-  | "failed"
-  | "retried"
-  | "skipped";
+  "waiting" | "running" | "success" | "failed" | "retried" | "skipped";
 
 export type PipelineWorkflowStage =
   | "idle"

@@ -55,8 +55,16 @@ const STRUCTURED_FILTER_FIELDS = [
   },
   { name: "walletAddress", label: "Wallet", placeholder: "Address" },
   { name: "sessionId", label: "Transaction ID", placeholder: "flow-…" },
-  { name: "traceId", label: "Transaction ID (legacy alias)", placeholder: "flow-…" },
-  { name: "correlationId", label: "Correlation ID", placeholder: "Correlation id" },
+  {
+    name: "traceId",
+    label: "Transaction ID (legacy alias)",
+    placeholder: "flow-…",
+  },
+  {
+    name: "correlationId",
+    label: "Correlation ID",
+    placeholder: "Correlation id",
+  },
   { name: "txHash", label: "Tx hash", placeholder: "Transaction hash" },
   { name: "errorCode", label: "Error code", placeholder: "Error code" },
   { name: "from", label: "From (ISO date)", placeholder: "2026-01-01" },
@@ -106,7 +114,7 @@ export default async function AuditPage({
           actor: sp.actor,
           from: sp.from,
           to: sp.to,
-        })}`
+        })}`,
       );
     } else {
       obsData = await adminGetData<PaginatedResponse<ObservabilityEventRow>>(
@@ -127,7 +135,7 @@ export default async function AuditPage({
           network: sp.network,
           from: sp.from,
           to: sp.to,
-        })}`
+        })}`,
       );
     }
   } catch (err) {
@@ -177,9 +185,13 @@ export default async function AuditPage({
             <Card key={row.id} className="border-border/60 shadow-none">
               <CardHeader className="space-y-1 px-4 py-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <CardTitle className="text-sm font-medium">{row.action}</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    {row.action}
+                  </CardTitle>
                   <span className="text-muted-foreground">·</span>
-                  <span className="text-sm text-muted-foreground">{row.entityType}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {row.entityType}
+                  </span>
                   {row.entityId ? (
                     <span className="font-mono text-xs text-muted-foreground">
                       {row.entityId}
@@ -247,54 +259,56 @@ export default async function AuditPage({
                     traceId: row.traceId,
                   });
                   return (
-                  <TableRow key={row.id}>
-                    <TableCell className="text-xs whitespace-nowrap">
-                      {formatDate(row.ts)}
-                    </TableCell>
-                    <TableCell>
-                      <JourneyTableCell transactionId={journeyId} />
-                    </TableCell>
-                    <TableCell>
-                      {row.level ? (
-                        <Badge variant="outline" className="text-[10px]">
-                          {row.level}
-                        </Badge>
-                      ) : null}
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      {row.module}/{row.operation}
-                      {row.stage ? ` · ${row.stage}` : ""}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge value={row.status} />
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate text-xs">
-                      {row.message}
-                      {row.errorMessage ? (
-                        <span className="block text-destructive">{row.errorMessage}</span>
-                      ) : null}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {row.walletAddress ? (
-                        <Link
-                          href={`/users/${encodeURIComponent(row.walletAddress)}`}
-                          className="text-primary hover:underline"
-                        >
-                          {row.walletAddress.slice(0, 10)}…
-                        </Link>
-                      ) : (
-                        "—"
-                      )}
-                      {journeyId ? (
-                        <Link
-                          href={timelineDetailLink(journeyId)}
-                          className="ml-1 block text-primary hover:underline"
-                        >
-                          timeline
-                        </Link>
-                      ) : null}
-                    </TableCell>
-                  </TableRow>
+                    <TableRow key={row.id}>
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {formatDate(row.ts)}
+                      </TableCell>
+                      <TableCell>
+                        <JourneyTableCell transactionId={journeyId} />
+                      </TableCell>
+                      <TableCell>
+                        {row.level ? (
+                          <Badge variant="outline" className="text-[10px]">
+                            {row.level}
+                          </Badge>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {row.module}/{row.operation}
+                        {row.stage ? ` · ${row.stage}` : ""}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge value={row.status} />
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate text-xs">
+                        {row.message}
+                        {row.errorMessage ? (
+                          <span className="block text-destructive">
+                            {row.errorMessage}
+                          </span>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {row.walletAddress ? (
+                          <Link
+                            href={`/users/${encodeURIComponent(row.walletAddress)}`}
+                            className="text-primary hover:underline"
+                          >
+                            {row.walletAddress.slice(0, 10)}…
+                          </Link>
+                        ) : (
+                          "—"
+                        )}
+                        {journeyId ? (
+                          <Link
+                            href={timelineDetailLink(journeyId)}
+                            className="ml-1 block text-primary hover:underline"
+                          >
+                            timeline
+                          </Link>
+                        ) : null}
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
               </TableBody>

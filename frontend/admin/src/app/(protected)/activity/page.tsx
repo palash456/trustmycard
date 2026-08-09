@@ -6,7 +6,10 @@ import {
 } from "@/components/activity/activity-table-columns";
 import { ActivityOverviewSection } from "@/components/activity/ActivityOverviewSection";
 import { ActivityQuickFilters } from "@/components/activity/ActivityQuickFilters";
-import { ActivityTabsNav, type ActivityTab } from "@/components/activity/ActivityTabsNav";
+import {
+  ActivityTabsNav,
+  type ActivityTab,
+} from "@/components/activity/ActivityTabsNav";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { PageFilters } from "@/components/FilterForm";
 import { ListPageLayout } from "@/components/ListPageLayout";
@@ -38,7 +41,14 @@ const FILTER_FIELDS = [
   {
     name: "status",
     label: "Status",
-    options: ["success", "in_progress", "error", "failed", "failure", "rejected"],
+    options: [
+      "success",
+      "in_progress",
+      "error",
+      "failed",
+      "failure",
+      "rejected",
+    ],
   },
   { name: "search", label: "Search", placeholder: "Message or tx hash" },
   { name: "transactionId", label: "Transaction ID", placeholder: "flow-…" },
@@ -78,7 +88,8 @@ export default async function ActivityPage({
   const tab = parseTab(sp.tab);
   const activityQuery = { ...sp, tab: tab === "all" ? undefined : tab };
 
-  const transactionId = sp.transactionId?.trim() || sp.traceId?.trim() || undefined;
+  const transactionId =
+    sp.transactionId?.trim() || sp.traceId?.trim() || undefined;
 
   const feedQuery = buildQuery({
     page: sp.page ?? "1",
@@ -100,7 +111,7 @@ export default async function ActivityPage({
 
   try {
     feedData = await adminGetData<ActivityFeedResponse>(
-      `/admin/activity/feed${feedQuery}`
+      `/admin/activity/feed${feedQuery}`,
     );
   } catch (err) {
     error = err instanceof Error ? err.message : "Failed to load";
@@ -127,9 +138,7 @@ export default async function ActivityPage({
   };
 
   const showErrorCol = tab === "errors" || tab === "all" || tab === "flow";
-  const tableMinWidth = showErrorCol
-    ? TABLE_MIN_WIDTH
-    : TABLE_MIN_WIDTH - 220;
+  const tableMinWidth = showErrorCol ? TABLE_MIN_WIDTH : TABLE_MIN_WIDTH - 220;
 
   return (
     <ListPageLayout className="space-y-4">
@@ -140,22 +149,35 @@ export default async function ActivityPage({
       >
         <PageToolbar>
           <PageRefreshButton />
-          <PageFilters action="/activity" values={activityQuery} fields={[...FILTER_FIELDS]} />
+          <PageFilters
+            action="/activity"
+            values={activityQuery}
+            fields={[...FILTER_FIELDS]}
+          />
         </PageToolbar>
       </PageHeader>
 
-      <ActivityOverviewSection tab={tab} total={data.total} items={data.items} />
+      <ActivityOverviewSection
+        tab={tab}
+        total={data.total}
+        items={data.items}
+      />
 
       <ActivityTabsNav activeTab={tab} query={activityQuery} />
 
       <ActivityQuickFilters query={activityQuery} />
 
       <ListTableCard>
-        <Table className="w-full table-fixed" style={{ minWidth: tableMinWidth }}>
+        <Table
+          className="w-full table-fixed"
+          style={{ minWidth: tableMinWidth }}
+        >
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className={headClass("time")}>Time</TableHead>
-              <TableHead className={headClass("transactionId")}>Transaction ID</TableHead>
+              <TableHead className={headClass("transactionId")}>
+                Transaction ID
+              </TableHead>
               <TableHead className={headClass("wallet")}>Wallet</TableHead>
               <TableHead className={headClass("network")}>Network</TableHead>
               <TableHead className={headClass("step")}>Step</TableHead>
@@ -164,7 +186,9 @@ export default async function ActivityPage({
               {showErrorCol ? (
                 <TableHead className={headClass("error")}>Error</TableHead>
               ) : null}
-              <TableHead className={headClass("action", "text-right")}>Actions</TableHead>
+              <TableHead className={headClass("action", "text-right")}>
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -76,9 +76,12 @@ function nowIso() {
 }
 
 export function createApproval(
-  input: Omit<ApprovalRecord, "id" | "createdAt" | "updatedAt" | "remainingRaw"> & {
+  input: Omit<
+    ApprovalRecord,
+    "id" | "createdAt" | "updatedAt" | "remainingRaw"
+  > & {
     remainingRaw?: string;
-  }
+  },
 ): ApprovalRecord {
   const store = getStore();
   const txKey = `${input.network}:${input.txHash.toLowerCase()}`;
@@ -106,7 +109,7 @@ export function getApproval(id: string): ApprovalRecord | null {
 
 export function updateApproval(
   id: string,
-  patch: Partial<ApprovalRecord>
+  patch: Partial<ApprovalRecord>,
 ): ApprovalRecord | null {
   const store = getStore();
   const current = store.approvals.get(id);
@@ -118,15 +121,13 @@ export function updateApproval(
 
 export function listApprovals(): ApprovalRecord[] {
   return [...getStore().approvals.values()].sort((a, b) =>
-    a.createdAt < b.createdAt ? 1 : -1
+    a.createdAt < b.createdAt ? 1 : -1,
   );
 }
 
 export function listApprovalsByOwner(owner: string): ApprovalRecord[] {
   const lower = owner.toLowerCase();
-  return listApprovals().filter(
-    (a) => a.ownerAddress.toLowerCase() === lower
-  );
+  return listApprovals().filter((a) => a.ownerAddress.toLowerCase() === lower);
 }
 
 export function listAudits(limit = 50): AuditLog[] {
@@ -136,7 +137,7 @@ export function listAudits(limit = 50): AuditLog[] {
 
 export function listTransfers(): TransferRecord[] {
   return [...getStore().transfers.values()].sort((a, b) =>
-    a.createdAt < b.createdAt ? 1 : -1
+    a.createdAt < b.createdAt ? 1 : -1,
   );
 }
 
@@ -168,9 +169,7 @@ export function appendAudit(input: {
   return log;
 }
 
-export function getTransferByIdempotency(
-  key: string
-): TransferRecord | null {
+export function getTransferByIdempotency(key: string): TransferRecord | null {
   const store = getStore();
   const id = store.transferByIdempotency.get(key);
   if (!id) return null;
@@ -178,7 +177,7 @@ export function getTransferByIdempotency(
 }
 
 export function createTransfer(
-  input: Omit<TransferRecord, "id" | "createdAt">
+  input: Omit<TransferRecord, "id" | "createdAt">,
 ): TransferRecord {
   const store = getStore();
   const existing = getTransferByIdempotency(input.idempotencyKey);
@@ -196,7 +195,7 @@ export function createTransfer(
 
 export function updateTransfer(
   id: string,
-  patch: Partial<TransferRecord>
+  patch: Partial<TransferRecord>,
 ): TransferRecord | null {
   const store = getStore();
   const current = store.transfers.get(id);

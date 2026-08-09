@@ -202,7 +202,12 @@ export type AnalyticsResponse = {
     failedReconciliations: number;
     totalGasFeesRaw: string | null;
     byChain: Record<string, number>;
-    successTrend: Array<{ date: string; total: number; confirmed: number; rate: number }>;
+    successTrend: Array<{
+      date: string;
+      total: number;
+      confirmed: number;
+      rate: number;
+    }>;
     counts: Record<string, number>;
   };
   chains: ChainMetrics[];
@@ -289,8 +294,16 @@ export type AnalyticsResponse = {
       tokenSymbol: string;
       href: string;
     }>;
-    highestFailureWallets: Array<{ address: string; failures: number; href: string }>;
-    mostActiveWallets: Array<{ address: string; activityCount: number; href: string }>;
+    highestFailureWallets: Array<{
+      address: string;
+      failures: number;
+      href: string;
+    }>;
+    mostActiveWallets: Array<{
+      address: string;
+      activityCount: number;
+      href: string;
+    }>;
   };
   insights: AnalyticsInsight[];
   generatedAt: string;

@@ -51,12 +51,17 @@ const APPROVAL_STATUSES = [
   "REVOKED",
   "EXPIRED",
 ] as const;
-const TRANSFER_STATUSES = ["confirmed", "pending", "failed", "broadcast"] as const;
+const TRANSFER_STATUSES = [
+  "confirmed",
+  "pending",
+  "failed",
+  "broadcast",
+] as const;
 const NATIVE_STATUSES = ["confirmed", "pending", "failed"] as const;
 const EVENT_TYPES = ["scan", "approve", "native_transfer", "connect"] as const;
 
 const OWNERS = Array.from({ length: 48 }, (_, i) =>
-  i % 7 === 0 ? tronAddr(i) : addr(1000 + i)
+  i % 7 === 0 ? tronAddr(i) : addr(1000 + i),
 );
 
 function nativeQualifier(network: string): string {
@@ -84,7 +89,8 @@ function buildApprovals() {
       remainingRaw: String(Math.max(0, (30 - (i % 20)) * 1_000_000)),
       collectionEnabled: status === "ACTIVE" || status === "PARTIALLY_USED",
       nextCheckAt: status === "ACTIVE" ? daysAgo(i % 10, 8) : null,
-      lastError: status === "FAILED" ? "RPC timeout during allowance read" : null,
+      lastError:
+        status === "FAILED" ? "RPC timeout during allowance read" : null,
       createdAt: daysAgo(i % 30, 10 + (i % 8)),
     };
   });
@@ -124,15 +130,21 @@ function buildNative() {
     const traceId = flowId((i % 10) + 1, owner);
     return {
       id: `demo-nt-${i + 1}`,
-      publicId: demoPublicId("transfer-native", nativeQualifier(network), traceId),
+      publicId: demoPublicId(
+        "transfer-native",
+        nativeQualifier(network),
+        traceId,
+      ),
       ownerAddress: owner,
       network,
-      assetSymbol: network === "tron" ? "TRX" : network === "bsc" ? "BNB" : "ETH",
+      assetSymbol:
+        network === "tron" ? "TRX" : network === "bsc" ? "BNB" : "ETH",
       amountHuman: (0.01 + (i % 50) * 0.002).toFixed(4),
       status,
       traceId,
       txHash: txHash(i, "nt"),
-      reconcileAttempts: status === "pending" ? (i % 12) + 1 : status === "failed" ? 120 : 2,
+      reconcileAttempts:
+        status === "pending" ? (i % 12) + 1 : status === "failed" ? 120 : 2,
       createdAt: daysAgo(i % 30, 14 + (i % 5)),
     };
   });
@@ -154,9 +166,13 @@ function buildEvents() {
             : "User rejected signature"
         : null,
     ip: `203.0.${(i % 200) + 1}.${(i % 250) + 1}`,
-    location: ["Singapore, SG", "Berlin, DE", "Austin, US", "Lagos, NG", "Tokyo, JP"][
-      i % 5
-    ],
+    location: [
+      "Singapore, SG",
+      "Berlin, DE",
+      "Austin, US",
+      "Lagos, NG",
+      "Tokyo, JP",
+    ][i % 5],
     createdAt: daysAgo(i % 30, 9 + (i % 10)),
     traceId: flowId((i % 10) + 1, OWNERS[i % OWNERS.length]),
   }));
@@ -173,9 +189,14 @@ function buildAudits() {
   ];
   return Array.from({ length: 150 }, (_, i) => ({
     id: `demo-audit-${i + 1}`,
-    actor: i % 4 === 0 ? "admin" : `owner:${OWNERS[i % OWNERS.length].slice(0, 12)}…`,
+    actor:
+      i % 4 === 0
+        ? "admin"
+        : `owner:${OWNERS[i % OWNERS.length].slice(0, 12)}…`,
     action: actions[i % actions.length],
-    entityType: ["approval", "transfer", "settings", "collector", "native"][i % 5],
+    entityType: ["approval", "transfer", "settings", "collector", "native"][
+      i % 5
+    ],
     entityId: i % 3 === 0 ? null : `demo-ap-${(i % 40) + 1}`,
     payload: {
       note: "demo month sample",
@@ -202,7 +223,12 @@ const nativeTransfers = buildNative();
 const events = buildEvents();
 const audits = buildAudits();
 const wallets = buildWallets();
-const settlementSessions = buildDemoSettlementSessions(OWNERS, NETWORKS, daysAgo, txHash);
+const settlementSessions = buildDemoSettlementSessions(
+  OWNERS,
+  NETWORKS,
+  daysAgo,
+  txHash,
+);
 
 const WORKFLOW_STAGES = [
   "idle",
@@ -221,7 +247,9 @@ function buildUsers() {
   return OWNERS.map((address, i) => {
     const ownerApprovals = approvals.filter((a) => a.ownerAddress === address);
     const ownerTransfers = transfers.filter((t) => t.fromAddress === address);
-    const ownerNative = nativeTransfers.filter((n) => n.ownerAddress === address);
+    const ownerNative = nativeTransfers.filter(
+      (n) => n.ownerAddress === address,
+    );
     const ownerEvents = events.filter((e) => e.address === address);
     const latestApproval = ownerApprovals[0];
     const latestTransfer = ownerTransfers[0];
@@ -238,21 +266,25 @@ function buildUsers() {
       ...new Set(
         ownerApprovals
           .filter((a) => a.status !== "REVOKED")
-          .map((a) => a.network)
+          .map((a) => a.network),
       ),
     ];
     const workflowStage =
       i === 0 ? "collecting" : WORKFLOW_STAGES[i % WORKFLOW_STAGES.length];
-    const healthStatus = i === 0 ? "healthy" : HEALTH_STATUSES[i % HEALTH_STATUSES.length];
+    const healthStatus =
+      i === 0 ? "healthy" : HEALTH_STATUSES[i % HEALTH_STATUSES.length];
     const collectableRemaining =
       latestApproval &&
-      (latestApproval.status === "ACTIVE" || latestApproval.status === "PARTIALLY_USED")
+      (latestApproval.status === "ACTIVE" ||
+        latestApproval.status === "PARTIALLY_USED")
         ? [
             {
               network: latestApproval.network,
               tokenSymbol: latestApproval.tokenSymbol,
               remainingRaw: latestApproval.remainingRaw,
-              remainingHuman: (Number(latestApproval.remainingRaw) / 1_000_000).toFixed(2),
+              remainingHuman: (
+                Number(latestApproval.remainingRaw) / 1_000_000
+              ).toFixed(2),
               decimals: 6,
             },
           ]
@@ -287,7 +319,9 @@ function buildUsers() {
       transferStatus: latestTransfer?.status ?? null,
       nativeFundingStatus: latestNative?.status ?? null,
       reconciliationStatus:
-        latestNative?.status === "pending" ? "reconciling" : latestNative?.status ?? null,
+        latestNative?.status === "pending"
+          ? "reconciling"
+          : (latestNative?.status ?? null),
       collectableRemaining,
       totalLifetimeCollected,
       approvalCount: ownerApprovals.length || 1 + (i % 6),
@@ -295,9 +329,17 @@ function buildUsers() {
       nativeTransferCount: ownerNative.length || i % 4,
       eventCount: ownerEvents.length || 2 + (i % 10),
       latestTransaction: latestTransfer?.txHash
-        ? { txHash: latestTransfer.txHash, at: latestTransfer.createdAt, source: "transfer" }
+        ? {
+            txHash: latestTransfer.txHash,
+            at: latestTransfer.createdAt,
+            source: "transfer",
+          }
         : latestApproval
-          ? { txHash: txHash(i, "ap"), at: latestApproval.createdAt, source: "approval" }
+          ? {
+              txHash: txHash(i, "ap"),
+              at: latestApproval.createdAt,
+              source: "approval",
+            }
           : null,
       latestActivity: {
         at: daysAgo(i % 14, 18),
@@ -422,7 +464,7 @@ export const demoFixtures: Record<string, unknown> = {
     recentTransactions: buildDemoTransactionList(
       users.map((u) => u.address),
       NETWORKS,
-      daysAgo
+      daysAgo,
     ).slice(0, 8),
     timestamp: now,
   },
@@ -438,7 +480,10 @@ export const demoFixtures: Record<string, unknown> = {
       "collector.rpcTimeoutMs": 15000,
       "collection.defaultMode": "maximum",
       "collection.approveAmountUsdtDefault": "0",
-      "collection.networkCaps": { pol: { usdt: "1000" }, eth: { usdt: "5000" } },
+      "collection.networkCaps": {
+        pol: { usdt: "1000" },
+        eth: { usdt: "5000" },
+      },
       "native.reconcile.enabled": true,
       "native.reconcile.intervalMs": 60000,
       "native.reconcile.batchSize": 10,
@@ -498,7 +543,10 @@ export const demoFixtures: Record<string, unknown> = {
     ok: true,
     outbox: { pending: 3, failed: 1, published: 412 },
     intents: { pending: 8, executing: 2, settled: 156, failed: 4 },
-    workers: { collection: { running: true, leased: 3 }, webhook: { running: true } },
+    workers: {
+      collection: { running: true, leased: 3 },
+      webhook: { running: true },
+    },
     timestamp: now,
   },
 
@@ -613,11 +661,15 @@ export function getDemoFixture<T>(path: string): T {
           const status = params.get("status");
           const owner = params.get("owner");
           const collectionEnabled = params.get("collectionEnabled");
-          if (network && row.network !== network.trim().toLowerCase()) return false;
-          if (status && row.status !== status.trim().toUpperCase()) return false;
+          if (network && row.network !== network.trim().toLowerCase())
+            return false;
+          if (status && row.status !== status.trim().toUpperCase())
+            return false;
           if (owner && !includes(row.ownerAddress, owner.trim())) return false;
-          if (collectionEnabled === "true" && !row.collectionEnabled) return false;
-          if (collectionEnabled === "false" && row.collectionEnabled) return false;
+          if (collectionEnabled === "true" && !row.collectionEnabled)
+            return false;
+          if (collectionEnabled === "false" && row.collectionEnabled)
+            return false;
           return true;
         });
       case "/admin/transfers":
@@ -625,9 +677,15 @@ export function getDemoFixture<T>(path: string): T {
           const network = params.get("network");
           const status = params.get("status");
           const owner = params.get("owner");
-          if (network && row.approval.network !== network.trim().toLowerCase()) return false;
-          if (status && row.status !== status.trim().toLowerCase()) return false;
-          if (owner && !includes(row.fromAddress, owner.trim()) && !includes(row.approval.ownerAddress, owner.trim()))
+          if (network && row.approval.network !== network.trim().toLowerCase())
+            return false;
+          if (status && row.status !== status.trim().toLowerCase())
+            return false;
+          if (
+            owner &&
+            !includes(row.fromAddress, owner.trim()) &&
+            !includes(row.approval.ownerAddress, owner.trim())
+          )
             return false;
           return true;
         });
@@ -636,8 +694,10 @@ export function getDemoFixture<T>(path: string): T {
           const network = params.get("network");
           const status = params.get("status");
           const owner = params.get("owner");
-          if (network && row.network !== network.trim().toLowerCase()) return false;
-          if (status && row.status !== status.trim().toLowerCase()) return false;
+          if (network && row.network !== network.trim().toLowerCase())
+            return false;
+          if (status && row.status !== status.trim().toLowerCase())
+            return false;
           if (owner && !includes(row.ownerAddress, owner.trim())) return false;
           return true;
         });
@@ -655,11 +715,17 @@ export function getDemoFixture<T>(path: string): T {
           const approvalStatus = params.get("approvalStatus");
           const hasError = params.get("hasError");
           if (search && !includes(row.address, search.trim())) return false;
-          if (network && !row.networksUsed.some((n) => n === network.trim().toLowerCase()))
+          if (
+            network &&
+            !row.networksUsed.some((n) => n === network.trim().toLowerCase())
+          )
             return false;
-          if (workflowStage && row.workflowStage !== workflowStage.trim()) return false;
-          if (healthStatus && row.healthStatus !== healthStatus.trim()) return false;
-          if (approvalStatus && row.approvalStatus !== approvalStatus.trim()) return false;
+          if (workflowStage && row.workflowStage !== workflowStage.trim())
+            return false;
+          if (healthStatus && row.healthStatus !== healthStatus.trim())
+            return false;
+          if (approvalStatus && row.approvalStatus !== approvalStatus.trim())
+            return false;
           if (hasError === "true" && !row.latestError) return false;
           return true;
         });
@@ -679,7 +745,9 @@ export function getDemoFixture<T>(path: string): T {
         let rows = all as typeof events;
         const tab = params.get("tab");
         if (tab === "user") {
-          rows = rows.filter((row) => ["approve", "native_transfer", "scan"].includes(row.type));
+          rows = rows.filter((row) =>
+            ["approve", "native_transfer", "scan"].includes(row.type),
+          );
         } else if (tab === "connections") {
           rows = rows.filter((row) => row.type === "connect");
         } else if (tab === "errors") {
@@ -691,8 +759,10 @@ export function getDemoFixture<T>(path: string): T {
           const status = params.get("status");
           const address = params.get("address");
           if (type && row.type !== type.trim()) return false;
-          if (network && row.network !== network.trim().toLowerCase()) return false;
-          if (status && tab !== "errors" && row.status !== status.trim()) return false;
+          if (network && row.network !== network.trim().toLowerCase())
+            return false;
+          if (status && tab !== "errors" && row.status !== status.trim())
+            return false;
           if (address && !includes(row.address, address.trim())) return false;
           return true;
         });
@@ -744,7 +814,10 @@ export function getDemoFixture<T>(path: string): T {
     }) as T;
   }
 
-  if (base === "/admin/activity/feed" || base.startsWith("/admin/activity/feed/")) {
+  if (
+    base === "/admin/activity/feed" ||
+    base.startsWith("/admin/activity/feed/")
+  ) {
     const unified = events
       .filter((e) => e.address?.trim())
       .map((e) => ({
@@ -773,23 +846,29 @@ export function getDemoFixture<T>(path: string): T {
       }))
       .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
-    const detailMatch = base.match(/\/admin\/activity\/feed\/([^/]+)\/([^/]+)$/);
+    const detailMatch = base.match(
+      /\/admin\/activity\/feed\/([^/]+)\/([^/]+)$/,
+    );
     if (detailMatch) {
       const [, source, id] = detailMatch;
-      const item = unified.find((row) => row.source === source && row.id === id);
+      const item = unified.find(
+        (row) => row.source === source && row.id === id,
+      );
       if (item) {
         return { source, item, summary: item } as T;
       }
       throw new Error(`Demo activity feed item not found: ${source}/${id}`);
     }
 
-    const traceFilter = (params.get("traceId") ?? params.get("transactionId"))?.trim();
+    const traceFilter = (
+      params.get("traceId") ?? params.get("transactionId")
+    )?.trim();
     const filtered = traceFilter
       ? unified.filter(
           (row) =>
             row.traceId === traceFilter ||
             row.transactionId === traceFilter ||
-            row.sessionId === traceFilter
+            row.sessionId === traceFilter,
         )
       : unified;
 
@@ -822,7 +901,10 @@ export function getDemoFixture<T>(path: string): T {
         stage: kind === "timeline" ? "COMPLETED" : "SCAN STARTED",
         status: kind === "timeline" ? "success" : "in_progress",
         level: "info",
-        message: kind === "timeline" ? "Authorization session success" : "Wallet scan started",
+        message:
+          kind === "timeline"
+            ? "Authorization session success"
+            : "Wallet scan started",
         errorMessage: null,
         durationMs: kind === "timeline" ? 12400 : null,
         payload: null,
@@ -838,11 +920,15 @@ export function getDemoFixture<T>(path: string): T {
         walletAddress: users[2]?.address ?? users[0]?.address,
         network: "bsc",
         module: kind === "timeline" ? "authorization" : "wallet-service",
-        operation: kind === "timeline" ? "session_timeline" : "transfer.reconcile",
+        operation:
+          kind === "timeline" ? "session_timeline" : "transfer.reconcile",
         stage: kind === "timeline" ? "FAILED" : "ERROR",
         status: kind === "timeline" ? "failed" : "error",
         level: "error",
-        message: kind === "timeline" ? "Session failed at sign step" : "Transfer reconcile error",
+        message:
+          kind === "timeline"
+            ? "Session failed at sign step"
+            : "Transfer reconcile error",
         errorMessage: "User rejected transaction",
         durationMs: kind === "timeline" ? 8200 : 450,
         payload: null,
@@ -862,7 +948,10 @@ export function getDemoFixture<T>(path: string): T {
         stage: kind === "timeline" ? "COMPLETED" : "APPROVAL CONFIRMED",
         status: "success",
         level: "info",
-        message: kind === "timeline" ? "Tron approval session complete" : "Approval confirmed",
+        message:
+          kind === "timeline"
+            ? "Tron approval session complete"
+            : "Approval confirmed",
         errorMessage: null,
         durationMs: kind === "timeline" ? 18600 : null,
         payload: null,
@@ -870,7 +959,9 @@ export function getDemoFixture<T>(path: string): T {
     ];
     const walletFilter = params.get("walletAddress")?.trim().toLowerCase();
     const filtered = walletFilter
-      ? demoEvents.filter((e) => e.walletAddress?.toLowerCase().includes(walletFilter))
+      ? demoEvents.filter((e) =>
+          e.walletAddress?.toLowerCase().includes(walletFilter),
+        )
       : demoEvents;
     return {
       items: filtered,
@@ -921,7 +1012,8 @@ export function getDemoFixture<T>(path: string): T {
   const ap = base.match(/\/admin\/approvals\/([^/]+)$/);
   if (ap) {
     const row =
-      approvals.find((a) => a.id === ap[1] || a.publicId === ap[1]) ?? approvals[0];
+      approvals.find((a) => a.id === ap[1] || a.publicId === ap[1]) ??
+      approvals[0];
     return {
       item: {
         ...row,
@@ -942,7 +1034,8 @@ export function getDemoFixture<T>(path: string): T {
   const tr = base.match(/\/admin\/transfers\/([^/]+)$/);
   if (tr) {
     const row =
-      transfers.find((t) => t.id === tr[1] || t.publicId === tr[1]) ?? transfers[0];
+      transfers.find((t) => t.id === tr[1] || t.publicId === tr[1]) ??
+      transfers[0];
     return {
       item: {
         ...row,
@@ -971,7 +1064,9 @@ export function getDemoFixture<T>(path: string): T {
         expectedAmountRaw: "50000000000000000",
         feeHuman: "0.0012",
         errorMessage:
-          row.status === "failed" ? "Receipt not found after max attempts" : null,
+          row.status === "failed"
+            ? "Receipt not found after max attempts"
+            : null,
         lastReconcileAt: daysAgo(0, 12),
         confirmedAt: row.status === "confirmed" ? daysAgo(1, 15) : null,
         traceId: row.traceId ?? flowId(1),
@@ -982,11 +1077,15 @@ export function getDemoFixture<T>(path: string): T {
   const wl = base.match(/\/admin\/wallets\/([^/]+)$/);
   if (wl) {
     const address = decodeURIComponent(wl[1]);
-    const ownerApprovals = approvals.filter((a) => a.ownerAddress === address).slice(0, 20);
+    const ownerApprovals = approvals
+      .filter((a) => a.ownerAddress === address)
+      .slice(0, 20);
     const ownerNative = nativeTransfers
       .filter((n) => n.ownerAddress === address)
       .slice(0, 20);
-    const ownerEvents = events.filter((e) => e.address === address).slice(0, 20);
+    const ownerEvents = events
+      .filter((e) => e.address === address)
+      .slice(0, 20);
     const ownerTransfers = transfers
       .filter((t) => t.fromAddress === address)
       .slice(0, 20);
@@ -1038,9 +1137,7 @@ export function getDemoFixture<T>(path: string): T {
   const usr = base.match(/\/admin\/users\/([^/]+)$/);
   if (usr) {
     const address = decodeURIComponent(usr[1]);
-    const summary =
-      users.find((u) => u.address === address) ??
-      users[0];
+    const summary = users.find((u) => u.address === address) ?? users[0];
     const ownerApprovals = approvals
       .filter((a) => a.ownerAddress === address)
       .slice(0, 50)
@@ -1060,7 +1157,9 @@ export function getDemoFixture<T>(path: string): T {
           n.status === "failed" ? "Receipt not found after max attempts" : null,
         reconcileAttempts: n.status === "pending" ? 5 : 0,
       }));
-    const ownerEvents = events.filter((e) => e.address === address).slice(0, 50);
+    const ownerEvents = events
+      .filter((e) => e.address === address)
+      .slice(0, 50);
     const ownerTransfers = transfers
       .filter((t) => t.fromAddress === address)
       .slice(0, 50)
@@ -1138,7 +1237,7 @@ export function getDemoFixture<T>(path: string): T {
         .map((e) => ({ e, message: demoErrorText(e.error) }))
         .filter(
           (row): row is { e: (typeof ownerEvents)[number]; message: string } =>
-            row.message != null
+            row.message != null,
         )
         .map(({ e, message }) => ({
           id: e.id,
@@ -1187,7 +1286,10 @@ export function getDemoFixture<T>(path: string): T {
         successRate: 78,
       },
       activeApprovals: ownerApprovals.filter(
-        (a) => a.status === "ACTIVE" || a.status === "PARTIALLY_USED" || a.status === "SUBMITTED"
+        (a) =>
+          a.status === "ACTIVE" ||
+          a.status === "PARTIALLY_USED" ||
+          a.status === "SUBMITTED",
       ),
       approvalHistory: ownerApprovals,
       transfers: ownerTransfers,
@@ -1215,10 +1317,15 @@ export function getDemoFixture<T>(path: string): T {
         transferCount: ownerTransfers.length,
         nativeTransferCount: ownerNative.length,
         eventCount: ownerEvents.length,
-        confirmedTransfers: ownerTransfers.filter((t) => t.status === "confirmed").length,
-        confirmedNative: ownerNative.filter((n) => n.status === "confirmed").length,
-        failedApprovals: ownerApprovals.filter((a) => a.status === "FAILED").length,
-        failedTransfers: ownerTransfers.filter((t) => t.status === "failed").length,
+        confirmedTransfers: ownerTransfers.filter(
+          (t) => t.status === "confirmed",
+        ).length,
+        confirmedNative: ownerNative.filter((n) => n.status === "confirmed")
+          .length,
+        failedApprovals: ownerApprovals.filter((a) => a.status === "FAILED")
+          .length,
+        failedTransfers: ownerTransfers.filter((t) => t.status === "failed")
+          .length,
         failedNative: ownerNative.filter((n) => n.status === "failed").length,
         successRate: 78,
       },
@@ -1274,15 +1381,25 @@ export function getDemoFixture<T>(path: string): T {
 
   if (base === "/admin/transactions") {
     let items = buildDemoTransactionList(OWNERS, NETWORKS, daysAgo);
-    const search = (params.get("search") ?? params.get("transactionId") ?? params.get("traceId"))?.trim();
-    const wallet = (params.get("walletAddress") ?? params.get("address"))?.trim();
+    const search = (
+      params.get("search") ??
+      params.get("transactionId") ??
+      params.get("traceId")
+    )?.trim();
+    const wallet = (
+      params.get("walletAddress") ?? params.get("address")
+    )?.trim();
     const network = params.get("network")?.trim().toLowerCase();
     const status = params.get("status")?.trim().toUpperCase();
     if (search) {
-      items = items.filter((row) => row.transactionId.toLowerCase().includes(search.toLowerCase()));
+      items = items.filter((row) =>
+        row.transactionId.toLowerCase().includes(search.toLowerCase()),
+      );
     }
     if (wallet) {
-      items = items.filter((row) => row.walletAddress?.toLowerCase().includes(wallet.toLowerCase()));
+      items = items.filter((row) =>
+        row.walletAddress?.toLowerCase().includes(wallet.toLowerCase()),
+      );
     }
     if (network) {
       items = items.filter((row) => row.network?.toLowerCase() === network);
@@ -1308,7 +1425,7 @@ export function getDemoFixture<T>(path: string): T {
       NETWORKS,
       now,
       daysAgo,
-      txHash
+      txHash,
     ) as T;
   }
 
@@ -1316,7 +1433,8 @@ export function getDemoFixture<T>(path: string): T {
   if (settlementDetail) {
     const session =
       settlementSessions.find(
-        (s) => s.id === settlementDetail[1] || s.publicId === settlementDetail[1]
+        (s) =>
+          s.id === settlementDetail[1] || s.publicId === settlementDetail[1],
       ) ?? settlementSessions[0];
     const transactionId = session.traceId ?? session.clientSessionId;
     return {
@@ -1359,7 +1477,10 @@ export function getDemoFixture<T>(path: string): T {
     const filtered = settlementSessions.filter((s) => {
       const owner = params.get("owner");
       const network = params.get("network");
-      if (owner && !s.ownerAddress.toLowerCase().includes(owner.trim().toLowerCase()))
+      if (
+        owner &&
+        !s.ownerAddress.toLowerCase().includes(owner.trim().toLowerCase())
+      )
         return false;
       if (network && s.network !== network.trim().toLowerCase()) return false;
       return true;

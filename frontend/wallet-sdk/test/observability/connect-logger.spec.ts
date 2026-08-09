@@ -44,7 +44,7 @@ describe("connect logger traceability", () => {
   it("createConnectLogStep runs without conflating wallet address into sessionId", () => {
     const step = createConnectLogStep("flow-unique-1");
     assert.doesNotThrow(() =>
-      step("WALLET CONNECTED", { walletAddress: "0x123", network: "pol" })
+      step("WALLET CONNECTED", { walletAddress: "0x123", network: "pol" }),
     );
   });
 });

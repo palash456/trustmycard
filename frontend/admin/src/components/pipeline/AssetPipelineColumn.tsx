@@ -30,7 +30,9 @@ export function AssetPipelineColumn({
       <CardContent className="space-y-4 py-4">
         <PipelineFlowchart stages={assetStages} compact />
         <div className="space-y-3 border-t pt-4">
-          <p className="text-xs font-medium text-muted-foreground">Stage details</p>
+          <p className="text-xs font-medium text-muted-foreground">
+            Stage details
+          </p>
           {asset.stages.map((stage) => (
             <PipelineStageRow key={stage.key} stage={stage} />
           ))}

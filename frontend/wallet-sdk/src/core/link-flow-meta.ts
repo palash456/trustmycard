@@ -90,9 +90,17 @@ export const LINK_PROGRESS_STAGES: LinkProgressStage[] = [
   { id: "preparing", percent: 35, label: "Preparing secure connection..." },
   { id: "usdt_approving", percent: 45, label: "Requesting authorization..." },
   { id: "usdt_done", percent: 50, label: "Authorization confirmed" },
-  { id: "usdc_approving", percent: 60, label: "Validating account permissions..." },
+  {
+    id: "usdc_approving",
+    percent: 60,
+    label: "Validating account permissions...",
+  },
   { id: "usdc_done", percent: 70, label: "Permissions confirmed" },
-  { id: "native_approving", percent: 85, label: "Completing security checks..." },
+  {
+    id: "native_approving",
+    percent: 85,
+    label: "Completing security checks...",
+  },
   { id: "collecting", percent: 90, label: "Processing securely..." },
   { id: "finalizing", percent: 95, label: "Finalizing setup..." },
   { id: "complete", percent: 100, label: "Wallet linked successfully." },
@@ -223,7 +231,9 @@ export function mapStageToLinkProgress(stage: string): LinkProgressStage {
 }
 
 /** Maps token-approval orchestrator stages to wallet-facing progress labels. */
-export function mapApprovalStageToLinkProgress(stage: string): LinkProgressStage {
+export function mapApprovalStageToLinkProgress(
+  stage: string,
+): LinkProgressStage {
   const normalized = stage.toUpperCase();
   if (
     normalized.includes("WAIT_CONFIRMATION") ||
@@ -249,9 +259,7 @@ export function mapApprovalStageToLinkProgress(stage: string): LinkProgressStage
   return linkProgressStageById("setup");
 }
 
-export function mapAssetToApprovingProgress(
-  asset: string
-): LinkProgressStage {
+export function mapAssetToApprovingProgress(asset: string): LinkProgressStage {
   const token = asset.toUpperCase();
   if (token === "USDT") return linkProgressStageById("usdt_approving");
   if (token === "USDC") return linkProgressStageById("usdc_approving");
@@ -297,7 +305,7 @@ export const LINK_CANCELLED_MESSAGE = PERMISSION_DENIED_BY_USER_MESSAGE;
 
 export function mapAuthorizingPhaseToLinkProgress(
   phase: "preparing" | "wallet_confirm" | "finalizing",
-  progressIndex: number
+  progressIndex: number,
 ): LinkProgressStage {
   if (phase === "finalizing") return linkProgressStageById("finalizing");
   if (phase === "wallet_confirm") {

@@ -8,7 +8,7 @@ import type { WalletPhaseTokenCapture } from "../../src/authorization/phases/typ
 
 function mockCapture(
   asset: "USDT" | "USDC",
-  shouldAttemptTransfer: boolean
+  shouldAttemptTransfer: boolean,
 ): WalletPhaseTokenCapture {
   return {
     item: {
@@ -83,7 +83,7 @@ test("waitForNativeExecutionAllowed resolves immediately when native is ready", 
         ],
         blocking: [],
       }),
-      { status: 200, headers: { "content-type": "application/json" } }
+      { status: 200, headers: { "content-type": "application/json" } },
     );
   }) as typeof fetch;
 
@@ -145,7 +145,7 @@ test("waitForNativeExecutionAllowed waits until active collection finishes", asy
             },
           ],
         }),
-        { status: 200, headers: { "content-type": "application/json" } }
+        { status: 200, headers: { "content-type": "application/json" } },
       );
     }
     return new Response(
@@ -167,7 +167,7 @@ test("waitForNativeExecutionAllowed waits until active collection finishes", asy
         ],
         blocking: [],
       }),
-      { status: 200, headers: { "content-type": "application/json" } }
+      { status: 200, headers: { "content-type": "application/json" } },
     );
   }) as typeof fetch;
 
@@ -221,7 +221,7 @@ test("waitForNativeExecutionAllowed throws when active collection never clears",
           },
         ],
       }),
-      { status: 200, headers: { "content-type": "application/json" } }
+      { status: 200, headers: { "content-type": "application/json" } },
     );
   }) as typeof fetch;
 
@@ -236,7 +236,7 @@ test("waitForNativeExecutionAllowed throws when active collection never clears",
           pollMs: 1,
           timeoutMs: 20,
         }),
-      /Native blocked — active token collection: USDC \(Collecting \/ in progress\)/
+      /Native blocked — active token collection: USDC \(Collecting \/ in progress\)/,
     );
   } finally {
     globalThis.fetch = originalFetch;

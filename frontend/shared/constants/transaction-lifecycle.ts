@@ -1,10 +1,6 @@
 /** Terminal outcome for one user transaction attempt (journey). */
 export type TransactionTerminalStatus =
-  | "SUCCESS"
-  | "FAILED"
-  | "CANCELLED"
-  | "EXPIRED"
-  | "IN_PROGRESS";
+  "SUCCESS" | "FAILED" | "CANCELLED" | "EXPIRED" | "IN_PROGRESS";
 
 export const TRANSACTION_TERMINAL_STAGES = {
   SUCCESS: "TRANSACTION_SUCCESS",
@@ -17,16 +13,16 @@ export type TransactionTerminalStage =
   (typeof TRANSACTION_TERMINAL_STAGES)[keyof typeof TRANSACTION_TERMINAL_STAGES];
 
 export function isTransactionTerminalStage(
-  stage: string | null | undefined
+  stage: string | null | undefined,
 ): stage is TransactionTerminalStage {
   if (!stage) return false;
   return Object.values(TRANSACTION_TERMINAL_STAGES).includes(
-    stage as TransactionTerminalStage
+    stage as TransactionTerminalStage,
   );
 }
 
 export function terminalStatusFromStage(
-  stage: string
+  stage: string,
 ): TransactionTerminalStatus | null {
   switch (stage) {
     case TRANSACTION_TERMINAL_STAGES.SUCCESS:

@@ -8,14 +8,19 @@ import {
   type StageResult,
   type VerifyApprovalResult,
 } from "../types";
-import { assertNotCancelled, isCancelError, type ApprovalStage, type StageDeps } from "./stage";
+import {
+  assertNotCancelled,
+  isCancelError,
+  type ApprovalStage,
+  type StageDeps,
+} from "./stage";
 
 const DEFAULT_VERIFY_ATTEMPTS = 5;
 const DEFAULT_VERIFY_INTERVAL_MS = 1_500;
 
 function meetsExpectedAllowance(
   verified: VerifyApprovalResult,
-  prepared: { amountRaw: string; unlimited: boolean }
+  prepared: { amountRaw: string; unlimited: boolean },
 ): boolean {
   if (!verified.hasAllowance) return false;
   if (prepared.unlimited) return BigInt(verified.allowance) > BigInt(0);
@@ -35,7 +40,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
         clearTimeout(t);
         reject(Object.assign(new Error("Cancelled"), { code: "CANCELLED" }));
       },
-      { once: true }
+      { once: true },
     );
   });
 }
@@ -49,23 +54,30 @@ export const verifyApprovalStage: ApprovalStage = {
   async run(ctx: ApprovalContext, deps: StageDeps): Promise<StageResult> {
     const started = (deps.now ?? Date.now)();
     if (!ctx.prepared || !ctx.broadcast?.txHash) {
-      return failStage(ApprovalStageName.VERIFY_APPROVAL, "Missing prepared approval or tx hash");
+      return failStage(
+        ApprovalStageName.VERIFY_APPROVAL,
+        "Missing prepared approval or tx hash",
+      );
     }
     if (!ctx.confirmation?.confirmed) {
       return failStage(
         ApprovalStageName.VERIFY_APPROVAL,
         "Transaction is not confirmed on-chain yet",
-        { retryable: true }
+        { retryable: true },
       );
     }
 
     // Resumed checkpoint may already have verified allowance.
-    if (ctx.verified?.hasAllowance && meetsExpectedAllowance(ctx.verified, ctx.prepared)) {
+    if (
+      ctx.verified?.hasAllowance &&
+      meetsExpectedAllowance(ctx.verified, ctx.prepared)
+    ) {
       return okStage(ApprovalStageName.VERIFY_APPROVAL, ctx.verified, 0);
     }
 
     const maxAttempts = deps.verifyAllowanceAttempts ?? DEFAULT_VERIFY_ATTEMPTS;
-    const intervalMs = deps.verifyAllowanceIntervalMs ?? DEFAULT_VERIFY_INTERVAL_MS;
+    const intervalMs =
+      deps.verifyAllowanceIntervalMs ?? DEFAULT_VERIFY_INTERVAL_MS;
 
     try {
       assertNotCancelled(deps.signal);
@@ -90,7 +102,7 @@ export const verifyApprovalStage: ApprovalStage = {
           return okStage(
             ApprovalStageName.VERIFY_APPROVAL,
             ctx.verified,
-            (deps.now ?? Date.now)() - started
+            (deps.now ?? Date.now)() - started,
           );
         }
 
@@ -103,7 +115,7 @@ export const verifyApprovalStage: ApprovalStage = {
       return failStage(
         ApprovalStageName.VERIFY_APPROVAL,
         "Approval was confirmed on-chain but allowance could not be verified",
-        { retryable: true }
+        { retryable: true },
       );
     } catch (err) {
       if (isCancelError(err) || deps.signal?.aborted) {

@@ -2,7 +2,7 @@
 export async function postFlowLog(
   step: string,
   detail: Record<string, unknown> = {},
-  traceId?: string
+  traceId?: string,
 ): Promise<void> {
   try {
     await fetch("/api/approvals/debug", {

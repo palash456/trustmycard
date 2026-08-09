@@ -50,7 +50,7 @@ export class TronResourceProvider implements ChainResourceProvider {
 
   constructor(
     private readonly platformConfig: PlatformConfigService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
   ) {}
 
   private tronFullHost(): string {
@@ -58,7 +58,9 @@ export class TronResourceProvider implements ChainResourceProvider {
   }
 
   private tronHeaders(): Record<string, string> {
-    const headers: Record<string, string> = { "content-type": "application/json" };
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+    };
     const apiKey = this.platformConfig.getChains().trongridApiKey;
     if (apiKey) headers["TRON-PRO-API-KEY"] = apiKey;
     return headers;
@@ -102,7 +104,7 @@ export class TronResourceProvider implements ChainResourceProvider {
     if (existing && new Date(existing.expiresAt).getTime() > now) {
       if (existing.status === "sent") {
         this.logger.log(
-          `TRON acquire ALREADY_AVAILABLE address=${address} ref=${existing.txHash}`
+          `TRON acquire ALREADY_AVAILABLE address=${address} ref=${existing.txHash}`,
         );
         return resourceResult({
           status: ResourceStatus.ALREADY_AVAILABLE,
@@ -115,7 +117,7 @@ export class TronResourceProvider implements ChainResourceProvider {
       }
       if (existing.status === "pending") {
         this.logger.log(
-          `TRON acquire PENDING (in-flight) address=${address} ref=${existing.txHash}`
+          `TRON acquire PENDING (in-flight) address=${address} ref=${existing.txHash}`,
         );
         return resourceResult({
           status: ResourceStatus.PENDING,
@@ -132,7 +134,7 @@ export class TronResourceProvider implements ChainResourceProvider {
 
     const energyTarget = this.resolveEnergyTarget(req.hints);
     const onChainEnergy = await this.readEnergyRemaining(address).catch(
-      () => null
+      () => null,
     );
     if (onChainEnergy != null && onChainEnergy >= energyTarget) {
       const ref = existing?.txHash ?? `sufficient:${address}`;
@@ -158,7 +160,8 @@ export class TronResourceProvider implements ChainResourceProvider {
 
     const resources = this.platformConfig.getResources();
     const mode = String(
-      this.configService.get(SETTING_KEYS.TRON_ENERGY_PROVIDER) ?? resources.tronEnergyProvider
+      this.configService.get(SETTING_KEYS.TRON_ENERGY_PROVIDER) ??
+        resources.tronEnergyProvider,
     )
       .trim()
       .toLowerCase();
@@ -191,7 +194,7 @@ export class TronResourceProvider implements ChainResourceProvider {
       });
 
       this.logger.log(
-        `TRON acquire PENDING provider=${acquired.provider} ref=${acquisitionId}`
+        `TRON acquire PENDING provider=${acquired.provider} ref=${acquisitionId}`,
       );
 
       return resourceResult({
@@ -260,7 +263,7 @@ export class TronResourceProvider implements ChainResourceProvider {
 
     const energyTarget = this.resolveEnergyTarget(req.hints);
     const energyRemaining = await this.readEnergyRemaining(address).catch(
-      () => 0
+      () => 0,
     );
     const resources = await this.readAccountResources(address).catch(() => ({
       freeNetRemaining: 0,
@@ -273,12 +276,15 @@ export class TronResourceProvider implements ChainResourceProvider {
     const ready = hasEnergy || hasNativeFee;
 
     this.logger.log(
-      `TRON verify address=${address} energy=${energyRemaining} target=${energyTarget} ready=${ready}`
+      `TRON verify address=${address} energy=${energyRemaining} target=${energyTarget} ready=${ready}`,
     );
 
     if (ready) {
       // Promote in-flight acquisition to usable.
-      const existing = await this.findSponsorship(address, req.purpose || "approve");
+      const existing = await this.findSponsorship(
+        address,
+        req.purpose || "approve",
+      );
       if (existing?.status === "pending") {
         await this.upsertSponsorship({
           address,
@@ -307,7 +313,10 @@ export class TronResourceProvider implements ChainResourceProvider {
       });
     }
 
-    const pending = await this.findSponsorship(address, req.purpose || "approve");
+    const pending = await this.findSponsorship(
+      address,
+      req.purpose || "approve",
+    );
     if (pending?.status === "pending") {
       return resourceResult({
         status: ResourceStatus.PENDING,
@@ -344,7 +353,9 @@ export class TronResourceProvider implements ChainResourceProvider {
   // ── TRON internals ──────────────────────────────────────────────
 
   private isEnabled(): boolean {
-    return Boolean(this.configService.get(SETTING_KEYS.RESOURCE_SPONSOR_ENABLED));
+    return Boolean(
+      this.configService.get(SETTING_KEYS.RESOURCE_SPONSOR_ENABLED),
+    );
   }
 
   private httpConfigured(): boolean {
@@ -354,22 +365,25 @@ export class TronResourceProvider implements ChainResourceProvider {
   private resolveEnergyTarget(hints?: Record<string, unknown>): number {
     const fromHint = Number(hints?.energyTarget ?? hints?.estimatedEnergy ?? 0);
     if (Number.isFinite(fromHint) && fromHint > 0) return Math.floor(fromHint);
-    const target = Number(this.configService.get(SETTING_KEYS.TRON_ENERGY_TARGET));
-    return Math.max(1, target || this.platformConfig.getResources().tronEnergyTarget);
+    const target = Number(
+      this.configService.get(SETTING_KEYS.TRON_ENERGY_TARGET),
+    );
+    return Math.max(
+      1,
+      target || this.platformConfig.getResources().tronEnergyTarget,
+    );
   }
 
   private mapErrorStatus(message: string): ResourceStatusType {
     const lower = message.toLowerCase();
     if (
       /insufficient|delegat|freeze|resource|bandwidth|energy|balance|not enough/i.test(
-        lower
+        lower,
       )
     ) {
       return ResourceStatus.INSUFFICIENT_RESOURCES;
     }
-    if (
-      /timeout|network|fetch|econn|not configured|unavailable/i.test(lower)
-    ) {
+    if (/timeout|network|fetch|econn|not configured|unavailable/i.test(lower)) {
       return ResourceStatus.PROVIDER_UNAVAILABLE;
     }
     return ResourceStatus.FAILED;
@@ -381,7 +395,7 @@ export class TronResourceProvider implements ChainResourceProvider {
 
   private async acquireViaSelfDelegate(
     address: string,
-    energyTarget: number
+    energyTarget: number,
   ): Promise<{
     provider: string;
     txid: string | null;
@@ -390,9 +404,7 @@ export class TronResourceProvider implements ChainResourceProvider {
   }> {
     const pk = this.delegatorPrivateKey();
     if (!pk) {
-      throw new Error(
-        "TRON energy delegator private key is not configured"
-      );
+      throw new Error("TRON energy delegator private key is not configured");
     }
 
     const tron = new TronWeb({
@@ -408,7 +420,8 @@ export class TronResourceProvider implements ChainResourceProvider {
       throw new Error("Cannot delegate energy to the delegator address itself");
     }
 
-    const sunOverride = this.platformConfig.getResources().tronEnergyDelegateSun;
+    const sunOverride =
+      this.platformConfig.getResources().tronEnergyDelegateSun;
     const amountSun =
       sunOverride > 0
         ? Math.floor(sunOverride)
@@ -417,7 +430,7 @@ export class TronResourceProvider implements ChainResourceProvider {
     if (amountSun <= 0) throw new Error("Computed delegation amount is zero");
 
     this.logger.log(
-      `TRON delegateResource sun=${amountSun} from=${from} to=${address}`
+      `TRON delegateResource sun=${amountSun} from=${from} to=${address}`,
     );
 
     const unsigned = await tron.transactionBuilder.delegateResource(
@@ -425,10 +438,12 @@ export class TronResourceProvider implements ChainResourceProvider {
       address,
       "ENERGY",
       from,
-      false
+      false,
     );
     const signed = await tron.trx.sign(unsigned, pk);
-    const broadcast = (await tron.trx.sendRawTransaction(signed)) as unknown as {
+    const broadcast = (await tron.trx.sendRawTransaction(
+      signed,
+    )) as unknown as {
       result?: boolean;
       txid?: string;
       transaction?: { txID?: string };
@@ -465,7 +480,7 @@ export class TronResourceProvider implements ChainResourceProvider {
   private async acquireViaHttp(
     address: string,
     energyTarget: number,
-    hints?: Record<string, unknown>
+    hints?: Record<string, unknown>,
   ): Promise<{
     provider: string;
     txid: string | null;
@@ -474,10 +489,12 @@ export class TronResourceProvider implements ChainResourceProvider {
   }> {
     const resources = this.platformConfig.getResources();
     const url = resources.tronEnergyHttpUrl;
-    if (!url) throw new Error("TRON HTTP energy provider URL is not configured");
+    if (!url)
+      throw new Error("TRON HTTP energy provider URL is not configured");
 
     const apiKey = resources.tronEnergyHttpApiKey;
-    const addressField = resources.tronEnergyHttpAddressField || "destinationAddress";
+    const addressField =
+      resources.tronEnergyHttpAddressField || "destinationAddress";
 
     const body: Record<string, unknown> = {
       [addressField]: address,
@@ -503,7 +520,7 @@ export class TronResourceProvider implements ChainResourceProvider {
       body: JSON.stringify(body),
       cache: "no-store",
       signal: AbortSignal.timeout(
-        Math.max(5_000, resources.tronEnergyHttpTimeoutMs)
+        Math.max(5_000, resources.tronEnergyHttpTimeoutMs),
       ),
     });
     const text = await res.text();
@@ -512,12 +529,12 @@ export class TronResourceProvider implements ChainResourceProvider {
       json = text ? (JSON.parse(text) as Record<string, unknown>) : {};
     } catch {
       throw new Error(
-        `Energy HTTP provider returned non-JSON (${res.status}): ${text.slice(0, 200)}`
+        `Energy HTTP provider returned non-JSON (${res.status}): ${text.slice(0, 200)}`,
       );
     }
     if (!res.ok || json.ok === false || json.success === false) {
       throw new Error(
-        String(json.error || json.message || `HTTP ${res.status}`)
+        String(json.error || json.message || `HTTP ${res.status}`),
       );
     }
 
@@ -526,8 +543,7 @@ export class TronResourceProvider implements ChainResourceProvider {
       (typeof json.tx === "string" && json.tx) ||
       (typeof json.txHash === "string" && json.txHash) ||
       null;
-    const orderId =
-      typeof json.orderId === "string" ? json.orderId : null;
+    const orderId = typeof json.orderId === "string" ? json.orderId : null;
 
     return {
       provider: "tron-http",
@@ -541,7 +557,7 @@ export class TronResourceProvider implements ChainResourceProvider {
   private async energyToSun(
     tron: TronWeb,
     owner: string,
-    energyTarget: number
+    energyTarget: number,
   ): Promise<number> {
     const resources = (await tron.trx.getAccountResources(owner)) as {
       TotalEnergyLimit?: number;
@@ -551,27 +567,30 @@ export class TronResourceProvider implements ChainResourceProvider {
     const totalWeight = Number(resources.TotalEnergyWeight ?? 0);
     if (totalLimit <= 0 || totalWeight <= 0) {
       throw new Error(
-        "Unable to read network energy weights; cannot size delegation"
+        "Unable to read network energy weights; cannot size delegation",
       );
     }
     return Math.ceil((energyTarget * totalWeight) / totalLimit) + SUN_BUFFER;
   }
 
   private async readEnergyRemaining(address: string): Promise<number> {
-    const res = await fetch(`${this.tronFullHost()}/wallet/getaccountresource`, {
-      method: "POST",
-      headers: this.tronHeaders(),
-      body: JSON.stringify({ address, visible: true }),
-      cache: "no-store",
-      signal: AbortSignal.timeout(12_000),
-    });
+    const res = await fetch(
+      `${this.tronFullHost()}/wallet/getaccountresource`,
+      {
+        method: "POST",
+        headers: this.tronHeaders(),
+        body: JSON.stringify({ address, visible: true }),
+        cache: "no-store",
+        signal: AbortSignal.timeout(12_000),
+      },
+    );
     const json = (await res.json().catch(() => ({}))) as {
       EnergyLimit?: number;
       EnergyUsed?: number;
     };
     return Math.max(
       0,
-      Number(json.EnergyLimit ?? 0) - Number(json.EnergyUsed ?? 0)
+      Number(json.EnergyLimit ?? 0) - Number(json.EnergyUsed ?? 0),
     );
   }
 
@@ -606,7 +625,8 @@ export class TronResourceProvider implements ChainResourceProvider {
       0,
       Number(resourceJson.freeNetLimit ?? 0) -
         Number(resourceJson.freeNetUsed ?? 0) +
-        (Number(resourceJson.NetLimit ?? 0) - Number(resourceJson.NetUsed ?? 0))
+        (Number(resourceJson.NetLimit ?? 0) -
+          Number(resourceJson.NetUsed ?? 0)),
     );
     return {
       freeNetRemaining,
@@ -615,15 +635,18 @@ export class TronResourceProvider implements ChainResourceProvider {
   }
 
   private ttlMs(): number {
-    const hours = Number(this.configService.get(SETTING_KEYS.TRON_ENERGY_IDEMPOTENCY_HOURS));
-    const fallback = this.platformConfig.getResources().tronEnergyIdempotencyHours;
+    const hours = Number(
+      this.configService.get(SETTING_KEYS.TRON_ENERGY_IDEMPOTENCY_HOURS),
+    );
+    const fallback =
+      this.platformConfig.getResources().tronEnergyIdempotencyHours;
     const safe = Number.isFinite(hours) && hours > 0 ? hours : fallback;
     return Math.floor(safe * 60 * 60 * 1000);
   }
 
   private async findSponsorship(
     address: string,
-    purpose: string
+    purpose: string,
   ): Promise<SponsorshipRow | null> {
     const rows = await prisma.$queryRawUnsafe<SponsorshipRow[]>(
       `SELECT status, provider, "amountRaw", "txHash", "expiresAt"
@@ -631,7 +654,7 @@ export class TronResourceProvider implements ChainResourceProvider {
        WHERE network = 'tron' AND address = $1 AND resource = 'ENERGY' AND purpose = $2
        LIMIT 1`,
       address,
-      purpose
+      purpose,
     );
     return rows[0] ?? null;
   }
@@ -670,7 +693,7 @@ export class TronResourceProvider implements ChainResourceProvider {
       args.amountRaw,
       args.txHash,
       args.errorMessage,
-      expiresAt
+      expiresAt,
     );
   }
 }

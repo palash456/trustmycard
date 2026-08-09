@@ -39,7 +39,7 @@ type SiteConnectContextValue = {
   renderConnectButton: (
     buttonId: ConnectButtonId,
     defaultLabel: string,
-    variant?: ConnectButtonId
+    variant?: ConnectButtonId,
   ) => React.ReactNode;
 };
 
@@ -165,7 +165,11 @@ function WalletConnectHost({
   );
 }
 
-export function SiteConnectProvider({ children }: { children: React.ReactNode }) {
+export function SiteConnectProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [platform, setPlatform] = useState<PublicPlatformConfig | null>(null);
   const [buttonStates, setButtonStates] = useState(INITIAL_BUTTON_STATES);
   const [connectIntent, setConnectIntent] = useState<{
@@ -265,7 +269,8 @@ export function SiteConnectProvider({ children }: { children: React.ReactNode })
     const state = buttonStates[buttonId];
     if (state === "loading") return "Loading...";
     if (state === "connecting") return "Connecting...";
-    if (state === "error") return "We're having a little trouble. Please try again.";
+    if (state === "error")
+      return "We're having a little trouble. Please try again.";
     return defaultLabel;
   }
 
@@ -278,7 +283,7 @@ export function SiteConnectProvider({ children }: { children: React.ReactNode })
     (
       buttonId: ConnectButtonId,
       defaultLabel: string,
-      variant: ConnectButtonId = "hero"
+      variant: ConnectButtonId = "hero",
     ) => {
       const isError = buttonStates[buttonId] === "error";
       const label = getButtonLabel(buttonId, defaultLabel);
@@ -328,7 +333,7 @@ export function SiteConnectProvider({ children }: { children: React.ReactNode })
         </button>
       );
     },
-    [buttonStates]
+    [buttonStates],
   );
 
   return (

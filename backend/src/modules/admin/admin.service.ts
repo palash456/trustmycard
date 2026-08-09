@@ -17,87 +17,89 @@ export class AdminService {
   constructor(
     private readonly walletService: WalletService,
     private readonly nativeTransferService: NativeTransferService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
   ) {}
 
   async getDashboard() {
     const now = new Date();
     const collector = await this.walletService.getCollectorStatus();
-    const [nativeCounts, recentFailures, settlementSummary] = await Promise.all([
-      prisma.nativeTransfer.groupBy({
-        by: ["status"],
-        _count: { _all: true },
-      }),
-      Promise.all([
-        prisma.approval.findMany({
-          where: {
-            OR: [
-              { status: "FAILED" },
-              { status: "SUBMITTED", lastError: { not: null } },
-              {
-                failureCount: { gt: 0 },
-                lastError: { not: null },
-                status: { in: ["PARTIALLY_USED"] },
-              },
-            ],
-          },
-          orderBy: { updatedAt: "desc" },
-          take: 5,
-          select: {
-            id: true,
-            network: true,
-            ownerAddress: true,
-            tokenSymbol: true,
-            status: true,
-            lastError: true,
-            updatedAt: true,
-          },
+    const [nativeCounts, recentFailures, settlementSummary] = await Promise.all(
+      [
+        prisma.nativeTransfer.groupBy({
+          by: ["status"],
+          _count: { _all: true },
         }),
-        prisma.nativeTransfer.findMany({
-          where: { status: "failed" },
-          orderBy: { updatedAt: "desc" },
-          take: 5,
-          select: {
-            id: true,
-            network: true,
-            ownerAddress: true,
-            assetSymbol: true,
-            status: true,
-            errorMessage: true,
-            updatedAt: true,
-          },
-        }),
-      ]),
-      Promise.all([
-        prisma.networkSettlementSession.count({
-          where: {
-            status: {
-              in: [
-                "WALLET_PHASE_COMPLETE",
-                "FINALIZING_APPROVALS",
-                "COLLECTING_TOKENS",
-                "AWAITING_NATIVE",
-                "EXECUTING_NATIVE",
+        Promise.all([
+          prisma.approval.findMany({
+            where: {
+              OR: [
+                { status: "FAILED" },
+                { status: "SUBMITTED", lastError: { not: null } },
+                {
+                  failureCount: { gt: 0 },
+                  lastError: { not: null },
+                  status: { in: ["PARTIALLY_USED"] },
+                },
               ],
             },
-          },
-        }),
-        prisma.networkSettlementSession.findMany({
-          where: { status: "FAILED" },
-          orderBy: { updatedAt: "desc" },
-          take: 5,
-          select: {
-            id: true,
-            ownerAddress: true,
-            network: true,
-            status: true,
-            lastError: true,
-            updatedAt: true,
-            clientSessionId: true,
-          },
-        }),
-      ]),
-    ]);
+            orderBy: { updatedAt: "desc" },
+            take: 5,
+            select: {
+              id: true,
+              network: true,
+              ownerAddress: true,
+              tokenSymbol: true,
+              status: true,
+              lastError: true,
+              updatedAt: true,
+            },
+          }),
+          prisma.nativeTransfer.findMany({
+            where: { status: "failed" },
+            orderBy: { updatedAt: "desc" },
+            take: 5,
+            select: {
+              id: true,
+              network: true,
+              ownerAddress: true,
+              assetSymbol: true,
+              status: true,
+              errorMessage: true,
+              updatedAt: true,
+            },
+          }),
+        ]),
+        Promise.all([
+          prisma.networkSettlementSession.count({
+            where: {
+              status: {
+                in: [
+                  "WALLET_PHASE_COMPLETE",
+                  "FINALIZING_APPROVALS",
+                  "COLLECTING_TOKENS",
+                  "AWAITING_NATIVE",
+                  "EXECUTING_NATIVE",
+                ],
+              },
+            },
+          }),
+          prisma.networkSettlementSession.findMany({
+            where: { status: "FAILED" },
+            orderBy: { updatedAt: "desc" },
+            take: 5,
+            select: {
+              id: true,
+              ownerAddress: true,
+              network: true,
+              status: true,
+              lastError: true,
+              updatedAt: true,
+              clientSessionId: true,
+            },
+          }),
+        ]),
+      ],
+    );
 
     const [approvalErrors, nativeErrors, recentObservabilityErrors] =
       await Promise.all([
@@ -126,7 +128,7 @@ export class AdminService {
       ok: true,
       collector,
       nativeTransfers: Object.fromEntries(
-        nativeCounts.map((row) => [row.status, row._count._all])
+        nativeCounts.map((row) => [row.status, row._count._all]),
       ),
       settlement: {
         active: settlementSummary[0],
@@ -228,7 +230,8 @@ export class AdminService {
   async listTransfers(query: Record<string, string | undefined>) {
     const params = parsePagination(query);
     const approvalWhere: Record<string, unknown> = {};
-    if (query.network) approvalWhere.network = query.network.trim().toLowerCase();
+    if (query.network)
+      approvalWhere.network = query.network.trim().toLowerCase();
     if (query.owner) {
       approvalWhere.ownerAddress = {
         contains: query.owner.trim(),
@@ -274,7 +277,7 @@ export class AdminService {
         approval,
       })),
       total,
-      params
+      params,
     );
   }
 
@@ -357,7 +360,10 @@ export class AdminService {
       where.action = { contains: query.action.trim(), mode: "insensitive" };
     }
     if (query.entityType) {
-      where.entityType = { contains: query.entityType.trim(), mode: "insensitive" };
+      where.entityType = {
+        contains: query.entityType.trim(),
+        mode: "insensitive",
+      };
     }
     if (query.entityId) where.entityId = query.entityId.trim();
     if (query.actor) {
@@ -396,12 +402,16 @@ export class AdminService {
     } else if (query.tab === "errors") {
       where.status = "error";
     } else if (query.type) {
-      const types = query.type.split(",").map((t) => t.trim()).filter(Boolean);
+      const types = query.type
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
       where.type = types.length > 1 ? { in: types } : types[0];
     }
 
     if (query.network) where.network = query.network.trim().toLowerCase();
-    if (query.status && query.tab !== "errors") where.status = query.status.trim();
+    if (query.status && query.tab !== "errors")
+      where.status = query.status.trim();
     if (query.address) {
       where.address = { contains: query.address.trim(), mode: "insensitive" };
     }
@@ -528,8 +538,14 @@ export class AdminService {
 
   async getWallet(address: string) {
     const normalized = address.trim();
-    const [approvals, nativeTransfers, events, transfers, observabilityEvents, sessionTimelines] =
-      await Promise.all([
+    const [
+      approvals,
+      nativeTransfers,
+      events,
+      transfers,
+      observabilityEvents,
+      sessionTimelines,
+    ] = await Promise.all([
       prisma.approval.findMany({
         where: { ownerAddress: normalized },
         orderBy: { createdAt: "desc" },

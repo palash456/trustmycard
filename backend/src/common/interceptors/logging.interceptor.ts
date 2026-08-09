@@ -6,7 +6,10 @@ import {
 } from "@nestjs/common";
 import type { Request } from "express";
 import { Observable, tap } from "rxjs";
-import { recordTiming, safeObservability } from "@trustmycard/shared/observability";
+import {
+  recordTiming,
+  safeObservability,
+} from "@trustmycard/shared/observability";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 import { getRequestCorrelation } from "../middleware/correlation.middleware";
 
@@ -34,7 +37,7 @@ export class LoggingInterceptor implements NestInterceptor {
         requestId,
         apiEndpoint: path,
         skipSampling: true,
-      })
+      }),
     );
 
     return next.handle().pipe(
@@ -59,7 +62,7 @@ export class LoggingInterceptor implements NestInterceptor {
               apiEndpoint: path,
               durationMs,
               skipSampling: true,
-            })
+            }),
           );
         },
         error: (err: unknown) => {
@@ -83,10 +86,10 @@ export class LoggingInterceptor implements NestInterceptor {
               durationMs,
               err,
               skipSampling: true,
-            })
+            }),
           );
         },
-      })
+      }),
     );
   }
 }

@@ -13,7 +13,7 @@ export function formatUnits(value: bigint, decimals: number): string {
 export async function rpcCall(
   rpc: string,
   method: string,
-  params: unknown[]
+  params: unknown[],
 ): Promise<string> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 8000);

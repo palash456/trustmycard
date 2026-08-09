@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     if (!network || !owner) {
       return NextResponse.json(
         { error: "network and owner are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       return NextResponse.json(
         { error: err instanceof Error ? err.message : "Invalid amount" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -113,14 +113,14 @@ export async function POST(req: NextRequest) {
       if (!TRON_ADDRESS_RE.test(owner)) {
         return NextResponse.json(
           { error: "Invalid Tron owner address" },
-          { status: 400 }
+          { status: 400 },
         );
       }
       const spender = getSpenderTron(platform);
       if (!spender || !TRON_ADDRESS_RE.test(spender)) {
         return NextResponse.json(
           { error: "Platform TRON spender is not configured" },
-          { status: 400 }
+          { status: 400 },
         );
       }
       if (shouldBlockSelfSpender(owner, spender, allowSelfEnv)) {
@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
             error:
               "Spender cannot be the same as the owner wallet. Set NEXT_PUBLIC_SPENDER_TRON to your admin address.",
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -233,29 +233,28 @@ export async function POST(req: NextRequest) {
     if (!isEvmChainKey(network)) {
       return NextResponse.json(
         { error: "Unsupported network" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     if (!EVM_ADDRESS_RE.test(owner)) {
       return NextResponse.json(
         { error: "Invalid EVM owner address" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     const spender = getSpenderEvm(platform);
     if (!EVM_ADDRESS_RE.test(spender)) {
       return NextResponse.json(
         { error: "Platform EVM spender is not configured" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     if (shouldBlockSelfSpender(owner, spender, allowSelfEnv)) {
       return NextResponse.json(
         {
-          error:
-            "Spender cannot be the same as the owner wallet.",
+          error: "Spender cannot be the same as the owner wallet.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -312,7 +311,7 @@ export async function POST(req: NextRequest) {
         error:
           err instanceof Error ? err.message : "Failed to prepare approval",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

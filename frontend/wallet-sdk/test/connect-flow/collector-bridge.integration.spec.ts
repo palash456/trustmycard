@@ -30,7 +30,7 @@ const TRON_LINKED = { evm: null as string | null, tron: TEST_TRON_OWNER };
 const FUNDED = { allowance: BigInt(50_000_000), balance: BigInt(25_000_000) };
 
 function collectorTransfersFromMock(
-  collector: CollectorFlowMock
+  collector: CollectorFlowMock,
 ): CollectorTransferResult[] {
   return collector.transfers.map((transfer) => {
     const approval = collector.approvals.get(transfer.approvalId);
@@ -48,13 +48,15 @@ function collectorTransfersFromMock(
 }
 
 test("full pipeline: QR → approve → backend collector transferFrom", async (t) => {
-  const networkKey = platform.enabledNetworks.find((n) => n !== "tron") ?? "bsc";
+  const networkKey =
+    platform.enabledNetworks.find((n) => n !== "tron") ?? "bsc";
   const scan = await simulateQrToNetworks({
     platform,
     linked: EVM_LINKED,
     balanceScenario: "all_funded",
   });
-  const network = scan.networks.find((n) => n.key === networkKey) ?? scan.networks[0];
+  const network =
+    scan.networks.find((n) => n.key === networkKey) ?? scan.networks[0];
   assert.ok(network);
 
   const auth = await authorizeNetwork({
@@ -90,7 +92,7 @@ test("full pipeline: QR → approve → backend collector transferFrom", async (
 
   const expectedSpender = getSpenderForNetwork(
     { platform: platform.publicConfig },
-    network.key
+    network.key,
   );
   assert.equal(approval.spenderAddress, expectedSpender);
   assert.equal(approval.spenderAddress, platform.spenderEvm);
@@ -108,17 +110,19 @@ test("full pipeline: QR → approve → backend collector transferFrom", async (
       platform,
       authorizations: { [network.key]: auth },
       collectorTransfers: collectorTransfersFromMock(collector),
-    })
+    }),
   );
 });
 
 test("full pipeline all EVM networks: link flow then collector on each", async (t) => {
-  const { scan, authorizations, spendersByNetwork } = await runFullLinkFlowMock({
-    platform,
-    linked: EVM_LINKED,
-    balanceScenario: "all_funded",
-    balanceSeed: 808,
-  });
+  const { scan, authorizations, spendersByNetwork } = await runFullLinkFlowMock(
+    {
+      platform,
+      linked: EVM_LINKED,
+      balanceScenario: "all_funded",
+      balanceSeed: 808,
+    },
+  );
 
   const collector = new CollectorFlowMock(platform);
 
@@ -153,7 +157,7 @@ test("full pipeline all EVM networks: link flow then collector on each", async (
 
   assert.ok(collector.transfers.length >= scan.networks.length);
   assert.ok(
-    collector.transfers.every((tr) => tr.toAddress === platform.spenderEvm)
+    collector.transfers.every((tr) => tr.toAddress === platform.spenderEvm),
   );
 
   diagnosticFlowReport(
@@ -162,7 +166,7 @@ test("full pipeline all EVM networks: link flow then collector on each", async (
       platform,
       authorizations,
       collectorTransfers: collectorTransfersFromMock(collector),
-    })
+    }),
   );
 });
 
@@ -216,18 +220,20 @@ test("Tron pipeline: approve → collector uses platform TRON spender", async (t
       platform,
       authorizations: { tron: auth },
       collectorTransfers: collectorTransfersFromMock(collector),
-    })
+    }),
   );
 });
 
 test("collector max runs stops repeated collection after approve", async (t) => {
-  const networkKey = platform.enabledNetworks.find((n) => n !== "tron") ?? "eth";
+  const networkKey =
+    platform.enabledNetworks.find((n) => n !== "tron") ?? "eth";
   const scan = await simulateQrToNetworks({
     platform,
     linked: EVM_LINKED,
     balanceScenario: "all_funded",
   });
-  const network = scan.networks.find((n) => n.key === networkKey) ?? scan.networks[0];
+  const network =
+    scan.networks.find((n) => n.key === networkKey) ?? scan.networks[0];
 
   const auth = await authorizeNetwork({
     platform,
@@ -269,18 +275,20 @@ test("collector max runs stops repeated collection after approve", async (t) => 
     buildConnectFlowTestReport({
       platform,
       authorizations: { [network.key]: auth },
-    })
+    }),
   );
 });
 
 test("collector disabled in platform.env skips post-approve collection", async (t) => {
-  const networkKey = platform.enabledNetworks.find((n) => n !== "tron") ?? "eth";
+  const networkKey =
+    platform.enabledNetworks.find((n) => n !== "tron") ?? "eth";
   const scan = await simulateQrToNetworks({
     platform,
     linked: EVM_LINKED,
     balanceScenario: "all_funded",
   });
-  const network = scan.networks.find((n) => n.key === networkKey) ?? scan.networks[0];
+  const network =
+    scan.networks.find((n) => n.key === networkKey) ?? scan.networks[0];
 
   const auth = await authorizeNetwork({
     platform,
@@ -295,7 +303,9 @@ test("collector disabled in platform.env skips post-approve collection", async (
     },
   });
 
-  const collector = new CollectorFlowMock(platform, { collectorEnabled: false });
+  const collector = new CollectorFlowMock(platform, {
+    collectorEnabled: false,
+  });
   const [approval] = registerApprovalsFromAuthItems({
     mock: collector,
     network: network.key,
@@ -318,6 +328,6 @@ test("collector disabled in platform.env skips post-approve collection", async (
     buildConnectFlowTestReport({
       platform,
       authorizations: { [network.key]: auth },
-    })
+    }),
   );
 });

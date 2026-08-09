@@ -9,10 +9,20 @@ type Row = {
   href?: string;
 };
 
-function TableBlock({ title, rows, empty = "No data" }: { title: string; rows: Row[]; empty?: string }) {
+function TableBlock({
+  title,
+  rows,
+  empty = "No data",
+}: {
+  title: string;
+  rows: Row[];
+  empty?: string;
+}) {
   return (
     <div>
-      <h4 className="mb-1.5 text-[10px] font-medium text-muted-foreground">{title}</h4>
+      <h4 className="mb-1.5 text-[10px] font-medium text-muted-foreground">
+        {title}
+      </h4>
       {rows.length === 0 ? (
         <p className="text-[11px] text-muted-foreground">{empty}</p>
       ) : (
@@ -24,15 +34,26 @@ function TableBlock({ title, rows, empty = "No data" }: { title: string; rows: R
             >
               <div className="min-w-0">
                 {row.href ? (
-                  <Link href={row.href} className="block truncate font-medium text-primary hover:underline">
+                  <Link
+                    href={row.href}
+                    className="block truncate font-medium text-primary hover:underline"
+                  >
                     {row.label}
                   </Link>
                 ) : (
-                  <span className="block truncate font-medium">{row.label}</span>
+                  <span className="block truncate font-medium">
+                    {row.label}
+                  </span>
                 )}
-                {row.sub ? <span className="block truncate text-muted-foreground">{row.sub}</span> : null}
+                {row.sub ? (
+                  <span className="block truncate text-muted-foreground">
+                    {row.sub}
+                  </span>
+                ) : null}
               </div>
-              <span className="shrink-0 tabular-nums font-semibold">{row.value}</span>
+              <span className="shrink-0 tabular-nums font-semibold">
+                {row.value}
+              </span>
             </li>
           ))}
         </ul>
@@ -68,15 +89,25 @@ export function LeaderboardsPanel({
       tokenSymbol: string;
       href: string;
     }>;
-    highestFailureWallets: Array<{ address: string; failures: number; href: string }>;
-    mostActiveWallets: Array<{ address: string; activityCount: number; href: string }>;
+    highestFailureWallets: Array<{
+      address: string;
+      failures: number;
+      href: string;
+    }>;
+    mostActiveWallets: Array<{
+      address: string;
+      activityCount: number;
+      href: string;
+    }>;
   };
   className?: string;
 }) {
   return (
     <Card className={cn("border-border/60 shadow-none", className)}>
       <CardHeader className="shrink-0 space-y-0 px-4 pb-0 pt-4">
-        <CardTitle className="text-[11px] font-medium text-muted-foreground">Leaderboards</CardTitle>
+        <CardTitle className="text-[11px] font-medium text-muted-foreground">
+          Leaderboards
+        </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4 px-4 pb-4 pt-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <TableBlock

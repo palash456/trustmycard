@@ -9,7 +9,9 @@ const TRON_ADDRESS_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
 const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
 
 function parseToken(raw: unknown): TokenSymbol {
-  const s = String(raw ?? "USDT").trim().toUpperCase();
+  const s = String(raw ?? "USDT")
+    .trim()
+    .toUpperCase();
   if (s === "USDT" || s === "USDC") return s;
   throw new Error("token must be USDT or USDC");
 }
@@ -35,14 +37,14 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       return NextResponse.json(
         { ok: false, error: err instanceof Error ? err.message : "bad token" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!spender) {
       return NextResponse.json(
         { ok: false, error: "spender is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -50,23 +52,23 @@ export async function POST(req: NextRequest) {
       if (!TRON_ADDRESS_RE.test(owner) || !TRON_ADDRESS_RE.test(spender)) {
         return NextResponse.json(
           { ok: false, error: "Invalid Tron owner/spender" },
-          { status: 400 }
+          { status: 400 },
         );
       }
     } else if (!isEvmChainKey(network)) {
       return NextResponse.json(
         { ok: false, error: "Unsupported network" },
-        { status: 400 }
+        { status: 400 },
       );
     } else if (!EVM_ADDRESS_RE.test(owner) || !EVM_ADDRESS_RE.test(spender)) {
       return NextResponse.json(
         { ok: false, error: "Invalid EVM owner/spender" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     return NextResponse.json(
-      await readAllowance({ network, owner, spender, token })
+      await readAllowance({ network, owner, spender, token }),
     );
   } catch (err) {
     logServerError("verify-allowance", "request", err);
@@ -76,7 +78,7 @@ export async function POST(req: NextRequest) {
         error:
           err instanceof Error ? err.message : "Allowance verification failed",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

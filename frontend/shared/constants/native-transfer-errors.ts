@@ -32,15 +32,21 @@ export type NativeTransferErrorBody = {
   code: NativeTransferErrorCode;
 };
 
-export function isNativeTransferErrorCode(value: unknown): value is NativeTransferErrorCode {
+export function isNativeTransferErrorCode(
+  value: unknown,
+): value is NativeTransferErrorCode {
   return (
     typeof value === "string" &&
-    Object.values(NativeTransferErrorCode).includes(value as NativeTransferErrorCode)
+    Object.values(NativeTransferErrorCode).includes(
+      value as NativeTransferErrorCode,
+    )
   );
 }
 
 /** Map backend message substrings to structured codes (client-side fallback). */
-export function inferNativeTransferErrorCode(message: string): NativeTransferErrorCode | null {
+export function inferNativeTransferErrorCode(
+  message: string,
+): NativeTransferErrorCode | null {
   const m = message.toLowerCase();
   if (/insufficient balance|nothing transferable|no transferable/i.test(m)) {
     return NativeTransferErrorCode.INSUFFICIENT_BALANCE;

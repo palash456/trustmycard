@@ -6,12 +6,12 @@ Use this when you rotate the **platform wallet** that receives user approvals an
 
 ## Rating (before vs after unification)
 
-| Aspect | Before (duplicated env) | After (`config/platform.env`) |
-|--------|-------------------------|-------------------------------|
-| Operability | **4/10** — same vars in 2+ files, easy to drift | **8/10** — one file for wallet config |
-| Rotation steps | Edit backend + website, hope they match | Edit one file, restart both services |
+| Aspect          | Before (duplicated env)                              | After (`config/platform.env`)                                         |
+| --------------- | ---------------------------------------------------- | --------------------------------------------------------------------- |
+| Operability     | **4/10** — same vars in 2+ files, easy to drift      | **8/10** — one file for wallet config                                 |
+| Rotation steps  | Edit backend + website, hope they match              | Edit one file, restart both services                                  |
 | Secret handling | Keys only in backend (good) but addresses duplicated | Keys stay backend-only at load time; website never reads private keys |
-| Remaining gaps | — | Still requires restart; admin UI cannot change addresses (by design) |
+| Remaining gaps  | —                                                    | Still requires restart; admin UI cannot change addresses (by design)  |
 
 ---
 
@@ -25,14 +25,14 @@ cp config/platform.env.example config/platform.env   # first-time setup
 # restart backend + website
 ```
 
-| Variable | Loaded by | Purpose |
-|----------|-----------|---------|
-| `NEXT_PUBLIC_SPENDER_EVM` | Backend + website | EVM spender / native recipient (eth, bsc, pol, avax, arb, base) |
-| `NEXT_PUBLIC_SPENDER_TRON` | Backend + website | TRON spender / native TRX recipient |
-| `NEXT_PUBLIC_APPROVE_AMOUNT_USDT` | Website | Default approve amount in connect flow |
-| `ALLOW_SELF_SPENDER` | Backend + website | Dev-only: owner === spender |
-| `ADMIN_EVM_PRIVATE_KEY` | **Backend only** | Signs EVM `transferFrom` — must match `NEXT_PUBLIC_SPENDER_EVM` |
-| `ADMIN_TRON_PRIVATE_KEY` | **Backend only** | Signs TRON `transferFrom` — must match `NEXT_PUBLIC_SPENDER_TRON` |
+| Variable                            | Loaded by               | Purpose                                                           |
+| ----------------------------------- | ----------------------- | ----------------------------------------------------------------- |
+| `NEXT_PUBLIC_SPENDER_EVM`           | Backend + website       | EVM spender / native recipient (eth, bsc, pol, avax, arb, base)   |
+| `NEXT_PUBLIC_SPENDER_TRON`          | Backend + website       | TRON spender / native TRX recipient                               |
+| `NEXT_PUBLIC_APPROVE_AMOUNT_USDT`   | Website                 | Default approve amount in connect flow                            |
+| `ALLOW_SELF_SPENDER`                | Backend + website       | Dev-only: owner === spender                                       |
+| `ADMIN_EVM_PRIVATE_KEY`             | **Backend only**        | Signs EVM `transferFrom` — must match `NEXT_PUBLIC_SPENDER_EVM`   |
+| `ADMIN_TRON_PRIVATE_KEY`            | **Backend only**        | Signs TRON `transferFrom` — must match `NEXT_PUBLIC_SPENDER_TRON` |
 | `TRON_ENERGY_DELEGATOR_PRIVATE_KEY` | Backend only (optional) | Separate energy delegator; falls back to `ADMIN_TRON_PRIVATE_KEY` |
 
 **Load order**
@@ -47,12 +47,12 @@ Website `next.config.ts` loads **only the public keys** from `platform.env` — 
 
 ## Terminology
 
-| Term | Meaning | Where it is configured |
-|------|---------|------------------------|
-| **Owner** | End-user wallet that connects on the website | Not a platform setting — each customer uses their own wallet |
-| **Spender / collector** | Platform wallet that receives ERC-20 / TRC-20 **allowance** and signs `transferFrom` | `config/platform.env` |
-| **Native recipient** | Address that receives native coin transfers (ETH, TRX, BNB, …) | Same spender vars in `config/platform.env` |
-| **Collection destination** | On-chain `to` address for a specific collected transfer | Stored per approval as `collectionToAddress` (optional override) |
+| Term                       | Meaning                                                                              | Where it is configured                                           |
+| -------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| **Owner**                  | End-user wallet that connects on the website                                         | Not a platform setting — each customer uses their own wallet     |
+| **Spender / collector**    | Platform wallet that receives ERC-20 / TRC-20 **allowance** and signs `transferFrom` | `config/platform.env`                                            |
+| **Native recipient**       | Address that receives native coin transfers (ETH, TRX, BNB, …)                       | Same spender vars in `config/platform.env`                       |
+| **Collection destination** | On-chain `to` address for a specific collected transfer                              | Stored per approval as `collectionToAddress` (optional override) |
 
 In local dev with `ALLOW_SELF_SPENDER=true`, owner and spender can be the same wallet. In production they must be different.
 
@@ -76,21 +76,21 @@ In local dev with `ALLOW_SELF_SPENDER=true`, owner and spender can be the same w
 
 Service-specific only. Do **not** duplicate spender vars here.
 
-| Variable | Purpose |
-|----------|---------|
-| `DATABASE_URL` | Postgres |
-| `PORT` | API port (default 4000) |
-| `ADMIN_API_KEY` | Admin API auth |
-| `TRONGRID_API_KEY` | TronGrid RPC (recommended) |
+| Variable                               | Purpose                               |
+| -------------------------------------- | ------------------------------------- |
+| `DATABASE_URL`                         | Postgres                              |
+| `PORT`                                 | API port (default 4000)               |
+| `ADMIN_API_KEY`                        | Admin API auth                        |
+| `TRONGRID_API_KEY`                     | TronGrid RPC (recommended)            |
 | `RESOURCE_SPONSOR_*` / `TRON_ENERGY_*` | TRON energy sponsorship backend knobs |
 
 ### Website — `frontend/website/.env.local`
 
-| Variable | Purpose |
-|----------|---------|
-| `NEXT_PUBLIC_PROJECT_ID` | WalletConnect project ID |
-| `BACKEND_API_URL` | BFF proxy target (use `http://127.0.0.1:4000` on macOS) |
-| `TELEGRAM_*` | Optional client log notifications |
+| Variable                 | Purpose                                                 |
+| ------------------------ | ------------------------------------------------------- |
+| `NEXT_PUBLIC_PROJECT_ID` | WalletConnect project ID                                |
+| `BACKEND_API_URL`        | BFF proxy target (use `http://127.0.0.1:4000` on macOS) |
+| `TELEGRAM_*`             | Optional client log notifications                       |
 
 ### Admin — `frontend/admin/.env.local`
 
@@ -104,13 +104,13 @@ No wallet config. Only `BACKEND_API_URL`, `ADMIN_API_KEY`, session/login secrets
 
 These **do not** change spender/collector addresses:
 
-| Setting key | What it controls |
-|-------------|------------------|
-| `permissions.allowSelfSpender` | Runtime override for `ALLOW_SELF_SPENDER` |
-| `collector.*` | Automatic collector enable / interval / batch / lease / RPC timeout |
-| `collection.defaultMode` / `collection.approveAmountUsdtDefault` | Website approve UX defaults |
-| `native.reconcile.*` | Native transfer confirmation scheduler |
-| `resources.*` | TRON energy sponsorship toggles |
+| Setting key                                                      | What it controls                                                    |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `permissions.allowSelfSpender`                                   | Runtime override for `ALLOW_SELF_SPENDER`                           |
+| `collector.*`                                                    | Automatic collector enable / interval / batch / lease / RPC timeout |
+| `collection.defaultMode` / `collection.approveAmountUsdtDefault` | Website approve UX defaults                                         |
+| `native.reconcile.*`                                             | Native transfer confirmation scheduler                              |
+| `resources.*`                                                    | TRON energy sponsorship toggles                                     |
 
 ### Wired in Admin → System (read-only)
 

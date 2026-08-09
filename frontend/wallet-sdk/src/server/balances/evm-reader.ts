@@ -5,7 +5,7 @@ export async function readErc20(
   rpcs: string[],
   token: string,
   holder: string,
-  decimals: number
+  decimals: number,
 ): Promise<string> {
   for (const rpc of rpcs) {
     try {
@@ -23,7 +23,7 @@ export async function readErc20(
 
 export async function readEvmChain(
   chain: EvmChainConfig,
-  address: string
+  address: string,
 ): Promise<TokenBalances> {
   let native = "0";
   for (const rpc of chain.rpc) {

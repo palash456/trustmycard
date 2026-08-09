@@ -14,8 +14,17 @@ import type { DocPage } from "../types";
 export const apiPage: DocPage = {
   slug: "api",
   title: "API Reference",
-  description: "Wallet API, admin API, auth, observability endpoints, and Swagger interactive docs.",
-  keywords: ["endpoints", "rest", "admin api", "wallet api", "v1", "swagger", "openapi"],
+  description:
+    "Wallet API, admin API, auth, observability endpoints, and Swagger interactive docs.",
+  keywords: [
+    "endpoints",
+    "rest",
+    "admin api",
+    "wallet api",
+    "v1",
+    "swagger",
+    "openapi",
+  ],
   sections: [
     {
       id: "swagger",
@@ -24,15 +33,19 @@ export const apiPage: DocPage = {
         <>
           <DocP>
             The NestJS backend ships interactive API documentation via{" "}
-            <DocCode>@nestjs/swagger</DocCode> and <DocCode>swagger-ui-express</DocCode>. It is
-            disabled by default in production and must be explicitly enabled.
+            <DocCode>@nestjs/swagger</DocCode> and{" "}
+            <DocCode>swagger-ui-express</DocCode>. It is disabled by default in
+            production and must be explicitly enabled.
           </DocP>
           <DocTable
             headers={["Setting", "Value"]}
             rows={[
               ["Env var", "SWAGGER_ENABLED=true"],
               ["URL (local)", "http://localhost:4000/v1/docs"],
-              ["URL (production)", "https://api.trustmycard.com/v1/docs (only when enabled)"],
+              [
+                "URL (production)",
+                "https://api.trustmycard.com/v1/docs (only when enabled)",
+              ],
               ["OpenAPI JSON", "http://localhost:4000/v1/docs-json"],
               ["Implementation", "backend/src/main.ts"],
             ]}
@@ -60,8 +73,8 @@ export const apiPage: DocPage = {
           content: (
             <>
               <DocP>
-                Swagger is configured with an admin API key security scheme named{" "}
-                <DocCode>adminApiKey</DocCode>:
+                Swagger is configured with an admin API key security scheme
+                named <DocCode>adminApiKey</DocCode>:
               </DocP>
               <DocPre>{`Header: x-admin-api-key
 Value: <your ADMIN_API_KEY from platform.env>`}</DocPre>
@@ -74,9 +87,11 @@ Value: <your ADMIN_API_KEY from platform.env>`}</DocPre>
                 ]}
               />
               <DocCallout variant="warning">
-                Wallet session endpoints require a separate <DocCode>Authorization: Bearer &lt;token&gt;</DocCode>{" "}
-                header — obtain via POST /v1/auth/wallet/challenge + verify. Swagger does not
-                auto-manage wallet sessions; use curl or the wallet app for those flows.
+                Wallet session endpoints require a separate{" "}
+                <DocCode>Authorization: Bearer &lt;token&gt;</DocCode> header —
+                obtain via POST /v1/auth/wallet/challenge + verify. Swagger does
+                not auto-manage wallet sessions; use curl or the wallet app for
+                those flows.
               </DocCallout>
             </>
           ),
@@ -88,10 +103,26 @@ Value: <your ADMIN_API_KEY from platform.env>`}</DocPre>
             <DocTable
               headers={["Controller", "Swagger tags", "Notes"]}
               rows={[
-                ["wallet.controller.ts", "Wallet API", "ApiOperation + ApiBody on key endpoints; ApiSecurity for session routes"],
-                ["admin.controller.ts", "Admin", "ApiOperation on endpoints; requires adminApiKey"],
-                ["settings.controller.ts", "Settings", "Public settings endpoint"],
-                ["auth.controller.ts", "—", "Not heavily decorated — use this doc for auth routes"],
+                [
+                  "wallet.controller.ts",
+                  "Wallet API",
+                  "ApiOperation + ApiBody on key endpoints; ApiSecurity for session routes",
+                ],
+                [
+                  "admin.controller.ts",
+                  "Admin",
+                  "ApiOperation on endpoints; requires adminApiKey",
+                ],
+                [
+                  "settings.controller.ts",
+                  "Settings",
+                  "Public settings endpoint",
+                ],
+                [
+                  "auth.controller.ts",
+                  "—",
+                  "Not heavily decorated — use this doc for auth routes",
+                ],
               ]}
             />
           ),
@@ -118,11 +149,21 @@ Value: <your ADMIN_API_KEY from platform.env>`}</DocPre>
           content: (
             <DocUl>
               <DocLi>
-                <DocCode>render-budget.yaml</DocCode> sets <DocCode>SWAGGER_ENABLED=false</DocCode> by default.
+                <DocCode>render-budget.yaml</DocCode> sets{" "}
+                <DocCode>SWAGGER_ENABLED=false</DocCode> by default.
               </DocLi>
-              <DocLi>Do not enable Swagger on public production API without access controls — it exposes endpoint shapes.</DocLi>
-              <DocLi>Safe pattern: enable only in development or staging (<DocCode>TMC_ENV=production-preview</DocCode>).</DocLi>
-              <DocLi>Alternative: use admin panel or curl with <DocCode>x-admin-api-key</DocCode> for ops testing.</DocLi>
+              <DocLi>
+                Do not enable Swagger on public production API without access
+                controls — it exposes endpoint shapes.
+              </DocLi>
+              <DocLi>
+                Safe pattern: enable only in development or staging (
+                <DocCode>TMC_ENV=production-preview</DocCode>).
+              </DocLi>
+              <DocLi>
+                Alternative: use admin panel or curl with{" "}
+                <DocCode>x-admin-api-key</DocCode> for ops testing.
+              </DocLi>
             </DocUl>
           ),
         },
@@ -133,10 +174,22 @@ Value: <your ADMIN_API_KEY from platform.env>`}</DocPre>
             <DocTable
               headers={["Use Swagger when…", "Use Admin Panel when…"]}
               rows={[
-                ["Exploring raw API request/response shapes", "Viewing aggregated journey data"],
-                ["Testing a single endpoint with custom body", "Monitoring pipeline, collector, analytics"],
-                ["Debugging backend without UI", "Tracing flow-* journeys with entity links"],
-                ["Validating a new endpoint during development", "Operational workflows (retry, reconcile, toggle collector)"],
+                [
+                  "Exploring raw API request/response shapes",
+                  "Viewing aggregated journey data",
+                ],
+                [
+                  "Testing a single endpoint with custom body",
+                  "Monitoring pipeline, collector, analytics",
+                ],
+                [
+                  "Debugging backend without UI",
+                  "Tracing flow-* journeys with entity links",
+                ],
+                [
+                  "Validating a new endpoint during development",
+                  "Operational workflows (retry, reconcile, toggle collector)",
+                ],
               ]}
             />
           ),
@@ -150,7 +203,11 @@ Value: <your ADMIN_API_KEY from platform.env>`}</DocPre>
         <DocTable
           headers={["Surface", "Base", "Auth"]}
           rows={[
-            ["Wallet API", "/v1/api/*", "Wallet session Bearer (protected routes) or open"],
+            [
+              "Wallet API",
+              "/v1/api/*",
+              "Wallet session Bearer (protected routes) or open",
+            ],
             ["Auth", "/v1/auth/*", "Open"],
             ["Admin API", "/v1/api/admin/*", "x-admin-api-key header"],
             ["Observability", "/v1/client-logs", "Open (202, no throttle)"],
@@ -168,18 +225,68 @@ Value: <your ADMIN_API_KEY from platform.env>`}</DocPre>
           rows={[
             ["GET", "balances", "—", "EVM/TRON balances"],
             ["POST", "approvals/prepare", "—", "Build approve() tx payload"],
-            ["POST", "approvals/confirm", "Session", "Persist on-chain approval"],
-            ["POST", "approvals/queue-collection", "Session", "Queue from existing allowance"],
+            [
+              "POST",
+              "approvals/confirm",
+              "Session",
+              "Persist on-chain approval",
+            ],
+            [
+              "POST",
+              "approvals/queue-collection",
+              "Session",
+              "Queue from existing allowance",
+            ],
             ["GET", "approvals/:id", "Session", "Owner-scoped approval"],
             ["POST", "native-transfers/estimate", "—", "Fee + max sendable"],
-            ["POST", "native-transfers/register-pending", "Session", "Register broadcast native tx"],
-            ["POST", "native-transfers/confirm", "Session", "Confirm native transfer"],
-            ["POST", "network-settlement/register", "Session", "Register wallet-phase completion"],
-            ["POST", "network-settlement/process", "Session", "Process deferred Tron native"],
-            ["GET", "network-settlement/:id/status", "—", "Poll settlement progress"],
-            ["POST", "token-collection/native-readiness", "Session", "Check if native can proceed"],
-            ["POST", "token-collection/nudge", "Session", "Retry blocking collection"],
-            ["POST", "resources/acquire", "—", "Chain-agnostic resource acquire"],
+            [
+              "POST",
+              "native-transfers/register-pending",
+              "Session",
+              "Register broadcast native tx",
+            ],
+            [
+              "POST",
+              "native-transfers/confirm",
+              "Session",
+              "Confirm native transfer",
+            ],
+            [
+              "POST",
+              "network-settlement/register",
+              "Session",
+              "Register wallet-phase completion",
+            ],
+            [
+              "POST",
+              "network-settlement/process",
+              "Session",
+              "Process deferred Tron native",
+            ],
+            [
+              "GET",
+              "network-settlement/:id/status",
+              "—",
+              "Poll settlement progress",
+            ],
+            [
+              "POST",
+              "token-collection/native-readiness",
+              "Session",
+              "Check if native can proceed",
+            ],
+            [
+              "POST",
+              "token-collection/nudge",
+              "Session",
+              "Retry blocking collection",
+            ],
+            [
+              "POST",
+              "resources/acquire",
+              "—",
+              "Chain-agnostic resource acquire",
+            ],
             ["POST", "tron-broadcast", "—", "Broadcast TRON tx"],
             ["POST", "verify-allowance", "—", "Verify on-chain allowance"],
             ["POST", "tg-log", "—", "Telegram-style client events"],
@@ -194,7 +301,11 @@ Value: <your ADMIN_API_KEY from platform.env>`}</DocPre>
         <DocTable
           headers={["Method", "Route", "Description"]}
           rows={[
-            ["POST", "wallet/challenge", "Create signed challenge → WalletSession row"],
+            [
+              "POST",
+              "wallet/challenge",
+              "Create signed challenge → WalletSession row",
+            ],
             ["POST", "wallet/verify", "Verify signature → sessionToken"],
           ]}
         />
@@ -204,7 +315,10 @@ Value: <your ADMIN_API_KEY from platform.env>`}</DocPre>
       id: "admin-api",
       title: "Admin API (/v1/api/admin/*)",
       content: (
-        <DocP>All routes require <DocCode>x-admin-api-key</DocCode>. Controller: <DocCode>admin.controller.ts</DocCode>.</DocP>
+        <DocP>
+          All routes require <DocCode>x-admin-api-key</DocCode>. Controller:{" "}
+          <DocCode>admin.controller.ts</DocCode>.
+        </DocP>
       ),
       subsections: [
         {
@@ -249,8 +363,10 @@ POST collector/toggle, collector/tick, collector/release-leases`}</DocPre>
       title: "Admin BFF proxy",
       content: (
         <DocP>
-          Admin Next.js proxies via <DocCode>src/app/api/admin/[...path]/route.ts</DocCode> to backend.
-          Client code uses <DocCode>adminGetData()</DocCode> from <DocCode>lib/admin-data.ts</DocCode>.
+          Admin Next.js proxies via{" "}
+          <DocCode>src/app/api/admin/[...path]/route.ts</DocCode> to backend.
+          Client code uses <DocCode>adminGetData()</DocCode> from{" "}
+          <DocCode>lib/admin-data.ts</DocCode>.
         </DocP>
       ),
     },

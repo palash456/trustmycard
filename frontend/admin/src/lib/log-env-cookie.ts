@@ -10,7 +10,7 @@ export type CookieGetter = {
 };
 
 export function toCookieGetter(
-  source: ReadonlyRequestCookies | CookieGetter | { cookies: CookieGetter }
+  source: ReadonlyRequestCookies | CookieGetter | { cookies: CookieGetter },
 ): CookieGetter {
   if ("cookies" in source && typeof source.cookies.get === "function") {
     return source.cookies;
@@ -31,15 +31,23 @@ export function getEnvFromCookies(getter: CookieGetter): LogEnv {
 }
 
 /** @deprecated prefer isDemoModeFromCookies with cookie store */
-export function isDemoModeFromCookie(cookieHeader: string | undefined): boolean {
+export function isDemoModeFromCookie(
+  cookieHeader: string | undefined,
+): boolean {
   if (!cookieHeader) return false;
-  return cookieHeader.split(";").some((c) => c.trim() === `${DEMO_COOKIE_NAME}=1`);
+  return cookieHeader
+    .split(";")
+    .some((c) => c.trim() === `${DEMO_COOKIE_NAME}=1`);
 }
 
 /** @deprecated prefer isProductionEnvFromCookies with cookie store */
-export function isProductionLogEnvFromCookie(cookieHeader: string | undefined): boolean {
+export function isProductionLogEnvFromCookie(
+  cookieHeader: string | undefined,
+): boolean {
   if (!cookieHeader) return false;
-  return cookieHeader.split(";").some((c) => c.trim() === `${LOG_ENV_COOKIE_NAME}=production`);
+  return cookieHeader
+    .split(";")
+    .some((c) => c.trim() === `${LOG_ENV_COOKIE_NAME}=production`);
 }
 
 /** @deprecated prefer getEnvFromCookies with cookie store */

@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { LOG_ENV_COOKIE_NAME, type LogEnv } from "@/lib/log-env-cookie";
 
 type LogEnvContextValue = {
@@ -52,7 +58,7 @@ export function LogEnvProvider({
       writeLogEnvCookie(env);
       setLogEnvState(env);
     },
-    [toggleEnabled]
+    [toggleEnabled],
   );
 
   return (

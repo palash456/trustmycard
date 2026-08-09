@@ -27,7 +27,13 @@ export class AdminDevOpsService {
 
   restartWebsite(): { ok: boolean; message: string } {
     this.assertDevOps();
-    const script = join(process.cwd(), "..", "frontend", "scripts", "dev-restart-website.mjs");
+    const script = join(
+      process.cwd(),
+      "..",
+      "frontend",
+      "scripts",
+      "dev-restart-website.mjs",
+    );
     spawn("node", [script], {
       detached: true,
       stdio: "ignore",

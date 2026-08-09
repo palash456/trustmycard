@@ -27,7 +27,7 @@ test("loadPlatformConfig rejects invalid COLLECTOR_MAX_RUNS", () => {
     loadPlatformConfig({
       COLLECTOR_MAX_RUNS: "not-a-number",
       PLATFORM_ENABLED_NETWORKS: "eth",
-    })
+    }),
   );
 });
 

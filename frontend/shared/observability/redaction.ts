@@ -37,16 +37,15 @@ export const REDACTED_FIELDS = [
 export function shouldRedactKey(key: string): boolean {
   if (SENSITIVE_VALUE_HEADERS.has(key.toLowerCase())) return true;
   if (/url|uri|endpoint|origin|host/i.test(key)) return true;
-  return REDACTED_FIELDS.some(
-    (field) => field.toLowerCase() === key.toLowerCase()
-  ) || SENSITIVE_KEY_RE.test(key);
+  return (
+    REDACTED_FIELDS.some(
+      (field) => field.toLowerCase() === key.toLowerCase(),
+    ) || SENSITIVE_KEY_RE.test(key)
+  );
 }
 
 /** Deep-redact sensitive fields from log context objects. */
-export function redactContext(
-  value: unknown,
-  depth = 0
-): unknown {
+export function redactContext(value: unknown, depth = 0): unknown {
   if (depth > 8) return REDACTED;
   if (value == null) return value;
   if (typeof value === "string") return redactStringValue(value);

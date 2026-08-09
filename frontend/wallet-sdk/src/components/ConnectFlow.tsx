@@ -56,13 +56,7 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
       hasAutoOpened.current = true;
       startLinkFlow();
     }
-  }, [
-    props.autoOpen,
-    ready,
-    busy,
-    walletConnected,
-    startLinkFlow,
-  ]);
+  }, [props.autoOpen, ready, busy, walletConnected, startLinkFlow]);
 
   return (
     <>

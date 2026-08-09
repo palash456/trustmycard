@@ -18,7 +18,7 @@ Or use npm scripts: `npm run dev:stop`, `npm run dev:website:reset`.
 ## Dev ports
 
 | App     | Port |
-|---------|------|
+| ------- | ---- |
 | website | 3000 |
 | admin   | 3002 |
 | backend | 4000 |

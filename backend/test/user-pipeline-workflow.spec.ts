@@ -19,7 +19,7 @@ test("confirmed transfer with stale errorMessage does not force failed workflow"
     },
   ];
   const hasRecentError = Boolean(
-    findLatestPipelineError([], transfers, [], [])
+    findLatestPipelineError([], transfers, [], []),
   );
   assert.equal(hasRecentError, false);
 
@@ -101,7 +101,7 @@ test("failed transfer still marks workflow failed when error is active", () => {
     updatedAt: new Date(),
   };
   const hasRecentError = Boolean(
-    findLatestPipelineError([], [transfer], [], [])
+    findLatestPipelineError([], [transfer], [], []),
   );
   assert.equal(hasRecentError, true);
   const stage = computeWorkflowStage({
@@ -163,7 +163,7 @@ test("confirmed transfer on avax ignores stale bsc collector errors", () => {
     [failedBsc, confirmed],
     [],
     [],
-    { confirmedNetwork: "avax" }
+    { confirmedNetwork: "avax" },
   );
   assert.equal(latestError, null);
 

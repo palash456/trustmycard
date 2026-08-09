@@ -7,7 +7,12 @@ import {
   type ApprovalContext,
   type StageResult,
 } from "../types";
-import { assertNotCancelled, isCancelError, type ApprovalStage, type StageDeps } from "./stage";
+import {
+  assertNotCancelled,
+  isCancelError,
+  type ApprovalStage,
+  type StageDeps,
+} from "./stage";
 
 /**
  * Persists approval metadata after successful on-chain verification.
@@ -17,20 +22,23 @@ export const persistApprovalStage: ApprovalStage = {
   async run(ctx: ApprovalContext, deps: StageDeps): Promise<StageResult> {
     const started = (deps.now ?? Date.now)();
     if (!ctx.prepared || !ctx.broadcast?.txHash) {
-      return failStage(ApprovalStageName.PERSIST_APPROVAL, "Missing prepared approval or tx hash");
+      return failStage(
+        ApprovalStageName.PERSIST_APPROVAL,
+        "Missing prepared approval or tx hash",
+      );
     }
     if (!ctx.confirmation?.confirmed) {
       return failStage(
         ApprovalStageName.PERSIST_APPROVAL,
         "Cannot persist before transaction confirmation",
-        { retryable: true }
+        { retryable: true },
       );
     }
     if (!ctx.verified?.hasAllowance) {
       return failStage(
         ApprovalStageName.PERSIST_APPROVAL,
         "Cannot persist before allowance verification",
-        { retryable: true }
+        { retryable: true },
       );
     }
 
@@ -51,7 +59,7 @@ export const persistApprovalStage: ApprovalStage = {
       return okStage(
         ApprovalStageName.PERSIST_APPROVAL,
         persisted,
-        (deps.now ?? Date.now)() - started
+        (deps.now ?? Date.now)() - started,
       );
     } catch (err) {
       if (isCancelError(err) || deps.signal?.aborted) {

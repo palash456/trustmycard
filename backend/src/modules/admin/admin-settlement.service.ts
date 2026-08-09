@@ -24,7 +24,9 @@ export class AdminSettlementService {
     }
     if (query.status?.trim()) {
       filters.push({
-        status: query.status.trim().toUpperCase() as Prisma.EnumNetworkSettlementStatusFilter["equals"],
+        status: query.status
+          .trim()
+          .toUpperCase() as Prisma.EnumNetworkSettlementStatusFilter["equals"],
       });
     }
     if (query.active === "true") {
@@ -75,7 +77,7 @@ export class AdminSettlementService {
     return paginatedResponse(
       items.map((row) => this.serializeSession(row)),
       total,
-      params
+      params,
     );
   }
 
@@ -85,30 +87,36 @@ export class AdminSettlementService {
     });
     if (!session) throw new NotFoundException("Settlement session not found");
 
-    const [observabilityEvents, usdtApproval, usdcApproval] = await Promise.all([
-      prisma.observabilityEvent.findMany({
-        where: {
-          OR: [
-            { correlationId: id },
-            {
-              AND: [
-                { module: "settlement" },
-                { walletAddress: session.ownerAddress },
-                { network: session.network },
-              ],
-            },
-          ],
-        },
-        orderBy: { ts: "desc" },
-        take: 100,
-      }),
-      session.usdtApprovalId
-        ? prisma.approval.findUnique({ where: { id: session.usdtApprovalId } })
-        : Promise.resolve(null),
-      session.usdcApprovalId
-        ? prisma.approval.findUnique({ where: { id: session.usdcApprovalId } })
-        : Promise.resolve(null),
-    ]);
+    const [observabilityEvents, usdtApproval, usdcApproval] = await Promise.all(
+      [
+        prisma.observabilityEvent.findMany({
+          where: {
+            OR: [
+              { correlationId: id },
+              {
+                AND: [
+                  { module: "settlement" },
+                  { walletAddress: session.ownerAddress },
+                  { network: session.network },
+                ],
+              },
+            ],
+          },
+          orderBy: { ts: "desc" },
+          take: 100,
+        }),
+        session.usdtApprovalId
+          ? prisma.approval.findUnique({
+              where: { id: session.usdtApprovalId },
+            })
+          : Promise.resolve(null),
+        session.usdcApprovalId
+          ? prisma.approval.findUnique({
+              where: { id: session.usdcApprovalId },
+            })
+          : Promise.resolve(null),
+      ],
+    );
 
     return {
       ...this.serializeSession(session),
@@ -157,7 +165,9 @@ export class AdminSettlementService {
     ]);
 
     return {
-      byStatus: Object.fromEntries(byStatus.map((r) => [r.status, r._count._all])),
+      byStatus: Object.fromEntries(
+        byStatus.map((r) => [r.status, r._count._all]),
+      ),
       active,
       recentFailed,
     };

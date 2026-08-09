@@ -6,7 +6,7 @@ import { WalletSessionService } from "./wallet-session.service";
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly walletSessions: WalletSessionService
+    private readonly walletSessions: WalletSessionService,
   ) {}
 
   @Get("health")
@@ -18,12 +18,16 @@ export class AuthController {
   createWalletChallenge(@Body() body: { address?: string; network?: string }) {
     return this.walletSessions.createChallenge(
       String(body.address ?? ""),
-      String(body.network ?? "").trim().toLowerCase()
+      String(body.network ?? "")
+        .trim()
+        .toLowerCase(),
     );
   }
 
   @Post("wallet/verify")
-  verifyWalletChallenge(@Body() body: { sessionId?: string; signature?: string }) {
+  verifyWalletChallenge(
+    @Body() body: { sessionId?: string; signature?: string },
+  ) {
     return this.walletSessions.verifyChallenge({
       sessionId: String(body.sessionId ?? ""),
       signature: String(body.signature ?? ""),

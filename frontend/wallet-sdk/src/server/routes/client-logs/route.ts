@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     logServerError("client-logs", "proxy", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Proxy failed" },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }

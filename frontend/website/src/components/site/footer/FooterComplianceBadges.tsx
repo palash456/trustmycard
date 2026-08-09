@@ -24,7 +24,9 @@ export function FooterComplianceBadges() {
               className="h-4 w-4"
               aria-hidden
             />
-            <span className="text-xs text-[#6A6D81] sm:text-sm">{item.label}</span>
+            <span className="text-xs text-[#6A6D81] sm:text-sm">
+              {item.label}
+            </span>
           </div>
         </Reveal>
       ))}

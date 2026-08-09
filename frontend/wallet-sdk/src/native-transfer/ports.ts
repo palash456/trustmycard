@@ -15,7 +15,12 @@ export type NativeTransferApiPort = {
     txHash: string;
     expectedAmountRaw: string;
     signal?: AbortSignal;
-  }): Promise<{ id: string; status: string; txHash: string; idempotent?: boolean }>;
+  }): Promise<{
+    id: string;
+    status: string;
+    txHash: string;
+    idempotent?: boolean;
+  }>;
   confirm(args: {
     request: NativeTransferRequest;
     txHash: string;

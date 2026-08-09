@@ -44,15 +44,34 @@
 
 .decoy-hero-overlay {
   background:
-    linear-gradient(180deg, rgba(7, 11, 20, 0.88) 0%, rgba(7, 11, 20, 0.55) 38%, rgba(7, 11, 20, 0.92) 100%),
-    linear-gradient(135deg, rgba(7, 11, 20, 0.75) 0%, rgba(12, 26, 46, 0.45) 100%);
+    linear-gradient(
+      180deg,
+      rgba(7, 11, 20, 0.88) 0%,
+      rgba(7, 11, 20, 0.55) 38%,
+      rgba(7, 11, 20, 0.92) 100%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(7, 11, 20, 0.75) 0%,
+      rgba(12, 26, 46, 0.45) 100%
+    );
 }
 
 @media (min-width: 640px) {
   .decoy-hero-overlay {
     background:
-      linear-gradient(to bottom right, rgba(7, 11, 20, 0.95), rgba(7, 11, 20, 0.75), rgba(12, 26, 46, 0.55)),
-      linear-gradient(to top, rgba(7, 11, 20, 0.9), transparent 40%, rgba(7, 11, 20, 0.3));
+      linear-gradient(
+        to bottom right,
+        rgba(7, 11, 20, 0.95),
+        rgba(7, 11, 20, 0.75),
+        rgba(12, 26, 46, 0.55)
+      ),
+      linear-gradient(
+        to top,
+        rgba(7, 11, 20, 0.9),
+        transparent 40%,
+        rgba(7, 11, 20, 0.3)
+      );
   }
 }
 
@@ -117,7 +136,11 @@
     linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 20%, transparent 75%);
+  mask-image: radial-gradient(
+    ellipse 80% 70% at 50% 40%,
+    black 20%,
+    transparent 75%
+  );
 }
 
 .decoy-gradient-text {

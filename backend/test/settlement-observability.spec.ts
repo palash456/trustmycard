@@ -55,5 +55,8 @@ test("settlement token settled events keep settlementSessionId in context only",
   assert.equal(persisted.length, 1);
   const row = persisted[0]!;
   assert.equal(row.traceId, "flow-demo-3");
-  assert.equal((row.context as { settlementSessionId?: string }).settlementSessionId, "settle-db-pk-42");
+  assert.equal(
+    (row.context as { settlementSessionId?: string }).settlementSessionId,
+    "settle-db-pk-42",
+  );
 });

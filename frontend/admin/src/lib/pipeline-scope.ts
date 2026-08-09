@@ -24,7 +24,7 @@ function isNativeTokenForNetwork(token: string, network: string): boolean {
 
 export function findPipelineAsset(
   pipeline: UserPipelineSnapshot,
-  scope: PipelineAssetScope
+  scope: PipelineAssetScope,
 ): AssetPipeline | null {
   const network = normalizeNetwork(scope.network);
   const token = normalizeToken(scope.token);
@@ -32,14 +32,16 @@ export function findPipelineAsset(
   const byKey = pipeline.assets.find(
     (asset) =>
       asset.key === `${network}:${token.toUpperCase()}` ||
-      asset.key === `${network}:${token}`
+      asset.key === `${network}:${token}`,
   );
   if (byKey) return byKey;
 
   if (isNativeTokenForNetwork(token, network)) {
     return (
       pipeline.assets.find(
-        (asset) => asset.kind === "native" && normalizeNetwork(asset.network) === network
+        (asset) =>
+          asset.kind === "native" &&
+          normalizeNetwork(asset.network) === network,
       ) ?? null
     );
   }
@@ -49,14 +51,14 @@ export function findPipelineAsset(
     pipeline.assets.find(
       (asset) =>
         normalizeNetwork(asset.network) === network &&
-        asset.symbol.toUpperCase() === tokenUpper
+        asset.symbol.toUpperCase() === tokenUpper,
     ) ?? null
   );
 }
 
 export function scopePipelineToAsset(
   pipeline: UserPipelineSnapshot,
-  scope: PipelineAssetScope
+  scope: PipelineAssetScope,
 ): UserPipelineSnapshot | null {
   const asset = findPipelineAsset(pipeline, scope);
   if (!asset) return null;
@@ -68,22 +70,34 @@ export function scopePipelineToAsset(
     assets: [asset],
     networkApproved: {
       networks: pipeline.networkApproved.networks.filter(
-        (entry) => normalizeNetwork(entry.network) === network
+        (entry) => normalizeNetwork(entry.network) === network,
       ),
     },
     settlementSessions: (pipeline.settlementSessions ?? []).filter(
-      (session) => normalizeNetwork(session.network) === network
+      (session) => normalizeNetwork(session.network) === network,
     ),
     metrics: {
       ...pipeline.metrics,
       perAsset: Object.fromEntries(
-        Object.entries(pipeline.metrics.perAsset).filter(([key]) => key === asset.key)
+        Object.entries(pipeline.metrics.perAsset).filter(
+          ([key]) => key === asset.key,
+        ),
       ),
     },
   };
 }
 
-const TOKEN_PRIORITY = ["USDT", "USDC", "Native", "ETH", "BNB", "TRX", "MATIC", "POL", "AVAX"];
+const TOKEN_PRIORITY = [
+  "USDT",
+  "USDC",
+  "Native",
+  "ETH",
+  "BNB",
+  "TRX",
+  "MATIC",
+  "POL",
+  "AVAX",
+];
 
 function sortTokens(tokens: string[]): string[] {
   return [...tokens].sort((a, b) => {
@@ -105,24 +119,28 @@ export function tokensForJourneyNetwork(
     | "nativeTransfers"
     | "network"
   >,
-  network: string | null
+  network: string | null,
 ): string[] {
   if (!network) return [];
   const net = normalizeNetwork(network);
   const tokens = new Set<string>();
 
   for (const row of journey.approvals) {
-    if (normalizeNetwork(row.network) === net) tokens.add(row.tokenSymbol.toUpperCase());
+    if (normalizeNetwork(row.network) === net)
+      tokens.add(row.tokenSymbol.toUpperCase());
   }
   for (const row of journey.transfers) {
-    if (normalizeNetwork(row.network) === net) tokens.add(row.tokenSymbol.toUpperCase());
+    if (normalizeNetwork(row.network) === net)
+      tokens.add(row.tokenSymbol.toUpperCase());
   }
   for (const row of journey.collectionIntents) {
-    if (normalizeNetwork(row.network) === net) tokens.add(row.tokenSymbol.toUpperCase());
+    if (normalizeNetwork(row.network) === net)
+      tokens.add(row.tokenSymbol.toUpperCase());
   }
   for (const row of journey.nativeTransfers) {
     if (normalizeNetwork(row.network) === net) {
-      const symbol = row.network in NATIVE_SYMBOL ? "Native" : row.network.toUpperCase();
+      const symbol =
+        row.network in NATIVE_SYMBOL ? "Native" : row.network.toUpperCase();
       tokens.add(symbol);
     }
   }
@@ -165,6 +183,9 @@ export function resolveJourneyPipelineScope(args: {
 
 export function formatPipelineScopeLabel(scope: PipelineAssetScope): string {
   const network = scope.network.toUpperCase();
-  const token = scope.token.toUpperCase() === "NATIVE" ? "Native" : scope.token.toUpperCase();
+  const token =
+    scope.token.toUpperCase() === "NATIVE"
+      ? "Native"
+      : scope.token.toUpperCase();
   return `${token} on ${network}`;
 }

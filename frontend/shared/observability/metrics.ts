@@ -122,9 +122,7 @@ export class MetricRegistry {
     this.gauges.clear();
   }
 
-  private parseKey(
-    key: string
-  ): { name: string; labels: MetricLabels } | null {
+  private parseKey(key: string): { name: string; labels: MetricLabels } | null {
     const pipe = key.indexOf("|");
     if (pipe === -1) return { name: key, labels: {} };
     const name = key.slice(0, pipe);
@@ -146,7 +144,7 @@ export const globalMetrics = new MetricRegistry();
 export function incrementCounter(
   name: string,
   labels: MetricLabels = {},
-  delta = 1
+  delta = 1,
 ): void {
   try {
     globalMetrics.increment(name, labels, delta);
@@ -158,7 +156,7 @@ export function incrementCounter(
 export function recordTiming(
   name: string,
   durationMs: number,
-  labels: MetricLabels = {}
+  labels: MetricLabels = {},
 ): void {
   try {
     globalMetrics.observe(name, durationMs, labels);

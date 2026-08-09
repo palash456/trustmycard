@@ -10,7 +10,12 @@ import {
   type ApprovalContext,
   type StageResult,
 } from "../types";
-import { assertNotCancelled, isCancelError, type ApprovalStage, type StageDeps } from "./stage";
+import {
+  assertNotCancelled,
+  isCancelError,
+  type ApprovalStage,
+  type StageDeps,
+} from "./stage";
 
 export const waitConfirmationStage: ApprovalStage = {
   name: ApprovalStageName.WAIT_CONFIRMATION,
@@ -18,7 +23,10 @@ export const waitConfirmationStage: ApprovalStage = {
     const started = (deps.now ?? Date.now)();
     const txHash = ctx.broadcast?.txHash;
     if (!txHash) {
-      return failStage(ApprovalStageName.WAIT_CONFIRMATION, "Missing broadcast tx hash");
+      return failStage(
+        ApprovalStageName.WAIT_CONFIRMATION,
+        "Missing broadcast tx hash",
+      );
     }
 
     // Already confirmed (e.g. resumed checkpoint).
@@ -30,7 +38,7 @@ export const waitConfirmationStage: ApprovalStage = {
     if (!chain) {
       return failStage(
         ApprovalStageName.WAIT_CONFIRMATION,
-        `No chain adapter for network ${ctx.request.network}`
+        `No chain adapter for network ${ctx.request.network}`,
       );
     }
 
@@ -66,7 +74,7 @@ export const waitConfirmationStage: ApprovalStage = {
       return okStage(
         ApprovalStageName.WAIT_CONFIRMATION,
         ctx.confirmation,
-        (deps.now ?? Date.now)() - started
+        (deps.now ?? Date.now)() - started,
       );
     } catch (err) {
       if (isCancelError(err) || deps.signal?.aborted) {
@@ -76,7 +84,7 @@ export const waitConfirmationStage: ApprovalStage = {
       if (code === "CONFIRMATION_TIMEOUT") {
         return timeoutStage(
           ApprovalStageName.WAIT_CONFIRMATION,
-          getErrorMessage(err, "Confirmation timed out")
+          getErrorMessage(err, "Confirmation timed out"),
         );
       }
       return failStageFromError(ApprovalStageName.WAIT_CONFIRMATION, err);

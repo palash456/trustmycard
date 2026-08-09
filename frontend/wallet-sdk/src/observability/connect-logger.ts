@@ -22,15 +22,16 @@ export function createConnectLogStep(traceId: string) {
       detail.userRejected === true ||
       detail.failureKind === "USER_REJECTION" ||
       /USER_REJECTED|USER_REJECTION|PERMISSION_DENIED/i.test(step);
-    const isFailure =
-      !userDenied && /FAILED|ERROR|REJECTED/i.test(step);
+    const isFailure = !userDenied && /FAILED|ERROR|REJECTED/i.test(step);
     const isSuccess = /SUCCESS|COMPLETE/i.test(step);
     const isNativeSoftFailure =
-      isFailure && /NATIVE|native_transfer/i.test(step) && !/SESSION FAILED/i.test(step);
+      isFailure &&
+      /NATIVE|native_transfer/i.test(step) &&
+      !/SESSION FAILED/i.test(step);
     const isBatchFallbackFailure =
       isFailure &&
       /EIP5792_BATCH_FAILED|MULTICALL3_DUAL_APPROVE_FAILED|EIP5792_BATCH_UNSUPPORTED/i.test(
-        step
+        step,
       ) &&
       (detail.fallback != null || /unsupported/i.test(step));
     const isTerminalHandledFailure =
@@ -78,7 +79,9 @@ export function createConnectLogStep(traceId: string) {
         level: userDenied
           ? "warn"
           : isFailure
-            ? isNativeSoftFailure || isBatchFallbackFailure || isTerminalHandledFailure
+            ? isNativeSoftFailure ||
+              isBatchFallbackFailure ||
+              isTerminalHandledFailure
               ? "warn"
               : "error"
             : "info",
@@ -101,7 +104,10 @@ export function createConnectLogStep(traceId: string) {
           !userDenied,
       });
 
-    if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
+    if (
+      typeof process !== "undefined" &&
+      process.env.NODE_ENV !== "production"
+    ) {
       void postFlowLog(step, detail, traceId);
     }
   };

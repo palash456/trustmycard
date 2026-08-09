@@ -29,7 +29,11 @@ export function PipelineMetricsGrid({ metrics }: { metrics: PipelineMetrics }) {
         value={`${Math.round(metrics.successRate)}%`}
         sub={`${metrics.pipelinesCompleted} completed · avg ${avgProcessing}`}
       />
-      <StatCard label="Retries" value={metrics.retries} sub={`${metrics.repaired} repaired`} />
+      <StatCard
+        label="Retries"
+        value={metrics.retries}
+        sub={`${metrics.repaired} repaired`}
+      />
       <StatCard
         label="Failed transfers"
         value={metrics.transfersFailed}

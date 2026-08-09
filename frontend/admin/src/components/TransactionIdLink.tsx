@@ -19,7 +19,9 @@ export function TransactionIdLink({
 }) {
   const label = truncate ? shortTransactionId(id) : id;
   return (
-    <span className={cn("inline-flex max-w-full items-center gap-1", className)}>
+    <span
+      className={cn("inline-flex max-w-full items-center gap-1", className)}
+    >
       <Link
         href={transactionDetailLink(id, { token })}
         className="truncate font-mono text-xs text-primary hover:underline"

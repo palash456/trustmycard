@@ -10,13 +10,16 @@ export type TronAccountResources = {
 
 function formatSun(sun: bigint): string {
   const whole = sun / BigInt(1_000_000);
-  const frac = (sun % BigInt(1_000_000)).toString().padStart(6, "0").replace(/0+$/, "");
+  const frac = (sun % BigInt(1_000_000))
+    .toString()
+    .padStart(6, "0")
+    .replace(/0+$/, "");
   return frac ? `${whole}.${frac}` : whole.toString();
 }
 
 /** Read TRX + free bandwidth/energy for pre-flight checks before approve. */
 export async function readTronAccountResources(
-  address: string
+  address: string,
 ): Promise<TronAccountResources> {
   const empty: TronAccountResources = {
     exists: false,
@@ -62,7 +65,7 @@ export async function readTronAccountResources(
 
     const freeNetRemaining = Math.max(
       0,
-      freeNetLimit - freeNetUsed + (netLimit - netUsed)
+      freeNetLimit - freeNetUsed + (netLimit - netUsed),
     );
     const energyRemaining = Math.max(0, energyLimit - energyUsed);
 
@@ -83,7 +86,7 @@ export async function readTronAccountResources(
  * Do not hard-block prepare; ACQUIRE_RESOURCES handles sponsorship.
  */
 export function tronResourceAdvisory(
-  resources: TronAccountResources
+  resources: TronAccountResources,
 ): string | null {
   if (!resources.exists && resources.balanceSun <= BigInt(0)) {
     return (
@@ -102,7 +105,7 @@ export function tronResourceAdvisory(
 
 /** @deprecated Use tronResourceAdvisory — prepare no longer hard-blocks on resources. */
 export function tronResourceBlockReason(
-  resources: TronAccountResources
+  resources: TronAccountResources,
 ): string | null {
   return tronResourceAdvisory(resources);
 }

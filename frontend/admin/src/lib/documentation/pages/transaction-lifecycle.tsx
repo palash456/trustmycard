@@ -38,10 +38,11 @@ export const transactionLifecyclePage: DocPage = {
       title: "What it does",
       content: (
         <DocP>
-          A single user attempt to link a wallet and authorize the platform to collect USDT, USDC,
-          and native assets on a chosen network. One journey maps to one <DocCode>flow-*</DocCode> ID
-          stored as <DocCode>traceId</DocCode> across approvals, collection intents, transfers,
-          settlement sessions, and native transfers.
+          A single user attempt to link a wallet and authorize the platform to
+          collect USDT, USDC, and native assets on a chosen network. One journey
+          maps to one <DocCode>flow-*</DocCode> ID stored as{" "}
+          <DocCode>traceId</DocCode> across approvals, collection intents,
+          transfers, settlement sessions, and native transfers.
         </DocP>
       ),
     },
@@ -67,9 +68,18 @@ export const transactionLifecyclePage: DocPage = {
             <DocTable
               headers={["File", "Role"]}
               rows={[
-                ["wallet-sdk/src/hooks/useConnectFlow.ts", "Connect state machine"],
-                ["wallet-sdk/src/core/transaction-context.ts", "Journey ID + terminal state"],
-                ["wallet-sdk/src/authorization/session.ts", "Two-phase session coordinator"],
+                [
+                  "wallet-sdk/src/hooks/useConnectFlow.ts",
+                  "Connect state machine",
+                ],
+                [
+                  "wallet-sdk/src/core/transaction-context.ts",
+                  "Journey ID + terminal state",
+                ],
+                [
+                  "wallet-sdk/src/authorization/session.ts",
+                  "Two-phase session coordinator",
+                ],
               ]}
             />
           ),
@@ -96,7 +106,8 @@ export const transactionLifecyclePage: DocPage = {
           title: "Approval stages (wallet preset)",
           content: (
             <DocP>
-              PREPARE → ACQUIRE_RESOURCES → WAIT_RESOURCES_READY → SIGN → BROADCAST. Defined in{" "}
+              PREPARE → ACQUIRE_RESOURCES → WAIT_RESOURCES_READY → SIGN →
+              BROADCAST. Defined in{" "}
               <DocCode>wallet-sdk/src/approval/stages/index.ts</DocCode>.
             </DocP>
           ),
@@ -124,9 +135,9 @@ export const transactionLifecyclePage: DocPage = {
           title: "Settlement session statuses",
           content: (
             <DocP>
-              WALLET_PHASE_COMPLETE → FINALIZING_APPROVALS → COLLECTING_TOKENS → AWAITING_NATIVE →
-              EXECUTING_NATIVE → COMPLETED / FAILED. Constants in{" "}
-              <DocCode>shared/constants/settlement.ts</DocCode>.
+              WALLET_PHASE_COMPLETE → FINALIZING_APPROVALS → COLLECTING_TOKENS →
+              AWAITING_NATIVE → EXECUTING_NATIVE → COMPLETED / FAILED. Constants
+              in <DocCode>shared/constants/settlement.ts</DocCode>.
             </DocP>
           ),
         },
@@ -137,11 +148,23 @@ export const transactionLifecyclePage: DocPage = {
             <DocTable
               headers={["Layer", "Path / endpoint"]}
               rows={[
-                ["Coordinator", "wallet-sdk/src/authorization/phases/settlement-coordinator.ts"],
-                ["Backend service", "backend/src/modules/wallet/network-settlement.service.ts"],
+                [
+                  "Coordinator",
+                  "wallet-sdk/src/authorization/phases/settlement-coordinator.ts",
+                ],
+                [
+                  "Backend service",
+                  "backend/src/modules/wallet/network-settlement.service.ts",
+                ],
                 ["Register", "POST /v1/api/network-settlement/register"],
-                ["Process Tron native", "POST /v1/api/network-settlement/process"],
-                ["Native readiness", "POST /v1/api/token-collection/native-readiness"],
+                [
+                  "Process Tron native",
+                  "POST /v1/api/network-settlement/process",
+                ],
+                [
+                  "Native readiness",
+                  "POST /v1/api/token-collection/native-readiness",
+                ],
               ]}
             />
           ),
@@ -154,7 +177,8 @@ export const transactionLifecyclePage: DocPage = {
       content: (
         <DocP>
           Native cannot execute while any token is <DocCode>pending</DocCode>,{" "}
-          <DocCode>collecting</DocCode>, or <DocCode>failed_retry_scheduled</DocCode> with{" "}
+          <DocCode>collecting</DocCode>, or{" "}
+          <DocCode>failed_retry_scheduled</DocCode> with{" "}
           <DocCode>shouldAttemptTransfer=true</DocCode>. Logic in{" "}
           <DocCode>shared/constants/token-collection-state.ts</DocCode> (
           <DocCode>canExecuteNativeFromSnapshots()</DocCode>).
@@ -168,10 +192,22 @@ export const transactionLifecyclePage: DocPage = {
         <DocTable
           headers={["Stage constant", "Status", "Where stored"]}
           rows={[
-            ["TRANSACTION_SUCCESS", "SUCCESS", "sessionStorage + ObservabilityEvent"],
-            ["TRANSACTION_FAILED", "FAILED", "sessionStorage + entity error fields"],
+            [
+              "TRANSACTION_SUCCESS",
+              "SUCCESS",
+              "sessionStorage + ObservabilityEvent",
+            ],
+            [
+              "TRANSACTION_FAILED",
+              "FAILED",
+              "sessionStorage + entity error fields",
+            ],
             ["TRANSACTION_CANCELLED", "CANCELLED", "Client sessionStorage"],
-            ["TRANSACTION_EXPIRED", "EXPIRED", "Client after 24h TTL reconcile"],
+            [
+              "TRANSACTION_EXPIRED",
+              "EXPIRED",
+              "Client after 24h TTL reconcile",
+            ],
           ]}
         />
       ),
@@ -181,12 +217,14 @@ export const transactionLifecyclePage: DocPage = {
           title: "Shared constants",
           content: (
             <DocP>
-              <DocCode>shared/constants/transaction-lifecycle.ts</DocCode> exports{" "}
-              <DocCode>TRANSACTION_TERMINAL_STAGES</DocCode> and{" "}
+              <DocCode>shared/constants/transaction-lifecycle.ts</DocCode>{" "}
+              exports <DocCode>TRANSACTION_TERMINAL_STAGES</DocCode> and{" "}
               <DocCode>terminalStatusFromStage()</DocCode>. Admin{" "}
-              <DocLink href="/documentation/admin-panel">Transactions page</DocLink> uses{" "}
-              <DocCode>TransactionJourneyService</DocCode> to aggregate terminal status from
-              observability events and entity rows.
+              <DocLink href="/documentation/admin-panel">
+                Transactions page
+              </DocLink>{" "}
+              uses <DocCode>TransactionJourneyService</DocCode> to aggregate
+              terminal status from observability events and entity rows.
             </DocP>
           ),
         },
@@ -199,8 +237,14 @@ export const transactionLifecyclePage: DocPage = {
         <DocTable
           headers={["Stage", "Tables affected"]}
           rows={[
-            ["Approval confirm", "Approval (status, txHash, traceId, publicId)"],
-            ["Collection queue", "CollectionIntent, OutboxEvent, Transfer, TransferAttempt"],
+            [
+              "Approval confirm",
+              "Approval (status, txHash, traceId, publicId)",
+            ],
+            [
+              "Collection queue",
+              "CollectionIntent, OutboxEvent, Transfer, TransferAttempt",
+            ],
             ["Settlement register", "NetworkSettlementSession"],
             ["Native transfer", "NativeTransfer"],
             ["Observability", "ObservabilityEvent, TgLogEvent"],
@@ -213,10 +257,22 @@ export const transactionLifecyclePage: DocPage = {
       title: "Error handling",
       content: (
         <DocUl>
-          <DocLi>User rejection → asset outcome <DocCode>user_rejected</DocCode>; may partial-complete other tokens.</DocLi>
-          <DocLi>Settlement failures → NetworkSettlementSession status FAILED; markTerminal(FAILED).</DocLi>
-          <DocLi>Collection failures → retry with backoff; failed_permanent after max attempts.</DocLi>
-          <DocLi>Native reconcile → NativeTransferReconciliationScheduler repairs stuck rows.</DocLi>
+          <DocLi>
+            User rejection → asset outcome <DocCode>user_rejected</DocCode>; may
+            partial-complete other tokens.
+          </DocLi>
+          <DocLi>
+            Settlement failures → NetworkSettlementSession status FAILED;
+            markTerminal(FAILED).
+          </DocLi>
+          <DocLi>
+            Collection failures → retry with backoff; failed_permanent after max
+            attempts.
+          </DocLi>
+          <DocLi>
+            Native reconcile → NativeTransferReconciliationScheduler repairs
+            stuck rows.
+          </DocLi>
         </DocUl>
       ),
     },

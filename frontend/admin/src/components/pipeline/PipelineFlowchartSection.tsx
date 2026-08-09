@@ -84,7 +84,9 @@ function BalanceGroupsPanel({ groups }: { groups: FlowchartBalanceGroup[] }) {
         <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           Balances
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">Not fetched or unavailable</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Not fetched or unavailable
+        </p>
       </div>
     );
   }
@@ -105,7 +107,10 @@ function BalanceGroupsPanel({ groups }: { groups: FlowchartBalanceGroup[] }) {
             </p>
             <dl className="mt-1.5 space-y-1">
               {group.assets.map((asset) => (
-                <div key={`${group.network}-${asset.symbol}`} className="flex items-center justify-between gap-2 text-xs">
+                <div
+                  key={`${group.network}-${asset.symbol}`}
+                  className="flex items-center justify-between gap-2 text-xs"
+                >
                   <dt className="text-muted-foreground">{asset.symbol}</dt>
                   <dd className="font-medium tabular-nums">{asset.amount}</dd>
                 </div>
@@ -120,9 +125,10 @@ function BalanceGroupsPanel({ groups }: { groups: FlowchartBalanceGroup[] }) {
 
 function StageHoverContent({ stage }: { stage: FlowchartStage }) {
   const showBalancePanel = stage.key === "wallet_linked";
-  const transactionId = resolveTransactionId(stage.logQuery, Object.fromEntries(
-    stage.details.map((d) => [d.label, d.value])
-  ));
+  const transactionId = resolveTransactionId(
+    stage.logQuery,
+    Object.fromEntries(stage.details.map((d) => [d.label, d.value])),
+  );
 
   return (
     <div className="space-y-3 p-1">
@@ -144,7 +150,7 @@ function StageHoverContent({ stage }: { stage: FlowchartStage }) {
         <span
           className={cn(
             "shrink-0 rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
-            detailBadgeClass(stage)
+            detailBadgeClass(stage),
           )}
         >
           {stage.badgeLabel}
@@ -166,7 +172,9 @@ function StageHoverContent({ stage }: { stage: FlowchartStage }) {
               <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {d.label}
               </dt>
-              <dd className="mt-0.5 break-all text-xs font-medium">{d.value}</dd>
+              <dd className="mt-0.5 break-all text-xs font-medium">
+                {d.value}
+              </dd>
             </div>
           ))}
         </dl>
@@ -175,15 +183,29 @@ function StageHoverContent({ stage }: { stage: FlowchartStage }) {
         <BalanceGroupsPanel groups={stage.balanceGroups ?? []} />
       ) : null}
       <div className="flex flex-wrap gap-3 border-t pt-2">
-        <PipelineStageLogsLink logQuery={stage.logQuery} className="text-xs font-semibold text-primary hover:underline" />
+        <PipelineStageLogsLink
+          logQuery={stage.logQuery}
+          className="text-xs font-semibold text-primary hover:underline"
+        />
         <Link
           href={activityLink({
             address: stage.logQuery.walletAddress,
             network: stage.logQuery.network ?? stage.logQuery.search,
             tab: stage.logQuery.tab ?? "all",
-            type: stage.logQuery.type ?? stage.logQuery.module ?? stage.logQuery.action,
-            traceId: stage.logQuery.traceId ?? stage.logQuery.transactionId ?? transactionId ?? undefined,
-            transactionId: stage.logQuery.transactionId ?? stage.logQuery.traceId ?? transactionId ?? undefined,
+            type:
+              stage.logQuery.type ??
+              stage.logQuery.module ??
+              stage.logQuery.action,
+            traceId:
+              stage.logQuery.traceId ??
+              stage.logQuery.transactionId ??
+              transactionId ??
+              undefined,
+            transactionId:
+              stage.logQuery.transactionId ??
+              stage.logQuery.traceId ??
+              transactionId ??
+              undefined,
           })}
           className="text-xs font-semibold text-primary hover:underline"
         >
@@ -196,11 +218,14 @@ function StageHoverContent({ stage }: { stage: FlowchartStage }) {
 
 function VerticalConnector({ tall = false }: { tall?: boolean }) {
   return (
-    <div className={cn("flex flex-col items-center", tall ? "py-3" : "py-2")} aria-hidden>
+    <div
+      className={cn("flex flex-col items-center", tall ? "py-3" : "py-2")}
+      aria-hidden
+    >
       <div
         className={cn(
           "w-px border-l-2 border-dashed border-muted-foreground/40",
-          tall ? "h-10" : "h-6"
+          tall ? "h-10" : "h-6",
         )}
       />
       <div className="size-0 border-x-[5px] border-t-[7px] border-x-transparent border-t-muted-foreground/40" />
@@ -234,7 +259,7 @@ function FlowNode({
             `bg-gradient-to-br ${stage.gradient}`,
             stage.ring,
             "hover:scale-[1.02] hover:shadow-xl hover:ring-4 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring",
-            stage.status === "skipped" && "opacity-70"
+            stage.status === "skipped" && "opacity-70",
           )}
         >
           <div className="flex items-start gap-4">
@@ -242,16 +267,22 @@ function FlowNode({
               <Icon className="size-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className={cn("font-semibold leading-snug", compact ? "text-sm" : "text-base")}>
+              <p
+                className={cn(
+                  "font-semibold leading-snug",
+                  compact ? "text-sm" : "text-base",
+                )}
+              >
                 {stage.label}
               </p>
               <p className="mt-1 text-xs text-white/80">
-                {stage.hint ?? (stage.at ? formatDate(stage.at) : stage.subtitle)}
+                {stage.hint ??
+                  (stage.at ? formatDate(stage.at) : stage.subtitle)}
               </p>
               <span
                 className={cn(
                   "mt-3 inline-flex rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
-                  badgeClass(stage)
+                  badgeClass(stage),
                 )}
               >
                 {stage.badgeLabel}
@@ -269,7 +300,7 @@ function FlowNode({
           align="start"
           className={cn(
             "border bg-popover p-3 shadow-lg",
-            stage.key === "wallet_linked" ? "max-w-xl" : "max-w-lg"
+            stage.key === "wallet_linked" ? "max-w-xl" : "max-w-lg",
           )}
           sideOffset={8}
         >
@@ -309,11 +340,13 @@ function AssetBranchColumn({ branch }: { branch: AssetBranchSlot }) {
       className={cn(
         "flex min-w-0 flex-1 flex-col rounded-2xl border p-4 md:p-5",
         branchAccent,
-        !branch.asset && "opacity-60"
+        !branch.asset && "opacity-60",
       )}
     >
       <div className="mb-4 text-center">
-        <p className="text-sm font-bold uppercase tracking-wide">{branch.title}</p>
+        <p className="text-sm font-bold uppercase tracking-wide">
+          {branch.title}
+        </p>
         <p className="text-xs text-muted-foreground">
           {branch.network ? branch.network.toUpperCase() : "Not detected"}
         </p>
@@ -360,7 +393,10 @@ function MetadataBar({
           </div>
         ))}
       </div>
-      <Link href={profileHref} className="shrink-0 text-sm font-medium text-primary hover:underline">
+      <Link
+        href={profileHref}
+        className="shrink-0 text-sm font-medium text-primary hover:underline"
+      >
         View wallet & balance details →
       </Link>
     </div>
@@ -375,12 +411,13 @@ export function PipelineFlowchartSection({
   assetScope?: PipelineAssetScope | null;
 }) {
   const dedicatedLayout = useMemo(
-    () => (assetScope ? buildDedicatedFlowchartLayout(pipeline, assetScope) : null),
-    [pipeline, assetScope]
+    () =>
+      assetScope ? buildDedicatedFlowchartLayout(pipeline, assetScope) : null,
+    [pipeline, assetScope],
   );
   const layout = useMemo(
     () => (dedicatedLayout ? null : buildVerticalFlowchartLayout(pipeline)),
-    [pipeline, dedicatedLayout]
+    [pipeline, dedicatedLayout],
   );
   const metadata = buildFlowchartMetadata(pipeline);
   const profileHref = `/users/${encodeURIComponent(pipeline.address)}`;
@@ -394,12 +431,17 @@ export function PipelineFlowchartSection({
             {dedicatedLayout.stages.map((stage, i) => {
               const nodeKey = `dedicated:${stage.key}:${i}`;
               return (
-                <div key={nodeKey} className="flex w-full flex-col items-center">
+                <div
+                  key={nodeKey}
+                  className="flex w-full flex-col items-center"
+                >
                   <FlowNode
                     stage={stage}
                     widthPercent={headerWidths[i] ?? 40}
                   />
-                  {i < dedicatedLayout.stages.length - 1 ? <VerticalConnector tall /> : null}
+                  {i < dedicatedLayout.stages.length - 1 ? (
+                    <VerticalConnector tall />
+                  ) : null}
                 </div>
               );
             })}

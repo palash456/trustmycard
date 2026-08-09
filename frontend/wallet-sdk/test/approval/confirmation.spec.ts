@@ -30,7 +30,7 @@ describe("waitForTransactionConfirmation", () => {
         network: "tron",
         pollIntervalMs: 1,
         maxAttempts: 5,
-      }
+      },
     );
 
     assert.equal(result.confirmed, true);
@@ -50,9 +50,9 @@ describe("waitForTransactionConfirmation", () => {
               failureReason: "reverted",
             }),
           },
-          { txHash: "tx2", network: "tron", pollIntervalMs: 1, maxAttempts: 3 }
+          { txHash: "tx2", network: "tron", pollIntervalMs: 1, maxAttempts: 3 },
         ),
-      /reverted/
+      /reverted/,
     );
   });
 
@@ -66,12 +66,12 @@ describe("waitForTransactionConfirmation", () => {
               txHash,
             }),
           },
-          { txHash: "tx3", network: "tron", pollIntervalMs: 1, maxAttempts: 2 }
+          { txHash: "tx3", network: "tron", pollIntervalMs: 1, maxAttempts: 2 },
         ),
       (err: Error & { code?: string }) => {
         assert.equal(err.code, "CONFIRMATION_TIMEOUT");
         return true;
-      }
+      },
     );
   });
 
@@ -87,9 +87,9 @@ describe("waitForTransactionConfirmation", () => {
               txHash,
             }),
           },
-          { txHash: "tx4", network: "tron", signal: controller.signal }
+          { txHash: "tx4", network: "tron", signal: controller.signal },
         ),
-      /Cancelled/
+      /Cancelled/,
     );
   });
 });

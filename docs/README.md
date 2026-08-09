@@ -55,24 +55,24 @@ npm run start:dev      # http://localhost:4000
 
 ## Packages
 
-| Location | Name | Role |
-|----------|------|------|
-| `frontend/marketing` | `@trustmycard/marketing` | Public marketing site (static export → Hostinger) |
-| `frontend/website` | `@trustmycard/website` | Wallet app + BFF on Render; decoy cover at `/`, product at `/connect` |
-| `frontend/admin` | `@trustmycard/admin` | Admin dashboard |
-| `frontend/wallet-sdk` | `@trustmycard/wallet-sdk` | Wallet connect + approvals |
-| `frontend/shared` | `@trustmycard/shared` | FE types, constants, schemas, observability |
-| `backend` | `@trustmycard/backend` | NestJS API (`SERVICE_ROLE=api`) and workers (`SERVICE_ROLE=worker`) |
+| Location              | Name                      | Role                                                                  |
+| --------------------- | ------------------------- | --------------------------------------------------------------------- |
+| `frontend/marketing`  | `@trustmycard/marketing`  | Public marketing site (static export → Hostinger)                     |
+| `frontend/website`    | `@trustmycard/website`    | Wallet app + BFF on Render; decoy cover at `/`, product at `/connect` |
+| `frontend/admin`      | `@trustmycard/admin`      | Admin dashboard                                                       |
+| `frontend/wallet-sdk` | `@trustmycard/wallet-sdk` | Wallet connect + approvals                                            |
+| `frontend/shared`     | `@trustmycard/shared`     | FE types, constants, schemas, observability                           |
+| `backend`             | `@trustmycard/backend`    | NestJS API (`SERVICE_ROLE=api`) and workers (`SERVICE_ROLE=worker`)   |
 
 ## Production overview
 
-| Surface | Host | URL |
-|---------|------|-----|
-| Marketing | Hostinger static | `trustmycard.com` |
-| Wallet app | Render | `app.trustmycard.com` (`/` decoy, `/connect` product) |
-| API | Render | `api.trustmycard.com` |
-| Workers | Render | (no public HTTP) |
-| Admin | Render | `admin.trustmycard.com` |
+| Surface    | Host             | URL                                                   |
+| ---------- | ---------------- | ----------------------------------------------------- |
+| Marketing  | Hostinger static | `trustmycard.com`                                     |
+| Wallet app | Render           | `app.trustmycard.com` (`/` decoy, `/connect` product) |
+| API        | Render           | `api.trustmycard.com`                                 |
+| Workers    | Render           | (no public HTTP)                                      |
+| Admin      | Render           | `admin.trustmycard.com`                               |
 
 Deploy guide (budget): [infrastructure/render-budget-production.md](./infrastructure/render-budget-production.md)  
 Deploy guide (full): [infrastructure/render-hostinger-production.md](./infrastructure/render-hostinger-production.md)
@@ -81,48 +81,48 @@ Deploy guide (full): [infrastructure/render-hostinger-production.md](./infrastru
 
 ### Architecture
 
-| Doc | Description |
-|-----|-------------|
-| [architecture/README.md](./architecture/README.md) | Index |
-| [settlement-and-native-execution.md](./architecture/settlement-and-native-execution.md) | Two-phase settlement and native policy |
-| [event-driven-collection.md](./architecture/event-driven-collection.md) | Collection queue modes |
-| [platform-configuration.md](./architecture/platform-configuration.md) | Platform env and spender config |
-| [collection-rollout.md](./architecture/collection-rollout.md) | Collection rollout stages |
-| [semantic-ids.md](./architecture/semantic-ids.md) | Journey `flow-*` IDs and child `publicId` formats |
-| [approval-flow-three-way-comparison.md](./architecture/approval-flow-three-way-comparison.md) | Competitor vs TMC Old vs TMC Current |
-| [tron-approval-flow-comparison.md](./architecture/tron-approval-flow-comparison.md) | HAR-based TRON comparison |
+| Doc                                                                                           | Description                                       |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| [architecture/README.md](./architecture/README.md)                                            | Index                                             |
+| [settlement-and-native-execution.md](./architecture/settlement-and-native-execution.md)       | Two-phase settlement and native policy            |
+| [event-driven-collection.md](./architecture/event-driven-collection.md)                       | Collection queue modes                            |
+| [platform-configuration.md](./architecture/platform-configuration.md)                         | Platform env and spender config                   |
+| [collection-rollout.md](./architecture/collection-rollout.md)                                 | Collection rollout stages                         |
+| [semantic-ids.md](./architecture/semantic-ids.md)                                             | Journey `flow-*` IDs and child `publicId` formats |
+| [approval-flow-three-way-comparison.md](./architecture/approval-flow-three-way-comparison.md) | Competitor vs TMC Old vs TMC Current              |
+| [tron-approval-flow-comparison.md](./architecture/tron-approval-flow-comparison.md)           | HAR-based TRON comparison                         |
 
 ### Infrastructure
 
-| Doc | Description |
-|-----|-------------|
-| [infrastructure/README.md](./infrastructure/README.md) | Index |
-| [render-budget-production.md](./infrastructure/render-budget-production.md) | **Budget deploy ~$14/mo** |
-| [render-hostinger-production.md](./infrastructure/render-hostinger-production.md) | Full deploy ~$60/mo |
-| [production-architecture.md](./infrastructure/production-architecture.md) | Blast-radius zones |
-| [environments.md](./infrastructure/environments.md) | `TMC_ENV` profiles |
-| [secrets.md](./infrastructure/secrets.md) | Env var matrix per service |
-| [cloudflare-edge.md](./infrastructure/cloudflare-edge.md) | WAF and admin SSO |
-| [disaster-recovery.md](./infrastructure/disaster-recovery.md) | Backups and rebuild |
+| Doc                                                                               | Description                |
+| --------------------------------------------------------------------------------- | -------------------------- |
+| [infrastructure/README.md](./infrastructure/README.md)                            | Index                      |
+| [render-budget-production.md](./infrastructure/render-budget-production.md)       | **Budget deploy ~$14/mo**  |
+| [render-hostinger-production.md](./infrastructure/render-hostinger-production.md) | Full deploy ~$60/mo        |
+| [production-architecture.md](./infrastructure/production-architecture.md)         | Blast-radius zones         |
+| [environments.md](./infrastructure/environments.md)                               | `TMC_ENV` profiles         |
+| [secrets.md](./infrastructure/secrets.md)                                         | Env var matrix per service |
+| [cloudflare-edge.md](./infrastructure/cloudflare-edge.md)                         | WAF and admin SSO          |
+| [disaster-recovery.md](./infrastructure/disaster-recovery.md)                     | Backups and rebuild        |
 
 ### Operations
 
-| Doc | Description |
-|-----|-------------|
-| [operations/README.md](./operations/README.md) | Index |
-| [observability.md](./operations/observability.md) | Logging, metrics, timelines |
-| [change-spender-collector-guide.md](./operations/change-spender-collector-guide.md) | Spender/collector rotation |
-| [admin-pipeline-validation.md](./operations/admin-pipeline-validation.md) | Post-deploy QA checklist |
+| Doc                                                                                 | Description                 |
+| ----------------------------------------------------------------------------------- | --------------------------- |
+| [operations/README.md](./operations/README.md)                                      | Index                       |
+| [observability.md](./operations/observability.md)                                   | Logging, metrics, timelines |
+| [change-spender-collector-guide.md](./operations/change-spender-collector-guide.md) | Spender/collector rotation  |
+| [admin-pipeline-validation.md](./operations/admin-pipeline-validation.md)           | Post-deploy QA checklist    |
 
 ### API, database, security, testing
 
-| Doc | Description |
-|-----|-------------|
-| [api/README.md](./api/README.md) | HTTP API reference |
-| [database/README.md](./database/README.md) | Prisma models index |
-| [security/README.md](./security/README.md) | Security boundaries and key handling |
-| [testing/test-cases.md](./testing/test-cases.md) | Automated test catalog |
-| [adr/](./adr/) | Architecture decision records |
+| Doc                                              | Description                          |
+| ------------------------------------------------ | ------------------------------------ |
+| [api/README.md](./api/README.md)                 | HTTP API reference                   |
+| [database/README.md](./database/README.md)       | Prisma models index                  |
+| [security/README.md](./security/README.md)       | Security boundaries and key handling |
+| [testing/test-cases.md](./testing/test-cases.md) | Automated test catalog               |
+| [adr/](./adr/)                                   | Architecture decision records        |
 
 ## Key conventions
 

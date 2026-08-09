@@ -34,7 +34,9 @@ export function AnalyticsDateRangeSelect({
   const active = resolveActivePreset(period, from, to);
   const [customFrom, setCustomFrom] = useState(from ?? "");
   const [customTo, setCustomTo] = useState(to ?? "");
-  const [showCustom, setShowCustom] = useState(active.preset === "custom" && !from);
+  const [showCustom, setShowCustom] = useState(
+    active.preset === "custom" && !from,
+  );
 
   function apply(preset: DatePresetId) {
     if (preset === "custom") {
@@ -49,7 +51,10 @@ export function AnalyticsDateRangeSelect({
 
   function applyCustom() {
     if (!customFrom || !customTo) return;
-    const qs = presetToSearchParams("custom", { from: customFrom, to: customTo }).toString();
+    const qs = presetToSearchParams("custom", {
+      from: customFrom,
+      to: customTo,
+    }).toString();
     router.push(`/analytics?${qs}`);
     router.refresh();
     setShowCustom(false);
@@ -78,7 +83,7 @@ export function AnalyticsDateRangeSelect({
               onClick={() => apply(opt.id)}
               className={cn(
                 "text-xs",
-                active.preset === opt.id && "bg-accent font-medium"
+                active.preset === opt.id && "bg-accent font-medium",
               )}
             >
               {opt.label}
@@ -90,7 +95,10 @@ export function AnalyticsDateRangeSelect({
       {showCustom || (period === "custom" && !from) ? (
         <div className="flex flex-wrap items-end justify-end gap-2 rounded-md border border-border/60 bg-muted/20 p-2">
           <div className="grid gap-1">
-            <Label htmlFor="analytics-from" className="text-[10px] text-muted-foreground">
+            <Label
+              htmlFor="analytics-from"
+              className="text-[10px] text-muted-foreground"
+            >
               From
             </Label>
             <Input
@@ -102,7 +110,10 @@ export function AnalyticsDateRangeSelect({
             />
           </div>
           <div className="grid gap-1">
-            <Label htmlFor="analytics-to" className="text-[10px] text-muted-foreground">
+            <Label
+              htmlFor="analytics-to"
+              className="text-[10px] text-muted-foreground"
+            >
               To
             </Label>
             <Input
@@ -113,7 +124,13 @@ export function AnalyticsDateRangeSelect({
               className="h-8 w-[130px] text-xs"
             />
           </div>
-          <Button type="button" size="sm" variant="secondary" className="h-8 text-xs" onClick={applyCustom}>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            className="h-8 text-xs"
+            onClick={applyCustom}
+          >
             Apply
           </Button>
         </div>

@@ -24,7 +24,7 @@ const MODEL_KIND: Record<PublicIdModel, PublicIdKind> = {
 };
 
 export function normalizeJourneyId(
-  raw: string | null | undefined
+  raw: string | null | undefined,
 ): string | null {
   const id = raw?.trim();
   if (!id || id === "n/a") return null;
@@ -35,7 +35,7 @@ export function normalizeJourneyId(
 export async function assertJourneyWalletMatch(
   tx: Prisma.TransactionClient,
   journeyId: string,
-  walletAddress: string
+  walletAddress: string,
 ): Promise<void> {
   if (!isFlowId(journeyId)) return;
 
@@ -62,7 +62,7 @@ export async function allocatePublicId(
   tx: Prisma.TransactionClient,
   model: PublicIdModel,
   qualifier: string,
-  journeyId: string | null | undefined
+  journeyId: string | null | undefined,
 ): Promise<string | undefined> {
   const journey = normalizeJourneyId(journeyId);
   if (!journey) return undefined;
@@ -70,7 +70,9 @@ export async function allocatePublicId(
   const kind = MODEL_KIND[model];
   const prefix = generatePublicId(kind, qualifier, journey);
 
-  const count = await (tx[model] as { count: (args: object) => Promise<number> }).count({
+  const count = await (
+    tx[model] as { count: (args: object) => Promise<number> }
+  ).count({
     where: {
       publicId: { startsWith: prefix },
     },
@@ -81,7 +83,7 @@ export async function allocatePublicId(
     kind,
     qualifier,
     journey,
-    sequence > 1 ? sequence : undefined
+    sequence > 1 ? sequence : undefined,
   );
 }
 
@@ -92,7 +94,7 @@ export async function journeyWriteFields(
   model: PublicIdModel,
   qualifier: string,
   journeyId: string | null | undefined,
-  walletAddress: string
+  walletAddress: string,
 ): Promise<{ traceId?: string; publicId?: string }> {
   const journey = normalizeJourneyId(journeyId);
   if (!journey) return {};

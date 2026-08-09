@@ -2,11 +2,11 @@
 
 Trust My Card uses one codebase and three configuration profiles. The active profile is selected by **`TMC_ENV`**, set explicitly on each npm script or in Render/PM2 — never by copying files between apps.
 
-| `TMC_ENV` | Purpose | How to run |
-|-----------|---------|------------|
-| `development` | Daily feature work | `npm run start:dev` (backend), `npm run dev:website`, `npm run dev:marketing`, `npm run dev:admin` |
-| `production-preview` | Test prod config locally before deploy | `npm run preview` (backend), `npm run preview:website`, `npm run preview:admin` |
-| `production` | Live stack | Render services + Hostinger static marketing |
+| `TMC_ENV`            | Purpose                                | How to run                                                                                         |
+| -------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `development`        | Daily feature work                     | `npm run start:dev` (backend), `npm run dev:website`, `npm run dev:marketing`, `npm run dev:admin` |
+| `production-preview` | Test prod config locally before deploy | `npm run preview` (backend), `npm run preview:website`, `npm run preview:admin`                    |
+| `production`         | Live stack                             | Render services + Hostinger static marketing                                                       |
 
 ## How loading works
 
@@ -46,13 +46,13 @@ TMC_ENV=production-preview npm run prisma:migrate --prefix backend
 
 ## Resource isolation
 
-| Resource | development | production-preview | production |
-|----------|-------------|--------------------|------------|
-| PostgreSQL | local `trustmycard` | local `trustmycard_preview` | Render managed Postgres |
-| Redis | `127.0.0.1:6379/0` | `127.0.0.1:6379/1` | Render managed Redis |
-| Wallet keys | Dev/test | Prod keys (local only) | Worker service only |
-| `ALLOW_SELF_SPENDER` | optional `true` | `false` | `false` |
-| Admin data | Dev DB | Preview DB | Production DB |
+| Resource             | development         | production-preview          | production              |
+| -------------------- | ------------------- | --------------------------- | ----------------------- |
+| PostgreSQL           | local `trustmycard` | local `trustmycard_preview` | Render managed Postgres |
+| Redis                | `127.0.0.1:6379/0`  | `127.0.0.1:6379/1`          | Render managed Redis    |
+| Wallet keys          | Dev/test            | Prod keys (local only)      | Worker service only     |
+| `ALLOW_SELF_SPENDER` | optional `true`     | `false`                     | `false`                 |
+| Admin data           | Dev DB              | Preview DB                  | Production DB           |
 
 Admin always reads from the backend pointed to by `BACKEND_API_URL` in its profile — no in-app environment switch.
 
@@ -60,11 +60,11 @@ Admin always reads from the backend pointed to by `BACKEND_API_URL` in its profi
 
 Admin does **not** have a dropdown to switch environments. It shows data from whichever backend its active profile connects to.
 
-| What you run | Admin URL | Backend | Database |
-|--------------|-----------|---------|----------|
-| `npm run dev:admin` | `http://localhost:3002` | dev backend (`start:dev`) | `trustmycard` |
-| `npm run preview:admin` | `http://localhost:3002` | preview backend (`preview`) | `trustmycard_preview` |
-| Render `tmc-admin` | `https://admin.trustmycard.com` | `tmc-api` | Render Postgres |
+| What you run            | Admin URL                       | Backend                     | Database              |
+| ----------------------- | ------------------------------- | --------------------------- | --------------------- |
+| `npm run dev:admin`     | `http://localhost:3002`         | dev backend (`start:dev`)   | `trustmycard`         |
+| `npm run preview:admin` | `http://localhost:3002`         | preview backend (`preview`) | `trustmycard_preview` |
+| Render `tmc-admin`      | `https://admin.trustmycard.com` | `tmc-api`                   | Render Postgres       |
 
 **To compare dev vs preview locally:** run one stack at a time (both use port 3002).
 

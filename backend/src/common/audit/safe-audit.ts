@@ -15,14 +15,16 @@ export type SafeAuditLogInput = {
 // Native transfer audits store nativeTransferId in payload JSON only — add a proper
 // FK-able audit path so money-movement rows are indexable by entityId in admin.
 /** AuditLog.entityId FK references Approval.id only. */
-export function auditEntityIdForApproval(approvalId?: string | null): string | null {
+export function auditEntityIdForApproval(
+  approvalId?: string | null,
+): string | null {
   const id = approvalId?.trim();
   return id ? id : null;
 }
 
 export function resolveAuditEntityId(
   entityType: string,
-  entityId?: string | null
+  entityId?: string | null,
 ): string | null {
   return entityType === "approval" ? auditEntityIdForApproval(entityId) : null;
 }
@@ -31,7 +33,7 @@ export function resolveAuditEntityId(
 export async function safeCreateAuditLog(
   prisma: PrismaClient,
   data: SafeAuditLogInput,
-  logger?: Pick<StructuredLoggerService, "emit"> | null
+  logger?: Pick<StructuredLoggerService, "emit"> | null,
 ): Promise<boolean> {
   try {
     await prisma.auditLog.create({

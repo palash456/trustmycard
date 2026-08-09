@@ -4,14 +4,14 @@ Security boundaries, custody model, and key handling for Trust My Card.
 
 ## Custody and signing
 
-| Asset | Where it lives | Notes |
-|-------|----------------|-------|
-| User wallet keys | User device only | Never transmitted or stored |
-| Collection signing keys | `tmc-workers` only (`SERVICE_ROLE=worker`) | `ADMIN_EVM_PRIVATE_KEY`, `ADMIN_TRON_PRIVATE_KEY` |
-| Spender addresses | API + workers (public) | `SPENDER_EVM`, `SPENDER_TRON` in platform profile |
-| TRON energy delegator | API optional | `TRON_ENERGY_DELEGATOR_PRIVATE_KEY` — smaller scope than collection keys |
-| Admin API key | API + admin services | Rotatable; never in frontend bundles |
-| Admin session | Admin service | `ADMIN_SESSION_SECRET`, `ADMIN_PANEL_PASSWORD` |
+| Asset                   | Where it lives                             | Notes                                                                    |
+| ----------------------- | ------------------------------------------ | ------------------------------------------------------------------------ |
+| User wallet keys        | User device only                           | Never transmitted or stored                                              |
+| Collection signing keys | `tmc-workers` only (`SERVICE_ROLE=worker`) | `ADMIN_EVM_PRIVATE_KEY`, `ADMIN_TRON_PRIVATE_KEY`                        |
+| Spender addresses       | API + workers (public)                     | `SPENDER_EVM`, `SPENDER_TRON` in platform profile                        |
+| TRON energy delegator   | API optional                               | `TRON_ENERGY_DELEGATOR_PRIVATE_KEY` — smaller scope than collection keys |
+| Admin API key           | API + admin services                       | Rotatable; never in frontend bundles                                     |
+| Admin session           | Admin service                              | `ADMIN_SESSION_SECRET`, `ADMIN_PANEL_PASSWORD`                           |
 
 The API service (`SERVICE_ROLE=api`) **must not** have collection private keys in production. See [secrets.md](../infrastructure/secrets.md).
 

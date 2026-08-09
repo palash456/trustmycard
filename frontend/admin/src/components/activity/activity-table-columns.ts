@@ -14,5 +14,4 @@ export const ACTIVITY_COL = {
 export const ACTIVITY_HEAD_CELL =
   "h-auto px-4 py-3 align-middle first:pl-5 last:pr-5";
 
-export const ACTIVITY_ROW_CELL =
-  "px-4 py-5 align-middle first:pl-5 last:pr-5";
+export const ACTIVITY_ROW_CELL = "px-4 py-5 align-middle first:pl-5 last:pr-5";

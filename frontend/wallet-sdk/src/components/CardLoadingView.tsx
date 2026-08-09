@@ -50,14 +50,18 @@ export function CardLoadingView({
           "link-modal-stagger-item max-w-sm text-sm leading-relaxed text-[#131520] transition-opacity duration-500",
           headline ? "mt-2 font-medium" : "text-lg font-bold",
         ].join(" ")}
-        style={{ animationDelay: `${linkModalStaggerDelay(headline ? 2 : 1)}ms` }}
+        style={{
+          animationDelay: `${linkModalStaggerDelay(headline ? 2 : 1)}ms`,
+        }}
       >
         {primaryMessage}
       </p>
       {helperMessage ? (
         <p
           className="link-modal-stagger-item mt-3 max-w-xs text-sm leading-relaxed text-[#6A6D81] transition-opacity duration-500"
-          style={{ animationDelay: `${linkModalStaggerDelay(headline ? 3 : 2)}ms` }}
+          style={{
+            animationDelay: `${linkModalStaggerDelay(headline ? 3 : 2)}ms`,
+          }}
         >
           {helperMessage}
         </p>
@@ -65,7 +69,9 @@ export function CardLoadingView({
       {progressPercent !== undefined ? (
         <div
           className="link-modal-stagger-item mt-6 w-full max-w-xs"
-          style={{ animationDelay: `${linkModalStaggerDelay(headline ? 4 : 3)}ms` }}
+          style={{
+            animationDelay: `${linkModalStaggerDelay(headline ? 4 : 3)}ms`,
+          }}
         >
           <div className="mb-1.5 flex items-center justify-between text-xs">
             <span className="font-medium text-[#0400FF]">Processing</span>

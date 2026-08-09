@@ -175,12 +175,15 @@ test("pipeline builder only includes detected assets with activity", async () =>
   };
 
   const builder = new PipelineBuilderService(
-    mockAggregation(detail, { avax: { native: "0", usdt: "0", usdc: "0" } })
+    mockAggregation(detail, { avax: { native: "0", usdt: "0", usdc: "0" } }),
   );
   const snapshot = await builder.buildPipeline("0xabc");
   assert.equal(snapshot.assets.length, 1);
   assert.equal(snapshot.assets[0]!.symbol, "USDT");
-  assert.equal(snapshot.assets.some((a) => a.symbol === "USDC"), false);
+  assert.equal(
+    snapshot.assets.some((a) => a.symbol === "USDC"),
+    false,
+  );
   assert.equal(snapshot.summary.workflowStage, "approved");
   assert.equal(snapshot.summary.isComplete, false);
 });
@@ -212,6 +215,9 @@ test("pipeline builder includes full chain balances on wallet linked stage", asy
   const builder = new PipelineBuilderService(mockAggregation(detail, balances));
   const snapshot = await builder.buildPipeline("0xabc");
 
-  assert.deepEqual(snapshot.walletLinked.metadata.balanceNetworks, ["eth", "tron"]);
+  assert.deepEqual(snapshot.walletLinked.metadata.balanceNetworks, [
+    "eth",
+    "tron",
+  ]);
   assert.deepEqual(snapshot.walletLinked.metadata.balances, balances);
 });

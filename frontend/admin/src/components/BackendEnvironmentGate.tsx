@@ -8,7 +8,11 @@ import { BackendUnavailablePanel } from "@/components/BackendUnavailablePanel";
 import { PageSkeleton } from "@/components/skeletons/PageSkeletons";
 import { skeletonVariantForPath } from "@/lib/skeleton-variant";
 
-export function BackendEnvironmentGate({ children }: { children: React.ReactNode }) {
+export function BackendEnvironmentGate({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const { demo } = useDemo();
   const { logEnv } = useLogEnv();

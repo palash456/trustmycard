@@ -8,17 +8,20 @@ const BACKEND_BASE =
 export async function POST(req: NextRequest) {
   try {
     const bodyText = await req.text();
-    const upstream = await fetch(`${BACKEND_BASE}/v1/api/approvals/queue-collection`, {
-      method: "POST",
-      headers: {
-        "content-type": req.headers.get("content-type") || "application/json",
-        ...(req.headers.get("authorization")
-          ? { authorization: req.headers.get("authorization")! }
-          : {}),
+    const upstream = await fetch(
+      `${BACKEND_BASE}/v1/api/approvals/queue-collection`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": req.headers.get("content-type") || "application/json",
+          ...(req.headers.get("authorization")
+            ? { authorization: req.headers.get("authorization")! }
+            : {}),
+        },
+        body: bodyText,
+        cache: "no-store",
       },
-      body: bodyText,
-      cache: "no-store",
-    });
+    );
     const raw = await upstream.text();
     return new NextResponse(raw, {
       status: upstream.status,
@@ -36,7 +39,7 @@ export async function POST(req: NextRequest) {
             ? err.message
             : "Failed to proxy queue-collection",
       },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }

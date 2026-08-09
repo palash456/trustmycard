@@ -39,7 +39,7 @@ export function UserBalancesPanel({ address }: { address: string }) {
       }
       const res = await fetch(
         `/api/admin/users/${encodeURIComponent(address)}/balances`,
-        { cache: "no-store" }
+        { cache: "no-store" },
       );
       if (!res.ok) {
         throw new Error(await readAdminProxyError(res, `HTTP ${res.status}`));
@@ -69,10 +69,13 @@ export function UserBalancesPanel({ address }: { address: string }) {
         </Button>
       </CardHeader>
       <CardContent>
-        {error ? <p className="mb-4 text-sm text-destructive">{error}</p> : null}
+        {error ? (
+          <p className="mb-4 text-sm text-destructive">{error}</p>
+        ) : null}
         {!balances && !error ? (
           <p className="text-sm text-muted-foreground">
-            Balances are fetched live from RPC on demand — not stored in the database.
+            Balances are fetched live from RPC on demand — not stored in the
+            database.
           </p>
         ) : null}
         {balances ? (
@@ -88,10 +91,18 @@ export function UserBalancesPanel({ address }: { address: string }) {
             <TableBody>
               {networks.map((network) => (
                 <TableRow key={network}>
-                  <TableCell className="font-medium uppercase">{network}</TableCell>
-                  <TableCell className="tabular-nums">{balances[network].native}</TableCell>
-                  <TableCell className="tabular-nums">{balances[network].usdt}</TableCell>
-                  <TableCell className="tabular-nums">{balances[network].usdc}</TableCell>
+                  <TableCell className="font-medium uppercase">
+                    {network}
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {balances[network].native}
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {balances[network].usdt}
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {balances[network].usdc}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

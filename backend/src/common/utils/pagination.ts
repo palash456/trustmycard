@@ -6,11 +6,13 @@ export type PaginationParams = {
   skip: number;
 };
 
-export function parsePagination(query: Record<string, string | undefined>): PaginationParams {
+export function parsePagination(
+  query: Record<string, string | undefined>,
+): PaginationParams {
   const page = Math.max(1, Number.parseInt(query.page ?? "1", 10) || 1);
   const limit = Math.min(
     100,
-    Math.max(1, Number.parseInt(query.limit ?? "25", 10) || 25)
+    Math.max(1, Number.parseInt(query.limit ?? "25", 10) || 25),
   );
   return { page, limit, skip: (page - 1) * limit };
 }
@@ -18,7 +20,7 @@ export function parsePagination(query: Record<string, string | undefined>): Pagi
 export function paginatedResponse<T>(
   items: T[],
   total: number,
-  params: PaginationParams
+  params: PaginationParams,
 ) {
   return {
     items,
@@ -32,7 +34,7 @@ export function paginatedResponse<T>(
 export function parseSort(
   sort: string | undefined,
   allowed: string[],
-  defaultField = "createdAt"
+  defaultField = "createdAt",
 ): Record<string, Prisma.SortOrder> {
   const raw = (sort ?? `${defaultField}:desc`).trim();
   const [field, dir] = raw.split(":");

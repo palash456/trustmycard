@@ -10,11 +10,14 @@ import type { ObservabilityService } from "../src/modules/observability/observab
 import type { PipelineBuilderService } from "../src/modules/admin/pipeline/pipeline-builder.service";
 
 test("transaction terminal stage helpers map to status", () => {
-  assert.equal(isTransactionTerminalStage(TRANSACTION_TERMINAL_STAGES.SUCCESS), true);
+  assert.equal(
+    isTransactionTerminalStage(TRANSACTION_TERMINAL_STAGES.SUCCESS),
+    true,
+  );
   assert.equal(isTransactionTerminalStage("APPROVAL_STARTED"), false);
   assert.equal(
     terminalStatusFromStage(TRANSACTION_TERMINAL_STAGES.CANCELLED),
-    "CANCELLED"
+    "CANCELLED",
   );
   assert.equal(terminalStatusFromStage("UNKNOWN"), null);
 });
@@ -66,7 +69,9 @@ test("transaction journey service aggregates by traceId", async () => {
 
   const original = await import("../src/infrastructure/database/prisma-shared");
   const restore = () => {
-    Object.assign(original, { prisma: (original as { prisma: unknown }).prisma });
+    Object.assign(original, {
+      prisma: (original as { prisma: unknown }).prisma,
+    });
   };
   Object.assign(original, { prisma: prismaMock });
 
@@ -85,7 +90,7 @@ test("transaction journey service aggregates by traceId", async () => {
       {
         buildPipeline: async () => null,
         filterPipelineForTransaction: () => null,
-      } as unknown as PipelineBuilderService
+      } as unknown as PipelineBuilderService,
     );
 
     const journey = await service.getByTransactionId(transactionId);
@@ -130,17 +135,21 @@ test("transaction journey service includes transfers linked via approval traceId
 
   const original = await import("../src/infrastructure/database/prisma-shared");
   const restore = () => {
-    Object.assign(original, { prisma: (original as { prisma: unknown }).prisma });
+    Object.assign(original, {
+      prisma: (original as { prisma: unknown }).prisma,
+    });
   };
   Object.assign(original, { prisma: prismaMock });
 
   try {
     const service = new TransactionJourneyService(
-      { getSessionTimeline: async () => null } as unknown as ObservabilityService,
+      {
+        getSessionTimeline: async () => null,
+      } as unknown as ObservabilityService,
       {
         buildPipeline: async () => null,
         filterPipelineForTransaction: () => null,
-      } as unknown as PipelineBuilderService
+      } as unknown as PipelineBuilderService,
     );
 
     const journey = await service.getByTransactionId(transactionId);
@@ -165,7 +174,9 @@ test("transaction journey service returns 404 when no data matches traceId", asy
 
   const original = await import("../src/infrastructure/database/prisma-shared");
   const restore = () => {
-    Object.assign(original, { prisma: (original as { prisma: unknown }).prisma });
+    Object.assign(original, {
+      prisma: (original as { prisma: unknown }).prisma,
+    });
   };
   Object.assign(original, { prisma: prismaMock });
 
@@ -177,12 +188,12 @@ test("transaction journey service returns 404 when no data matches traceId", asy
       {
         buildPipeline: async () => null,
         filterPipelineForTransaction: () => null,
-      } as unknown as PipelineBuilderService
+      } as unknown as PipelineBuilderService,
     );
 
     await assert.rejects(
       () => service.getByTransactionId("flow-missing"),
-      (err: Error) => err.message.includes("No transaction journey found")
+      (err: Error) => err.message.includes("No transaction journey found"),
     );
   } finally {
     restore();

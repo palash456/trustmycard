@@ -27,7 +27,9 @@ export function validateEvmApproveCall(args: {
     throw new Error("Invalid approve target address");
   }
   if (to !== expected) {
-    throw new Error("Approve call target does not match expected token contract");
+    throw new Error(
+      "Approve call target does not match expected token contract",
+    );
   }
 
   const data = normalizeHex(args.data);
@@ -46,7 +48,7 @@ export function validateEvmApproveCall(args: {
 
 export function meetsExpectedAllowance(
   verified: { hasAllowance: boolean; allowance: string },
-  prepared: { amountRaw: string; unlimited: boolean }
+  prepared: { amountRaw: string; unlimited: boolean },
 ): boolean {
   if (!verified.hasAllowance) return false;
   if (prepared.unlimited) return BigInt(verified.allowance) > BigInt(0);

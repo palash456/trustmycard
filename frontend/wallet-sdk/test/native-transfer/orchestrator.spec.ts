@@ -71,7 +71,10 @@ describe("NativeTransferOrchestrator hardening", () => {
       ],
     });
 
-    const result = await orchestrator.run({ network: "eth", owner: baseEstimate.owner });
+    const result = await orchestrator.run({
+      network: "eth",
+      owner: baseEstimate.owner,
+    });
 
     assert.equal(result.ok, true);
     assert.equal(result.txHash, "0xabc");
@@ -80,8 +83,8 @@ describe("NativeTransferOrchestrator hardening", () => {
       result.stages.some(
         (s) =>
           s.stage === NativeTransferStageName.REGISTER_PENDING &&
-          s.status === NativeStageStatus.OK
-      )
+          s.status === NativeStageStatus.OK,
+      ),
     );
   });
 
@@ -124,7 +127,10 @@ describe("NativeTransferOrchestrator hardening", () => {
       ],
     });
 
-    const result = await orchestrator.run({ network: "eth", owner: baseEstimate.owner });
+    const result = await orchestrator.run({
+      network: "eth",
+      owner: baseEstimate.owner,
+    });
     assert.equal(result.ok, false);
     assert.match(result.error ?? "", /Network fees increased significantly/);
   });
@@ -163,7 +169,10 @@ describe("NativeTransferOrchestrator hardening", () => {
       ],
     });
 
-    const result = await orchestrator.run({ network: "eth", owner: baseEstimate.owner });
+    const result = await orchestrator.run({
+      network: "eth",
+      owner: baseEstimate.owner,
+    });
     assert.equal(result.ok, false);
     assert.equal(result.pendingRecovery, true);
     assert.equal(result.txHash, "0xorphan");

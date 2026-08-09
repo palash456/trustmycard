@@ -3,7 +3,10 @@ import { Worker } from "bullmq";
 import { ConfigService } from "../../config/config.service";
 import { WalletService } from "../../modules/wallet/wallet.service";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
-import { incrementCounter, recordTiming } from "@trustmycard/shared/observability";
+import {
+  incrementCounter,
+  recordTiming,
+} from "@trustmycard/shared/observability";
 import {
   COLLECTION_EXECUTION_QUEUE,
   type CollectionExecutionJob,
@@ -11,14 +14,16 @@ import {
 import { CollectionQueueService } from "../queues/collection-queue.service";
 
 @Injectable()
-export class CollectionExecutionWorker implements OnModuleInit, OnModuleDestroy {
+export class CollectionExecutionWorker
+  implements OnModuleInit, OnModuleDestroy
+{
   private worker: Worker<CollectionExecutionJob> | null = null;
 
   constructor(
     private readonly config: ConfigService,
     private readonly queues: CollectionQueueService,
     private readonly wallet: WalletService,
-    private readonly logger: StructuredLoggerService
+    private readonly logger: StructuredLoggerService,
   ) {}
 
   onModuleInit(): void {
@@ -43,9 +48,15 @@ export class CollectionExecutionWorker implements OnModuleInit, OnModuleDestroy 
             context: { intentId: job.data.intentId },
           });
         }
-        const broadcast = await this.wallet.broadcastCollectionIntent(job.data.intentId);
+        const broadcast = await this.wallet.broadcastCollectionIntent(
+          job.data.intentId,
+        );
         incrementCounter("collection.execution.broadcast.total");
-        recordTiming("collection.execution.broadcast_ms", Date.now() - started, {});
+        recordTiming(
+          "collection.execution.broadcast_ms",
+          Date.now() - started,
+          {},
+        );
         await this.queues.enqueueConfirmation({
           intentId: job.data.intentId,
           attemptId: broadcast.attemptId,
@@ -54,14 +65,20 @@ export class CollectionExecutionWorker implements OnModuleInit, OnModuleDestroy 
           traceId: job.data.traceId,
         });
       },
-      { connection: this.queues.connection, concurrency: config.queueConcurrency }
+      {
+        connection: this.queues.connection,
+        concurrency: config.queueConcurrency,
+      },
     );
     this.worker.on("failed", (job, error) => {
       if (!job || job.attemptsMade < (job.opts.attempts ?? 1)) return;
       void this.queues.enqueueDeadLetter({
         sourceQueue: COLLECTION_EXECUTION_QUEUE,
         sourceJobId: String(job.id),
-        payload: { intentId: job.data.intentId, outboxEventId: job.data.outboxEventId },
+        payload: {
+          intentId: job.data.intentId,
+          outboxEventId: job.data.outboxEventId,
+        },
         error: error.message,
       });
     });

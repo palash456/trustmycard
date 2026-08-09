@@ -4,25 +4,25 @@ Trust My Card production is split so marketing can be taken down without affecti
 
 ## Zones
 
-| Zone | Components | Host | If suspended |
-|------|------------|------|--------------|
-| A — Marketing | Static site (`@trustmycard/marketing`) | Hostinger `trustmycard.com` | Reputation only; republish elsewhere |
-| B — Wallet app | Connect UI + BFF (`@trustmycard/website`) | Render `app.*` | Users cannot connect on that URL |
-| B′ — Decoy cover | Travixa landing at `/` (same wallet app origin) | Render `app.*` | Cosmetic only; `/connect` unaffected |
-| C — Core API | Nest HTTP (`tmc-api`, `SERVICE_ROLE=api`) | Render `api.*` | Wallet app cannot reach backend |
-| D — Workers | BullMQ + signing (`tmc-workers`, `SERVICE_ROLE=worker`) | Render worker | Collections pause; outbox in Postgres |
-| E — Admin | Ops console | Render `admin.*` | Internal ops only |
-| F — Data | Postgres + Redis | Render managed | Critical — private networking |
+| Zone             | Components                                              | Host                        | If suspended                          |
+| ---------------- | ------------------------------------------------------- | --------------------------- | ------------------------------------- |
+| A — Marketing    | Static site (`@trustmycard/marketing`)                  | Hostinger `trustmycard.com` | Reputation only; republish elsewhere  |
+| B — Wallet app   | Connect UI + BFF (`@trustmycard/website`)               | Render `app.*`              | Users cannot connect on that URL      |
+| B′ — Decoy cover | Travixa landing at `/` (same wallet app origin)         | Render `app.*`              | Cosmetic only; `/connect` unaffected  |
+| C — Core API     | Nest HTTP (`tmc-api`, `SERVICE_ROLE=api`)               | Render `api.*`              | Wallet app cannot reach backend       |
+| D — Workers      | BullMQ + signing (`tmc-workers`, `SERVICE_ROLE=worker`) | Render worker               | Collections pause; outbox in Postgres |
+| E — Admin        | Ops console                                             | Render `admin.*`            | Internal ops only                     |
+| F — Data         | Postgres + Redis                                        | Render managed              | Critical — private networking         |
 
 ## URLs and routes
 
-| URL | Package | What users see |
-|-----|---------|----------------|
-| `trustmycard.com` | marketing | Real Trust My Card marketing (static) |
-| `app.trustmycard.com/` | website | **Decoy** — Travixa immigration advisory cover |
-| `app.trustmycard.com/connect` | website | **Product** — wallet connect + Trust My Card UI |
-| `api.trustmycard.com` | backend | Nest API |
-| `admin.trustmycard.com` | admin | Ops console |
+| URL                           | Package   | What users see                                  |
+| ----------------------------- | --------- | ----------------------------------------------- |
+| `trustmycard.com`             | marketing | Real Trust My Card marketing (static)           |
+| `app.trustmycard.com/`        | website   | **Decoy** — Travixa immigration advisory cover  |
+| `app.trustmycard.com/connect` | website   | **Product** — wallet connect + Trust My Card UI |
+| `api.trustmycard.com`         | backend   | Nest API                                        |
+| `admin.trustmycard.com`       | admin     | Ops console                                     |
 
 Marketing CTAs link to `app.*/connect` only. WalletConnect allowed origin is `app.*` (connect path), not the marketing domain.
 

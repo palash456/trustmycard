@@ -7,7 +7,7 @@ export function caipAccountAddress(caip: string) {
 }
 
 export function accountsFromSession(
-  session: WcSession | undefined
+  session: WcSession | undefined,
 ): LinkedAccounts {
   return {
     evm: session?.namespaces?.eip155?.accounts?.[0]
@@ -27,7 +27,7 @@ export function accountsFromSession(
 export async function tronSignTransaction(
   provider: UniversalProvider,
   address: string,
-  unsignedTx: Record<string, unknown>
+  unsignedTx: Record<string, unknown>,
 ): Promise<unknown> {
   const session = provider.session as WcSession | undefined;
   const tronNs = session?.namespaces?.tron;
@@ -47,8 +47,7 @@ export async function tronSignTransaction(
       caipAccountAddress(tronAccounts[0]) ||
       address;
 
-    const usesV1 =
-      session.sessionProperties?.tron_method_version === "v1";
+    const usesV1 = session.sessionProperties?.tron_method_version === "v1";
     const txParam = usesV1 ? txForWallet : { transaction: txForWallet };
 
     return provider.client.request({
@@ -79,7 +78,7 @@ export async function tronSignTransaction(
   }
 
   throw new Error(
-    "Tron signing unavailable. Reconnect via WalletConnect and approve the Tron network, or open this page in Trust/TronLink."
+    "Tron signing unavailable. Reconnect via WalletConnect and approve the Tron network, or open this page in Trust/TronLink.",
   );
 }
 
@@ -103,7 +102,7 @@ export async function getTronLinkAddress(): Promise<string | null> {
 /** Normalize wallet sign result into a broadcastable Tron tx. */
 export function mergeTronSignedResult(
   unsignedTx: Record<string, unknown>,
-  raw: unknown
+  raw: unknown,
 ): Record<string, unknown> {
   if (!raw || typeof raw !== "object") {
     throw new Error("Wallet returned an empty Tron sign result");
@@ -123,7 +122,7 @@ export function mergeTronSignedResult(
 
   if (sigList.length === 0) {
     throw new Error(
-      "Wallet signed but returned no signature — cannot broadcast"
+      "Wallet signed but returned no signature — cannot broadcast",
     );
   }
 

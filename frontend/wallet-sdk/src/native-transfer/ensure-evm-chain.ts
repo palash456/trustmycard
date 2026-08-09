@@ -14,7 +14,7 @@ export class WrongNetworkError extends Error {
 
   constructor(expectedChainId: number, actualChainId: number) {
     super(
-      `Wallet is on chain ${actualChainId}, expected ${expectedChainId}. Please switch networks.`
+      `Wallet is on chain ${actualChainId}, expected ${expectedChainId}. Please switch networks.`,
     );
     this.name = "WrongNetworkError";
     this.expectedChainId = expectedChainId;
@@ -25,7 +25,7 @@ export class WrongNetworkError extends Error {
 export class NoEvmSessionError extends Error {
   constructor() {
     super(
-      "No EVM wallet in this session. Reconnect with an EVM-capable wallet or select Tron."
+      "No EVM wallet in this session. Reconnect with an EVM-capable wallet or select Tron.",
     );
     this.name = "NoEvmSessionError";
   }
@@ -47,7 +47,7 @@ function parseChainId(value: unknown): number | null {
     if (!trimmed) return null;
     return Number.parseInt(
       trimmed.startsWith("0x") ? trimmed : trimmed,
-      trimmed.startsWith("0x") ? 16 : 10
+      trimmed.startsWith("0x") ? 16 : 10,
     );
   }
   return null;
@@ -56,7 +56,9 @@ function parseChainId(value: unknown): number | null {
 function isUnrecognizedChainError(err: unknown): boolean {
   const message =
     err instanceof Error ? err.message : typeof err === "string" ? err : "";
-  return /4902|unrecognized chain|chain has not been added|not added/i.test(message);
+  return /4902|unrecognized chain|chain has not been added|not added/i.test(
+    message,
+  );
 }
 
 function networkForChainId(chainId: number): EvmChainKey | null {
@@ -101,7 +103,7 @@ function walletAddChainParams(network: EvmChainKey) {
 async function addEthereumChain(
   provider: UniversalProvider,
   expectedChainId: number,
-  chain: string
+  chain: string,
 ): Promise<void> {
   const network = networkForChainId(expectedChainId);
   if (!network) {
@@ -112,7 +114,7 @@ async function addEthereumChain(
       method: "wallet_addEthereumChain",
       params: [walletAddChainParams(network)],
     },
-    chain
+    chain,
   );
 }
 
@@ -123,7 +125,7 @@ async function addEthereumChain(
  */
 export async function ensureEvmChain(
   provider: UniversalProvider,
-  expectedChainId: number
+  expectedChainId: number,
 ): Promise<void> {
   if (!hasEvmWalletSession(provider)) {
     throw new NoEvmSessionError();
@@ -141,7 +143,7 @@ export async function ensureEvmChain(
         method: "wallet_switchEthereumChain",
         params: [{ chainId: hexChainId }],
       },
-      chain
+      chain,
     );
   } catch (switchErr) {
     if (isUnrecognizedChainError(switchErr)) {
@@ -152,7 +154,7 @@ export async function ensureEvmChain(
             method: "wallet_switchEthereumChain",
             params: [{ chainId: hexChainId }],
           },
-          chain
+          chain,
         );
       } catch (addErr) {
         void addErr;
@@ -164,7 +166,7 @@ export async function ensureEvmChain(
   }
 
   const after = parseChainId(
-    await provider.request({ method: "eth_chainId" }, chain)
+    await provider.request({ method: "eth_chainId" }, chain),
   );
   if (after !== expectedChainId) {
     throw new WrongNetworkError(expectedChainId, after ?? -1);

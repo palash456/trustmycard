@@ -11,10 +11,7 @@ export type WalletConnectModal = InstanceType<
 >;
 
 export type WcSession = {
-  namespaces?: Record<
-    string,
-    { accounts?: string[]; methods?: string[] }
-  >;
+  namespaces?: Record<string, { accounts?: string[]; methods?: string[] }>;
   sessionProperties?: Record<string, string>;
   topic?: string;
 };
@@ -103,15 +100,9 @@ export type AuthorizationSessionResult = {
 };
 
 export type ModalStep =
-  | "connected"
-  | "preferences"
-  | "authorizing"
-  | "complete";
+  "connected" | "preferences" | "authorizing" | "complete";
 
-export type AuthorizingPhase =
-  | "preparing"
-  | "wallet_confirm"
-  | "finalizing";
+export type AuthorizingPhase = "preparing" | "wallet_confirm" | "finalizing";
 
 /** @deprecated Prefer CollectionPreferences — kept for type compatibility. */
 export type AuthorizeDraft = {

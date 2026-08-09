@@ -56,7 +56,10 @@ export default async function TransferDetailPage({
     return (
       <div className="space-y-4">
         <ErrorAlert message={error} />
-        <Link href="/transfers" className="text-sm text-primary hover:underline">
+        <Link
+          href="/transfers"
+          className="text-sm text-primary hover:underline"
+        >
           Back to transfers
         </Link>
       </div>
@@ -72,7 +75,12 @@ export default async function TransferDetailPage({
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" size="sm" className="-ml-2 w-fit" render={<Link href="/pipeline?tab=transfers" />}>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="-ml-2 w-fit"
+        render={<Link href="/pipeline?tab=transfers" />}
+      >
         <ChevronLeft className="size-4" />
         Back to pipeline
       </Button>
@@ -94,12 +102,18 @@ export default async function TransferDetailPage({
         <CardContent>
           <DetailList>
             <DetailRow label="Approval record">
-              <Link href={`/approvals/${t.approval.id}`} className="text-primary hover:underline">
-                {t.approval.network} {t.approval.tokenSymbol} · {shortAddress(t.approval.id)}
+              <Link
+                href={`/approvals/${t.approval.id}`}
+                className="text-primary hover:underline"
+              >
+                {t.approval.network} {t.approval.tokenSymbol} ·{" "}
+                {shortAddress(t.approval.id)}
               </Link>
             </DetailRow>
             <DetailRow label="Amount raw">
-              <span className="font-mono">{formatAdminAmount(t.amountRaw)}</span>
+              <span className="font-mono">
+                {formatAdminAmount(t.amountRaw)}
+              </span>
             </DetailRow>
             <DetailRow label="From → To">
               <span className="font-mono text-xs">
@@ -124,7 +138,9 @@ export default async function TransferDetailPage({
               <span className="font-mono text-xs">{t.idempotencyKey}</span>
             </DetailRow>
             <DetailRow label="Retries">{t.retryCount}</DetailRow>
-            <DetailRow label="Signed payload">{t.hasSignedPayload ? "Yes" : "No"}</DetailRow>
+            <DetailRow label="Signed payload">
+              {t.hasSignedPayload ? "Yes" : "No"}
+            </DetailRow>
             {t.errorMessage ? (
               <DetailRow label="Error">
                 <span className="text-destructive">{t.errorMessage}</span>

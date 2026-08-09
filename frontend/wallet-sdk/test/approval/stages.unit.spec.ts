@@ -8,7 +8,9 @@ import type { ApprovalContext } from "../../src/approval/types";
 import { ResourceStatus } from "../../src/core/resource-sponsor-client";
 import { createFakeApi, createFakeChain, resourceResult } from "./fakes";
 
-function emptyCtx(overrides: Partial<ApprovalContext["request"]> = {}): ApprovalContext {
+function emptyCtx(
+  overrides: Partial<ApprovalContext["request"]> = {},
+): ApprovalContext {
   return {
     request: {
       network: "tron",

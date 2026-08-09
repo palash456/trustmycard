@@ -11,9 +11,20 @@ import { WalletController } from "./wallet.controller";
 import { WalletService } from "./wallet.service";
 
 @Module({
-  imports: [ResourcesModule, CollectionsModule, AuthModule, CustodyModule, ObservabilityModule],
+  imports: [
+    ResourcesModule,
+    CollectionsModule,
+    AuthModule,
+    CustodyModule,
+    ObservabilityModule,
+  ],
   controllers: [WalletController],
-  providers: [WalletService, NativeTransferService, NetworkSettlementService, AdminApiKeyGuard],
+  providers: [
+    WalletService,
+    NativeTransferService,
+    NetworkSettlementService,
+    AdminApiKeyGuard,
+  ],
   exports: [WalletService, NativeTransferService, NetworkSettlementService],
 })
 export class WalletModule {}

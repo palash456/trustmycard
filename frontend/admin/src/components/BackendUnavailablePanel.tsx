@@ -31,7 +31,9 @@ export function BackendUnavailablePanel({
         <div className="flex items-center gap-2 text-destructive">
           <AlertCircle className="size-5 shrink-0" />
           <CardTitle className="text-lg">
-            {isDev ? "Development server is not available" : "Production server is not available"}
+            {isDev
+              ? "Development server is not available"
+              : "Production server is not available"}
           </CardTitle>
         </div>
         <CardDescription className="text-sm leading-relaxed text-foreground/80">
@@ -47,7 +49,11 @@ export function BackendUnavailablePanel({
           </Button>
         ) : null}
         {!isDev ? (
-          <Button type="button" variant="secondary" onClick={() => switchEnvironment("dev")}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => switchEnvironment("dev")}
+          >
             <Server className="size-4" />
             Switch to development
           </Button>

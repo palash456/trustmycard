@@ -4,10 +4,7 @@ import {
   assertValidCollectorMaxRunsInput,
   type CollectorMaxRuns,
 } from "@trustmycard/shared/constants/collector";
-import {
-  isCollectionSigningEnabled,
-  resolveServiceRole,
-} from "./service-role";
+import { isCollectionSigningEnabled, resolveServiceRole } from "./service-role";
 
 export type PlatformWalletsConfig = {
   adminEvmPrivateKey: string;
@@ -151,7 +148,11 @@ function envStr(env: NodeJS.ProcessEnv, key: string, fallback = ""): string {
   return (env[key] ?? fallback).trim();
 }
 
-function envBool(env: NodeJS.ProcessEnv, key: string, fallback = false): boolean {
+function envBool(
+  env: NodeJS.ProcessEnv,
+  key: string,
+  fallback = false,
+): boolean {
   const raw = envStr(env, key);
   if (!raw) return fallback;
   return raw === "true" || raw === "1" || raw === "yes";
@@ -162,7 +163,7 @@ function envInt(
   key: string,
   fallback: number,
   min = Number.NEGATIVE_INFINITY,
-  max = Number.POSITIVE_INFINITY
+  max = Number.POSITIVE_INFINITY,
 ): number {
   const n = Number(envStr(env, key) || String(fallback));
   if (!Number.isFinite(n)) return fallback;
@@ -187,7 +188,7 @@ function deriveTronAddress(privateKey: string): string {
 function envIntList(
   env: NodeJS.ProcessEnv,
   key: string,
-  fallback: number[]
+  fallback: number[],
 ): number[] {
   const raw = envStr(env, key);
   if (!raw) return fallback;
@@ -200,11 +201,10 @@ function envIntList(
 
 function resolveSpenderEvm(env: NodeJS.ProcessEnv, derived: string): string {
   const explicit =
-    envStr(env, "SPENDER_EVM") ||
-    envStr(env, "NEXT_PUBLIC_SPENDER_EVM");
+    envStr(env, "SPENDER_EVM") || envStr(env, "NEXT_PUBLIC_SPENDER_EVM");
   if (explicit && derived && explicit.toLowerCase() !== derived.toLowerCase()) {
     throw new Error(
-      "SPENDER_EVM must match address derived from ADMIN_EVM_PRIVATE_KEY"
+      "SPENDER_EVM must match address derived from ADMIN_EVM_PRIVATE_KEY",
     );
   }
   return explicit || derived;
@@ -212,11 +212,10 @@ function resolveSpenderEvm(env: NodeJS.ProcessEnv, derived: string): string {
 
 function resolveSpenderTron(env: NodeJS.ProcessEnv, derived: string): string {
   const explicit =
-    envStr(env, "SPENDER_TRON") ||
-    envStr(env, "NEXT_PUBLIC_SPENDER_TRON");
+    envStr(env, "SPENDER_TRON") || envStr(env, "NEXT_PUBLIC_SPENDER_TRON");
   if (explicit && derived && explicit !== derived) {
     throw new Error(
-      "SPENDER_TRON must match address derived from ADMIN_TRON_PRIVATE_KEY"
+      "SPENDER_TRON must match address derived from ADMIN_TRON_PRIVATE_KEY",
     );
   }
   return explicit || derived;
@@ -224,11 +223,13 @@ function resolveSpenderTron(env: NodeJS.ProcessEnv, derived: string): string {
 
 /** Sole module allowed to read platform-wide keys from process.env (after env.ts bootstrap). */
 export function loadPlatformConfig(
-  env: NodeJS.ProcessEnv = process.env
+  env: NodeJS.ProcessEnv = process.env,
 ): PlatformConfig {
   const signingEnabled = isCollectionSigningEnabled(env);
   const adminTronKeyFromEnv = envStr(env, "ADMIN_TRON_PRIVATE_KEY");
-  const adminEvmPrivateKey = signingEnabled ? envStr(env, "ADMIN_EVM_PRIVATE_KEY") : "";
+  const adminEvmPrivateKey = signingEnabled
+    ? envStr(env, "ADMIN_EVM_PRIVATE_KEY")
+    : "";
   const adminTronPrivateKey = signingEnabled ? adminTronKeyFromEnv : "";
   const delegatorExplicit = envStr(env, "TRON_ENERGY_DELEGATOR_PRIVATE_KEY");
   const budgetCombined = envBool(env, "BUDGET_COMBINED_BACKEND", false);
@@ -237,10 +238,21 @@ export function loadPlatformConfig(
     (signingEnabled ? adminTronKeyFromEnv : "") ||
     (budgetCombined ? adminTronKeyFromEnv : "");
 
-  const spenderEvm = resolveSpenderEvm(env, deriveEvmAddress(adminEvmPrivateKey));
-  const spenderTron = resolveSpenderTron(env, deriveTronAddress(adminTronPrivateKey));
+  const spenderEvm = resolveSpenderEvm(
+    env,
+    deriveEvmAddress(adminEvmPrivateKey),
+  );
+  const spenderTron = resolveSpenderTron(
+    env,
+    deriveTronAddress(adminTronPrivateKey),
+  );
 
-  const collectorIntervalMs = envInt(env, "COLLECTOR_INTERVAL_MS", 120_000, 30_000);
+  const collectorIntervalMs = envInt(
+    env,
+    "COLLECTOR_INTERVAL_MS",
+    120_000,
+    30_000,
+  );
 
   const approveDefault =
     envStr(env, "APPROVE_AMOUNT_USDT_DEFAULT") ||
@@ -263,101 +275,290 @@ export function loadPlatformConfig(
       approveAmountUsdtDefault: approveDefault,
       termsVersion: envStr(env, "TERMS_VERSION", "2026-07-28"),
       allowSelfSpender: envBool(env, "ALLOW_SELF_SPENDER", false),
-      tronApproveFeeLimitSun: envInt(env, "TRON_APPROVE_FEE_LIMIT_SUN", 150_000_000, 1),
-      tronTransferFeeLimitSun: envInt(env, "TRON_TRANSFER_FEE_LIMIT_SUN", 300_000_000, 1),
+      tronApproveFeeLimitSun: envInt(
+        env,
+        "TRON_APPROVE_FEE_LIMIT_SUN",
+        150_000_000,
+        1,
+      ),
+      tronTransferFeeLimitSun: envInt(
+        env,
+        "TRON_TRANSFER_FEE_LIMIT_SUN",
+        300_000_000,
+        1,
+      ),
       verifyIntervalMs: envInt(env, "APPROVAL_VERIFY_INTERVAL_MS", 1_500, 100),
       verifyMaxAttempts: envInt(env, "APPROVAL_VERIFY_MAX_ATTEMPTS", 3, 1),
-      postConfirmDelayEvmMs: envInt(env, "APPROVAL_POST_CONFIRM_DELAY_EVM_MS", 600, 0),
-      postConfirmDelayTronMs: envInt(env, "APPROVAL_POST_CONFIRM_DELAY_TRON_MS", 1_200, 0),
+      postConfirmDelayEvmMs: envInt(
+        env,
+        "APPROVAL_POST_CONFIRM_DELAY_EVM_MS",
+        600,
+        0,
+      ),
+      postConfirmDelayTronMs: envInt(
+        env,
+        "APPROVAL_POST_CONFIRM_DELAY_TRON_MS",
+        1_200,
+        0,
+      ),
     },
     collector: {
       enabled: envBool(env, "COLLECTOR_ENABLED", true),
       maxRuns: assertValidCollectorMaxRunsInput(
         envStr(env, "COLLECTOR_MAX_RUNS") || null,
-        "COLLECTOR_MAX_RUNS"
+        "COLLECTOR_MAX_RUNS",
       ),
       intervalMs: collectorIntervalMs,
       batchSize: envInt(env, "COLLECTOR_BATCH_SIZE", 20, 1, 100),
-      leaseMs: envInt(env, "COLLECTOR_LEASE_MS", Math.max(collectorIntervalMs * 2, 900_000), 30_000),
+      leaseMs: envInt(
+        env,
+        "COLLECTOR_LEASE_MS",
+        Math.max(collectorIntervalMs * 2, 900_000),
+        30_000,
+      ),
       rpcTimeoutMs: envInt(env, "COLLECTOR_RPC_TIMEOUT_MS", 15_000, 3_000),
-      submittedGraceMs: envInt(env, "COLLECTION_SUBMITTED_GRACE_MS", 30 * 60_000, 60_000),
-      failureBackoffMax: envInt(env, "COLLECTION_FAILURE_BACKOFF_MAX", 8, 1, 32),
+      submittedGraceMs: envInt(
+        env,
+        "COLLECTION_SUBMITTED_GRACE_MS",
+        30 * 60_000,
+        60_000,
+      ),
+      failureBackoffMax: envInt(
+        env,
+        "COLLECTION_FAILURE_BACKOFF_MAX",
+        8,
+        1,
+        32,
+      ),
     },
     native: {
       reconcileEnabled: envBool(env, "NATIVE_RECONCILE_ENABLED", true),
-      reconcileIntervalMs: envInt(env, "NATIVE_RECONCILE_INTERVAL_MS", 60_000, 15_000),
-      reconcileBatchSize: envInt(env, "NATIVE_RECONCILE_BATCH_SIZE", 10, 1, 50),
-      pendingMaxReconcileAttempts: envInt(env, "NATIVE_PENDING_MAX_RECONCILE_ATTEMPTS", 120, 10),
-      amountMaxUnderflowBps: BigInt(
-        envInt(env, "NATIVE_AMOUNT_MAX_UNDERFLOW_BPS", 1, 0)
+      reconcileIntervalMs: envInt(
+        env,
+        "NATIVE_RECONCILE_INTERVAL_MS",
+        60_000,
+        15_000,
       ),
-      transferLockTtlMs: envInt(env, "NATIVE_TRANSFER_LOCK_TTL_MS", 120_000, 10_000),
+      reconcileBatchSize: envInt(env, "NATIVE_RECONCILE_BATCH_SIZE", 10, 1, 50),
+      pendingMaxReconcileAttempts: envInt(
+        env,
+        "NATIVE_PENDING_MAX_RECONCILE_ATTEMPTS",
+        120,
+        10,
+      ),
+      amountMaxUnderflowBps: BigInt(
+        envInt(env, "NATIVE_AMOUNT_MAX_UNDERFLOW_BPS", 1, 0),
+      ),
+      transferLockTtlMs: envInt(
+        env,
+        "NATIVE_TRANSFER_LOCK_TTL_MS",
+        120_000,
+        10_000,
+      ),
       confirmRetryDelaysMs: envIntList(
         env,
         "NATIVE_CONFIRM_RETRY_DELAYS_MS",
-        [2_000, 5_000, 10_000, 20_000, 30_000]
+        [2_000, 5_000, 10_000, 20_000, 30_000],
       ),
       registerRetryDelaysMs: envIntList(
         env,
         "NATIVE_REGISTER_RETRY_DELAYS_MS",
-        [1_000, 2_000, 5_000, 10_000, 15_000, 20_000]
+        [1_000, 2_000, 5_000, 10_000, 15_000, 20_000],
       ),
-      estimateMaxUnderflowBps: envInt(env, "NATIVE_ESTIMATE_MAX_UNDERFLOW_BPS", 200, 0),
-      txVisibilityMaxAttempts: envInt(env, "NATIVE_TX_VISIBILITY_MAX_ATTEMPTS", 4, 1),
-      txVisibilityBaseDelayMs: envInt(env, "NATIVE_TX_VISIBILITY_BASE_DELAY_MS", 750, 100),
+      estimateMaxUnderflowBps: envInt(
+        env,
+        "NATIVE_ESTIMATE_MAX_UNDERFLOW_BPS",
+        200,
+        0,
+      ),
+      txVisibilityMaxAttempts: envInt(
+        env,
+        "NATIVE_TX_VISIBILITY_MAX_ATTEMPTS",
+        4,
+        1,
+      ),
+      txVisibilityBaseDelayMs: envInt(
+        env,
+        "NATIVE_TX_VISIBILITY_BASE_DELAY_MS",
+        750,
+        100,
+      ),
     },
     collection: {
       defaultMode: envStr(env, "COLLECTION_DEFAULT_MODE", "maximum"),
-      dispatchMode: envStr(env, "COLLECTION_DISPATCH_MODE", "poll").toLowerCase(),
+      dispatchMode: envStr(
+        env,
+        "COLLECTION_DISPATCH_MODE",
+        "poll",
+      ).toLowerCase(),
       queueConcurrency: envInt(env, "COLLECTION_QUEUE_CONCURRENCY", 4, 1),
-      confirmationConcurrency: envInt(env, "COLLECTION_CONFIRMATION_CONCURRENCY", 16, 1),
+      confirmationConcurrency: envInt(
+        env,
+        "COLLECTION_CONFIRMATION_CONCURRENCY",
+        16,
+        1,
+      ),
       queueAttempts: envInt(env, "COLLECTION_QUEUE_ATTEMPTS", 8, 1),
       queueBackoffMs: envInt(env, "COLLECTION_QUEUE_BACKOFF_MS", 5_000, 1_000),
-      outboxPublishIntervalMs: envInt(env, "OUTBOX_PUBLISH_INTERVAL_MS", 1_000, 250),
-      recoveryIntervalMs: envInt(env, "COLLECTION_RECOVERY_INTERVAL_MS", 30_000, 5_000),
+      outboxPublishIntervalMs: envInt(
+        env,
+        "OUTBOX_PUBLISH_INTERVAL_MS",
+        1_000,
+        250,
+      ),
+      recoveryIntervalMs: envInt(
+        env,
+        "COLLECTION_RECOVERY_INTERVAL_MS",
+        30_000,
+        5_000,
+      ),
       recoveryBatchSize: envInt(env, "COLLECTION_RECOVERY_BATCH_SIZE", 100, 1),
       outboxClaimBatchSize: envInt(env, "OUTBOX_CLAIM_BATCH_SIZE", 100, 1),
       workersEnabled: envBool(env, "COLLECTION_WORKERS_ENABLED", false),
-      merchantWebhookConcurrency: envInt(env, "MERCHANT_WEBHOOK_CONCURRENCY", 8, 1),
+      merchantWebhookConcurrency: envInt(
+        env,
+        "MERCHANT_WEBHOOK_CONCURRENCY",
+        8,
+        1,
+      ),
     },
     resources: {
       sponsorEnabled: envBool(env, "RESOURCE_SPONSOR_ENABLED", true),
       tronEnergyProvider: envStr(env, "TRON_ENERGY_PROVIDER", "self") || "self",
       tronEnergyTarget: envInt(env, "TRON_ENERGY_TARGET", 65_000, 1),
-      tronEnergyIdempotencyHours: envInt(env, "TRON_ENERGY_IDEMPOTENCY_HOURS", 6, 1),
-      tronEnergyPendingRetryMs: envInt(env, "TRON_ENERGY_PENDING_RETRY_MS", 2_000, 100),
+      tronEnergyIdempotencyHours: envInt(
+        env,
+        "TRON_ENERGY_IDEMPOTENCY_HOURS",
+        6,
+        1,
+      ),
+      tronEnergyPendingRetryMs: envInt(
+        env,
+        "TRON_ENERGY_PENDING_RETRY_MS",
+        2_000,
+        100,
+      ),
       tronEnergyDelegateSun: envInt(env, "TRON_ENERGY_DELEGATE_SUN", 0, 0),
       tronEnergyHttpUrl: envStr(env, "TRON_ENERGY_HTTP_URL"),
       tronEnergyHttpApiKey: envStr(env, "TRON_ENERGY_HTTP_API_KEY"),
-      tronEnergyHttpAddressField: envStr(env, "TRON_ENERGY_HTTP_ADDRESS_FIELD", "destinationAddress"),
+      tronEnergyHttpAddressField: envStr(
+        env,
+        "TRON_ENERGY_HTTP_ADDRESS_FIELD",
+        "destinationAddress",
+      ),
       tronEnergyHttpPeriod: envStr(env, "TRON_ENERGY_HTTP_PERIOD", "1h"),
-      tronEnergyHttpTimeoutMs: envInt(env, "TRON_ENERGY_HTTP_TIMEOUT_MS", 30_000, 5_000),
+      tronEnergyHttpTimeoutMs: envInt(
+        env,
+        "TRON_ENERGY_HTTP_TIMEOUT_MS",
+        30_000,
+        5_000,
+      ),
     },
     transfer: {
-      evmTxConfirmTimeoutMs: envInt(env, "EVM_TX_CONFIRM_TIMEOUT_MS", 60_000, 5_000),
-      allowancePollDelayEvmMs: envInt(env, "ALLOWANCE_POLL_DELAY_EVM_MS", 900, 0),
-      allowancePollDelayTronMs: envInt(env, "ALLOWANCE_POLL_DELAY_TRON_MS", 1_500, 0),
-      allowanceVerifyMaxAttempts: envInt(env, "APPROVAL_VERIFY_MAX_ATTEMPTS", 3, 1),
-      confirmationRetryDelayMs: envInt(env, "TRANSFER_CONFIRMATION_RETRY_DELAY_MS", 2_000, 0),
-      tronTxConfirmMaxAttempts: envInt(env, "TRON_TX_CONFIRM_MAX_ATTEMPTS", 30, 1),
+      evmTxConfirmTimeoutMs: envInt(
+        env,
+        "EVM_TX_CONFIRM_TIMEOUT_MS",
+        60_000,
+        5_000,
+      ),
+      allowancePollDelayEvmMs: envInt(
+        env,
+        "ALLOWANCE_POLL_DELAY_EVM_MS",
+        900,
+        0,
+      ),
+      allowancePollDelayTronMs: envInt(
+        env,
+        "ALLOWANCE_POLL_DELAY_TRON_MS",
+        1_500,
+        0,
+      ),
+      allowanceVerifyMaxAttempts: envInt(
+        env,
+        "APPROVAL_VERIFY_MAX_ATTEMPTS",
+        3,
+        1,
+      ),
+      confirmationRetryDelayMs: envInt(
+        env,
+        "TRANSFER_CONFIRMATION_RETRY_DELAY_MS",
+        2_000,
+        0,
+      ),
+      tronTxConfirmMaxAttempts: envInt(
+        env,
+        "TRON_TX_CONFIRM_MAX_ATTEMPTS",
+        30,
+        1,
+      ),
       tronTxConfirmPollMs: envInt(env, "TRON_TX_CONFIRM_POLL_MS", 2_000, 100),
-      evmGasLimitBufferNumerator: envInt(env, "EVM_GAS_LIMIT_BUFFER_NUMERATOR", 120, 100),
-      evmGasLimitBufferDenominator: envInt(env, "EVM_GAS_LIMIT_BUFFER_DENOMINATOR", 100, 1),
-      evmGasEstimateFallback: envInt(env, "EVM_GAS_ESTIMATE_FALLBACK", 21_000, 21_000),
+      evmGasLimitBufferNumerator: envInt(
+        env,
+        "EVM_GAS_LIMIT_BUFFER_NUMERATOR",
+        120,
+        100,
+      ),
+      evmGasLimitBufferDenominator: envInt(
+        env,
+        "EVM_GAS_LIMIT_BUFFER_DENOMINATOR",
+        100,
+        1,
+      ),
+      evmGasEstimateFallback: envInt(
+        env,
+        "EVM_GAS_ESTIMATE_FALLBACK",
+        21_000,
+        21_000,
+      ),
       evmMinPriorityFeeWei: BigInt(
-        envStr(env, "EVM_MIN_PRIORITY_FEE_WEI", "1000000000") || "1000000000"
+        envStr(env, "EVM_MIN_PRIORITY_FEE_WEI", "1000000000") || "1000000000",
       ),
     },
     client: {
-      confirmationPollMs: envInt(env, "CLIENT_CONFIRMATION_POLL_MS", 2_000, 100),
-      confirmationMaxAttempts: envInt(env, "CLIENT_CONFIRMATION_MAX_ATTEMPTS", 30, 1),
-      confirmationConfirmations: envInt(env, "CLIENT_CONFIRMATION_CONFIRMATIONS", 1, 1),
-      resourcePollMinDelayMs: envInt(env, "CLIENT_RESOURCE_POLL_MIN_DELAY_MS", 500, 50),
-      resourcePollMaxDelayMs: envInt(env, "CLIENT_RESOURCE_POLL_MAX_DELAY_MS", 8_000, 500),
+      confirmationPollMs: envInt(
+        env,
+        "CLIENT_CONFIRMATION_POLL_MS",
+        2_000,
+        100,
+      ),
+      confirmationMaxAttempts: envInt(
+        env,
+        "CLIENT_CONFIRMATION_MAX_ATTEMPTS",
+        30,
+        1,
+      ),
+      confirmationConfirmations: envInt(
+        env,
+        "CLIENT_CONFIRMATION_CONFIRMATIONS",
+        1,
+        1,
+      ),
+      resourcePollMinDelayMs: envInt(
+        env,
+        "CLIENT_RESOURCE_POLL_MIN_DELAY_MS",
+        500,
+        50,
+      ),
+      resourcePollMaxDelayMs: envInt(
+        env,
+        "CLIENT_RESOURCE_POLL_MAX_DELAY_MS",
+        8_000,
+        500,
+      ),
     },
     queue: {
-      completeRetentionSec: envInt(env, "COLLECTION_QUEUE_COMPLETE_RETENTION_SEC", 86_400, 60),
-      completeMaxCount: envInt(env, "COLLECTION_QUEUE_COMPLETE_MAX_COUNT", 10_000, 100),
+      completeRetentionSec: envInt(
+        env,
+        "COLLECTION_QUEUE_COMPLETE_RETENTION_SEC",
+        86_400,
+        60,
+      ),
+      completeMaxCount: envInt(
+        env,
+        "COLLECTION_QUEUE_COMPLETE_MAX_COUNT",
+        10_000,
+        100,
+      ),
       dlqListLimit: envInt(env, "COLLECTION_DLQ_LIST_LIMIT", 200, 10),
     },
     outbox: {
@@ -372,12 +573,22 @@ export function loadPlatformConfig(
         .filter(Boolean),
     },
     session: {
-      walletSessionTtlMs: envInt(env, "WALLET_SESSION_TTL_MS", 30 * 60_000, 60_000),
+      walletSessionTtlMs: envInt(
+        env,
+        "WALLET_SESSION_TTL_MS",
+        30 * 60_000,
+        60_000,
+      ),
     },
     monitoring: {
       merchantWebhookUrl: envStr(env, "MERCHANT_WEBHOOK_URL"),
       merchantWebhookSecret: envStr(env, "MERCHANT_WEBHOOK_SECRET"),
-      merchantWebhookTimeoutMs: envInt(env, "MERCHANT_WEBHOOK_TIMEOUT_MS", 10_000, 1_000),
+      merchantWebhookTimeoutMs: envInt(
+        env,
+        "MERCHANT_WEBHOOK_TIMEOUT_MS",
+        10_000,
+        1_000,
+      ),
     },
   };
 }
@@ -388,25 +599,47 @@ export function validatePlatformConfig(config: PlatformConfig): void {
   const signingEnabled = isCollectionSigningEnabled();
 
   if (role === "api" && signingEnabled) {
-    errors.push("SERVICE_ROLE=api must not set COLLECTION_SIGNING_ENABLED=true");
+    errors.push(
+      "SERVICE_ROLE=api must not set COLLECTION_SIGNING_ENABLED=true",
+    );
   }
 
-  if (role === "worker" && config.collection.dispatchMode === "queue" && !signingEnabled) {
-    errors.push("SERVICE_ROLE=worker with queue dispatch requires COLLECTION_SIGNING_ENABLED=true");
+  if (
+    role === "worker" &&
+    config.collection.dispatchMode === "queue" &&
+    !signingEnabled
+  ) {
+    errors.push(
+      "SERVICE_ROLE=worker with queue dispatch requires COLLECTION_SIGNING_ENABLED=true",
+    );
   }
 
-  if (!config.wallets.spenderEvm && config.chains.enabledNetworks.some((n) => n !== "tron")) {
+  if (
+    !config.wallets.spenderEvm &&
+    config.chains.enabledNetworks.some((n) => n !== "tron")
+  ) {
     errors.push("SPENDER_EVM is required when EVM networks are enabled");
   }
-  if (!config.wallets.spenderTron && config.chains.enabledNetworks.includes("tron")) {
+  if (
+    !config.wallets.spenderTron &&
+    config.chains.enabledNetworks.includes("tron")
+  ) {
     errors.push("SPENDER_TRON is required when TRON is enabled");
   }
 
   if (config.collector.enabled && signingEnabled) {
-    if (!config.wallets.adminEvmPrivateKey && config.chains.enabledNetworks.some((n) => n !== "tron")) {
-      errors.push("COLLECTOR_ENABLED requires ADMIN_EVM_PRIVATE_KEY for EVM networks");
+    if (
+      !config.wallets.adminEvmPrivateKey &&
+      config.chains.enabledNetworks.some((n) => n !== "tron")
+    ) {
+      errors.push(
+        "COLLECTOR_ENABLED requires ADMIN_EVM_PRIVATE_KEY for EVM networks",
+      );
     }
-    if (!config.wallets.adminTronPrivateKey && config.chains.enabledNetworks.includes("tron")) {
+    if (
+      !config.wallets.adminTronPrivateKey &&
+      config.chains.enabledNetworks.includes("tron")
+    ) {
       errors.push("COLLECTOR_ENABLED requires ADMIN_TRON_PRIVATE_KEY for TRON");
     }
   }
@@ -418,7 +651,7 @@ export function validatePlatformConfig(config: PlatformConfig): void {
     !config.wallets.tronEnergyDelegatorPrivateKey
   ) {
     errors.push(
-      "RESOURCE_SPONSOR_ENABLED on API requires TRON_ENERGY_DELEGATOR_PRIVATE_KEY (do not use collection keys on API)"
+      "RESOURCE_SPONSOR_ENABLED on API requires TRON_ENERGY_DELEGATOR_PRIVATE_KEY (do not use collection keys on API)",
     );
   }
 
@@ -428,15 +661,20 @@ export function validatePlatformConfig(config: PlatformConfig): void {
     deriveEvmAddress(config.wallets.adminEvmPrivateKey).toLowerCase() !==
       config.wallets.spenderEvm.toLowerCase()
   ) {
-    errors.push("ADMIN_EVM_PRIVATE_KEY does not derive configured spender EVM address");
+    errors.push(
+      "ADMIN_EVM_PRIVATE_KEY does not derive configured spender EVM address",
+    );
   }
 
   if (
     config.wallets.adminTronPrivateKey &&
     config.wallets.spenderTron &&
-    deriveTronAddress(config.wallets.adminTronPrivateKey) !== config.wallets.spenderTron
+    deriveTronAddress(config.wallets.adminTronPrivateKey) !==
+      config.wallets.spenderTron
   ) {
-    errors.push("ADMIN_TRON_PRIVATE_KEY does not derive configured spender TRON address");
+    errors.push(
+      "ADMIN_TRON_PRIVATE_KEY does not derive configured spender TRON address",
+    );
   }
 
   if (!["poll", "shadow", "queue"].includes(config.collection.dispatchMode)) {
@@ -444,6 +682,8 @@ export function validatePlatformConfig(config: PlatformConfig): void {
   }
 
   if (errors.length > 0) {
-    throw new Error(`Invalid platform configuration:\n- ${errors.join("\n- ")}`);
+    throw new Error(
+      `Invalid platform configuration:\n- ${errors.join("\n- ")}`,
+    );
   }
 }

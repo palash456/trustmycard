@@ -1,4 +1,8 @@
-import { getErrorMessage, getErrorCode, isUserRejection } from "../../core/errors";
+import {
+  getErrorMessage,
+  getErrorCode,
+  isUserRejection,
+} from "../../core/errors";
 import type { ApprovalContext, ApprovalStageName, StageResult } from "../types";
 import { failStage, StageStatus } from "../types";
 
@@ -111,7 +115,7 @@ const IDEMPOTENT_STAGE_ARTIFACT: Partial<
 
 export function stageHasArtifact(
   stage: ApprovalStageName,
-  ctx: ApprovalContext
+  ctx: ApprovalContext,
 ): boolean {
   const key = IDEMPOTENT_STAGE_ARTIFACT[stage];
   if (!key) return false;
@@ -120,7 +124,9 @@ export function stageHasArtifact(
     return Boolean((value as { txHash?: string } | undefined)?.txHash);
   }
   if (key === "persisted") {
-    return Boolean((value as { approvalId?: string | null } | undefined)?.approvalId);
+    return Boolean(
+      (value as { approvalId?: string | null } | undefined)?.approvalId,
+    );
   }
   return Boolean(value);
 }
@@ -140,7 +146,7 @@ export function isUserDeniedStageResult(result: {
 export function isStageRetryAllowed(
   stage: ApprovalStageName,
   result: { retryable?: boolean; userRejected?: boolean; status?: string },
-  ctx: ApprovalContext
+  ctx: ApprovalContext,
 ): boolean {
   if (result.userRejected) return false;
   if (result.status === StageStatus.CANCELLED) return false;
@@ -152,7 +158,7 @@ export function isStageRetryAllowed(
 /** Classify an error and build a typed stage failure. */
 export function failStageFromError(
   stage: ApprovalStageName,
-  err: unknown
+  err: unknown,
 ): StageResult {
   const c = classifyFailure(err);
   return failStage(stage, c.message, {

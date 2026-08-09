@@ -4,7 +4,7 @@ function flagEmoji(countryCode: string): string {
   const A = 0x1f1e6;
   return String.fromCodePoint(
     A + (cc.charCodeAt(0) - 65),
-    A + (cc.charCodeAt(1) - 65)
+    A + (cc.charCodeAt(1) - 65),
   );
 }
 
@@ -15,7 +15,7 @@ export async function lookupLocation(ip: string): Promise<string> {
   try {
     const res = await fetch(
       `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,city,countryCode`,
-      { cache: "no-store" }
+      { cache: "no-store" },
     );
     if (!res.ok) return "Unknown";
     const json = (await res.json()) as {

@@ -14,7 +14,7 @@ test("zero balance schedules no transfer", () => {
       remaining: BigInt(100),
       unlimited: false,
     }),
-    BigInt(0)
+    BigInt(0),
   );
 });
 
@@ -47,7 +47,7 @@ test("custom approval supports 20 + 30 + 50 partial collections", () => {
       transferred: BigInt(50),
       unlimited: false,
     }).status,
-    "COMPLETED"
+    "COMPLETED",
   );
 });
 
@@ -60,7 +60,7 @@ test("custom collection never exceeds balance, allowance, or remaining target", 
       remaining: BigInt(60),
       unlimited: false,
     }),
-    BigInt(60)
+    BigInt(60),
   );
 });
 

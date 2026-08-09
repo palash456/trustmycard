@@ -7,7 +7,7 @@ const configDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(configDir, "../..");
 const nodeRequire = createRequire(import.meta.url);
 const { loadTmcEnv } = nodeRequire(
-  path.join(repoRoot, "config/load-env.mjs")
+  path.join(repoRoot, "config/load-env.mjs"),
 ) as { loadTmcEnv: (app: "backend" | "website" | "admin") => string };
 
 loadTmcEnv("admin");
@@ -18,11 +18,27 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: frontendRoot,
   async redirects() {
     return [
-      { source: "/approvals", destination: "/pipeline?tab=approvals", permanent: false },
-      { source: "/transfers", destination: "/pipeline?tab=transfers", permanent: false },
-      { source: "/native-transfers", destination: "/pipeline?tab=native", permanent: false },
+      {
+        source: "/approvals",
+        destination: "/pipeline?tab=approvals",
+        permanent: false,
+      },
+      {
+        source: "/transfers",
+        destination: "/pipeline?tab=transfers",
+        permanent: false,
+      },
+      {
+        source: "/native-transfers",
+        destination: "/pipeline?tab=native",
+        permanent: false,
+      },
       { source: "/wallets", destination: "/users", permanent: false },
-      { source: "/wallets/:address", destination: "/users/:address", permanent: false },
+      {
+        source: "/wallets/:address",
+        destination: "/users/:address",
+        permanent: false,
+      },
       { source: "/events", destination: "/activity", permanent: false },
       { source: "/events/:id", destination: "/activity/:id", permanent: false },
     ];

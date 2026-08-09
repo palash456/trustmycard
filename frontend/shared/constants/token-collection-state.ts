@@ -10,7 +10,10 @@ export type TokenCollectionLogicalState =
   | "failed_retry_scheduled"
   | "cancelled";
 
-export const TOKEN_COLLECTION_STATE_LABELS: Record<TokenCollectionLogicalState, string> = {
+export const TOKEN_COLLECTION_STATE_LABELS: Record<
+  TokenCollectionLogicalState,
+  string
+> = {
   pending: "Pending collection",
   collecting: "Collecting / in progress",
   success: "Success",
@@ -20,8 +23,16 @@ export const TOKEN_COLLECTION_STATE_LABELS: Record<TokenCollectionLogicalState, 
   cancelled: "Cancelled",
 };
 
-const IN_FLIGHT_TRANSFER_STATUSES = new Set(["prepared", "broadcast", "pending"]);
-const ACTIVE_INTENT_STATUSES = new Set(["EXECUTING", "BROADCAST", "CONFIRMING"]);
+const IN_FLIGHT_TRANSFER_STATUSES = new Set([
+  "prepared",
+  "broadcast",
+  "pending",
+]);
+const ACTIVE_INTENT_STATUSES = new Set([
+  "EXECUTING",
+  "BROADCAST",
+  "CONFIRMING",
+]);
 const PENDING_INTENT_STATUSES = new Set(["CREATED", "QUEUED"]);
 
 export type TokenCollectionSnapshot = {
@@ -46,20 +57,25 @@ export type TokenCollectionSnapshot = {
   hasConfirmedTransfer?: boolean;
 };
 
-function isFuture(date: string | Date | null | undefined, nowMs: number): boolean {
+function isFuture(
+  date: string | Date | null | undefined,
+  nowMs: number,
+): boolean {
   if (!date) return false;
   const ts = date instanceof Date ? date.getTime() : new Date(date).getTime();
   return !Number.isNaN(ts) && ts > nowMs;
 }
 
-export function isTokenCollectionActive(state: TokenCollectionLogicalState): boolean {
+export function isTokenCollectionActive(
+  state: TokenCollectionLogicalState,
+): boolean {
   return state === "pending" || state === "collecting";
 }
 
 /** Whether native must wait for this token before executing. */
 export function isTokenCollectionBlockingNative(
   state: TokenCollectionLogicalState,
-  shouldAttemptTransfer: boolean
+  shouldAttemptTransfer: boolean,
 ): boolean {
   if (!shouldAttemptTransfer) return false;
   return (
@@ -69,20 +85,22 @@ export function isTokenCollectionBlockingNative(
   );
 }
 
-export function isTokenCollectionTerminal(state: TokenCollectionLogicalState): boolean {
+export function isTokenCollectionTerminal(
+  state: TokenCollectionLogicalState,
+): boolean {
   return !isTokenCollectionActive(state);
 }
 
 /** Native may execute when no token has active in-flight collection work. */
 export function canExecuteNativeFromStates(
-  states: TokenCollectionLogicalState[]
+  states: TokenCollectionLogicalState[],
 ): boolean {
   return states.every((s) => !isTokenCollectionActive(s));
 }
 
 export function resolveTokenCollectionState(
   snapshot: TokenCollectionSnapshot,
-  nowMs = Date.now()
+  nowMs = Date.now(),
 ): TokenCollectionLogicalState {
   const { approval, intent, inFlightTransfer, hasConfirmedTransfer } = snapshot;
 
@@ -110,7 +128,10 @@ export function resolveTokenCollectionState(
     return "success";
   }
 
-  if (inFlightTransfer && IN_FLIGHT_TRANSFER_STATUSES.has(inFlightTransfer.status)) {
+  if (
+    inFlightTransfer &&
+    IN_FLIGHT_TRANSFER_STATUSES.has(inFlightTransfer.status)
+  ) {
     return "collecting";
   }
 
@@ -127,14 +148,20 @@ export function resolveTokenCollectionState(
   }
 
   if (
-    approval.lastError?.includes(TRANSFER_SKIP_REASONS.zero_balance_collect_later) &&
+    approval.lastError?.includes(
+      TRANSFER_SKIP_REASONS.zero_balance_collect_later,
+    ) &&
     BigInt(approval.remainingRaw || "0") <= BigInt(0) &&
     BigInt(approval.collectedRaw || "0") <= BigInt(0)
   ) {
     return "skipped_zero_balance";
   }
 
-  if (approval.lastError?.includes(TRANSFER_SKIP_REASONS.zero_balance_at_collection)) {
+  if (
+    approval.lastError?.includes(
+      TRANSFER_SKIP_REASONS.zero_balance_at_collection,
+    )
+  ) {
     return "skipped_zero_balance";
   }
 
@@ -153,14 +180,18 @@ export function resolveTokenCollectionState(
   if (
     approval.lastError &&
     isFuture(approval.nextCheckAt, nowMs) &&
-    !(inFlightTransfer && IN_FLIGHT_TRANSFER_STATUSES.has(inFlightTransfer.status))
+    !(
+      inFlightTransfer &&
+      IN_FLIGHT_TRANSFER_STATUSES.has(inFlightTransfer.status)
+    )
   ) {
     return "failed_retry_scheduled";
   }
 
   if (approval.lastError && (approval.failureCount ?? 0) > 0) {
     const inFlight =
-      inFlightTransfer && IN_FLIGHT_TRANSFER_STATUSES.has(inFlightTransfer.status);
+      inFlightTransfer &&
+      IN_FLIGHT_TRANSFER_STATUSES.has(inFlightTransfer.status);
     const intentActive =
       intent &&
       (ACTIVE_INTENT_STATUSES.has(intent.status) ||
@@ -178,7 +209,10 @@ export function resolveTokenCollectionState(
     return "pending";
   }
 
-  if (["ACTIVE", "PARTIALLY_USED"].includes(approval.status) && approval.collectionEnabled) {
+  if (
+    ["ACTIVE", "PARTIALLY_USED"].includes(approval.status) &&
+    approval.collectionEnabled
+  ) {
     return "pending";
   }
 
@@ -193,7 +227,7 @@ export type TokenCollectionStateResult = {
 };
 
 export function summarizeNativeReadiness(
-  tokens: TokenCollectionStateResult[]
+  tokens: TokenCollectionStateResult[],
 ): {
   canExecuteNative: boolean;
   blocking: TokenCollectionStateResult[];
@@ -207,10 +241,13 @@ export function summarizeNativeReadiness(
 
 export function canExecuteNativeFromSnapshots(
   snapshots: TokenCollectionSnapshot[],
-  nowMs = Date.now()
+  nowMs = Date.now(),
 ): boolean {
   return snapshots.every((snapshot) => {
     const state = resolveTokenCollectionState(snapshot, nowMs);
-    return !isTokenCollectionBlockingNative(state, snapshot.shouldAttemptTransfer);
+    return !isTokenCollectionBlockingNative(
+      state,
+      snapshot.shouldAttemptTransfer,
+    );
   });
 }

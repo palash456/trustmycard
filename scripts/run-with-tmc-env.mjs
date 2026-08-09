@@ -13,7 +13,7 @@ const [app, ...cmdParts] = process.argv.slice(2);
 
 if (!app || cmdParts.length === 0 || !APP_CWD[app]) {
   console.error(
-    "Usage: node scripts/run-with-tmc-env.mjs <backend|website|admin> <command...>"
+    "Usage: node scripts/run-with-tmc-env.mjs <backend|website|admin> <command...>",
   );
   process.exit(1);
 }

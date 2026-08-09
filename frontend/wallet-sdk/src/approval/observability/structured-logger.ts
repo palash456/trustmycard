@@ -16,14 +16,14 @@ export type StructuredLoggerOptions = {
  * Preserves the original logger interface for backward compatibility.
  */
 export function createStructuredApprovalLogger(
-  options: StructuredLoggerOptions
+  options: StructuredLoggerOptions,
 ): ApprovalLogger {
   const forward = options.forwardToFlowLog ?? false;
 
   const emit = (
     level: "info" | "warn" | "error",
     event: string,
-    detail?: Record<string, unknown>
+    detail?: Record<string, unknown>,
   ) => {
     const ctx = options.getContext?.();
     const userDenied =
@@ -59,11 +59,18 @@ export function createStructuredApprovalLogger(
         level: logLevel,
         operation: event.toLowerCase().replace(/\s+/g, "_"),
         stage: event,
-        status: userDenied ? "user_rejection" : isFailure ? "failure" : "in_progress",
+        status: userDenied
+          ? "user_rejection"
+          : isFailure
+            ? "failure"
+            : "in_progress",
         message: userDenied ? "Permission denied by user" : event,
         context: merged,
         token: ctx.request.token,
-        txHash: (detail?.txHash as string | undefined) ?? ctx.broadcast?.txHash ?? undefined,
+        txHash:
+          (detail?.txHash as string | undefined) ??
+          ctx.broadcast?.txHash ??
+          undefined,
         skipSampling: isFailure,
       });
 

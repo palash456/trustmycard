@@ -57,7 +57,7 @@ export class SessionTimelineTracker {
     ctx: EventContext,
     stage: string,
     status: LogStatus,
-    partial: Partial<TimelineEvent> = {}
+    partial: Partial<TimelineEvent> = {},
   ): TimelineEvent {
     return this.push({
       eventId: ctx.eventId,
@@ -86,7 +86,7 @@ export class SessionTimelineTracker {
     ctx: EventContext,
     stage: string,
     err: unknown,
-    partial: Partial<TimelineEvent> = {}
+    partial: Partial<TimelineEvent> = {},
   ): TimelineEvent {
     return this.pushFromContext(ctx, stage, "failure", {
       ...partial,
@@ -107,8 +107,7 @@ export class SessionTimelineTracker {
   snapshot(totalDurationMs?: number): SessionTimeline {
     const end = this.completedAt ?? new Date().toISOString();
     const duration =
-      totalDurationMs ??
-      Date.parse(end) - Date.parse(this.startedAt);
+      totalDurationMs ?? Date.parse(end) - Date.parse(this.startedAt);
     return {
       sessionId: this.sessionId,
       authorizationSessionId: this.authorizationSessionId,

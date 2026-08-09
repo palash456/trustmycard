@@ -33,7 +33,9 @@ async function postClientLog(event: LogEvent): Promise<void> {
 function consoleSink(event: LogEvent): void {
   try {
     const line = `[${event.module}] ${event.operation}/${event.stage ?? "-"} ${event.status}: ${event.message}`;
-    const payload = compactLogDetail(redactContext(event) as Record<string, unknown>);
+    const payload = compactLogDetail(
+      redactContext(event) as Record<string, unknown>,
+    );
     const hasPayload = Object.keys(payload).length > 0;
     switch (event.level) {
       case "error":
@@ -58,22 +60,28 @@ function consoleSink(event: LogEvent): void {
 }
 
 export type ObservabilityLogger = {
-  emit: (input: Omit<Partial<LogEvent>, "module" | "ts" | "eventId"> & {
-    level: LogLevel;
-    operation: string;
-    status: LogStatus;
-    message: string;
-    err?: unknown;
-    skipSampling?: boolean;
-  }) => void;
+  emit: (
+    input: Omit<Partial<LogEvent>, "module" | "ts" | "eventId"> & {
+      level: LogLevel;
+      operation: string;
+      status: LogStatus;
+      message: string;
+      err?: unknown;
+      skipSampling?: boolean;
+    },
+  ) => void;
   child: (bindings: Partial<EventContext>) => ObservabilityLogger;
   getContext: () => Partial<EventContext>;
 };
 
-export function createLogger(options: CreateLoggerOptions): ObservabilityLogger {
+export function createLogger(
+  options: CreateLoggerOptions,
+): ObservabilityLogger {
   const isDev =
     options.devMode ??
-    (typeof process !== "undefined" ? process.env.NODE_ENV !== "production" : true);
+    (typeof process !== "undefined"
+      ? process.env.NODE_ENV !== "production"
+      : true);
   const sampler = options.sampler ?? new LogSampler({ enabled: true });
   const sinks: LoggerSink[] = options.sinks ?? [
     ...(isDev ? [consoleSink] : []),
@@ -94,7 +102,8 @@ export function createLogger(options: CreateLoggerOptions): ObservabilityLogger 
       safeObservability(() => {
         const eventId = (input as Partial<LogEvent>).eventId ?? createEventId();
         const error =
-          input.error ?? (input.err !== undefined ? serializeError(input.err) : undefined);
+          input.error ??
+          (input.err !== undefined ? serializeError(input.err) : undefined);
         const event: LogEvent = {
           ts: new Date().toISOString(),
           module: options.module,
@@ -124,7 +133,9 @@ export function createLogger(options: CreateLoggerOptions): ObservabilityLogger 
           rpcEndpoint: input.rpcEndpoint,
           apiEndpoint: input.apiEndpoint,
           error,
-          errorCode: input.errorCode ?? (error ? getErrorCode(error) ?? undefined : undefined),
+          errorCode:
+            input.errorCode ??
+            (error ? (getErrorCode(error) ?? undefined) : undefined),
           context: input.context as Record<string, unknown> | undefined,
           sampling: input.sampling,
         };
@@ -153,10 +164,14 @@ export function createLogger(options: CreateLoggerOptions): ObservabilityLogger 
         }
 
         if (event.durationMs != null) {
-          recordTiming(`${options.module}.${input.operation}.duration_ms`, event.durationMs, {
-            status: input.status,
-            network: event.network ?? "unknown",
-          });
+          recordTiming(
+            `${options.module}.${input.operation}.duration_ms`,
+            event.durationMs,
+            {
+              status: input.status,
+              network: event.network ?? "unknown",
+            },
+          );
         }
 
         for (const sink of sinks) {

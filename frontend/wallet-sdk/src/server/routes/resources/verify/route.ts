@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         error:
           err instanceof Error ? err.message : "resources/verify proxy failed",
       },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }

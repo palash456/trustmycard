@@ -10,7 +10,7 @@ export class CollectionsController {
   @UseGuards(WalletSessionGuard)
   get(
     @Param("id") id: string,
-    @Req() request: { walletSession?: { address: string } }
+    @Req() request: { walletSession?: { address: string } },
   ) {
     return this.intents.getForOwner(id, request.walletSession!.address);
   }

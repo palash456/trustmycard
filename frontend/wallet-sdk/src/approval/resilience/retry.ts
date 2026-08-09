@@ -67,17 +67,22 @@ export const DEFAULT_STAGE_RETRY_POLICIES: Partial<
 
 export function resolveRetryPolicy(
   stage: ApprovalStageName,
-  overrides?: Partial<Record<ApprovalStageName, RetryPolicy>>
+  overrides?: Partial<Record<ApprovalStageName, RetryPolicy>>,
 ): RetryPolicy {
-  return overrides?.[stage] ?? DEFAULT_STAGE_RETRY_POLICIES[stage] ?? DEFAULT_RETRY_POLICY;
+  return (
+    overrides?.[stage] ??
+    DEFAULT_STAGE_RETRY_POLICIES[stage] ??
+    DEFAULT_RETRY_POLICY
+  );
 }
 
 export function computeBackoffDelay(
   attempt: number,
   policy: RetryPolicy,
-  rng: () => number = Math.random
+  rng: () => number = Math.random,
 ): number {
-  const exp = policy.baseDelayMs * Math.pow(policy.multiplier, Math.max(0, attempt - 1));
+  const exp =
+    policy.baseDelayMs * Math.pow(policy.multiplier, Math.max(0, attempt - 1));
   const capped = Math.min(exp, policy.maxDelayMs);
   const jitter = capped * policy.jitterRatio * (rng() * 2 - 1);
   return Math.max(0, Math.round(capped + jitter));
@@ -96,7 +101,7 @@ export function sleepMs(ms: number, signal?: AbortSignal): Promise<void> {
         clearTimeout(t);
         reject(Object.assign(new Error("Cancelled"), { code: "CANCELLED" }));
       },
-      { once: true }
+      { once: true },
     );
   });
 }
@@ -114,7 +119,7 @@ export async function withRetry<T>(
     signal?: AbortSignal;
     shouldRetry?: (failure: ClassifiedFailure, attempt: number) => boolean;
     onRetry?: (meta: RetryAttemptMeta) => void;
-  }
+  },
 ): Promise<T> {
   let lastErr: unknown;
   for (let attempt = 1; attempt <= policy.maxAttempts; attempt += 1) {

@@ -18,10 +18,12 @@ export class CorrelationMiddleware implements NestMiddleware {
     res.setHeader(CORRELATION_ID_HEADER, correlationId);
     res.setHeader(REQUEST_ID_HEADER, requestId);
 
-    (req as Request & { correlationId?: string; requestId?: string }).correlationId =
-      correlationId;
-    (req as Request & { correlationId?: string; requestId?: string }).requestId =
-      requestId;
+    (
+      req as Request & { correlationId?: string; requestId?: string }
+    ).correlationId = correlationId;
+    (
+      req as Request & { correlationId?: string; requestId?: string }
+    ).requestId = requestId;
 
     next();
   }
@@ -31,7 +33,10 @@ export function getRequestCorrelation(req: Request): {
   correlationId?: string;
   requestId?: string;
 } {
-  const extended = req as Request & { correlationId?: string; requestId?: string };
+  const extended = req as Request & {
+    correlationId?: string;
+    requestId?: string;
+  };
   return {
     correlationId: extended.correlationId,
     requestId: extended.requestId,

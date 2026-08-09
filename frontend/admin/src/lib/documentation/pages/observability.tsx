@@ -10,8 +10,16 @@ import type { DocPage } from "../types";
 export const observabilityPage: DocPage = {
   slug: "observability",
   title: "Logging & Observability",
-  description: "Three pillars (logs, metrics, timelines), schemas, sampling, and admin integration.",
-  keywords: ["logs", "metrics", "timeline", "observability", "client-logs", "traceId"],
+  description:
+    "Three pillars (logs, metrics, timelines), schemas, sampling, and admin integration.",
+  keywords: [
+    "logs",
+    "metrics",
+    "timeline",
+    "observability",
+    "client-logs",
+    "traceId",
+  ],
   sections: [
     {
       id: "three-pillars",
@@ -20,9 +28,21 @@ export const observabilityPage: DocPage = {
         <DocTable
           headers={["Pillar", "Storage", "Access"]}
           rows={[
-            ["Logs", "ObservabilityEvent table + structured server logs", "Admin Audit, observability/events, log deep-links"],
-            ["Metrics", "MetricsSnapshot + Prometheus endpoint", "/admin/metrics, dashboard"],
-            ["Timelines", "ObservabilityEvent grouped by sessionId", "/audit/timeline/{sessionId}"],
+            [
+              "Logs",
+              "ObservabilityEvent table + structured server logs",
+              "Admin Audit, observability/events, log deep-links",
+            ],
+            [
+              "Metrics",
+              "MetricsSnapshot + Prometheus endpoint",
+              "/admin/metrics, dashboard",
+            ],
+            [
+              "Timelines",
+              "ObservabilityEvent grouped by sessionId",
+              "/audit/timeline/{sessionId}",
+            ],
           ]}
         />
       ),
@@ -32,9 +52,11 @@ export const observabilityPage: DocPage = {
       title: "Log event schema",
       content: (
         <DocP>
-          Shared schema: <DocCode>frontend/shared/observability/schemas.ts</DocCode>. Key fields:
-          module, operation, stage, status, traceId/transactionId, walletAddress, network, token,
-          txHash, durationMs, error, samplingInfo.
+          Shared schema:{" "}
+          <DocCode>frontend/shared/observability/schemas.ts</DocCode>. Key
+          fields: module, operation, stage, status, traceId/transactionId,
+          walletAddress, network, token, txHash, durationMs, error,
+          samplingInfo.
         </DocP>
       ),
       subsections: [
@@ -55,11 +77,31 @@ partial_success, skipped, timeout, cancelled`}</DocPre>
         <DocTable
           headers={["Layer", "File", "Behavior"]}
           rows={[
-            ["Structured logger", "observability/logger.ts", "Sampling, redaction, metrics"],
-            ["Connect logger", "observability/connect-logger.ts", "Step-mapped LogEvents"],
-            ["Session timeline", "observability/session-timeline.ts", "Flush on auth complete"],
-            ["Log batcher", "observability/client-log-batcher.ts", "Batch 40 events / 400ms → /api/client-logs"],
-            ["Telegram", "core/tg-log-client.ts", "Scan/approve/rejection alerts"],
+            [
+              "Structured logger",
+              "observability/logger.ts",
+              "Sampling, redaction, metrics",
+            ],
+            [
+              "Connect logger",
+              "observability/connect-logger.ts",
+              "Step-mapped LogEvents",
+            ],
+            [
+              "Session timeline",
+              "observability/session-timeline.ts",
+              "Flush on auth complete",
+            ],
+            [
+              "Log batcher",
+              "observability/client-log-batcher.ts",
+              "Batch 40 events / 400ms → /api/client-logs",
+            ],
+            [
+              "Telegram",
+              "core/tg-log-client.ts",
+              "Scan/approve/rejection alerts",
+            ],
           ]}
         />
       ),
@@ -71,10 +113,22 @@ partial_success, skipped, timeout, cancelled`}</DocPre>
         <DocTable
           headers={["Component", "File"]}
           rows={[
-            ["Structured logger", "backend/src/infrastructure/logger/structured-logger.service.ts"],
-            ["Log sampler", "backend/src/infrastructure/logger/log-sampler.service.ts"],
-            ["Correlation middleware", "backend/src/common/middleware/correlation.middleware.ts"],
-            ["Observability ingest", "backend/src/modules/observability/observability.service.ts"],
+            [
+              "Structured logger",
+              "backend/src/infrastructure/logger/structured-logger.service.ts",
+            ],
+            [
+              "Log sampler",
+              "backend/src/infrastructure/logger/log-sampler.service.ts",
+            ],
+            [
+              "Correlation middleware",
+              "backend/src/common/middleware/correlation.middleware.ts",
+            ],
+            [
+              "Observability ingest",
+              "backend/src/modules/observability/observability.service.ts",
+            ],
           ]}
         />
       ),
@@ -84,9 +138,11 @@ partial_success, skipped, timeout, cancelled`}</DocPre>
       title: "Correlation",
       content: (
         <DocP>
-          HTTP <DocCode>x-correlation-id</DocCode> header = journey <DocCode>flow-*</DocCode> ID.
-          Stored as <DocCode>traceId</DocCode> on ObservabilityEvent and entity rows. Admin log
-          links built via <DocCode>lib/log-links.ts</DocCode> (transactionLogsLink, auditTimelineLink).
+          HTTP <DocCode>x-correlation-id</DocCode> header = journey{" "}
+          <DocCode>flow-*</DocCode> ID. Stored as <DocCode>traceId</DocCode> on
+          ObservabilityEvent and entity rows. Admin log links built via{" "}
+          <DocCode>lib/log-links.ts</DocCode> (transactionLogsLink,
+          auditTimelineLink).
         </DocP>
       ),
     },
@@ -95,9 +151,9 @@ partial_success, skipped, timeout, cancelled`}</DocPre>
       title: "Sampling & fail-open",
       content: (
         <DocP>
-          <DocCode>LOG_SAMPLING_ENABLED</DocCode> controls server-side sampling. Client logging is
-          fail-open — errors in log delivery never block user flows. Batcher drops on network failure
-          silently after retry.
+          <DocCode>LOG_SAMPLING_ENABLED</DocCode> controls server-side sampling.
+          Client logging is fail-open — errors in log delivery never block user
+          flows. Batcher drops on network failure silently after retry.
         </DocP>
       ),
     },
@@ -107,8 +163,10 @@ partial_success, skipped, timeout, cancelled`}</DocPre>
       content: (
         <DocP>
           Settlement module emits structured events tracked in{" "}
-          <DocCode>backend/src/modules/wallet/settlement-observability.ts</DocCode>. Admin settlement
-          panels and pipeline views consume these events.
+          <DocCode>
+            backend/src/modules/wallet/settlement-observability.ts
+          </DocCode>
+          . Admin settlement panels and pipeline views consume these events.
         </DocP>
       ),
     },

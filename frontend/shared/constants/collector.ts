@@ -18,7 +18,7 @@ const UNLIMITED_ALIASES = new Set([
  * Returns null for unlimited; otherwise a positive integer.
  */
 export function parseCollectorMaxRuns(
-  raw: string | number | null | undefined
+  raw: string | number | null | undefined,
 ): CollectorMaxRuns {
   if (raw == null) return null;
   if (typeof raw === "number") {
@@ -35,7 +35,7 @@ export function parseCollectorMaxRuns(
 /** Validate explicit env/admin input; throws on invalid non-empty values. */
 export function assertValidCollectorMaxRunsInput(
   raw: string | number | null | undefined,
-  label = "COLLECTOR_MAX_RUNS"
+  label = "COLLECTOR_MAX_RUNS",
 ): CollectorMaxRuns {
   if (raw == null) return null;
   if (typeof raw === "number") {
@@ -55,7 +55,7 @@ export function assertValidCollectorMaxRunsInput(
 
 export function isCollectorRunLimitReached(
   runCount: number,
-  maxRuns: CollectorMaxRuns
+  maxRuns: CollectorMaxRuns,
 ): boolean {
   if (maxRuns == null) return false;
   return runCount >= maxRuns;
@@ -63,7 +63,7 @@ export function isCollectorRunLimitReached(
 
 export function canClaimCollectorRun(
   runCount: number,
-  maxRuns: CollectorMaxRuns
+  maxRuns: CollectorMaxRuns,
 ): boolean {
   if (maxRuns == null) return true;
   return runCount < maxRuns;

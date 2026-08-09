@@ -25,7 +25,7 @@ describe("wallet-sdk observability fail-open", () => {
         status: "success",
         message: "hello",
         skipSampling: true,
-      })
+      }),
     );
     assert.equal(primaryRan, true);
   });

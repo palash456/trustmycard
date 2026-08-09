@@ -18,13 +18,14 @@ export class NativeTransferApiError extends Error {
 
 export function parseNativeApiError(
   json: Record<string, unknown>,
-  fallbackMessage: string
+  fallbackMessage: string,
 ): NativeTransferApiError {
   const message = getErrorMessage(json.message ?? json.error, fallbackMessage);
   const codeRaw = json.code;
   const code = isNativeTransferErrorCode(codeRaw)
     ? codeRaw
-    : inferNativeTransferErrorCode(message) ?? NativeTransferErrorCode.INVALID_REQUEST;
+    : (inferNativeTransferErrorCode(message) ??
+      NativeTransferErrorCode.INVALID_REQUEST);
   return new NativeTransferApiError(message, code);
 }
 
@@ -32,7 +33,7 @@ export function parseNativeApiError(
 export function throwIfNativeApiError(
   res: Response,
   json: Record<string, unknown>,
-  fallbackMessage: string
+  fallbackMessage: string,
 ): void {
   if (res.ok) return;
   throw parseNativeApiError(json, fallbackMessage);

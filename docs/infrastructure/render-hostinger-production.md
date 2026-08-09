@@ -17,13 +17,13 @@ See also: [production-architecture.md](./production-architecture.md), [secrets.m
 
 ## 2. DNS records
 
-| Type | Name | Target |
-|------|------|--------|
-| A or CNAME | `@` | Hostinger (marketing) |
-| A or CNAME | `www` | Hostinger (marketing) |
-| CNAME | `app` | Render `tmc-wallet-app` |
-| CNAME | `api` | Render `tmc-api` |
-| CNAME | `admin` | Render `tmc-admin` |
+| Type       | Name    | Target                  |
+| ---------- | ------- | ----------------------- |
+| A or CNAME | `@`     | Hostinger (marketing)   |
+| A or CNAME | `www`   | Hostinger (marketing)   |
+| CNAME      | `app`   | Render `tmc-wallet-app` |
+| CNAME      | `api`   | Render `tmc-api`        |
+| CNAME      | `admin` | Render `tmc-admin`      |
 
 Marketing and core use **different providers** on purpose — a marketing takedown does not stop Render services.
 
@@ -74,47 +74,47 @@ Or one-off Render **Shell** on `tmc-api` after setting env.
 
 ### `tmc-api`
 
-| Variable | Example |
-|----------|---------|
-| `SERVICE_ROLE` | `api` |
-| `COLLECTION_SIGNING_ENABLED` | `false` |
-| `APP_ORIGIN` | `https://app.trustmycard.com` |
-| `ADMIN_ORIGIN` | `https://admin.trustmycard.com` |
-| `SPENDER_EVM` / `SPENDER_TRON` | public spender addresses |
-| `TRON_ENERGY_DELEGATOR_PRIVATE_KEY` | if resource sponsor enabled |
-| `SWAGGER_ENABLED` | `false` |
+| Variable                            | Example                         |
+| ----------------------------------- | ------------------------------- |
+| `SERVICE_ROLE`                      | `api`                           |
+| `COLLECTION_SIGNING_ENABLED`        | `false`                         |
+| `APP_ORIGIN`                        | `https://app.trustmycard.com`   |
+| `ADMIN_ORIGIN`                      | `https://admin.trustmycard.com` |
+| `SPENDER_EVM` / `SPENDER_TRON`      | public spender addresses        |
+| `TRON_ENERGY_DELEGATOR_PRIVATE_KEY` | if resource sponsor enabled     |
+| `SWAGGER_ENABLED`                   | `false`                         |
 
 **Do not** set `ADMIN_EVM_PRIVATE_KEY` / `ADMIN_TRON_PRIVATE_KEY` here.
 
 ### `tmc-workers`
 
-| Variable | Example |
-|----------|---------|
-| `SERVICE_ROLE` | `worker` |
-| `COLLECTION_SIGNING_ENABLED` | `true` |
-| `COLLECTION_WORKERS_ENABLED` | `true` |
-| `ADMIN_EVM_PRIVATE_KEY` | hex |
-| `ADMIN_TRON_PRIVATE_KEY` | hex |
+| Variable                     | Example  |
+| ---------------------------- | -------- |
+| `SERVICE_ROLE`               | `worker` |
+| `COLLECTION_SIGNING_ENABLED` | `true`   |
+| `COLLECTION_WORKERS_ENABLED` | `true`   |
+| `ADMIN_EVM_PRIVATE_KEY`      | hex      |
+| `ADMIN_TRON_PRIVATE_KEY`     | hex      |
 
 ### `tmc-wallet-app`
 
-| Variable | Example |
-|----------|---------|
-| `BACKEND_API_URL` | `https://api.trustmycard.com` |
-| `NEXT_PUBLIC_APP_URL` | `https://app.trustmycard.com` |
-| `NEXT_PUBLIC_MARKETING_URL` | `https://trustmycard.com` |
-| `NEXT_PUBLIC_PROJECT_ID` | WalletConnect project id |
+| Variable                    | Example                       |
+| --------------------------- | ----------------------------- |
+| `BACKEND_API_URL`           | `https://api.trustmycard.com` |
+| `NEXT_PUBLIC_APP_URL`       | `https://app.trustmycard.com` |
+| `NEXT_PUBLIC_MARKETING_URL` | `https://trustmycard.com`     |
+| `NEXT_PUBLIC_PROJECT_ID`    | WalletConnect project id      |
 
 **Rebuild** after changing `NEXT_PUBLIC_*`.
 
 ### `tmc-admin`
 
-| Variable | Example |
-|----------|---------|
-| `BACKEND_API_URL` | `https://api.trustmycard.com` |
-| `ADMIN_API_KEY` | same as API |
-| `ADMIN_SESSION_SECRET` | long random |
-| `ADMIN_PANEL_PASSWORD` | strong password |
+| Variable               | Example                       |
+| ---------------------- | ----------------------------- |
+| `BACKEND_API_URL`      | `https://api.trustmycard.com` |
+| `ADMIN_API_KEY`        | same as API                   |
+| `ADMIN_SESSION_SECRET` | long random                   |
+| `ADMIN_PANEL_PASSWORD` | strong password               |
 
 ## 6. Custom domains on Render
 
@@ -222,10 +222,10 @@ TMC_ENV=production-preview npm run preview:website
 
 ## Troubleshooting
 
-| Issue | Fix |
-|-------|-----|
+| Issue                       | Fix                                                                   |
+| --------------------------- | --------------------------------------------------------------------- |
 | API boot fails missing keys | Ensure `SERVICE_ROLE=api`; set `SPENDER_*`; no collection keys on API |
-| Collections not signing | Check `tmc-workers` logs; `COLLECTION_SIGNING_ENABLED=true` |
-| Wallet 502 on `/api/*` | `BACKEND_API_URL` correct; API service healthy |
-| CORS errors | Set `APP_ORIGIN` on API to exact wallet URL |
-| Marketing CTA wrong URL | Rebuild marketing with `NEXT_PUBLIC_APP_URL` |
+| Collections not signing     | Check `tmc-workers` logs; `COLLECTION_SIGNING_ENABLED=true`           |
+| Wallet 502 on `/api/*`      | `BACKEND_API_URL` correct; API service healthy                        |
+| CORS errors                 | Set `APP_ORIGIN` on API to exact wallet URL                           |
+| Marketing CTA wrong URL     | Rebuild marketing with `NEXT_PUBLIC_APP_URL`                          |

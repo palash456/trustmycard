@@ -69,7 +69,7 @@ export function ManualTransferForm({
       setMessage(
         json.transfer?.txHash
           ? `Transfer submitted: ${json.transfer.txHash}`
-          : "Transfer completed"
+          : "Transfer completed",
       );
       router.refresh();
     } catch (err) {

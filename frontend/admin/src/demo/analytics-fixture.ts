@@ -45,8 +45,16 @@ type UserRow = {
   lastActivity: string;
   workflowStage: string;
   healthStatus: string;
-  totalLifetimeCollected: Array<{ network: string; tokenSymbol: string; collectedHuman: string }>;
-  collectableRemaining: Array<{ network: string; tokenSymbol: string; remainingHuman: string }>;
+  totalLifetimeCollected: Array<{
+    network: string;
+    tokenSymbol: string;
+    collectedHuman: string;
+  }>;
+  collectableRemaining: Array<{
+    network: string;
+    tokenSymbol: string;
+    remainingHuman: string;
+  }>;
 };
 
 type EventRow = {
@@ -119,7 +127,10 @@ function parsePeriod(params: URLSearchParams): {
   };
 }
 
-function countBy<T>(items: T[], keyFn: (item: T) => string): Record<string, number> {
+function countBy<T>(
+  items: T[],
+  keyFn: (item: T) => string,
+): Record<string, number> {
   const out: Record<string, number> = {};
   for (const item of items) {
     const k = keyFn(item);
@@ -128,7 +139,11 @@ function countBy<T>(items: T[], keyFn: (item: T) => string): Record<string, numb
   return out;
 }
 
-function dailySeries(items: Array<{ createdAt: string }>, start: Date | null, end: Date) {
+function dailySeries(
+  items: Array<{ createdAt: string }>,
+  start: Date | null,
+  end: Date,
+) {
   const map = new Map<string, number>();
   for (const item of items) {
     if (!inRange(item.createdAt, start, end)) continue;
@@ -141,7 +156,17 @@ function dailySeries(items: Array<{ createdAt: string }>, start: Date | null, en
 }
 
 function tokenAmountsFromTransfers(rows: TransferRow[]) {
-  const map = new Map<string, { network: string; tokenSymbol: string; raw: string; human: string; decimals: number; count: number }>();
+  const map = new Map<
+    string,
+    {
+      network: string;
+      tokenSymbol: string;
+      raw: string;
+      human: string;
+      decimals: number;
+      count: number;
+    }
+  >();
   for (const t of rows) {
     if (t.status !== "confirmed") continue;
     const key = `${t.approval.network}:${t.approval.tokenSymbol}`;
@@ -167,19 +192,21 @@ export function buildDemoAnalytics(
     nativeTransfers: NativeRow[];
     users: UserRow[];
     events: EventRow[];
-  }
+  },
 ): AnalyticsResponse {
   const period = parsePeriod(params);
   const confirmedInPeriod = data.transfers.filter(
-    (t) => t.status === "confirmed" && inRange(t.createdAt, period.start, period.end)
+    (t) =>
+      t.status === "confirmed" &&
+      inRange(t.createdAt, period.start, period.end),
   );
   const collectedPeriod = tokenAmountsFromTransfers(confirmedInPeriod);
   const collectedLifetime = tokenAmountsFromTransfers(
-    data.transfers.filter((t) => t.status === "confirmed")
+    data.transfers.filter((t) => t.status === "confirmed"),
   );
 
   const approvalInPeriod = data.approvals.filter((a) =>
-    inRange(a.createdAt, period.start, period.end)
+    inRange(a.createdAt, period.start, period.end),
   );
   const approvalCounts = countBy(approvalInPeriod, (a) => a.status);
   const approvalTotal = approvalInPeriod.length;
@@ -189,28 +216,33 @@ export function buildDemoAnalytics(
     (approvalCounts.PARTIALLY_USED ?? 0);
 
   const transferInPeriod = data.transfers.filter((t) =>
-    inRange(t.createdAt, period.start, period.end)
+    inRange(t.createdAt, period.start, period.end),
   );
   const transferCounts = countBy(transferInPeriod, (t) => t.status);
   const transferTotal = transferInPeriod.length;
   const transferConfirmed = transferCounts.confirmed ?? 0;
 
   const nativeInPeriod = data.nativeTransfers.filter((n) =>
-    inRange(n.createdAt, period.start, period.end)
+    inRange(n.createdAt, period.start, period.end),
   );
   const nativeCounts = countBy(nativeInPeriod, (n) => n.status);
 
   const newInPeriod = data.users.filter((u) =>
-    inRange(u.firstSeen, period.start, period.end)
+    inRange(u.firstSeen, period.start, period.end),
   ).length;
 
   const chains = NETWORKS.map((network, idx) => {
-    const chainTransfers = confirmedInPeriod.filter((t) => t.approval.network === network);
+    const chainTransfers = confirmedInPeriod.filter(
+      (t) => t.approval.network === network,
+    );
     return {
       network,
-      wallets: data.users.filter((u) => u.address.endsWith(String(idx))).length || Math.floor(data.users.length / 6),
+      wallets:
+        data.users.filter((u) => u.address.endsWith(String(idx))).length ||
+        Math.floor(data.users.length / 6),
       approvals: data.approvals.filter((a) => a.network === network).length,
-      transfers: data.transfers.filter((t) => t.approval.network === network).length,
+      transfers: data.transfers.filter((t) => t.approval.network === network)
+        .length,
       collections: chainTransfers.length,
       volume: tokenAmountsFromTransfers(chainTransfers),
       revenue: tokenAmountsFromTransfers(chainTransfers),
@@ -233,7 +265,9 @@ export function buildDemoAnalytics(
     revenue: {
       platformVolume: {
         stablecoin: collectedPeriod,
-        nativeTransferCount: nativeInPeriod.filter((n) => n.status === "confirmed").length,
+        nativeTransferCount: nativeInPeriod.filter(
+          (n) => n.status === "confirmed",
+        ).length,
       },
       collected: {
         period: collectedPeriod,
@@ -242,14 +276,19 @@ export function buildDemoAnalytics(
           data.transfers.filter(
             (t) =>
               t.status === "confirmed" &&
-              t.createdAt.slice(0, 10) === new Date().toISOString().slice(0, 10)
-          )
+              t.createdAt.slice(0, 10) ===
+                new Date().toISOString().slice(0, 10),
+          ),
         ),
         thisWeek: collectedPeriod,
         thisMonth: collectedPeriod,
       },
       pending: data.approvals
-        .filter((a) => a.collectionEnabled && ["ACTIVE", "PARTIALLY_USED", "SUBMITTED"].includes(a.status))
+        .filter(
+          (a) =>
+            a.collectionEnabled &&
+            ["ACTIVE", "PARTIALLY_USED", "SUBMITTED"].includes(a.status),
+        )
         .slice(0, 5)
         .map((a) => ({
           network: a.network,
@@ -270,7 +309,9 @@ export function buildDemoAnalytics(
         largestCollection: confirmedInPeriod[0]
           ? {
               amountRaw: confirmedInPeriod[0].amountRaw,
-              human: (Number(confirmedInPeriod[0].amountRaw) / 1_000_000).toFixed(2),
+              human: (
+                Number(confirmedInPeriod[0].amountRaw) / 1_000_000
+              ).toFixed(2),
               network: confirmedInPeriod[0].approval.network,
               tokenSymbol: confirmedInPeriod[0].approval.tokenSymbol,
               address: confirmedInPeriod[0].fromAddress,
@@ -279,7 +320,9 @@ export function buildDemoAnalytics(
         largestUser: null,
         highestPendingUser: null,
       },
-      confirmedTransferCount: data.transfers.filter((t) => t.status === "confirmed").length,
+      confirmedTransferCount: data.transfers.filter(
+        (t) => t.status === "confirmed",
+      ).length,
       periodConfirmedCount: transferConfirmed,
     },
     users: {
@@ -292,16 +335,20 @@ export function buildDemoAnalytics(
       activeWallets: Math.floor(data.users.length * 0.62),
       abandonedWallets: 4,
       workflowStages: {
-        waitingForApproval: data.approvals.filter((a) => a.status === "SUBMITTED").length,
+        waitingForApproval: data.approvals.filter(
+          (a) => a.status === "SUBMITTED",
+        ).length,
         readyForCollection: 8,
         currentlyCollecting: 11,
-        successfullyCompleted: data.approvals.filter((a) => a.status === "COMPLETED").length,
+        successfullyCompleted: data.approvals.filter(
+          (a) => a.status === "COMPLETED",
+        ).length,
         failed: data.approvals.filter((a) => a.status === "FAILED").length,
       },
       growthSeries: dailySeries(
         data.users.map((u) => ({ createdAt: u.firstSeen })),
         period.start,
-        period.end
+        period.end,
       ),
     },
     approvals: {
@@ -311,12 +358,18 @@ export function buildDemoAnalytics(
       revoked: approvalCounts.REVOKED ?? 0,
       expired: approvalCounts.EXPIRED ?? 0,
       pending: approvalCounts.SUBMITTED ?? 0,
-      successRate: approvalTotal ? Math.round((approvalSuccess / approvalTotal) * 100) : 0,
-      failureRate: approvalTotal ? Math.round(((approvalCounts.FAILED ?? 0) / approvalTotal) * 100) : 0,
+      successRate: approvalTotal
+        ? Math.round((approvalSuccess / approvalTotal) * 100)
+        : 0,
+      failureRate: approvalTotal
+        ? Math.round(((approvalCounts.FAILED ?? 0) / approvalTotal) * 100)
+        : 0,
       averageApprovalTimeMs: 45_000,
       byChain: countBy(approvalInPeriod, (a) => a.network),
       byToken: countBy(approvalInPeriod, (a) => a.tokenSymbol),
-      series: { daily: dailySeries(approvalInPeriod, period.start, period.end) },
+      series: {
+        daily: dailySeries(approvalInPeriod, period.start, period.end),
+      },
       counts: approvalCounts,
     },
     collections: {
@@ -324,9 +377,12 @@ export function buildDemoAnalytics(
       successful: transferConfirmed,
       failed: transferCounts.failed ?? 0,
       pending: (transferCounts.pending ?? 0) + (transferCounts.broadcast ?? 0),
-      partial: data.approvals.filter((a) => a.status === "PARTIALLY_USED").length,
+      partial: data.approvals.filter((a) => a.status === "PARTIALLY_USED")
+        .length,
       retryCollections: 7,
-      successRate: transferTotal ? Math.round((transferConfirmed / transferTotal) * 100) : 0,
+      successRate: transferTotal
+        ? Math.round((transferConfirmed / transferTotal) * 100)
+        : 0,
       averageCollectionTimeMs: 90_000,
       averageRetryCount: 0.4,
       averageCollectionValueRaw: "250000",
@@ -334,7 +390,9 @@ export function buildDemoAnalytics(
       lowest: null,
       byChain: countBy(transferInPeriod, (t) => t.approval.network),
       byToken: countBy(transferInPeriod, (t) => t.approval.tokenSymbol),
-      series: { daily: dailySeries(transferInPeriod, period.start, period.end) },
+      series: {
+        daily: dailySeries(transferInPeriod, period.start, period.end),
+      },
       counts: transferCounts,
     },
     transfers: {
@@ -346,12 +404,16 @@ export function buildDemoAnalytics(
       confirmed: transferConfirmed,
       averageConfirmationTimeMs: 32_000,
       retryCount: 14,
-      successRate: transferTotal ? Math.round((transferConfirmed / transferTotal) * 100) : 0,
+      successRate: transferTotal
+        ? Math.round((transferConfirmed / transferTotal) * 100)
+        : 0,
       counts: transferCounts,
-      volumeSeries: dailySeries(transferInPeriod, period.start, period.end).map((d) => ({
-        ...d,
-        volumeRaw: String(d.count * 250_000),
-      })),
+      volumeSeries: dailySeries(transferInPeriod, period.start, period.end).map(
+        (d) => ({
+          ...d,
+          volumeRaw: String(d.count * 250_000),
+        }),
+      ),
     },
     nativeFunding: {
       total: nativeInPeriod.length,
@@ -361,18 +423,22 @@ export function buildDemoAnalytics(
       averageAmountRaw: "50000000000000000",
       averageFundingTimeMs: 55_000,
       successRate: nativeInPeriod.length
-        ? Math.round(((nativeCounts.confirmed ?? 0) / nativeInPeriod.length) * 100)
+        ? Math.round(
+            ((nativeCounts.confirmed ?? 0) / nativeInPeriod.length) * 100,
+          )
         : 0,
       reconciliationSuccessRate: 92,
       failedReconciliations: 3,
       totalGasFeesRaw: "1250000000000000",
       byChain: countBy(nativeInPeriod, (n) => n.network),
-      successTrend: dailySeries(nativeInPeriod, period.start, period.end).map((d) => ({
-        date: d.date,
-        total: d.count,
-        confirmed: Math.max(1, d.count - 1),
-        rate: 88,
-      })),
+      successTrend: dailySeries(nativeInPeriod, period.start, period.end).map(
+        (d) => ({
+          date: d.date,
+          total: d.count,
+          confirmed: Math.max(1, d.count - 1),
+          rate: 88,
+        }),
+      ),
       counts: nativeCounts,
     },
     chains,
@@ -380,7 +446,9 @@ export function buildDemoAnalytics(
       usdt: {
         volume: collectedPeriod.filter((c) => c.tokenSymbol === "USDT"),
         volumeTotal: { raw: "5000000000", human: "5000.00" },
-        collections: collectedPeriod.filter((c) => c.tokenSymbol === "USDT").reduce((s, c) => s + (c.count ?? 0), 0),
+        collections: collectedPeriod
+          .filter((c) => c.tokenSymbol === "USDT")
+          .reduce((s, c) => s + (c.count ?? 0), 0),
         averageCollection: "42.50",
         successRate: 91,
         pendingValue: [],
@@ -389,7 +457,9 @@ export function buildDemoAnalytics(
       usdc: {
         volume: collectedPeriod.filter((c) => c.tokenSymbol === "USDC"),
         volumeTotal: { raw: "3200000000", human: "3200.00" },
-        collections: collectedPeriod.filter((c) => c.tokenSymbol === "USDC").reduce((s, c) => s + (c.count ?? 0), 0),
+        collections: collectedPeriod
+          .filter((c) => c.tokenSymbol === "USDC")
+          .reduce((s, c) => s + (c.count ?? 0), 0),
         averageCollection: "38.00",
         successRate: 89,
         pendingValue: [],
@@ -412,9 +482,13 @@ export function buildDemoAnalytics(
       revenueLost: [],
       recoverableRevenue: collectedPeriod,
       unrecoverableRevenue: [],
-      failedApprovals: data.approvals.filter((a) => a.status === "FAILED").length,
-      failedTransfers: data.transfers.filter((t) => t.status === "failed").length,
-      failedNativeFunding: data.nativeTransfers.filter((n) => n.status === "failed").length,
+      failedApprovals: data.approvals.filter((a) => a.status === "FAILED")
+        .length,
+      failedTransfers: data.transfers.filter((t) => t.status === "failed")
+        .length,
+      failedNativeFunding: data.nativeTransfers.filter(
+        (n) => n.status === "failed",
+      ).length,
       failedReconciliation: 3,
       rpcFailures: 8,
       timeoutFailures: 5,
@@ -425,9 +499,11 @@ export function buildDemoAnalytics(
         { reason: "Receipt not found after max reconcile attempts", count: 3 },
       ],
       failureTrend: dailySeries(
-        data.approvals.filter((a) => a.lastError).map((a) => ({ createdAt: a.createdAt })),
+        data.approvals
+          .filter((a) => a.lastError)
+          .map((a) => ({ createdAt: a.createdAt })),
         period.start,
-        period.end
+        period.end,
       ),
       failureRateByChain: { pol: 4, eth: 3, tron: 5 },
       failureRateByToken: { USDT: 6, USDC: 4 },
@@ -569,7 +645,8 @@ export function buildDemoActivity(data: {
   }
   for (const t of data.transfers.slice(0, 15)) {
     items.push({
-      type: t.status === "confirmed" ? "transfer_confirmed" : "collection_started",
+      type:
+        t.status === "confirmed" ? "transfer_confirmed" : "collection_started",
       id: t.id,
       at: t.createdAt,
       label: `${t.approval.network} ${t.approval.tokenSymbol}`,

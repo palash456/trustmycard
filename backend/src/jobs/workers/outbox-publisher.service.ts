@@ -4,7 +4,10 @@ import { ConfigService } from "../../config/config.service";
 import { PlatformConfigService } from "../../config/platform-config.service";
 import { getErrorMessage } from "@trustmycard/shared/observability";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
-import { COLLECTION_EVENT, OutboxService } from "../../modules/collections/outbox.service";
+import {
+  COLLECTION_EVENT,
+  OutboxService,
+} from "../../modules/collections/outbox.service";
 import { CollectionQueueService } from "../queues/collection-queue.service";
 import { PrismaService } from "../../infrastructure/database/prisma.service";
 import { Prisma } from "@prisma/client";
@@ -12,7 +15,9 @@ import { Prisma } from "@prisma/client";
 function traceIdFromOutboxPayload(payload: unknown): string | undefined {
   if (!payload || typeof payload !== "object") return undefined;
   const traceId = (payload as Record<string, unknown>).traceId;
-  return typeof traceId === "string" && traceId.trim() ? traceId.trim() : undefined;
+  return typeof traceId === "string" && traceId.trim()
+    ? traceId.trim()
+    : undefined;
 }
 
 @Injectable()
@@ -27,13 +32,20 @@ export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
     private readonly outbox: OutboxService,
     private readonly queues: CollectionQueueService,
     private readonly logger: StructuredLoggerService,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
   ) {}
 
   onModuleInit(): void {
     const cfg = this.config.getCollectionWorkerConfig();
-    if (cfg.mode === "poll" || !this.platformConfig.getCollection().workersEnabled) return;
-    this.timer = setInterval(() => void this.publish(), cfg.outboxPublishIntervalMs);
+    if (
+      cfg.mode === "poll" ||
+      !this.platformConfig.getCollection().workersEnabled
+    )
+      return;
+    this.timer = setInterval(
+      () => void this.publish(),
+      cfg.outboxPublishIntervalMs,
+    );
     this.timer.unref();
     void this.publish();
   }
@@ -43,19 +55,23 @@ export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
   }
 
   async publish(): Promise<number> {
-    if (this.running || this.config.getCollectionWorkerConfig().mode === "poll") return 0;
+    if (this.running || this.config.getCollectionWorkerConfig().mode === "poll")
+      return 0;
     this.running = true;
     let published = 0;
     try {
       const events = await this.outbox.claimPending(
         this.owner,
-        this.platformConfig.getCollection().outboxClaimBatchSize
+        this.platformConfig.getCollection().outboxClaimBatchSize,
       );
       const webhookUrl = this.platformConfig.getMonitoring().merchantWebhookUrl;
       for (const event of events) {
         try {
           const traceId = traceIdFromOutboxPayload(event.payload);
-          if (event.eventType === COLLECTION_EVENT.QUEUED && event.collectionIntentId) {
+          if (
+            event.eventType === COLLECTION_EVENT.QUEUED &&
+            event.collectionIntentId
+          ) {
             await this.queues.enqueueExecution({
               intentId: event.collectionIntentId,
               outboxEventId: event.id,
@@ -79,9 +95,10 @@ export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
                 eventId: event.id,
                 eventType: event.eventType,
                 endpoint: webhookUrl,
-                payload: event.payload === null
-                  ? Prisma.JsonNull
-                  : event.payload as Prisma.InputJsonValue,
+                payload:
+                  event.payload === null
+                    ? Prisma.JsonNull
+                    : (event.payload as Prisma.InputJsonValue),
               },
               update: {},
             });
@@ -94,7 +111,11 @@ export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
           await this.outbox.markPublished(event.id, this.owner);
           published += 1;
         } catch (error) {
-          await this.outbox.markFailed(event.id, this.owner, getErrorMessage(error));
+          await this.outbox.markFailed(
+            event.id,
+            this.owner,
+            getErrorMessage(error),
+          );
         }
       }
       return published;

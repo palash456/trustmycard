@@ -11,7 +11,7 @@ function cacheKey(network: string, owner: string): string {
 
 export function getCachedWalletSessionToken(
   network: string,
-  owner: string
+  owner: string,
 ): string | null {
   if (typeof sessionStorage === "undefined") return null;
   try {
@@ -49,14 +49,17 @@ export function setCachedWalletSessionToken(args: {
   try {
     sessionStorage.setItem(
       cacheKey(args.network, args.owner),
-      JSON.stringify({ token: args.token, expiresAt })
+      JSON.stringify({ token: args.token, expiresAt }),
     );
   } catch {
     // Quota or private mode — ignore
   }
 }
 
-export function clearCachedWalletSessionToken(network: string, owner: string): void {
+export function clearCachedWalletSessionToken(
+  network: string,
+  owner: string,
+): void {
   if (typeof sessionStorage === "undefined") return;
   sessionStorage.removeItem(cacheKey(network, owner));
 }

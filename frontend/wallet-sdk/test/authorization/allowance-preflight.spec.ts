@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { preflightExistingAllowance } from "../../src/authorization/allowance-preflight";
 import type { ApprovalApiPort } from "../../src/approval/ports";
-import type { ApprovalRequest, PreparedApproval } from "../../src/approval/types";
+import type {
+  ApprovalRequest,
+  PreparedApproval,
+} from "../../src/approval/types";
 
 function fakeApi(overrides: {
   allowance?: string;

@@ -212,7 +212,7 @@ describe("ApprovalOrchestrator unit", () => {
     assert.ok(
       result.status === StageStatus.CANCELLED ||
         result.failedStage === ApprovalStageName.SIGN ||
-        result.failedStage === ApprovalStageName.BROADCAST
+        result.failedStage === ApprovalStageName.BROADCAST,
     );
   });
 
@@ -230,14 +230,16 @@ describe("ApprovalOrchestrator unit", () => {
     const result = await orch.run(baseRequest);
     assert.equal(result.ok, true);
     const post = result.stages.find(
-      (s) => s.stage === ApprovalStageName.POST_APPROVAL
+      (s) => s.stage === ApprovalStageName.POST_APPROVAL,
     );
     assert.equal(post?.status, StageStatus.FAILED);
   });
 
   it("fails verify when allowance missing after confirmation", async () => {
     const api = createFakeApi();
-    api.state.verifyAllowanceSequence = [{ hasAllowance: false, allowance: "0" }];
+    api.state.verifyAllowanceSequence = [
+      { hasAllowance: false, allowance: "0" },
+    ];
     const orch = new ApprovalOrchestrator({
       api,
       chains: [createFakeChain()],

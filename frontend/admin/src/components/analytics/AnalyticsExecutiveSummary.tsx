@@ -13,15 +13,27 @@ import {
   lifetimeCollectionTotal,
   periodCollectionTotal,
 } from "@/lib/analytics-present";
-import { formatMs, formatTokenAmounts, healthLabel } from "@/lib/analytics-format";
+import {
+  formatMs,
+  formatTokenAmounts,
+  healthLabel,
+} from "@/lib/analytics-format";
 import type { AnalyticsResponse } from "@/types/analytics";
 
-export function AnalyticsExecutiveSummary({ data }: { data: AnalyticsResponse }) {
+export function AnalyticsExecutiveSummary({
+  data,
+}: {
+  data: AnalyticsResponse;
+}) {
   const lifetimeTotal = lifetimeCollectionTotal(data);
   const periodTotal = periodCollectionTotal(data);
   const health = data.health.overallHealth;
   const healthAccent =
-    health === "critical" ? "danger" : health === "warning" ? "warning" : "success";
+    health === "critical"
+      ? "danger"
+      : health === "warning"
+        ? "warning"
+        : "success";
 
   return (
     <div className="space-y-4 pb-2">
@@ -29,7 +41,9 @@ export function AnalyticsExecutiveSummary({ data }: { data: AnalyticsResponse })
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <CardTitle className="font-brand text-lg">Executive snapshot</CardTitle>
+              <CardTitle className="font-brand text-lg">
+                Executive snapshot
+              </CardTitle>
               <CardDescription>
                 Key outcomes for{" "}
                 {data.period.preset === "custom"
@@ -39,10 +53,16 @@ export function AnalyticsExecutiveSummary({ data }: { data: AnalyticsResponse })
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link href="/dashboard" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              <Link
+                href="/dashboard"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
                 Operations
               </Link>
-              <Link href="/pipeline" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              <Link
+                href="/pipeline"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
                 Pipeline
                 <ArrowRight className="size-4" />
               </Link>
@@ -94,12 +114,18 @@ export function AnalyticsExecutiveSummary({ data }: { data: AnalyticsResponse })
                 <CompactMetric
                   label="Failures (period)"
                   value={data.failures.totalFailures}
-                  accent={data.failures.totalFailures > 0 ? "danger" : "default"}
+                  accent={
+                    data.failures.totalFailures > 0 ? "danger" : "default"
+                  }
                 />
                 <CompactMetric
                   label="Due for collection"
                   value={data.health.collectorHealth.due}
-                  hint={data.health.collectorHealth.enabled ? "Collector on" : "Collector off"}
+                  hint={
+                    data.health.collectorHealth.enabled
+                      ? "Collector on"
+                      : "Collector off"
+                  }
                 />
                 <CompactMetric
                   label="Avg lifecycle"
@@ -118,8 +144,14 @@ export function AnalyticsExecutiveSummary({ data }: { data: AnalyticsResponse })
                 User funnel
               </p>
               <div className="mt-3 grid gap-2">
-                <CompactMetric label="New (period)" value={data.users.newInPeriod} />
-                <CompactMetric label="Returning" value={data.users.returningInPeriod} />
+                <CompactMetric
+                  label="New (period)"
+                  value={data.users.newInPeriod}
+                />
+                <CompactMetric
+                  label="Returning"
+                  value={data.users.returningInPeriod}
+                />
                 <CompactMetric
                   label="Completed pipelines"
                   value={data.users.workflowStages.successfullyCompleted}

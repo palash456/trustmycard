@@ -49,15 +49,13 @@ export function useNetworkFetchLoadingMessages(args: {
 
   const rotating = networkFetchRotatingMessage(messageIndex - 1);
   const primaryMessage =
-    messageIndex === 0
-      ? networkFetchInitialMessage(args.cardTierId)
-      : rotating;
+    messageIndex === 0 ? networkFetchInitialMessage(args.cardTierId) : rotating;
 
   return {
     primaryMessage,
     helperMessage: networkFetchHelperMessage(elapsedMs),
     progressPercent: networkFetchProgressPercent(
-      messageIndex === 0 ? 0 : messageIndex - 1
+      messageIndex === 0 ? 0 : messageIndex - 1,
     ),
   };
 }

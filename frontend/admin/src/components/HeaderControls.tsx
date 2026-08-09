@@ -55,7 +55,7 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
   }
 
   const selectableModes = ADMIN_DATA_MODES.filter(
-    (item) => item !== "production" || productionAvailable
+    (item) => item !== "production" || productionAvailable,
   );
 
   return (
@@ -76,7 +76,9 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
           <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
             {DISPLAY_NAME.charAt(0)}
           </span>
-          <span className="hidden max-w-[120px] truncate sm:inline">{DISPLAY_NAME}</span>
+          <span className="hidden max-w-[120px] truncate sm:inline">
+            {DISPLAY_NAME}
+          </span>
           <ChevronDown className="size-4 text-muted-foreground" />
         </DropdownMenuTrigger>
 
@@ -84,8 +86,12 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
           <DropdownMenuGroup>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col gap-0.5">
-                <span className="font-medium text-foreground">{DISPLAY_NAME}</span>
-                <span className="text-xs text-muted-foreground">{meta.description}</span>
+                <span className="font-medium text-foreground">
+                  {DISPLAY_NAME}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {meta.description}
+                </span>
               </div>
             </DropdownMenuLabel>
           </DropdownMenuGroup>
@@ -104,11 +110,19 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
                 const itemMeta = getAdminDataModeMeta(item);
                 const Icon = MODE_ICONS[item];
                 return (
-                  <DropdownMenuRadioItem key={item} value={item} className="items-start py-2">
+                  <DropdownMenuRadioItem
+                    key={item}
+                    value={item}
+                    className="items-start py-2"
+                  >
                     <Icon className="mt-0.5" />
                     <span className="flex flex-col gap-0.5">
-                      <span className="font-medium leading-none">{itemMeta.label}</span>
-                      <span className="text-xs text-muted-foreground">{itemMeta.description}</span>
+                      <span className="font-medium leading-none">
+                        {itemMeta.label}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {itemMeta.description}
+                      </span>
                     </span>
                   </DropdownMenuRadioItem>
                 );
@@ -144,7 +158,11 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
           <DropdownMenuSeparator />
 
           <DropdownMenuGroup>
-            <DropdownMenuItem variant="destructive" onClick={onLogout} label="Log out">
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={onLogout}
+              label="Log out"
+            >
               <LogOut />
               Log out
             </DropdownMenuItem>

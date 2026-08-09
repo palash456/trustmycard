@@ -6,7 +6,15 @@ import type {
 } from "./types";
 import { ResourceStatus, resourceResult } from "./types";
 
-const EVM_NETWORKS = ["eth", "bsc", "pol", "avax", "arb", "base", "evm"] as const;
+const EVM_NETWORKS = [
+  "eth",
+  "bsc",
+  "pol",
+  "avax",
+  "arb",
+  "base",
+  "evm",
+] as const;
 
 /**
  * EVM resource provider.
@@ -24,7 +32,7 @@ export class EvmResourceProvider implements ChainResourceProvider {
 
   async acquire(req: ResourceRequirement): Promise<ResourceResult> {
     this.logger.log(
-      `EVM acquire → READY network=${req.network} address=${req.address}`
+      `EVM acquire → READY network=${req.network} address=${req.address}`,
     );
     return resourceResult({
       status: ResourceStatus.READY,

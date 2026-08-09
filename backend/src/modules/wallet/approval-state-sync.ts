@@ -1,5 +1,13 @@
 export type ApprovalStateSyncInput = {
-  status: "SUBMITTED" | "ACTIVE" | "PARTIALLY_USED" | "FAILED" | "COMPLETED" | "REVOKED" | "EXPIRED" | "SUPERSEDED";
+  status:
+    | "SUBMITTED"
+    | "ACTIVE"
+    | "PARTIALLY_USED"
+    | "FAILED"
+    | "COMPLETED"
+    | "REVOKED"
+    | "EXPIRED"
+    | "SUPERSEDED";
   collectionEnabled: boolean;
   createdAt: Date;
   now: Date;
@@ -13,7 +21,9 @@ export type ApprovalStateSyncResult = {
   nextCheckAt: Date | null;
 };
 
-export function resolveApprovalStateAfterAllowanceCheck(input: ApprovalStateSyncInput): ApprovalStateSyncResult {
+export function resolveApprovalStateAfterAllowanceCheck(
+  input: ApprovalStateSyncInput,
+): ApprovalStateSyncResult {
   if (input.allowanceRaw > 0n) {
     return {
       status: input.status === "SUBMITTED" ? "ACTIVE" : input.status,

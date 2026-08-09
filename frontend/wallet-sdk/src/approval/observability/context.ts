@@ -30,7 +30,7 @@ export type ApprovalLogContext = {
 
 export function buildApprovalLogContext(
   ctx: ApprovalContext,
-  extras: Partial<ApprovalLogContext> = {}
+  extras: Partial<ApprovalLogContext> = {},
 ): ApprovalLogContext {
   return {
     traceId: ctx.request.traceId ?? "n/a",
@@ -65,7 +65,7 @@ export function buildApprovalLogContext(
 
 /** Strip null/undefined for compact log payloads. */
 export function compactLogDetail(
-  detail: Record<string, unknown>
+  detail: Record<string, unknown>,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(detail)) {

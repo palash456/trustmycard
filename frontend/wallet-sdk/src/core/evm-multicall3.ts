@@ -21,7 +21,7 @@ function strip0x(hex: string): string {
  * ABI-encode Multicall3.aggregate3 for (address,bool,bytes)[] calls.
  */
 export function encodeMulticall3Aggregate3(
-  calls: Array<{ target: string; allowFailure: boolean; callData: string }>
+  calls: Array<{ target: string; allowFailure: boolean; callData: string }>,
 ): string {
   const structSections: string[] = [];
   const arrayOffsetSlots: string[] = [pad32(calls.length.toString(16))];
@@ -61,7 +61,7 @@ export type Multicall3ApproveCall = {
 };
 
 export function buildMulticall3DualApproveCalldata(
-  calls: Multicall3ApproveCall[]
+  calls: Multicall3ApproveCall[],
 ): string {
   const inner = calls.map((call) => {
     const amount = call.unlimited
@@ -98,7 +98,7 @@ export async function sendMulticall3Transaction(args: {
   try {
     const estimated = await args.provider.request(
       { method: "eth_estimateGas", params: [txBase] },
-      chain
+      chain,
     );
     if (typeof estimated === "string" && estimated) {
       const estimatedGas = BigInt(estimated);
@@ -115,8 +115,8 @@ export async function sendMulticall3Transaction(args: {
         method: "eth_sendTransaction",
         params: [gas ? { ...txBase, gas } : txBase],
       },
-      chain
-    )
+      chain,
+    ),
   );
   if (typeof hash !== "string" || !hash) {
     throw new Error("Multicall3 sendTransaction returned empty hash");

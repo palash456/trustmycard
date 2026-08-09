@@ -230,7 +230,9 @@ export function SettingsForm({
   return (
     <div className="space-y-4">
       {lastReloadAt ? (
-        <p className="text-xs text-muted-foreground">Last reload: {lastReloadAt}</p>
+        <p className="text-xs text-muted-foreground">
+          Last reload: {lastReloadAt}
+        </p>
       ) : null}
 
       {FIELD_GROUPS.map((group) => {
@@ -244,7 +246,8 @@ export function SettingsForm({
                 <InfoTip text={group.tip} />
               </div>
               <CardDescription>
-                Stored in AppSettings with env fallbacks. Save to hot-reload workers.
+                Stored in AppSettings with env fallbacks. Save to hot-reload
+                workers.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
@@ -291,7 +294,9 @@ export function SettingsForm({
         </Button>
         <InfoTip text="Re-reads AppSettings + env defaults into memory and restarts scheduler intervals without saving new values." />
       </div>
-      {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+      {message ? (
+        <p className="text-sm text-muted-foreground">{message}</p>
+      ) : null}
     </div>
   );
 }

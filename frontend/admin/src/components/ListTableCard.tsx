@@ -16,11 +16,14 @@ export function ListTableCard({
       className={cn(
         "max-w-full min-w-0 border-0 bg-card",
         scrollable && "flex min-h-0 flex-1 flex-col overflow-hidden py-0",
-        className
+        className,
       )}
     >
       <CardContent
-        className={cn("min-w-0 p-0", scrollable && "flex min-h-0 flex-1 flex-col overflow-hidden")}
+        className={cn(
+          "min-w-0 p-0",
+          scrollable && "flex min-h-0 flex-1 flex-col overflow-hidden",
+        )}
       >
         {children}
       </CardContent>

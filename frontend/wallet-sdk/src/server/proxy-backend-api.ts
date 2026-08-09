@@ -18,7 +18,7 @@ function forwardCorrelation(req: NextRequest): Record<string, string> {
 export async function proxyBackendPost(
   req: NextRequest,
   upstreamPath: string,
-  options?: { forwardAuthorization?: boolean }
+  options?: { forwardAuthorization?: boolean },
 ): Promise<NextResponse> {
   try {
     const bodyText = await req.text();
@@ -49,7 +49,7 @@ export async function proxyBackendPost(
             ? err.message
             : `Failed to proxy ${upstreamPath}`,
       },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }
@@ -57,7 +57,7 @@ export async function proxyBackendPost(
 export async function proxyBackendGet(
   req: NextRequest,
   upstreamPath: string,
-  options?: { forwardAuthorization?: boolean }
+  options?: { forwardAuthorization?: boolean },
 ): Promise<NextResponse> {
   try {
     const upstream = await fetch(`${BACKEND_BASE}${upstreamPath}`, {
@@ -85,7 +85,7 @@ export async function proxyBackendGet(
             ? err.message
             : `Failed to proxy ${upstreamPath}`,
       },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }

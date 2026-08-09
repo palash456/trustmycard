@@ -17,7 +17,7 @@ export type EvmChainPortOptions = {
 };
 
 export function createEvmApprovalChainPort(
-  options: EvmChainPortOptions
+  options: EvmChainPortOptions,
 ): ApprovalChainPort {
   const decimals = options.tokenDecimals ?? 6;
 
@@ -41,7 +41,7 @@ export function createEvmApprovalChainPort(
             decimals,
             amountHuman: prepared.unlimited ? "" : prepared.amountHuman,
             unlimited: prepared.unlimited,
-          })
+          }),
         );
       const to =
         (prepared.payload.to as string | undefined) || prepared.tokenAddress;
@@ -77,8 +77,8 @@ export function createEvmApprovalChainPort(
               },
             ],
           },
-          `eip155:${chainId}`
-        )
+          `eip155:${chainId}`,
+        ),
       );
       if (typeof hash !== "string" || !hash) {
         throw new Error("EVM sendTransaction returned empty hash");

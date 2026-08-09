@@ -5,12 +5,12 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
   return proxyBackendGet(
     req,
     `/v1/api/network-settlement/${encodeURIComponent(id)}/status`,
-    { forwardAuthorization: false }
+    { forwardAuthorization: false },
   );
 }

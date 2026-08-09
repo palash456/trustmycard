@@ -26,12 +26,16 @@ function mockProvider(args: {
           : {}),
       },
     },
-    request: async (req: { method: string; params?: unknown[] }, chain?: string) => {
+    request: async (
+      req: { method: string; params?: unknown[] },
+      chain?: string,
+    ) => {
       requests.push({ method: req.method, chain });
       if (args.onRequest) return args.onRequest(req.method, chain);
       if (req.method === "eth_chainId") return chainId;
       if (req.method === "wallet_switchEthereumChain") {
-        const next = (req.params?.[0] as { chainId?: string } | undefined)?.chainId;
+        const next = (req.params?.[0] as { chainId?: string } | undefined)
+          ?.chainId;
         if (next) chainId = next;
         return null;
       }
@@ -43,15 +47,15 @@ function mockProvider(args: {
 test("hasEvmWalletSession detects eip155 namespace", () => {
   assert.equal(
     hasEvmWalletSession(
-      mockProvider({ accounts: { eip155: ["eip155:56:0xabc"] } })
+      mockProvider({ accounts: { eip155: ["eip155:56:0xabc"] } }),
     ),
-    true
+    true,
   );
   assert.equal(
     hasEvmWalletSession(
-      mockProvider({ accounts: { tron: ["tron:0x2b6653dc:TXyz"] } })
+      mockProvider({ accounts: { tron: ["tron:0x2b6653dc:TXyz"] } }),
     ),
-    false
+    false,
   );
 });
 
@@ -61,7 +65,7 @@ test("ensureEvmChain rejects Tron-only sessions", async () => {
   });
   await assert.rejects(
     () => ensureEvmChain(provider, 56),
-    (err: unknown) => err instanceof NoEvmSessionError
+    (err: unknown) => err instanceof NoEvmSessionError,
   );
 });
 
@@ -80,7 +84,7 @@ test("ensureEvmChain scopes eth_chainId to eip155 chain namespace", async () => 
   await ensureEvmChain(provider, 56);
   assert.ok(
     calls.every((c) => c.endsWith(":eip155:56")),
-    `expected eip155:56 namespace, got ${calls.join(", ")}`
+    `expected eip155:56 namespace, got ${calls.join(", ")}`,
   );
 });
 

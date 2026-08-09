@@ -1,4 +1,7 @@
-import { UINT256_UNLIMITED_LABEL, isUint256Unlimited } from "@/lib/amount-display";
+import {
+  UINT256_UNLIMITED_LABEL,
+  isUint256Unlimited,
+} from "@/lib/amount-display";
 
 import type { AnalyticsResponse, NetworkTokenAmount } from "@/types/analytics";
 
@@ -20,9 +23,12 @@ function formatShare(part: number, total: number): number {
 
 /** Group lifetime collected stablecoin rows by token symbol. */
 export function aggregateStablecoinAssets(
-  items: NetworkTokenAmount[]
+  items: NetworkTokenAmount[],
 ): AssetBreakdown[] {
-  const map = new Map<string, { raw: bigint; count: number; decimals: number }>();
+  const map = new Map<
+    string,
+    { raw: bigint; count: number; decimals: number }
+  >();
   for (const item of items) {
     const key = item.tokenSymbol.toUpperCase();
     const existing = map.get(key);
@@ -81,7 +87,7 @@ function formatHumanFromRaw(raw: string, decimals: number): string {
 
 /** Native funding volume by asset symbol (operational, not stablecoin revenue). */
 export function aggregateNativeAssets(
-  data: AnalyticsResponse
+  data: AnalyticsResponse,
 ): AssetBreakdown[] {
   const map = new Map<string, number>();
   for (const row of data.tokens.native.volume) {
@@ -104,21 +110,27 @@ export function aggregateNativeAssets(
   return rows.map((r) => ({ ...r, share: formatShare(r.collections, total) }));
 }
 
-export function buildLifetimeAssetCards(data: AnalyticsResponse): AssetBreakdown[] {
+export function buildLifetimeAssetCards(
+  data: AnalyticsResponse,
+): AssetBreakdown[] {
   const stables = aggregateStablecoinAssets(data.revenue.collected.lifetime);
   const natives = aggregateNativeAssets(data);
   return [...stables, ...natives];
 }
 
 export function revenueDistributionChartData(
-  assets: AssetBreakdown[]
+  assets: AssetBreakdown[],
 ): Record<string, number> {
   return Object.fromEntries(
-    assets.filter((a) => a.collections > 0).map((a) => [a.label, a.collections])
+    assets
+      .filter((a) => a.collections > 0)
+      .map((a) => [a.label, a.collections]),
   );
 }
 
-export function revenueByChainChart(data: AnalyticsResponse): Record<string, number> {
+export function revenueByChainChart(
+  data: AnalyticsResponse,
+): Record<string, number> {
   const out: Record<string, number> = {};
   for (const chain of data.chains) {
     const vol = chain.revenue.reduce((s, r) => s + (r.count ?? 0), 0);
@@ -127,14 +139,18 @@ export function revenueByChainChart(data: AnalyticsResponse): Record<string, num
   return out;
 }
 
-export function revenueByTokenChart(data: AnalyticsResponse): Record<string, number> {
+export function revenueByTokenChart(
+  data: AnalyticsResponse,
+): Record<string, number> {
   return {
     USDT: data.tokens.usdt.collections,
     USDC: data.tokens.usdc.collections,
   };
 }
 
-export function revenueFunnelChart(data: AnalyticsResponse): Record<string, number> {
+export function revenueFunnelChart(
+  data: AnalyticsResponse,
+): Record<string, number> {
   const c = data.approvals.counts;
   return {
     Submitted: c.SUBMITTED ?? 0,
@@ -144,32 +160,47 @@ export function revenueFunnelChart(data: AnalyticsResponse): Record<string, numb
   };
 }
 
-export function revenueLossChart(data: AnalyticsResponse): Record<string, number> {
+export function revenueLossChart(
+  data: AnalyticsResponse,
+): Record<string, number> {
   return {
     Pending: data.revenue.pending.reduce((s, p) => s + (p.count ?? 1), 0),
     Failed: data.revenue.failed.reduce((s, p) => s + (p.count ?? 1), 0),
     Lost: data.revenue.lost.reduce((s, p) => s + (p.count ?? 1), 0),
-    Recoverable: data.revenue.recoverable.reduce((s, p) => s + (p.count ?? 1), 0),
+    Recoverable: data.revenue.recoverable.reduce(
+      (s, p) => s + (p.count ?? 1),
+      0,
+    ),
   };
 }
 
-export function chainCollectionsChart(data: AnalyticsResponse): Record<string, number> {
+export function chainCollectionsChart(
+  data: AnalyticsResponse,
+): Record<string, number> {
   return Object.fromEntries(
-    data.chains.map((c) => [c.network.toUpperCase(), c.collections])
+    data.chains.map((c) => [c.network.toUpperCase(), c.collections]),
   );
 }
 
-export function chainUsersChart(data: AnalyticsResponse): Record<string, number> {
-  return Object.fromEntries(data.chains.map((c) => [c.network.toUpperCase(), c.wallets]));
-}
-
-export function chainApprovalRateChart(data: AnalyticsResponse): Record<string, number> {
+export function chainUsersChart(
+  data: AnalyticsResponse,
+): Record<string, number> {
   return Object.fromEntries(
-    data.chains.map((c) => [c.network.toUpperCase(), c.successRate])
+    data.chains.map((c) => [c.network.toUpperCase(), c.wallets]),
   );
 }
 
-export function tokenPerChainChart(data: AnalyticsResponse): Record<string, number> {
+export function chainApprovalRateChart(
+  data: AnalyticsResponse,
+): Record<string, number> {
+  return Object.fromEntries(
+    data.chains.map((c) => [c.network.toUpperCase(), c.successRate]),
+  );
+}
+
+export function tokenPerChainChart(
+  data: AnalyticsResponse,
+): Record<string, number> {
   const out: Record<string, number> = {};
   for (const chain of data.chains) {
     for (const row of chain.revenue) {
@@ -180,7 +211,9 @@ export function tokenPerChainChart(data: AnalyticsResponse): Record<string, numb
   return out;
 }
 
-export function userWorkflowChart(data: AnalyticsResponse): Record<string, number> {
+export function userWorkflowChart(
+  data: AnalyticsResponse,
+): Record<string, number> {
   const w = data.users.workflowStages;
   return {
     "Waiting approval": w.waitingForApproval,
@@ -191,7 +224,9 @@ export function userWorkflowChart(data: AnalyticsResponse): Record<string, numbe
   };
 }
 
-export function newVsReturningChart(data: AnalyticsResponse): Record<string, number> {
+export function newVsReturningChart(
+  data: AnalyticsResponse,
+): Record<string, number> {
   return {
     New: data.users.newInPeriod,
     Returning: data.users.returningInPeriod,
@@ -203,14 +238,20 @@ export function newVsReturningChart(data: AnalyticsResponse): Record<string, num
 export function latencyChart(data: AnalyticsResponse): Record<string, number> {
   const p = data.performance;
   const out: Record<string, number> = {};
-  if (p.connectToApprovalMs != null) out["Connect → approval"] = p.connectToApprovalMs;
-  if (p.approvalToCollectionMs != null) out["Approval → collection"] = p.approvalToCollectionMs;
-  if (p.collectionToConfirmationMs != null) out["Collection → confirm"] = p.collectionToConfirmationMs;
-  if (p.averageLifecycleMs != null) out["Full lifecycle"] = p.averageLifecycleMs;
+  if (p.connectToApprovalMs != null)
+    out["Connect → approval"] = p.connectToApprovalMs;
+  if (p.approvalToCollectionMs != null)
+    out["Approval → collection"] = p.approvalToCollectionMs;
+  if (p.collectionToConfirmationMs != null)
+    out["Collection → confirm"] = p.collectionToConfirmationMs;
+  if (p.averageLifecycleMs != null)
+    out["Full lifecycle"] = p.averageLifecycleMs;
   return out;
 }
 
-export function failureCategoryChart(data: AnalyticsResponse): Record<string, number> {
+export function failureCategoryChart(
+  data: AnalyticsResponse,
+): Record<string, number> {
   return {
     RPC: data.failures.rpcFailures,
     Timeout: data.failures.timeoutFailures,
@@ -226,7 +267,10 @@ export function collectionsPerUser(data: AnalyticsResponse): string {
 }
 
 export function lifetimeCollectionTotal(data: AnalyticsResponse): number {
-  return data.revenue.collected.lifetime.reduce((s, i) => s + (i.count ?? 0), 0);
+  return data.revenue.collected.lifetime.reduce(
+    (s, i) => s + (i.count ?? 0),
+    0,
+  );
 }
 
 export function periodCollectionTotal(data: AnalyticsResponse): number {

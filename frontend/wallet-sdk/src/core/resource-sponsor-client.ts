@@ -57,7 +57,7 @@ export function isResourceTerminalFailure(result: ResourceResult): boolean {
 
 function asResourceResult(
   json: unknown,
-  fallback: Partial<ResourceResult>
+  fallback: Partial<ResourceResult>,
 ): ResourceResult {
   if (json && typeof json === "object" && "status" in json) {
     const r = json as ResourceResult;
@@ -103,25 +103,22 @@ export async function acquireResources(args: {
   } = args;
 
   try {
-    const res = await fetch(
-      resolveApiUrl(apiBaseUrl, "/api/energy-delegate"),
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          address,
-          network,
-          purpose,
-          currentUsdt: currentUsdt ?? hints.currentUsdt ?? "0",
-          hints,
-          feeLimit: hints.feeLimit,
-          amountRaw: hints.amountRaw,
-          token: hints.token,
-          preparedTxId: hints.preparedTxId,
-        }),
-        cache: "no-store",
-      }
-    );
+    const res = await fetch(resolveApiUrl(apiBaseUrl, "/api/energy-delegate"), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        address,
+        network,
+        purpose,
+        currentUsdt: currentUsdt ?? hints.currentUsdt ?? "0",
+        hints,
+        feeLimit: hints.feeLimit,
+        amountRaw: hints.amountRaw,
+        token: hints.token,
+        preparedTxId: hints.preparedTxId,
+      }),
+      cache: "no-store",
+    });
     const json = await res.json().catch(() => null);
     return asResourceResult(json, {
       network,
@@ -163,7 +160,7 @@ export async function verifyResources(args: {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ address, network, purpose, hints }),
         cache: "no-store",
-      }
+      },
     );
     const json = await res.json().catch(() => null);
     return asResourceResult(json, {

@@ -23,7 +23,8 @@ export const COLLECTION_INTENT_STATUSES = [
   "CANCELLED",
 ] as const;
 
-export type CollectionIntentStatus = (typeof COLLECTION_INTENT_STATUSES)[number];
+export type CollectionIntentStatus =
+  (typeof COLLECTION_INTENT_STATUSES)[number];
 
 export const TRANSFER_SKIP_REASON_LABELS: Record<string, string> = {
   [TRANSFER_SKIP_REASONS.allowance_not_confirmed]:
@@ -41,7 +42,9 @@ export const TRANSFER_SKIP_REASON_LABELS: Record<string, string> = {
   already_authorized: "Already authorized on-chain — no new approve required",
 };
 
-export function formatTransferSkipReason(reason: string | null | undefined): string {
+export function formatTransferSkipReason(
+  reason: string | null | undefined,
+): string {
   if (!reason) return "—";
   return TRANSFER_SKIP_REASON_LABELS[reason] ?? reason.replace(/_/g, " ");
 }

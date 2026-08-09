@@ -1,4 +1,10 @@
-import { Global, Injectable, Module, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
+import {
+  Global,
+  Injectable,
+  Module,
+  OnModuleDestroy,
+  OnModuleInit,
+} from "@nestjs/common";
 import { prisma } from "./prisma-shared";
 import { PrismaService } from "./prisma.service";
 

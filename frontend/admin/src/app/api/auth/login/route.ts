@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   if (isRateLimited(ip)) {
     return NextResponse.json(
       { error: "Too many login attempts. Try again later." },
-      { status: 429 }
+      { status: 429 },
     );
   }
 
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   if (!expected) {
     return NextResponse.json(
       { error: "ADMIN_PANEL_PASSWORD is not configured" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -38,10 +38,9 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     return NextResponse.json(
       {
-        error:
-          err instanceof Error ? err.message : "Failed to create session",
+        error: err instanceof Error ? err.message : "Failed to create session",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

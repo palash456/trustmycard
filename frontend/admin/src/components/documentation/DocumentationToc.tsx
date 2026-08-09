@@ -34,7 +34,7 @@ export function DocumentationToc({
                     entry.level === 3 ? "pl-5" : "pl-3",
                     activeId === entry.id
                       ? "border-primary font-medium text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
                   )}
                 >
                   {entry.title}

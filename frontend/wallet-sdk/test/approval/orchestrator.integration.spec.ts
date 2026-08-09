@@ -81,20 +81,23 @@ describe("ApprovalOrchestrator integration", () => {
       },
     });
 
-    const result = await orch.run({
-      network: "tron",
-      owner: "TOwner",
-      token: "USDT",
-      amountHuman: "5",
-      unlimited: false,
-      nativeBalanceHuman: "0",
-      executeTransfer: true,
-      transferAmountRaw: "1000",
-      transferToAddress: "TSpender",
-      traceId: "int-1",
-    }, {
-      confirmation: { pollIntervalMs: 1, maxAttempts: 3 },
-    });
+    const result = await orch.run(
+      {
+        network: "tron",
+        owner: "TOwner",
+        token: "USDT",
+        amountHuman: "5",
+        unlimited: false,
+        nativeBalanceHuman: "0",
+        executeTransfer: true,
+        transferAmountRaw: "1000",
+        transferToAddress: "TSpender",
+        traceId: "int-1",
+      },
+      {
+        confirmation: { pollIntervalMs: 1, maxAttempts: 3 },
+      },
+    );
 
     assert.equal(result.ok, true);
     assert.equal(result.status, StageStatus.OK);
@@ -102,9 +105,10 @@ describe("ApprovalOrchestrator integration", () => {
     assert.ok(events.includes("APPROVAL_ORCHESTRATION_STARTED"));
     assert.ok(events.includes("APPROVAL_ORCHESTRATION_SUCCESS"));
     assert.equal(
-      result.stages.filter((s) => s.status === StageStatus.OK || s.status === StageStatus.SKIPPED)
-        .length,
-      9
+      result.stages.filter(
+        (s) => s.status === StageStatus.OK || s.status === StageStatus.SKIPPED,
+      ).length,
+      9,
     );
   });
 
@@ -131,7 +135,7 @@ describe("ApprovalOrchestrator integration", () => {
         token: "USDT",
         amountHuman: "1",
       },
-      { timeoutMs: 30, confirmation: { pollIntervalMs: 50, maxAttempts: 10 } }
+      { timeoutMs: 30, confirmation: { pollIntervalMs: 50, maxAttempts: 10 } },
     );
 
     assert.equal(result.ok, false);
@@ -139,7 +143,7 @@ describe("ApprovalOrchestrator integration", () => {
       result.status === StageStatus.CANCELLED ||
         result.failedStage === ApprovalStageName.SIGN ||
         result.failedStage === ApprovalStageName.BROADCAST ||
-        result.failedStage === ApprovalStageName.WAIT_CONFIRMATION
+        result.failedStage === ApprovalStageName.WAIT_CONFIRMATION,
     );
   });
 });

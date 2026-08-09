@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logServerError } from "../../../observability/server-logger";
-import { TERMS_VERSION, getSpenderForNetwork } from "../../../core/approve-config";
 import {
-  appendAudit,
-  createApproval,
-} from "../../approvals/store";
+  TERMS_VERSION,
+  getSpenderForNetwork,
+} from "../../../core/approve-config";
+import { appendAudit, createApproval } from "../../approvals/store";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     if (!network || !address) {
       return NextResponse.json(
         { error: "network and address are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
         error:
           err instanceof Error ? err.message : "Failed to register approval",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -5,12 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useOptionalPageRefresh } from "@/components/RefreshProvider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminStream } from "@/hooks/use-admin-stream";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { readAdminProxyError } from "@/lib/admin-proxy-client";
@@ -44,7 +39,12 @@ export function LiveActivityFeed({ className }: { className?: string }) {
       setLoading(true);
       const res = await fetch("/api/admin/analytics/activity?limit=50");
       if (!res.ok) {
-        throw new Error(await readAdminProxyError(res, `Failed to load activity (${res.status})`));
+        throw new Error(
+          await readAdminProxyError(
+            res,
+            `Failed to load activity (${res.status})`,
+          ),
+        );
       }
       const data = (await res.json()) as { items: AnalyticsActivityItem[] };
       setItems(data.items ?? []);
@@ -63,9 +63,16 @@ export function LiveActivityFeed({ className }: { className?: string }) {
   }, [load, pageRefresh?.refreshGeneration]);
 
   return (
-    <Card className={cn("flex h-full min-h-0 flex-col border-border/60 shadow-none", className)}>
+    <Card
+      className={cn(
+        "flex h-full min-h-0 flex-col border-border/60 shadow-none",
+        className,
+      )}
+    >
       <CardHeader className="shrink-0 space-y-0 px-4 pb-0 pt-4">
-        <CardTitle className="text-[11px] font-medium text-muted-foreground">Live activity</CardTitle>
+        <CardTitle className="text-[11px] font-medium text-muted-foreground">
+          Live activity
+        </CardTitle>
         <p className="text-[10px] text-muted-foreground">
           {connected ? "Stream connected" : "Polling every 30s"}
         </p>
@@ -74,7 +81,10 @@ export function LiveActivityFeed({ className }: { className?: string }) {
         {loading ? (
           <ul className="space-y-2">
             {Array.from({ length: 6 }).map((_, i) => (
-              <li key={i} className="rounded-md border border-border/50 px-2 py-2">
+              <li
+                key={i}
+                className="rounded-md border border-border/50 px-2 py-2"
+              >
                 <Skeleton className="h-3 w-32" />
                 <Skeleton className="mt-2 h-3 w-full" />
               </li>
@@ -92,7 +102,10 @@ export function LiveActivityFeed({ className }: { className?: string }) {
                 className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-muted/10 px-2 py-1.5 text-[11px]"
               >
                 <div className="min-w-0">
-                  <Link href={item.href} className="font-medium text-primary hover:underline">
+                  <Link
+                    href={item.href}
+                    className="font-medium text-primary hover:underline"
+                  >
                     {TYPE_LABELS[item.type] ?? item.label}
                   </Link>
                   <p className="font-mono text-xs text-muted-foreground truncate">

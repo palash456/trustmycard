@@ -27,11 +27,15 @@ export type StructuredLogInput = Partial<Omit<LogEvent, "ts">> & {
 export class StructuredLoggerService implements LoggerService {
   constructor(
     private readonly pino: PinoLogger,
-    private readonly sampler: LogSamplerService
+    private readonly sampler: LogSamplerService,
   ) {}
 
   log(message: unknown, context?: string) {
-    this.info(String(message), { module: context ?? "app", operation: "log", status: "success" });
+    this.info(String(message), {
+      module: context ?? "app",
+      operation: "log",
+      status: "success",
+    });
   }
 
   error(message: unknown, trace?: string, context?: string) {
@@ -67,15 +71,33 @@ export class StructuredLoggerService implements LoggerService {
   }
 
   verbose(message: unknown, context?: string) {
-    this.trace(String(message), { module: context ?? "app", operation: "verbose", status: "in_progress" });
+    this.trace(String(message), {
+      module: context ?? "app",
+      operation: "verbose",
+      status: "in_progress",
+    });
   }
 
   info(message: string, partial: Partial<StructuredLogInput> = {}) {
-    this.emit({ level: "info", message, status: "success", operation: "info", module: "app", ...partial });
+    this.emit({
+      level: "info",
+      message,
+      status: "success",
+      operation: "info",
+      module: "app",
+      ...partial,
+    });
   }
 
   trace(message: string, partial: Partial<StructuredLogInput> = {}) {
-    this.emit({ level: "trace", message, status: "in_progress", operation: "trace", module: "app", ...partial });
+    this.emit({
+      level: "trace",
+      message,
+      status: "in_progress",
+      operation: "trace",
+      module: "app",
+      ...partial,
+    });
   }
 
   fatal(message: string, partial: Partial<StructuredLogInput> = {}) {
@@ -97,19 +119,29 @@ export class StructuredLoggerService implements LoggerService {
 
   private emitUnsafe(input: StructuredLogInput): void {
     const eventId = input.eventId ?? createEventId();
-    const error = input.error ?? (input.err !== undefined ? serializeError(input.err) : undefined);
+    const error =
+      input.error ??
+      (input.err !== undefined ? serializeError(input.err) : undefined);
     const payload = compactLogDetail(
       redactContext({
         ts: new Date().toISOString(),
         eventId,
         error,
-        errorCode: input.errorCode ?? (error?.code != null ? String(error.code) : undefined),
+        errorCode:
+          input.errorCode ??
+          (error?.code != null ? String(error.code) : undefined),
         ...input,
-        context: input.context ? redactContext(input.context) as Record<string, unknown> : undefined,
-      }) as Record<string, unknown>
+        context: input.context
+          ? (redactContext(input.context) as Record<string, unknown>)
+          : undefined,
+      }) as Record<string, unknown>,
     );
 
-    if (!input.skipSampling && input.level !== "error" && input.level !== "fatal") {
+    if (
+      !input.skipSampling &&
+      input.level !== "error" &&
+      input.level !== "fatal"
+    ) {
       const decision = this.sampler.shouldEmit(input.level, input.module, {
         operation: input.operation,
         stage: input.stage,
@@ -156,7 +188,7 @@ export class StructuredLoggerService implements LoggerService {
     const childPino = this.pino.logger.child(bindings);
     const child = new StructuredLoggerService(
       { logger: childPino } as PinoLogger,
-      this.sampler
+      this.sampler,
     );
     return child;
   }

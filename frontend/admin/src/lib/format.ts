@@ -20,13 +20,19 @@ const EXPLORERS: Record<string, (tx: string) => string> = {
   tron: (tx) => `https://tronscan.org/#/transaction/${tx}`,
 };
 
-export function blockExplorerTx(network: string, txHash: string | null | undefined): string | null {
+export function blockExplorerTx(
+  network: string,
+  txHash: string | null | undefined,
+): string | null {
   if (!txHash) return null;
   const fn = EXPLORERS[network.toLowerCase()];
   return fn ? fn(txHash) : null;
 }
 
-export function blockExplorerAddress(network: string, address: string): string | null {
+export function blockExplorerAddress(
+  network: string,
+  address: string,
+): string | null {
   const n = network.toLowerCase();
   if (n === "tron") return `https://tronscan.org/#/address/${address}`;
   if (EVM_EXPLORER_BASE[n]) return `${EVM_EXPLORER_BASE[n]}/address/${address}`;

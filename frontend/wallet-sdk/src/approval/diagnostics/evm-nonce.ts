@@ -58,7 +58,10 @@ export async function evmPendingNonceDiagnostic(args: {
         elapsedMs: Date.now() - started,
       };
     }
-    const json = (await res.json()) as { result?: string; error?: { message?: string } };
+    const json = (await res.json()) as {
+      result?: string;
+      error?: { message?: string };
+    };
     if (!json.result) {
       return {
         ok: true,

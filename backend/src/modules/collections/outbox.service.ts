@@ -16,13 +16,14 @@ export const COLLECTION_EVENT = {
   RECOVERY_COMPLETED: "RecoveryCompleted",
 } as const;
 
-export type CollectionEventType = (typeof COLLECTION_EVENT)[keyof typeof COLLECTION_EVENT];
+export type CollectionEventType =
+  (typeof COLLECTION_EVENT)[keyof typeof COLLECTION_EVENT];
 
 @Injectable()
 export class OutboxService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly platformConfig: PlatformConfigService
+    private readonly platformConfig: PlatformConfigService,
   ) {}
 
   async record(
@@ -33,7 +34,7 @@ export class OutboxService {
       collectionIntentId?: string;
       eventType: CollectionEventType;
       payload: Prisma.InputJsonValue;
-    }
+    },
   ) {
     return tx.outboxEvent.create({
       data: {
@@ -50,7 +51,7 @@ export class OutboxService {
   async claimPending(owner: string, limit: number) {
     const now = new Date();
     const lockUntil = new Date(
-      now.getTime() + this.platformConfig.getOutbox().claimLockMs
+      now.getTime() + this.platformConfig.getOutbox().claimLockMs,
     );
     return this.prisma.$transaction(async (tx) => {
       const events = await tx.$queryRaw<Array<{ id: string }>>`

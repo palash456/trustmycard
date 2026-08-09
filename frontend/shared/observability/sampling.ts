@@ -77,10 +77,7 @@ export class LogSampler {
   private readonly maxBuckets: number;
   private readonly buckets = new Map<string, Bucket>();
 
-  constructor(
-    config: Partial<SamplingConfig> = {},
-    maxBuckets = 10_000
-  ) {
+  constructor(config: Partial<SamplingConfig> = {}, maxBuckets = 10_000) {
     this.config = { ...DEFAULT_SAMPLING_CONFIG, ...config };
     this.maxBuckets = maxBuckets;
   }
@@ -92,7 +89,7 @@ export class LogSampler {
   shouldEmit(
     level: LogLevel,
     module: string,
-    keyParts: Record<string, unknown>
+    keyParts: Record<string, unknown>,
   ): SamplingDecision {
     if (!this.config.enabled) return { emit: true };
     if (this.config.neverSampleLevels.includes(level)) return { emit: true };

@@ -3,7 +3,10 @@ import { Worker } from "bullmq";
 import { ConfigService } from "../../config/config.service";
 import { PlatformConfigService } from "../../config/platform-config.service";
 import { WalletService } from "../../modules/wallet/wallet.service";
-import { incrementCounter, recordTiming } from "@trustmycard/shared/observability";
+import {
+  incrementCounter,
+  recordTiming,
+} from "@trustmycard/shared/observability";
 import {
   COLLECTION_CONFIRMATION_QUEUE,
   type CollectionConfirmationJob,
@@ -11,14 +14,16 @@ import {
 import { CollectionQueueService } from "../queues/collection-queue.service";
 
 @Injectable()
-export class CollectionConfirmationWorker implements OnModuleInit, OnModuleDestroy {
+export class CollectionConfirmationWorker
+  implements OnModuleInit, OnModuleDestroy
+{
   private worker: Worker<CollectionConfirmationJob> | null = null;
 
   constructor(
     private readonly config: ConfigService,
     private readonly platformConfig: PlatformConfigService,
     private readonly queues: CollectionQueueService,
-    private readonly wallet: WalletService
+    private readonly wallet: WalletService,
   ) {}
 
   onModuleInit(): void {
@@ -28,20 +33,29 @@ export class CollectionConfirmationWorker implements OnModuleInit, OnModuleDestr
       COLLECTION_CONFIRMATION_QUEUE,
       async (job) => {
         const started = Date.now();
-        const result = await this.wallet.confirmCollectionAttempt(job.data.attemptId);
-        recordTiming("collection.confirmation.check_ms", Date.now() - started, {});
+        const result = await this.wallet.confirmCollectionAttempt(
+          job.data.attemptId,
+        );
+        recordTiming(
+          "collection.confirmation.check_ms",
+          Date.now() - started,
+          {},
+        );
         if (!result.finalized) {
           incrementCounter("collection.confirmation.pending.total");
           await this.queues.enqueueConfirmation(
             job.data,
             result.retryAfterMs ??
-              this.platformConfig.getTransfer().confirmationRetryDelayMs
+              this.platformConfig.getTransfer().confirmationRetryDelayMs,
           );
         } else {
           incrementCounter("collection.confirmation.finalized.total");
         }
       },
-      { connection: this.queues.connection, concurrency: config.confirmationConcurrency }
+      {
+        connection: this.queues.connection,
+        concurrency: config.confirmationConcurrency,
+      },
     );
     this.worker.on("failed", (job, error) => {
       if (!job || job.attemptsMade < (job.opts.attempts ?? 1)) return;

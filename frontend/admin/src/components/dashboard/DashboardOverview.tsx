@@ -98,7 +98,11 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
   const activeSettlement = data.settlement?.active ?? 0;
   const failedSettlement = data.settlement?.recentFailed?.length ?? 0;
   const attentionCount =
-    c.due + failedApprovals + failedNative + pendingTransfers(c.transfers) + activeSettlement;
+    c.due +
+    failedApprovals +
+    failedNative +
+    pendingTransfers(c.transfers) +
+    activeSettlement;
 
   const failureRows = [
     ...data.recentFailures.approvals.map((a) => ({
@@ -143,12 +147,16 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
             <div>
               <p className="text-sm font-semibold">Items need attention</p>
               <p className="text-xs text-muted-foreground">
-                {c.due} due for collection · {pendingTransfers(c.transfers)} transfers in-flight ·{" "}
-                {activeSettlement} settling · {failedApprovals + failedNative} failed
+                {c.due} due for collection · {pendingTransfers(c.transfers)}{" "}
+                transfers in-flight · {activeSettlement} settling ·{" "}
+                {failedApprovals + failedNative} failed
               </p>
             </div>
           </div>
-          <Link href="/pipeline" className={buttonVariants({ variant: "outline", size: "sm" })}>
+          <Link
+            href="/pipeline"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
             Open pipeline
             <ArrowRight className="size-4" />
           </Link>
@@ -176,7 +184,9 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
           label="Failed approvals"
           value={failedApprovals}
           sub="Need investigation"
-          className={failedApprovals > 0 ? "ring-1 ring-destructive/20" : undefined}
+          className={
+            failedApprovals > 0 ? "ring-1 ring-destructive/20" : undefined
+          }
         />
         <StatCard
           label="Native pending"
@@ -187,13 +197,17 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
           label="Native failed"
           value={failedNative}
           sub={c.enabled ? "Collector running" : "Collector stopped"}
-          className={failedNative > 0 ? "ring-1 ring-destructive/20" : undefined}
+          className={
+            failedNative > 0 ? "ring-1 ring-destructive/20" : undefined
+          }
         />
         <StatCard
           label="Settling"
           value={activeSettlement}
           sub={`${failedSettlement} recent failures`}
-          className={activeSettlement > 0 ? "ring-1 ring-violet-500/25" : undefined}
+          className={
+            activeSettlement > 0 ? "ring-1 ring-violet-500/25" : undefined
+          }
         />
       </div>
 
@@ -208,8 +222,12 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
 
         <Card className="border-0 xl:col-span-4">
           <CardHeader>
-            <CardTitle className="font-brand text-base">Collector & queue</CardTitle>
-            <CardDescription>Live pipeline workload and automation state</CardDescription>
+            <CardTitle className="font-brand text-base">
+              Collector & queue
+            </CardTitle>
+            <CardDescription>
+              Live pipeline workload and automation state
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
@@ -225,31 +243,44 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                 <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   Leased jobs
                 </p>
-                <p className="mt-1 text-lg font-semibold tabular-nums">{c.leased}</p>
+                <p className="mt-1 text-lg font-semibold tabular-nums">
+                  {c.leased}
+                </p>
               </div>
             </div>
 
             <dl className="space-y-2 text-sm">
               <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-2">
                 <dt className="text-muted-foreground">Submitted approvals</dt>
-                <dd className="font-medium tabular-nums">{c.approvals.SUBMITTED ?? 0}</dd>
+                <dd className="font-medium tabular-nums">
+                  {c.approvals.SUBMITTED ?? 0}
+                </dd>
               </div>
               <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-2">
                 <dt className="text-muted-foreground">Partially used</dt>
-                <dd className="font-medium tabular-nums">{c.approvals.PARTIALLY_USED ?? 0}</dd>
+                <dd className="font-medium tabular-nums">
+                  {c.approvals.PARTIALLY_USED ?? 0}
+                </dd>
               </div>
               <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-2">
                 <dt className="text-muted-foreground">Broadcast transfers</dt>
-                <dd className="font-medium tabular-nums">{c.transfers.broadcast ?? 0}</dd>
+                <dd className="font-medium tabular-nums">
+                  {c.transfers.broadcast ?? 0}
+                </dd>
               </div>
               <div className="flex items-center justify-between gap-2">
                 <dt className="text-muted-foreground">Failed transfers</dt>
-                <dd className="font-medium tabular-nums">{c.transfers.failed ?? 0}</dd>
+                <dd className="font-medium tabular-nums">
+                  {c.transfers.failed ?? 0}
+                </dd>
               </div>
             </dl>
 
             <div className="flex flex-wrap gap-2 pt-1">
-              <Link href="/pipeline" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              <Link
+                href="/pipeline"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
                 Pipeline
               </Link>
               <Link
@@ -267,10 +298,17 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
         <Card className="border-0">
           <CardHeader className="flex flex-row items-center justify-between gap-2">
             <div>
-              <CardTitle className="font-brand text-base">Recent transactions</CardTitle>
-              <CardDescription>Latest end-to-end user journeys by flow-* ID</CardDescription>
+              <CardTitle className="font-brand text-base">
+                Recent transactions
+              </CardTitle>
+              <CardDescription>
+                Latest end-to-end user journeys by flow-* ID
+              </CardDescription>
             </div>
-            <Link href="/transactions" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            <Link
+              href="/transactions"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
               View all
               <ArrowRight className="size-4" />
             </Link>
@@ -289,9 +327,15 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                 </thead>
                 <tbody>
                   {data.recentTransactions?.map((row) => (
-                    <tr key={row.transactionId} className="border-b border-border/40">
+                    <tr
+                      key={row.transactionId}
+                      className="border-b border-border/40"
+                    >
                       <td className="py-2.5 pr-3">
-                        <TransactionIdLink id={row.transactionId} showCopy={false} />
+                        <TransactionIdLink
+                          id={row.transactionId}
+                          showCopy={false}
+                        />
                       </td>
                       <td className="py-2.5 pr-3">
                         <StatusBadge value={row.terminalStatus} />
@@ -308,7 +352,9 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                           "—"
                         )}
                       </td>
-                      <td className="py-2.5 pr-3 text-xs uppercase">{row.network ?? "—"}</td>
+                      <td className="py-2.5 pr-3 text-xs uppercase">
+                        {row.network ?? "—"}
+                      </td>
                       <td className="py-2.5 text-xs text-muted-foreground">
                         {formatDate(row.lastActivityAt)}
                       </td>
@@ -330,7 +376,9 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
         </CardHeader>
         <CardContent>
           {failureRows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No recent failures — pipeline looks healthy.</p>
+            <p className="text-sm text-muted-foreground">
+              No recent failures — pipeline looks healthy.
+            </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px] text-sm">
@@ -346,16 +394,27 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                 </thead>
                 <tbody>
                   {failureRows.map((row) => (
-                    <tr key={`${row.kind}-${row.id}`} className="border-b border-border/40">
-                      <td className="py-2.5 pr-3 text-xs text-muted-foreground">{row.kind}</td>
+                    <tr
+                      key={`${row.kind}-${row.id}`}
+                      className="border-b border-border/40"
+                    >
+                      <td className="py-2.5 pr-3 text-xs text-muted-foreground">
+                        {row.kind}
+                      </td>
                       <td className="py-2.5 pr-3">
-                        <Link href={row.href} className="font-medium text-primary hover:underline">
+                        <Link
+                          href={row.href}
+                          className="font-medium text-primary hover:underline"
+                        >
                           {row.label}
                         </Link>
                       </td>
                       <td className="py-2.5 pr-3 font-mono text-xs">
                         {"journeyId" in row && row.journeyId ? (
-                          <TransactionIdLink id={row.journeyId} showCopy={false} />
+                          <TransactionIdLink
+                            id={row.journeyId}
+                            showCopy={false}
+                          />
                         ) : (
                           "—"
                         )}
@@ -386,8 +445,12 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
       {(data.recentObservabilityErrors?.length ?? 0) > 0 ? (
         <Card className="border-0">
           <CardHeader>
-            <CardTitle className="font-brand text-base">Structured errors</CardTitle>
-            <CardDescription>Latest observability log events at error level</CardDescription>
+            <CardTitle className="font-brand text-base">
+              Structured errors
+            </CardTitle>
+            <CardDescription>
+              Latest observability log events at error level
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             {data.recentObservabilityErrors?.map((e) => (
@@ -399,7 +462,9 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                   <p className="font-medium">
                     {e.module} · {e.operation}
                   </p>
-                  <p className="mt-1 text-destructive">{e.errorMessage ?? e.message}</p>
+                  <p className="mt-1 text-destructive">
+                    {e.errorMessage ?? e.message}
+                  </p>
                   <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                     {e.ts ? <span>{formatDate(e.ts)}</span> : null}
                     {e.network ? <span>{e.network.toUpperCase()}</span> : null}
@@ -418,7 +483,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                       search: e.message,
                     }}
                   />
-                  {e.traceId ?? e.sessionId ? (
+                  {(e.traceId ?? e.sessionId) ? (
                     <Link
                       href={transactionDetailLink(e.traceId ?? e.sessionId!)}
                       className="text-xs text-primary hover:underline"
@@ -434,11 +499,17 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
       ) : null}
 
       <div className="flex flex-wrap gap-2">
-        <Link href="/analytics" className={buttonVariants({ variant: "outline", size: "sm" })}>
+        <Link
+          href="/analytics"
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
           Analytics
           <ArrowRight className="size-4" />
         </Link>
-        <Link href="/activity?tab=errors" className={buttonVariants({ variant: "outline", size: "sm" })}>
+        <Link
+          href="/activity?tab=errors"
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
           Activity errors
           <ArrowRight className="size-4" />
         </Link>

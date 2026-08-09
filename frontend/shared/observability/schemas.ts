@@ -1,12 +1,6 @@
 import type { SerializedError } from "./errors";
 
-export type LogLevel =
-  | "trace"
-  | "debug"
-  | "info"
-  | "warn"
-  | "error"
-  | "fatal";
+export type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
 
 export type LogStatus =
   | "started"

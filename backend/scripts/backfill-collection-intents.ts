@@ -48,7 +48,11 @@ async function main(): Promise<void> {
           aggregateId: intent.id,
           collectionIntentId: intent.id,
           eventType: "CollectionQueued",
-          payload: { collectionIntentId: intent.id, approvalId: approval.id, migrated: true },
+          payload: {
+            collectionIntentId: intent.id,
+            approvalId: approval.id,
+            migrated: true,
+          },
         },
       });
       created += 1;

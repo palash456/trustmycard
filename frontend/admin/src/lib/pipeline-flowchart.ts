@@ -15,11 +15,7 @@ import type {
 import { pipelineStageStatusLabel } from "@/types/pipeline";
 
 export type FlowchartVisualStatus =
-  | "pending"
-  | "active"
-  | "completed"
-  | "failed"
-  | "skipped";
+  "pending" | "active" | "completed" | "failed" | "skipped";
 
 export type FlowchartDetail = {
   label: string;
@@ -47,7 +43,8 @@ export type FlowchartStage = {
   widthPercent: number;
   gradient: string;
   ring: string;
-  icon: "wallet" | "approval" | "collection" | "native" | "reconcile" | "complete";
+  icon:
+    "wallet" | "approval" | "collection" | "native" | "reconcile" | "complete";
   logQuery: LogLinkParams;
   details: FlowchartDetail[];
   balanceGroups?: FlowchartBalanceGroup[];
@@ -72,10 +69,14 @@ function formatBalanceAmount(value: string | undefined): string {
   return n.toLocaleString(undefined, { maximumFractionDigits: 6 });
 }
 
-function parseChainBalances(raw: unknown): Record<string, ChainBalanceSnapshot> | null {
+function parseChainBalances(
+  raw: unknown,
+): Record<string, ChainBalanceSnapshot> | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const out: Record<string, ChainBalanceSnapshot> = {};
-  for (const [network, value] of Object.entries(raw as Record<string, unknown>)) {
+  for (const [network, value] of Object.entries(
+    raw as Record<string, unknown>,
+  )) {
     if (!value || typeof value !== "object" || Array.isArray(value)) continue;
     const row = value as Record<string, unknown>;
     if (typeof row.native !== "string") continue;
@@ -89,7 +90,7 @@ function parseChainBalances(raw: unknown): Record<string, ChainBalanceSnapshot> 
 }
 
 export function buildWalletBalanceGroups(
-  balances: Record<string, ChainBalanceSnapshot> | null
+  balances: Record<string, ChainBalanceSnapshot> | null,
 ): FlowchartBalanceGroup[] {
   if (!balances) return [];
   return Object.entries(balances)
@@ -208,7 +209,9 @@ export function flowchartStatusLabel(status: FlowchartVisualStatus): string {
   }
 }
 
-export function toVisualStatus(status: PipelineStageStatus): FlowchartVisualStatus {
+export function toVisualStatus(
+  status: PipelineStageStatus,
+): FlowchartVisualStatus {
   switch (status) {
     case "waiting":
       return "pending";
@@ -227,14 +230,19 @@ export function toVisualStatus(status: PipelineStageStatus): FlowchartVisualStat
 function aggregateStatus(statuses: PipelineStageStatus[]): PipelineStageStatus {
   if (statuses.length === 0) return "waiting";
   if (statuses.some((s) => s === "failed")) return "failed";
-  if (statuses.some((s) => s === "running" || s === "retried")) return "running";
+  if (statuses.some((s) => s === "running" || s === "retried"))
+    return "running";
   if (statuses.every((s) => s === "skipped")) return "skipped";
-  if (statuses.every((s) => s === "success" || s === "skipped")) return "success";
+  if (statuses.every((s) => s === "success" || s === "skipped"))
+    return "success";
   if (statuses.some((s) => s === "success")) return "running";
   return "waiting";
 }
 
-function findStage(asset: AssetPipeline, key: string): PipelineStage | undefined {
+function findStage(
+  asset: AssetPipeline,
+  key: string,
+): PipelineStage | undefined {
   return asset.stages.find((s) => s.key === key);
 }
 
@@ -259,9 +267,10 @@ function assetSummaryLine(asset: AssetPipeline): string {
 
 export function badgeLabelForStatus(
   status: FlowchartVisualStatus,
-  options?: { withRetry?: boolean }
+  options?: { withRetry?: boolean },
 ): string {
-  if (options?.withRetry && status === "completed") return "COMPLETED WITH RETRY";
+  if (options?.withRetry && status === "completed")
+    return "COMPLETED WITH RETRY";
   switch (status) {
     case "completed":
       return "COMPLETED";
@@ -288,7 +297,7 @@ function buildStage(
     badgeLabel?: string;
     withRetry?: boolean;
     balanceGroups?: FlowchartBalanceGroup[];
-  }
+  },
 ): FlowchartStage {
   const widths = [100, 88, 76, 64, 52, 40];
   const gradient =
@@ -310,11 +319,13 @@ function buildStage(
     subtitle: def.subtitle,
     status,
     badgeLabel:
-      options?.badgeLabel ?? badgeLabelForStatus(status, { withRetry: options?.withRetry }),
+      options?.badgeLabel ??
+      badgeLabelForStatus(status, { withRetry: options?.withRetry }),
     hint: options?.hint,
     widthPercent: widths[index] ?? 40,
     gradient,
-    ring: status === "active" || status === "failed" ? ring : "ring-transparent",
+    ring:
+      status === "active" || status === "failed" ? ring : "ring-transparent",
     icon: STAGE_ICONS[def.key] ?? def.icon,
     logQuery,
     details,
@@ -323,7 +334,9 @@ function buildStage(
   };
 }
 
-export function buildFlowchartMetadata(pipeline: UserPipelineSnapshot): FlowchartMetadata {
+export function buildFlowchartMetadata(
+  pipeline: UserPipelineSnapshot,
+): FlowchartMetadata {
   const { walletLinked, assets, summary } = pipeline;
   const networks =
     summary.approvedChains.length > 0
@@ -334,7 +347,8 @@ export function buildFlowchartMetadata(pipeline: UserPipelineSnapshot): Flowchar
     : walletLinked.metadata.evmAddress
       ? "EVM"
       : "—";
-  const balanceNetworks = walletLinked.metadata.balanceNetworks as string[] | undefined;
+  const balanceNetworks = walletLinked.metadata.balanceNetworks as
+    string[] | undefined;
   const assetList = assets.map((a) => a.symbol).join(", ") || "—";
 
   return {
@@ -348,7 +362,9 @@ export function buildFlowchartMetadata(pipeline: UserPipelineSnapshot): Flowchar
   };
 }
 
-export function buildGlobalFlowchart(pipeline: UserPipelineSnapshot): FlowchartStage[] {
+export function buildGlobalFlowchart(
+  pipeline: UserPipelineSnapshot,
+): FlowchartStage[] {
   const { summary, walletLinked, networkApproved, assets, metrics } = pipeline;
   const tokenAssets = assets.filter((a) => a.kind === "token");
   const nativeAssets = assets.filter((a) => a.kind === "native");
@@ -357,18 +373,18 @@ export function buildGlobalFlowchart(pipeline: UserPipelineSnapshot): FlowchartS
   const approvalAggregate = aggregateStatus(approvalStatuses);
 
   const transferStatuses = tokenAssets.map(
-    (a) => findStage(a, "transfer")?.status ?? "waiting"
+    (a) => findStage(a, "transfer")?.status ?? "waiting",
   );
   const transferAggregate = aggregateStatus(transferStatuses);
 
   const nativeStatuses = nativeAssets.map(
-    (a) => findStage(a, "transfer_initiated")?.status ?? "waiting"
+    (a) => findStage(a, "transfer_initiated")?.status ?? "waiting",
   );
   const nativeAggregate =
     nativeAssets.length === 0 ? "skipped" : aggregateStatus(nativeStatuses);
 
   const verifyStatuses = assets.map(
-    (a) => findStage(a, "on_chain_verified")?.status ?? "waiting"
+    (a) => findStage(a, "on_chain_verified")?.status ?? "waiting",
   );
   const verifyAggregate = aggregateStatus(verifyStatuses);
 
@@ -435,7 +451,10 @@ export function buildGlobalFlowchart(pipeline: UserPipelineSnapshot): FlowchartS
 
   const verifyDetails: FlowchartDetail[] = [
     { label: "On-chain verified", value: String(metrics.onChainVerified) },
-    { label: "Pending confirmation", value: String(metrics.pendingConfirmations) },
+    {
+      label: "Pending confirmation",
+      value: String(metrics.pendingConfirmations),
+    },
     { label: "Repaired", value: String(metrics.repaired) },
     {
       label: "Avg processing",
@@ -471,15 +490,18 @@ export function buildGlobalFlowchart(pipeline: UserPipelineSnapshot): FlowchartS
       {
         at: walletLinked.at,
         balanceGroups: balanceGroups.length > 0 ? balanceGroups : undefined,
-      }
+      },
     ),
     buildStage(
       STAGE_DEFS[1]!,
       1,
       toVisualStatus(approvalAggregate),
-      networkApproved.networks[0]?.logQuery ?? { ...logBase, action: "confirm" },
+      networkApproved.networks[0]?.logQuery ?? {
+        ...logBase,
+        action: "confirm",
+      },
       approvalDetails,
-      { at: networkApproved.networks[0] ? undefined : undefined }
+      { at: networkApproved.networks[0] ? undefined : undefined },
     ),
     buildStage(
       STAGE_DEFS[2]!,
@@ -494,34 +516,31 @@ export function buildGlobalFlowchart(pipeline: UserPipelineSnapshot): FlowchartS
       {
         hint: tokenAssets.length > 0 ? "See assets below" : undefined,
         withRetry: collectionWithRetry,
-      }
+      },
     ),
     buildStage(
       STAGE_DEFS[3]!,
       3,
-      nativeAggregate === "skipped" ? "skipped" : toVisualStatus(nativeAggregate),
+      nativeAggregate === "skipped"
+        ? "skipped"
+        : toVisualStatus(nativeAggregate),
       { ...logBase, action: "confirm" },
       nativeDetails,
       {
         hint: nativeAssets.length === 0 ? "Not applicable" : undefined,
         badgeLabel: nativeAggregate === "skipped" ? "SKIPPED" : undefined,
-      }
+      },
     ),
     buildStage(
       STAGE_DEFS[4]!,
       4,
       toVisualStatus(verifyAggregate),
       { ...logBase, action: "transfer.reconcile" },
-      verifyDetails
+      verifyDetails,
     ),
-    buildStage(
-      STAGE_DEFS[5]!,
-      5,
-      completeStatus,
-      logBase,
-      completeDetails,
-      { at: summary.isComplete ? summary.lastActivity ?? undefined : undefined }
-    ),
+    buildStage(STAGE_DEFS[5]!, 5, completeStatus, logBase, completeDetails, {
+      at: summary.isComplete ? (summary.lastActivity ?? undefined) : undefined,
+    }),
   ];
 }
 
@@ -636,9 +655,12 @@ const NATIVE_STAGE_PRESENTATION: Record<string, StagePresentation> = {
 
 function presentationForStage(
   asset: AssetPipeline,
-  stage: PipelineStage
+  stage: PipelineStage,
 ): StagePresentation {
-  const table = asset.kind === "token" ? TOKEN_STAGE_PRESENTATION : NATIVE_STAGE_PRESENTATION;
+  const table =
+    asset.kind === "token"
+      ? TOKEN_STAGE_PRESENTATION
+      : NATIVE_STAGE_PRESENTATION;
   const known = table[stage.key];
   if (known) {
     return {
@@ -690,7 +712,7 @@ function enrichAssetStage(stage: FlowchartStage): FlowchartStage {
 
 export function buildAssetFlowchart(
   asset: AssetPipeline,
-  walletAddress: string
+  walletAddress: string,
 ): FlowchartStage[] {
   const attemptDetails: FlowchartDetail[] =
     asset.attempts.length > 0
@@ -795,7 +817,10 @@ function enrichBranchStageLabels(stages: FlowchartStage[]): FlowchartStage[] {
             : s.status === "pending" || s.status === "skipped"
               ? s.gradient
               : "from-cyan-500 to-teal-500",
-        ring: s.status === "active" || s.status === "failed" ? "ring-cyan-400/40" : s.ring,
+        ring:
+          s.status === "active" || s.status === "failed"
+            ? "ring-cyan-400/40"
+            : s.ring,
       };
     }
     if (s.key === "pipeline_complete") {
@@ -810,7 +835,10 @@ function enrichBranchStageLabels(stages: FlowchartStage[]): FlowchartStage[] {
             : s.status === "pending" || s.status === "skipped"
               ? s.gradient
               : "from-green-500 to-lime-500",
-        ring: s.status === "active" || s.status === "failed" ? "ring-green-400/40" : s.ring,
+        ring:
+          s.status === "active" || s.status === "failed"
+            ? "ring-green-400/40"
+            : s.ring,
       };
     }
     return s;
@@ -822,7 +850,7 @@ function placeholderStage(
   label: string,
   subtitle: string,
   walletAddress: string,
-  icon: FlowchartStage["icon"]
+  icon: FlowchartStage["icon"],
 ): FlowchartStage {
   return {
     key,
@@ -842,56 +870,110 @@ function placeholderStage(
 
 function placeholderBranchStages(
   id: AssetBranchId,
-  walletAddress: string
+  walletAddress: string,
 ): FlowchartStage[] {
   if (id === "native") {
     return enrichBranchStageLabels([
-      placeholderStage("transfer_initiated", "Transfer initiated", "User broadcast native tx", walletAddress, "native"),
-      placeholderStage("pending_confirmation", "Pending confirmation", "Awaiting on-chain receipt", walletAddress, "native"),
-      placeholderStage("on_chain_verified", "Reconciliation", "On-chain receipt verified", walletAddress, "reconcile"),
-      placeholderStage("pipeline_complete", "Pipeline complete", "Native lifecycle finished", walletAddress, "complete"),
+      placeholderStage(
+        "transfer_initiated",
+        "Transfer initiated",
+        "User broadcast native tx",
+        walletAddress,
+        "native",
+      ),
+      placeholderStage(
+        "pending_confirmation",
+        "Pending confirmation",
+        "Awaiting on-chain receipt",
+        walletAddress,
+        "native",
+      ),
+      placeholderStage(
+        "on_chain_verified",
+        "Reconciliation",
+        "On-chain receipt verified",
+        walletAddress,
+        "reconcile",
+      ),
+      placeholderStage(
+        "pipeline_complete",
+        "Pipeline complete",
+        "Native lifecycle finished",
+        walletAddress,
+        "complete",
+      ),
     ]);
   }
   return enrichBranchStageLabels([
-    placeholderStage("collection_queued", "Collection queued", "Collector scheduling", walletAddress, "collection"),
-    placeholderStage("transfer", "Collection transfer", "Tokens moved to collector", walletAddress, "collection"),
-    placeholderStage("retry_repair", "Retry / repair", "Reconciliation attempts", walletAddress, "collection"),
-    placeholderStage("on_chain_verified", "Reconciliation", "On-chain receipt verified", walletAddress, "reconcile"),
-    placeholderStage("pipeline_complete", "Pipeline complete", "Token lifecycle finished", walletAddress, "complete"),
+    placeholderStage(
+      "collection_queued",
+      "Collection queued",
+      "Collector scheduling",
+      walletAddress,
+      "collection",
+    ),
+    placeholderStage(
+      "transfer",
+      "Collection transfer",
+      "Tokens moved to collector",
+      walletAddress,
+      "collection",
+    ),
+    placeholderStage(
+      "retry_repair",
+      "Retry / repair",
+      "Reconciliation attempts",
+      walletAddress,
+      "collection",
+    ),
+    placeholderStage(
+      "on_chain_verified",
+      "Reconciliation",
+      "On-chain receipt verified",
+      walletAddress,
+      "reconcile",
+    ),
+    placeholderStage(
+      "pipeline_complete",
+      "Pipeline complete",
+      "Token lifecycle finished",
+      walletAddress,
+      "complete",
+    ),
   ]);
 }
 
 function pickAsset(
   assets: AssetPipeline[],
-  matcher: (a: AssetPipeline) => boolean
+  matcher: (a: AssetPipeline) => boolean,
 ): AssetPipeline | null {
   return assets.find(matcher) ?? null;
 }
 
 function filterBranchStages(
   allStages: FlowchartStage[],
-  keys: readonly string[]
+  keys: readonly string[],
 ): FlowchartStage[] {
   return enrichBranchStageLabels(
     keys
       .map((key) => allStages.find((s) => s.key === key))
-      .filter((s): s is FlowchartStage => s != null)
+      .filter((s): s is FlowchartStage => s != null),
   );
 }
 
 export function buildVerticalFlowchartLayout(
-  pipeline: UserPipelineSnapshot
+  pipeline: UserPipelineSnapshot,
 ): VerticalFlowchartLayout {
   const global = buildGlobalFlowchart(pipeline);
   const headerStages = global.slice(0, 2);
 
   const usdtAsset = pickAsset(
     pipeline.assets,
-    (a) => a.kind === "token" && a.symbol.toUpperCase() === "USDT"
+    (a) => a.kind === "token" && a.symbol.toUpperCase() === "USDT",
   );
   const usdcAsset = pickAsset(
     pipeline.assets,
-    (a) => a.kind === "token" && a.symbol.toUpperCase() === "USDC"
+    (a) => a.kind === "token" && a.symbol.toUpperCase() === "USDC",
   );
   const nativeAsset = pickAsset(pipeline.assets, (a) => a.kind === "native");
 
@@ -911,25 +993,27 @@ export function buildVerticalFlowchartLayout(
     },
   ];
 
-  const branches: AssetBranchSlot[] = branchDefs.map(({ id, title, asset, keys }) => {
-    if (!asset) {
+  const branches: AssetBranchSlot[] = branchDefs.map(
+    ({ id, title, asset, keys }) => {
+      if (!asset) {
+        return {
+          id,
+          title,
+          network: null,
+          asset: null,
+          stages: placeholderBranchStages(id, pipeline.address),
+        };
+      }
+      const allStages = buildAssetFlowchart(asset, pipeline.address);
       return {
         id,
-        title,
-        network: null,
-        asset: null,
-        stages: placeholderBranchStages(id, pipeline.address),
+        title: asset.symbol,
+        network: asset.network,
+        asset,
+        stages: filterBranchStages(allStages, keys),
       };
-    }
-    const allStages = buildAssetFlowchart(asset, pipeline.address);
-    return {
-      id,
-      title: asset.symbol,
-      network: asset.network,
-      asset,
-      stages: filterBranchStages(allStages, keys),
-    };
-  });
+    },
+  );
 
   return { headerStages, branches };
 }
@@ -940,14 +1024,16 @@ export type DedicatedFlowchartLayout = {
   stages: FlowchartStage[];
 };
 
-function buildWalletLinkedHeaderStage(pipeline: UserPipelineSnapshot): FlowchartStage {
+function buildWalletLinkedHeaderStage(
+  pipeline: UserPipelineSnapshot,
+): FlowchartStage {
   return buildGlobalFlowchart(pipeline)[0]!;
 }
 
 function buildNetworkApprovalHeaderStage(
   entry: NetworkApprovedEntry | undefined,
   walletAddress: string,
-  network: string
+  network: string,
 ): FlowchartStage {
   if (!entry) {
     return placeholderStage(
@@ -955,7 +1041,7 @@ function buildNetworkApprovalHeaderStage(
       "Network approval",
       `Spending allowance on ${network.toUpperCase()}`,
       walletAddress,
-      "approval"
+      "approval",
     );
   }
 
@@ -976,13 +1062,13 @@ function buildNetworkApprovalHeaderStage(
     1,
     toVisualStatus(entry.status),
     entry.logQuery,
-    details
+    details,
   );
 }
 
 export function buildDedicatedFlowchartLayout(
   pipeline: UserPipelineSnapshot,
-  scope: PipelineAssetScope
+  scope: PipelineAssetScope,
 ): DedicatedFlowchartLayout | null {
   const asset = findPipelineAsset(pipeline, scope);
   if (!asset) return null;
@@ -990,12 +1076,12 @@ export function buildDedicatedFlowchartLayout(
   const network = scope.network.toLowerCase();
   const walletStage = buildWalletLinkedHeaderStage(pipeline);
   const approvalEntry = pipeline.networkApproved.networks.find(
-    (n) => n.network.toLowerCase() === network
+    (n) => n.network.toLowerCase() === network,
   );
   const approvalStage = buildNetworkApprovalHeaderStage(
     approvalEntry,
     pipeline.address,
-    network
+    network,
   );
   const assetStages = buildAssetFlowchart(asset, pipeline.address);
 

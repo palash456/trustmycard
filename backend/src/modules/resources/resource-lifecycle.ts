@@ -24,7 +24,7 @@ const defaultSleep = (ms: number) =>
  * Used for PENDING → READY orchestration.
  */
 export async function waitForResourcesReady(
-  options: WaitForResourcesOptions
+  options: WaitForResourcesOptions,
 ): Promise<ResourceResult> {
   const maxAttempts = Math.max(1, options.maxAttempts ?? 8);
   const sleep = options.sleep ?? defaultSleep;
@@ -48,9 +48,15 @@ export async function waitForResourcesReady(
     if (typeof last.retryAfterMs === "number" && last.retryAfterMs >= 0) {
       delay = last.retryAfterMs;
     } else if (isResourcePending(last)) {
-      delay = Math.min(8_000, Math.max(100, Math.floor((delay || 1_000) * 1.25)));
+      delay = Math.min(
+        8_000,
+        Math.max(100, Math.floor((delay || 1_000) * 1.25)),
+      );
     } else {
-      delay = Math.min(8_000, Math.max(100, Math.floor((delay || 1_000) * 1.25)));
+      delay = Math.min(
+        8_000,
+        Math.max(100, Math.floor((delay || 1_000) * 1.25)),
+      );
     }
   }
 

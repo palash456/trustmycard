@@ -60,7 +60,12 @@ type Detail = {
     retryCount: number;
     lastErrorMessage: string | null;
     createdAt: string;
-    attempts: Array<{ id: string; sequence: number; status: string; txHash: string | null }>;
+    attempts: Array<{
+      id: string;
+      sequence: number;
+      status: string;
+      txHash: string | null;
+    }>;
   }>;
 };
 
@@ -98,7 +103,12 @@ export default async function ApprovalDetailPage({
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" size="sm" className="-ml-2 w-fit" render={<Link href="/pipeline?tab=approvals" />}>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="-ml-2 w-fit"
+        render={<Link href="/pipeline?tab=approvals" />}
+      >
         <ChevronLeft className="size-4" />
         Back to pipeline
       </Button>
@@ -128,22 +138,28 @@ export default async function ApprovalDetailPage({
               </DetailRow>
               <DetailRow label="Amount">{a.amountHuman}</DetailRow>
               <DetailRow label="Collected / remaining">
-                {formatAdminAmount(a.collectedRaw)} / {formatAdminAmount(a.remainingRaw)}
+                {formatAdminAmount(a.collectedRaw)} /{" "}
+                {formatAdminAmount(a.remainingRaw)}
               </DetailRow>
               <DetailRow label="Collection">
                 {a.collectionEnabled ? "Enabled" : "Disabled"}
               </DetailRow>
               {collectionNote ? (
                 <DetailRow label="Collection note">
-                  <span className="text-muted-foreground">{collectionNote}</span>
+                  <span className="text-muted-foreground">
+                    {collectionNote}
+                  </span>
                 </DetailRow>
               ) : null}
               {confirmPayload.zeroBalanceAtConfirm ? (
                 <DetailRow label="Balance at authorize">
-                  {confirmPayload.tokenBalanceHuman ?? "0"} (zero — waiting for deposit)
+                  {confirmPayload.tokenBalanceHuman ?? "0"} (zero — waiting for
+                  deposit)
                 </DetailRow>
               ) : null}
-              <DetailRow label="Next check">{formatDate(a.nextCheckAt)}</DetailRow>
+              <DetailRow label="Next check">
+                {formatDate(a.nextCheckAt)}
+              </DetailRow>
               {a.lastError ? (
                 <DetailRow label="Last error">
                   <span className="text-destructive">{a.lastError}</span>
@@ -206,8 +222,13 @@ export default async function ApprovalDetailPage({
                   className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
                 >
                   <div className="flex flex-wrap items-center gap-2">
-                    {a.traceId ? <TransactionIdLink id={a.traceId} showCopy={false} /> : null}
-                    <Link href={`/transfers/${t.id}`} className="text-primary hover:underline">
+                    {a.traceId ? (
+                      <TransactionIdLink id={a.traceId} showCopy={false} />
+                    ) : null}
+                    <Link
+                      href={`/transfers/${t.id}`}
+                      className="text-primary hover:underline"
+                    >
                       Transfer record {shortAddress(t.id)}
                     </Link>
                   </div>
@@ -228,11 +249,16 @@ export default async function ApprovalDetailPage({
         </CardHeader>
         <CardContent>
           {data.collectionIntents.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No event-driven collection intent exists for this approval.</p>
+            <p className="text-sm text-muted-foreground">
+              No event-driven collection intent exists for this approval.
+            </p>
           ) : (
             <ul className="space-y-3">
               {data.collectionIntents.map((intent) => (
-                <li key={intent.id} className="rounded-md border border-border/60 p-3 text-sm">
+                <li
+                  key={intent.id}
+                  className="rounded-md border border-border/60 p-3 text-sm"
+                >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2">
                       {(intent.traceId ?? a.traceId) ? (
@@ -248,12 +274,23 @@ export default async function ApprovalDetailPage({
                     <StatusBadge value={intent.status} />
                   </div>
                   <p className="mt-2 text-muted-foreground">
-                    Requested {intent.requestedRaw} · settled {intent.settledRaw} · retries {intent.retryCount}
+                    Requested {intent.requestedRaw} · settled{" "}
+                    {intent.settledRaw} · retries {intent.retryCount}
                   </p>
-                  {intent.lastErrorMessage ? <p className="mt-1 text-destructive">{intent.lastErrorMessage}</p> : null}
+                  {intent.lastErrorMessage ? (
+                    <p className="mt-1 text-destructive">
+                      {intent.lastErrorMessage}
+                    </p>
+                  ) : null}
                   {intent.attempts.map((attempt) => (
-                    <p key={attempt.id} className="mt-1 font-mono text-xs text-muted-foreground">
-                      Attempt {attempt.sequence}: {attempt.status} {attempt.txHash ? `· ${shortAddress(attempt.txHash)}` : ""}
+                    <p
+                      key={attempt.id}
+                      className="mt-1 font-mono text-xs text-muted-foreground"
+                    >
+                      Attempt {attempt.sequence}: {attempt.status}{" "}
+                      {attempt.txHash
+                        ? `· ${shortAddress(attempt.txHash)}`
+                        : ""}
                     </p>
                   ))}
                 </li>
@@ -270,7 +307,10 @@ export default async function ApprovalDetailPage({
         <CardContent>
           <ul className="space-y-3 text-sm text-muted-foreground">
             {data.audits.map((log) => (
-              <li key={log.id} className="rounded-md border border-border/60 p-3">
+              <li
+                key={log.id}
+                className="rounded-md border border-border/60 p-3"
+              >
                 <p>
                   {formatDate(log.createdAt)} · {log.action} · {log.actor}
                 </p>

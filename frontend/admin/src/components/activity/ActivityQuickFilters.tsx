@@ -62,7 +62,7 @@ export function ActivityQuickFilters({
             "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
             isActive(filter)
               ? "border-primary bg-primary text-primary-foreground"
-              : "bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground"
+              : "bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground",
           )}
         >
           {filter.label}

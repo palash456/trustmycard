@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { WalletSessionService } from "./wallet-session.service";
 
 @Injectable()
@@ -13,7 +18,10 @@ export class WalletSessionGuard implements CanActivate {
     const raw = request.headers.authorization;
     const value = Array.isArray(raw) ? raw[0] : raw;
     const token = value?.startsWith("Bearer ") ? value.slice(7).trim() : "";
-    if (!token) throw new UnauthorizedException("Bearer wallet session token is required");
+    if (!token)
+      throw new UnauthorizedException(
+        "Bearer wallet session token is required",
+      );
     request.walletSession = await this.sessions.authenticate(token);
     return true;
   }

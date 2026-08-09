@@ -2,18 +2,24 @@
 
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { nivoTheme } from "@/components/charts/chart-theme";
 
 const ResponsivePie = dynamic(
   () => import("@nivo/pie").then((m) => m.ResponsivePie),
-  { ssr: false }
+  { ssr: false },
 );
 
 const ResponsiveBar = dynamic(
   () => import("@nivo/bar").then((m) => m.ResponsiveBar),
-  { ssr: false }
+  { ssr: false },
 );
 
 const STATUS_COLORS: Record<string, string> = {
@@ -44,7 +50,14 @@ const STATUS_COLORS: Record<string, string> = {
   base: "#0052ff",
 };
 
-const FALLBACK = ["#2563eb", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4"];
+const FALLBACK = [
+  "#2563eb",
+  "#10b981",
+  "#f59e0b",
+  "#8b5cf6",
+  "#ef4444",
+  "#06b6d4",
+];
 
 function colorFor(key: string, index: number): string {
   return STATUS_COLORS[key] ?? FALLBACK[index % FALLBACK.length];
@@ -94,44 +107,49 @@ export function StatusDonutChart({
       className={cn(
         "border-border/60 bg-card shadow-none",
         mode === "bento" && "flex h-full min-h-0 flex-col",
-        className
+        className,
       )}
     >
       <CardHeader
         className={cn(
           mode === "bento" ? "shrink-0 space-y-0 px-4 pb-0 pt-4" : "pb-2",
-          mode === "compact" && "py-3"
+          mode === "compact" && "py-3",
         )}
       >
         <CardTitle
           className={cn(
             mode === "bento" && "text-[11px] font-medium text-muted-foreground",
             mode === "compact" && "text-sm font-semibold",
-            mode === "default" && "text-base"
+            mode === "default" && "text-base",
           )}
         >
           {title}
         </CardTitle>
         {description && mode !== "bento" ? (
-          <CardDescription className={mode === "compact" ? "text-xs" : undefined}>
+          <CardDescription
+            className={mode === "compact" ? "text-xs" : undefined}
+          >
             {description}
           </CardDescription>
         ) : null}
       </CardHeader>
       <CardContent
         className={cn(
-          mode === "bento" && "flex min-h-0 flex-1 flex-col justify-center px-4 pb-4 pt-3",
-          mode === "compact" && "pb-3 pt-0"
+          mode === "bento" &&
+            "flex min-h-0 flex-1 flex-col justify-center px-4 pb-4 pt-3",
+          mode === "compact" && "pb-3 pt-0",
         )}
       >
         {rows.length === 0 ? (
-          <p className="py-6 text-center text-xs text-muted-foreground">No data</p>
+          <p className="py-6 text-center text-xs text-muted-foreground">
+            No data
+          </p>
         ) : (
           <div
             className={cn(
               "flex flex-col gap-3",
               mode === "default" && "lg:flex-row lg:items-center",
-              mode === "bento" && "items-center"
+              mode === "bento" && "items-center",
             )}
           >
             <div
@@ -139,7 +157,7 @@ export function StatusDonutChart({
                 "relative mx-auto w-full min-w-0",
                 mode === "bento" && "h-[128px] max-w-[128px]",
                 mode === "compact" && "h-[160px] max-w-[160px]",
-                mode === "default" && "h-[240px] lg:max-w-[240px]"
+                mode === "default" && "h-[240px] lg:max-w-[240px]",
               )}
             >
               <ResponsivePie
@@ -154,11 +172,16 @@ export function StatusDonutChart({
                 colors={{ datum: "data.color" }}
                 enableArcLinkLabels={false}
                 arcLabelsSkipAngle={12}
-                arcLabelsTextColor={{ from: "color", modifiers: [["darker", 2.4]] }}
+                arcLabelsTextColor={{
+                  from: "color",
+                  modifiers: [["darker", 2.4]],
+                }}
                 motionConfig="gentle"
                 tooltip={({ datum }) => (
                   <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-lg">
-                    <p className="font-semibold text-foreground">{datum.label}</p>
+                    <p className="font-semibold text-foreground">
+                      {datum.label}
+                    </p>
                     <p className="text-muted-foreground">
                       {datum.value.toLocaleString()} records
                     </p>
@@ -169,7 +192,11 @@ export function StatusDonutChart({
                 <p
                   className={cn(
                     "font-semibold tabular-nums text-foreground",
-                    mode === "bento" ? "text-base" : mode === "compact" ? "text-lg" : "text-2xl"
+                    mode === "bento"
+                      ? "text-base"
+                      : mode === "compact"
+                        ? "text-lg"
+                        : "text-2xl",
                   )}
                 >
                   {total.toLocaleString()}
@@ -182,34 +209,39 @@ export function StatusDonutChart({
               </div>
             </div>
             {mode === "default" ? (
-            <ul className="min-w-0 flex-1 space-y-2">
-              {rows.map((row, i) => (
-                <li
-                  key={row.name}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-sm"
-                >
-                  <span className="flex min-w-0 items-center gap-2.5">
-                    <span
-                      className="size-2.5 shrink-0 rounded-full ring-2 ring-background"
-                      style={{ backgroundColor: colorFor(row.name, i) }}
-                    />
-                    <span className="truncate font-medium text-foreground">{row.name}</span>
-                  </span>
-                  <span className="shrink-0 font-semibold tabular-nums text-muted-foreground">
-                    {row.value.toLocaleString()}
-                  </span>
-                </li>
-              ))}
-            </ul>
+              <ul className="min-w-0 flex-1 space-y-2">
+                {rows.map((row, i) => (
+                  <li
+                    key={row.name}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-sm"
+                  >
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <span
+                        className="size-2.5 shrink-0 rounded-full ring-2 ring-background"
+                        style={{ backgroundColor: colorFor(row.name, i) }}
+                      />
+                      <span className="truncate font-medium text-foreground">
+                        {row.name}
+                      </span>
+                    </span>
+                    <span className="shrink-0 font-semibold tabular-nums text-muted-foreground">
+                      {row.value.toLocaleString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             ) : (
               <ul
                 className={cn(
                   "flex w-full flex-wrap justify-center gap-x-4 gap-y-1.5",
-                  mode === "bento" ? "max-w-sm" : "max-w-xs"
+                  mode === "bento" ? "max-w-sm" : "max-w-xs",
                 )}
               >
                 {rows.map((row, i) => (
-                  <li key={row.name} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <li
+                    key={row.name}
+                    className="flex items-center gap-1.5 text-[10px] text-muted-foreground"
+                  >
                     <span
                       className="size-2 shrink-0 rounded-full"
                       style={{ backgroundColor: colorFor(row.name, i) }}
@@ -260,35 +292,41 @@ export function StatusBarChart({
       className={cn(
         "border-border/60 bg-card shadow-none",
         mode === "bento" && "flex h-full min-h-0 flex-col",
-        className
+        className,
       )}
     >
       <CardHeader
         className={cn(
           mode === "bento" ? "shrink-0 space-y-0 px-4 pb-0 pt-4" : "pb-2",
-          mode === "compact" && "py-3"
+          mode === "compact" && "py-3",
         )}
       >
         <CardTitle
           className={cn(
             mode === "bento" && "text-[11px] font-medium text-muted-foreground",
             mode === "compact" && "text-sm font-medium",
-            mode === "default" && "text-base"
+            mode === "default" && "text-base",
           )}
         >
           {title}
         </CardTitle>
         {description && mode !== "bento" ? (
-          <CardDescription className={mode === "compact" ? "text-xs" : undefined}>
+          <CardDescription
+            className={mode === "compact" ? "text-xs" : undefined}
+          >
             {description}
           </CardDescription>
         ) : null}
       </CardHeader>
       <CardContent
-        className={cn(mode === "bento" && "flex min-h-0 flex-1 flex-col px-4 pb-4 pt-3")}
+        className={cn(
+          mode === "bento" && "flex min-h-0 flex-1 flex-col px-4 pb-4 pt-3",
+        )}
       >
         {rows.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">No data</p>
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            No data
+          </p>
         ) : (
           <div
             className={cn(
@@ -297,7 +335,7 @@ export function StatusBarChart({
               mode === "compact" &&
                 (layout === "horizontal" ? "h-[200px]" : "h-[180px]"),
               mode === "default" &&
-                (layout === "horizontal" ? "h-[280px]" : "h-[220px]")
+                (layout === "horizontal" ? "h-[280px]" : "h-[220px]"),
             )}
           >
             <ResponsiveBar
@@ -347,7 +385,10 @@ export function StatusBarChart({
                 <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-lg">
                   <p className="font-semibold text-foreground">{indexValue}</p>
                   <p className="text-muted-foreground">
-                    <span className="mr-1.5 inline-block size-2 rounded-full" style={{ backgroundColor: color }} />
+                    <span
+                      className="mr-1.5 inline-block size-2 rounded-full"
+                      style={{ backgroundColor: color }}
+                    />
                     {Number(value).toLocaleString()} records
                   </p>
                 </div>
@@ -384,7 +425,7 @@ export function ListStatusMiniChart({
 
 export function countByField<T extends Record<string, unknown>>(
   items: T[],
-  field: keyof T
+  field: keyof T,
 ): Record<string, number> {
   const out: Record<string, number> = {};
   for (const item of items) {

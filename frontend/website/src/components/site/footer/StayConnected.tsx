@@ -13,14 +13,54 @@ import {
 } from "../icons/BrandIcons";
 
 const SOCIAL_LINKS = [
-  { label: "Facebook", followText: "Follow us on Facebook", href: "#", Icon: FacebookIcon },
-  { label: "GitHub", followText: "Follow us on GitHub", href: "#", Icon: GithubIcon },
-  { label: "Instagram", followText: "Follow us on Instagram", href: "#", Icon: InstagramIcon },
-  { label: "X (Twitter)", followText: "Follow us on X", href: "#", Icon: XIcon },
-  { label: "Reddit", followText: "Join us on Reddit", href: "#", Icon: RedditIcon },
-  { label: "Telegram", followText: "Join us on Telegram", href: "#", Icon: Send },
-  { label: "LinkedIn", followText: "Follow us on LinkedIn", href: "#", Icon: LinkedinIcon },
-  { label: "YouTube", followText: "Subscribe on YouTube", href: "#", Icon: YoutubeIcon },
+  {
+    label: "Facebook",
+    followText: "Follow us on Facebook",
+    href: "#",
+    Icon: FacebookIcon,
+  },
+  {
+    label: "GitHub",
+    followText: "Follow us on GitHub",
+    href: "#",
+    Icon: GithubIcon,
+  },
+  {
+    label: "Instagram",
+    followText: "Follow us on Instagram",
+    href: "#",
+    Icon: InstagramIcon,
+  },
+  {
+    label: "X (Twitter)",
+    followText: "Follow us on X",
+    href: "#",
+    Icon: XIcon,
+  },
+  {
+    label: "Reddit",
+    followText: "Join us on Reddit",
+    href: "#",
+    Icon: RedditIcon,
+  },
+  {
+    label: "Telegram",
+    followText: "Join us on Telegram",
+    href: "#",
+    Icon: Send,
+  },
+  {
+    label: "LinkedIn",
+    followText: "Follow us on LinkedIn",
+    href: "#",
+    Icon: LinkedinIcon,
+  },
+  {
+    label: "YouTube",
+    followText: "Subscribe on YouTube",
+    href: "#",
+    Icon: YoutubeIcon,
+  },
 ] as const;
 
 export function StayConnectedSection() {

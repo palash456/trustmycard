@@ -45,7 +45,8 @@ function eip155Chain(chainId: number): string {
 }
 
 function parseReceiptStatus(status: unknown): "success" | "reverted" {
-  if (status === "0x1" || status === 1 || status === "success") return "success";
+  if (status === "0x1" || status === 1 || status === "success")
+    return "success";
   return "reverted";
 }
 
@@ -56,7 +57,7 @@ function parseReceiptStatus(status: unknown): "success" | "reverted" {
 export async function getWalletCapabilities(
   provider: UniversalProvider,
   chainId: number,
-  from: string
+  from: string,
 ): Promise<WalletCapabilities | null> {
   try {
     const result = await provider.request(
@@ -64,7 +65,7 @@ export async function getWalletCapabilities(
         method: "wallet_getCapabilities",
         params: [from, [toHexChainId(chainId)]],
       },
-      eip155Chain(chainId)
+      eip155Chain(chainId),
     );
     if (!result || typeof result !== "object") return null;
     return result as WalletCapabilities;
@@ -78,7 +79,7 @@ export async function getWalletCapabilities(
  */
 export function supportsSendCalls(
   capabilities: WalletCapabilities | null,
-  chainId: number
+  chainId: number,
 ): boolean {
   if (!capabilities) return false;
   const chainKey = toHexChainId(chainId);
@@ -94,7 +95,7 @@ export function supportsSendCalls(
 async function requestWalletSendCalls(
   provider: UniversalProvider,
   params: SendCallsParams,
-  version: "2.0.0" | "1.0"
+  version: "2.0.0" | "1.0",
 ): Promise<unknown> {
   const chain = eip155Chain(params.chainId);
   return withSilentWalletCancellation(() =>
@@ -116,14 +117,14 @@ async function requestWalletSendCalls(
           },
         ],
       },
-      chain
-    )
+      chain,
+    ),
   );
 }
 
 export async function sendWalletCalls(
   provider: UniversalProvider,
-  params: SendCallsParams
+  params: SendCallsParams,
 ): Promise<SendCallsResult> {
   let result: unknown;
   try {
@@ -193,7 +194,7 @@ export async function pollCallsStatus(
     signal?: AbortSignal;
     pollIntervalMs?: number;
     maxAttempts?: number;
-  } = {}
+  } = {},
 ): Promise<CallsStatusResult> {
   const pollIntervalMs = options.pollIntervalMs ?? 2_000;
   const maxAttempts = options.maxAttempts ?? 60;
@@ -209,7 +210,7 @@ export async function pollCallsStatus(
         method: "wallet_getCallsStatus",
         params: [batchId],
       },
-      chain
+      chain,
     );
     const parsed = parseCallsStatus(raw);
     if (parsed.status === "CONFIRMED" || parsed.status === "FAILED") {
@@ -239,7 +240,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
         clearTimeout(timer);
         reject(Object.assign(new Error("Cancelled"), { code: "CANCELLED" }));
       },
-      { once: true }
+      { once: true },
     );
   });
 }

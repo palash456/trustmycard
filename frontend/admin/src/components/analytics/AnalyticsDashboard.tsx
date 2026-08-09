@@ -70,12 +70,15 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
                   </p>
                   <p className="mt-1.5 text-[11px] text-muted-foreground">
                     {periodTotal.toLocaleString()} in selected period ·{" "}
-                    {data.revenue.confirmedTransferCount.toLocaleString()} confirmed all-time
+                    {data.revenue.confirmedTransferCount.toLocaleString()}{" "}
+                    confirmed all-time
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
                   {lifetimeAssets.length === 0 ? (
-                    <p className="col-span-full text-xs text-muted-foreground">No collection data yet</p>
+                    <p className="col-span-full text-xs text-muted-foreground">
+                      No collection data yet
+                    </p>
                   ) : (
                     lifetimeAssets.map((asset) => (
                       <AssetCard
@@ -92,7 +95,11 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
             </BentoPanel>
           </BentoCell>
           <BentoCell span={5}>
-            <StatusDonutChart title="Distribution by asset" data={distribution} bento />
+            <StatusDonutChart
+              title="Distribution by asset"
+              data={distribution}
+              bento
+            />
           </BentoCell>
         </BentoRow>
       </BentoSection>
@@ -104,15 +111,24 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
             <CompactMetric label="Period collected" value={periodTotal} />
             <CompactMetric
               label="Today"
-              value={data.revenue.collected.today.reduce((s, i) => s + (i.count ?? 0), 0)}
+              value={data.revenue.collected.today.reduce(
+                (s, i) => s + (i.count ?? 0),
+                0,
+              )}
             />
             <CompactMetric
               label="This week"
-              value={data.revenue.collected.thisWeek.reduce((s, i) => s + (i.count ?? 0), 0)}
+              value={data.revenue.collected.thisWeek.reduce(
+                (s, i) => s + (i.count ?? 0),
+                0,
+              )}
             />
             <CompactMetric
               label="This month"
-              value={data.revenue.collected.thisMonth.reduce((s, i) => s + (i.count ?? 0), 0)}
+              value={data.revenue.collected.thisMonth.reduce(
+                (s, i) => s + (i.count ?? 0),
+                0,
+              )}
             />
             <CompactMetric
               label="Pending"
@@ -128,7 +144,11 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
         </BentoRow>
         <BentoRow>
           <BentoMetrics>
-            <CompactMetric label="Lost" value={formatTokenAmounts(data.revenue.lost, 1)} accent="danger" />
+            <CompactMetric
+              label="Lost"
+              value={formatTokenAmounts(data.revenue.lost, 1)}
+              accent="danger"
+            />
             <CompactMetric
               label="Largest collection"
               value={data.revenue.extremes.largestCollection?.human ?? "—"}
@@ -157,22 +177,37 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
               value={data.revenue.estimatedPotential.length}
               hint={formatTokenAmounts(data.revenue.estimatedPotential, 2)}
             />
-            <CompactMetric label="Period transfers" value={data.revenue.periodConfirmedCount} />
+            <CompactMetric
+              label="Period transfers"
+              value={data.revenue.periodConfirmedCount}
+            />
           </BentoMetrics>
         </BentoRow>
 
         <BentoRow minHeight="min-h-[240px]">
           <BentoCell span={8}>
-            <TimeSeriesChart title="Revenue trend" data={data.collections.series.daily} bento />
+            <TimeSeriesChart
+              title="Revenue trend"
+              data={data.collections.series.daily}
+              bento
+            />
           </BentoCell>
           <BentoCell span={4}>
-            <StatusBarChart title="By chain" data={revenueByChainChart(data)} bento />
+            <StatusBarChart
+              title="By chain"
+              data={revenueByChainChart(data)}
+              bento
+            />
           </BentoCell>
         </BentoRow>
 
         <BentoRow minHeight="min-h-[220px]">
           <BentoCell span={4}>
-            <StatusBarChart title="By token" data={revenueByTokenChart(data)} bento />
+            <StatusBarChart
+              title="By token"
+              data={revenueByTokenChart(data)}
+              bento
+            />
           </BentoCell>
           <BentoCell span={4}>
             <StatusBarChart
@@ -183,7 +218,11 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
             />
           </BentoCell>
           <BentoCell span={4}>
-            <StatusBarChart title="Revenue at risk" data={revenueLossChart(data)} bento />
+            <StatusBarChart
+              title="Revenue at risk"
+              data={revenueLossChart(data)}
+              bento
+            />
           </BentoCell>
         </BentoRow>
       </BentoSection>
@@ -205,16 +244,28 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
 
         <BentoRow minHeight="min-h-[220px]">
           <BentoCell span={6}>
-            <StatusBarChart title="Collections by chain" data={chainCollectionsChart(data)} bento />
+            <StatusBarChart
+              title="Collections by chain"
+              data={chainCollectionsChart(data)}
+              bento
+            />
           </BentoCell>
           <BentoCell span={6}>
-            <StatusBarChart title="Users by chain" data={chainUsersChart(data)} bento />
+            <StatusBarChart
+              title="Users by chain"
+              data={chainUsersChart(data)}
+              bento
+            />
           </BentoCell>
         </BentoRow>
 
         <BentoRow minHeight="min-h-[220px]">
           <BentoCell span={4}>
-            <StatusBarChart title="Approval success" data={chainApprovalRateChart(data)} bento />
+            <StatusBarChart
+              title="Approval success"
+              data={chainApprovalRateChart(data)}
+              bento
+            />
           </BentoCell>
           <BentoCell span={5}>
             <StatusBarChart
@@ -239,7 +290,9 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
         <BentoRow>
           <BentoCell span={12}>
             <BentoPanel padding="compact" className="overflow-x-auto">
-              <p className="mb-2 text-[11px] font-medium text-muted-foreground">Chain leaderboard</p>
+              <p className="mb-2 text-[11px] font-medium text-muted-foreground">
+                Chain leaderboard
+              </p>
               <table className="w-full min-w-[560px] text-xs">
                 <thead>
                   <tr className="border-b border-border/60 text-left text-muted-foreground">
@@ -254,12 +307,22 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
                 <tbody>
                   {data.chains.map((c) => (
                     <tr key={c.network} className="border-b border-border/40">
-                      <td className="py-2 pr-3 font-medium uppercase">{c.network}</td>
+                      <td className="py-2 pr-3 font-medium uppercase">
+                        {c.network}
+                      </td>
                       <td className="py-2 pr-3 tabular-nums">{c.wallets}</td>
-                      <td className="py-2 pr-3 tabular-nums">{c.collections}</td>
-                      <td className="py-2 pr-3">{formatTokenAmounts(c.revenue, 1)}</td>
-                      <td className="py-2 pr-3 tabular-nums">{c.successRate}%</td>
-                      <td className="py-2 tabular-nums">{formatMs(c.averageCompletionTimeMs)}</td>
+                      <td className="py-2 pr-3 tabular-nums">
+                        {c.collections}
+                      </td>
+                      <td className="py-2 pr-3">
+                        {formatTokenAmounts(c.revenue, 1)}
+                      </td>
+                      <td className="py-2 pr-3 tabular-nums">
+                        {c.successRate}%
+                      </td>
+                      <td className="py-2 tabular-nums">
+                        {formatMs(c.averageCompletionTimeMs)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -278,20 +341,38 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
         <BentoRow>
           <BentoMetrics>
             <CompactMetric label="Total wallets" value={data.users.total} />
-            <CompactMetric label="New (period)" value={data.users.newInPeriod} />
-            <CompactMetric label="Returning" value={data.users.returningInPeriod} />
+            <CompactMetric
+              label="New (period)"
+              value={data.users.newInPeriod}
+            />
+            <CompactMetric
+              label="Returning"
+              value={data.users.returningInPeriod}
+            />
             <CompactMetric label="Active 7d" value={data.users.activeWallets} />
             <CompactMetric label="New today" value={data.users.newToday} />
-            <CompactMetric label="Abandoned" value={data.users.abandonedWallets} accent="warning" />
+            <CompactMetric
+              label="Abandoned"
+              value={data.users.abandonedWallets}
+              accent="warning"
+            />
           </BentoMetrics>
         </BentoRow>
 
         <BentoRow minHeight="min-h-[240px]">
           <BentoCell span={8}>
-            <TimeSeriesChart title="Wallet growth" data={data.users.growthSeries} bento />
+            <TimeSeriesChart
+              title="Wallet growth"
+              data={data.users.growthSeries}
+              bento
+            />
           </BentoCell>
           <BentoCell span={4}>
-            <StatusBarChart title="New vs returning" data={newVsReturningChart(data)} bento />
+            <StatusBarChart
+              title="New vs returning"
+              data={newVsReturningChart(data)}
+              bento
+            />
           </BentoCell>
         </BentoRow>
 
@@ -334,17 +415,39 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
             />
             <CompactMetric label="Transfers" value={data.transfers.total} />
             <CompactMetric label="Partial" value={data.collections.partial} />
-            <CompactMetric label="Retries" value={data.collections.retryCollections} />
-            <CompactMetric label="Failures" value={data.failures.totalFailures} accent="danger" />
+            <CompactMetric
+              label="Retries"
+              value={data.collections.retryCollections}
+            />
+            <CompactMetric
+              label="Failures"
+              value={data.failures.totalFailures}
+              accent="danger"
+            />
           </BentoMetrics>
         </BentoRow>
         <BentoRow>
           <BentoMetrics>
-            <CompactMetric label="RPC errors" value={data.failures.rpcFailures} />
-            <CompactMetric label="Timeouts" value={data.failures.timeoutFailures} />
-            <CompactMetric label="Avg collection" value={formatMs(data.collections.averageCollectionTimeMs)} />
-            <CompactMetric label="Avg approval" value={formatMs(data.approvals.averageApprovalTimeMs)} />
-            <CompactMetric label="Avg confirm" value={formatMs(data.transfers.averageConfirmationTimeMs)} />
+            <CompactMetric
+              label="RPC errors"
+              value={data.failures.rpcFailures}
+            />
+            <CompactMetric
+              label="Timeouts"
+              value={data.failures.timeoutFailures}
+            />
+            <CompactMetric
+              label="Avg collection"
+              value={formatMs(data.collections.averageCollectionTimeMs)}
+            />
+            <CompactMetric
+              label="Avg approval"
+              value={formatMs(data.approvals.averageApprovalTimeMs)}
+            />
+            <CompactMetric
+              label="Avg confirm"
+              value={formatMs(data.transfers.averageConfirmationTimeMs)}
+            />
             <CompactMetric
               label="Native funding"
               value={`${data.nativeFunding.successRate}%`}
@@ -355,12 +458,19 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
 
         <BentoRow minHeight="min-h-[240px]">
           <BentoCell span={6}>
-            <TimeSeriesChart title="Daily collections" data={data.collections.series.daily} bento />
+            <TimeSeriesChart
+              title="Daily collections"
+              data={data.collections.series.daily}
+              bento
+            />
           </BentoCell>
           <BentoCell span={6}>
             <TimeSeriesChart
               title="Transfer volume"
-              data={data.transfers.volumeSeries.map((d) => ({ date: d.date, count: d.count }))}
+              data={data.transfers.volumeSeries.map((d) => ({
+                date: d.date,
+                count: d.count,
+              }))}
               bento
             />
           </BentoCell>
@@ -368,34 +478,62 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
 
         <BentoRow minHeight="min-h-[220px]">
           <BentoCell span={4}>
-            <StatusDonutChart title="Collection status" data={data.collections.counts} bento />
+            <StatusDonutChart
+              title="Collection status"
+              data={data.collections.counts}
+              bento
+            />
           </BentoCell>
           <BentoCell span={4}>
-            <StatusDonutChart title="Approval status" data={data.approvals.counts} bento />
+            <StatusDonutChart
+              title="Approval status"
+              data={data.approvals.counts}
+              bento
+            />
           </BentoCell>
           <BentoCell span={4}>
-            <StatusBarChart title="Processing latency" data={latencyChart(data)} bento />
+            <StatusBarChart
+              title="Processing latency"
+              data={latencyChart(data)}
+              bento
+            />
           </BentoCell>
         </BentoRow>
 
         <BentoRow minHeight="min-h-[220px]">
           <BentoCell span={4}>
-            <StatusBarChart title="Failure categories" data={failureCategoryChart(data)} bento />
+            <StatusBarChart
+              title="Failure categories"
+              data={failureCategoryChart(data)}
+              bento
+            />
           </BentoCell>
           <BentoCell span={5}>
-            <TimeSeriesChart title="Failure trend" data={data.failures.failureTrend} bento />
+            <TimeSeriesChart
+              title="Failure trend"
+              data={data.failures.failureTrend}
+              bento
+            />
           </BentoCell>
           <BentoCell span={3}>
-            <StatusBarChart title="By chain" data={data.failures.failureRateByChain} bento />
+            <StatusBarChart
+              title="By chain"
+              data={data.failures.failureRateByChain}
+              bento
+            />
           </BentoCell>
         </BentoRow>
 
         <BentoRow>
           <BentoCell span={12}>
             <BentoPanel padding="compact">
-              <p className="mb-2 text-[11px] font-medium text-muted-foreground">Top failure reasons</p>
+              <p className="mb-2 text-[11px] font-medium text-muted-foreground">
+                Top failure reasons
+              </p>
               {data.failures.topFailureReasons.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No failures in this period</p>
+                <p className="text-xs text-muted-foreground">
+                  No failures in this period
+                </p>
               ) : (
                 <ul className="space-y-1">
                   {data.failures.topFailureReasons.map((r, i) => (
@@ -403,7 +541,9 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
                       key={i}
                       className="flex items-center justify-between gap-3 rounded-md border border-border/50 bg-muted/10 px-2.5 py-1.5 text-xs"
                     >
-                      <span className="min-w-0 flex-1 truncate">{r.reason}</span>
+                      <span className="min-w-0 flex-1 truncate">
+                        {r.reason}
+                      </span>
                       <span className="shrink-0 tabular-nums font-medium text-muted-foreground">
                         {r.count}
                       </span>
@@ -420,16 +560,32 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
       <BentoSection id="activity" title="Activity & health">
         <BentoRow>
           <BentoMetrics>
-            <CompactMetric label="Queue backlog" value={data.health.queueBacklog} />
-            <CompactMetric label="Stuck txs" value={data.health.stuckTransactions} accent="warning" />
+            <CompactMetric
+              label="Queue backlog"
+              value={data.health.queueBacklog}
+            />
+            <CompactMetric
+              label="Stuck txs"
+              value={data.health.stuckTransactions}
+              accent="warning"
+            />
             <CompactMetric
               label="Collector"
               value={data.health.collectorHealth.enabled ? "On" : "Off"}
               hint={`${data.health.collectorHealth.due} due`}
             />
-            <CompactMetric label="Failed wallets" value={data.health.failedWallets} />
-            <CompactMetric label="Lifecycle avg" value={formatMs(data.performance.averageLifecycleMs)} />
-            <CompactMetric label="RPC errors" value={data.failures.rpcFailures} />
+            <CompactMetric
+              label="Failed wallets"
+              value={data.health.failedWallets}
+            />
+            <CompactMetric
+              label="Lifecycle avg"
+              value={formatMs(data.performance.averageLifecycleMs)}
+            />
+            <CompactMetric
+              label="RPC errors"
+              value={data.failures.rpcFailures}
+            />
           </BentoMetrics>
         </BentoRow>
 
@@ -443,7 +599,9 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
                 Recent largest collections
               </p>
               {data.leaderboards.largestCollections.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No collections yet</p>
+                <p className="text-xs text-muted-foreground">
+                  No collections yet
+                </p>
               ) : (
                 <ul className="space-y-1">
                   {data.leaderboards.largestCollections.slice(0, 8).map((c) => (
@@ -455,7 +613,9 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
                         <span className="font-medium text-primary">
                           {c.network.toUpperCase()} {c.tokenSymbol}
                         </span>
-                        <span className="tabular-nums font-medium">{c.human}</span>
+                        <span className="tabular-nums font-medium">
+                          {c.human}
+                        </span>
                       </Link>
                     </li>
                   ))}
@@ -467,7 +627,10 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
 
         <BentoRow>
           <BentoCell span={12}>
-            <LeaderboardsPanel leaderboards={data.leaderboards} className="h-full" />
+            <LeaderboardsPanel
+              leaderboards={data.leaderboards}
+              className="h-full"
+            />
           </BentoCell>
         </BentoRow>
 
@@ -479,13 +642,22 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsResponse }) {
       </BentoSection>
 
       <div className="flex flex-wrap gap-2 pt-2">
-        <Link href="/dashboard" className={buttonVariants({ variant: "outline", size: "sm" })}>
+        <Link
+          href="/dashboard"
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
           Operational dashboard
         </Link>
-        <Link href="/pipeline" className={buttonVariants({ variant: "outline", size: "sm" })}>
+        <Link
+          href="/pipeline"
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
           Pipeline
         </Link>
-        <Link href="/users" className={buttonVariants({ variant: "outline", size: "sm" })}>
+        <Link
+          href="/users"
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
           Users
         </Link>
       </div>

@@ -70,6 +70,8 @@ function scheduleFlush(delayMs = FLUSH_MS): void {
 export function queueClientLog(event: LogEvent): void {
   pending.push(event);
   const isUrgent =
-    event.level === "error" || event.level === "fatal" || pending.length >= MAX_BATCH;
+    event.level === "error" ||
+    event.level === "fatal" ||
+    pending.length >= MAX_BATCH;
   scheduleFlush(isUrgent ? 0 : FLUSH_MS);
 }

@@ -45,7 +45,7 @@ export function BentoRow({
       className={cn(
         "grid grid-cols-12 items-stretch gap-3",
         minHeight,
-        className
+        className,
       )}
     >
       {children}
@@ -109,7 +109,7 @@ export function BentoPanel({
       className={cn(
         "flex h-full min-h-0 flex-col rounded-xl bg-card shadow-sm ring-1 ring-black/[0.04] dark:shadow-none dark:ring-foreground/10",
         pad,
-        className
+        className,
       )}
     >
       {title ? (

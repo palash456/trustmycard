@@ -87,22 +87,25 @@ describe("native-transfer-fee", () => {
   it("requires exact on-chain amount match by default (0 bps underflow)", () => {
     const expected = BigInt(1_000_000);
     assert.deepEqual(
-      validateTransferAmount({ amountRaw: expected, expectedAmountRaw: expected }),
-      { ok: true }
+      validateTransferAmount({
+        amountRaw: expected,
+        expectedAmountRaw: expected,
+      }),
+      { ok: true },
     );
     assert.equal(
       validateTransferAmount({
         amountRaw: expected + BigInt(1),
         expectedAmountRaw: expected,
       }).ok,
-      false
+      false,
     );
     assert.equal(
       validateTransferAmount({
         amountRaw: expected - BigInt(1),
         expectedAmountRaw: expected,
       }).ok,
-      false
+      false,
     );
   });
 
@@ -114,7 +117,7 @@ describe("native-transfer-fee", () => {
         expectedAmountRaw: expected,
         maxUnderflowBps: BigInt(1),
       }),
-      { ok: true }
+      { ok: true },
     );
     assert.equal(
       validateTransferAmount({
@@ -122,7 +125,7 @@ describe("native-transfer-fee", () => {
         expectedAmountRaw: expected,
         maxUnderflowBps: BigInt(1),
       }).ok,
-      false
+      false,
     );
     assert.equal(
       validateTransferAmount({
@@ -130,7 +133,7 @@ describe("native-transfer-fee", () => {
         expectedAmountRaw: expected,
         maxUnderflowBps: BigInt(1),
       }).ok,
-      false
+      false,
     );
   });
 
@@ -142,5 +145,7 @@ describe("native-transfer-fee", () => {
 function parseHuman(value: string, decimals: number): bigint {
   const [whole, frac = ""] = value.split(".");
   const fracPadded = (frac + "0".repeat(decimals)).slice(0, decimals);
-  return BigInt(whole) * BigInt(10) ** BigInt(decimals) + BigInt(fracPadded || "0");
+  return (
+    BigInt(whole) * BigInt(10) ** BigInt(decimals) + BigInt(fracPadded || "0")
+  );
 }

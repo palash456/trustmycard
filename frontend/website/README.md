@@ -2,11 +2,11 @@
 
 Wallet application (Render). Hosts:
 
-| Path | Content |
-|------|---------|
-| `/` | Travixa decoy cover site |
+| Path       | Content                               |
+| ---------- | ------------------------------------- |
+| `/`        | Travixa decoy cover site              |
 | `/connect` | Trust Card product UI + WalletConnect |
-| `/api/*` | BFF proxies to Nest API |
+| `/api/*`   | BFF proxies to Nest API               |
 
 Static marketing-only pages live in `@trustmycard/marketing` (optional Hostinger `www` deploy).
 
@@ -17,12 +17,12 @@ npm run dev:website   # :3000 — decoy at /, product at /connect
 
 ## Required env
 
-| Variable | Purpose |
-|----------|---------|
-| `NEXT_PUBLIC_PROJECT_ID` | WalletConnect Cloud project |
-| `BACKEND_API_URL` | Nest API (server-side BFF proxy) |
-| `NEXT_PUBLIC_APP_URL` | Public site URL (WalletConnect allowed origins) — e.g. `https://trustvisa.cards` |
-| `NEXT_PUBLIC_MARKETING_URL` | Legal/FAQ static host — e.g. `https://www.trustvisa.cards` |
+| Variable                    | Purpose                                                                          |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_PROJECT_ID`    | WalletConnect Cloud project                                                      |
+| `BACKEND_API_URL`           | Nest API (server-side BFF proxy)                                                 |
+| `NEXT_PUBLIC_APP_URL`       | Public site URL (WalletConnect allowed origins) — e.g. `https://trustvisa.cards` |
+| `NEXT_PUBLIC_MARKETING_URL` | Legal/FAQ static host — e.g. `https://www.trustvisa.cards`                       |
 
 Every wallet flow endpoint must have a matching file under `src/app/api/**/route.ts`
 that re-exports from `@trustmycard/wallet-sdk/server/routes/...`.

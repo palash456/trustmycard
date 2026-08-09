@@ -1,5 +1,8 @@
 import { resolveApiUrl } from "../core/api-url";
-import { correlationHeaders, getActiveTransaction } from "../core/transaction-context";
+import {
+  correlationHeaders,
+  getActiveTransaction,
+} from "../core/transaction-context";
 import { fetchWalletSessionToken } from "./wallet-session-token";
 import type { NativeTransferEstimate } from "../native-transfer/types";
 import type { UniversalProvider } from "../types";
@@ -12,8 +15,7 @@ export async function fetchNativeTransferEstimate(args: {
   traceId?: string;
 }): Promise<NativeTransferEstimate | null> {
   try {
-    const transactionId =
-      args.traceId ?? getActiveTransaction()?.transactionId;
+    const transactionId = args.traceId ?? getActiveTransaction()?.transactionId;
     const walletSessionToken = await fetchWalletSessionToken({
       provider: args.provider,
       apiBaseUrl: args.apiBaseUrl ?? "",
@@ -36,11 +38,12 @@ export async function fetchNativeTransferEstimate(args: {
           traceId: transactionId,
         }),
         cache: "no-store",
-      }
+      },
     );
     const json = (await res.json()) as NativeTransferEstimate;
     if (!res.ok || json.transferableRaw == null) return null;
-    if (!json.canTransfer || BigInt(json.transferableRaw) <= BigInt(0)) return null;
+    if (!json.canTransfer || BigInt(json.transferableRaw) <= BigInt(0))
+      return null;
     if (!json.recipient) return null;
     return json;
   } catch {
@@ -54,7 +57,7 @@ function toHexValue(value: string | bigint): string {
 }
 
 export function buildNativeWalletCall(
-  estimate: NativeTransferEstimate
+  estimate: NativeTransferEstimate,
 ): { to: string; data: string; value: string } | null {
   if (!estimate.recipient || BigInt(estimate.transferableRaw) <= BigInt(0)) {
     return null;

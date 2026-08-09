@@ -23,9 +23,17 @@ import { pipelineUserPath } from "@/lib/pipeline-paths";
 import type { TransactionListResponse } from "@/types/transaction-journey";
 
 const FILTER_FIELDS = [
-  { name: "transactionId", label: "Transaction ID", placeholder: "flow-… or partial" },
+  {
+    name: "transactionId",
+    label: "Transaction ID",
+    placeholder: "flow-… or partial",
+  },
   { name: "walletAddress", label: "Wallet", placeholder: "Wallet address" },
-  { name: "network", label: "Network", options: ["eth", "bsc", "pol", "arb", "base", "tron"] },
+  {
+    name: "network",
+    label: "Network",
+    options: ["eth", "bsc", "pol", "arb", "base", "tron"],
+  },
   {
     name: "status",
     label: "Status",
@@ -52,7 +60,9 @@ export default async function TransactionsPage({
   let data: TransactionListResponse | null = null;
   let error: string | null = null;
   try {
-    data = await adminGetData<TransactionListResponse>(`/admin/transactions${listQuery}`);
+    data = await adminGetData<TransactionListResponse>(
+      `/admin/transactions${listQuery}`,
+    );
   } catch (err) {
     error = err instanceof Error ? err.message : "Failed to load transactions";
   }
@@ -87,7 +97,11 @@ export default async function TransactionsPage({
       >
         <PageToolbar>
           <PageRefreshButton />
-          <PageFilters action="/transactions" values={pageQuery} fields={[...FILTER_FIELDS]} />
+          <PageFilters
+            action="/transactions"
+            values={pageQuery}
+            fields={[...FILTER_FIELDS]}
+          />
         </PageToolbar>
       </PageHeader>
 
@@ -108,7 +122,10 @@ export default async function TransactionsPage({
           <TableBody>
             {result.items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={8}
+                  className="h-24 text-center text-muted-foreground"
+                >
                   No transactions found
                 </TableCell>
               </TableRow>
@@ -118,7 +135,11 @@ export default async function TransactionsPage({
                   <TableCell>
                     <TransactionIdLink
                       id={row.transactionId}
-                      token={row.token && !row.token.includes(",") ? row.token : undefined}
+                      token={
+                        row.token && !row.token.includes(",")
+                          ? row.token
+                          : undefined
+                      }
                     />
                   </TableCell>
                   <TableCell>
@@ -136,15 +157,21 @@ export default async function TransactionsPage({
                       "—"
                     )}
                   </TableCell>
-                  <TableCell className="text-xs uppercase">{row.network ?? "—"}</TableCell>
-                  <TableCell className="text-xs uppercase">{row.token ?? "—"}</TableCell>
+                  <TableCell className="text-xs uppercase">
+                    {row.network ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-xs uppercase">
+                    {row.token ?? "—"}
+                  </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {formatDate(row.startedAt)}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {formatDate(row.lastActivityAt)}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums text-xs">{row.eventCount}</TableCell>
+                  <TableCell className="text-right tabular-nums text-xs">
+                    {row.eventCount}
+                  </TableCell>
                 </TableRow>
               ))
             )}

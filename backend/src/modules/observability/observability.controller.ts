@@ -1,11 +1,9 @@
 import { SkipThrottle } from "@nestjs/throttler";
-import {
-  Body,
-  Controller,
-  HttpCode,
-  Post,
-} from "@nestjs/common";
-import type { LogEvent, SessionTimeline } from "@trustmycard/shared/observability";
+import { Body, Controller, HttpCode, Post } from "@nestjs/common";
+import type {
+  LogEvent,
+  SessionTimeline,
+} from "@trustmycard/shared/observability";
 import { ObservabilityService } from "./observability.service";
 
 @SkipThrottle()
@@ -25,7 +23,7 @@ export class ObservabilityController {
       type?: "log" | "session_timeline";
       events?: Partial<LogEvent>[];
       timeline?: SessionTimeline;
-    }
+    },
   ) {
     if (body.type === "session_timeline" && body.timeline) {
       this.observability.schedulePersistTimeline(body.timeline);
@@ -33,7 +31,9 @@ export class ObservabilityController {
     }
 
     const events = body.events ?? (body as unknown as Partial<LogEvent>[]);
-    const list = Array.isArray(events) ? events : [body as unknown as Partial<LogEvent>];
+    const list = Array.isArray(events)
+      ? events
+      : [body as unknown as Partial<LogEvent>];
 
     let accepted = 0;
     for (const event of list) {

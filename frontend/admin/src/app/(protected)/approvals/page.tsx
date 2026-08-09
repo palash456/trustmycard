@@ -94,7 +94,9 @@ export default async function ApprovalsPage({
           title="Approvals"
           tip="All token allowances recorded after users approve USDT/USDC (and similar). Filter by network, status, or owner; open a row for manual transfer and collection controls."
         />
-        <ErrorAlert message={err instanceof Error ? err.message : "Failed to load"} />
+        <ErrorAlert
+          message={err instanceof Error ? err.message : "Failed to load"}
+        />
       </ListPageLayout>
     );
   }
@@ -108,7 +110,11 @@ export default async function ApprovalsPage({
       >
         <PageToolbar>
           <PageRefreshButton />
-          <PageFilters action="/approvals" values={sp} fields={[...FILTER_FIELDS]} />
+          <PageFilters
+            action="/approvals"
+            values={sp}
+            fields={[...FILTER_FIELDS]}
+          />
         </PageToolbar>
       </PageHeader>
 
@@ -131,7 +137,10 @@ export default async function ApprovalsPage({
           <TableBody>
             {data.items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={8}
+                  className="h-24 text-center text-muted-foreground"
+                >
                   No approvals found
                 </TableCell>
               </TableRow>
@@ -141,7 +150,9 @@ export default async function ApprovalsPage({
                   <TableCell>
                     <JourneyTableCell transactionId={row.traceId} />
                   </TableCell>
-                  <TableCell className="font-medium uppercase">{row.network}</TableCell>
+                  <TableCell className="font-medium uppercase">
+                    {row.network}
+                  </TableCell>
                   <TableCell>{row.tokenSymbol}</TableCell>
                   <TableCell className="font-mono text-xs">
                     <Link
@@ -155,7 +166,8 @@ export default async function ApprovalsPage({
                     <StatusBadge value={row.status} />
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {formatAdminAmount(row.collectedRaw)} / rem {formatAdminAmount(row.remainingRaw)}
+                    {formatAdminAmount(row.collectedRaw)} / rem{" "}
+                    {formatAdminAmount(row.remainingRaw)}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {formatDate(row.nextCheckAt)}

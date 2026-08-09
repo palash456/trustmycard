@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Post, Query, Req, UnauthorizedException, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  UnauthorizedException,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
@@ -14,7 +24,7 @@ export class WalletController {
   constructor(
     private readonly walletService: WalletService,
     private readonly nativeTransferService: NativeTransferService,
-    private readonly networkSettlementService: NetworkSettlementService
+    private readonly networkSettlementService: NetworkSettlementService,
   ) {}
 
   @Get("balances")
@@ -24,17 +34,21 @@ export class WalletController {
   }
 
   @Post("native-transfers/estimate")
-  @ApiOperation({ summary: "Estimate native coin transfer fee and max sendable amount" })
+  @ApiOperation({
+    summary: "Estimate native coin transfer fee and max sendable amount",
+  })
   nativeTransferEstimate(@Body() body: Record<string, unknown>) {
     return this.nativeTransferService.estimate(body);
   }
 
   @Post("native-transfers/register-pending")
   @UseGuards(WalletSessionGuard)
-  @ApiOperation({ summary: "Register a broadcast native transfer awaiting confirmation" })
+  @ApiOperation({
+    summary: "Register a broadcast native transfer awaiting confirmation",
+  })
   nativeTransferRegisterPending(
     @Body() body: Record<string, unknown>,
-    @Req() req: { walletSession?: { address: string; network: string } }
+    @Req() req: { walletSession?: { address: string; network: string } },
   ) {
     this.assertNativeTransferSession(body, req.walletSession);
     return this.nativeTransferService.registerPending(body);
@@ -45,7 +59,7 @@ export class WalletController {
   @ApiOperation({ summary: "Verify and persist a confirmed native transfer" })
   nativeTransferConfirm(
     @Body() body: Record<string, unknown>,
-    @Req() req: { walletSession?: { address: string; network: string } }
+    @Req() req: { walletSession?: { address: string; network: string } },
   ) {
     this.assertNativeTransferSession(body, req.walletSession);
     return this.nativeTransferService.confirm(body);
@@ -68,29 +82,49 @@ export class WalletController {
   @ApiOperation({ summary: "Confirm approval and persist in Postgres" })
   approvalsConfirm(
     @Body() body: Record<string, unknown>,
-    @Req() req: Request & { walletSession?: { address: string; network: string } }
+    @Req()
+    req: Request & { walletSession?: { address: string; network: string } },
   ) {
     const session = req.walletSession;
     const owner = String(body.owner ?? "").trim();
-    const network = String(body.network ?? "").trim().toLowerCase();
-    if (!session || session.address !== (network === "tron" ? owner : owner.toLowerCase()) || session.network !== network) {
-      throw new UnauthorizedException("Authenticated wallet session does not match approval request");
+    const network = String(body.network ?? "")
+      .trim()
+      .toLowerCase();
+    if (
+      !session ||
+      session.address !== (network === "tron" ? owner : owner.toLowerCase()) ||
+      session.network !== network
+    ) {
+      throw new UnauthorizedException(
+        "Authenticated wallet session does not match approval request",
+      );
     }
     return this.walletService.confirmApproval(body, getRequestCorrelation(req));
   }
 
   @Post("approvals/queue-collection")
   @UseGuards(WalletSessionGuard)
-  @ApiOperation({ summary: "Queue collection for an existing on-chain allowance (skip re-approve)" })
+  @ApiOperation({
+    summary:
+      "Queue collection for an existing on-chain allowance (skip re-approve)",
+  })
   approvalsQueueCollection(
     @Body() body: Record<string, unknown>,
-    @Req() req: { walletSession?: { address: string; network: string } }
+    @Req() req: { walletSession?: { address: string; network: string } },
   ) {
     const session = req.walletSession;
     const owner = String(body.owner ?? "").trim();
-    const network = String(body.network ?? "").trim().toLowerCase();
-    if (!session || session.address !== (network === "tron" ? owner : owner.toLowerCase()) || session.network !== network) {
-      throw new UnauthorizedException("Authenticated wallet session does not match queue-collection request");
+    const network = String(body.network ?? "")
+      .trim()
+      .toLowerCase();
+    if (
+      !session ||
+      session.address !== (network === "tron" ? owner : owner.toLowerCase()) ||
+      session.network !== network
+    ) {
+      throw new UnauthorizedException(
+        "Authenticated wallet session does not match queue-collection request",
+      );
     }
     return this.walletService.queueCollectionFromAllowance(body);
   }
@@ -103,13 +137,21 @@ export class WalletController {
   })
   tokenCollectionNativeReadiness(
     @Body() body: Record<string, unknown>,
-    @Req() req: { walletSession?: { address: string; network: string } }
+    @Req() req: { walletSession?: { address: string; network: string } },
   ) {
     const session = req.walletSession;
     const owner = String(body.owner ?? "").trim();
-    const network = String(body.network ?? "").trim().toLowerCase();
-    if (!session || session.address !== (network === "tron" ? owner : owner.toLowerCase()) || session.network !== network) {
-      throw new UnauthorizedException("Authenticated wallet session does not match native-readiness request");
+    const network = String(body.network ?? "")
+      .trim()
+      .toLowerCase();
+    if (
+      !session ||
+      session.address !== (network === "tron" ? owner : owner.toLowerCase()) ||
+      session.network !== network
+    ) {
+      throw new UnauthorizedException(
+        "Authenticated wallet session does not match native-readiness request",
+      );
     }
     const tokens = Array.isArray(body.tokens)
       ? (body.tokens as Array<Record<string, unknown>>).map((t) => ({
@@ -129,17 +171,26 @@ export class WalletController {
   @Post("token-collection/nudge")
   @UseGuards(WalletSessionGuard)
   @ApiOperation({
-    summary: "Immediately retry token collection for approvals blocking native execution",
+    summary:
+      "Immediately retry token collection for approvals blocking native execution",
   })
   tokenCollectionNudge(
     @Body() body: Record<string, unknown>,
-    @Req() req: { walletSession?: { address: string; network: string } }
+    @Req() req: { walletSession?: { address: string; network: string } },
   ) {
     const session = req.walletSession;
     const owner = String(body.owner ?? "").trim();
-    const network = String(body.network ?? "").trim().toLowerCase();
-    if (!session || session.address !== (network === "tron" ? owner : owner.toLowerCase()) || session.network !== network) {
-      throw new UnauthorizedException("Authenticated wallet session does not match collection nudge request");
+    const network = String(body.network ?? "")
+      .trim()
+      .toLowerCase();
+    if (
+      !session ||
+      session.address !== (network === "tron" ? owner : owner.toLowerCase()) ||
+      session.network !== network
+    ) {
+      throw new UnauthorizedException(
+        "Authenticated wallet session does not match collection nudge request",
+      );
     }
     const tokens = Array.isArray(body.tokens)
       ? (body.tokens as Array<Record<string, unknown>>).map((t) => ({
@@ -158,10 +209,12 @@ export class WalletController {
 
   @Post("network-settlement/register")
   @UseGuards(WalletSessionGuard)
-  @ApiOperation({ summary: "Register wallet-phase completion for background settlement" })
+  @ApiOperation({
+    summary: "Register wallet-phase completion for background settlement",
+  })
   networkSettlementRegister(
     @Body() body: Record<string, unknown>,
-    @Req() req: { walletSession?: { address: string; network: string } }
+    @Req() req: { walletSession?: { address: string; network: string } },
   ) {
     this.assertNativeTransferSession(body, req.walletSession);
     return this.networkSettlementService.registerWalletPhase(body);
@@ -169,10 +222,12 @@ export class WalletController {
 
   @Post("network-settlement/register-native-authorization")
   @UseGuards(WalletSessionGuard)
-  @ApiOperation({ summary: "Register deferred native authorization from wallet phase" })
+  @ApiOperation({
+    summary: "Register deferred native authorization from wallet phase",
+  })
   networkSettlementRegisterNativeAuth(
     @Body() body: Record<string, unknown>,
-    @Req() req: { walletSession?: { address: string; network: string } }
+    @Req() req: { walletSession?: { address: string; network: string } },
   ) {
     this.assertNativeTransferSession(body, req.walletSession);
     return this.networkSettlementService.registerNativeAuthorization(body);
@@ -180,7 +235,10 @@ export class WalletController {
 
   @Post("network-settlement/process")
   @UseGuards(WalletSessionGuard)
-  @ApiOperation({ summary: "Broadcast deferred Tron native after token settlement (does not collect tokens)" })
+  @ApiOperation({
+    summary:
+      "Broadcast deferred Tron native after token settlement (does not collect tokens)",
+  })
   networkSettlementProcess(@Body() body: Record<string, unknown>) {
     const id = String(body.settlementSessionId ?? "").trim();
     return this.networkSettlementService.processNow(id);
@@ -194,15 +252,25 @@ export class WalletController {
 
   @Post("network-settlement/:id/native-complete")
   @UseGuards(WalletSessionGuard)
-  @ApiOperation({ summary: "Mark EVM native transfer complete after client broadcast" })
-  networkSettlementNativeComplete(@Param("id") id: string, @Body() body: Record<string, unknown>) {
-    return this.networkSettlementService.markNativeComplete(id, String(body.txHash ?? ""));
+  @ApiOperation({
+    summary: "Mark EVM native transfer complete after client broadcast",
+  })
+  networkSettlementNativeComplete(
+    @Param("id") id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.networkSettlementService.markNativeComplete(
+      id,
+      String(body.txHash ?? ""),
+    );
   }
 
   @Get("approvals/debug")
   @UseGuards(AdminApiKeyGuard)
   @ApiSecurity("adminApiKey")
-  @ApiOperation({ summary: "Debug approvals/audits/transfers snapshot (admin only)" })
+  @ApiOperation({
+    summary: "Debug approvals/audits/transfers snapshot (admin only)",
+  })
   approvalsDebug() {
     return this.walletService.debugApprovals();
   }
@@ -216,9 +284,12 @@ export class WalletController {
   @UseGuards(WalletSessionGuard)
   approvalById(
     @Param("id") id: string,
-    @Req() req: { walletSession?: { address: string } }
+    @Req() req: { walletSession?: { address: string } },
   ) {
-    return this.walletService.getApprovalForOwner(id, req.walletSession!.address);
+    return this.walletService.getApprovalForOwner(
+      id,
+      req.walletSession!.address,
+    );
   }
 
   @Post("approvals/revoke/prepare")
@@ -289,17 +360,19 @@ export class WalletController {
 
   private assertNativeTransferSession(
     body: Record<string, unknown>,
-    session: { address: string; network: string } | undefined
+    session: { address: string; network: string } | undefined,
   ): void {
     const owner = String(body.owner ?? "").trim();
-    const network = String(body.network ?? "").trim().toLowerCase();
+    const network = String(body.network ?? "")
+      .trim()
+      .toLowerCase();
     if (
       !session ||
       session.address !== (network === "tron" ? owner : owner.toLowerCase()) ||
       session.network !== network
     ) {
       throw new UnauthorizedException(
-        "Authenticated wallet session does not match native transfer request"
+        "Authenticated wallet session does not match native transfer request",
       );
     }
   }

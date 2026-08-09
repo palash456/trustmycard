@@ -32,8 +32,9 @@ export default function FrequentlyAskedQuestionsPage() {
             </Reveal>
             <Reveal delay={160}>
               <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-[#6A6D81] sm:text-lg">
-                Everything you need to know about issuing your Black Card, connecting
-                your wallet, earning rewards, and spending crypto worldwide.
+                Everything you need to know about issuing your Black Card,
+                connecting your wallet, earning rewards, and spending crypto
+                worldwide.
               </p>
             </Reveal>
           </div>

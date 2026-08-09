@@ -25,7 +25,7 @@ function badgeClass(status: PipelineStageStatus): string {
 
 export function PipelineStageRow({ stage }: { stage: PipelineStage }) {
   const metaEntries = Object.entries(stage.metadata).filter(
-    ([, v]) => v != null && v !== ""
+    ([, v]) => v != null && v !== "",
   );
 
   return (
@@ -42,7 +42,7 @@ export function PipelineStageRow({ stage }: { stage: PipelineStage }) {
         <span
           className={cn(
             "rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-            badgeClass(stage.status)
+            badgeClass(stage.status),
           )}
         >
           {pipelineStageStatusLabel(stage.status)}

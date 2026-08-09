@@ -20,7 +20,7 @@ test("getEvmTransactionStatus tries next RPC when first returns null receipt", a
             }
           : null,
       }),
-      { status: 200, headers: { "content-type": "application/json" } }
+      { status: 200, headers: { "content-type": "application/json" } },
     );
   };
 
@@ -39,10 +39,10 @@ test("getEvmTransactionStatus tries next RPC when first returns null receipt", a
 
 test("getEvmTransactionStatus returns PENDING when all RPCs return null", async () => {
   globalThis.fetch = async () =>
-    new Response(
-      JSON.stringify({ jsonrpc: "2.0", id: 1, result: null }),
-      { status: 200, headers: { "content-type": "application/json" } }
-    );
+    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: null }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
 
   try {
     const status = await getEvmTransactionStatus({

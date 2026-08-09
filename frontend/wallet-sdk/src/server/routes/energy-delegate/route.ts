@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
         error:
           err instanceof Error ? err.message : "energy-delegate proxy failed",
       },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }

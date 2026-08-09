@@ -47,10 +47,16 @@ export function JourneyPageHeader({
               {status ? <StatusBadge value={status} /> : null}
             </div>
             <div className="flex flex-wrap gap-3 text-xs">
-              <Link href={transactionDetailLink(journeyId)} className="text-primary hover:underline">
+              <Link
+                href={transactionDetailLink(journeyId)}
+                className="text-primary hover:underline"
+              >
                 Open journey hub
               </Link>
-              <Link href={transactionLogsLink(journeyId)} className="text-primary hover:underline">
+              <Link
+                href={transactionLogsLink(journeyId)}
+                className="text-primary hover:underline"
+              >
                 Structured logs
               </Link>
               <Link
@@ -65,7 +71,8 @@ export function JourneyPageHeader({
       ) : (
         <Card className="border-amber-500/30 bg-amber-500/5 shadow-none">
           <CardContent className="px-4 py-3 text-sm text-muted-foreground">
-            No transaction ID recorded for this record — likely created before journey tracing was enabled.
+            No transaction ID recorded for this record — likely created before
+            journey tracing was enabled.
           </CardContent>
         </Card>
       )}
@@ -76,8 +83,7 @@ export function JourneyPageHeader({
           <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
             {recordLabel && recordId ? (
               <span>
-                {recordLabel}{" "}
-                <span className="font-mono">{recordId}</span>
+                {recordLabel} <span className="font-mono">{recordId}</span>
               </span>
             ) : null}
             {walletAddress ? (
@@ -101,14 +107,12 @@ export function JourneyPageHeader({
 }
 
 /** Resolve journey ID from common entity field shapes. */
-export function journeyIdFromFields(
-  fields: {
-    transactionId?: string | null;
-    traceId?: string | null;
-    sessionId?: string | null;
-    clientSessionId?: string | null;
-  }
-): string | null {
+export function journeyIdFromFields(fields: {
+  transactionId?: string | null;
+  traceId?: string | null;
+  sessionId?: string | null;
+  clientSessionId?: string | null;
+}): string | null {
   return resolveTransactionId(fields);
 }
 

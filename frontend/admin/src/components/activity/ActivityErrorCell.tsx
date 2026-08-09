@@ -1,7 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { getErrorMessage } from "@/lib/observability";
 
-export function formatActivityError(error: unknown, status?: string): string | null {
+export function formatActivityError(
+  error: unknown,
+  status?: string,
+): string | null {
   if (error == null || error === "") {
     return status === "error" ? "Unknown error" : null;
   }
@@ -23,7 +26,10 @@ export function ActivityErrorCell({
   if (!message) {
     if (isError) {
       return (
-        <Badge variant="destructive" className="text-[10px] font-semibold uppercase">
+        <Badge
+          variant="destructive"
+          className="text-[10px] font-semibold uppercase"
+        >
           Failed
         </Badge>
       );
@@ -35,7 +41,10 @@ export function ActivityErrorCell({
 
   return (
     <div className="flex max-w-[260px] flex-col gap-1.5">
-      <Badge variant="destructive" className="w-fit text-[10px] font-semibold uppercase">
+      <Badge
+        variant="destructive"
+        className="w-fit text-[10px] font-semibold uppercase"
+      >
         Error
       </Badge>
       <p className="text-xs leading-snug text-destructive" title={message}>

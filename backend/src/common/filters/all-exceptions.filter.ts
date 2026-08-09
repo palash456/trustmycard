@@ -6,7 +6,11 @@ import {
   HttpStatus,
 } from "@nestjs/common";
 import type { Request, Response } from "express";
-import { getErrorMessage, safeObservability, serializeError } from "@trustmycard/shared/observability";
+import {
+  getErrorMessage,
+  safeObservability,
+  serializeError,
+} from "@trustmycard/shared/observability";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 import { getRequestCorrelation } from "../middleware/correlation.middleware";
 
@@ -31,8 +35,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const message =
       typeof responseBody === "string"
         ? responseBody
-        : responseBody && typeof responseBody === "object" && "message" in responseBody
-          ? getErrorMessage((responseBody as { message: unknown }).message, getErrorMessage(exception))
+        : responseBody &&
+            typeof responseBody === "object" &&
+            "message" in responseBody
+          ? getErrorMessage(
+              (responseBody as { message: unknown }).message,
+              getErrorMessage(exception),
+            )
           : getErrorMessage(exception);
 
     const errorCode =
@@ -57,7 +66,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         err: exception,
         error: serializeError(exception),
         skipSampling: true,
-      })
+      }),
     );
 
     res.status(status).json({

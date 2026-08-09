@@ -12,10 +12,7 @@ const {
 
 describe("flow-id", () => {
   it("walletSuffix uses last 6 alphanumeric chars", () => {
-    assert.equal(
-      walletSuffix("0x742d35Cc6634C0532925a8b8C4a8F92C"),
-      "A8F92C"
-    );
+    assert.equal(walletSuffix("0x742d35Cc6634C0532925a8b8C4a8F92C"), "A8F92C");
     assert.equal(walletSuffix("TXYZabc123def456"), "DEF456");
   });
 
@@ -48,11 +45,11 @@ describe("flow-id", () => {
     const journey = "flow-20260809-142315-A8F92C";
     assert.equal(
       generatePublicId("approval", "usdt", journey),
-      "approval-usdt-20260809-142315-A8F92C"
+      "approval-usdt-20260809-142315-A8F92C",
     );
     assert.equal(
       generatePublicId("transfer", "usdc", journey, 2),
-      "transfer-usdc-20260809-142315-A8F92C-02"
+      "transfer-usdc-20260809-142315-A8F92C-02",
     );
   });
 

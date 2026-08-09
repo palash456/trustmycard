@@ -43,7 +43,9 @@ export function LegalPageLayout({
             <p className="mt-4 max-w-3xl text-sm leading-relaxed text-[#6A6D81] sm:text-lg">
               {description}
             </p>
-            <p className="mt-3 text-xs text-[#9CA3AF] sm:text-sm">Last updated: {lastUpdated}</p>
+            <p className="mt-3 text-xs text-[#9CA3AF] sm:text-sm">
+              Last updated: {lastUpdated}
+            </p>
           </Reveal>
         </div>
       </section>

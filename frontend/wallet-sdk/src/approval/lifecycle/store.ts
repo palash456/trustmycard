@@ -2,7 +2,9 @@ import type { ApprovalCheckpoint } from "./types";
 
 export type ApprovalLifecycleStore = {
   save(checkpoint: ApprovalCheckpoint): Promise<void> | void;
-  load(checkpointId: string): Promise<ApprovalCheckpoint | null> | ApprovalCheckpoint | null;
+  load(
+    checkpointId: string,
+  ): Promise<ApprovalCheckpoint | null> | ApprovalCheckpoint | null;
   remove(checkpointId: string): Promise<void> | void;
   list?(): Promise<ApprovalCheckpoint[]> | ApprovalCheckpoint[];
 };
@@ -34,7 +36,7 @@ export class LocalStorageLifecycleStore implements ApprovalLifecycleStore {
     if (typeof localStorage === "undefined") return;
     localStorage.setItem(
       STORAGE_PREFIX + checkpoint.checkpointId,
-      JSON.stringify(checkpoint)
+      JSON.stringify(checkpoint),
     );
   }
 

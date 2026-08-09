@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  OnModuleDestroy,
-  OnModuleInit,
-} from "@nestjs/common";
+import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
 import { randomUUID } from "crypto";
 import {
@@ -30,7 +26,7 @@ export class ApprovalCollectionScheduler
   constructor(
     private readonly walletService: WalletService,
     private readonly configService: ConfigService,
-    private readonly logger: StructuredLoggerService
+    private readonly logger: StructuredLoggerService,
   ) {}
 
   onModuleInit(): void {
@@ -226,7 +222,11 @@ export class ApprovalCollectionScheduler
         try {
           await this.walletService.processMonitoredApproval(id);
           incrementCounter("collector.transfers.completed", { network });
-          recordTiming("collector.execution.duration_ms", Date.now() - execStart, { network });
+          recordTiming(
+            "collector.execution.duration_ms",
+            Date.now() - execStart,
+            { network },
+          );
         } catch (err) {
           incrementCounter("collector.transfers.failed", {
             network,

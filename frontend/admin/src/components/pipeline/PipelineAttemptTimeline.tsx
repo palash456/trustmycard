@@ -33,15 +33,22 @@ export function PipelineAttemptTimeline({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-medium text-muted-foreground">Attempt history</p>
+      <p className="text-xs font-medium text-muted-foreground">
+        Attempt history
+      </p>
       <div className="grid gap-2 sm:grid-cols-2">
         {attempts.map((attempt) => (
           <div
             key={attempt.id}
-            className={cn("rounded-md border p-2 text-xs", badgeClass(attempt.status))}
+            className={cn(
+              "rounded-md border p-2 text-xs",
+              badgeClass(attempt.status),
+            )}
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="font-semibold">Attempt #{attempt.attemptNumber}</span>
+              <span className="font-semibold">
+                Attempt #{attempt.attemptNumber}
+              </span>
               <span className="uppercase tracking-wide">
                 {pipelineStageStatusLabel(attempt.status)}
               </span>

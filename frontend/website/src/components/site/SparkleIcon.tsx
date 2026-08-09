@@ -25,10 +25,34 @@ export function SparkleIcon({
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <path d="M13.334 2V4.66667" stroke={strokeColor} strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M14.6667 3.3335H12" stroke={strokeColor} strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M2.66602 11.3335V12.6668" stroke={strokeColor} strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M3.33333 12H2" stroke={strokeColor} strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
+        <path
+          d="M13.334 2V4.66667"
+          stroke={strokeColor}
+          strokeWidth="1.33333"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M14.6667 3.3335H12"
+          stroke={strokeColor}
+          strokeWidth="1.33333"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M2.66602 11.3335V12.6668"
+          stroke={strokeColor}
+          strokeWidth="1.33333"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M3.33333 12H2"
+          stroke={strokeColor}
+          strokeWidth="1.33333"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </g>
       <defs>
         <clipPath id="clip0_sparkle">

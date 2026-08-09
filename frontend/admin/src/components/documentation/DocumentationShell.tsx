@@ -6,7 +6,13 @@ import { DocumentationContent } from "@/components/documentation/DocumentationCo
 import { DocumentationNav } from "@/components/documentation/DocumentationNav";
 import { DocumentationToc } from "@/components/documentation/DocumentationToc";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { buildTocEntries } from "@/lib/documentation/registry";
 import type { DocPage } from "@/lib/documentation/types";
 
@@ -32,9 +38,14 @@ export function DocumentationShell({ page }: { page: DocPage }) {
                   </Button>
                 }
               />
-              <SheetContent side="left" className="w-[min(100vw-2rem,20rem)] p-0">
+              <SheetContent
+                side="left"
+                className="w-[min(100vw-2rem,20rem)] p-0"
+              >
                 <SheetHeader className="border-b border-border/60 px-4 py-3">
-                  <SheetTitle className="text-left text-sm">Documentation</SheetTitle>
+                  <SheetTitle className="text-left text-sm">
+                    Documentation
+                  </SheetTitle>
                 </SheetHeader>
                 <DocumentationNav
                   activeSlug={page.slug}
@@ -43,13 +54,18 @@ export function DocumentationShell({ page }: { page: DocPage }) {
                 />
               </SheetContent>
             </Sheet>
-            <p className="truncate text-sm font-medium text-muted-foreground">{page.title}</p>
+            <p className="truncate text-sm font-medium text-muted-foreground">
+              {page.title}
+            </p>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto">
             <div className="mx-auto flex w-full max-w-6xl gap-8 px-5 py-8 lg:px-10">
               <DocumentationContent page={page} />
-              <DocumentationToc entries={tocEntries} className="w-48 shrink-0" />
+              <DocumentationToc
+                entries={tocEntries}
+                className="w-48 shrink-0"
+              />
             </div>
           </div>
         </div>

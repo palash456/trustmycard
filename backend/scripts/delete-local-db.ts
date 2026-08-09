@@ -25,9 +25,7 @@ function parseArgs(argv: string[]): { window: DeleteWindow; yes: boolean } {
   const window = (positional[0] ?? "all") as DeleteWindow;
   const yes = argv.includes("--yes") || argv.includes("-y");
   if (!["all", "today", "1h", "10m"].includes(window)) {
-    throw new Error(
-      `Unknown window "${window}". Use: all | today | 1h | 10m`
-    );
+    throw new Error(`Unknown window "${window}". Use: all | today | 1h | 10m`);
   }
   return { window, yes };
 }
@@ -58,21 +56,21 @@ function assertLocalDevelopmentDatabase(databaseUrl: string): void {
   const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
   if (!localHosts.has(host)) {
     throw new Error(
-      `Refusing to delete data: DATABASE_URL host "${host}" is not local (localhost only).`
+      `Refusing to delete data: DATABASE_URL host "${host}" is not local (localhost only).`,
     );
   }
 
   const tmcEnv = (process.env.TMC_ENV ?? "development").trim();
   if (tmcEnv !== "development") {
     throw new Error(
-      `Refusing to delete data: TMC_ENV="${tmcEnv}" (development only).`
+      `Refusing to delete data: TMC_ENV="${tmcEnv}" (development only).`,
     );
   }
 }
 
 async function countRows(
   prisma: PrismaClient,
-  since: Date | null
+  since: Date | null,
 ): Promise<Record<string, number>> {
   const createdAt = since ? { gte: since } : undefined;
   const ts = since ? { gte: since } : undefined;
@@ -94,21 +92,29 @@ async function countRows(
     networkSettlementSession,
     collectorLease,
   ] = await Promise.all([
-    prisma.transferAttempt.count({ where: createdAt ? { createdAt } : undefined }),
+    prisma.transferAttempt.count({
+      where: createdAt ? { createdAt } : undefined,
+    }),
     prisma.merchantWebhookDelivery.count({
       where: createdAt ? { createdAt } : undefined,
     }),
     prisma.outboxEvent.count({ where: createdAt ? { createdAt } : undefined }),
-    prisma.collectionIntent.count({ where: createdAt ? { createdAt } : undefined }),
+    prisma.collectionIntent.count({
+      where: createdAt ? { createdAt } : undefined,
+    }),
     prisma.transfer.count({ where: createdAt ? { createdAt } : undefined }),
     prisma.auditLog.count({ where: createdAt ? { createdAt } : undefined }),
     prisma.approval.count({ where: createdAt ? { createdAt } : undefined }),
-    prisma.nativeTransfer.count({ where: createdAt ? { createdAt } : undefined }),
+    prisma.nativeTransfer.count({
+      where: createdAt ? { createdAt } : undefined,
+    }),
     prisma.tgLogEvent.count({ where: createdAt ? { createdAt } : undefined }),
     prisma.resourceSponsorship.count({
       where: createdAt ? { createdAt } : undefined,
     }),
-    prisma.walletSession.count({ where: createdAt ? { createdAt } : undefined }),
+    prisma.walletSession.count({
+      where: createdAt ? { createdAt } : undefined,
+    }),
     prisma.observabilityEvent.count({ where: ts ? { ts } : undefined }),
     prisma.metricsSnapshot.count({ where: ts ? { ts } : undefined }),
     prisma.networkSettlementSession.count({
@@ -136,8 +142,12 @@ async function countRows(
   };
 }
 
-async function truncateTransactionalTables(prisma: PrismaClient): Promise<void> {
-  const tableList = TRANSACTIONAL_TABLES.map((name) => `"${name}"`).join(",\n  ");
+async function truncateTransactionalTables(
+  prisma: PrismaClient,
+): Promise<void> {
+  const tableList = TRANSACTIONAL_TABLES.map((name) => `"${name}"`).join(
+    ",\n  ",
+  );
   await prisma.$executeRawUnsafe(`
 TRUNCATE TABLE
   ${tableList}
@@ -190,7 +200,7 @@ async function main(): Promise<void> {
     const totalBefore = Object.values(before).reduce((sum, n) => sum + n, 0);
 
     console.log(
-      `[delete-local-db] window=${window} label=${formatWindowLabel(window, since)}`
+      `[delete-local-db] window=${window} label=${formatWindowLabel(window, since)}`,
     );
     console.log("[delete-local-db] rows to delete:");
     for (const table of TRANSACTIONAL_TABLES) {
@@ -205,7 +215,7 @@ async function main(): Promise<void> {
 
     if (!yes) {
       throw new Error(
-        "Refusing to delete without confirmation. Re-run with --yes (VS Code tasks pass this automatically)."
+        "Refusing to delete without confirmation. Re-run with --yes (VS Code tasks pass this automatically).",
       );
     }
 
@@ -216,7 +226,7 @@ async function main(): Promise<void> {
       const clearedLeases = await prisma.collectorLease.deleteMany();
       if (clearedLeases.count > 0) {
         console.log(
-          `[delete-local-db] cleared ${clearedLeases.count} CollectorLease lock(s)`
+          `[delete-local-db] cleared ${clearedLeases.count} CollectorLease lock(s)`,
         );
       }
     }
@@ -231,6 +241,9 @@ async function main(): Promise<void> {
 }
 
 void main().catch((error) => {
-  console.error("[delete-local-db] failed:", error instanceof Error ? error.message : error);
+  console.error(
+    "[delete-local-db] failed:",
+    error instanceof Error ? error.message : error,
+  );
   process.exitCode = 1;
 });

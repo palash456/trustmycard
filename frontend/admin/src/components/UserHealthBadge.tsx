@@ -2,10 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { HealthStatus } from "@/types/users";
 
-const HEALTH: Record<
-  HealthStatus,
-  { label: string; className: string }
-> = {
+const HEALTH: Record<HealthStatus, { label: string; className: string }> = {
   healthy: {
     label: "Healthy",
     className:
@@ -18,8 +15,7 @@ const HEALTH: Record<
   },
   error: {
     label: "Error",
-    className:
-      "border-destructive/30 bg-destructive/10 text-destructive",
+    className: "border-destructive/30 bg-destructive/10 text-destructive",
   },
   idle: {
     label: "Idle",

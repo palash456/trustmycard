@@ -16,7 +16,7 @@ export class AdminStreamService implements OnModuleInit {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly adminEvents: AdminEventsService
+    private readonly adminEvents: AdminEventsService,
   ) {}
 
   onModuleInit(): void {

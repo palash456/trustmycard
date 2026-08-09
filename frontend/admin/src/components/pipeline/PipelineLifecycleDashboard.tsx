@@ -24,7 +24,9 @@ export function PipelineLifecycleDashboard({
 
   return (
     <div className="space-y-6">
-      {showTransactionJourneys ? <PipelineTransactionJourneys pipeline={pipeline} /> : null}
+      {showTransactionJourneys ? (
+        <PipelineTransactionJourneys pipeline={pipeline} />
+      ) : null}
 
       <Card className="overflow-hidden">
         <CardHeader className="border-b bg-muted/30 px-6 py-4">
@@ -32,7 +34,10 @@ export function PipelineLifecycleDashboard({
           <p className="text-sm text-muted-foreground">{flowDescription}</p>
         </CardHeader>
         <CardContent className="px-4 py-6 md:px-8">
-          <PipelineFlowchartSection pipeline={pipeline} assetScope={assetScope} />
+          <PipelineFlowchartSection
+            pipeline={pipeline}
+            assetScope={assetScope}
+          />
         </CardContent>
       </Card>
 

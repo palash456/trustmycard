@@ -2,13 +2,13 @@
 
 Deploy Trust My Card for **~$14/month** on Render (2× Starter web services) using **free external** Postgres and Redis.
 
-| Service | Render cost | Notes |
-|---------|-------------|--------|
-| `tmc-backend` | $7/mo | All-in-one API + collection signing (`SERVICE_ROLE=all`) |
-| `tmc-wallet-app` | $7/mo | Decoy `/` + product `/connect` |
-| Postgres (Neon free) | $0 | External `DATABASE_URL` |
-| Redis (Upstash free) | $0 | External `REDIS_URL` |
-| Admin | $0 | Run locally when needed |
+| Service              | Render cost | Notes                                                    |
+| -------------------- | ----------- | -------------------------------------------------------- |
+| `tmc-backend`        | $7/mo       | All-in-one API + collection signing (`SERVICE_ROLE=all`) |
+| `tmc-wallet-app`     | $7/mo       | Decoy `/` + product `/connect`                           |
+| Postgres (Neon free) | $0          | External `DATABASE_URL`                                  |
+| Redis (Upstash free) | $0          | External `REDIS_URL`                                     |
+| Admin                | $0          | Run locally when needed                                  |
 
 **Tradeoff:** API and collection signing run on the **same process** (`node dist/main.js`, poll-mode collector). Keys live in the same container env. Acceptable for launch; upgrade to [render.yaml](../../render.yaml) split deploy later.
 
@@ -53,28 +53,28 @@ export SERVICE_ROLE=api
 
 **Required** — deploy will fail without these:
 
-| Variable | Example |
-|----------|---------|
-| `DATABASE_URL` | Neon connection string (`postgresql://...?sslmode=require`) |
-| `REDIS_URL` | Upstash `rediss://default:PASSWORD@HOST:6379` |
-| `APP_ORIGIN` | `https://trustvisa.cards` |
-| `ADMIN_ORIGIN` | `https://admin.trustvisa.cards` (or localhost for local admin) |
-| `SPENDER_EVM` / `SPENDER_TRON` | Public spender addresses |
-| `ADMIN_EVM_PRIVATE_KEY` | Hex (worker uses; same container as API) |
-| `ADMIN_TRON_PRIVATE_KEY` | Hex |
-| `TRONGRID_API_KEY` | Optional |
-| `TRON_ENERGY_DELEGATOR_PRIVATE_KEY` | If resource sponsor enabled |
+| Variable                            | Example                                                        |
+| ----------------------------------- | -------------------------------------------------------------- |
+| `DATABASE_URL`                      | Neon connection string (`postgresql://...?sslmode=require`)    |
+| `REDIS_URL`                         | Upstash `rediss://default:PASSWORD@HOST:6379`                  |
+| `APP_ORIGIN`                        | `https://trustvisa.cards`                                      |
+| `ADMIN_ORIGIN`                      | `https://admin.trustvisa.cards` (or localhost for local admin) |
+| `SPENDER_EVM` / `SPENDER_TRON`      | Public spender addresses                                       |
+| `ADMIN_EVM_PRIVATE_KEY`             | Hex (worker uses; same container as API)                       |
+| `ADMIN_TRON_PRIVATE_KEY`            | Hex                                                            |
+| `TRONGRID_API_KEY`                  | Optional                                                       |
+| `TRON_ENERGY_DELEGATOR_PRIVATE_KEY` | If resource sponsor enabled                                    |
 
 `ADMIN_API_KEY` is auto-generated — copy it for local admin.
 
 ### `tmc-wallet-app` env
 
-| Variable | Example |
-|----------|---------|
-| `BACKEND_API_URL` | `https://api.trustvisa.cards` (custom domain on `tmc-backend`) |
-| `NEXT_PUBLIC_APP_URL` | `https://trustvisa.cards` |
-| `NEXT_PUBLIC_MARKETING_URL` | `https://www.trustvisa.cards` |
-| `NEXT_PUBLIC_PROJECT_ID` | WalletConnect project id |
+| Variable                    | Example                                                        |
+| --------------------------- | -------------------------------------------------------------- |
+| `BACKEND_API_URL`           | `https://api.trustvisa.cards` (custom domain on `tmc-backend`) |
+| `NEXT_PUBLIC_APP_URL`       | `https://trustvisa.cards`                                      |
+| `NEXT_PUBLIC_MARKETING_URL` | `https://www.trustvisa.cards`                                  |
+| `NEXT_PUBLIC_PROJECT_ID`    | WalletConnect project id                                       |
 
 **Redeploy** wallet app after changing `NEXT_PUBLIC_*`.
 
@@ -82,10 +82,10 @@ export SERVICE_ROLE=api
 
 ## 4. Custom domains
 
-| Render service | Suggested hostname |
-|----------------|-------------------|
-| `tmc-backend` | `api.trustvisa.cards` |
-| `tmc-wallet-app` | `trustvisa.cards` |
+| Render service   | Suggested hostname    |
+| ---------------- | --------------------- |
+| `tmc-backend`    | `api.trustvisa.cards` |
+| `tmc-wallet-app` | `trustvisa.cards`     |
 
 Render → each service → **Custom Domains** → add hostname → update DNS CNAME.
 
@@ -137,11 +137,11 @@ When revenue allows, migrate to full split deploy:
 
 ## Troubleshooting
 
-| Issue | Fix |
-|-------|-----|
-| Build fails on `prisma generate` | Ensure `DATABASE_URL` set before migrate; build does not need live DB |
-| Collection signing disabled | Confirm `SERVICE_ROLE=all`, `COLLECTION_SIGNING_ENABLED=true`, `COLLECTION_DISPATCH_MODE=poll` on `tmc-backend`; redeploy after changing Start Command |
-| `ADMIN_EVM_PRIVATE_KEY does not derive...` | `SPENDER_EVM`/`SPENDER_TRON` must match addresses derived from admin private keys |
-| 502 on wallet `/api/*` | `BACKEND_API_URL` must match `tmc-backend` public URL |
-| CORS errors | `APP_ORIGIN=https://trustvisa.cards` on backend |
-| Neon connection limit | Use Neon pooled connection string |
+| Issue                                      | Fix                                                                                                                                                    |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Build fails on `prisma generate`           | Ensure `DATABASE_URL` set before migrate; build does not need live DB                                                                                  |
+| Collection signing disabled                | Confirm `SERVICE_ROLE=all`, `COLLECTION_SIGNING_ENABLED=true`, `COLLECTION_DISPATCH_MODE=poll` on `tmc-backend`; redeploy after changing Start Command |
+| `ADMIN_EVM_PRIVATE_KEY does not derive...` | `SPENDER_EVM`/`SPENDER_TRON` must match addresses derived from admin private keys                                                                      |
+| 502 on wallet `/api/*`                     | `BACKEND_API_URL` must match `tmc-backend` public URL                                                                                                  |
+| CORS errors                                | `APP_ORIGIN=https://trustvisa.cards` on backend                                                                                                        |
+| Neon connection limit                      | Use Neon pooled connection string                                                                                                                      |

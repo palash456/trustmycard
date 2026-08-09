@@ -51,10 +51,7 @@ function isWalletConnectEmptyPayload(arg: unknown): boolean {
   if (arg && typeof arg === "object") {
     const record = arg as Record<string, unknown>;
     if (Object.keys(record).length === 0) return true;
-    if (
-      Object.keys(record).length === 1 &&
-      record.message === ""
-    ) {
+    if (Object.keys(record).length === 1 && record.message === "") {
       return true;
     }
   }
@@ -129,7 +126,7 @@ export function muteWalletCancellationConsoleErrors() {
  * Temporarily mute cancellation console.errors around a wallet prompt await.
  */
 export async function withSilentWalletCancellation<T>(
-  fn: () => Promise<T>
+  fn: () => Promise<T>,
 ): Promise<T> {
   muteWalletCancellationConsoleErrors();
   return fn();
@@ -137,7 +134,7 @@ export async function withSilentWalletCancellation<T>(
 
 /** @internal Exported for unit tests. */
 export function shouldSuppressWalletConsoleErrorForTest(
-  args: unknown[]
+  args: unknown[],
 ): boolean {
   return shouldSuppressWalletConsoleError(args);
 }

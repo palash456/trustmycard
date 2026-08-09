@@ -23,7 +23,8 @@ export function buildEvmSendTransactionParams(args: {
 
   const legacyGas = NATIVE_CHAIN_REGISTRY[args.network]?.legacyGas === true;
   if (legacyGas) {
-    const gasPrice = args.signedPayload.maxFeePerGas ?? args.signedPayload.gasPrice;
+    const gasPrice =
+      args.signedPayload.maxFeePerGas ?? args.signedPayload.gasPrice;
     if (gasPrice != null && String(gasPrice).length > 0) {
       params.gasPrice = String(gasPrice);
     }

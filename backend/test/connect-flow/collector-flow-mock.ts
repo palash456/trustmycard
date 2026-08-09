@@ -12,11 +12,7 @@ import type { TestPlatformSnapshot } from "./platform-env-fixture";
 import { spenderForNetwork } from "./platform-env-fixture";
 
 export type MockApprovalStatus =
-  | "SUBMITTED"
-  | "ACTIVE"
-  | "PARTIALLY_USED"
-  | "COMPLETED"
-  | "EXPIRED";
+  "SUBMITTED" | "ACTIVE" | "PARTIALLY_USED" | "COMPLETED" | "EXPIRED";
 
 export type MockApproval = {
   id: string;
@@ -60,7 +56,13 @@ export type CollectorFlowEvent =
   | { type: "run_blocked"; approvalId: string; reason: string }
   | { type: "allowance_zero"; approvalId: string }
   | { type: "no_transferable"; approvalId: string }
-  | { type: "transfer_from"; approvalId: string; txHash: string; amountRaw: string; toAddress: string }
+  | {
+      type: "transfer_from";
+      approvalId: string;
+      txHash: string;
+      amountRaw: string;
+      toAddress: string;
+    }
   | { type: "collection_completed"; approvalId: string }
   | { type: "collection_partial"; approvalId: string; remainingRaw: string };
 
@@ -95,9 +97,13 @@ export class CollectorFlowMock {
   private readonly chain = new Map<string, ChainTokenState>();
   private tick = 0;
 
-  constructor(platform: TestPlatformSnapshot, options: CollectorFlowMockOptions = {}) {
+  constructor(
+    platform: TestPlatformSnapshot,
+    options: CollectorFlowMockOptions = {},
+  ) {
     this.platform = platform;
-    this.collectorEnabled = options.collectorEnabled ?? platform.config.collector.enabled;
+    this.collectorEnabled =
+      options.collectorEnabled ?? platform.config.collector.enabled;
     this.maxRuns = options.maxRuns ?? platform.config.collector.maxRuns;
   }
 
@@ -105,12 +111,16 @@ export class CollectorFlowMock {
     network: string,
     owner: string,
     token: string,
-    state: ChainTokenState
+    state: ChainTokenState,
   ): void {
     this.chain.set(chainKey(network, owner, token), { ...state });
   }
 
-  getChainState(network: string, owner: string, token: string): ChainTokenState {
+  getChainState(
+    network: string,
+    owner: string,
+    token: string,
+  ): ChainTokenState {
     return (
       this.chain.get(chainKey(network, owner, token)) ?? {
         allowanceRaw: BigInt(0),
@@ -132,7 +142,9 @@ export class CollectorFlowMock {
   }): MockApproval {
     const spender = spenderForNetwork(this.platform, args.network);
     if (!spender) {
-      throw new Error(`No spender configured for ${args.network} in platform.env`);
+      throw new Error(
+        `No spender configured for ${args.network} in platform.env`,
+      );
     }
 
     const remaining = args.remainingRaw ?? BigInt(1_000_000);
@@ -205,7 +217,7 @@ export class CollectorFlowMock {
     const chain = this.getChainState(
       claimed.network,
       claimed.ownerAddress,
-      claimed.tokenSymbol
+      claimed.tokenSymbol,
     );
 
     if (chain.allowanceRaw <= BigInt(0)) {
@@ -307,7 +319,10 @@ export class CollectorFlowMock {
     };
   }
 
-  runCollectorUntilIdle(approvalId: string, maxTicks = 20): CollectorRunResult[] {
+  runCollectorUntilIdle(
+    approvalId: string,
+    maxTicks = 20,
+  ): CollectorRunResult[] {
     const results: CollectorRunResult[] = [];
     for (let i = 0; i < maxTicks; i += 1) {
       const before = this.approvals.get(approvalId);

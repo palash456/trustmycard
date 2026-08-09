@@ -18,10 +18,14 @@ test("every supported EVM chain exposes USDT and USDC with valid addresses", () 
     assert.equal(tokens.length, 2, `${network} should expose USDT + USDC`);
     assert.deepEqual(
       tokens.map((t) => t.symbol),
-      ["USDT", "USDC"]
+      ["USDT", "USDC"],
     );
     for (const token of tokens) {
-      assert.match(token.address, /^0x[a-fA-F0-9]{40}$/, `${network} ${token.symbol} address`);
+      assert.match(
+        token.address,
+        /^0x[a-fA-F0-9]{40}$/,
+        `${network} ${token.symbol} address`,
+      );
       assert.ok(token.decimals > 0, `${network} ${token.symbol} decimals`);
     }
     assert.ok(getToken(network, "USDT"));
@@ -54,7 +58,10 @@ test("transfer amount raw respects token decimals on every EVM chain", () => {
       };
       const human = balanceForToken(row, symbol);
       const raw = parseHumanToRaw(human, info.decimals);
-      assert.ok(raw > BigInt(0), `${network} ${symbol} should parse positive raw`);
+      assert.ok(
+        raw > BigInt(0),
+        `${network} ${symbol} should parse positive raw`,
+      );
     }
   }
 });
@@ -63,7 +70,7 @@ test("tron exposes USDT and USDC with distinct token metadata", () => {
   const tokens = tokensForNetwork("tron");
   assert.deepEqual(
     tokens.map((t) => t.symbol),
-    ["USDT", "USDC"]
+    ["USDT", "USDC"],
   );
   assert.notEqual(tokens[0]?.address, tokens[1]?.address);
 });

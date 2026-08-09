@@ -20,7 +20,10 @@ export type NetworkChainMeta = {
   legacyGas?: boolean;
 };
 
-export const NATIVE_CHAIN_REGISTRY: Record<SupportedNetworkKey, NetworkChainMeta> = {
+export const NATIVE_CHAIN_REGISTRY: Record<
+  SupportedNetworkKey,
+  NetworkChainMeta
+> = {
   eth: {
     key: "eth",
     chainId: 1,
@@ -79,15 +82,15 @@ export const NATIVE_CHAIN_REGISTRY: Record<SupportedNetworkKey, NetworkChainMeta
 };
 
 export const EVM_CHAIN_KEYS = Object.keys(NATIVE_CHAIN_REGISTRY).filter(
-  (k) => k !== "tron"
+  (k) => k !== "tron",
 ) as EvmChainKey[];
 
 export const EVM_CHAIN_ID: Record<EvmChainKey, number> = Object.fromEntries(
-  EVM_CHAIN_KEYS.map((k) => [k, NATIVE_CHAIN_REGISTRY[k].chainId!])
+  EVM_CHAIN_KEYS.map((k) => [k, NATIVE_CHAIN_REGISTRY[k].chainId!]),
 ) as Record<EvmChainKey, number>;
 
 export const EVM_RPC: Record<EvmChainKey, string> = Object.fromEntries(
-  EVM_CHAIN_KEYS.map((k) => [k, NATIVE_CHAIN_REGISTRY[k].rpcUrl])
+  EVM_CHAIN_KEYS.map((k) => [k, NATIVE_CHAIN_REGISTRY[k].rpcUrl]),
 ) as Record<EvmChainKey, string>;
 
 export function isEvmChainKey(key: string): key is EvmChainKey {

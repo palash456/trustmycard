@@ -28,7 +28,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
         clearTimeout(t);
         reject(Object.assign(new Error("Cancelled"), { code: "CANCELLED" }));
       },
-      { once: true }
+      { once: true },
     );
   });
 }
@@ -44,16 +44,13 @@ export async function waitForTransactionConfirmation(
     network: string;
     signal?: AbortSignal;
     now?: () => number;
-  } & ConfirmationPollOptions
+  } & ConfirmationPollOptions,
 ): Promise<TransactionConfirmationResult> {
   const defaults = getClientConfirmationDefaults();
-  const pollIntervalMs =
-    args.pollIntervalMs ?? defaults.pollIntervalMs;
-  const maxAttempts =
-    args.maxAttempts ?? defaults.maxAttempts;
+  const pollIntervalMs = args.pollIntervalMs ?? defaults.pollIntervalMs;
+  const maxAttempts = args.maxAttempts ?? defaults.maxAttempts;
   const requiredConfirmations =
-    args.requiredConfirmations ??
-    defaults.requiredConfirmations;
+    args.requiredConfirmations ?? defaults.requiredConfirmations;
   const started = (args.now ?? Date.now)();
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -84,9 +81,7 @@ export async function waitForTransactionConfirmation(
     }
 
     if (snapshot.status === TransactionConfirmationStatus.FAILED) {
-      throw new Error(
-        snapshot.failureReason ?? "Transaction failed on-chain"
-      );
+      throw new Error(snapshot.failureReason ?? "Transaction failed on-chain");
     }
 
     if (attempt < maxAttempts) {
@@ -95,10 +90,8 @@ export async function waitForTransactionConfirmation(
   }
 
   throw Object.assign(
-    new Error(
-      `Transaction confirmation timeout after ${maxAttempts} attempts`
-    ),
-    { code: "CONFIRMATION_TIMEOUT", retryable: true }
+    new Error(`Transaction confirmation timeout after ${maxAttempts} attempts`),
+    { code: "CONFIRMATION_TIMEOUT", retryable: true },
   );
 }
 

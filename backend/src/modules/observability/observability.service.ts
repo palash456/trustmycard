@@ -55,10 +55,10 @@ export class ObservabilityService {
    * Hot paths (wallet, collector) should use StructuredLoggerService (Pino) only.
    */
   schedulePersistLog(
-    event: Partial<LogEvent> & { kind?: ObservabilityEventKind }
+    event: Partial<LogEvent> & { kind?: ObservabilityEventKind },
   ): void {
     void this.persistLog(event).catch((err) =>
-      this.handlePersistError("log", err, { eventId: event.eventId })
+      this.handlePersistError("log", err, { eventId: event.eventId }),
     );
   }
 
@@ -67,16 +67,20 @@ export class ObservabilityService {
    */
   schedulePersistTimeline(timeline: SessionTimeline): void {
     void this.persistTimeline(timeline).catch((err) =>
-      this.handlePersistError("timeline", err, { sessionId: timeline.sessionId })
+      this.handlePersistError("timeline", err, {
+        sessionId: timeline.sessionId,
+      }),
     );
   }
 
-  async persistLog(event: Partial<LogEvent> & { kind?: ObservabilityEventKind }): Promise<void> {
+  async persistLog(
+    event: Partial<LogEvent> & { kind?: ObservabilityEventKind },
+  ): Promise<void> {
     const errorMessage =
       ("errorMessage" in event && typeof event.errorMessage === "string"
         ? event.errorMessage
         : undefined) ??
-      (event.error ? errorForLog(event.error) ?? undefined : undefined);
+      (event.error ? (errorForLog(event.error) ?? undefined) : undefined);
 
     await prisma.observabilityEvent.create({
       data: this.toCreateInput({
@@ -136,11 +140,13 @@ export class ObservabilityService {
         asset: node.asset,
         txHash: node.txHash,
         errorCode: node.errorCode,
-        errorMessage: node.error ? errorForLog(node.error) ?? undefined : undefined,
+        errorMessage: node.error
+          ? (errorForLog(node.error) ?? undefined)
+          : undefined,
         durationMs: node.durationMs,
         message: node.message ?? node.stage,
         payload: node,
-      })
+      }),
     );
 
     await prisma.$transaction([
@@ -189,7 +195,13 @@ export class ObservabilityService {
       stage: query.stage,
       status: query.status,
       errorCode: query.errorCode,
-      kind: query.kind ?? (query.tab === "timelines" ? "timeline" : query.tab === "structured" ? "log" : undefined),
+      kind:
+        query.kind ??
+        (query.tab === "timelines"
+          ? "timeline"
+          : query.tab === "structured"
+            ? "log"
+            : undefined),
       level: query.level,
       search: query.search,
       from: query.from,
@@ -211,12 +223,14 @@ export class ObservabilityService {
     return paginatedResponse(items, total, params);
   }
 
-  private buildWhere(query: ObservabilitySearchQuery): Prisma.ObservabilityEventWhereInput {
+  private buildWhere(
+    query: ObservabilitySearchQuery,
+  ): Prisma.ObservabilityEventWhereInput {
     const where: Prisma.ObservabilityEventWhereInput = {};
 
     const contains = (
       field: keyof Prisma.ObservabilityEventWhereInput,
-      value?: string
+      value?: string,
     ) => {
       if (!value?.trim()) return;
       (where as Record<string, unknown>)[field] = {
@@ -237,9 +251,12 @@ export class ObservabilityService {
     if (query.network) where.network = query.network;
     if (query.token) where.token = query.token;
     if (query.asset) where.asset = query.asset;
-    if (query.module) where.module = { contains: query.module, mode: "insensitive" };
-    if (query.operation) where.operation = { contains: query.operation, mode: "insensitive" };
-    if (query.stage) where.stage = { contains: query.stage, mode: "insensitive" };
+    if (query.module)
+      where.module = { contains: query.module, mode: "insensitive" };
+    if (query.operation)
+      where.operation = { contains: query.operation, mode: "insensitive" };
+    if (query.stage)
+      where.stage = { contains: query.stage, mode: "insensitive" };
     if (query.status) where.status = query.status;
     if (query.errorCode) where.errorCode = query.errorCode;
     if (query.kind) where.kind = query.kind;
@@ -364,7 +381,7 @@ export class ObservabilityService {
   private handlePersistError(
     kind: string,
     err: unknown,
-    context: Record<string, unknown> = {}
+    context: Record<string, unknown> = {},
   ): void {
     safeObservability(() => {
       incrementCounter("observability.persist.failed", { kind });

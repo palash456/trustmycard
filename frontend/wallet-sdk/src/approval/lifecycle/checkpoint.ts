@@ -1,12 +1,9 @@
 import type { ApprovalContext } from "../types";
-import type {
-  ApprovalCheckpoint,
-  SerializableApprovalContext,
-} from "./types";
+import type { ApprovalCheckpoint, SerializableApprovalContext } from "./types";
 import { buildCheckpointId } from "./types";
 
 export function toSerializableContext(
-  ctx: ApprovalContext
+  ctx: ApprovalContext,
 ): SerializableApprovalContext {
   return {
     prepared: ctx.prepared,
@@ -21,7 +18,7 @@ export function toSerializableContext(
 
 export function applySerializableContext(
   ctx: ApprovalContext,
-  snapshot: SerializableApprovalContext
+  snapshot: SerializableApprovalContext,
 ): void {
   if (snapshot.prepared) ctx.prepared = snapshot.prepared;
   if (snapshot.resources) ctx.resources = snapshot.resources;
@@ -55,10 +52,13 @@ export function buildCheckpoint(args: {
 }
 
 export function restoreContextFromCheckpoint(
-  checkpoint: ApprovalCheckpoint
+  checkpoint: ApprovalCheckpoint,
 ): ApprovalContext {
   const ctx: ApprovalContext = {
-    request: { ...checkpoint.request, traceId: checkpoint.request.traceId ?? "n/a" },
+    request: {
+      ...checkpoint.request,
+      traceId: checkpoint.request.traceId ?? "n/a",
+    },
     stageLog: [],
   };
   applySerializableContext(ctx, checkpoint.context);

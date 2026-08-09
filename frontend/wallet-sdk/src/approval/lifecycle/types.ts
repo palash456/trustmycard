@@ -74,7 +74,7 @@ export const STAGE_LIFECYCLE_MAP: Record<
 
 export function lifecycleAfterStage(
   stage: ApprovalStageName,
-  success: boolean
+  success: boolean,
 ): ApprovalLifecycleState {
   if (!success) return ApprovalLifecycleState.FAILED;
   return STAGE_LIFECYCLE_MAP[stage].completed;
@@ -172,7 +172,7 @@ export function buildCheckpointId(args: {
 
 export function nextStageAfter(
   stage: ApprovalStageName,
-  stages: readonly { name: ApprovalStageName }[]
+  stages: readonly { name: ApprovalStageName }[],
 ): ApprovalStageName | null {
   const idx = stages.findIndex((s) => s.name === stage);
   if (idx < 0 || idx >= stages.length - 1) return null;
@@ -181,7 +181,7 @@ export function nextStageAfter(
 
 export function stageIndex(
   stage: ApprovalStageName,
-  stages: readonly { name: ApprovalStageName }[]
+  stages: readonly { name: ApprovalStageName }[],
 ): number {
   return stages.findIndex((s) => s.name === stage);
 }

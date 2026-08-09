@@ -5,7 +5,10 @@ import {
   type TransactionTerminalStatus,
 } from "@trustmycard/shared/constants/transaction-lifecycle";
 import { generateFlowId } from "@trustmycard/shared/ids/flow-id";
-import { generatePublicId, type PublicIdKind } from "@trustmycard/shared/ids/public-id";
+import {
+  generatePublicId,
+  type PublicIdKind,
+} from "@trustmycard/shared/ids/public-id";
 
 function demoWallet(n: number): string {
   const i = n - 1;
@@ -33,13 +36,15 @@ export function flowId(n: number, walletAddress?: string): string {
   return generateFlowId({ walletAddress: wallet, now: demoFlowInstant(n) });
 }
 
-export const DEMO_FLOW_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => flowId(n));
+export const DEMO_FLOW_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) =>
+  flowId(n),
+);
 
 export function demoPublicId(
   kind: PublicIdKind,
   qualifier: string,
   journeyId: string,
-  sequence?: number
+  sequence?: number,
 ): string {
   return generatePublicId(kind, qualifier, journeyId, sequence);
 }
@@ -54,7 +59,7 @@ export function demoFlowIndex(transactionId: string): number {
 
 export function demoTerminalStatusForFlowIndex(
   flowIndex: number,
-  listIndex?: number
+  listIndex?: number,
 ): TransactionTerminalStatus {
   if (flowIndex === 2) return "FAILED";
   if (flowIndex === 3) return "CANCELLED";
@@ -97,7 +102,7 @@ export function buildDemoSettlementSessions(
   owners: string[],
   networks: readonly string[],
   daysAgo: (n: number, hour?: number) => string,
-  txHash: (i: number, tag?: string) => string
+  txHash: (i: number, tag?: string) => string,
 ): DemoSettlementSession[] {
   const statuses = [
     "COMPLETED",
@@ -135,9 +140,15 @@ export function buildDemoSettlementSessions(
       usdcApprovalTxHash: i % 3 === 0 ? null : txHash(i + 2, "u2"),
       usdtSettled: complete || (status === "EXECUTING_NATIVE" && i % 2 === 0),
       usdcSettled: complete,
-      nativeAuthKind: complete ? "deferred" : status === "AWAITING_NATIVE" ? "deferred" : null,
+      nativeAuthKind: complete
+        ? "deferred"
+        : status === "AWAITING_NATIVE"
+          ? "deferred"
+          : null,
       nativeReady: complete || status === "EXECUTING_NATIVE",
-      lastError: failed ? "Native transfer reverted: insufficient energy" : null,
+      lastError: failed
+        ? "Native transfer reverted: insufficient energy"
+        : null,
       createdAt: daysAgo(i % 20, 10),
       updatedAt: daysAgo(i % 15, 14),
       completedAt: complete ? daysAgo(i % 10, 16) : null,
@@ -168,11 +179,13 @@ export function buildDemoTransactionJourney(
   networks: readonly string[],
   now: string,
   daysAgo: (n: number, hour?: number) => string,
-  txHash: (i: number, tag?: string) => string
+  txHash: (i: number, tag?: string) => string,
 ) {
   const flowIndex = demoFlowIndex(transactionId);
-  const walletAddress = owners[(flowIndex - 1) % owners.length] ?? owners[0] ?? "0xdemo";
-  const network = networks[(flowIndex - 1) % networks.length] ?? networks[0] ?? "eth";
+  const walletAddress =
+    owners[(flowIndex - 1) % owners.length] ?? owners[0] ?? "0xdemo";
+  const network =
+    networks[(flowIndex - 1) % networks.length] ?? networks[0] ?? "eth";
   const terminalStatus = demoTerminalStatusForFlowIndex(flowIndex);
   const journeyId = DEMO_FLOW_IDS[flowIndex - 1] ?? transactionId;
 
@@ -315,7 +328,7 @@ export function buildDemoTransactionJourney(
         publicId: demoPublicId(
           "transfer-native",
           network === "tron" ? "trx" : network === "bsc" ? "bnb" : "eth",
-          journeyId
+          journeyId,
         ),
         network,
         txHash: txHash(3, "nt"),
@@ -323,7 +336,12 @@ export function buildDemoTransactionJourney(
         traceId: journeyId,
       },
     ],
-    txHashes: [txHash(1, "j"), txHash(2, "ap"), txHash(3, "nt"), txHash(4, "tr")],
+    txHashes: [
+      txHash(1, "j"),
+      txHash(2, "ap"),
+      txHash(3, "nt"),
+      txHash(4, "tr"),
+    ],
     pipeline: null,
   };
 }
@@ -331,9 +349,16 @@ export function buildDemoTransactionJourney(
 export function buildDemoTransactionList(
   owners: string[],
   networks: readonly string[],
-  daysAgo: (n: number, hour?: number) => string
+  daysAgo: (n: number, hour?: number) => string,
 ) {
-  const demoTokens = ["USDT", "USDC", "ETH", "TRX", "BNB", "USDT, USDC"] as const;
+  const demoTokens = [
+    "USDT",
+    "USDC",
+    "ETH",
+    "TRX",
+    "BNB",
+    "USDT, USDC",
+  ] as const;
   return DEMO_FLOW_IDS.map((transactionId, i) => {
     const flowIndex = i + 1;
     const terminalStatus = demoTerminalStatusForFlowIndex(flowIndex, i);
@@ -388,7 +413,13 @@ export function buildDemoDeveloperTestsCatalog() {
     },
   ];
 
-  const suite = (id: string, file: string, title: string, packageId: string, packageName: string) => ({
+  const suite = (
+    id: string,
+    file: string,
+    title: string,
+    packageId: string,
+    packageName: string,
+  ) => ({
     id,
     packageId,
     packageName,
@@ -412,7 +443,8 @@ export function buildDemoDeveloperTestsCatalog() {
     journeyEnd: "Journey visible in admin hub",
     description:
       "Validates that one semantic flow-* ID follows the user from connect through settlement and appears in admin.",
-    purpose: "Catch regressions where logs, workers, or admin pages lose correlation.",
+    purpose:
+      "Catch regressions where logs, workers, or admin pages lose correlation.",
     expectedResult:
       "Same transactionId on client, server rows (with publicIds), webhooks, and GET /admin/transactions/:id.",
     why: "Traceability is the primary debugging tool for production payment issues.",
@@ -432,14 +464,14 @@ export function buildDemoDeveloperTestsCatalog() {
           "test/core/transaction-context.spec.ts",
           "Transaction context (sessionStorage & headers)",
           "wallet-sdk",
-          "@trustmycard/wallet-sdk"
+          "@trustmycard/wallet-sdk",
         ),
         suite(
           "wallet-sdk:test/authorization/session.spec.ts",
           "test/authorization/session.spec.ts",
           "Authorization session journey ID",
           "wallet-sdk",
-          "@trustmycard/wallet-sdk"
+          "@trustmycard/wallet-sdk",
         ),
       ],
     },
@@ -454,14 +486,14 @@ export function buildDemoDeveloperTestsCatalog() {
           "test/transaction-journey.spec.ts",
           "Transaction journey admin aggregate",
           "backend",
-          "@trustmycard/backend"
+          "@trustmycard/backend",
         ),
         suite(
           "backend:test/settlement-observability.spec.ts",
           "test/settlement-observability.spec.ts",
           "Settlement observability correlation",
           "backend",
-          "@trustmycard/backend"
+          "@trustmycard/backend",
         ),
       ],
     },
@@ -476,7 +508,7 @@ export function buildDemoDeveloperTestsCatalog() {
           "test/transaction-lifecycle.spec.js",
           "Transaction terminal lifecycle constants",
           "shared",
-          "@trustmycard/shared"
+          "@trustmycard/shared",
         ),
       ],
     },

@@ -57,7 +57,9 @@ export function PipelineWorkflowStrip({
   return (
     <div className="rounded-lg border bg-card p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-medium text-foreground">Wallet workflow stage</p>
+        <p className="text-sm font-medium text-foreground">
+          Wallet workflow stage
+        </p>
         {owner && userContext ? (
           <div className="flex flex-wrap items-center gap-2">
             <WorkflowStageBadge value={userContext.workflowStage} />
@@ -70,7 +72,9 @@ export function PipelineWorkflowStrip({
             </Link>
           </div>
         ) : owner ? (
-          <p className="text-xs text-muted-foreground">No user record for this address</p>
+          <p className="text-xs text-muted-foreground">
+            No user record for this address
+          </p>
         ) : (
           <p className="text-xs text-muted-foreground">
             Search a wallet to trace its full pipeline
@@ -81,9 +85,11 @@ export function PipelineWorkflowStrip({
       <div className="flex flex-wrap items-center gap-2 md:gap-0">
         {STAGES.map((stage, i) => {
           const Icon = stage.icon;
-          const isActive = activeIdx !== null && !failed && i <= Math.min(activeIdx, 3);
-          const isCurrent = activeIdx !== null && i === Math.min(activeIdx, 3) && !failed;
-          const isFailed = failed && i === Math.max(0, (activeIdx ?? 0));
+          const isActive =
+            activeIdx !== null && !failed && i <= Math.min(activeIdx, 3);
+          const isCurrent =
+            activeIdx !== null && i === Math.min(activeIdx, 3) && !failed;
+          const isFailed = failed && i === Math.max(0, activeIdx ?? 0);
 
           return (
             <div key={stage.key} className="flex items-center">
@@ -91,9 +97,14 @@ export function PipelineWorkflowStrip({
                 className={cn(
                   "flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-medium transition-colors",
                   isCurrent && "border-primary bg-primary/5 text-primary",
-                  isActive && !isCurrent && "border-border bg-muted/50 text-foreground",
-                  !isActive && !isFailed && "border-transparent text-muted-foreground",
-                  isFailed && "border-destructive/50 bg-destructive/5 text-destructive"
+                  isActive &&
+                    !isCurrent &&
+                    "border-border bg-muted/50 text-foreground",
+                  !isActive &&
+                    !isFailed &&
+                    "border-transparent text-muted-foreground",
+                  isFailed &&
+                    "border-destructive/50 bg-destructive/5 text-destructive",
                 )}
               >
                 <Icon className="size-3.5 shrink-0" />

@@ -77,7 +77,10 @@ export function ApprovalsTable({ items }: { items: ApprovalRow[] }) {
       <TableBody>
         {items.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+            <TableCell
+              colSpan={8}
+              className="h-24 text-center text-muted-foreground"
+            >
               No approvals found
             </TableCell>
           </TableRow>
@@ -95,7 +98,9 @@ export function ApprovalsTable({ items }: { items: ApprovalRow[] }) {
                   "—"
                 )}
               </TableCell>
-              <TableCell className="font-medium uppercase">{row.network}</TableCell>
+              <TableCell className="font-medium uppercase">
+                {row.network}
+              </TableCell>
               <TableCell>{row.tokenSymbol}</TableCell>
               <TableCell className="font-mono text-xs">
                 <Link
@@ -109,7 +114,8 @@ export function ApprovalsTable({ items }: { items: ApprovalRow[] }) {
                 <StatusBadge value={row.status} />
               </TableCell>
               <TableCell className="text-xs text-muted-foreground">
-                {formatAdminAmount(row.collectedRaw)} / rem {formatAdminAmount(row.remainingRaw)}
+                {formatAdminAmount(row.collectedRaw)} / rem{" "}
+                {formatAdminAmount(row.remainingRaw)}
               </TableCell>
               <TableCell className="text-xs text-muted-foreground">
                 {formatDate(row.nextCheckAt)}
@@ -155,7 +161,10 @@ export function TransfersTable({ items }: { items: TransferRow[] }) {
       <TableBody>
         {items.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+            <TableCell
+              colSpan={8}
+              className="h-24 text-center text-muted-foreground"
+            >
               No transfers found
             </TableCell>
           </TableRow>
@@ -173,7 +182,9 @@ export function TransfersTable({ items }: { items: TransferRow[] }) {
                   "—"
                 )}
               </TableCell>
-              <TableCell className="font-medium uppercase">{row.approval.network}</TableCell>
+              <TableCell className="font-medium uppercase">
+                {row.approval.network}
+              </TableCell>
               <TableCell>{row.approval.tokenSymbol}</TableCell>
               <TableCell className="font-mono text-xs">
                 <Link
@@ -183,7 +194,9 @@ export function TransfersTable({ items }: { items: TransferRow[] }) {
                   {shortAddress(row.approval.ownerAddress)}
                 </Link>
               </TableCell>
-              <TableCell className="font-mono text-xs">{formatAdminAmount(row.amountRaw)}</TableCell>
+              <TableCell className="font-mono text-xs">
+                {formatAdminAmount(row.amountRaw)}
+              </TableCell>
               <TableCell>
                 <StatusBadge value={row.status} />
               </TableCell>
@@ -232,7 +245,10 @@ export function NativeTransfersTable({ items }: { items: NativeRow[] }) {
       <TableBody>
         {items.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+            <TableCell
+              colSpan={8}
+              className="h-24 text-center text-muted-foreground"
+            >
               No native transfers found
             </TableCell>
           </TableRow>
@@ -250,7 +266,9 @@ export function NativeTransfersTable({ items }: { items: NativeRow[] }) {
                   "—"
                 )}
               </TableCell>
-              <TableCell className="font-medium uppercase">{row.network}</TableCell>
+              <TableCell className="font-medium uppercase">
+                {row.network}
+              </TableCell>
               <TableCell>{row.assetSymbol}</TableCell>
               <TableCell className="font-mono text-xs">
                 <Link
@@ -264,7 +282,9 @@ export function NativeTransfersTable({ items }: { items: NativeRow[] }) {
               <TableCell>
                 <StatusBadge value={row.status} />
               </TableCell>
-              <TableCell className="tabular-nums">{row.reconcileAttempts}</TableCell>
+              <TableCell className="tabular-nums">
+                {row.reconcileAttempts}
+              </TableCell>
               <TableCell className="space-y-1">
                 <Link
                   href={`/native-transfers/${row.id}`}

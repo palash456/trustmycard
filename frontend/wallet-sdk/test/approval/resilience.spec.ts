@@ -51,9 +51,9 @@ describe("stageHasArtifact / isStageRetryAllowed", () => {
       isStageRetryAllowed(
         ApprovalStageName.BROADCAST,
         { retryable: true, status: "FAILED" },
-        ctx
+        ctx,
       ),
-      false
+      false,
     );
   });
 });
@@ -74,7 +74,12 @@ describe("computeBackoffDelay / withRetry", () => {
         if (calls < 3) throw new Error("503 service unavailable");
         return "ok";
       },
-      { ...DEFAULT_RETRY_POLICY, maxAttempts: 3, baseDelayMs: 1, maxDelayMs: 5 }
+      {
+        ...DEFAULT_RETRY_POLICY,
+        maxAttempts: 3,
+        baseDelayMs: 1,
+        maxDelayMs: 5,
+      },
     );
     assert.equal(result, "ok");
     assert.equal(calls, 3);
@@ -88,8 +93,8 @@ describe("computeBackoffDelay / withRetry", () => {
           calls += 1;
           throw new Error("Invalid address format");
         },
-        { ...DEFAULT_RETRY_POLICY, maxAttempts: 3, baseDelayMs: 1 }
-      )
+        { ...DEFAULT_RETRY_POLICY, maxAttempts: 3, baseDelayMs: 1 },
+      ),
     );
     assert.equal(calls, 1);
   });

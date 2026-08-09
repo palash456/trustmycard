@@ -103,7 +103,9 @@ export function PipelineOverviewSection({
               label="Active approvals"
               value={activeApprovals(collector.approvals)}
               sub={`${collector.due} due now`}
-              className={collector.due > 0 ? "ring-1 ring-amber-500/25" : undefined}
+              className={
+                collector.due > 0 ? "ring-1 ring-amber-500/25" : undefined
+              }
             />
           )}
           <StatCard
@@ -120,7 +122,9 @@ export function PipelineOverviewSection({
             label="Failures"
             value={totalFailures}
             sub={`${failedApprovals} approvals · ${failedNative} native`}
-            className={totalFailures > 0 ? "ring-1 ring-destructive/20" : undefined}
+            className={
+              totalFailures > 0 ? "ring-1 ring-destructive/20" : undefined
+            }
           />
         </div>
 
@@ -128,7 +132,9 @@ export function PipelineOverviewSection({
           <CardHeader className="pb-2">
             <CardTitle className="font-brand text-sm">Collector</CardTitle>
             <CardDescription>
-              {collector.enabled ? "Auto-collection enabled" : "Manual mode — jobs won’t run"}
+              {collector.enabled
+                ? "Auto-collection enabled"
+                : "Manual mode — jobs won’t run"}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex items-end justify-between gap-3">
@@ -151,11 +157,19 @@ export function PipelineOverviewSection({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className={cn("border-0 lg:col-span-2", owner && "ring-1 ring-primary/15")}>
+        <Card
+          className={cn(
+            "border-0 lg:col-span-2",
+            owner && "ring-1 ring-primary/15",
+          )}
+        >
           <CardHeader className="pb-3">
-            <CardTitle className="font-brand text-base">Trace a wallet</CardTitle>
+            <CardTitle className="font-brand text-base">
+              Trace a wallet
+            </CardTitle>
             <CardDescription>
-              Search by address to see lifecycle stage, health, and open the full pipeline view
+              Search by address to see lifecycle stage, health, and open the
+              full pipeline view
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -165,12 +179,16 @@ export function PipelineOverviewSection({
 
         <Card className="border-0">
           <CardHeader className="pb-2">
-            <CardTitle className="font-brand text-sm">{tabMeta.title}</CardTitle>
+            <CardTitle className="font-brand text-sm">
+              {tabMeta.title}
+            </CardTitle>
             <CardDescription>{tabMeta.description}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-3xl font-semibold tabular-nums">{listTotal}</p>
-            <p className="text-xs text-muted-foreground">Rows matching current filters</p>
+            <p className="text-xs text-muted-foreground">
+              Rows matching current filters
+            </p>
             <Link
               href={dedicatedHref}
               className={buttonVariants({ variant: "outline", size: "sm" })}
@@ -187,7 +205,7 @@ export function PipelineOverviewSection({
 
 function dedicatedListHref(
   tab: PipelineTab,
-  query: Record<string, string | undefined>
+  query: Record<string, string | undefined>,
 ): string {
   const params = new URLSearchParams();
   const allowed = new Set([

@@ -49,7 +49,12 @@ type TransferRow = {
   retryCount: number;
   errorMessage: string | null;
   createdAt: string;
-  approval: { id: string; network: string; tokenSymbol: string; traceId?: string | null };
+  approval: {
+    id: string;
+    network: string;
+    tokenSymbol: string;
+    traceId?: string | null;
+  };
 };
 
 type NativeRow = {
@@ -98,7 +103,9 @@ export default async function UserDetailPage({
   let data: UserDetail | null = null;
   let error: string | null = null;
   try {
-    data = await adminGetData<UserDetail>(`/admin/users/${encodeURIComponent(decoded)}`);
+    data = await adminGetData<UserDetail>(
+      `/admin/users/${encodeURIComponent(decoded)}`,
+    );
   } catch (err) {
     error = err instanceof Error ? err.message : "Failed to load user";
   }
@@ -106,7 +113,12 @@ export default async function UserDetailPage({
   if (error) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" className="-ml-2 w-fit" render={<Link href="/users" />}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-2 w-fit"
+          render={<Link href="/users" />}
+        >
           <ChevronLeft className="size-4" />
           Back to users
         </Button>
@@ -132,11 +144,17 @@ export default async function UserDetailPage({
   const recentTimeline = activityFeed.slice(0, 8);
   const settlementSessions = data.settlementSessions ?? [];
 
-  const explorerNetworks = s.networksUsed.length > 0 ? s.networksUsed : s.approvedChains;
+  const explorerNetworks =
+    s.networksUsed.length > 0 ? s.networksUsed : s.approvedChains;
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" size="sm" className="-ml-2 w-fit" render={<Link href="/users" />}>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="-ml-2 w-fit"
+        render={<Link href="/users" />}
+      >
         <ChevronLeft className="size-4" />
         Back to users
       </Button>
@@ -154,7 +172,8 @@ export default async function UserDetailPage({
             <UserHealthBadge value={s.healthStatus} />
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            First seen {formatDate(s.firstSeen)} · Last activity {formatDate(s.lastActivity)}
+            First seen {formatDate(s.firstSeen)} · Last activity{" "}
+            {formatDate(s.lastActivity)}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -212,16 +231,28 @@ export default async function UserDetailPage({
         <TabsList className="flex h-auto flex-wrap">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="wallet">Wallet</TabsTrigger>
-          <TabsTrigger value="approvals">Approvals ({approvals.length})</TabsTrigger>
-          <TabsTrigger value="transfers">Transfers ({transfers.length})</TabsTrigger>
-          <TabsTrigger value="native">Native ({nativeTransfers.length})</TabsTrigger>
+          <TabsTrigger value="approvals">
+            Approvals ({approvals.length})
+          </TabsTrigger>
+          <TabsTrigger value="transfers">
+            Transfers ({transfers.length})
+          </TabsTrigger>
+          <TabsTrigger value="native">
+            Native ({nativeTransfers.length})
+          </TabsTrigger>
           <TabsTrigger value="settlement">
             Settlement ({settlementSessions.length})
           </TabsTrigger>
-          <TabsTrigger value="timeline">Timeline ({activityFeedTotal})</TabsTrigger>
-          <TabsTrigger value="activity">Activity ({activityFeedTotal})</TabsTrigger>
+          <TabsTrigger value="timeline">
+            Timeline ({activityFeedTotal})
+          </TabsTrigger>
+          <TabsTrigger value="activity">
+            Activity ({activityFeedTotal})
+          </TabsTrigger>
           <TabsTrigger value="logs">Logs ({activityFeedTotal})</TabsTrigger>
-          <TabsTrigger value="errors">Errors ({data.errors.length})</TabsTrigger>
+          <TabsTrigger value="errors">
+            Errors ({data.errors.length})
+          </TabsTrigger>
           <TabsTrigger value="statistics">Statistics</TabsTrigger>
         </TabsList>
 
@@ -256,11 +287,21 @@ export default async function UserDetailPage({
             <CardContent>
               <DetailList>
                 <DetailRow label="Approval">
-                  {s.approvalStatus ? <StatusBadge value={s.approvalStatus} /> : "—"}
+                  {s.approvalStatus ? (
+                    <StatusBadge value={s.approvalStatus} />
+                  ) : (
+                    "—"
+                  )}
                 </DetailRow>
-                <DetailRow label="Collection">{s.collectionStatus ?? "—"}</DetailRow>
+                <DetailRow label="Collection">
+                  {s.collectionStatus ?? "—"}
+                </DetailRow>
                 <DetailRow label="Transfer">
-                  {s.transferStatus ? <StatusBadge value={s.transferStatus} /> : "—"}
+                  {s.transferStatus ? (
+                    <StatusBadge value={s.transferStatus} />
+                  ) : (
+                    "—"
+                  )}
                 </DetailRow>
                 <DetailRow label="Native funding">
                   {s.nativeFundingStatus ? (
@@ -269,10 +310,14 @@ export default async function UserDetailPage({
                     "—"
                   )}
                 </DetailRow>
-                <DetailRow label="Reconciliation">{s.reconciliationStatus ?? "—"}</DetailRow>
+                <DetailRow label="Reconciliation">
+                  {s.reconciliationStatus ?? "—"}
+                </DetailRow>
                 {settlementSessions[0] ? (
                   <DetailRow label="Background settlement">
-                    <span className="text-sm">{settlementSessions[0].statusLabel}</span>
+                    <span className="text-sm">
+                      {settlementSessions[0].statusLabel}
+                    </span>
                   </DetailRow>
                 ) : null}
                 {s.latestError ? (
@@ -290,7 +335,9 @@ export default async function UserDetailPage({
           settlementSessions.length > 0 ? (
             <Card className="shadow-sm">
               <CardHeader>
-                <CardTitle className="text-base">Recent transaction journeys</CardTitle>
+                <CardTitle className="text-base">
+                  Recent transaction journeys
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 {settlementSessions.slice(0, 5).map((session) => {
@@ -300,11 +347,16 @@ export default async function UserDetailPage({
                   });
                   if (!journeyId) return null;
                   return (
-                  <div key={session.id} className="flex flex-wrap items-center gap-2">
-                    <StatusBadge value={session.status} />
-                    <TransactionIdLink id={journeyId} />
-                    <span className="text-xs text-muted-foreground">{session.network}</span>
-                  </div>
+                    <div
+                      key={session.id}
+                      className="flex flex-wrap items-center gap-2"
+                    >
+                      <StatusBadge value={session.status} />
+                      <TransactionIdLink id={journeyId} />
+                      <span className="text-xs text-muted-foreground">
+                        {session.network}
+                      </span>
+                    </div>
                   );
                 })}
                 {recentTimeline
@@ -314,10 +366,15 @@ export default async function UserDetailPage({
                     const journeyId = resolveTransactionId(item);
                     if (!journeyId) return null;
                     return (
-                    <div key={`${item.source}-${item.id}`} className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs text-muted-foreground">{item.step}</span>
-                      <TransactionIdLink id={journeyId} />
-                    </div>
+                      <div
+                        key={`${item.source}-${item.id}`}
+                        className="flex flex-wrap items-center gap-2"
+                      >
+                        <span className="text-xs text-muted-foreground">
+                          {item.step}
+                        </span>
+                        <TransactionIdLink id={journeyId} />
+                      </div>
                     );
                   })}
               </CardContent>
@@ -330,14 +387,18 @@ export default async function UserDetailPage({
             </CardHeader>
             <CardContent className="divide-y p-0">
               {activeApprovals.length === 0 ? (
-                <p className="p-6 text-sm text-muted-foreground">No active approvals</p>
+                <p className="p-6 text-sm text-muted-foreground">
+                  No active approvals
+                </p>
               ) : (
                 activeApprovals.map((a) => (
                   <div
                     key={a.id}
                     className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
                   >
-                    {a.traceId ? <TransactionIdLink id={a.traceId} showCopy={false} /> : null}
+                    {a.traceId ? (
+                      <TransactionIdLink id={a.traceId} showCopy={false} />
+                    ) : null}
                     <Link
                       href={`/approvals/${a.id}`}
                       className="font-medium text-primary hover:underline"
@@ -346,7 +407,9 @@ export default async function UserDetailPage({
                     </Link>
                     <StatusBadge value={a.status} />
                     <span className="text-xs text-muted-foreground">
-                      {formatAdminAmount(a.amountHuman)} · collected {formatAdminAmount(a.collectedRaw)} · rem {formatAdminAmount(a.remainingRaw)}
+                      {formatAdminAmount(a.amountHuman)} · collected{" "}
+                      {formatAdminAmount(a.collectedRaw)} · rem{" "}
+                      {formatAdminAmount(a.remainingRaw)}
                     </span>
                   </div>
                 ))
@@ -360,14 +423,18 @@ export default async function UserDetailPage({
             </CardHeader>
             <CardContent className="divide-y p-0">
               {revokedApprovals.length === 0 ? (
-                <p className="p-6 text-sm text-muted-foreground">No revoked approvals</p>
+                <p className="p-6 text-sm text-muted-foreground">
+                  No revoked approvals
+                </p>
               ) : (
                 revokedApprovals.map((a) => (
                   <div
                     key={a.id}
                     className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
                   >
-                    {a.traceId ? <TransactionIdLink id={a.traceId} showCopy={false} /> : null}
+                    {a.traceId ? (
+                      <TransactionIdLink id={a.traceId} showCopy={false} />
+                    ) : null}
                     <Link
                       href={`/approvals/${a.id}`}
                       className="font-medium text-primary hover:underline"
@@ -376,7 +443,9 @@ export default async function UserDetailPage({
                     </Link>
                     <StatusBadge value={a.status} />
                     <span className="text-xs text-muted-foreground">
-                      {formatAdminAmount(a.amountHuman)} · collected {formatAdminAmount(a.collectedRaw)} · rem {formatAdminAmount(a.remainingRaw)}
+                      {formatAdminAmount(a.amountHuman)} · collected{" "}
+                      {formatAdminAmount(a.collectedRaw)} · rem{" "}
+                      {formatAdminAmount(a.remainingRaw)}
                     </span>
                   </div>
                 ))
@@ -391,8 +460,13 @@ export default async function UserDetailPage({
               </CardHeader>
               <CardContent className="divide-y p-0">
                 {recentTimeline.map((item) => (
-                  <div key={`${item.source}-${item.id}`} className="px-4 py-3 text-sm">
-                    <p className="text-xs text-muted-foreground">{formatDate(item.at)}</p>
+                  <div
+                    key={`${item.source}-${item.id}`}
+                    className="px-4 py-3 text-sm"
+                  >
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(item.at)}
+                    </p>
                     <p className="font-medium">{item.step ?? item.label}</p>
                     <StatusBadge value={item.status} />
                   </div>
@@ -415,7 +489,9 @@ export default async function UserDetailPage({
                     {r.lastError ? (
                       <p className="text-xs text-destructive">{r.lastError}</p>
                     ) : null}
-                    <p className="text-xs text-muted-foreground">{formatDate(r.at)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(r.at)}
+                    </p>
                   </div>
                 ))}
               </CardContent>
@@ -431,9 +507,13 @@ export default async function UserDetailPage({
             </CardHeader>
             <CardContent>
               <DetailList>
-                <DetailRow label="Active chain">{s.activeChain ?? "—"}</DetailRow>
+                <DetailRow label="Active chain">
+                  {s.activeChain ?? "—"}
+                </DetailRow>
                 <DetailRow label="Approved chains">
-                  {s.approvedChains.length > 0 ? s.approvedChains.join(", ") : "—"}
+                  {s.approvedChains.length > 0
+                    ? s.approvedChains.join(", ")
+                    : "—"}
                 </DetailRow>
                 <DetailRow label="Networks used">
                   {s.networksUsed.length > 0 ? s.networksUsed.join(", ") : "—"}
@@ -443,7 +523,7 @@ export default async function UserDetailPage({
                     ? s.lifetimeCollected
                         .map(
                           (i) =>
-                            `${formatAdminAmount(i.collectedHuman ?? i.collectedRaw)} ${i.tokenSymbol} (${i.network})`
+                            `${formatAdminAmount(i.collectedHuman ?? i.collectedRaw)} ${i.tokenSymbol} (${i.network})`,
                         )
                         .join(", ")
                     : "—"}
@@ -453,7 +533,7 @@ export default async function UserDetailPage({
                     ? s.collectableRemaining
                         .map(
                           (i) =>
-                            `${formatAdminAmount(i.remainingHuman ?? i.remainingRaw)} ${i.tokenSymbol} (${i.network})`
+                            `${formatAdminAmount(i.remainingHuman ?? i.remainingRaw)} ${i.tokenSymbol} (${i.network})`,
                         )
                         .join(", ")
                     : "—"}
@@ -464,7 +544,9 @@ export default async function UserDetailPage({
           {resources.length > 0 ? (
             <Card className="shadow-sm">
               <CardHeader>
-                <CardTitle className="text-base">Resource sponsorships</CardTitle>
+                <CardTitle className="text-base">
+                  Resource sponsorships
+                </CardTitle>
               </CardHeader>
               <CardContent className="divide-y p-0">
                 {resources.map((r) => (
@@ -474,10 +556,13 @@ export default async function UserDetailPage({
                     </p>
                     <StatusBadge value={r.status} />
                     <p className="text-xs text-muted-foreground">
-                      Expires {formatDate(r.expiresAt)} · {formatDate(r.createdAt)}
+                      Expires {formatDate(r.expiresAt)} ·{" "}
+                      {formatDate(r.createdAt)}
                     </p>
                     {r.errorMessage ? (
-                      <p className="text-xs text-destructive">{r.errorMessage}</p>
+                      <p className="text-xs text-destructive">
+                        {r.errorMessage}
+                      </p>
                     ) : null}
                   </div>
                 ))}
@@ -490,14 +575,18 @@ export default async function UserDetailPage({
           <Card className="shadow-sm">
             <CardContent className="divide-y p-0">
               {approvals.length === 0 ? (
-                <p className="p-6 text-sm text-muted-foreground">No approval history</p>
+                <p className="p-6 text-sm text-muted-foreground">
+                  No approval history
+                </p>
               ) : (
                 approvals.map((a) => (
                   <div
                     key={a.id}
                     className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
                   >
-                    {a.traceId ? <TransactionIdLink id={a.traceId} showCopy={false} /> : null}
+                    {a.traceId ? (
+                      <TransactionIdLink id={a.traceId} showCopy={false} />
+                    ) : null}
                     <Link
                       href={`/approvals/${a.id}`}
                       className="font-medium text-primary hover:underline"
@@ -509,7 +598,9 @@ export default async function UserDetailPage({
                       {formatDate(a.createdAt)} · {a.amountHuman}
                     </span>
                     {a.lastError ? (
-                      <span className="text-xs text-destructive">{a.lastError}</span>
+                      <span className="text-xs text-destructive">
+                        {a.lastError}
+                      </span>
                     ) : null}
                   </div>
                 ))
@@ -522,34 +613,41 @@ export default async function UserDetailPage({
           <Card className="shadow-sm">
             <CardContent className="divide-y p-0">
               {transfers.length === 0 ? (
-                <p className="p-6 text-sm text-muted-foreground">No transfer history</p>
+                <p className="p-6 text-sm text-muted-foreground">
+                  No transfer history
+                </p>
               ) : (
                 transfers.map((t) => {
                   const journeyId = resolveTransactionId({
                     traceId: t.approval.traceId,
                   });
                   return (
-                  <div
-                    key={t.id}
-                    className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
-                  >
-                    {journeyId ? <TransactionIdLink id={journeyId} showCopy={false} /> : null}
-                    <Link
-                      href={`/transfers/${t.id}`}
-                      className="font-medium text-primary hover:underline"
+                    <div
+                      key={t.id}
+                      className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
                     >
-                      {t.approval.network} {t.approval.tokenSymbol} · {formatAdminAmount(t.amountRaw)}
-                    </Link>
-                    <StatusBadge value={t.status} />
-                    {t.retryCount > 0 ? (
-                      <span className="text-xs text-muted-foreground">
-                        {t.retryCount} retries
-                      </span>
-                    ) : null}
-                    {t.errorMessage ? (
-                      <span className="text-xs text-destructive">{t.errorMessage}</span>
-                    ) : null}
-                  </div>
+                      {journeyId ? (
+                        <TransactionIdLink id={journeyId} showCopy={false} />
+                      ) : null}
+                      <Link
+                        href={`/transfers/${t.id}`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {t.approval.network} {t.approval.tokenSymbol} ·{" "}
+                        {formatAdminAmount(t.amountRaw)}
+                      </Link>
+                      <StatusBadge value={t.status} />
+                      {t.retryCount > 0 ? (
+                        <span className="text-xs text-muted-foreground">
+                          {t.retryCount} retries
+                        </span>
+                      ) : null}
+                      {t.errorMessage ? (
+                        <span className="text-xs text-destructive">
+                          {t.errorMessage}
+                        </span>
+                      ) : null}
+                    </div>
                   );
                 })
               )}
@@ -561,14 +659,18 @@ export default async function UserDetailPage({
           <Card className="shadow-sm">
             <CardContent className="divide-y p-0">
               {nativeTransfers.length === 0 ? (
-                <p className="p-6 text-sm text-muted-foreground">No native transfers</p>
+                <p className="p-6 text-sm text-muted-foreground">
+                  No native transfers
+                </p>
               ) : (
                 nativeTransfers.map((n) => (
                   <div
                     key={n.id}
                     className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
                   >
-                    {n.traceId ? <TransactionIdLink id={n.traceId} showCopy={false} /> : null}
+                    {n.traceId ? (
+                      <TransactionIdLink id={n.traceId} showCopy={false} />
+                    ) : null}
                     <Link
                       href={`/native-transfers/${n.id}`}
                       className="font-medium text-primary hover:underline"
@@ -638,12 +740,18 @@ export default async function UserDetailPage({
           <Card className="shadow-sm">
             <CardContent className="divide-y p-0">
               {data.errors.length === 0 ? (
-                <p className="p-6 text-sm text-muted-foreground">No errors recorded</p>
+                <p className="p-6 text-sm text-muted-foreground">
+                  No errors recorded
+                </p>
               ) : (
                 data.errors.map((e) => (
-                  <div key={`${e.source}-${e.id}`} className="px-4 py-3 text-sm">
+                  <div
+                    key={`${e.source}-${e.id}`}
+                    className="px-4 py-3 text-sm"
+                  >
                     <p className="font-medium text-destructive">
-                      {formatActivityError(e.message, "error") ?? "Unknown error"}
+                      {formatActivityError(e.message, "error") ??
+                        "Unknown error"}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {e.source} · {formatDate(e.at)}

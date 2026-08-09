@@ -19,8 +19,5 @@ export {
   buildCheckpoint,
   restoreContextFromCheckpoint,
 } from "./checkpoint";
-export {
-  InMemoryLifecycleStore,
-  LocalStorageLifecycleStore,
-} from "./store";
+export { InMemoryLifecycleStore, LocalStorageLifecycleStore } from "./store";
 export type { ApprovalLifecycleStore } from "./store";

@@ -50,18 +50,25 @@ export function CollectorPanel({
           {JSON.stringify({ collector, collection }, null, 2)}
         </pre>
         <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={() => void post("collections/recover")}>Run recovery</Button>
+          <Button onClick={() => void post("collections/recover")}>
+            Run recovery
+          </Button>
           <InfoTip text="Replays pending transactional outbox events. Normal queue-mode collection is never performed by this recovery action." />
           {!collection ? (
             <>
-              <Button variant="outline" onClick={() => void post("collector/release-leases")}>
+              <Button
+                variant="outline"
+                onClick={() => void post("collector/release-leases")}
+              >
                 Release leases
               </Button>
               <InfoTip text="Legacy polling compatibility operation. Queue-mode recovery uses outbox replay instead." />
               <Button
                 variant="outline"
                 onClick={() =>
-                  void post("collector/toggle", { enabled: !collector.effectiveEnabled })
+                  void post("collector/toggle", {
+                    enabled: !collector.effectiveEnabled,
+                  })
                 }
               >
                 {collector.effectiveEnabled ? "Disable" : "Enable"} collector

@@ -41,7 +41,7 @@ export default async function SettlementSessionDetailPage({
   let data: SettlementSessionDetail;
   try {
     data = await adminGetData<SettlementSessionDetail>(
-      `/admin/settlement-sessions/${encodeURIComponent(id)}`
+      `/admin/settlement-sessions/${encodeURIComponent(id)}`,
     );
   } catch (err) {
     return (
@@ -59,7 +59,10 @@ export default async function SettlementSessionDetailPage({
 
   return (
     <div className="space-y-6">
-      <Link href="/users" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <Link
+        href="/users"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
         <ChevronLeft className="h-4 w-4" />
         Users
       </Link>
@@ -94,7 +97,9 @@ export default async function SettlementSessionDetailPage({
 
       <Card className="border-border/60 shadow-none">
         <CardHeader className="px-4 py-3">
-          <CardTitle className="text-sm font-medium">Observability trail</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Observability trail
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 px-4 pb-4">
           {data.observability.map((e) => (
@@ -105,12 +110,17 @@ export default async function SettlementSessionDetailPage({
               <StatusBadge value={e.status} />
               <span>{e.stage ?? e.module}</span>
               <span className="text-muted-foreground">{e.message}</span>
-              <span className="ml-auto text-muted-foreground">{formatDate(e.ts)}</span>
+              <span className="ml-auto text-muted-foreground">
+                {formatDate(e.ts)}
+              </span>
             </div>
           ))}
           {transactionId ? (
             <Link
-              href={auditStructuredLink({ traceId: transactionId, transactionId })}
+              href={auditStructuredLink({
+                traceId: transactionId,
+                transactionId,
+              })}
               className="text-sm text-primary hover:underline"
             >
               View all structured logs for this transaction

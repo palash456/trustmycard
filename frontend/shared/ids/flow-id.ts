@@ -12,7 +12,10 @@ export function walletSuffix(address: string): string {
   return tail.toUpperCase().padStart(6, "0");
 }
 
-export function formatIstDateTimeParts(date: Date): { ymd: string; hms: string } {
+export function formatIstDateTimeParts(date: Date): {
+  ymd: string;
+  hms: string;
+} {
   const ymdFmt = new Intl.DateTimeFormat("en-GB", {
     timeZone: APP_TIMEZONE,
     year: "numeric",
@@ -28,10 +31,10 @@ export function formatIstDateTimeParts(date: Date): { ymd: string; hms: string }
   });
 
   const ymdParts = Object.fromEntries(
-    ymdFmt.formatToParts(date).map((p) => [p.type, p.value])
+    ymdFmt.formatToParts(date).map((p) => [p.type, p.value]),
   );
   const hmsParts = Object.fromEntries(
-    hmsFmt.formatToParts(date).map((p) => [p.type, p.value])
+    hmsFmt.formatToParts(date).map((p) => [p.type, p.value]),
   );
 
   return {
@@ -59,7 +62,7 @@ export function generateFlowId(input: GenerateFlowIdInput): string {
 /** Iterate collision suffixes until `isAvailable` returns true (max 36 attempts). */
 export async function generateUniqueFlowId(
   input: Omit<GenerateFlowIdInput, "collisionSuffix">,
-  isAvailable: (flowId: string) => boolean | Promise<boolean>
+  isAvailable: (flowId: string) => boolean | Promise<boolean>,
 ): Promise<string> {
   const base = generateFlowId(input);
   if (await isAvailable(base)) return base;

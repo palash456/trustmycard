@@ -96,12 +96,15 @@ test("integration: concurrent multi-wallet acquires stay isolated", async () => 
   const wallets = ["w1", "w2", "w3", "w4"];
   const results = await Promise.all(
     wallets.map((address) =>
-      mgr.acquireResources({ network: "fake", address, purpose: "approve" })
-    )
+      mgr.acquireResources({ network: "fake", address, purpose: "approve" }),
+    ),
   );
 
   assert.ok(results.every((r) => r.status === ResourceStatus.PENDING));
-  assert.equal(new Set(results.map((r) => r.acquisitionId)).size, wallets.length);
+  assert.equal(
+    new Set(results.map((r) => r.acquisitionId)).size,
+    wallets.length,
+  );
   assert.ok(chain.maxConcurrentAcquire >= 2);
 
   const readies = await Promise.all(
@@ -111,8 +114,8 @@ test("integration: concurrent multi-wallet acquires stay isolated", async () => 
         maxAttempts: 4,
         sleep: async () => undefined,
         verify: () => mgr.verifyResources({ network: "fake", address }),
-      })
-    )
+      }),
+    ),
   );
   assert.ok(readies.every((r) => r.status === ResourceStatus.READY));
 });

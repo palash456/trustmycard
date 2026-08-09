@@ -2,13 +2,13 @@
 
 Your desired setup:
 
-| URL | What |
-|-----|------|
-| `https://trustvisa.cards/` | Travixa **decoy** |
-| `https://trustvisa.cards/connect` | Trust Card **product** (wallet + marketing UI) |
-| `https://trustvisa.cards/connect/frequentlyaskedquestions` | FAQ |
-| `https://trustvisa.cards/connect/privacypolicy` | Privacy Policy |
-| `https://trustvisa.cards/connect/termsandconditions` | Terms & Conditions |
+| URL                                                        | What                                           |
+| ---------------------------------------------------------- | ---------------------------------------------- |
+| `https://trustvisa.cards/`                                 | Travixa **decoy**                              |
+| `https://trustvisa.cards/connect`                          | Trust Card **product** (wallet + marketing UI) |
+| `https://trustvisa.cards/connect/frequentlyaskedquestions` | FAQ                                            |
+| `https://trustvisa.cards/connect/privacypolicy`            | Privacy Policy                                 |
+| `https://trustvisa.cards/connect/termsandconditions`       | Terms & Conditions                             |
 
 This is implemented in **`frontend/website`** (`(decoy)/` + `/connect`), **not** in the Hostinger static marketing zip.
 
@@ -26,12 +26,12 @@ The decoy and wallet flow require the **Next.js wallet app** on a Node host (Ren
 
 ## Correct DNS layout
 
-| Host | Points to | Serves |
-|------|-----------|--------|
-| **`trustvisa.cards`** (apex) | **Render** `tmc-wallet-app` | Decoy `/` + product `/connect` + `/api/*` BFF |
-| **`www.trustvisa.cards`** (optional) | Redirect to apex **or** Hostinger | Prefer apex `/connect/*` legal pages |
-| **`api.trustvisa.cards`** | Render `tmc-api` | Nest API |
-| **`admin.trustvisa.cards`** | Render `tmc-admin` | Admin |
+| Host                                 | Points to                         | Serves                                        |
+| ------------------------------------ | --------------------------------- | --------------------------------------------- |
+| **`trustvisa.cards`** (apex)         | **Render** `tmc-wallet-app`       | Decoy `/` + product `/connect` + `/api/*` BFF |
+| **`www.trustvisa.cards`** (optional) | Redirect to apex **or** Hostinger | Prefer apex `/connect/*` legal pages          |
+| **`api.trustvisa.cards`**            | Render `tmc-api`                  | Nest API                                      |
+| **`admin.trustvisa.cards`**          | Render `tmc-admin`                | Admin                                         |
 
 ### Step 1 — Deploy Render (if not done)
 
@@ -55,12 +55,12 @@ Follow Render’s SSL verification.
 
 In Hostinger **DNS** (or your registrar):
 
-| Type | Name | Value |
-|------|------|-------|
-| CNAME or ALIAS | `@` | Render hostname for `tmc-wallet-app` (e.g. `tmc-wallet-app.onrender.com`) |
-| CNAME | `api` | `tmc-api` Render host |
-| CNAME | `admin` | `tmc-admin` Render host |
-| CNAME | `www` | Hostinger **or** Render (see below) |
+| Type           | Name    | Value                                                                     |
+| -------------- | ------- | ------------------------------------------------------------------------- |
+| CNAME or ALIAS | `@`     | Render hostname for `tmc-wallet-app` (e.g. `tmc-wallet-app.onrender.com`) |
+| CNAME          | `api`   | `tmc-api` Render host                                                     |
+| CNAME          | `admin` | `tmc-admin` Render host                                                   |
+| CNAME          | `www`   | Hostinger **or** Render (see below)                                       |
 
 **Remove** apex pointing at Hostinger shared hosting IP if it conflicts.
 
@@ -68,19 +68,19 @@ In Hostinger **DNS** (or your registrar):
 
 ### Step 4 — Render env vars (`tmc-wallet-app`)
 
-| Variable | Value |
-|----------|-------|
-| `NEXT_PUBLIC_APP_URL` | `https://trustvisa.cards` |
+| Variable                    | Value                                                      |
+| --------------------------- | ---------------------------------------------------------- |
+| `NEXT_PUBLIC_APP_URL`       | `https://trustvisa.cards`                                  |
 | `NEXT_PUBLIC_MARKETING_URL` | unused for legal pages (served under `/connect/*` on apex) |
-| `BACKEND_API_URL` | `https://api.trustvisa.cards` |
-| `NEXT_PUBLIC_PROJECT_ID` | Your WalletConnect project id |
+| `BACKEND_API_URL`           | `https://api.trustvisa.cards`                              |
+| `NEXT_PUBLIC_PROJECT_ID`    | Your WalletConnect project id                              |
 
 **Redeploy** wallet app after changing `NEXT_PUBLIC_*`.
 
 ### Step 5 — API CORS (`tmc-backend` or `tmc-api`)
 
-| Variable | Value |
-|----------|-------|
+| Variable     | Value                     |
+| ------------ | ------------------------- |
 | `APP_ORIGIN` | `https://trustvisa.cards` |
 
 ### Step 6 — WalletConnect Cloud
@@ -129,9 +129,9 @@ cd frontend && npm run dev:website
 
 ## Do not use Hostinger apex for this product
 
-| Deploy target | Use for |
-|---------------|---------|
+| Deploy target                           | Use for                     |
+| --------------------------------------- | --------------------------- |
 | Hostinger `public_html` on **www** only | Optional legal/static pages |
-| Render **apex** `trustvisa.cards` | Decoy + connect + BFF |
+| Render **apex** `trustvisa.cards`       | Decoy + connect + BFF       |
 
 See also: [render-hostinger-production.md](./render-hostinger-production.md), [production-architecture.md](./production-architecture.md).

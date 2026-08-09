@@ -30,11 +30,7 @@ export const WC_CONNECT_NAMESPACES = {
     events: ["chainChanged", "accountsChanged"],
   },
   tron: {
-    methods: [
-      "tron_signTransaction",
-      "tron_signMessage",
-      "tron_signMessageV2",
-    ],
+    methods: ["tron_signTransaction", "tron_signMessage", "tron_signMessageV2"],
     chains: [TRON_CAIP],
     events: ["accountsChanged", "chainChanged"],
     rpcMap: {

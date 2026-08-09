@@ -70,7 +70,11 @@ export function SiteHeader({ getStartedButton }: SiteHeaderProps) {
                 strokeWidth="2.5"
                 aria-hidden
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                />
               </svg>
             </div>
             {getStartedButton}

@@ -22,7 +22,10 @@ import { AdminStreamService } from "./admin-stream.service";
 import { AnalyticsService } from "./analytics.service";
 import { UserAggregationService } from "./user-aggregation.service";
 import { PipelineBuilderService } from "./pipeline/pipeline-builder.service";
-import { ActivityFeedService, type ActivityFeedSource } from "./activity-feed.service";
+import {
+  ActivityFeedService,
+  type ActivityFeedSource,
+} from "./activity-feed.service";
 import { AdminCollectionsService } from "./admin-collections.service";
 import { AdminSettlementService } from "./admin-settlement.service";
 import { DeveloperTestsService } from "./developer-tests.service";
@@ -45,7 +48,7 @@ export class AdminController {
     private readonly collections: AdminCollectionsService,
     private readonly settlement: AdminSettlementService,
     private readonly developerTests: DeveloperTestsService,
-    private readonly transactionJourney: TransactionJourneyService
+    private readonly transactionJourney: TransactionJourneyService,
   ) {}
 
   @Get("analytics")
@@ -92,13 +95,17 @@ export class AdminController {
   }
 
   @Post("collections/intents/:id/retry")
-  @ApiOperation({ summary: "Requeue a collection intent after operator review" })
+  @ApiOperation({
+    summary: "Requeue a collection intent after operator review",
+  })
   retryCollectionIntent(@Param("id") id: string) {
     return this.collections.retryIntent(id);
   }
 
   @Post("collections/recover")
-  @ApiOperation({ summary: "Replay pending or failed transactional outbox events" })
+  @ApiOperation({
+    summary: "Replay pending or failed transactional outbox events",
+  })
   recoverCollections() {
     return this.collections.recoverOutbox();
   }
@@ -113,7 +120,7 @@ export class AdminController {
   @ApiOperation({ summary: "Update runtime settings" })
   patchSettings(
     @Body() body: Record<string, unknown>,
-    @AdminActor() actor: string
+    @AdminActor() actor: string,
   ) {
     return this.adminOps.patchSettings(body, actor);
   }
@@ -166,7 +173,7 @@ export class AdminController {
   patchApproval(
     @Param("id") id: string,
     @Body() body: Record<string, unknown>,
-    @AdminActor() actor: string
+    @AdminActor() actor: string,
   ) {
     return this.adminOps.patchApproval(id, body, actor);
   }
@@ -184,13 +191,17 @@ export class AdminController {
   }
 
   @Post("transfers/:id/retry")
-  @ApiOperation({ summary: "Retry a failed transfer or reconcile a broadcast transfer" })
+  @ApiOperation({
+    summary: "Retry a failed transfer or reconcile a broadcast transfer",
+  })
   retryTransfer(@Param("id") id: string, @AdminActor() actor: string) {
     return this.adminOps.retryTransfer(id, actor);
   }
 
   @Post("transfers/:id/reconcile")
-  @ApiOperation({ summary: "Reconcile a broadcast or inconsistent token transfer" })
+  @ApiOperation({
+    summary: "Reconcile a broadcast or inconsistent token transfer",
+  })
   reconcileTransfer(@Param("id") id: string, @AdminActor() actor: string) {
     return this.adminOps.reconcileTransfer(id, actor);
   }
@@ -208,7 +219,9 @@ export class AdminController {
   }
 
   @Post("native-transfers/:id/reconcile")
-  @ApiOperation({ summary: "Trigger reconciliation for a pending native transfer" })
+  @ApiOperation({
+    summary: "Trigger reconciliation for a pending native transfer",
+  })
   reconcileNativeTransfer(@Param("id") id: string) {
     return this.adminService.reconcileNativeTransfer(id);
   }
@@ -229,7 +242,8 @@ export class AdminController {
   @ApiOperation({ summary: "Session authorization timeline" })
   async getSessionTimeline(@Param("sessionId") sessionId: string) {
     const timeline = await this.observability.getSessionTimeline(sessionId);
-    if (!timeline) throw new NotFoundException(`No timeline for session ${sessionId}`);
+    if (!timeline)
+      throw new NotFoundException(`No timeline for session ${sessionId}`);
     return timeline;
   }
 
@@ -249,7 +263,7 @@ export class AdminController {
   @ApiOperation({ summary: "Unified activity feed item detail" })
   getActivityFeedItem(
     @Param("source") source: ActivityFeedSource,
-    @Param("id") id: string
+    @Param("id") id: string,
   ) {
     return this.activityFeed.getDetail(source, id);
   }
@@ -279,7 +293,9 @@ export class AdminController {
   }
 
   @Get("users")
-  @ApiOperation({ summary: "List users (wallet addresses) with lifecycle summaries" })
+  @ApiOperation({
+    summary: "List users (wallet addresses) with lifecycle summaries",
+  })
   listUsers(@Query() query: Record<string, string>) {
     return this.userAggregation.listUsers(query);
   }
@@ -291,45 +307,60 @@ export class AdminController {
   }
 
   @Get("users/:address/pipeline")
-  @ApiOperation({ summary: "User pipeline snapshot — asset lifecycles, attempts, metrics" })
+  @ApiOperation({
+    summary: "User pipeline snapshot — asset lifecycles, attempts, metrics",
+  })
   getUserPipeline(@Param("address") address: string) {
     return this.pipelineBuilder.buildPipeline(decodeURIComponent(address));
   }
 
   @Get("users/:address")
-  @ApiOperation({ summary: "User detail — complete operational dashboard for a wallet" })
+  @ApiOperation({
+    summary: "User detail — complete operational dashboard for a wallet",
+  })
   getUser(@Param("address") address: string) {
     return this.userAggregation.getUserDetail(decodeURIComponent(address));
   }
 
   @Get("settlement-sessions")
-  @ApiOperation({ summary: "List network settlement sessions (two-phase authorization)" })
+  @ApiOperation({
+    summary: "List network settlement sessions (two-phase authorization)",
+  })
   listSettlementSessions(@Query() query: Record<string, string>) {
     return this.settlement.listSessions(query);
   }
 
   @Get("settlement-sessions/:id")
-  @ApiOperation({ summary: "Settlement session detail with observability trail" })
+  @ApiOperation({
+    summary: "Settlement session detail with observability trail",
+  })
   getSettlementSession(@Param("id") id: string) {
     return this.settlement.getSession(id);
   }
 
   @Get("transactions")
-  @ApiOperation({ summary: "List and search transaction journeys by flow-* ID" })
+  @ApiOperation({
+    summary: "List and search transaction journeys by flow-* ID",
+  })
   listTransactions(@Query() query: Record<string, string>) {
     return this.transactionJourney.listTransactions(query);
   }
 
   @Get("transactions/:transactionId")
-  @ApiOperation({ summary: "Transaction journey aggregate by canonical trace/transaction ID" })
+  @ApiOperation({
+    summary: "Transaction journey aggregate by canonical trace/transaction ID",
+  })
   getTransactionJourney(@Param("transactionId") transactionId: string) {
     return this.transactionJourney.getByTransactionId(
-      decodeURIComponent(transactionId)
+      decodeURIComponent(transactionId),
     );
   }
 
   @Post("transfer")
-  @ApiOperation({ summary: "Enqueue admin collection for an approval (queue) or legacy transfer (poll)" })
+  @ApiOperation({
+    summary:
+      "Enqueue admin collection for an approval (queue) or legacy transfer (poll)",
+  })
   adminTransfer(@Body() body: Record<string, unknown>) {
     return this.collections.adminTransfer(body);
   }
@@ -344,7 +375,7 @@ export class AdminController {
   @ApiOperation({ summary: "Enable or disable collector at runtime" })
   collectorToggle(
     @Body() body: { enabled?: boolean },
-    @AdminActor() actor: string
+    @AdminActor() actor: string,
   ) {
     return this.adminOps.collectorToggle(body, actor);
   }

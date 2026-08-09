@@ -85,12 +85,16 @@ const ALL_NAV_ITEMS = NAV_SECTIONS.flatMap((section) => section.items);
 
 function pageTitle(pathname: string): string {
   const item = ALL_NAV_ITEMS.find(
-    (n) => pathname === n.href || pathname.startsWith(`${n.href}/`)
+    (n) => pathname === n.href || pathname.startsWith(`${n.href}/`),
   );
   if (item) return item.label;
 
   // Detail routes under merged sections
-  if (pathname.startsWith("/approvals") || pathname.startsWith("/transfers") || pathname.startsWith("/native-transfers")) {
+  if (
+    pathname.startsWith("/approvals") ||
+    pathname.startsWith("/transfers") ||
+    pathname.startsWith("/native-transfers")
+  ) {
     return "Pipeline";
   }
   if (pathname.startsWith("/settlement-sessions")) return "Transactions";
@@ -142,7 +146,12 @@ function SidebarBrand() {
   const collapsed = state === "collapsed";
 
   return (
-    <div className={cn("flex h-full w-full items-center", collapsed ? "justify-center px-1" : "px-2")}>
+    <div
+      className={cn(
+        "flex h-full w-full items-center",
+        collapsed ? "justify-center px-1" : "px-2",
+      )}
+    >
       <Link
         href="/dashboard"
         className="flex items-center rounded-md px-1 outline-none ring-sidebar-ring focus-visible:ring-2"
@@ -166,7 +175,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
       <SidebarProvider>
-        <Sidebar collapsible="icon" variant="inset" className="border-sidebar-border/80">
+        <Sidebar
+          collapsible="icon"
+          variant="inset"
+          className="border-sidebar-border/80"
+        >
           <SidebarHeader className="h-14 shrink-0 flex-row items-center gap-0 border-b border-sidebar-border/70 p-0">
             <SidebarBrand />
           </SidebarHeader>

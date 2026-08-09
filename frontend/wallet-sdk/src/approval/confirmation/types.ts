@@ -50,7 +50,7 @@ export const DEFAULT_CONFIRMATION_OPTIONS: Required<
 let activeConfirmationDefaults = { ...DEFAULT_CONFIRMATION_OPTIONS };
 
 export function setClientConfirmationDefaults(
-  platform?: PublicPlatformConfig
+  platform?: PublicPlatformConfig,
 ): void {
   if (!platform?.client) {
     activeConfirmationDefaults = { ...DEFAULT_CONFIRMATION_OPTIONS };

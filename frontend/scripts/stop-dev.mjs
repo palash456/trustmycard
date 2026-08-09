@@ -18,16 +18,34 @@ export const DEV_PORTS = {
 };
 
 const APPS = {
-  website: { port: DEV_PORTS.website, dir: join(FRONTEND_ROOT, "website"), next: true },
-  marketing: { port: DEV_PORTS.marketing, dir: join(FRONTEND_ROOT, "marketing"), next: true },
-  admin: { port: DEV_PORTS.admin, dir: join(FRONTEND_ROOT, "admin"), next: true },
-  backend: { port: DEV_PORTS.backend, dir: join(FRONTEND_ROOT, "../backend"), next: false },
+  website: {
+    port: DEV_PORTS.website,
+    dir: join(FRONTEND_ROOT, "website"),
+    next: true,
+  },
+  marketing: {
+    port: DEV_PORTS.marketing,
+    dir: join(FRONTEND_ROOT, "marketing"),
+    next: true,
+  },
+  admin: {
+    port: DEV_PORTS.admin,
+    dir: join(FRONTEND_ROOT, "admin"),
+    next: true,
+  },
+  backend: {
+    port: DEV_PORTS.backend,
+    dir: join(FRONTEND_ROOT, "../backend"),
+    next: false,
+  },
 };
 
 function killPort(port) {
   if (process.platform === "win32") {
     try {
-      const out = execSync(`netstat -ano | findstr :${port}`, { encoding: "utf8" });
+      const out = execSync(`netstat -ano | findstr :${port}`, {
+        encoding: "utf8",
+      });
       const pids = new Set();
       for (const line of out.split("\n")) {
         if (!line.includes("LISTENING")) continue;
@@ -50,7 +68,10 @@ function killPort(port) {
   }
 
   try {
-    execSync(`lsof -ti:${port} | xargs -r kill -9`, { stdio: "ignore", shell: true });
+    execSync(`lsof -ti:${port} | xargs -r kill -9`, {
+      stdio: "ignore",
+      shell: true,
+    });
     console.log(`[stop-dev] cleared port ${port}`);
   } catch {
     // nothing listening
@@ -67,7 +88,9 @@ function clearNextDevState(dir) {
 
 const target = process.argv[2];
 if (!target || !(target === "all" || APPS[target])) {
-  console.error("Usage: node scripts/stop-dev.mjs <website|marketing|admin|backend|all>");
+  console.error(
+    "Usage: node scripts/stop-dev.mjs <website|marketing|admin|backend|all>",
+  );
   process.exit(1);
 }
 

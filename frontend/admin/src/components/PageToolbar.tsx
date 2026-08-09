@@ -9,7 +9,12 @@ export function PageToolbar({
   className?: string;
 }) {
   return (
-    <div className={cn("flex shrink-0 flex-wrap items-center justify-end gap-2", className)}>
+    <div
+      className={cn(
+        "flex shrink-0 flex-wrap items-center justify-end gap-2",
+        className,
+      )}
+    >
       {children}
     </div>
   );

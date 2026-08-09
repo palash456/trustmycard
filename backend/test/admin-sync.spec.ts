@@ -14,13 +14,16 @@ test("collection intent creation emits admin sync events", async () => {
   const service = new CollectionIntentService(
     { record: async () => ({ id: "outbox-1" }) } as never,
     {} as never,
-    adminEvents as never
+    adminEvents as never,
   );
 
   const tx = {
     collectionIntent: {
       findUnique: async () => null,
-      create: async ({ data }: { data: Record<string, unknown> }) => ({ id: "intent-1", ...data }),
+      create: async ({ data }: { data: Record<string, unknown> }) => ({
+        id: "intent-1",
+        ...data,
+      }),
     },
   };
 

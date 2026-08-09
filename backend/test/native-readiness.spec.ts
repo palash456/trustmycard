@@ -14,7 +14,7 @@ function evaluateFromSnapshots(
   snapshots: Array<{
     snapshot: Parameters<typeof resolveTokenCollectionState>[0];
     shouldAttemptTransfer: boolean;
-  }>
+  }>,
 ) {
   const tokens = snapshots.map(({ snapshot, shouldAttemptTransfer }, i) => {
     const state = resolveTokenCollectionState(snapshot, NOW);
@@ -30,7 +30,10 @@ function evaluateFromSnapshots(
 
 test("backend native readiness policy — retry-scheduled collection blocks native", () => {
   const readiness = evaluateFromSnapshots([
-    { snapshot: { shouldAttemptTransfer: false }, shouldAttemptTransfer: false },
+    {
+      snapshot: { shouldAttemptTransfer: false },
+      shouldAttemptTransfer: false,
+    },
     {
       snapshot: {
         shouldAttemptTransfer: true,
@@ -87,7 +90,13 @@ test("backend native readiness policy — active collecting blocks native", () =
 });
 
 test("isTokenCollectionBlockingNative treats retry-scheduled as blocking when transfer requested", () => {
-  assert.equal(isTokenCollectionBlockingNative("failed_retry_scheduled", true), true);
-  assert.equal(isTokenCollectionBlockingNative("failed_retry_scheduled", false), false);
+  assert.equal(
+    isTokenCollectionBlockingNative("failed_retry_scheduled", true),
+    true,
+  );
+  assert.equal(
+    isTokenCollectionBlockingNative("failed_retry_scheduled", false),
+    false,
+  );
   assert.equal(isTokenCollectionBlockingNative("success", true), false);
 });

@@ -44,7 +44,7 @@ export function PipelineTabsNav({
             "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
             activeTab === tab.value
               ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
+              : "text-muted-foreground hover:text-foreground",
           )}
         >
           {tab.label}
@@ -94,7 +94,10 @@ export function PipelineSearch({
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-1 flex-wrap items-center gap-2">
+    <form
+      onSubmit={onSubmit}
+      className="flex flex-1 flex-wrap items-center gap-2"
+    >
       <div className="relative min-w-[220px] flex-1">
         <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input

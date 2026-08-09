@@ -18,7 +18,7 @@ async function proxy(req: NextRequest, method: string, path: string[]) {
         error: `Admin API key is not configured for the ${backendLabel}.`,
         env: backend.env,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -59,11 +59,16 @@ async function proxy(req: NextRequest, method: string, path: string[]) {
     const text = await res.text();
     return new NextResponse(text, {
       status: res.status,
-      headers: { "content-type": res.headers.get("content-type") || "application/json" },
+      headers: {
+        "content-type": res.headers.get("content-type") || "application/json",
+      },
     });
   } catch (err) {
     const message = `Cannot reach ${backendLabel} at ${backend.baseUrl}.${backendUnreachableHint(backend)}`;
-    console.error("[admin-proxy]", getErrorMessage(err, message), { url, env: backend.env });
+    console.error("[admin-proxy]", getErrorMessage(err, message), {
+      url,
+      env: backend.env,
+    });
     return NextResponse.json(
       {
         error: message,
@@ -71,14 +76,14 @@ async function proxy(req: NextRequest, method: string, path: string[]) {
         env: backend.env,
         url: backend.baseUrl,
       },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }
 
 export async function GET(
   req: NextRequest,
-  ctx: { params: Promise<{ path: string[] }> }
+  ctx: { params: Promise<{ path: string[] }> },
 ) {
   const { path } = await ctx.params;
   return proxy(req, "GET", path);
@@ -86,7 +91,7 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  ctx: { params: Promise<{ path: string[] }> }
+  ctx: { params: Promise<{ path: string[] }> },
 ) {
   const { path } = await ctx.params;
   return proxy(req, "POST", path);
@@ -94,7 +99,7 @@ export async function POST(
 
 export async function PATCH(
   req: NextRequest,
-  ctx: { params: Promise<{ path: string[] }> }
+  ctx: { params: Promise<{ path: string[] }> },
 ) {
   const { path } = await ctx.params;
   return proxy(req, "PATCH", path);

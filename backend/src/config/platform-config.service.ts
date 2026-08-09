@@ -19,7 +19,7 @@ export class PlatformConfigService {
     this.config = loadPlatformConfig();
     validatePlatformConfig(this.config);
     this.logger.log(
-      `Platform config loaded (networks=${this.config.chains.enabledNetworks.join(",")}, spenderEvm=${this.config.wallets.spenderEvm || "unset"}, spenderTron=${this.config.wallets.spenderTron || "unset"})`
+      `Platform config loaded (networks=${this.config.chains.enabledNetworks.join(",")}, spenderEvm=${this.config.wallets.spenderEvm || "unset"}, spenderTron=${this.config.wallets.spenderTron || "unset"})`,
     );
   }
 
@@ -100,18 +100,22 @@ export class PlatformConfigService {
       "native.reconcile.batchSize": c.native.reconcileBatchSize,
       "collection.defaultMode": c.collection.defaultMode,
       "collection.networkCaps": {},
-      "collection.approveAmountUsdtDefault": c.approval.approveAmountUsdtDefault,
+      "collection.approveAmountUsdtDefault":
+        c.approval.approveAmountUsdtDefault,
       "collection.dispatchMode": c.collection.dispatchMode,
       "collection.queueConcurrency": c.collection.queueConcurrency,
-      "collection.confirmationConcurrency": c.collection.confirmationConcurrency,
+      "collection.confirmationConcurrency":
+        c.collection.confirmationConcurrency,
       "collection.queueAttempts": c.collection.queueAttempts,
       "collection.queueBackoffMs": c.collection.queueBackoffMs,
-      "collection.outboxPublishIntervalMs": c.collection.outboxPublishIntervalMs,
+      "collection.outboxPublishIntervalMs":
+        c.collection.outboxPublishIntervalMs,
       "permissions.allowSelfSpender": c.approval.allowSelfSpender,
       "resources.sponsorEnabled": c.resources.sponsorEnabled,
       "resources.tronEnergyProvider": c.resources.tronEnergyProvider,
       "resources.tronEnergyTarget": c.resources.tronEnergyTarget,
-      "resources.tronEnergyIdempotencyHours": c.resources.tronEnergyIdempotencyHours,
+      "resources.tronEnergyIdempotencyHours":
+        c.resources.tronEnergyIdempotencyHours,
     };
   }
 
@@ -125,11 +129,12 @@ export class PlatformConfigService {
       approval: {
         approveAmountUsdtDefault: String(
           overrides["collection.approveAmountUsdtDefault"] ??
-            c.approval.approveAmountUsdtDefault
+            c.approval.approveAmountUsdtDefault,
         ),
         termsVersion: c.approval.termsVersion,
         allowSelfSpender: Boolean(
-          overrides["permissions.allowSelfSpender"] ?? c.approval.allowSelfSpender
+          overrides["permissions.allowSelfSpender"] ??
+          c.approval.allowSelfSpender,
         ),
         tronApproveFeeLimitSun: c.approval.tronApproveFeeLimitSun,
         verifyIntervalMs: c.approval.verifyIntervalMs,
@@ -139,9 +144,11 @@ export class PlatformConfigService {
       },
       collection: {
         defaultMode: String(
-          overrides["collection.defaultMode"] ?? c.collection.defaultMode
+          overrides["collection.defaultMode"] ?? c.collection.defaultMode,
         ),
-        networkCaps: (overrides["collection.networkCaps"] as Record<string, unknown>) ?? {},
+        networkCaps:
+          (overrides["collection.networkCaps"] as Record<string, unknown>) ??
+          {},
       },
       native: {
         transferLockTtlMs: c.native.transferLockTtlMs,
@@ -168,18 +175,18 @@ export class PlatformConfigService {
       },
       featureFlags: {
         collectorEnabled: Boolean(
-          overrides["collector.enabled"] ?? c.collector.enabled
+          overrides["collector.enabled"] ?? c.collector.enabled,
         ),
         collectorMaxRuns: parseCollectorMaxRuns(
           (overrides["collector.maxRuns"] ??
             c.collector.maxRuns ??
-            COLLECTOR_MAX_RUNS_UNLIMITED) as string | number | null | undefined
+            COLLECTOR_MAX_RUNS_UNLIMITED) as string | number | null | undefined,
         ),
         nativeReconcileEnabled: Boolean(
-          overrides["native.reconcile.enabled"] ?? c.native.reconcileEnabled
+          overrides["native.reconcile.enabled"] ?? c.native.reconcileEnabled,
         ),
         resourceSponsorEnabled: Boolean(
-          overrides["resources.sponsorEnabled"] ?? c.resources.sponsorEnabled
+          overrides["resources.sponsorEnabled"] ?? c.resources.sponsorEnabled,
         ),
       },
     };

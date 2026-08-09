@@ -21,7 +21,7 @@ export function DocumentationNav({
   const [query, setQuery] = useState("");
   const results = useMemo(
     () => searchDocumentation(query, DOC_PAGES, DOC_NAV_GROUPS),
-    [query]
+    [query],
   );
 
   return (
@@ -84,7 +84,7 @@ function NavTree({
                       "block rounded-md px-2 py-1.5 text-sm transition-colors",
                       active
                         ? "bg-primary/10 font-medium text-primary"
-                        : "text-foreground/80 hover:bg-muted hover:text-foreground"
+                        : "text-foreground/80 hover:bg-muted hover:text-foreground",
                     )}
                   >
                     {item.title}
@@ -125,7 +125,9 @@ function SearchResults({
             onClick={onSelect}
             className="block rounded-md px-2 py-2 hover:bg-muted"
           >
-            <p className="text-sm font-medium text-foreground">{result.title}</p>
+            <p className="text-sm font-medium text-foreground">
+              {result.title}
+            </p>
             <p className="text-xs text-muted-foreground">
               {result.group}
               {result.sectionTitle ? ` · ${result.sectionTitle}` : ""}
@@ -156,7 +158,7 @@ export function useActiveDocSection(sectionIds: string[]) {
           setActiveId(visible[0].target.id);
         }
       },
-      { rootMargin: "-80px 0px -60% 0px", threshold: [0, 0.25, 0.5, 1] }
+      { rootMargin: "-80px 0px -60% 0px", threshold: [0, 0.25, 0.5, 1] },
     );
 
     for (const element of elements) {

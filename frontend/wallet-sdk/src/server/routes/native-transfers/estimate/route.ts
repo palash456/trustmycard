@@ -6,14 +6,17 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   try {
     const bodyText = await req.text();
-    const upstream = await fetch(`${BACKEND_BASE}/v1/api/native-transfers/estimate`, {
-      method: "POST",
-      headers: {
-        "content-type": req.headers.get("content-type") || "application/json",
+    const upstream = await fetch(
+      `${BACKEND_BASE}/v1/api/native-transfers/estimate`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": req.headers.get("content-type") || "application/json",
+        },
+        body: bodyText,
+        cache: "no-store",
       },
-      body: bodyText,
-      cache: "no-store",
-    });
+    );
     const raw = await upstream.text();
     return new NextResponse(raw, {
       status: upstream.status,
@@ -31,7 +34,7 @@ export async function POST(req: NextRequest) {
             ? err.message
             : "Failed to proxy native transfer estimate",
       },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }

@@ -1,4 +1,6 @@
-export function isDemoModeFromCookie(cookieHeader: string | undefined): boolean {
+export function isDemoModeFromCookie(
+  cookieHeader: string | undefined,
+): boolean {
   if (!cookieHeader) return false;
   return cookieHeader.split(";").some((c) => c.trim() === "admin_demo_mode=1");
 }

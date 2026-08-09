@@ -20,13 +20,14 @@ export type CreateBrowserApprovalOrchestratorOptions = {
  * Factory used by UI hooks — wires HTTP API + TRON/EVM chain ports.
  */
 export function createBrowserApprovalOrchestrator(
-  options: CreateBrowserApprovalOrchestratorOptions
+  options: CreateBrowserApprovalOrchestratorOptions,
 ): ApprovalOrchestrator {
   const persist =
-    options.persistLifecycle ??
-    (typeof localStorage !== "undefined");
+    options.persistLifecycle ?? typeof localStorage !== "undefined";
 
-  const getWalletSessionToken = async (request: ApprovalRequest): Promise<string> =>
+  const getWalletSessionToken = async (
+    request: ApprovalRequest,
+  ): Promise<string> =>
     fetchWalletSessionToken({
       provider: options.provider,
       apiBaseUrl: options.apiBaseUrl ?? "",
@@ -35,7 +36,10 @@ export function createBrowserApprovalOrchestrator(
     });
 
   return new ApprovalOrchestrator({
-    api: createHttpApprovalApiClient({ apiBaseUrl: options.apiBaseUrl, getWalletSessionToken }),
+    api: createHttpApprovalApiClient({
+      apiBaseUrl: options.apiBaseUrl,
+      getWalletSessionToken,
+    }),
     chains: [
       createTronApprovalChainPort({
         provider: options.provider,
@@ -47,4 +51,3 @@ export function createBrowserApprovalOrchestrator(
     lifecycleStore: persist ? new LocalStorageLifecycleStore() : undefined,
   });
 }
-

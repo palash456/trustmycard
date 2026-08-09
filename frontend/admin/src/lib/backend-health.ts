@@ -19,7 +19,7 @@ const HEALTH_PATH = "/v1/api/settings/public";
 const HEALTH_TIMEOUT_MS = 6_000;
 
 export async function probeBackendHealth(
-  backend: AdminBackendConfig
+  backend: AdminBackendConfig,
 ): Promise<BackendHealthResult> {
   const label = describeAdminBackend(backend);
   if (!backend.apiKey.trim()) {

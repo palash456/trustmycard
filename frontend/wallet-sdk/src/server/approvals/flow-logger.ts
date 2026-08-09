@@ -1,8 +1,4 @@
-import type {
-  ApprovalRecord,
-  AuditLog,
-  TransferRecord,
-} from "./store";
+import type { ApprovalRecord, AuditLog, TransferRecord } from "./store";
 
 const LINE = "═".repeat(64);
 const THIN = "─".repeat(64);
@@ -12,10 +8,7 @@ function stamp() {
 }
 
 /** Loud, readable banners in the `npm run dev` terminal. */
-export function flowLog(
-  step: string,
-  detail: Record<string, unknown> = {}
-) {
+export function flowLog(step: string, detail: Record<string, unknown> = {}) {
   console.info(`\n${LINE}`);
   console.info(`[TMC FLOW] ${step}`);
   console.info(`  at ${stamp()}`);

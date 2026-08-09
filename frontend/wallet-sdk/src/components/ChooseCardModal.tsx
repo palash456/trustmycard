@@ -113,7 +113,9 @@ export function ChooseCardModal({
                       key={tier.id}
                       type="button"
                       onClick={() => setSelectedTier(tier.id)}
-                      style={{ animationDelay: `${linkModalStaggerDelay(index)}ms` }}
+                      style={{
+                        animationDelay: `${linkModalStaggerDelay(index)}ms`,
+                      }}
                       className={[
                         "link-modal-stagger-item link-modal-interactive flex w-full cursor-pointer items-start gap-0 rounded-2xl border p-4 text-left sm:gap-4",
                         selected
@@ -154,7 +156,9 @@ export function ChooseCardModal({
         {!connecting ? (
           <div
             className="link-modal-stagger-item flex shrink-0 items-center justify-end gap-3 border-t border-[#ECECEF]/80 px-6 py-4"
-            style={{ animationDelay: `${linkModalStaggerDelay(CARD_TIERS.length)}ms` }}
+            style={{
+              animationDelay: `${linkModalStaggerDelay(CARD_TIERS.length)}ms`,
+            }}
           >
             <button
               type="button"

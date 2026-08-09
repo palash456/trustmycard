@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { execFile } from "node:child_process";
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
@@ -114,7 +118,7 @@ const AREA_LABELS: Record<string, string> = {
   "Native transfer": "Sending native coins (ETH, TRX, etc.)",
   "Collection (backend)": "Pulling approved tokens (server)",
   "Collection (shared)": "Pulling approved tokens (shared rules)",
-  "Resources": "Network fees & energy (TRON/EVM)",
+  Resources: "Network fees & energy (TRON/EVM)",
   "Admin / pipeline": "Admin dashboard & user pipeline",
   "Native execution policy": "When native sends are allowed",
   Observability: "Logging, errors & monitoring",
@@ -150,7 +154,8 @@ const SUITE_FRIENDLY_COPY: Array<{
     description:
       "Covers the wallet side: QR scan, connect wallet, pick networks, and finish token approvals using live platform settings.",
     purpose: "Makes sure users can connect and approve without errors.",
-    expectedResult: "Wallets link, spender addresses match config, and approvals complete on every enabled network.",
+    expectedResult:
+      "Wallets link, spender addresses match config, and approvals complete on every enabled network.",
     why: "This is the first half of the connect-to-collect journey.",
   },
   {
@@ -159,7 +164,8 @@ const SUITE_FRIENDLY_COPY: Array<{
     description:
       "Covers the handoff: after wallet approvals, the backend collector receives the right data and pulls tokens.",
     purpose: "Verifies the wallet app and server work together after sign-in.",
-    expectedResult: "Collector receives approvals and completes transferFrom to the platform wallet.",
+    expectedResult:
+      "Collector receives approvals and completes transferFrom to the platform wallet.",
     why: "This is the second half of the connect-to-collect journey.",
   },
   {
@@ -168,7 +174,8 @@ const SUITE_FRIENDLY_COPY: Array<{
     description:
       "Server-only checks: after an approval is registered, the collector picks up funds and handles edge cases like zero balance.",
     purpose: "Confirms the backend collector behaves correctly on its own.",
-    expectedResult: "Collector transfers to the correct wallet and skips safely when balance is zero.",
+    expectedResult:
+      "Collector transfers to the correct wallet and skips safely when balance is zero.",
     why: "Isolates server collection logic from the wallet connect UI.",
   },
   {
@@ -176,22 +183,28 @@ const SUITE_FRIENDLY_COPY: Array<{
     title: "When native sends are allowed",
     description:
       "Checks simple rules: when can the app send native coins vs when it must wait for token collection to finish.",
-    purpose: "Protects users from failed native sends while tokens are still being collected.",
-    expectedResult: "Native sends wait when collection is active; proceed when safe.",
+    purpose:
+      "Protects users from failed native sends while tokens are still being collected.",
+    expectedResult:
+      "Native sends wait when collection is active; proceed when safe.",
     why: "Wrong timing here causes failed transactions and confused users.",
   },
   {
     match: /collection-policy/i,
     title: "How much to collect each time",
-    description: "Checks math for partial collections — zero balance, custom amounts, and unlimited approvals.",
-    purpose: "Ensures the server collects the right amount and never over-draws.",
-    expectedResult: "Correct transfer amounts for every balance and approval type.",
+    description:
+      "Checks math for partial collections — zero balance, custom amounts, and unlimited approvals.",
+    purpose:
+      "Ensures the server collects the right amount and never over-draws.",
+    expectedResult:
+      "Correct transfer amounts for every balance and approval type.",
     why: "Collection math errors mean lost funds or stuck approvals.",
   },
   {
     match: /native-readiness/i,
     title: "Ready to send native coins?",
-    description: "Checks whether the platform should allow a native transfer based on current token collection status.",
+    description:
+      "Checks whether the platform should allow a native transfer based on current token collection status.",
     purpose: "Stops native sends at the wrong moment.",
     expectedResult: "Clear yes/no decision aligned with collection state.",
     why: "Prevents race conditions between token collection and native sends.",
@@ -199,17 +212,23 @@ const SUITE_FRIENDLY_COPY: Array<{
   {
     match: /wallet-phase/i,
     title: "Wallet sign-in phase",
-    description: "Tests the first phase where users connect and sign — before any collection happens.",
-    purpose: "Ensures sign-in never blocks on settlement and defers native work correctly.",
-    expectedResult: "Wallet phase completes without unnecessary waits or wrong signatures.",
+    description:
+      "Tests the first phase where users connect and sign — before any collection happens.",
+    purpose:
+      "Ensures sign-in never blocks on settlement and defers native work correctly.",
+    expectedResult:
+      "Wallet phase completes without unnecessary waits or wrong signatures.",
     why: "First impression for users — sign-in must feel instant and reliable.",
   },
   {
     match: /resource-manager/i,
     title: "Network resources (energy & fees)",
-    description: "Tests acquiring and releasing TRON energy and EVM gas resources for transactions.",
-    purpose: "Makes sure the platform can pay for network fees when users transact.",
-    expectedResult: "Resources are acquired, used, and released in the right order.",
+    description:
+      "Tests acquiring and releasing TRON energy and EVM gas resources for transactions.",
+    purpose:
+      "Makes sure the platform can pay for network fees when users transact.",
+    expectedResult:
+      "Resources are acquired, used, and released in the right order.",
     why: "Without resources, TRON and EVM transactions fail silently or cost too much.",
   },
   {
@@ -217,8 +236,10 @@ const SUITE_FRIENDLY_COPY: Array<{
     title: "Transaction context (client journey ID)",
     description:
       "Tests flow-* ID generation, sessionStorage resume/expiry, and x-correlation-id headers on the wallet client.",
-    purpose: "Ensures one user attempt keeps the same ID across refresh and API calls.",
-    expectedResult: "Stable transactionId in sessionStorage; correlation header on outbound requests.",
+    purpose:
+      "Ensures one user attempt keeps the same ID across refresh and API calls.",
+    expectedResult:
+      "Stable transactionId in sessionStorage; correlation header on outbound requests.",
     why: "Lost client context makes every production incident impossible to trace.",
   },
   {
@@ -226,16 +247,21 @@ const SUITE_FRIENDLY_COPY: Array<{
     title: "Admin transaction journey hub",
     description:
       "Tests GET /admin/transactions/:id aggregates approvals, settlement, logs, and terminal status by traceId.",
-    purpose: "Validates the admin debugging hub returns a complete lifecycle slice.",
-    expectedResult: "Hub resolves wallet, network, timeline, and child entities for a flow-* ID.",
+    purpose:
+      "Validates the admin debugging hub returns a complete lifecycle slice.",
+    expectedResult:
+      "Hub resolves wallet, network, timeline, and child entities for a flow-* ID.",
     why: "Support and ops rely on this page as the single pane of glass per payment attempt.",
   },
   {
     match: /transaction-lifecycle/i,
     title: "Transaction terminal lifecycle",
-    description: "Tests SUCCESS / FAILED / CANCELLED / EXPIRED terminal stage constants and mappings.",
-    purpose: "Keeps terminal closure semantics consistent across client, server, and admin.",
-    expectedResult: "Terminal stages map to the correct outcome status everywhere.",
+    description:
+      "Tests SUCCESS / FAILED / CANCELLED / EXPIRED terminal stage constants and mappings.",
+    purpose:
+      "Keeps terminal closure semantics consistent across client, server, and admin.",
+    expectedResult:
+      "Terminal stages map to the correct outcome status everywhere.",
     why: "Ambiguous terminal states break dashboards and retry logic.",
   },
   {
@@ -243,16 +269,21 @@ const SUITE_FRIENDLY_COPY: Array<{
     title: "Settlement log correlation",
     description:
       "Tests settlement observability uses client journey ID (flow-*) — not settlement DB PK — for trace fields.",
-    purpose: "Prevents settlement logs from becoming orphaned from the connect flow.",
-    expectedResult: "traceId/sessionId = clientSessionId; settlementSessionId only in context.",
+    purpose:
+      "Prevents settlement logs from becoming orphaned from the connect flow.",
+    expectedResult:
+      "traceId/sessionId = clientSessionId; settlementSessionId only in context.",
     why: "Mixing settlement row IDs with journey IDs was a major traceability gap.",
   },
   {
     match: /connect-logger/i,
     title: "Connect flow log correlation",
-    description: "Tests connect logger emits unified sessionId/traceId/transactionId on every step.",
-    purpose: "Guards against sessionId/traceId conflation regressions in connect observability.",
-    expectedResult: "All connect log events share one journey ID; wallet address stays separate.",
+    description:
+      "Tests connect logger emits unified sessionId/traceId/transactionId on every step.",
+    purpose:
+      "Guards against sessionId/traceId conflation regressions in connect observability.",
+    expectedResult:
+      "All connect log events share one journey ID; wallet address stays separate.",
     why: "Connect is the first mile — bad IDs here poison every downstream system.",
   },
 ];
@@ -271,7 +302,7 @@ export class DeveloperTestsService {
   assertEnabled(): void {
     if (!this.enabled()) {
       throw new ForbiddenException(
-        "Developer tests are disabled. Set ADMIN_DEV_OPS=true in a non-production environment."
+        "Developer tests are disabled. Set ADMIN_DEV_OPS=true in a non-production environment.",
       );
     }
   }
@@ -279,13 +310,17 @@ export class DeveloperTestsService {
   async getCatalog(force = false): Promise<DeveloperTestsCatalog> {
     this.assertEnabled();
     const now = Date.now();
-    if (!force && this.catalogCache && now - this.catalogCachedAt < this.catalogTtlMs) {
+    if (
+      !force &&
+      this.catalogCache &&
+      now - this.catalogCachedAt < this.catalogTtlMs
+    ) {
       return this.catalogCache;
     }
 
     const root = this.monorepoRoot();
     const packages = await Promise.all(
-      this.packageConfigs(root).map((pkg) => this.discoverPackage(pkg))
+      this.packageConfigs(root).map((pkg) => this.discoverPackage(pkg)),
     );
 
     const allSuites = packages.flatMap((p) => p.suites);
@@ -327,7 +362,9 @@ export class DeveloperTestsService {
       throw new NotFoundException(`Test suite not found: ${suiteId}`);
     }
 
-    const pkg = this.packageConfigs(this.monorepoRoot()).find((p) => p.id === suite.packageId);
+    const pkg = this.packageConfigs(this.monorepoRoot()).find(
+      (p) => p.id === suite.packageId,
+    );
     if (!pkg) {
       throw new NotFoundException(`Package not found: ${suite.packageId}`);
     }
@@ -353,7 +390,15 @@ export class DeveloperTestsService {
       });
       const durationMs = Date.now() - started;
       const report = parseTapOutput(stdout);
-      return this.finalizeRunResult(suiteId, true, 0, durationMs, stdout, stderr, report);
+      return this.finalizeRunResult(
+        suiteId,
+        true,
+        0,
+        durationMs,
+        stdout,
+        stderr,
+        report,
+      );
     } catch (err: unknown) {
       const durationMs = Date.now() - started;
       const execErr = err as {
@@ -363,7 +408,9 @@ export class DeveloperTestsService {
         message?: string;
       };
       const stdout = execErr.stdout ?? "";
-      const stderr = [execErr.stderr, execErr.message].filter(Boolean).join("\n");
+      const stderr = [execErr.stderr, execErr.message]
+        .filter(Boolean)
+        .join("\n");
       const report = parseTapOutput(stdout);
       return this.finalizeRunResult(
         suiteId,
@@ -372,7 +419,7 @@ export class DeveloperTestsService {
         durationMs,
         stdout,
         stderr,
-        report
+        report,
       );
     }
   }
@@ -384,7 +431,7 @@ export class DeveloperTestsService {
     durationMs: number,
     stdout: string,
     stderr: string,
-    report: TestRunResult["report"]
+    report: TestRunResult["report"],
   ): TestRunResult {
     const result: TestRunResult = {
       suiteId,
@@ -406,7 +453,10 @@ export class DeveloperTestsService {
     return result;
   }
 
-  async runAll(): Promise<{ results: TestRunResult[]; summary: TestRunResult["report"] }> {
+  async runAll(): Promise<{
+    results: TestRunResult[];
+    summary: TestRunResult["report"];
+  }> {
     this.assertEnabled();
     const catalog = await this.getCatalog();
     const results: TestRunResult[] = [];
@@ -425,7 +475,13 @@ export class DeveloperTestsService {
         total: acc.total + r.report.total,
         cases: [...acc.cases, ...r.report.cases],
       }),
-      { passed: 0, failed: 0, skipped: 0, total: 0, cases: [] as TestRunCaseResult[] }
+      {
+        passed: 0,
+        failed: 0,
+        skipped: 0,
+        total: 0,
+        cases: [] as TestRunCaseResult[],
+      },
     );
 
     return { results, summary };
@@ -442,7 +498,9 @@ export class DeveloperTestsService {
         name: "@trustmycard/backend",
         dir: "backend",
         runArgs: (fileOrFiles) => {
-          const files = Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles];
+          const files = Array.isArray(fileOrFiles)
+            ? fileOrFiles
+            : [fileOrFiles];
           return ["-r", "ts-node/register", ...files];
         },
       },
@@ -451,7 +509,9 @@ export class DeveloperTestsService {
         name: "@trustmycard/wallet-sdk",
         dir: join("frontend", "wallet-sdk"),
         runArgs: (fileOrFiles) => {
-          const files = Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles];
+          const files = Array.isArray(fileOrFiles)
+            ? fileOrFiles
+            : [fileOrFiles];
           return ["-r", "./test/register-ts.cjs", ...files];
         },
       },
@@ -460,7 +520,9 @@ export class DeveloperTestsService {
         name: "@trustmycard/shared",
         dir: join("frontend", "shared"),
         runArgs: (fileOrFiles) => {
-          const files = Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles];
+          const files = Array.isArray(fileOrFiles)
+            ? fileOrFiles
+            : [fileOrFiles];
           return files;
         },
         preRun: async () => {
@@ -532,14 +594,19 @@ export class DeveloperTestsService {
     return files;
   }
 
-  private findSuite(catalog: DeveloperTestsCatalog, suiteId: string): TestSuiteMeta | undefined {
+  private findSuite(
+    catalog: DeveloperTestsCatalog,
+    suiteId: string,
+  ): TestSuiteMeta | undefined {
     return (
       catalog.featuredSuites.find((s) => s.id === suiteId) ??
       catalog.packages.flatMap((p) => p.suites).find((s) => s.id === suiteId)
     );
   }
 
-  private async resolveConnectFlowSpecFiles(walletSdkDir: string): Promise<string[]> {
+  private async resolveConnectFlowSpecFiles(
+    walletSdkDir: string,
+  ): Promise<string[]> {
     const connectDir = join(walletSdkDir, "test", "connect-flow");
     const entries = await readdir(connectDir, { withFileTypes: true });
     return entries
@@ -564,7 +631,9 @@ export class DeveloperTestsService {
   }
 }
 
-function parseTestCases(content: string): Array<{ name: string; kind: TestCaseMeta["kind"] }> {
+function parseTestCases(
+  content: string,
+): Array<{ name: string; kind: TestCaseMeta["kind"] }> {
   const cases: Array<{ name: string; kind: TestCaseMeta["kind"] }> = [];
   const patterns: Array<{ kind: TestCaseMeta["kind"]; re: RegExp }> = [
     { kind: "describe", re: /\bdescribe\s*\(\s*["'`]([^"'`]+)["'`]/g },
@@ -584,7 +653,7 @@ function buildSuiteMeta(
   pkg: PackageConfig,
   relFile: string,
   cases: Array<{ name: string; kind: TestCaseMeta["kind"] }>,
-  defaultPatterns: string[]
+  defaultPatterns: string[],
 ): Pick<
   TestSuiteMeta,
   | "area"
@@ -607,10 +676,22 @@ function buildSuiteMeta(
   const layer = inferLayer(relFile);
   const inDefaultScript = matchesDefaultScript(relFile, defaultPatterns);
   const journey = inferJourney(pkg.id, normalized, area, layer);
-  const baseName = relFile.replace(/\.spec\.(ts|js)$/, "").split("/").pop() ?? relFile;
+  const baseName =
+    relFile
+      .replace(/\.spec\.(ts|js)$/, "")
+      .split("/")
+      .pop() ?? relFile;
   const testCount = cases.filter((c) => c.kind === "test").length;
-  const custom = SUITE_FRIENDLY_COPY.find((entry) => entry.match.test(normalized));
-  const generic = genericFriendlyCopy(area, layer, baseName, testCount, inDefaultScript);
+  const custom = SUITE_FRIENDLY_COPY.find((entry) =>
+    entry.match.test(normalized),
+  );
+  const generic = genericFriendlyCopy(
+    area,
+    layer,
+    baseName,
+    testCount,
+    inDefaultScript,
+  );
 
   return {
     area,
@@ -630,9 +711,13 @@ function buildSuiteMeta(
   };
 }
 
-function buildFullConnectFlowE2ESuite(packages: TestPackageMeta[]): TestSuiteMeta {
+function buildFullConnectFlowE2ESuite(
+  packages: TestPackageMeta[],
+): TestSuiteMeta {
   const walletPkg = packages.find((p) => p.id === "wallet-sdk");
-  const parts = (walletPkg?.suites ?? []).filter((s) => s.file.startsWith("test/connect-flow/"));
+  const parts = (walletPkg?.suites ?? []).filter((s) =>
+    s.file.startsWith("test/connect-flow/"),
+  );
   const cases = parts.flatMap((s) => s.cases);
   const caseCount = parts.reduce((n, s) => n + s.caseCount, 0);
 
@@ -655,8 +740,10 @@ function buildFullConnectFlowE2ESuite(packages: TestPackageMeta[]): TestSuiteMet
     journeyEnd: "Backend collector transfers approved tokens",
     description:
       "Runs all wallet connect flow tests together — the same command as: node --test test/connect-flow/*.spec.ts in wallet-sdk.",
-    purpose: "Proves the entire user path works: connect wallet, approve tokens, and server collection.",
-    expectedResult: "Every connect-flow check passes — QR through collector handoff.",
+    purpose:
+      "Proves the entire user path works: connect wallet, approve tokens, and server collection.",
+    expectedResult:
+      "Every connect-flow check passes — QR through collector handoff.",
     why: "This is the one test to run before release. It covers the full money path users experience.",
     cases,
     caseCount,
@@ -667,7 +754,7 @@ function inferJourney(
   packageId: string,
   normalizedPath: string,
   area: string,
-  layer: string
+  layer: string,
 ): { start: string; end: string } {
   const rules: Array<{ match: RegExp; start: string; end: string }> = [
     {
@@ -744,14 +831,29 @@ function inferJourney(
   }
 
   const areaDefaults: Record<string, { start: string; end: string }> = {
-    "Connect flow": { start: "User interaction begins", end: "Connect step completes" },
-    "Approval orchestrator": { start: "Approval requested", end: "Approval settled" },
-    "Authorization / wallet phase": { start: "Wallet opens", end: "Permission granted" },
+    "Connect flow": {
+      start: "User interaction begins",
+      end: "Connect step completes",
+    },
+    "Approval orchestrator": {
+      start: "Approval requested",
+      end: "Approval settled",
+    },
+    "Authorization / wallet phase": {
+      start: "Wallet opens",
+      end: "Permission granted",
+    },
     "Native transfer": { start: "Send initiated", end: "Send validated" },
-    "Collection (backend)": { start: "Collector runs", end: "Collection updated" },
-    "Resources": { start: "Resource needed", end: "Resource ready" },
+    "Collection (backend)": {
+      start: "Collector runs",
+      end: "Collection updated",
+    },
+    Resources: { start: "Resource needed", end: "Resource ready" },
     "Admin / pipeline": { start: "Data fetched", end: "View updated" },
-    "Native execution policy": { start: "States checked", end: "Policy applied" },
+    "Native execution policy": {
+      start: "States checked",
+      end: "Policy applied",
+    },
     Observability: { start: "Event emitted", end: "Observability recorded" },
     "Core / server": { start: "Request received", end: "Response validated" },
     "Shared utilities": { start: "Input provided", end: "Output verified" },
@@ -772,7 +874,7 @@ function genericFriendlyCopy(
   layer: string,
   baseName: string,
   testCount: number,
-  inDefaultScript: boolean
+  inDefaultScript: boolean,
 ): {
   title: string;
   description: string;
@@ -849,8 +951,10 @@ function inferArea(packageId: string, relFile: string): string {
   const normalized = relFile.replace(/\\/g, "/");
 
   if (packageId === "shared") {
-    if (normalized.includes("token-collection-state")) return "Native execution policy";
-    if (normalized.includes("transaction-lifecycle")) return "Transaction traceability";
+    if (normalized.includes("token-collection-state"))
+      return "Native execution policy";
+    if (normalized.includes("transaction-lifecycle"))
+      return "Transaction traceability";
     if (normalized.includes("observability")) return "Observability";
     if (normalized.includes("collection")) return "Collection (shared)";
     if (normalized.includes("collector")) return "Collection (shared)";
@@ -859,10 +963,12 @@ function inferArea(packageId: string, relFile: string): string {
 
   if (packageId === "wallet-sdk") {
     if (normalized.includes("/approval/")) return "Approval orchestrator";
-    if (normalized.includes("/authorization/")) return "Authorization / wallet phase";
+    if (normalized.includes("/authorization/"))
+      return "Authorization / wallet phase";
     if (normalized.includes("/native-transfer/")) return "Native transfer";
     if (normalized.includes("/connect-flow/")) return "Connect flow";
-    if (normalized.includes("transaction-context")) return "Transaction traceability";
+    if (normalized.includes("transaction-context"))
+      return "Transaction traceability";
     if (normalized.includes("/observability/")) return "Observability";
     if (normalized.includes("/server/")) return "Core / server";
     if (normalized.includes("/core/")) return "Core / server";
@@ -873,12 +979,19 @@ function inferArea(packageId: string, relFile: string): string {
   if (normalized.includes("/connect-flow/")) return "Connect flow";
   if (normalized.includes("collection")) return "Collection (backend)";
   if (normalized.includes("native")) return "Native transfer";
-  if (normalized.includes("pipeline") || normalized.includes("user-")) return "Admin / pipeline";
-  if (normalized.includes("transaction-journey") || normalized.includes("settlement-observability"))
+  if (normalized.includes("pipeline") || normalized.includes("user-"))
+    return "Admin / pipeline";
+  if (
+    normalized.includes("transaction-journey") ||
+    normalized.includes("settlement-observability")
+  )
     return "Transaction traceability";
-  if (normalized.includes("admin") || normalized.includes("approval-state")) return "Admin / pipeline";
-  if (normalized.includes("safe-audit") || normalized.includes("error-message")) return "Observability";
-  if (normalized.includes("network-settlement")) return "Native execution policy";
+  if (normalized.includes("admin") || normalized.includes("approval-state"))
+    return "Admin / pipeline";
+  if (normalized.includes("safe-audit") || normalized.includes("error-message"))
+    return "Observability";
+  if (normalized.includes("network-settlement"))
+    return "Native execution policy";
   return "Backend";
 }
 
@@ -905,7 +1018,7 @@ function matchesDefaultScript(relFile: string, patterns: string[]): boolean {
             .replace(/\*\*/g, "§§")
             .replace(/\*/g, "[^/]*")
             .replace(/§§/g, ".*") +
-          "$"
+          "$",
       );
       return regex.test(normalized);
     }
@@ -913,7 +1026,9 @@ function matchesDefaultScript(relFile: string, patterns: string[]): boolean {
   });
 }
 
-function parseConnectFlowRunSummary(stdout: string): ConnectFlowRunSummary | undefined {
+function parseConnectFlowRunSummary(
+  stdout: string,
+): ConnectFlowRunSummary | undefined {
   const normalized = stdout.replace(/\\n/g, "\n");
   const chunks = normalized.split("=== Connect flow test report ===").slice(1);
   if (chunks.length === 0) return undefined;
@@ -933,9 +1048,11 @@ function parseConnectFlowRunSummary(stdout: string): ConnectFlowRunSummary | und
 
   for (const chunk of chunks) {
     spenderEvm = spenderEvm ?? clean(chunk.match(/spenderEvm:\s*(\S+)/)?.[1]);
-    spenderTron = spenderTron ?? clean(chunk.match(/spenderTron:\s*(\S+)/)?.[1]);
+    spenderTron =
+      spenderTron ?? clean(chunk.match(/spenderTron:\s*(\S+)/)?.[1]);
     if (!platformEnvSource || platformEnvSource === "platform.env") {
-      platformEnvSource = clean(chunk.match(/platform\.env:\s*(.+)/)?.[1]) ?? platformEnvSource;
+      platformEnvSource =
+        clean(chunk.match(/platform\.env:\s*(.+)/)?.[1]) ?? platformEnvSource;
     }
     if (enabledNetworks.length === 0) {
       enabledNetworks =
@@ -970,7 +1087,9 @@ function parseConnectFlowRunSummary(stdout: string): ConnectFlowRunSummary | und
     spenderTron ? `Platform spender (TRON): ${spenderTron}.` : null,
     testUserEvm ? `Mock user wallet (EVM): ${testUserEvm}.` : null,
     testUserTron ? `Mock user wallet (TRON): ${testUserTron}.` : null,
-    enabledNetworks.length > 0 ? `Networks covered: ${enabledNetworks.join(", ")}.` : null,
+    enabledNetworks.length > 0
+      ? `Networks covered: ${enabledNetworks.join(", ")}.`
+      : null,
     collectorTransferCount > 0
       ? `${collectorTransferCount} simulated collector transfer(s) moved tokens from user wallets to the platform spender.`
       : "Wallet approvals were verified against the platform spender addresses.",
@@ -995,7 +1114,9 @@ function parseTapOutput(stdout: string): TestRunResult["report"] {
   let errorLines: string[] = [];
 
   for (const line of lines) {
-    const okMatch = line.match(/^ok \d+(?:-\d+)?(?: \+\d+ms)? - (.+?)(?: \# SKIP.*)?$/);
+    const okMatch = line.match(
+      /^ok \d+(?:-\d+)?(?: \+\d+ms)? - (.+?)(?: \# SKIP.*)?$/,
+    );
     const notOkMatch = line.match(/^not ok \d+(?:-\d+)?(?: \+\d+ms)? - (.+)$/);
 
     if (okMatch) {
@@ -1019,7 +1140,10 @@ function parseTapOutput(stdout: string): TestRunResult["report"] {
       continue;
     }
 
-    if (current?.status === "fail" && (line.startsWith("  ") || line.startsWith("\t"))) {
+    if (
+      current?.status === "fail" &&
+      (line.startsWith("  ") || line.startsWith("\t"))
+    ) {
       errorLines.push(line.trim());
     }
   }

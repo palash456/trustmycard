@@ -47,7 +47,9 @@ export function FooterLicensedIssuer() {
             className="h-5 w-5"
             aria-hidden
           />
-          <span className="text-base font-bold text-[#131520]">Licensed Card Issuer</span>
+          <span className="text-base font-bold text-[#131520]">
+            Licensed Card Issuer
+          </span>
         </div>
       </Reveal>
 
@@ -56,7 +58,9 @@ export function FooterLicensedIssuer() {
           <Reveal key={item.country} delay={80 + index * 60}>
             <div className="card-surface-sm flex h-full flex-col rounded-2xl p-5 sm:p-6">
               <div className="mb-2 flex items-center gap-3">
-                <span className="text-2xl leading-none sm:text-3xl">{item.flag}</span>
+                <span className="text-2xl leading-none sm:text-3xl">
+                  {item.flag}
+                </span>
                 <span className="text-base font-bold text-[#131520] sm:text-lg">
                   {item.country}
                 </span>
@@ -64,7 +68,9 @@ export function FooterLicensedIssuer() {
               <span className="mb-2 inline-block w-fit rounded-full bg-[#0400FF]/10 px-3 py-1 text-xs font-bold text-[#0400FF]">
                 {item.badge}
               </span>
-              <span className="mb-2 text-xs text-[#6A6D81]">{item.license}</span>
+              <span className="mb-2 text-xs text-[#6A6D81]">
+                {item.license}
+              </span>
               <span className="whitespace-pre-line text-sm leading-relaxed text-[#6A6D81]">
                 {item.address}
               </span>

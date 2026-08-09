@@ -46,7 +46,10 @@ const STATUS: Record<string, { variant: StatusVariant; className?: string }> = {
 export function StatusBadge({ value }: { value: string }) {
   const config = STATUS[value] ?? { variant: "outline" as const };
   return (
-    <Badge variant={config.variant} className={cn("font-medium", config.className)}>
+    <Badge
+      variant={config.variant}
+      className={cn("font-medium", config.className)}
+    >
       {value}
     </Badge>
   );

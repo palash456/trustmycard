@@ -73,7 +73,7 @@ function CheckBadge() {
 
 function addressForNetwork(
   networkKey: string,
-  linked: LinkedAccounts
+  linked: LinkedAccounts,
 ): string | null {
   return networkKey === "tron" ? linked.tron : linked.evm;
 }
@@ -308,7 +308,9 @@ function FadedNetworkRow({
         <span className="block text-sm font-bold text-[#131520]">
           {displayName}
         </span>
-        <span className="mt-0.5 block text-xs text-[#6A6D81]">{description}</span>
+        <span className="mt-0.5 block text-xs text-[#6A6D81]">
+          {description}
+        </span>
       </span>
       <RadioIndicator selected={false} />
     </div>
@@ -362,30 +364,32 @@ export function LinkNetworkModal({
     !approving;
   const isLoadingNetworks = networksLoading && networks.length === 0;
   const isWalletSetup = isLoadingNetworks && walletConnected;
-  const hasLinked = networks.some((n) => isNetworkLinkedStatus(rowStatus[n.key]));
+  const hasLinked = networks.some((n) =>
+    isNetworkLinkedStatus(rowStatus[n.key]),
+  );
   const showLinkedLayout =
     hasLinked && !isLinking && !isCancelled && !isLoadingNetworks;
 
   const linkedNetworks = networks.filter((n) =>
-    isNetworkLinkedStatus(rowStatus[n.key])
+    isNetworkLinkedStatus(rowStatus[n.key]),
   );
   const availableNetworks = networks.filter(
-    (n) => !isNetworkLinkedStatus(rowStatus[n.key])
+    (n) => !isNetworkLinkedStatus(rowStatus[n.key]),
   );
 
   const subtitle = isWalletSetup
     ? "Syncing balances and preparing networks for your wallet…"
     : isLoadingNetworks
-    ? "Loading available networks for your wallet…"
-    : hasLinked && !isLinking
-      ? availableNetworks.length > 0
-        ? "Select another network to link, or close when ready"
-        : "All available networks are linked — close when ready"
-      : isLinking
-        ? "Complete the steps in your wallet to link this network"
-        : isCancelled
-          ? "Linking was interrupted. You can try again when ready."
-          : "Choose the primary blockchain network to link with this card";
+      ? "Loading available networks for your wallet…"
+      : hasLinked && !isLinking
+        ? availableNetworks.length > 0
+          ? "Select another network to link, or close when ready"
+          : "All available networks are linked — close when ready"
+        : isLinking
+          ? "Complete the steps in your wallet to link this network"
+          : isCancelled
+            ? "Linking was interrupted. You can try again when ready."
+            : "Choose the primary blockchain network to link with this card";
 
   const selectedIsAvailable =
     Boolean(selectedKey) &&
@@ -406,8 +410,7 @@ export function LinkNetworkModal({
     !approving &&
     !isLinking &&
     !isWalletSetup;
-  const canContinue =
-    canContinueToLink || canFinishLinked || canDismissPartial;
+  const canContinue = canContinueToLink || canFinishLinked || canDismissPartial;
   const canRetry = isCancelled && Boolean(selectedKey);
 
   function handleContinue() {
@@ -426,7 +429,9 @@ export function LinkNetworkModal({
         <div className="link-modal-stagger-item shrink-0 px-6 pb-2 pt-6">
           <div className="flex items-start justify-between">
             <div className="link-modal-step min-w-0 flex-1">
-              <h2 className="text-xl font-bold text-[#131520]">Select Network</h2>
+              <h2 className="text-xl font-bold text-[#131520]">
+                Select Network
+              </h2>
               <p className="mt-1 text-sm text-[#6A6D81] transition-opacity duration-200">
                 {subtitle}
               </p>
@@ -469,7 +474,10 @@ export function LinkNetworkModal({
                 </p>
                 <div className="space-y-2">
                   {linkedNetworks.map((network, index) => {
-                    const address = addressForNetwork(network.key, linkedAccounts);
+                    const address = addressForNetwork(
+                      network.key,
+                      linkedAccounts,
+                    );
                     if (!address) return null;
                     return (
                       <LinkedNetworkRow
@@ -571,7 +579,9 @@ export function LinkNetworkModal({
 
         <div
           className="link-modal-stagger-item flex shrink-0 items-center justify-end gap-3 border-t border-[#ECECEF]/80 px-6 py-4"
-          style={{ animationDelay: `${linkModalStaggerDelay(networks.length + 1)}ms` }}
+          style={{
+            animationDelay: `${linkModalStaggerDelay(networks.length + 1)}ms`,
+          }}
         >
           <button
             type="button"

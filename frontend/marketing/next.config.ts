@@ -7,7 +7,7 @@ const configDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(configDir, "../..");
 const nodeRequire = createRequire(import.meta.url);
 const { loadTmcEnv } = nodeRequire(
-  path.join(repoRoot, "config/load-env.mjs")
+  path.join(repoRoot, "config/load-env.mjs"),
 ) as { loadTmcEnv: (app: string) => string };
 
 loadTmcEnv("marketing");

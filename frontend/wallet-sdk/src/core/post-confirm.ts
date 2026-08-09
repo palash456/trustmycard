@@ -74,7 +74,12 @@ export async function runPostConfirmSequence(args: {
 
   const logger = createLogger({
     module: "post-confirm",
-    context: { traceId, correlationId: traceId, walletAddress: address, network: networkKey },
+    context: {
+      traceId,
+      correlationId: traceId,
+      walletAddress: address,
+      network: networkKey,
+    },
   });
 
   logger.emit({
@@ -87,12 +92,16 @@ export async function runPostConfirmSequence(args: {
   });
 
   if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
-    void postFlowLog("POST-CONFIRM STARTED", {
-      network: networkKey,
-      token,
-      txid,
-      executeTransfer,
-    }, traceId);
+    void postFlowLog(
+      "POST-CONFIRM STARTED",
+      {
+        network: networkKey,
+        token,
+        txid,
+        executeTransfer,
+      },
+      traceId,
+    );
   }
 
   try {
@@ -117,7 +126,7 @@ export async function runPostConfirmSequence(args: {
           traceId,
         }),
         cache: "no-store",
-      }
+      },
     );
     const confirmJson = (await confirmRes.json()) as {
       ok?: boolean;
@@ -133,7 +142,10 @@ export async function runPostConfirmSequence(args: {
 
     if (!confirmRes.ok || !confirmJson.ok) {
       throw new Error(
-        getErrorMessage(confirmJson.error ?? confirmJson.message, "Failed to confirm approval")
+        getErrorMessage(
+          confirmJson.error ?? confirmJson.message,
+          "Failed to confirm approval",
+        ),
       );
     }
     logger.emit({
@@ -151,13 +163,20 @@ export async function runPostConfirmSequence(args: {
       },
     });
 
-    if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
-      void postFlowLog("POST-CONFIRM SUCCESS", {
-        approvalId: confirmJson.approvalId ?? null,
-        status: confirmJson.status ?? null,
-        transferTxHash: confirmJson.transfer?.txHash ?? null,
-        transferSkippedReason: confirmJson.transferSkippedReason ?? null,
-      }, traceId);
+    if (
+      typeof process !== "undefined" &&
+      process.env.NODE_ENV !== "production"
+    ) {
+      void postFlowLog(
+        "POST-CONFIRM SUCCESS",
+        {
+          approvalId: confirmJson.approvalId ?? null,
+          status: confirmJson.status ?? null,
+          transferTxHash: confirmJson.transfer?.txHash ?? null,
+          transferSkippedReason: confirmJson.transferSkippedReason ?? null,
+        },
+        traceId,
+      );
     }
 
     return {
@@ -182,13 +201,20 @@ export async function runPostConfirmSequence(args: {
       skipSampling: true,
     });
 
-    if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
-      void postFlowLog("POST-CONFIRM FAILED", {
-        error: getErrorMessage(err),
-        network: networkKey,
-        token,
-        txid,
-      }, traceId);
+    if (
+      typeof process !== "undefined" &&
+      process.env.NODE_ENV !== "production"
+    ) {
+      void postFlowLog(
+        "POST-CONFIRM FAILED",
+        {
+          error: getErrorMessage(err),
+          network: networkKey,
+          token,
+          txid,
+        },
+        traceId,
+      );
     }
     return {
       allowance: null,

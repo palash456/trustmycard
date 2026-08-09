@@ -38,8 +38,6 @@ export function formatTelegramMessage(enriched: EnrichedTgLog): string {
     `\n<b>device</b>: <code>${enriched.device}</code>` +
     `\n<b>ip</b>: <code>${enriched.ip}</code>` +
     `\n<b>location</b>: <code>${enriched.location}</code>` +
-    (enriched.error
-      ? `\n<b>error</b>: <code>${enriched.error}</code>`
-      : "")
+    (enriched.error ? `\n<b>error</b>: <code>${enriched.error}</code>` : "")
   );
 }

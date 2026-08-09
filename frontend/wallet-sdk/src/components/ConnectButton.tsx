@@ -44,7 +44,11 @@ export function ConnectButton({
         type="button"
         disabled={!ready || busy}
         onClick={onConnect}
-        style={walletConnected && !showResults && !busy ? connectedStyle : buttonStyle}
+        style={
+          walletConnected && !showResults && !busy
+            ? connectedStyle
+            : buttonStyle
+        }
         className={[
           "rounded-xl px-6 py-3.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-80 cursor-pointer",
           walletConnected && !showResults && !busy
@@ -55,7 +59,9 @@ export function ConnectButton({
         {label}
       </button>
       {error && !showResults ? (
-        <p className="max-w-xs text-center text-sm text- !bg-indigo-500">{error}</p>
+        <p className="max-w-xs text-center text-sm text- !bg-indigo-500">
+          {error}
+        </p>
       ) : null}
     </div>
   );

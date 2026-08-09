@@ -6,7 +6,11 @@ type AppCtaLinkProps = {
   path?: string;
 };
 
-export function AppCtaLink({ children, className, path = "/connect" }: AppCtaLinkProps) {
+export function AppCtaLink({
+  children,
+  className,
+  path = "/connect",
+}: AppCtaLinkProps) {
   const href = appUrl(path);
   return (
     <a href={href} className={className}>

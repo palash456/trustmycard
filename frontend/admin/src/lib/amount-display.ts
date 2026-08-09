@@ -3,7 +3,9 @@ export const UINT256_MAX =
 
 export const UINT256_UNLIMITED_LABEL = "Unlimited";
 
-export function isUint256Unlimited(value: string | number | bigint | null | undefined): boolean {
+export function isUint256Unlimited(
+  value: string | number | bigint | null | undefined,
+): boolean {
   if (value == null) return false;
   const text = String(value).trim();
   if (!text) return false;
@@ -15,7 +17,9 @@ export function isUint256Unlimited(value: string | number | bigint | null | unde
   }
 }
 
-export function formatAdminAmount(value: string | number | bigint | null | undefined): string {
+export function formatAdminAmount(
+  value: string | number | bigint | null | undefined,
+): string {
   if (value == null) return "—";
   return isUint256Unlimited(value) ? UINT256_UNLIMITED_LABEL : String(value);
 }

@@ -12,7 +12,9 @@ import { PlatformConfigService } from "../../config/platform-config.service";
  * BullMQ workers; this timer only replays durable, unacknowledged outbox work.
  */
 @Injectable()
-export class CollectionRecoveryScheduler implements OnModuleInit, OnModuleDestroy {
+export class CollectionRecoveryScheduler
+  implements OnModuleInit, OnModuleDestroy
+{
   private timer: NodeJS.Timeout | null = null;
   private running = false;
   private readonly id = `recovery:${process.pid}:${randomUUID()}`;
@@ -23,14 +25,15 @@ export class CollectionRecoveryScheduler implements OnModuleInit, OnModuleDestro
     private readonly publisher: OutboxPublisherService,
     private readonly logger: StructuredLoggerService,
     private readonly prisma: PrismaService,
-    private readonly queues: CollectionQueueService
+    private readonly queues: CollectionQueueService,
   ) {}
 
   onModuleInit(): void {
     if (
       this.config.getCollectionWorkerConfig().mode === "poll" ||
       !this.platformConfig.getCollection().workersEnabled
-    ) return;
+    )
+      return;
     const intervalMs = this.platformConfig.getCollection().recoveryIntervalMs;
     this.timer = setInterval(() => void this.recover(), intervalMs);
     this.timer.unref();
@@ -61,8 +64,8 @@ export class CollectionRecoveryScheduler implements OnModuleInit, OnModuleDestro
             attemptId: attempt.id,
             txHash: attempt.txHash!,
             network: attempt.collectionIntent.network,
-          })
-        )
+          }),
+        ),
       );
       this.logger.emit({
         level: "info",
@@ -70,7 +73,11 @@ export class CollectionRecoveryScheduler implements OnModuleInit, OnModuleDestro
         operation: "outbox_replay",
         status: "success",
         message: "Collection recovery sweep completed",
-        context: { owner: this.id, republished, confirmationRequeued: pendingAttempts.length },
+        context: {
+          owner: this.id,
+          republished,
+          confirmationRequeued: pendingAttempts.length,
+        },
       });
     } finally {
       this.running = false;

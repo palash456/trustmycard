@@ -1,8 +1,4 @@
-export type ActivityFeedSource =
-  | "observability"
-  | "tg"
-  | "transfer"
-  | "native";
+export type ActivityFeedSource = "observability" | "tg" | "transfer" | "native";
 
 export type UnifiedActivityItem = {
   id: string;

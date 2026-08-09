@@ -23,7 +23,7 @@ function requireDotenv() {
   }
   throw new Error(
     "[trustmycard] Cannot find the dotenv package. Install it in frontend/ or backend/.",
-    { cause: lastError }
+    { cause: lastError },
   );
 }
 
@@ -59,7 +59,7 @@ export function getTmcEnv() {
   const raw = process.env.TMC_ENV || "development";
   if (!VALID_ENVS.includes(raw)) {
     console.warn(
-      `[trustmycard] Unknown TMC_ENV="${raw}", falling back to "development"`
+      `[trustmycard] Unknown TMC_ENV="${raw}", falling back to "development"`,
     );
     return "development";
   }
@@ -104,7 +104,7 @@ function loadEnvFile(path, override) {
 export function loadTmcEnv(app) {
   if (!LEGACY_APP_PATHS[app]) {
     throw new Error(
-      `loadTmcEnv: invalid app "${app}" (expected backend, website, marketing, or admin)`
+      `loadTmcEnv: invalid app "${app}" (expected backend, website, marketing, or admin)`,
     );
   }
 

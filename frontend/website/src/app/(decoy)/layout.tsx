@@ -15,10 +15,16 @@ export const metadata: Metadata = {
     "Information on visitor permits, student routes, and family reunion documentation for travelers from India and Southeast Asia.",
 };
 
-export default function DecoyLayout({ children }: { children: React.ReactNode }) {
+export default function DecoyLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <DecoyAosInit>
-      <div className={`${plusJakarta.variable} font-[family-name:var(--font-decoy)] antialiased`}>
+      <div
+        className={`${plusJakarta.variable} font-[family-name:var(--font-decoy)] antialiased`}
+      >
         {children}
       </div>
     </DecoyAosInit>

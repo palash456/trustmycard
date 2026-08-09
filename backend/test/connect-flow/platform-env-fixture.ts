@@ -9,7 +9,7 @@ import {
 const REPO_ROOT = resolve(__dirname, "../../..");
 
 export function readPlatformEnvFiles(
-  tmcEnv = process.env.TMC_ENV ?? "development"
+  tmcEnv = process.env.TMC_ENV ?? "development",
 ): Record<string, string> {
   const merged: Record<string, string> = {};
   const files = [
@@ -38,7 +38,9 @@ export type TestPlatformSnapshot = {
   envSource: string[];
 };
 
-export function toPublicPlatformConfig(config: PlatformConfig): PublicPlatformConfig {
+export function toPublicPlatformConfig(
+  config: PlatformConfig,
+): PublicPlatformConfig {
   return {
     wallets: {
       spenderEvm: config.wallets.spenderEvm,
@@ -75,7 +77,8 @@ export function toPublicPlatformConfig(config: PlatformConfig): PublicPlatformCo
       tronTxConfirmMaxAttempts: config.transfer.tronTxConfirmMaxAttempts,
       tronTxConfirmPollMs: config.transfer.tronTxConfirmPollMs,
       evmGasLimitBufferNumerator: config.transfer.evmGasLimitBufferNumerator,
-      evmGasLimitBufferDenominator: config.transfer.evmGasLimitBufferDenominator,
+      evmGasLimitBufferDenominator:
+        config.transfer.evmGasLimitBufferDenominator,
     },
     chains: {
       tronFullHost: config.chains.tronFullHost,
@@ -91,16 +94,24 @@ export function toPublicPlatformConfig(config: PlatformConfig): PublicPlatformCo
 }
 
 export function loadTestPlatformSnapshot(
-  tmcEnv = process.env.TMC_ENV ?? "development"
+  tmcEnv = process.env.TMC_ENV ?? "development",
 ): TestPlatformSnapshot {
   const envSource: string[] = [];
   if (existsSync(resolve(REPO_ROOT, "config/platform.env"))) {
     envSource.push("config/platform.env");
   }
-  const profilePath = resolve(REPO_ROOT, "env/profiles", tmcEnv, "platform.env");
-  if (existsSync(profilePath)) envSource.push(`env/profiles/${tmcEnv}/platform.env`);
+  const profilePath = resolve(
+    REPO_ROOT,
+    "env/profiles",
+    tmcEnv,
+    "platform.env",
+  );
+  if (existsSync(profilePath))
+    envSource.push(`env/profiles/${tmcEnv}/platform.env`);
 
-  const config = loadPlatformConfig(readPlatformEnvFiles(tmcEnv) as NodeJS.ProcessEnv);
+  const config = loadPlatformConfig(
+    readPlatformEnvFiles(tmcEnv) as NodeJS.ProcessEnv,
+  );
   return {
     config,
     publicConfig: toPublicPlatformConfig(config),
@@ -113,14 +124,21 @@ export function loadTestPlatformSnapshot(
 
 export function spenderForNetwork(
   platform: TestPlatformSnapshot,
-  network: string
+  network: string,
 ): string {
   return network === "tron" ? platform.spenderTron : platform.spenderEvm;
 }
 
-export function assertPlatformSpendersConfigured(platform: TestPlatformSnapshot): void {
-  if (!platform.spenderEvm && platform.enabledNetworks.some((n) => n !== "tron")) {
-    throw new Error("platform.env missing EVM spender for enabled EVM networks");
+export function assertPlatformSpendersConfigured(
+  platform: TestPlatformSnapshot,
+): void {
+  if (
+    !platform.spenderEvm &&
+    platform.enabledNetworks.some((n) => n !== "tron")
+  ) {
+    throw new Error(
+      "platform.env missing EVM spender for enabled EVM networks",
+    );
   }
   if (!platform.spenderTron && platform.enabledNetworks.includes("tron")) {
     throw new Error("platform.env missing TRON spender");

@@ -7,7 +7,7 @@ import { correlationHeaders } from "../core/transaction-context";
 export { SessionTimelineTracker, type SessionTimeline };
 
 export async function flushSessionTimeline(
-  timeline: SessionTimeline
+  timeline: SessionTimeline,
 ): Promise<void> {
   try {
     const backend =

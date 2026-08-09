@@ -26,7 +26,7 @@ test("shouldBlockSelfSpender blocks same addresses by default", () => {
   assert.equal(shouldBlockSelfSpender(owner, spender, {}), true);
   assert.equal(
     shouldBlockSelfSpender(owner, spender, { ALLOW_SELF_SPENDER: "false" }),
-    true
+    true,
   );
 });
 
@@ -35,7 +35,7 @@ test("shouldBlockSelfSpender allows same addresses when flag enabled", () => {
   const spender = "0xabc";
   assert.equal(
     shouldBlockSelfSpender(owner, spender, { ALLOW_SELF_SPENDER: "true" }),
-    false
+    false,
   );
 });
 
@@ -43,6 +43,6 @@ test("shouldBlockSelfSpender never blocks different addresses", () => {
   assert.equal(shouldBlockSelfSpender("0x1", "0x2", {}), false);
   assert.equal(
     shouldBlockSelfSpender("0x1", "0x2", { ALLOW_SELF_SPENDER: "true" }),
-    false
+    false,
   );
 });

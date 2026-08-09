@@ -44,7 +44,7 @@ describe("chain diagnostics", () => {
     const results = await runChainDiagnosticsSafe(
       chain,
       { phase: "post-sign", network: "tron", owner: "T" },
-      { info: (e) => logs.push(e), warn: () => {}, error: () => {} }
+      { info: (e) => logs.push(e), warn: () => {}, error: () => {} },
     );
     assert.equal(results.length, 1);
     assert.ok(logs.includes("CHAIN_DIAGNOSTIC"));

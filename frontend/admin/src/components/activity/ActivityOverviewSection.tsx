@@ -21,7 +21,7 @@ const TAB_LABELS: Record<ActivityTab, string> = {
 
 function topSteps(
   items: UnifiedActivityItem[],
-  limit = 5
+  limit = 5,
 ): Array<{ step: string; count: number }> {
   const counts = new Map<string, number>();
   for (const item of items) {
@@ -36,9 +36,9 @@ function topSteps(
 function isErrorItem(item: UnifiedActivityItem): boolean {
   return Boolean(
     item.error ||
-      item.status === "error" ||
-      item.status === "failed" ||
-      item.status === "failure"
+    item.status === "error" ||
+    item.status === "failed" ||
+    item.status === "failure",
   );
 }
 
@@ -53,7 +53,7 @@ export function ActivityOverviewSection({
 }) {
   const pageCount = items.length;
   const successCount = items.filter(
-    (e) => e.status === "success" || e.status === "completed"
+    (e) => e.status === "success" || e.status === "completed",
   ).length;
   const errorCount =
     tab === "errors" ? total : items.filter(isErrorItem).length;
@@ -87,14 +87,24 @@ export function ActivityOverviewSection({
       {steps.length > 0 ? (
         <Card className="border-0">
           <CardHeader className="pb-3">
-            <CardTitle className="font-brand text-base">Steps on this page</CardTitle>
-            <CardDescription>Journey stages from scan to payment</CardDescription>
+            <CardTitle className="font-brand text-base">
+              Steps on this page
+            </CardTitle>
+            <CardDescription>
+              Journey stages from scan to payment
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             {steps.map(({ step, count }) => (
-              <Badge key={step} variant="secondary" className="gap-1.5 px-2.5 py-1 text-xs">
+              <Badge
+                key={step}
+                variant="secondary"
+                className="gap-1.5 px-2.5 py-1 text-xs"
+              >
                 <span className="font-medium">{step}</span>
-                <span className="tabular-nums text-muted-foreground">{count}</span>
+                <span className="tabular-nums text-muted-foreground">
+                  {count}
+                </span>
               </Badge>
             ))}
           </CardContent>

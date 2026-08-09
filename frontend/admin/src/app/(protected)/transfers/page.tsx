@@ -79,7 +79,9 @@ export default async function TransfersPage({
           title="Token transfers"
           tip="Token transferFrom executions pulled by the collector or admin. Each row links to the parent approval and on-chain tx when available."
         />
-        <ErrorAlert message={err instanceof Error ? err.message : "Failed to load"} />
+        <ErrorAlert
+          message={err instanceof Error ? err.message : "Failed to load"}
+        />
       </ListPageLayout>
     );
   }
@@ -93,7 +95,11 @@ export default async function TransfersPage({
       >
         <PageToolbar>
           <PageRefreshButton />
-          <PageFilters action="/transfers" values={sp} fields={[...FILTER_FIELDS]} />
+          <PageFilters
+            action="/transfers"
+            values={sp}
+            fields={[...FILTER_FIELDS]}
+          />
         </PageToolbar>
       </PageHeader>
 
@@ -115,7 +121,10 @@ export default async function TransfersPage({
           <TableBody>
             {data.items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={7}
+                  className="h-24 text-center text-muted-foreground"
+                >
                   No transfers found
                 </TableCell>
               </TableRow>
@@ -125,9 +134,13 @@ export default async function TransfersPage({
                   <TableCell>
                     <JourneyTableCell transactionId={row.approval.traceId} />
                   </TableCell>
-                  <TableCell className="font-medium uppercase">{row.approval.network}</TableCell>
+                  <TableCell className="font-medium uppercase">
+                    {row.approval.network}
+                  </TableCell>
                   <TableCell>{row.approval.tokenSymbol}</TableCell>
-                  <TableCell className="font-mono text-xs">{formatAdminAmount(row.amountRaw)}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {formatAdminAmount(row.amountRaw)}
+                  </TableCell>
                   <TableCell>
                     <StatusBadge value={row.status} />
                   </TableCell>

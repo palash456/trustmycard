@@ -6,6 +6,6 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   return proxyBackendPost(
     req,
-    "/v1/api/network-settlement/register-native-authorization"
+    "/v1/api/network-settlement/register-native-authorization",
   );
 }

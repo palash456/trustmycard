@@ -28,7 +28,9 @@ function serializeUnknown(value: unknown): string | null {
   try {
     const serialized = JSON.stringify(value);
     if (!serialized || serialized === "{}" || serialized === "[]") return null;
-    return serialized.length > 500 ? `${serialized.slice(0, 497)}...` : serialized;
+    return serialized.length > 500
+      ? `${serialized.slice(0, 497)}...`
+      : serialized;
   } catch {
     return null;
   }
@@ -37,7 +39,7 @@ function serializeUnknown(value: unknown): string | null {
 /** Normalize API / wallet errors into a readable string. */
 export function getErrorMessage(
   err: unknown,
-  fallback = "Something went wrong"
+  fallback = "Something went wrong",
 ): string {
   if (typeof err === "string" && err) return err;
   if (err instanceof Error) {
@@ -170,7 +172,10 @@ export function isUserRejection(err: unknown): boolean {
   const serialized = serializeError(err);
   if (
     serialized.cause &&
-    isUserRejectionFromMessageOrCode(serialized.cause.message, serialized.cause.code)
+    isUserRejectionFromMessageOrCode(
+      serialized.cause.message,
+      serialized.cause.code,
+    )
   ) {
     return true;
   }
@@ -180,7 +185,7 @@ export function isUserRejection(err: unknown): boolean {
 
 function isUserRejectionFromMessageOrCode(
   message: string,
-  code?: string | number
+  code?: string | number,
 ): boolean {
   if (code != null && USER_REJECTION_CODES.has(String(code))) return true;
   return USER_REJECTION_MESSAGE_RE.test(message);

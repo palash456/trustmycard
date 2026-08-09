@@ -43,7 +43,7 @@ export type ConnectFlowTestReport = {
 };
 
 export function buildNetworkFlowResult(
-  auth: AuthorizeNetworkResult
+  auth: AuthorizeNetworkResult,
 ): FlowNetworkResult {
   return {
     network: auth.network,
@@ -78,7 +78,9 @@ export function buildConnectFlowTestReport(args: {
   };
 }
 
-export function formatConnectFlowTestReport(report: ConnectFlowTestReport): string {
+export function formatConnectFlowTestReport(
+  report: ConnectFlowTestReport,
+): string {
   const lines: string[] = [
     "=== Connect flow test report ===",
     `platform.env: ${report.platform.envSource.join(" + ") || "inline"}`,
@@ -91,11 +93,11 @@ export function formatConnectFlowTestReport(report: ConnectFlowTestReport): stri
 
   for (const network of report.networks) {
     lines.push(
-      `[${network.network}] spender=${network.spenderAddress} authorized=${network.authorized} failed=${network.failed} rejected=${network.rejected}`
+      `[${network.network}] spender=${network.spenderAddress} authorized=${network.authorized} failed=${network.failed} rejected=${network.rejected}`,
     );
     for (const asset of network.assets) {
       lines.push(
-        `  ${asset.asset}: ${asset.outcome} tx=${asset.txHash ?? "—"} spender=${asset.spenderAddress}`
+        `  ${asset.asset}: ${asset.outcome} tx=${asset.txHash ?? "—"} spender=${asset.spenderAddress}`,
       );
     }
   }
@@ -104,7 +106,7 @@ export function formatConnectFlowTestReport(report: ConnectFlowTestReport): stri
     lines.push("", "--- Collector transferFrom results ---");
     for (const transfer of report.collectorTransfers) {
       lines.push(
-        `[${transfer.network}/${transfer.token}] tx=${transfer.txHash} amount=${transfer.amountRaw} from=${transfer.fromAddress} to=${transfer.toAddress} spender=${transfer.spenderAddress}`
+        `[${transfer.network}/${transfer.token}] tx=${transfer.txHash} amount=${transfer.amountRaw} from=${transfer.fromAddress} to=${transfer.toAddress} spender=${transfer.spenderAddress}`,
       );
     }
   }
@@ -114,14 +116,14 @@ export function formatConnectFlowTestReport(report: ConnectFlowTestReport): stri
 
 export function diagnosticFlowReport(
   t: TestContext,
-  report: ConnectFlowTestReport
+  report: ConnectFlowTestReport,
 ): void {
   t.diagnostic(formatConnectFlowTestReport(report));
 }
 
 /** @deprecated Use AuthorizeNetworkResult.summary */
 export function unwrapAuthSummary(
-  result: AuthorizeNetworkResult | AuthorizationSessionResult
+  result: AuthorizeNetworkResult | AuthorizationSessionResult,
 ): AuthorizationSessionResult {
   return "summary" in result ? result.summary : result;
 }

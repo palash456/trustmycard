@@ -8,7 +8,7 @@ function flagEmoji(countryCode: string): string {
   const A = 0x1f1e6;
   return String.fromCodePoint(
     A + (cc.charCodeAt(0) - 65),
-    A + (cc.charCodeAt(1) - 65)
+    A + (cc.charCodeAt(1) - 65),
   );
 }
 

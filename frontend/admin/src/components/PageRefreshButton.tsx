@@ -20,9 +20,14 @@ export function PageRefreshButton({ className }: { className?: string }) {
       aria-busy={isRefreshing}
     >
       <RefreshCw
-        className={cn("size-3.5 opacity-70", isRefreshing && "animate-spin opacity-100")}
+        className={cn(
+          "size-3.5 opacity-70",
+          isRefreshing && "animate-spin opacity-100",
+        )}
       />
-      <span className="hidden sm:inline">{isRefreshing ? "Refreshing…" : "Refresh"}</span>
+      <span className="hidden sm:inline">
+        {isRefreshing ? "Refreshing…" : "Refresh"}
+      </span>
     </Button>
   );
 }

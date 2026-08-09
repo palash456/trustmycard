@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  OnModuleDestroy,
-  OnModuleInit,
-} from "@nestjs/common";
+import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
 import {
   getErrorMessage,
@@ -29,22 +25,24 @@ export class NativeTransferReconciliationScheduler
     private readonly nativeTransferService: NativeTransferService,
     private readonly walletService: WalletService,
     private readonly configService: ConfigService,
-    private readonly logger: StructuredLoggerService
+    private readonly logger: StructuredLoggerService,
   ) {}
 
   onModuleInit(): void {
-    void this.walletService.repairInconsistentConfirmedTransfers().catch((err) => {
-      this.logger.emit({
-        level: "error",
-        module: "reconciliation",
-        operation: "repair_inconsistent_transfers",
-        stage: "STARTUP_FAILED",
-        status: "failure",
-        message: getErrorMessage(err, "Startup repair failed"),
-        err,
-        skipSampling: true,
+    void this.walletService
+      .repairInconsistentConfirmedTransfers()
+      .catch((err) => {
+        this.logger.emit({
+          level: "error",
+          module: "reconciliation",
+          operation: "repair_inconsistent_transfers",
+          stage: "STARTUP_FAILED",
+          status: "failure",
+          message: getErrorMessage(err, "Startup repair failed"),
+          err,
+          skipSampling: true,
+        });
       });
-    });
     this.configService.events.on("settings.updated", () => {
       this.updateFromConfig();
     });
@@ -122,14 +120,20 @@ export class NativeTransferReconciliationScheduler
     this.lastTickAt = new Date();
     const start = Date.now();
     try {
-      await this.walletService.repairInconsistentConfirmedTransfers(cfg.batchSize);
+      await this.walletService.repairInconsistentConfirmedTransfers(
+        cfg.batchSize,
+      );
 
       if (this.configService.getCollectionWorkerConfig().mode !== "queue") {
         const broadcast = await prisma.transfer.findMany({
           where: { status: "broadcast", confirmedAt: null },
           orderBy: { broadcastAt: "asc" },
           take: cfg.batchSize,
-          select: { id: true, txHash: true, approval: { select: { network: true } } },
+          select: {
+            id: true,
+            txHash: true,
+            approval: { select: { network: true } },
+          },
         });
 
         for (const record of broadcast) {

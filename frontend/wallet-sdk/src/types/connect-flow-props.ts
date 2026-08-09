@@ -15,7 +15,7 @@ export type ConnectFlowProps = {
 
 export function getSpenderForNetwork(
   props: ConnectFlowProps,
-  networkKey: string
+  networkKey: string,
 ): string {
   if (networkKey === "tron") {
     return (
@@ -25,16 +25,12 @@ export function getSpenderForNetwork(
     ).trim();
   }
 
-  return (
-    props.spenderEvm ??
-    props.platform?.wallets.spenderEvm ??
-    ""
-  ).trim();
+  return (props.spenderEvm ?? props.platform?.wallets.spenderEvm ?? "").trim();
 }
 
 export function configGaps(
   props: ConnectFlowProps,
-  networkKey: string
+  networkKey: string,
 ): string[] {
   const gaps: string[] = [];
 
@@ -49,20 +45,14 @@ export function configGaps(
   return gaps;
 }
 
-export function allowSelfSpenderFromProps(
-  props: ConnectFlowProps
-): boolean {
+export function allowSelfSpenderFromProps(props: ConnectFlowProps): boolean {
   return Boolean(props.platform?.approval.allowSelfSpender);
 }
 
-export function approveAmountDefaultFromProps(
-  props: ConnectFlowProps
-): string {
+export function approveAmountDefaultFromProps(props: ConnectFlowProps): string {
   return props.platform?.approval.approveAmountUsdtDefault ?? "0";
 }
 
-export function termsVersionFromProps(
-  props: ConnectFlowProps
-): string {
+export function termsVersionFromProps(props: ConnectFlowProps): string {
   return props.platform?.approval.termsVersion ?? "2026-07-28";
 }

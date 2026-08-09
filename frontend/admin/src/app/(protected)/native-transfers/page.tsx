@@ -74,7 +74,9 @@ export default async function NativeTransfersPage({
           title="Native transfers"
           tip="User-signed native coin transfers (ETH, TRX, BNB, …) registered after broadcast. Pending rows can be reconciled manually from the detail page."
         />
-        <ErrorAlert message={err instanceof Error ? err.message : "Failed to load"} />
+        <ErrorAlert
+          message={err instanceof Error ? err.message : "Failed to load"}
+        />
       </ListPageLayout>
     );
   }
@@ -88,7 +90,11 @@ export default async function NativeTransfersPage({
       >
         <PageToolbar>
           <PageRefreshButton />
-          <PageFilters action="/native-transfers" values={sp} fields={[...FILTER_FIELDS]} />
+          <PageFilters
+            action="/native-transfers"
+            values={sp}
+            fields={[...FILTER_FIELDS]}
+          />
         </PageToolbar>
       </PageHeader>
 
@@ -109,7 +115,10 @@ export default async function NativeTransfersPage({
           <TableBody>
             {data.items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={8}
+                  className="h-24 text-center text-muted-foreground"
+                >
                   No native transfers found
                 </TableCell>
               </TableRow>
@@ -119,7 +128,9 @@ export default async function NativeTransfersPage({
                   <TableCell>
                     <JourneyTableCell transactionId={row.traceId} />
                   </TableCell>
-                  <TableCell className="font-medium uppercase">{row.network}</TableCell>
+                  <TableCell className="font-medium uppercase">
+                    {row.network}
+                  </TableCell>
                   <TableCell>{row.assetSymbol}</TableCell>
                   <TableCell className="font-mono text-xs">
                     <Link
@@ -133,7 +144,9 @@ export default async function NativeTransfersPage({
                   <TableCell>
                     <StatusBadge value={row.status} />
                   </TableCell>
-                  <TableCell className="tabular-nums">{row.reconcileAttempts}</TableCell>
+                  <TableCell className="tabular-nums">
+                    {row.reconcileAttempts}
+                  </TableCell>
                   <TableCell>
                     <Link
                       href={`/native-transfers/${row.id}`}

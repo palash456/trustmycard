@@ -2,10 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { WorkflowStage } from "@/types/users";
 
-const STAGES: Record<
-  WorkflowStage,
-  { label: string; className: string }
-> = {
+const STAGES: Record<WorkflowStage, { label: string; className: string }> = {
   idle: { label: "Idle", className: "text-muted-foreground" },
   connected: {
     label: "Connected",
@@ -40,12 +37,15 @@ const STAGES: Record<
   },
   failed: {
     label: "Failed",
-    className:
-      "border-destructive/30 bg-destructive/10 text-destructive",
+    className: "border-destructive/30 bg-destructive/10 text-destructive",
   },
 };
 
-export function WorkflowStageBadge({ value }: { value: WorkflowStage | string }) {
+export function WorkflowStageBadge({
+  value,
+}: {
+  value: WorkflowStage | string;
+}) {
   const config = STAGES[value as WorkflowStage] ?? {
     label: value,
     className: "",

@@ -8,20 +8,32 @@ const SERVICE_ROUTES = [
   {
     name: "Visitor",
     desc: "Short-stay tourism and business trips. Checklist reviews, appointment scheduling guidance, and embassy fee breakdowns.",
-    perks: ["Country-specific document lists", "Interview preparation notes", "Rejection appeal overview"],
+    perks: [
+      "Country-specific document lists",
+      "Interview preparation notes",
+      "Rejection appeal overview",
+    ],
     icon: "M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064",
   },
   {
     name: "Student",
     desc: "Semester and degree programs abroad. I-20 / CAS alignment, financial proof templates, and biometrics walkthroughs.",
-    perks: ["University letter review", "Parent sponsor guidance", "Pre-departure briefing"],
+    perks: [
+      "University letter review",
+      "Parent sponsor guidance",
+      "Pre-departure briefing",
+    ],
     highlight: true,
     icon: "M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z",
   },
   {
     name: "Family reunion",
     desc: "Spousal, dependent, and long-stay routes. Timeline planning for split households across India and overseas.",
-    perks: ["Dual-country document sync", "Translation vendor referrals", "Case-status tracking tips"],
+    perks: [
+      "Dual-country document sync",
+      "Translation vendor referrals",
+      "Case-status tracking tips",
+    ],
     icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z",
   },
 ];
@@ -85,8 +97,8 @@ export default function HomePage() {
     <div className="min-h-screen bg-[#fafbfc] text-slate-900">
       <div className="border-b border-slate-200/80 bg-slate-900">
         <p className="mx-auto max-w-7xl px-5 py-2.5 text-center text-[11px] leading-relaxed text-slate-400 sm:text-xs">
-          Travixa Advisory Pvt. Ltd. · CIN U74999MH2018PTC312884 · Information only — not legal
-          representation
+          Travixa Advisory Pvt. Ltd. · CIN U74999MH2018PTC312884 · Information
+          only — not legal representation
         </p>
       </div>
 
@@ -129,7 +141,10 @@ export default function HomePage() {
 
       <DecoyHero />
 
-      <section className="border-b border-slate-200/80 bg-white py-10" data-aos="fade-up">
+      <section
+        className="border-b border-slate-200/80 bg-white py-10"
+        data-aos="fade-up"
+      >
         <p className="decoy-section-label text-center text-[11px] font-semibold uppercase text-slate-400">
           Guidance aligned with official embassy portals
         </p>
@@ -149,7 +164,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="services" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-12 lg:py-28">
+      <section
+        id="services"
+        className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-12 lg:py-28"
+      >
         <div className="mx-auto max-w-2xl text-center" data-aos="fade-up">
           <p className="decoy-section-label text-[11px] font-semibold uppercase text-teal-700">
             Service routes
@@ -158,8 +176,9 @@ export default function HomePage() {
             One advisory desk. Many border pathways.
           </h2>
           <p className="mt-4 text-base leading-relaxed text-slate-600">
-            Whether you&apos;re visiting for two weeks or relocating for a degree, start with the
-            route that matches your purpose — not a generic checklist from a forum thread.
+            Whether you&apos;re visiting for two weeks or relocating for a
+            degree, start with the route that matches your purpose — not a
+            generic checklist from a forum thread.
           </p>
         </div>
 
@@ -187,7 +206,11 @@ export default function HomePage() {
                   viewBox="0 0 24 24"
                   strokeWidth="1.5"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d={route.icon} />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d={route.icon}
+                  />
                 </svg>
               </div>
               {route.highlight ? (
@@ -195,7 +218,9 @@ export default function HomePage() {
                   Most requested
                 </span>
               ) : null}
-              <h3 className="text-xl font-semibold tracking-tight">{route.name}</h3>
+              <h3 className="text-xl font-semibold tracking-tight">
+                {route.name}
+              </h3>
               <p
                 className={`mt-3 flex-1 text-sm leading-relaxed ${
                   route.highlight ? "text-slate-300" : "text-slate-600"
@@ -205,12 +230,20 @@ export default function HomePage() {
               </p>
               <ul
                 className={`mt-8 space-y-3 border-t pt-6 text-sm ${
-                  route.highlight ? "border-white/10 text-slate-200" : "border-slate-100 text-slate-700"
+                  route.highlight
+                    ? "border-white/10 text-slate-200"
+                    : "border-slate-100 text-slate-700"
                 }`}
               >
                 {route.perks.map((perk) => (
                   <li key={perk} className="flex gap-2.5">
-                    <span className={route.highlight ? "text-teal-400" : "text-teal-600"}>✓</span>
+                    <span
+                      className={
+                        route.highlight ? "text-teal-400" : "text-teal-600"
+                      }
+                    >
+                      ✓
+                    </span>
                     {perk}
                   </li>
                 ))}
@@ -244,8 +277,9 @@ export default function HomePage() {
               Know what to prepare before you book
             </h2>
             <p className="mt-4 text-base leading-relaxed text-slate-600">
-              Our client portal tracks checklist progress, embassy notices, and appointment slots
-              you&apos;ve saved — so nothing surprises you at the counter.
+              Our client portal tracks checklist progress, embassy notices, and
+              appointment slots you&apos;ve saved — so nothing surprises you at
+              the counter.
             </p>
             <div className="mt-10 grid gap-4 sm:grid-cols-2">
               {FEATURES.map((f, index) => (
@@ -256,7 +290,9 @@ export default function HomePage() {
                   className="decoy-bento decoy-card rounded-xl border border-slate-200/60 p-5"
                 >
                   <p className="font-semibold text-slate-900">{f.title}</p>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{f.desc}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                    {f.desc}
+                  </p>
                 </div>
               ))}
             </div>
@@ -264,8 +300,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="timelines" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-12 lg:py-28">
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm" data-aos="zoom-in">
+      <section
+        id="timelines"
+        className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-12 lg:py-28"
+      >
+        <div
+          className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm"
+          data-aos="zoom-in"
+        >
           <div className="border-b border-slate-100 bg-slate-50/80 px-6 py-8 sm:px-10">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -279,7 +321,9 @@ export default function HomePage() {
                   Typical ranges we observe · Not official embassy estimates
                 </p>
               </div>
-              <p className="text-xs font-medium text-slate-400">Updated quarterly · August 2026</p>
+              <p className="text-xs font-medium text-slate-400">
+                Updated quarterly · August 2026
+              </p>
             </div>
           </div>
           <div className="overflow-x-auto px-2 sm:px-0">
@@ -288,7 +332,9 @@ export default function HomePage() {
                 <tr className="border-b border-slate-100 text-[11px] uppercase tracking-[0.1em] text-slate-400">
                   <th className="px-6 py-4 font-semibold sm:px-10">Route</th>
                   <th className="px-4 py-4 font-semibold">Low season</th>
-                  <th className="px-6 py-4 font-semibold sm:pr-10">Peak season</th>
+                  <th className="px-6 py-4 font-semibold sm:pr-10">
+                    Peak season
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -299,9 +345,13 @@ export default function HomePage() {
                       i === PROCESSING_TIMES.length - 1 ? "border-0" : ""
                     }`}
                   >
-                    <td className="px-6 py-4 font-medium text-slate-900 sm:px-10">{route}</td>
+                    <td className="px-6 py-4 font-medium text-slate-900 sm:px-10">
+                      {route}
+                    </td>
                     <td className="px-4 py-4 text-slate-600">{low}</td>
-                    <td className="px-6 py-4 text-slate-600 sm:pr-10">{peak}</td>
+                    <td className="px-6 py-4 text-slate-600 sm:pr-10">
+                      {peak}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -310,8 +360,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="security" className="relative overflow-hidden bg-[#070b14] py-24 text-white sm:py-28">
-        <div className="decoy-hero-grid absolute inset-0 opacity-30" aria-hidden />
+      <section
+        id="security"
+        className="relative overflow-hidden bg-[#070b14] py-24 text-white sm:py-28"
+      >
+        <div
+          className="decoy-hero-grid absolute inset-0 opacity-30"
+          aria-hidden
+        />
         <div className="relative mx-auto grid max-w-7xl gap-16 px-5 lg:grid-cols-2 lg:items-center lg:px-12">
           <div data-aos="fade-right">
             <p className="decoy-section-label text-[11px] font-semibold uppercase text-teal-400">
@@ -321,9 +377,10 @@ export default function HomePage() {
               Your documents stay yours
             </h2>
             <p className="mt-4 text-base leading-relaxed text-slate-400">
-              We store uploads encrypted at rest, limit staff access by case role, and purge inactive
-              files after 90 days unless you request an extension. Indian operations follow
-              DPDP-aligned internal policies.
+              We store uploads encrypted at rest, limit staff access by case
+              role, and purge inactive files after 90 days unless you request an
+              extension. Indian operations follow DPDP-aligned internal
+              policies.
             </p>
             <ul className="mt-10 grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
               {[
@@ -334,7 +391,10 @@ export default function HomePage() {
                 "SOC 2 Type II (in progress)",
                 "No document resale",
               ].map((item) => (
-                <li key={item} className="flex items-center gap-2.5 rounded-lg border border-white/5 bg-white/[0.03] px-3 py-2.5">
+                <li
+                  key={item}
+                  className="flex items-center gap-2.5 rounded-lg border border-white/5 bg-white/[0.03] px-3 py-2.5"
+                >
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-teal-400" />
                   {item}
                 </li>
@@ -358,15 +418,23 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="contact" className="border-b border-slate-200/80 bg-slate-900 py-20">
+      <section
+        id="contact"
+        className="border-b border-slate-200/80 bg-slate-900 py-20"
+      >
         <div className="mx-auto max-w-3xl px-5 text-center" data-aos="fade-up">
-          <DecoyLogo variant="footer" href={null} className="mx-auto rounded-md" />
+          <DecoyLogo
+            variant="footer"
+            href={null}
+            className="mx-auto rounded-md"
+          />
           <h2 className="mt-8 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             Guides & general inquiries
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-base leading-relaxed text-slate-400">
-            This site publishes immigration documentation information. For media, partnerships, or
-            corporate briefing requests, reach out below.
+            This site publishes immigration documentation information. For
+            media, partnerships, or corporate briefing requests, reach out
+            below.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <span className="cursor-default rounded-xl bg-white px-8 py-3.5 text-sm font-semibold text-slate-900 shadow-lg">
@@ -383,7 +451,10 @@ export default function HomePage() {
             General inquiries:{" "}
             <span className="font-medium text-slate-300">info@travixa.com</span>
             <span className="mx-2 text-slate-600">·</span>
-            Media: <span className="font-medium text-slate-300">press@travixa.com</span>
+            Media:{" "}
+            <span className="font-medium text-slate-300">
+              press@travixa.com
+            </span>
           </p>
         </div>
       </section>
@@ -406,21 +477,29 @@ export default function HomePage() {
               data-aos-delay={index * 60}
             >
               <dt className="font-semibold text-slate-900">{item.q}</dt>
-              <dd className="mt-2 text-sm leading-relaxed text-slate-600">{item.a}</dd>
+              <dd className="mt-2 text-sm leading-relaxed text-slate-600">
+                {item.a}
+              </dd>
             </div>
           ))}
         </dl>
       </section>
 
-      <footer className="border-t border-slate-800 bg-[#05080f] py-16 text-slate-500" data-aos="fade-up">
+      <footer
+        className="border-t border-slate-800 bg-[#05080f] py-16 text-slate-500"
+        data-aos="fade-up"
+      >
         <div className="mx-auto grid max-w-7xl gap-12 px-5 sm:grid-cols-2 lg:grid-cols-4 lg:px-12">
           <div className="sm:col-span-2">
             <DecoyLogo variant="footer" />
             <p className="mt-4 max-w-sm text-sm leading-relaxed">
-              International travel and immigration documentation guidance for individuals and
-              families. Operated by Travixa Advisory Pvt. Ltd., Mumbai.
+              International travel and immigration documentation guidance for
+              individuals and families. Operated by Travixa Advisory Pvt. Ltd.,
+              Mumbai.
             </p>
-            <p className="mt-4 text-xs text-slate-600">travixa.com · travixa.co · travixa.sg</p>
+            <p className="mt-4 text-xs text-slate-600">
+              travixa.com · travixa.co · travixa.sg
+            </p>
           </div>
           <div>
             <p className="decoy-section-label text-[11px] font-semibold uppercase text-slate-600">
@@ -444,7 +523,8 @@ export default function HomePage() {
           </div>
         </div>
         <p className="mx-auto mt-14 max-w-7xl border-t border-slate-800/80 px-5 pt-8 text-center text-xs text-slate-600 lg:px-12">
-          © 2018–2026 Travixa Advisory Pvt. Ltd. Informational content only — not legal advice.
+          © 2018–2026 Travixa Advisory Pvt. Ltd. Informational content only —
+          not legal advice.
         </p>
       </footer>
     </div>

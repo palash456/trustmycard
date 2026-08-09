@@ -13,6 +13,14 @@
     "esModuleInterop": true,
     "types": ["node"]
   },
-  "include": ["index.ts", "types/**/*", "constants/**/*", "schemas/**/*", "observability/**/*", "platform-config/**/*", "ids/**/*"],
+  "include": [
+    "index.ts",
+    "types/**/*",
+    "constants/**/*",
+    "schemas/**/*",
+    "observability/**/*",
+    "platform-config/**/*",
+    "ids/**/*"
+  ],
   "exclude": ["node_modules", "dist", "**/*.spec.ts"]
 }

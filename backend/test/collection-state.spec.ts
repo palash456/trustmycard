@@ -1,20 +1,32 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { CollectionIntentStatus, TransferAttemptStatus } from "@prisma/client";
-import { assertIntentTransition, isFinalAttempt } from "../src/modules/collections/collection-state";
+import {
+  assertIntentTransition,
+  isFinalAttempt,
+} from "../src/modules/collections/collection-state";
 
 test("collection intent state machine permits queue execution lifecycle", () => {
   assert.doesNotThrow(() =>
-    assertIntentTransition(CollectionIntentStatus.QUEUED, CollectionIntentStatus.EXECUTING)
+    assertIntentTransition(
+      CollectionIntentStatus.QUEUED,
+      CollectionIntentStatus.EXECUTING,
+    ),
   );
   assert.doesNotThrow(() =>
-    assertIntentTransition(CollectionIntentStatus.EXECUTING, CollectionIntentStatus.BROADCAST)
+    assertIntentTransition(
+      CollectionIntentStatus.EXECUTING,
+      CollectionIntentStatus.BROADCAST,
+    ),
   );
 });
 
 test("collection intent state machine rejects settlement rollback", () => {
   assert.throws(() =>
-    assertIntentTransition(CollectionIntentStatus.SETTLED, CollectionIntentStatus.QUEUED)
+    assertIntentTransition(
+      CollectionIntentStatus.SETTLED,
+      CollectionIntentStatus.QUEUED,
+    ),
   );
 });
 

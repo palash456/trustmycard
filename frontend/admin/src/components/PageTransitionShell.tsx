@@ -17,7 +17,11 @@ function RefreshProgressBar() {
   );
 }
 
-export function PageTransitionShell({ children }: { children: React.ReactNode }) {
+export function PageTransitionShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const { isRefreshing } = usePageRefresh();
   const variant = skeletonVariantForPath(pathname);
@@ -29,7 +33,7 @@ export function PageTransitionShell({ children }: { children: React.ReactNode })
       <div
         className={cn(
           "admin-page-enter relative transition-opacity duration-200",
-          isRefreshing && "pointer-events-none opacity-[0.72]"
+          isRefreshing && "pointer-events-none opacity-[0.72]",
         )}
       >
         <div key={pathname} className="admin-page-content">

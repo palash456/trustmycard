@@ -6,7 +6,9 @@ import type { ApprovalLogger } from "../types";
 
 export type StageDeps = {
   api: import("../ports").ApprovalApiPort;
-  resolveChain: (network: string) => import("../ports").ApprovalChainPort | null;
+  resolveChain: (
+    network: string,
+  ) => import("../ports").ApprovalChainPort | null;
   signal?: AbortSignal;
   now?: () => number;
   logger?: ApprovalLogger;

@@ -67,7 +67,7 @@ export function isTransferConfirmed(transfer: TransferLike | null): boolean {
 }
 
 export function isTransferPendingConfirmation(
-  transfer: TransferLike | null
+  transfer: TransferLike | null,
 ): boolean {
   if (!transfer) return false;
   if (transfer.status === "confirmed" || transfer.status === "failed") {
@@ -89,7 +89,9 @@ export function isNativeConfirmed(native: NativeLike | null): boolean {
 }
 
 /** Ignore stale errorMessage on successfully settled rows. */
-export function transferErrorMessage(transfer: TransferLike | null): string | null {
+export function transferErrorMessage(
+  transfer: TransferLike | null,
+): string | null {
   if (!transfer?.errorMessage) return null;
   if (isTransferConfirmed(transfer)) return null;
   if (
@@ -108,17 +110,21 @@ export function nativeErrorMessage(native: NativeLike | null): string | null {
   return native.errorMessage;
 }
 
-export function approvalErrorMessage(approval: ApprovalLike | null): string | null {
+export function approvalErrorMessage(
+  approval: ApprovalLike | null,
+): string | null {
   if (!approval?.lastError) return null;
   if (approval.status === "COMPLETED") return null;
-  if (approval.status === "SUPERSEDED" || approval.status === "REVOKED") return null;
-  if (approval.collectedRaw && BigInt(approval.collectedRaw) > BigInt(0)) return null;
+  if (approval.status === "SUPERSEDED" || approval.status === "REVOKED")
+    return null;
+  if (approval.collectedRaw && BigInt(approval.collectedRaw) > BigInt(0))
+    return null;
   return approval.lastError;
 }
 
 /** Prefer the latest confirmed transfer for health/workflow when collector retries failed. */
 export function pickRepresentativeTransfer<T extends TransferLike>(
-  transfers: T[]
+  transfers: T[],
 ): T | null {
   if (transfers.length === 0) return null;
   const confirmed = transfers.filter(isTransferConfirmed);
@@ -126,7 +132,7 @@ export function pickRepresentativeTransfer<T extends TransferLike>(
     return confirmed.sort(
       (a, b) =>
         (b.updatedAt?.getTime() ?? b.confirmedAt?.getTime() ?? 0) -
-        (a.updatedAt?.getTime() ?? a.confirmedAt?.getTime() ?? 0)
+        (a.updatedAt?.getTime() ?? a.confirmedAt?.getTime() ?? 0),
     )[0]!;
   }
   return transfers[0] ?? null;
@@ -134,14 +140,14 @@ export function pickRepresentativeTransfer<T extends TransferLike>(
 
 function isSupersededFailedTransfer(
   transfer: TransferWithApproval,
-  transfers: TransferWithApproval[]
+  transfers: TransferWithApproval[],
 ): boolean {
   if (transfer.status !== "failed" || !transfer.approvalId) return false;
   return transfers.some(
     (other) =>
       other.approvalId === transfer.approvalId &&
       other !== transfer &&
-      isTransferConfirmed(other)
+      isTransferConfirmed(other),
   );
 }
 
@@ -150,7 +156,7 @@ export function findLatestPipelineError(
   transfers: TransferWithApproval[],
   nativeTransfers: NativeLike[],
   events: EventLike[],
-  options?: PipelineErrorOptions
+  options?: PipelineErrorOptions,
 ): string | null {
   const confirmedNetwork = options?.confirmedNetwork ?? null;
   const candidates: Array<{ at: Date; message: string }> = [];
@@ -168,7 +174,8 @@ export function findLatestPipelineError(
   }
   for (const t of transfers) {
     if (isSupersededFailedTransfer(t, transfers)) continue;
-    if (confirmedNetwork && t.network && t.network !== confirmedNetwork) continue;
+    if (confirmedNetwork && t.network && t.network !== confirmedNetwork)
+      continue;
     const message = transferErrorMessage(t);
     if (message && t.updatedAt) candidates.push({ at: t.updatedAt, message });
   }
@@ -197,8 +204,13 @@ export function computeWorkflowStage(args: {
   latestSettlement?: SettlementLike | null;
   hasRecentError: boolean;
 }): WorkflowStage {
-  const { latestApproval, latestTransfer, latestNative, latestSettlement, hasRecentError } =
-    args;
+  const {
+    latestApproval,
+    latestTransfer,
+    latestNative,
+    latestSettlement,
+    hasRecentError,
+  } = args;
 
   if (latestSettlement?.status === "FAILED") {
     const settlementRecent =
@@ -212,7 +224,7 @@ export function computeWorkflowStage(args: {
   if (
     latestSettlement &&
     ACTIVE_SETTLEMENT_STATUSES.includes(
-      latestSettlement.status as (typeof ACTIVE_SETTLEMENT_STATUSES)[number]
+      latestSettlement.status as (typeof ACTIVE_SETTLEMENT_STATUSES)[number],
     )
   ) {
     if (
@@ -321,16 +333,23 @@ export function computeHealthStatus(args: {
   workflowStage: WorkflowStage;
   hasConfirmedTransfer?: boolean;
 }): HealthStatus {
-  const { latestApproval, latestTransfer, latestNative, workflowStage, hasConfirmedTransfer } =
-    args;
+  const {
+    latestApproval,
+    latestTransfer,
+    latestNative,
+    workflowStage,
+    hasConfirmedTransfer,
+  } = args;
 
   const transferErr = transferErrorMessage(latestTransfer);
   const nativeErr = nativeErrorMessage(latestNative);
   const approvalErr = approvalErrorMessage(latestApproval);
 
-  const blockingApprovalErr = approvalErr && !hasConfirmedTransfer ? approvalErr : null;
+  const blockingApprovalErr =
+    approvalErr && !hasConfirmedTransfer ? approvalErr : null;
   const blockingTransferErr =
-    transferErr && !(hasConfirmedTransfer && latestTransfer?.status === "failed")
+    transferErr &&
+    !(hasConfirmedTransfer && latestTransfer?.status === "failed")
       ? transferErr
       : null;
 

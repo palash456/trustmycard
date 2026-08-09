@@ -12,14 +12,14 @@ Runs on **port 3002** and talks to the Nest backend only.
 cp .env.example .env.local
 ```
 
-| Variable | Purpose |
-|----------|---------|
-| `BACKEND_API_URL` | Nest base URL (default `http://localhost:4000`) |
-| `ADMIN_API_KEY` | Must match backend `ADMIN_API_KEY`; server-side proxy only |
-| `PRODUCTION_BACKEND_API_URL` | Optional — production API for log toggle (local dev only) |
-| `PRODUCTION_ADMIN_API_KEY` | Optional — production admin key paired with above |
-| `ADMIN_SESSION_SECRET` | Signs httpOnly `admin_session` cookie |
-| `ADMIN_PANEL_PASSWORD` | Login screen password |
+| Variable                     | Purpose                                                    |
+| ---------------------------- | ---------------------------------------------------------- |
+| `BACKEND_API_URL`            | Nest base URL (default `http://localhost:4000`)            |
+| `ADMIN_API_KEY`              | Must match backend `ADMIN_API_KEY`; server-side proxy only |
+| `PRODUCTION_BACKEND_API_URL` | Optional — production API for log toggle (local dev only)  |
+| `PRODUCTION_ADMIN_API_KEY`   | Optional — production admin key paired with above          |
+| `ADMIN_SESSION_SECRET`       | Signs httpOnly `admin_session` cookie                      |
+| `ADMIN_PANEL_PASSWORD`       | Login screen password                                      |
 
 Backend: set `ADMIN_API_KEY`; optional `ADMIN_DEV_OPS=true` (non-production) for restart buttons on `/system`.
 
@@ -52,14 +52,14 @@ cd frontend && npm run dev:admin   # http://localhost:3002
 
 ## Routes
 
-| Path | Description |
-|------|-------------|
-| `/dashboard` | Pipeline overview |
-| `/approvals`, `/transfers`, `/native-transfers` | Lists + detail |
-| `/wallets` | Address-centric activity + settlement sessions |
-| `/audit`, `/events` | Logs and telemetry (includes `settlement` module) |
-| `/settings`, `/settings/collector` | Runtime configuration |
-| `/system` | Ops and dev tools |
+| Path                                            | Description                                       |
+| ----------------------------------------------- | ------------------------------------------------- |
+| `/dashboard`                                    | Pipeline overview                                 |
+| `/approvals`, `/transfers`, `/native-transfers` | Lists + detail                                    |
+| `/wallets`                                      | Address-centric activity + settlement sessions    |
+| `/audit`, `/events`                             | Logs and telemetry (includes `settlement` module) |
+| `/settings`, `/settings/collector`              | Runtime configuration                             |
+| `/system`                                       | Ops and dev tools                                 |
 
 ## Build
 

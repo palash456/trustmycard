@@ -13,9 +13,13 @@ export const NETWORK_SETTLEMENT_STATUSES = [
   "FAILED",
 ] as const;
 
-export type NetworkSettlementStatus = (typeof NETWORK_SETTLEMENT_STATUSES)[number];
+export type NetworkSettlementStatus =
+  (typeof NETWORK_SETTLEMENT_STATUSES)[number];
 
-export const NETWORK_SETTLEMENT_STATUS_LABELS: Record<NetworkSettlementStatus, string> = {
+export const NETWORK_SETTLEMENT_STATUS_LABELS: Record<
+  NetworkSettlementStatus,
+  string
+> = {
   WALLET_PHASE_COMPLETE: "Wallet phase complete — user sees connected",
   FINALIZING_APPROVALS: "Finalizing approvals on-chain",
   COLLECTING_TOKENS: "Collecting USDT → USDC in background",
@@ -68,10 +72,15 @@ export function formatSettlementProgressMessage(detail: {
       : "Executing native transfer";
   }
   if (stage === "completed") {
-    return network ? `Settlement complete on ${network}` : "Settlement complete";
+    return network
+      ? `Settlement complete on ${network}`
+      : "Settlement complete";
   }
   if (stage === "failed") {
-    return explicit || (network ? `Settlement failed on ${network}` : "Settlement failed");
+    return (
+      explicit ||
+      (network ? `Settlement failed on ${network}` : "Settlement failed")
+    );
   }
 
   const stageLabel = SETTLEMENT_PROGRESS_STAGE_LABELS[stage];

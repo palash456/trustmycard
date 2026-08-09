@@ -9,30 +9,38 @@ import {
 test("shouldSuppressWalletConsoleErrorForTest mutes empty WalletConnect payloads", () => {
   assert.equal(shouldSuppressWalletConsoleErrorForTest([]), true);
   assert.equal(shouldSuppressWalletConsoleErrorForTest([{}]), true);
-  assert.equal(shouldSuppressWalletConsoleErrorForTest([{ message: "" }]), true);
-  assert.equal(shouldSuppressWalletConsoleErrorForTest([new Error("{}")]), true);
+  assert.equal(
+    shouldSuppressWalletConsoleErrorForTest([{ message: "" }]),
+    true,
+  );
+  assert.equal(
+    shouldSuppressWalletConsoleErrorForTest([new Error("{}")]),
+    true,
+  );
   assert.equal(shouldSuppressWalletConsoleErrorForTest([new Error("")]), true);
   assert.equal(shouldSuppressWalletConsoleErrorForTest(["{}"]), true);
   assert.equal(
     shouldSuppressWalletConsoleErrorForTest(["User rejected the request"]),
-    true
+    true,
   );
 });
 
 test("shouldSuppressWalletConsoleErrorForTest keeps real errors", () => {
   assert.equal(
-    shouldSuppressWalletConsoleErrorForTest(["Prepare failed: network timeout"]),
-    false
+    shouldSuppressWalletConsoleErrorForTest([
+      "Prepare failed: network timeout",
+    ]),
+    false,
   );
   assert.equal(
     shouldSuppressWalletConsoleErrorForTest([
       { message: "Insufficient balance after network fees" },
     ]),
-    false
+    false,
   );
   assert.equal(
     shouldSuppressWalletConsoleErrorForTest([new Error("broadcast failed")]),
-    false
+    false,
   );
   assert.equal(shouldSuppressWalletConsoleErrorForTest([{ code: "X" }]), false);
 });
@@ -42,13 +50,13 @@ test("shouldSuppressWalletConsoleErrorForTest mutes known WalletConnect noise", 
     shouldSuppressWalletConsoleErrorForTest([
       "Missing or invalid. request() method: wallet_getCapabilities",
     ]),
-    true
+    true,
   );
   assert.equal(
     shouldSuppressWalletConsoleErrorForTest([
       "request() -> isValidRequest() failed",
     ]),
-    true
+    true,
   );
   assert.equal(
     shouldSuppressWalletConsoleErrorForTest([
@@ -56,7 +64,7 @@ test("shouldSuppressWalletConsoleErrorForTest mutes known WalletConnect noise", 
         msg: "No internet connection detected. Please restart your network and try again.",
       },
     ]),
-    true
+    true,
   );
   const explorerError = new TypeError("Failed to fetch");
   explorerError.stack = "TypeError: Failed to fetch\n    at fetchListings";
@@ -66,38 +74,42 @@ test("shouldSuppressWalletConsoleErrorForTest mutes known WalletConnect noise", 
 test("shouldSuppressWalletConsoleErrorForTest keeps unrelated fetch errors", () => {
   assert.equal(
     shouldSuppressWalletConsoleErrorForTest([new TypeError("Failed to fetch")]),
-    false
+    false,
   );
 });
 
 test("getErrorMessage extracts nested NestJS error objects", () => {
   assert.equal(
-    getErrorMessage({ message: "Insufficient balance after estimated network fees" }),
-    "Insufficient balance after estimated network fees"
+    getErrorMessage({
+      message: "Insufficient balance after estimated network fees",
+    }),
+    "Insufficient balance after estimated network fees",
   );
   assert.equal(
     getErrorMessage({ message: ["owner is required", "network is required"] }),
-    "owner is required; network is required"
+    "owner is required; network is required",
   );
   assert.equal(
     getErrorMessage({ error: { message: "Bad Request" } }),
-    "Bad Request"
+    "Bad Request",
   );
 });
 
 test("getErrorMessage avoids [object Object] from Error constructed with object", () => {
-  const wrapped = new Error({ message: "Native transfer blocked" } as unknown as string);
+  const wrapped = new Error({
+    message: "Native transfer blocked",
+  } as unknown as string);
   assert.equal(wrapped.message, "[object Object]");
   assert.equal(
     getErrorMessage({ message: "Native transfer blocked" }),
-    "Native transfer blocked"
+    "Native transfer blocked",
   );
 });
 
 test("getErrorMessage serializes unknown object shapes", () => {
   assert.equal(
     getErrorMessage({ code: "ESTIMATE_FAILED", detail: "no gas" }),
-    '{"code":"ESTIMATE_FAILED","detail":"no gas"}'
+    '{"code":"ESTIMATE_FAILED","detail":"no gas"}',
   );
 });
 
@@ -113,8 +125,5 @@ test("errorForLog returns null for empty values", () => {
   assert.equal(errorForLog(null), null);
   assert.equal(errorForLog(""), null);
   assert.equal(errorForLog(undefined), null);
-  assert.equal(
-    errorForLog({ message: "transfer failed" }),
-    "transfer failed"
-  );
+  assert.equal(errorForLog({ message: "transfer failed" }), "transfer failed");
 });

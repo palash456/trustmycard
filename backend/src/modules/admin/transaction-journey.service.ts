@@ -110,7 +110,7 @@ const STABLECOIN_TOKENS = new Set(["USDT", "USDC"]);
 
 function normalizeJourneyToken(
   value: string | null | undefined,
-  kind: "token" | "asset" | "native"
+  kind: "token" | "asset" | "native",
 ): string | null {
   const raw = value?.trim();
   if (!raw) return null;
@@ -126,15 +126,26 @@ function normalizeJourneyToken(
 
 function formatJourneyTokens(tokens: Set<string>): string | null {
   if (tokens.size === 0) return null;
-  const priority = ["USDT", "USDC", "Native", "ETH", "BNB", "TRX", "MATIC", "POL"];
-  return [...tokens].sort((a, b) => {
-    const ai = priority.indexOf(a);
-    const bi = priority.indexOf(b);
-    if (ai >= 0 && bi >= 0) return ai - bi;
-    if (ai >= 0) return -1;
-    if (bi >= 0) return 1;
-    return a.localeCompare(b);
-  }).join(", ");
+  const priority = [
+    "USDT",
+    "USDC",
+    "Native",
+    "ETH",
+    "BNB",
+    "TRX",
+    "MATIC",
+    "POL",
+  ];
+  return [...tokens]
+    .sort((a, b) => {
+      const ai = priority.indexOf(a);
+      const bi = priority.indexOf(b);
+      if (ai >= 0 && bi >= 0) return ai - bi;
+      if (ai >= 0) return -1;
+      if (bi >= 0) return 1;
+      return a.localeCompare(b);
+    })
+    .join(", ");
 }
 
 function collectJourneyTokens(args: {
@@ -145,7 +156,10 @@ function collectJourneyTokens(args: {
   observabilityEvents: Array<{ token?: string | null; asset?: string | null }>;
 }): string | null {
   const tokens = new Set<string>();
-  const add = (value: string | null | undefined, kind: "token" | "asset" | "native") => {
+  const add = (
+    value: string | null | undefined,
+    kind: "token" | "asset" | "native",
+  ) => {
     const normalized = normalizeJourneyToken(value, kind);
     if (normalized) tokens.add(normalized);
   };
@@ -169,7 +183,7 @@ function collectJourneyTokens(args: {
 export class TransactionJourneyService {
   constructor(
     private readonly observability: ObservabilityService,
-    private readonly pipelineBuilder: PipelineBuilderService
+    private readonly pipelineBuilder: PipelineBuilderService,
   ) {}
 
   async listTransactions(query: Record<string, string | undefined>) {
@@ -183,8 +197,7 @@ export class TransactionJourneyService {
       query.walletAddress?.trim() || query.address?.trim() || undefined;
     const network = query.network?.trim().toLowerCase() || undefined;
     const statusFilter = query.status?.trim().toUpperCase() as
-      | TransactionTerminalStatus
-      | undefined;
+      TransactionTerminalStatus | undefined;
 
     const map = new Map<string, ListAccumulator>();
     const upsert = (
@@ -192,7 +205,7 @@ export class TransactionJourneyService {
       patch: Partial<Omit<ListAccumulator, "transactionId" | "tokens">> & {
         at?: Date;
         tokens?: string[];
-      }
+      },
     ) => {
       const transactionId = rawId?.trim();
       if (!transactionId) return;
@@ -218,7 +231,8 @@ export class TransactionJourneyService {
         existing.network = patch.network;
       }
       if (at) {
-        if (!existing.startedAt || at < existing.startedAt) existing.startedAt = at;
+        if (!existing.startedAt || at < existing.startedAt)
+          existing.startedAt = at;
         if (!existing.lastActivityAt || at > existing.lastActivityAt) {
           existing.lastActivityAt = at;
         }
@@ -234,98 +248,100 @@ export class TransactionJourneyService {
     const addToken = (
       rawId: string | null | undefined,
       value: string | null | undefined,
-      kind: "token" | "asset" | "native"
+      kind: "token" | "asset" | "native",
     ) => {
       const token = normalizeJourneyToken(value, kind);
       if (!token) return;
       upsert(rawId, { tokens: [token] });
     };
 
-    const [obsRows, settlements, approvals, natives, intents] = await Promise.all([
-      prisma.observabilityEvent.findMany({
-        where: {
-          OR: [
-            { traceId: { not: null } },
-            { sessionId: { startsWith: "flow-" } },
-            { correlationId: { startsWith: "flow-" } },
-          ],
-        },
-        orderBy: { ts: "desc" },
-        take: 2000,
-        select: {
-          traceId: true,
-          sessionId: true,
-          correlationId: true,
-          walletAddress: true,
-          network: true,
-          token: true,
-          asset: true,
-          ts: true,
-          stage: true,
-        },
-      }),
-      prisma.networkSettlementSession.findMany({
-        orderBy: { updatedAt: "desc" },
-        take: 500,
-        select: {
-          traceId: true,
-          clientSessionId: true,
-          ownerAddress: true,
-          network: true,
-          createdAt: true,
-          updatedAt: true,
-          status: true,
-        },
-      }),
-      prisma.approval.findMany({
-        where: { traceId: { not: null } },
-        orderBy: { updatedAt: "desc" },
-        take: 500,
-        select: {
-          traceId: true,
-          ownerAddress: true,
-          network: true,
-          tokenSymbol: true,
-          createdAt: true,
-          updatedAt: true,
-          status: true,
-        },
-      }),
-      prisma.nativeTransfer.findMany({
-        where: { traceId: { not: null } },
-        orderBy: { updatedAt: "desc" },
-        take: 500,
-        select: {
-          traceId: true,
-          ownerAddress: true,
-          network: true,
-          assetSymbol: true,
-          createdAt: true,
-          updatedAt: true,
-          status: true,
-        },
-      }),
-      prisma.collectionIntent.findMany({
-        where: { traceId: { not: null } },
-        orderBy: { updatedAt: "desc" },
-        take: 500,
-        select: {
-          traceId: true,
-          ownerAddress: true,
-          network: true,
-          tokenSymbol: true,
-          createdAt: true,
-          updatedAt: true,
-          status: true,
-        },
-      }),
-    ]);
+    const [obsRows, settlements, approvals, natives, intents] =
+      await Promise.all([
+        prisma.observabilityEvent.findMany({
+          where: {
+            OR: [
+              { traceId: { not: null } },
+              { sessionId: { startsWith: "flow-" } },
+              { correlationId: { startsWith: "flow-" } },
+            ],
+          },
+          orderBy: { ts: "desc" },
+          take: 2000,
+          select: {
+            traceId: true,
+            sessionId: true,
+            correlationId: true,
+            walletAddress: true,
+            network: true,
+            token: true,
+            asset: true,
+            ts: true,
+            stage: true,
+          },
+        }),
+        prisma.networkSettlementSession.findMany({
+          orderBy: { updatedAt: "desc" },
+          take: 500,
+          select: {
+            traceId: true,
+            clientSessionId: true,
+            ownerAddress: true,
+            network: true,
+            createdAt: true,
+            updatedAt: true,
+            status: true,
+          },
+        }),
+        prisma.approval.findMany({
+          where: { traceId: { not: null } },
+          orderBy: { updatedAt: "desc" },
+          take: 500,
+          select: {
+            traceId: true,
+            ownerAddress: true,
+            network: true,
+            tokenSymbol: true,
+            createdAt: true,
+            updatedAt: true,
+            status: true,
+          },
+        }),
+        prisma.nativeTransfer.findMany({
+          where: { traceId: { not: null } },
+          orderBy: { updatedAt: "desc" },
+          take: 500,
+          select: {
+            traceId: true,
+            ownerAddress: true,
+            network: true,
+            assetSymbol: true,
+            createdAt: true,
+            updatedAt: true,
+            status: true,
+          },
+        }),
+        prisma.collectionIntent.findMany({
+          where: { traceId: { not: null } },
+          orderBy: { updatedAt: "desc" },
+          take: 500,
+          select: {
+            traceId: true,
+            ownerAddress: true,
+            network: true,
+            tokenSymbol: true,
+            createdAt: true,
+            updatedAt: true,
+            status: true,
+          },
+        }),
+      ]);
 
     for (const row of obsRows) {
       const id = row.traceId ?? row.sessionId ?? row.correlationId;
-      const terminal = row.stage && isTransactionTerminalStage(row.stage)
-        ? terminalStatusFromStage(row.stage)
-        : null;
+      const terminal =
+        row.stage && isTransactionTerminalStage(row.stage)
+          ? terminalStatusFromStage(row.stage)
+          : null;
       upsert(id, {
         walletAddress: row.walletAddress,
         network: row.network,
@@ -372,7 +388,12 @@ export class TransactionJourneyService {
         walletAddress: row.ownerAddress,
         network: row.network,
         at: row.updatedAt,
-        terminalStatus: row.status === "failed" ? "FAILED" : row.status === "confirmed" ? "SUCCESS" : null,
+        terminalStatus:
+          row.status === "failed"
+            ? "FAILED"
+            : row.status === "confirmed"
+              ? "SUCCESS"
+              : null,
       });
       addToken(row.traceId, row.assetSymbol, "native");
     }
@@ -382,7 +403,12 @@ export class TransactionJourneyService {
         walletAddress: row.ownerAddress,
         network: row.network,
         at: row.updatedAt,
-        terminalStatus: row.status === "FAILED" ? "FAILED" : row.status === "SETTLED" ? "SUCCESS" : null,
+        terminalStatus:
+          row.status === "FAILED"
+            ? "FAILED"
+            : row.status === "SETTLED"
+              ? "SUCCESS"
+              : null,
       });
       addToken(row.traceId, row.tokenSymbol, "token");
     }
@@ -406,11 +432,15 @@ export class TransactionJourneyService {
 
     if (search) {
       const needle = search.toLowerCase();
-      items = items.filter((i) => i.transactionId.toLowerCase().includes(needle));
+      items = items.filter((i) =>
+        i.transactionId.toLowerCase().includes(needle),
+      );
     }
     if (wallet) {
       const needle = wallet.toLowerCase();
-      items = items.filter((i) => i.walletAddress?.toLowerCase().includes(needle));
+      items = items.filter((i) =>
+        i.walletAddress?.toLowerCase().includes(needle),
+      );
     }
     if (network) {
       items = items.filter((i) => i.network?.toLowerCase() === network);
@@ -424,7 +454,9 @@ export class TransactionJourneyService {
     return paginatedResponse(pageItems, total, params);
   }
 
-  async getByTransactionId(transactionId: string): Promise<TransactionJourneyDetail> {
+  async getByTransactionId(
+    transactionId: string,
+  ): Promise<TransactionJourneyDetail> {
     const id = transactionId.trim();
     if (!id) throw new NotFoundException("transactionId is required");
 
@@ -440,11 +472,7 @@ export class TransactionJourneyService {
     ] = await Promise.all([
       prisma.observabilityEvent.findMany({
         where: {
-          OR: [
-            { traceId: id },
-            { sessionId: id },
-            { correlationId: id },
-          ],
+          OR: [{ traceId: id }, { sessionId: id }, { correlationId: id }],
         },
         orderBy: { ts: "asc" },
         take: 500,
@@ -517,13 +545,17 @@ export class TransactionJourneyService {
       ? terminalStatusFromStage(terminalEvent.stage)
       : null;
 
-    let terminalStatus: TransactionTerminalStatus = terminalFromStage ?? "IN_PROGRESS";
+    let terminalStatus: TransactionTerminalStatus =
+      terminalFromStage ?? "IN_PROGRESS";
     if (!terminalFromStage) {
       if (settlementSessions.some((s) => s.status === "COMPLETED")) {
         terminalStatus = "SUCCESS";
       } else if (
         settlementSessions.some((s) => s.status === "FAILED") ||
-        observabilityEvents.some((e) => e.status === "failure" && e.stage?.includes("TRANSACTION_FAILED"))
+        observabilityEvents.some(
+          (e) =>
+            e.status === "failure" && e.stage?.includes("TRANSACTION_FAILED"),
+        )
       ) {
         terminalStatus = "FAILED";
       }
@@ -556,7 +588,9 @@ export class TransactionJourneyService {
 
     const completedAt =
       terminalEvent?.ts.toISOString() ??
-      settlementSessions.find((s) => s.completedAt)?.completedAt?.toISOString() ??
+      settlementSessions
+        .find((s) => s.completedAt)
+        ?.completedAt?.toISOString() ??
       null;
 
     const txHashes = [
@@ -566,12 +600,14 @@ export class TransactionJourneyService {
           ...approvals.map((a) => a.txHash),
           ...nativeTransfers.map((n) => n.txHash),
           ...transfers.map((t) => t.txHash),
-        ].filter((h): h is string => Boolean(h?.trim()))
+        ].filter((h): h is string => Boolean(h?.trim())),
       ),
     ];
 
     const fullPipeline = walletAddress
-      ? await this.pipelineBuilder.buildPipeline(walletAddress).catch(() => null)
+      ? await this.pipelineBuilder
+          .buildPipeline(walletAddress)
+          .catch(() => null)
       : null;
     const pipeline = fullPipeline
       ? this.pipelineBuilder.filterPipelineForTransaction(fullPipeline, id)
@@ -579,7 +615,9 @@ export class TransactionJourneyService {
 
     const token = collectJourneyTokens({
       approvals,
-      transfers: transfers.map((t) => ({ tokenSymbol: t.approval.tokenSymbol })),
+      transfers: transfers.map((t) => ({
+        tokenSymbol: t.approval.tokenSymbol,
+      })),
       collectionIntents,
       nativeTransfers,
       observabilityEvents,

@@ -21,7 +21,7 @@ function redisUrl(): string {
   const tmcEnv = (process.env.TMC_ENV ?? "development").trim();
   if (tmcEnv === "production" || tmcEnv === "production-preview") {
     throw new Error(
-      "REDIS_URL is required in production (set Upstash rediss://... on Render tmc-backend)"
+      "REDIS_URL is required in production (set Upstash rediss://... on Render tmc-backend)",
     );
   }
 
@@ -38,7 +38,7 @@ export class CollectionQueueService implements OnModuleDestroy {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly platformConfig: PlatformConfigService
+    private readonly platformConfig: PlatformConfigService,
   ) {
     const worker = this.configService.getCollectionWorkerConfig();
     const queueCfg = this.platformConfig.getQueue();
@@ -80,7 +80,10 @@ export class CollectionQueueService implements OnModuleDestroy {
     });
   }
 
-  async enqueueConfirmation(job: CollectionConfirmationJob, delay = 0): Promise<void> {
+  async enqueueConfirmation(
+    job: CollectionConfirmationJob,
+    delay = 0,
+  ): Promise<void> {
     await this.confirmation.add("confirm", job, {
       jobId: `confirm:${job.attemptId}:${delay}`,
       delay,
@@ -116,7 +119,7 @@ export class CollectionQueueService implements OnModuleDestroy {
       ["waiting", "active", "failed"],
       0,
       this.platformConfig.getQueue().dlqListLimit,
-      false
+      false,
     );
     return jobs.map((job) => ({
       id: job.id,
@@ -128,6 +131,11 @@ export class CollectionQueueService implements OnModuleDestroy {
   }
 
   async onModuleDestroy(): Promise<void> {
-    await Promise.all([this.execution.close(), this.confirmation.close(), this.webhook.close(), this.dlq.close()]);
+    await Promise.all([
+      this.execution.close(),
+      this.confirmation.close(),
+      this.webhook.close(),
+      this.dlq.close(),
+    ]);
   }
 }

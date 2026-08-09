@@ -1,7 +1,10 @@
 import type { NetworkTokenAmount } from "@/types/analytics";
 import { formatAdminAmount, isUint256Unlimited } from "@/lib/amount-display";
 
-export function formatTokenAmounts(items: NetworkTokenAmount[], max = 3): string {
+export function formatTokenAmounts(
+  items: NetworkTokenAmount[],
+  max = 3,
+): string {
   if (!items.length) return "—";
   const shown = items.slice(0, max);
   const parts = shown.map((i) => {
@@ -13,7 +16,9 @@ export function formatTokenAmounts(items: NetworkTokenAmount[], max = 3): string
 }
 
 /** Clamp display strings so KPI tiles never spill into neighbors. */
-export function sanitizeMetricText(value: string | number | null | undefined): string {
+export function sanitizeMetricText(
+  value: string | number | null | undefined,
+): string {
   if (value == null) return "—";
   const text = String(value).trim();
   if (!text) return "—";

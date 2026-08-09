@@ -34,8 +34,8 @@ TMC_ENV=production npm run build:marketing
 
 ## Env
 
-| Variable | Purpose |
-|----------|---------|
+| Variable              | Purpose                                                                                              |
+| --------------------- | ---------------------------------------------------------------------------------------------------- |
 | `NEXT_PUBLIC_APP_URL` | Wallet app base URL for all CTAs (dev: `http://localhost:3000`, prod: `https://app.trustmycard.com`) |
 
 Profiles: `env/profiles/development/marketing.env`, `env/profiles/production/marketing.env`

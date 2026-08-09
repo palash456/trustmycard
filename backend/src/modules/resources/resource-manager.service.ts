@@ -20,7 +20,7 @@ export class ResourceManager {
   private readonly providers: ChainResourceProvider[];
 
   constructor(
-    @Inject(RESOURCE_CHAIN_PROVIDERS) providers: ChainResourceProvider[]
+    @Inject(RESOURCE_CHAIN_PROVIDERS) providers: ChainResourceProvider[],
   ) {
     this.providers = providers;
   }
@@ -31,11 +31,11 @@ export class ResourceManager {
   }
 
   async acquireResources(
-    body: Record<string, unknown>
+    body: Record<string, unknown>,
   ): Promise<ResourceResult> {
     const req = this.toRequirement(body);
     this.logger.log(
-      `acquireResources network=${req.network} address=${req.address} purpose=${req.purpose}`
+      `acquireResources network=${req.network} address=${req.address} purpose=${req.purpose}`,
     );
 
     if (!req.address) {
@@ -59,17 +59,17 @@ export class ResourceManager {
 
     const result = await provider.acquire(req);
     this.logger.log(
-      `acquireResources status=${result.status} network=${result.network} provider=${result.provider ?? provider.name}`
+      `acquireResources status=${result.status} network=${result.network} provider=${result.provider ?? provider.name}`,
     );
     return result;
   }
 
   async verifyResources(
-    body: Record<string, unknown>
+    body: Record<string, unknown>,
   ): Promise<ResourceResult> {
     const req = this.toRequirement(body);
     this.logger.log(
-      `verifyResources network=${req.network} address=${req.address} purpose=${req.purpose}`
+      `verifyResources network=${req.network} address=${req.address} purpose=${req.purpose}`,
     );
 
     if (!req.address) {
@@ -93,7 +93,7 @@ export class ResourceManager {
 
     const result = await provider.verify(req);
     this.logger.log(
-      `verifyResources status=${result.status} network=${result.network} provider=${result.provider ?? provider.name}`
+      `verifyResources status=${result.status} network=${result.network} provider=${result.provider ?? provider.name}`,
     );
     return result;
   }
@@ -105,7 +105,9 @@ export class ResourceManager {
 
   private toRequirement(body: Record<string, unknown>): ResourceRequirement {
     const address = String(body.address ?? body.owner ?? "").trim();
-    const explicit = String(body.network ?? "").trim().toLowerCase();
+    const explicit = String(body.network ?? "")
+      .trim()
+      .toLowerCase();
     const network =
       explicit ||
       (TRON_ADDRESS_RE.test(address)
@@ -123,8 +125,7 @@ export class ResourceManager {
       ...hintsFromBody,
       currentUsdt:
         body.currentUsdt ?? body.currentUSDT ?? hintsFromBody.currentUsdt,
-      currentBandwidth:
-        body.currentBandwidth ?? hintsFromBody.currentBandwidth,
+      currentBandwidth: body.currentBandwidth ?? hintsFromBody.currentBandwidth,
       feeLimit: body.feeLimit ?? hintsFromBody.feeLimit,
       amountRaw: body.amountRaw ?? hintsFromBody.amountRaw,
       token: body.token ?? hintsFromBody.token,

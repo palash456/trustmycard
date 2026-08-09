@@ -17,14 +17,17 @@ export async function GET(req: NextRequest) {
   if (!evm && !tron) {
     return NextResponse.json(
       { error: "Provide at least evm or tron address" },
-      { status: 400 }
+      { status: 400 },
     );
   }
   if (evm && !EVM_ADDRESS_RE.test(evm)) {
     return NextResponse.json({ error: "Invalid EVM address" }, { status: 400 });
   }
   if (tron && !TRON_ADDRESS_RE.test(tron)) {
-    return NextResponse.json({ error: "Invalid TRON address" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid TRON address" },
+      { status: 400 },
+    );
   }
 
   const result: BalancesResponse = {};
@@ -32,8 +35,8 @@ export async function GET(req: NextRequest) {
   if (evm) {
     const entries = await Promise.all(
       EVM_CHAINS.map(
-        async (chain) => [chain.key, await readEvmChain(chain, evm)] as const
-      )
+        async (chain) => [chain.key, await readEvmChain(chain, evm)] as const,
+      ),
     );
     for (const [key, balances] of entries) result[key] = balances;
   }

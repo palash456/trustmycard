@@ -10,7 +10,7 @@ const REPO_ROOT = resolve(__dirname, "../../../..");
 
 /** Parse platform.env files without mutating the live process.env. */
 export function readPlatformEnvFiles(
-  tmcEnv = process.env.TMC_ENV ?? "development"
+  tmcEnv = process.env.TMC_ENV ?? "development",
 ): Record<string, string> {
   const merged: Record<string, string> = {};
   const files = [
@@ -41,7 +41,9 @@ export type TestPlatformSnapshot = {
   envSource: string[];
 };
 
-export function toPublicPlatformConfig(config: PlatformConfig): PublicPlatformConfig {
+export function toPublicPlatformConfig(
+  config: PlatformConfig,
+): PublicPlatformConfig {
   return {
     wallets: {
       spenderEvm: config.wallets.spenderEvm,
@@ -78,7 +80,8 @@ export function toPublicPlatformConfig(config: PlatformConfig): PublicPlatformCo
       tronTxConfirmMaxAttempts: config.transfer.tronTxConfirmMaxAttempts,
       tronTxConfirmPollMs: config.transfer.tronTxConfirmPollMs,
       evmGasLimitBufferNumerator: config.transfer.evmGasLimitBufferNumerator,
-      evmGasLimitBufferDenominator: config.transfer.evmGasLimitBufferDenominator,
+      evmGasLimitBufferDenominator:
+        config.transfer.evmGasLimitBufferDenominator,
     },
     chains: {
       tronFullHost: config.chains.tronFullHost,
@@ -95,15 +98,21 @@ export function toPublicPlatformConfig(config: PlatformConfig): PublicPlatformCo
 
 /** Load spenders and enabled networks from the real platform.env files. */
 export function loadTestPlatformSnapshot(
-  tmcEnv = process.env.TMC_ENV ?? "development"
+  tmcEnv = process.env.TMC_ENV ?? "development",
 ): TestPlatformSnapshot {
   const envFiles = readPlatformEnvFiles(tmcEnv);
   const envSource: string[] = [];
   if (existsSync(resolve(REPO_ROOT, "config/platform.env"))) {
     envSource.push("config/platform.env");
   }
-  const profilePath = resolve(REPO_ROOT, "env/profiles", tmcEnv, "platform.env");
-  if (existsSync(profilePath)) envSource.push(`env/profiles/${tmcEnv}/platform.env`);
+  const profilePath = resolve(
+    REPO_ROOT,
+    "env/profiles",
+    tmcEnv,
+    "platform.env",
+  );
+  if (existsSync(profilePath))
+    envSource.push(`env/profiles/${tmcEnv}/platform.env`);
 
   const config = loadPlatformConfig(envFiles as NodeJS.ProcessEnv);
   const publicConfig = toPublicPlatformConfig(config);
@@ -118,15 +127,20 @@ export function loadTestPlatformSnapshot(
   };
 }
 
-export function assertPlatformSpendersConfigured(snapshot: TestPlatformSnapshot): void {
-  if (!snapshot.spenderEvm && snapshot.enabledNetworks.some((n) => n !== "tron")) {
+export function assertPlatformSpendersConfigured(
+  snapshot: TestPlatformSnapshot,
+): void {
+  if (
+    !snapshot.spenderEvm &&
+    snapshot.enabledNetworks.some((n) => n !== "tron")
+  ) {
     throw new Error(
-      "platform.env missing SPENDER_EVM / ADMIN_EVM_PRIVATE_KEY for EVM networks"
+      "platform.env missing SPENDER_EVM / ADMIN_EVM_PRIVATE_KEY for EVM networks",
     );
   }
   if (!snapshot.spenderTron && snapshot.enabledNetworks.includes("tron")) {
     throw new Error(
-      "platform.env missing SPENDER_TRON / ADMIN_TRON_PRIVATE_KEY for TRON"
+      "platform.env missing SPENDER_TRON / ADMIN_TRON_PRIVATE_KEY for TRON",
     );
   }
 }

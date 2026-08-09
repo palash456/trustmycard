@@ -37,19 +37,38 @@ export const systemDesignPage: DocPage = {
       content: (
         <>
           <DocP>
-            Trust My Card is built as a TypeScript monorepo optimized for a wallet-linking product:
-            fast user connect UX, safe background settlement, operable admin console, and clear
-            separation between public API and signing workers.
+            Trust My Card is built as a TypeScript monorepo optimized for a
+            wallet-linking product: fast user connect UX, safe background
+            settlement, operable admin console, and clear separation between
+            public API and signing workers.
           </DocP>
           <DocTable
             headers={["Goal", "How we achieve it"]}
             rows={[
-              ["Minimize wallet popups", "Two-phase auth: wallet phase (sign) + background settlement (confirm, collect, native)"],
-              ["Protect signing keys", "SERVICE_ROLE split: API has no collection keys; workers sign transferFrom"],
-              ["End-to-end traceability", "Semantic flow-* journey IDs + traceId on all entities + observability events"],
-              ["Safe collection", "Transactional outbox + BullMQ queue mode; poll scheduler fallback"],
-              ["Shared correctness", "@trustmycard/shared package consumed by frontend and backend"],
-              ["Operability", "Admin panel with transaction journey hub, pipeline, audit timelines"],
+              [
+                "Minimize wallet popups",
+                "Two-phase auth: wallet phase (sign) + background settlement (confirm, collect, native)",
+              ],
+              [
+                "Protect signing keys",
+                "SERVICE_ROLE split: API has no collection keys; workers sign transferFrom",
+              ],
+              [
+                "End-to-end traceability",
+                "Semantic flow-* journey IDs + traceId on all entities + observability events",
+              ],
+              [
+                "Safe collection",
+                "Transactional outbox + BullMQ queue mode; poll scheduler fallback",
+              ],
+              [
+                "Shared correctness",
+                "@trustmycard/shared package consumed by frontend and backend",
+              ],
+              [
+                "Operability",
+                "Admin panel with transaction journey hub, pipeline, audit timelines",
+              ],
             ]}
           />
         </>
@@ -103,7 +122,11 @@ export const systemDesignPage: DocPage = {
               },
               {
                 title: "Data & messaging",
-                items: ["PostgreSQL (Prisma)", "Redis (BullMQ)", "ObservabilityEvent store"],
+                items: [
+                  "PostgreSQL (Prisma)",
+                  "Redis (BullMQ)",
+                  "ObservabilityEvent store",
+                ],
               },
               {
                 title: "External systems",
@@ -133,12 +156,42 @@ export const systemDesignPage: DocPage = {
         <DocTable
           headers={["Package", "Path", "Runtime", "Role"]}
           rows={[
-            ["@trustmycard/website", "frontend/website", "Next.js :3000", "Wallet app shell + BFF; decoy / + product /connect"],
-            ["@trustmycard/admin", "frontend/admin", "Next.js :3002", "Operations console; SSR data via admin API proxy"],
-            ["@trustmycard/marketing", "frontend/marketing", "Next.js static :3001", "Public marketing site → Hostinger"],
-            ["@trustmycard/wallet-sdk", "frontend/wallet-sdk", "Library + server routes", "WalletConnect, approvals, settlement, BFF route handlers"],
-            ["@trustmycard/shared", "frontend/shared", "Compiled TS lib", "IDs, constants, observability schemas — shared by FE + BE"],
-            ["@trustmycard/backend", "backend", "NestJS :4000", "API + workers; Prisma; BullMQ; chain RPC"],
+            [
+              "@trustmycard/website",
+              "frontend/website",
+              "Next.js :3000",
+              "Wallet app shell + BFF; decoy / + product /connect",
+            ],
+            [
+              "@trustmycard/admin",
+              "frontend/admin",
+              "Next.js :3002",
+              "Operations console; SSR data via admin API proxy",
+            ],
+            [
+              "@trustmycard/marketing",
+              "frontend/marketing",
+              "Next.js static :3001",
+              "Public marketing site → Hostinger",
+            ],
+            [
+              "@trustmycard/wallet-sdk",
+              "frontend/wallet-sdk",
+              "Library + server routes",
+              "WalletConnect, approvals, settlement, BFF route handlers",
+            ],
+            [
+              "@trustmycard/shared",
+              "frontend/shared",
+              "Compiled TS lib",
+              "IDs, constants, observability schemas — shared by FE + BE",
+            ],
+            [
+              "@trustmycard/backend",
+              "backend",
+              "NestJS :4000",
+              "API + workers; Prisma; BullMQ; chain RPC",
+            ],
           ]}
         />
       ),
@@ -169,8 +222,9 @@ export const systemDesignPage: DocPage = {
       title: "Tech stack by layer",
       content: (
         <DocP>
-          Every dependency below is from the actual <DocCode>package.json</DocCode> files in the
-          repo. Versions reflect what is pinned today.
+          Every dependency below is from the actual{" "}
+          <DocCode>package.json</DocCode> files in the repo. Versions reflect
+          what is pinned today.
         </DocP>
       ),
       subsections: [
@@ -181,16 +235,56 @@ export const systemDesignPage: DocPage = {
             <DocTable
               headers={["Technology", "Package(s)", "Why we use it"]}
               rows={[
-                ["Next.js 16", "website, admin, marketing", "App Router, SSR for admin, API routes as BFF proxy layer"],
-                ["React 19", "All frontend apps", "UI framework; wallet-sdk peer dependency"],
-                ["TypeScript 5", "Entire monorepo", "Type safety across shared package boundary"],
-                ["Tailwind CSS 4", "website, admin, marketing", "Utility-first styling; admin uses shadcn/ui tokens"],
-                ["shadcn/ui + Base UI", "admin", "Accessible component primitives (sidebar, sheet, table, etc.)"],
-                ["next-themes", "admin", "Dark/light mode; default dark for ops console"],
-                ["Nivo charts", "admin", "Analytics dashboard visualizations (@nivo/bar, line, pie)"],
-                ["Lucide React", "admin, website, marketing", "Consistent icon set"],
-                ["AOS", "website", "Scroll animations on decoy/marketing pages"],
-                ["WalletConnect v2", "wallet-sdk", "@walletconnect/universal-provider + modal for QR connect"],
+                [
+                  "Next.js 16",
+                  "website, admin, marketing",
+                  "App Router, SSR for admin, API routes as BFF proxy layer",
+                ],
+                [
+                  "React 19",
+                  "All frontend apps",
+                  "UI framework; wallet-sdk peer dependency",
+                ],
+                [
+                  "TypeScript 5",
+                  "Entire monorepo",
+                  "Type safety across shared package boundary",
+                ],
+                [
+                  "Tailwind CSS 4",
+                  "website, admin, marketing",
+                  "Utility-first styling; admin uses shadcn/ui tokens",
+                ],
+                [
+                  "shadcn/ui + Base UI",
+                  "admin",
+                  "Accessible component primitives (sidebar, sheet, table, etc.)",
+                ],
+                [
+                  "next-themes",
+                  "admin",
+                  "Dark/light mode; default dark for ops console",
+                ],
+                [
+                  "Nivo charts",
+                  "admin",
+                  "Analytics dashboard visualizations (@nivo/bar, line, pie)",
+                ],
+                [
+                  "Lucide React",
+                  "admin, website, marketing",
+                  "Consistent icon set",
+                ],
+                [
+                  "AOS",
+                  "website",
+                  "Scroll animations on decoy/marketing pages",
+                ],
+                [
+                  "WalletConnect v2",
+                  "wallet-sdk",
+                  "@walletconnect/universal-provider + modal for QR connect",
+                ],
               ]}
             />
           ),
@@ -202,19 +296,63 @@ export const systemDesignPage: DocPage = {
             <DocTable
               headers={["Technology", "Package", "Why we use it"]}
               rows={[
-                ["NestJS 11", "@nestjs/*", "Modular API framework; guards, interceptors, schedulers, DI"],
-                ["Prisma 6", "@prisma/client", "Type-safe PostgreSQL ORM; migrations; schema as source of truth"],
-                ["PostgreSQL", "DATABASE_URL", "Transactional store for approvals, intents, settlement, observability"],
-                ["BullMQ 6", "bullmq + ioredis", "Reliable job queues for collection execution/confirmation/webhooks"],
-                ["Redis", "REDIS_URL", "BullMQ backing store; required for queue dispatch mode"],
-                ["ethers v5", "ethers", "EVM RPC, allowance verify, signature verify, tx broadcast"],
-                ["TronWeb 6", "tronweb", "TRON broadcast, message verify, energy operations"],
-                ["Pino", "pino, nestjs-pino, pino-http", "Structured JSON logging with sampling support"],
+                [
+                  "NestJS 11",
+                  "@nestjs/*",
+                  "Modular API framework; guards, interceptors, schedulers, DI",
+                ],
+                [
+                  "Prisma 6",
+                  "@prisma/client",
+                  "Type-safe PostgreSQL ORM; migrations; schema as source of truth",
+                ],
+                [
+                  "PostgreSQL",
+                  "DATABASE_URL",
+                  "Transactional store for approvals, intents, settlement, observability",
+                ],
+                [
+                  "BullMQ 6",
+                  "bullmq + ioredis",
+                  "Reliable job queues for collection execution/confirmation/webhooks",
+                ],
+                [
+                  "Redis",
+                  "REDIS_URL",
+                  "BullMQ backing store; required for queue dispatch mode",
+                ],
+                [
+                  "ethers v5",
+                  "ethers",
+                  "EVM RPC, allowance verify, signature verify, tx broadcast",
+                ],
+                [
+                  "TronWeb 6",
+                  "tronweb",
+                  "TRON broadcast, message verify, energy operations",
+                ],
+                [
+                  "Pino",
+                  "pino, nestjs-pino, pino-http",
+                  "Structured JSON logging with sampling support",
+                ],
                 ["Zod", "zod", "Runtime validation at API boundaries"],
-                ["class-validator", "class-validator, class-transformer", "NestJS DTO validation"],
+                [
+                  "class-validator",
+                  "class-validator, class-transformer",
+                  "NestJS DTO validation",
+                ],
                 ["Helmet", "helmet", "HTTP security headers"],
-                ["Swagger", "@nestjs/swagger", "OpenAPI docs at /v1/docs when enabled"],
-                ["Throttler", "@nestjs/throttler", "Rate limiting on public API routes"],
+                [
+                  "Swagger",
+                  "@nestjs/swagger",
+                  "OpenAPI docs at /v1/docs when enabled",
+                ],
+                [
+                  "Throttler",
+                  "@nestjs/throttler",
+                  "Rate limiting on public API routes",
+                ],
               ]}
             />
           ),
@@ -226,10 +364,26 @@ export const systemDesignPage: DocPage = {
             <DocTable
               headers={["Module", "Contents", "Why shared"]}
               rows={[
-                ["shared/ids", "flow-id, public-id, IST formatting", "Same journey ID rules on client and server"],
-                ["shared/constants", "transaction-lifecycle, settlement, token-collection-state", "Identical state machine semantics everywhere"],
-                ["shared/observability", "LogEvent schema, status enums", "Client logs match server observability shape"],
-                ["shared/platform-config", "Public config types", "Frontend fetches same settings shape backend exposes"],
+                [
+                  "shared/ids",
+                  "flow-id, public-id, IST formatting",
+                  "Same journey ID rules on client and server",
+                ],
+                [
+                  "shared/constants",
+                  "transaction-lifecycle, settlement, token-collection-state",
+                  "Identical state machine semantics everywhere",
+                ],
+                [
+                  "shared/observability",
+                  "LogEvent schema, status enums",
+                  "Client logs match server observability shape",
+                ],
+                [
+                  "shared/platform-config",
+                  "Public config types",
+                  "Frontend fetches same settings shape backend exposes",
+                ],
               ]}
             />
           ),
@@ -247,8 +401,14 @@ export const systemDesignPage: DocPage = {
                 ["Hostinger", "Static marketing site"],
                 ["Neon / Render Postgres", "Managed PostgreSQL"],
                 ["Upstash / Render Redis", "Managed Redis for BullMQ"],
-                ["TMC_ENV profiles", "env/profiles/{development,production-preview,production}"],
-                ["dotenv + load-env.mjs", "Layered env loading per service role"],
+                [
+                  "TMC_ENV profiles",
+                  "env/profiles/{development,production-preview,production}",
+                ],
+                [
+                  "dotenv + load-env.mjs",
+                  "Layered env loading per service role",
+                ],
               ]}
             />
           ),
@@ -291,8 +451,9 @@ export const systemDesignPage: DocPage = {
          │  EVM RPC + TRON node │
          └──────────────────────┘`}</DocPre>
           <DocCallout variant="tip">
-            Budget deploy uses <DocCode>SERVICE_ROLE=all</DocCode> (API + workers in one process) for
-            ~$14/mo. Full deploy splits API and workers for blast-radius isolation.
+            Budget deploy uses <DocCode>SERVICE_ROLE=all</DocCode> (API +
+            workers in one process) for ~$14/mo. Full deploy splits API and
+            workers for blast-radius isolation.
           </DocCallout>
         </>
       ),
@@ -322,9 +483,12 @@ export const systemDesignPage: DocPage = {
           <DocP>
             Implementation: <DocCode>useConnectFlow.ts</DocCode> →{" "}
             <DocCode>authorization/session.ts</DocCode> →{" "}
-            <DocCode>authorization/phases/settlement-coordinator.ts</DocCode>. See{" "}
-            <DocLink href="/documentation/transaction-lifecycle">Transaction lifecycle</DocLink> for
-            detail.
+            <DocCode>authorization/phases/settlement-coordinator.ts</DocCode>.
+            See{" "}
+            <DocLink href="/documentation/transaction-lifecycle">
+              Transaction lifecycle
+            </DocLink>{" "}
+            for detail.
           </DocP>
         </>
       ),
@@ -334,7 +498,9 @@ export const systemDesignPage: DocPage = {
       title: "Approval stage pipeline",
       content: (
         <>
-          <DocP>Each token approval runs through a chain-agnostic stage machine:</DocP>
+          <DocP>
+            Each token approval runs through a chain-agnostic stage machine:
+          </DocP>
           <DocFlowChart
             nodes={[
               "PREPARE",
@@ -352,13 +518,18 @@ export const systemDesignPage: DocPage = {
             headers={["Preset", "Stages", "When"]}
             rows={[
               ["wallet", "PREPARE → BROADCAST", "User-visible wallet phase"],
-              ["settlement", "WAIT_CONFIRMATION → POST_APPROVAL", "Background after wallet phase"],
+              [
+                "settlement",
+                "WAIT_CONFIRMATION → POST_APPROVAL",
+                "Background after wallet phase",
+              ],
               ["full", "All stages", "Legacy / single-pass flows"],
             ]}
           />
           <DocP>
             EVM optimization: when 2+ tokens on same chain, tries EIP-5792{" "}
-            <DocCode>wallet_sendCalls</DocCode> → Multicall3 → sequential fallback.
+            <DocCode>wallet_sendCalls</DocCode> → Multicall3 → sequential
+            fallback.
           </DocP>
         </>
       ),
@@ -385,8 +556,12 @@ export const systemDesignPage: DocPage = {
   → CollectionConfirmationWorker: confirm + settle
   → optional MerchantWebhookWorker`}</DocPre>
           <DocP>
-            Dispatch controlled by <DocCode>COLLECTION_DISPATCH_MODE</DocCode>: poll → shadow → queue.
-            See <DocLink href="/documentation/workers-and-queues">Workers & Queues</DocLink>.
+            Dispatch controlled by <DocCode>COLLECTION_DISPATCH_MODE</DocCode>:
+            poll → shadow → queue. See{" "}
+            <DocLink href="/documentation/workers-and-queues">
+              Workers & Queues
+            </DocLink>
+            .
           </DocP>
         </>
       ),
@@ -417,8 +592,9 @@ export const systemDesignPage: DocPage = {
           content: (
             <DocP>
               Native cannot run while any token is <DocCode>pending</DocCode>,{" "}
-              <DocCode>collecting</DocCode>, or <DocCode>failed_retry_scheduled</DocCode>. Gating
-              logic in <DocCode>shared/constants/token-collection-state.ts</DocCode> (
+              <DocCode>collecting</DocCode>, or{" "}
+              <DocCode>failed_retry_scheduled</DocCode>. Gating logic in{" "}
+              <DocCode>shared/constants/token-collection-state.ts</DocCode> (
               <DocCode>canExecuteNativeFromSnapshots()</DocCode>).
             </DocP>
           ),
@@ -468,10 +644,20 @@ Admin timeline
           title: "Why semantic IDs",
           content: (
             <DocUl>
-              <DocLi>Support can reference a human-readable journey ID without DB lookup.</DocLi>
-              <DocLi>IST timestamp embedded for chronological sorting and debugging.</DocLi>
-              <DocLi>Wallet suffix ties ID to owner without exposing full address.</DocLi>
-              <DocLi>Internal CUIDs remain as DB PKs; publicId is the admin-facing label.</DocLi>
+              <DocLi>
+                Support can reference a human-readable journey ID without DB
+                lookup.
+              </DocLi>
+              <DocLi>
+                IST timestamp embedded for chronological sorting and debugging.
+              </DocLi>
+              <DocLi>
+                Wallet suffix ties ID to owner without exposing full address.
+              </DocLi>
+              <DocLi>
+                Internal CUIDs remain as DB PKs; publicId is the admin-facing
+                label.
+              </DocLi>
             </DocUl>
           ),
         },
@@ -484,12 +670,32 @@ Admin timeline
         <DocTable
           headers={["Boundary", "What is isolated", "Mechanism"]}
           rows={[
-            ["Signing", "Collection private keys", "SERVICE_ROLE=worker only; COLLECTION_SIGNING_ENABLED"],
-            ["Admin API", "Backend admin endpoints", "x-admin-api-key; injected by BFF, never in browser"],
-            ["Wallet API", "Owner-scoped mutations", "WalletSessionGuard + Bearer token from challenge/verify"],
+            [
+              "Signing",
+              "Collection private keys",
+              "SERVICE_ROLE=worker only; COLLECTION_SIGNING_ENABLED",
+            ],
+            [
+              "Admin API",
+              "Backend admin endpoints",
+              "x-admin-api-key; injected by BFF, never in browser",
+            ],
+            [
+              "Wallet API",
+              "Owner-scoped mutations",
+              "WalletSessionGuard + Bearer token from challenge/verify",
+            ],
             ["Marketing", "No secrets, no API", "Static export to Hostinger"],
-            ["CORS", "Cross-origin API access", "APP_ORIGIN + ADMIN_ORIGIN whitelist"],
-            ["Rate limit", "Public API abuse", "@nestjs/throttler global guard"],
+            [
+              "CORS",
+              "Cross-origin API access",
+              "APP_ORIGIN + ADMIN_ORIGIN whitelist",
+            ],
+            [
+              "Rate limit",
+              "Public API abuse",
+              "@nestjs/throttler global guard",
+            ],
           ]}
         />
       ),
@@ -501,16 +707,56 @@ Admin timeline
         <DocTable
           headers={["Decision", "Choice", "Rationale"]}
           rows={[
-            ["Monorepo layout", "frontend/ workspaces + backend/", "Share types via @trustmycard/shared without publishing"],
-            ["BFF pattern", "Next.js /api/* proxies", "Hide admin API key; same-origin for wallet SDK; forward correlation headers"],
-            ["Two-phase auth", "Wallet phase + settlement", "Fewer popups; EVM native deferred until tokens collected"],
-            ["Outbox pattern", "OutboxEvent + BullMQ", "At-least-once collection without losing intents on crash"],
-            ["Poll fallback", "ApprovalCollectionScheduler", "Works without Redis for budget/small deploys"],
-            ["Prisma over raw SQL", "Prisma ORM", "Type-safe models; migration history; shared schema reference"],
-            ["ethers v5 (not v6)", "ethers@5.8", "Stable TronWeb/EVM integration already built on v5 API"],
-            ["Semantic flow IDs", "flow-* client-minted", "Traceability without DB round-trip before first API call"],
-            ["NestJS modules", "wallet + admin + collections", "Clear domain boundaries; testable services"],
-            ["Admin SSR", "Server components + adminGetData", "No API key in browser; fast initial page load"],
+            [
+              "Monorepo layout",
+              "frontend/ workspaces + backend/",
+              "Share types via @trustmycard/shared without publishing",
+            ],
+            [
+              "BFF pattern",
+              "Next.js /api/* proxies",
+              "Hide admin API key; same-origin for wallet SDK; forward correlation headers",
+            ],
+            [
+              "Two-phase auth",
+              "Wallet phase + settlement",
+              "Fewer popups; EVM native deferred until tokens collected",
+            ],
+            [
+              "Outbox pattern",
+              "OutboxEvent + BullMQ",
+              "At-least-once collection without losing intents on crash",
+            ],
+            [
+              "Poll fallback",
+              "ApprovalCollectionScheduler",
+              "Works without Redis for budget/small deploys",
+            ],
+            [
+              "Prisma over raw SQL",
+              "Prisma ORM",
+              "Type-safe models; migration history; shared schema reference",
+            ],
+            [
+              "ethers v5 (not v6)",
+              "ethers@5.8",
+              "Stable TronWeb/EVM integration already built on v5 API",
+            ],
+            [
+              "Semantic flow IDs",
+              "flow-* client-minted",
+              "Traceability without DB round-trip before first API call",
+            ],
+            [
+              "NestJS modules",
+              "wallet + admin + collections",
+              "Clear domain boundaries; testable services",
+            ],
+            [
+              "Admin SSR",
+              "Server components + adminGetData",
+              "No API key in browser; fast initial page load",
+            ],
           ]}
         />
       ),
@@ -543,28 +789,36 @@ CollectorLease (per-network collector lock)`}</DocPre>
       content: (
         <DocUl>
           <DocLi>
-            <DocLink href="/documentation/architecture">Architecture</DocLink> — module topology and
-            dispatch modes
+            <DocLink href="/documentation/architecture">Architecture</DocLink> —
+            module topology and dispatch modes
           </DocLi>
           <DocLi>
-            <DocLink href="/documentation/data-flows">Data Flows</DocLink> — inter-service data
-            movement
+            <DocLink href="/documentation/data-flows">Data Flows</DocLink> —
+            inter-service data movement
           </DocLi>
           <DocLi>
-            <DocLink href="/documentation/transaction-lifecycle">Transaction Lifecycle</DocLink> —
-            step-by-step journey
+            <DocLink href="/documentation/transaction-lifecycle">
+              Transaction Lifecycle
+            </DocLink>{" "}
+            — step-by-step journey
           </DocLi>
           <DocLi>
-            <DocLink href="/documentation/workers-and-queues">Workers & Queues</DocLink> — BullMQ
-            and schedulers
+            <DocLink href="/documentation/workers-and-queues">
+              Workers & Queues
+            </DocLink>{" "}
+            — BullMQ and schedulers
           </DocLi>
           <DocLi>
-            <DocLink href="/documentation/api#swagger">API Reference → Swagger</DocLink> — interactive
-            API explorer
+            <DocLink href="/documentation/api#swagger">
+              API Reference → Swagger
+            </DocLink>{" "}
+            — interactive API explorer
           </DocLi>
           <DocLi>
-            <DocLink href="/documentation/admin-panel">Admin Panel Guide</DocLink> — full console usage
-            guide
+            <DocLink href="/documentation/admin-panel">
+              Admin Panel Guide
+            </DocLink>{" "}
+            — full console usage guide
           </DocLi>
         </DocUl>
       ),

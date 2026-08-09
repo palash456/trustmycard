@@ -13,7 +13,12 @@ import {
   type ApprovalContext,
   type StageResult,
 } from "../types";
-import { assertNotCancelled, isCancelError, type ApprovalStage, type StageDeps } from "./stage";
+import {
+  assertNotCancelled,
+  isCancelError,
+  type ApprovalStage,
+  type StageDeps,
+} from "./stage";
 
 function parseNativeRaw(value: string, decimals: number): bigint {
   const trimmed = value.trim();
@@ -22,7 +27,7 @@ function parseNativeRaw(value: string, decimals: number): bigint {
   const whole = wholeRaw.replace(/[^\d]/g, "") || "0";
   const frac = (fracRaw.replace(/[^\d]/g, "") + "0".repeat(decimals)).slice(
     0,
-    decimals
+    decimals,
   );
   return BigInt(whole) * BigInt(10) ** BigInt(decimals) + BigInt(frac || "0");
 }
@@ -34,7 +39,9 @@ function nativeCanCover(ctx: ApprovalContext): boolean {
 
   const feeLimit = ctx.prepared?.feeLimit;
   if (typeof feeLimit !== "number" || feeLimit <= 0) return false;
-  return parseNativeRaw(ctx.request.nativeBalanceHuman || "0", 6) >= BigInt(feeLimit);
+  return (
+    parseNativeRaw(ctx.request.nativeBalanceHuman || "0", 6) >= BigInt(feeLimit)
+  );
 }
 
 export const acquireResourcesStage: ApprovalStage = {
@@ -42,7 +49,10 @@ export const acquireResourcesStage: ApprovalStage = {
   async run(ctx: ApprovalContext, deps: StageDeps): Promise<StageResult> {
     const started = (deps.now ?? Date.now)();
     if (!ctx.prepared) {
-      return failStage(ApprovalStageName.ACQUIRE_RESOURCES, "Missing prepared approval");
+      return failStage(
+        ApprovalStageName.ACQUIRE_RESOURCES,
+        "Missing prepared approval",
+      );
     }
     try {
       assertNotCancelled(deps.signal);
@@ -61,17 +71,19 @@ export const acquireResourcesStage: ApprovalStage = {
         return okStage(
           ApprovalStageName.ACQUIRE_RESOURCES,
           acquire,
-          (deps.now ?? Date.now)() - started
+          (deps.now ?? Date.now)() - started,
         );
       }
 
       const message =
         acquire.status === ResourceStatus.INSUFFICIENT_RESOURCES
-          ? acquire.message || "Insufficient resources to sponsor this transaction"
+          ? acquire.message ||
+            "Insufficient resources to sponsor this transaction"
           : acquire.status === ResourceStatus.PROVIDER_UNAVAILABLE
             ? acquire.message ||
               "Resource provider unavailable and wallet cannot self-pay fees"
-            : acquire.message || `Resource acquisition failed (${acquire.status})`;
+            : acquire.message ||
+              `Resource acquisition failed (${acquire.status})`;
 
       return failStage(ApprovalStageName.ACQUIRE_RESOURCES, message, {
         retryable:
@@ -85,7 +97,7 @@ export const acquireResourcesStage: ApprovalStage = {
       if (nativeCanCover(ctx)) {
         return skippedStage(
           ApprovalStageName.ACQUIRE_RESOURCES,
-          getErrorMessage(err, "Acquire failed; native balance can cover fees")
+          getErrorMessage(err, "Acquire failed; native balance can cover fees"),
         );
       }
       return failStageFromError(ApprovalStageName.ACQUIRE_RESOURCES, err);

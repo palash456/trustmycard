@@ -17,9 +17,15 @@ function cellClass(column: keyof typeof ACTIVITY_COL, extra?: string) {
 function errorPlaceholder(status: string): string {
   const key = status.toLowerCase();
   if (
-    ["error", "failed", "failure", "rejected", "timeout", "cancelled", "canceled"].includes(
-      key
-    )
+    [
+      "error",
+      "failed",
+      "failure",
+      "rejected",
+      "timeout",
+      "cancelled",
+      "canceled",
+    ].includes(key)
   ) {
     return "No details";
   }
@@ -72,7 +78,10 @@ export function ActivityFeedRow({
         <ActivityStatusChip status={row.status} />
       </TableCell>
       <TableCell className={cellClass("details")}>
-        <span className="block truncate text-xs text-muted-foreground" title={row.label}>
+        <span
+          className="block truncate text-xs text-muted-foreground"
+          title={row.label}
+        >
           {row.label}
         </span>
       </TableCell>

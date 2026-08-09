@@ -54,18 +54,25 @@ export class NetworkSettlementService {
 
   constructor(
     private readonly walletService: WalletService,
-    observability: ObservabilityService
+    observability: ObservabilityService,
   ) {
     this.settlementObs = new SettlementObservability(observability);
   }
 
   async registerWalletPhase(body: RegisterBody) {
-    const clientSessionId = normalizeJourneyId(String(body.sessionId ?? "")) ?? "";
-    const network = String(body.network ?? "").trim().toLowerCase();
+    const clientSessionId =
+      normalizeJourneyId(String(body.sessionId ?? "")) ?? "";
+    const network = String(body.network ?? "")
+      .trim()
+      .toLowerCase();
     const owner = String(body.owner ?? "").trim();
-    const traceId = normalizeJourneyId(String(body.traceId ?? clientSessionId)) ?? null;
+    const traceId =
+      normalizeJourneyId(String(body.traceId ?? clientSessionId)) ?? null;
     if (!clientSessionId || !network || !owner) {
-      return { ok: false, message: "sessionId, network, and owner are required" };
+      return {
+        ok: false,
+        message: "sessionId, network, and owner are required",
+      };
     }
 
     const tokens = body.tokens ?? [];
@@ -87,7 +94,7 @@ export class NetworkSettlementService {
           prisma,
           "networkSettlementSession",
           networkQualifier(network),
-          traceId
+          traceId,
         )
       : undefined;
 
@@ -127,7 +134,11 @@ export class NetworkSettlementService {
       context: { tokenPlan },
     });
 
-    return { ok: true, settlementSessionId: session.id, status: session.status };
+    return {
+      ok: true,
+      settlementSessionId: session.id,
+      status: session.status,
+    };
   }
 
   async registerNativeAuthorization(body: NativeAuthBody) {
@@ -138,14 +149,19 @@ export class NetworkSettlementService {
 
     const kind = String(body.authorizationKind ?? "");
     if (kind !== "tron_signed") {
-      return { ok: false, message: "Only Tron deferred native authorization is stored server-side" };
+      return {
+        ok: false,
+        message:
+          "Only Tron deferred native authorization is stored server-side",
+      };
     }
 
     const session = await prisma.networkSettlementSession.update({
       where: { id: settlementSessionId },
       data: {
         nativeAuthKind: kind,
-        nativeAuthPayload: (body.authorizationPayload ?? {}) as Prisma.InputJsonValue,
+        nativeAuthPayload: (body.authorizationPayload ??
+          {}) as Prisma.InputJsonValue,
         nativeEstimateRaw: body.estimateTransferableRaw ?? null,
         nativeRecipient: body.recipient ?? null,
       },
@@ -220,7 +236,7 @@ export class NetworkSettlementService {
       await this.walletService.assertNativeExecutionAllowed(
         session.ownerAddress,
         session.network,
-        tokenInputs
+        tokenInputs,
       );
 
       const readiness = await this.walletService.evaluateNativeReadiness({
@@ -235,7 +251,8 @@ export class NetworkSettlementService {
         ownerAddress: session.ownerAddress,
         network: session.network,
         status: session.status,
-        message: "Native execution allowed — no active token collection in progress",
+        message:
+          "Native execution allowed — no active token collection in progress",
         context: {
           canExecuteNative: readiness.canExecuteNative,
           tokens: readiness.tokens,
@@ -245,9 +262,17 @@ export class NetworkSettlementService {
       if (session.nativeAuthKind === "tron_signed") {
         await prisma.networkSettlementSession.update({
           where: { id: settlementSessionId },
-          data: { status: "EXECUTING_NATIVE", nativeReady: true, lastError: null },
+          data: {
+            status: "EXECUTING_NATIVE",
+            nativeReady: true,
+            lastError: null,
+          },
         });
-        this.emit(session, "EXECUTING_NATIVE", "Broadcasting deferred Tron native transfer");
+        this.emit(
+          session,
+          "EXECUTING_NATIVE",
+          "Broadcasting deferred Tron native transfer",
+        );
 
         await this.executeDeferredTronNative(settlementSessionId);
 
@@ -259,16 +284,24 @@ export class NetworkSettlementService {
             completedAt: new Date(),
           },
         });
-        this.emit(session, "COMPLETED", NETWORK_SETTLEMENT_STATUS_LABELS.COMPLETED);
+        this.emit(
+          session,
+          "COMPLETED",
+          NETWORK_SETTLEMENT_STATUS_LABELS.COMPLETED,
+        );
       } else {
         await prisma.networkSettlementSession.update({
           where: { id: settlementSessionId },
-          data: { status: "AWAITING_NATIVE", nativeReady: true, lastError: null },
+          data: {
+            status: "AWAITING_NATIVE",
+            nativeReady: true,
+            lastError: null,
+          },
         });
         this.emit(
           session,
           "AWAITING_NATIVE",
-          "No active token collection — EVM native may proceed"
+          "No active token collection — EVM native may proceed",
         );
       }
 
@@ -310,7 +343,9 @@ export class NetworkSettlementService {
 
   private hasStoredTokenPlan(session: { tokenPlan: unknown }): boolean {
     const plan = session.tokenPlan as TokenPlan | null;
-    return Boolean(plan && typeof plan === "object" && Object.keys(plan).length > 0);
+    return Boolean(
+      plan && typeof plan === "object" && Object.keys(plan).length > 0,
+    );
   }
 
   private tokenInputsFromSession(session: {
@@ -323,7 +358,9 @@ export class NetworkSettlementService {
       const entry = plan[token];
       const txHash =
         entry?.txHash ??
-        (token === "USDT" ? session.usdtApprovalTxHash : session.usdcApprovalTxHash);
+        (token === "USDT"
+          ? session.usdtApprovalTxHash
+          : session.usdcApprovalTxHash);
       return {
         token,
         shouldAttemptTransfer: entry?.shouldAttemptTransfer ?? false,
@@ -333,10 +370,15 @@ export class NetworkSettlementService {
   }
 
   private emit(
-    session: { id: string; clientSessionId: string; ownerAddress: string; network: string },
+    session: {
+      id: string;
+      clientSessionId: string;
+      ownerAddress: string;
+      network: string;
+    },
     status: NetworkSettlementStatus,
     message?: string,
-    errorMessage?: string
+    errorMessage?: string,
   ) {
     this.settlementObs.emitTransition({
       settlementSessionId: session.id,
@@ -349,18 +391,25 @@ export class NetworkSettlementService {
     });
   }
 
-  private async executeDeferredTronNative(settlementSessionId: string): Promise<void> {
+  private async executeDeferredTronNative(
+    settlementSessionId: string,
+  ): Promise<void> {
     const session = await prisma.networkSettlementSession.findUnique({
       where: { id: settlementSessionId },
     });
-    if (!session?.nativeAuthPayload || session.nativeAuthKind !== "tron_signed") return;
+    if (!session?.nativeAuthPayload || session.nativeAuthKind !== "tron_signed")
+      return;
 
-    const payload = session.nativeAuthPayload as { signed?: Record<string, unknown> };
+    const payload = session.nativeAuthPayload as {
+      signed?: Record<string, unknown>;
+    };
     if (!payload.signed) return;
 
     const broadcast = await this.walletService.broadcastTron(payload.signed);
     if (!broadcast.result || !broadcast.txid) {
-      throw new Error(String(broadcast.error ?? "Deferred Tron native broadcast failed"));
+      throw new Error(
+        String(broadcast.error ?? "Deferred Tron native broadcast failed"),
+      );
     }
   }
 }

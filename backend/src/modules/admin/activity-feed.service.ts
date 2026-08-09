@@ -12,11 +12,7 @@ import {
 
 import { prisma } from "../../infrastructure/database/prisma-shared";
 
-export type ActivityFeedSource =
-  | "observability"
-  | "tg"
-  | "transfer"
-  | "native";
+export type ActivityFeedSource = "observability" | "tg" | "transfer" | "native";
 
 export type UnifiedActivityItem = {
   id: string;
@@ -47,10 +43,20 @@ const ERROR_STATUSES = [
 ] as const;
 
 /** User-facing tg flow events (QR scan → payment). */
-const TG_JOURNEY_TYPES = ["connect", "scan", "approve", "native_transfer"] as const;
+const TG_JOURNEY_TYPES = [
+  "connect",
+  "scan",
+  "approve",
+  "native_transfer",
+] as const;
 
 /** Client + backend modules that belong to a wallet journey. */
-const JOURNEY_MODULES = ["connect", "authorization", "approval", "settlement"] as const;
+const JOURNEY_MODULES = [
+  "connect",
+  "authorization",
+  "approval",
+  "settlement",
+] as const;
 
 /** Internal / infra modules excluded from Activity. */
 const INTERNAL_MODULES = [
@@ -100,7 +106,8 @@ function activityTypeTokens(type: string | undefined): string[] {
       const token = raw.trim().toLowerCase();
       if (token === "connect_scan") return ["connect", "scan"];
       if (token === "approval") return ["approval", "approve"];
-      if (token === "payment") return ["transfer", "native_transfer", "payment"];
+      if (token === "payment")
+        return ["transfer", "native_transfer", "payment"];
       if (token === "settlement") return ["settlement"];
       if (token === "broadcast") return ["broadcast"];
       if (token === "revoke") return ["revoke", "revoked"];
@@ -185,7 +192,9 @@ export class ActivityFeedService {
   async getDetail(source: ActivityFeedSource, id: string) {
     switch (source) {
       case "observability": {
-        const item = await prisma.observabilityEvent.findUnique({ where: { id } });
+        const item = await prisma.observabilityEvent.findUnique({
+          where: { id },
+        });
         if (!item?.walletAddress?.trim()) break;
         const nodes =
           item.kind === "timeline" && item.sessionId
@@ -230,7 +239,7 @@ export class ActivityFeedService {
   }
 
   private journeyObservabilityCore(
-    tab: string
+    tab: string,
   ): Prisma.ObservabilityEventWhereInput {
     const walletServiceStages: Prisma.ObservabilityEventWhereInput[] =
       WALLET_SERVICE_JOURNEY_STAGES.map((prefix) => ({
@@ -257,7 +266,9 @@ export class ActivityFeedService {
         {
           OR: [
             { module: { in: [...JOURNEY_MODULES] } },
-            { AND: [{ module: "wallet-service" }, { OR: walletServiceStages }] },
+            {
+              AND: [{ module: "wallet-service" }, { OR: walletServiceStages }],
+            },
           ],
         },
       ],
@@ -266,7 +277,7 @@ export class ActivityFeedService {
 
   private observabilityWhere(
     query: FeedQuery,
-    tab: string
+    tab: string,
   ): Prisma.ObservabilityEventWhereInput {
     const filters: Prisma.ObservabilityEventWhereInput[] = [
       this.journeyObservabilityCore(tab),
@@ -403,16 +414,15 @@ export class ActivityFeedService {
     if (query.status?.trim() && tab !== "errors") {
       const status = query.status.trim();
       filters.push({
-        status:
-          ["error", "failed", "failure"].includes(status)
-            ? "error"
-            : status,
+        status: ["error", "failed", "failure"].includes(status)
+          ? "error"
+          : status,
       });
     }
     const typeTokens = activityTypeTokens(query.type);
     if (typeTokens.length > 0) {
       const types = typeTokens.filter((t) =>
-        ["connect", "scan", "approve", "native_transfer"].includes(t)
+        ["connect", "scan", "approve", "native_transfer"].includes(t),
       );
       filters.push({
         type:
@@ -466,7 +476,7 @@ export class ActivityFeedService {
    */
   private transferWhere(
     query: FeedQuery,
-    tab: string
+    tab: string,
   ): Prisma.TransferWhereInput {
     const filters: Prisma.TransferWhereInput[] = [{ status: "confirmed" }];
 
@@ -481,7 +491,9 @@ export class ActivityFeedService {
       });
     }
     if (query.network?.trim()) {
-      filters.push({ approval: { network: query.network.trim().toLowerCase() } });
+      filters.push({
+        approval: { network: query.network.trim().toLowerCase() },
+      });
     }
     if (query.traceId?.trim() || query.transactionId?.trim()) {
       const trace = (query.traceId ?? query.transactionId)!.trim();
@@ -519,7 +531,11 @@ export class ActivityFeedService {
       !["success", "completed"].includes(query.status.trim())
     ) {
       filters.push({ id: "__none__" });
-    } else if (tab === "connections" || tab === "sessions" || tab === "errors") {
+    } else if (
+      tab === "connections" ||
+      tab === "sessions" ||
+      tab === "errors"
+    ) {
       filters.push({ id: "__none__" });
     } else if (
       query.type?.trim() &&
@@ -533,9 +549,11 @@ export class ActivityFeedService {
 
   private nativeWhere(
     query: FeedQuery,
-    tab: string
+    tab: string,
   ): Prisma.NativeTransferWhereInput {
-    const filters: Prisma.NativeTransferWhereInput[] = [{ status: "confirmed" }];
+    const filters: Prisma.NativeTransferWhereInput[] = [
+      { status: "confirmed" },
+    ];
 
     if (query.address?.trim()) {
       filters.push({
@@ -573,11 +591,17 @@ export class ActivityFeedService {
       !["success", "completed"].includes(query.status.trim())
     ) {
       filters.push({ id: "__none__" });
-    } else if (tab === "connections" || tab === "sessions" || tab === "errors") {
+    } else if (
+      tab === "connections" ||
+      tab === "sessions" ||
+      tab === "errors"
+    ) {
       filters.push({ id: "__none__" });
     } else if (
       query.type?.trim() &&
-      !activityTypeTokens(query.type).some((t) => /transfer|payment|native_transfer/.test(t))
+      !activityTypeTokens(query.type).some((t) =>
+        /transfer|payment|native_transfer/.test(t),
+      )
     ) {
       filters.push({ id: "__none__" });
     }
@@ -608,8 +632,7 @@ export class ActivityFeedService {
         ? "Authorization session"
         : row.module === "settlement"
           ? "Background settlement"
-          : row.module === "connect" &&
-              row.stage?.includes("SETTLEMENT")
+          : row.module === "connect" && row.stage?.includes("SETTLEMENT")
             ? "Background settlement"
             : row.stage?.trim() ||
               row.operation.replace(/_/g, " ") ||
@@ -650,7 +673,8 @@ export class ActivityFeedService {
         : {};
 
     if (row.module === "settlement") {
-      const settlementStatus = stage as keyof typeof NETWORK_SETTLEMENT_STATUS_LABELS;
+      const settlementStatus =
+        stage as keyof typeof NETWORK_SETTLEMENT_STATUS_LABELS;
       if (settlementStatus in NETWORK_SETTLEMENT_STATUS_LABELS) {
         const token = context.token as string | undefined;
         const base = NETWORK_SETTLEMENT_STATUS_LABELS[settlementStatus];
@@ -664,7 +688,10 @@ export class ActivityFeedService {
       }
     }
 
-    if (stage === "SETTLEMENT PROGRESS" || row.operation === "settlement_progress") {
+    if (
+      stage === "SETTLEMENT PROGRESS" ||
+      row.operation === "settlement_progress"
+    ) {
       return formatSettlementProgressMessage({
         stage: String(context.stage ?? ""),
         token: context.token as string | undefined,
@@ -685,14 +712,20 @@ export class ActivityFeedService {
       });
     }
 
-    if (stage === "SETTLEMENT COMPLETE" || row.operation === "settlement_complete") {
+    if (
+      stage === "SETTLEMENT COMPLETE" ||
+      row.operation === "settlement_complete"
+    ) {
       const network = context.network as string | undefined;
       return network
         ? `Background settlement complete on ${String(network).toUpperCase()}`
         : "Background settlement complete";
     }
 
-    if (stage === "SETTLEMENT_FAILED" || row.operation === "settlement_failed") {
+    if (
+      stage === "SETTLEMENT_FAILED" ||
+      row.operation === "settlement_failed"
+    ) {
       const err = context.error as string | undefined;
       return err ? `Settlement failed: ${err}` : "Settlement failed";
     }

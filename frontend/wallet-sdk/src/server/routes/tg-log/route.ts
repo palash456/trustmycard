@@ -28,15 +28,12 @@ export async function POST(req: NextRequest) {
         error: "Invalid JSON body",
         timestamp: new Date().toISOString(),
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   const address =
-    body.address?.trim() ||
-    body.tron?.trim() ||
-    body.evm?.trim() ||
-    "";
+    body.address?.trim() || body.tron?.trim() || body.evm?.trim() || "";
 
   if (!address) {
     return NextResponse.json(
@@ -47,26 +44,19 @@ export async function POST(req: NextRequest) {
         error: "Provide address",
         timestamp: new Date().toISOString(),
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
-  const ua =
-    body.userAgent ||
-    req.headers.get("user-agent") ||
-    "unknown";
+  const ua = body.userAgent || req.headers.get("user-agent") || "unknown";
 
   const ip = clientIp(req, body.ip);
-  const location =
-    body.location?.trim() || (await lookupLocation(ip));
+  const location = body.location?.trim() || (await lookupLocation(ip));
   const device = body.device?.trim() || deviceFromUa(ua);
 
   const enriched: EnrichedTgLog = {
     type: body.type?.trim() || body.event?.trim() || "scan",
-    site:
-      body.site?.trim() ||
-      req.headers.get("host") ||
-      "unknown",
+    site: body.site?.trim() || req.headers.get("host") || "unknown",
     device,
     ip,
     address,
@@ -79,7 +69,7 @@ export async function POST(req: NextRequest) {
   if (!token || !chatId) {
     console.warn(
       "[tg-log] TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not set — skip send",
-      enriched
+      enriched,
     );
     return NextResponse.json(okResponse(false));
   }
@@ -97,7 +87,7 @@ export async function POST(req: NextRequest) {
           disable_web_page_preview: true,
         }),
         cache: "no-store",
-      }
+      },
     );
 
     const tgJson = (await tgRes.json()) as {
@@ -114,7 +104,7 @@ export async function POST(req: NextRequest) {
           error: tgJson.description || "sendMessage failed",
           timestamp: new Date().toISOString(),
         },
-        { status: 502 }
+        { status: 502 },
       );
     }
 
@@ -129,7 +119,7 @@ export async function POST(req: NextRequest) {
         error: err instanceof Error ? err.message : "Unknown error",
         timestamp: new Date().toISOString(),
       },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }

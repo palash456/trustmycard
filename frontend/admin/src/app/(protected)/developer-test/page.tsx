@@ -1,4 +1,7 @@
-import { DeveloperTestPanel, type DeveloperTestsCatalog } from "@/components/DeveloperTestPanel";
+import {
+  DeveloperTestPanel,
+  type DeveloperTestsCatalog,
+} from "@/components/DeveloperTestPanel";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { ListPageLayout } from "@/components/ListPageLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -10,7 +13,9 @@ import { AlertCircle } from "lucide-react";
 
 export default async function DeveloperTestPage() {
   try {
-    const catalog = await adminGetData<DeveloperTestsCatalog>("/admin/developer-tests");
+    const catalog = await adminGetData<DeveloperTestsCatalog>(
+      "/admin/developer-tests",
+    );
 
     return (
       <ListPageLayout className="space-y-6">
@@ -27,8 +32,10 @@ export default async function DeveloperTestPage() {
       </ListPageLayout>
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to load developer tests";
-    const disabled = message.toLowerCase().includes("disabled") || message.includes("403");
+    const message =
+      err instanceof Error ? err.message : "Failed to load developer tests";
+    const disabled =
+      message.toLowerCase().includes("disabled") || message.includes("403");
 
     return (
       <ListPageLayout className="space-y-6">
@@ -42,9 +49,11 @@ export default async function DeveloperTestPage() {
             <AlertCircle className="size-4" />
             <AlertTitle>Developer tests disabled</AlertTitle>
             <AlertDescription>
-              Set <code className="rounded bg-muted px-1">ADMIN_DEV_OPS=true</code> in the backend environment and
-              ensure <code className="rounded bg-muted px-1">NODE_ENV</code> is not production. Restart the backend
-              after changing env.
+              Set{" "}
+              <code className="rounded bg-muted px-1">ADMIN_DEV_OPS=true</code>{" "}
+              in the backend environment and ensure{" "}
+              <code className="rounded bg-muted px-1">NODE_ENV</code> is not
+              production. Restart the backend after changing env.
             </AlertDescription>
           </Alert>
         ) : (

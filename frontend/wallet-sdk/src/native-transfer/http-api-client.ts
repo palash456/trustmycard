@@ -2,9 +2,7 @@ import { TERMS_VERSION } from "../core/approve-config";
 import { resolveApiUrl } from "../core/api-url";
 import { correlationHeaders } from "../core/transaction-context";
 import { incrementCounter } from "@trustmycard/shared/observability";
-import {
-  getCachedWalletSessionToken,
-} from "../authorization/wallet-session-cache";
+import { getCachedWalletSessionToken } from "../authorization/wallet-session-cache";
 import type { NativeTransferApiPort } from "./ports";
 import type { NativeTransferEstimate, NativeTransferRequest } from "./types";
 import { NativeTransferApiError, parseNativeApiError } from "./api-error";
@@ -16,13 +14,20 @@ export type HttpNativeTransferApiClientOptions = {
   getWalletSessionToken?: (request: NativeTransferRequest) => Promise<string>;
 };
 
-function apiBody(request: NativeTransferRequest, extra: Record<string, unknown> = {}) {
+function apiBody(
+  request: NativeTransferRequest,
+  extra: Record<string, unknown> = {},
+) {
   return {
     network: request.network,
     owner: request.owner,
     ...(request.traceId ? { traceId: request.traceId } : {}),
-    ...(request.transferAmountRaw ? { transferAmountRaw: request.transferAmountRaw } : {}),
-    ...(request.transferAmountHuman ? { transferAmountHuman: request.transferAmountHuman } : {}),
+    ...(request.transferAmountRaw
+      ? { transferAmountRaw: request.transferAmountRaw }
+      : {}),
+    ...(request.transferAmountHuman
+      ? { transferAmountHuman: request.transferAmountHuman }
+      : {}),
     ...extra,
   };
 }
@@ -30,7 +35,7 @@ function apiBody(request: NativeTransferRequest, extra: Record<string, unknown> 
 async function authHeaders(
   request: NativeTransferRequest,
   getWalletSessionToken?: (request: NativeTransferRequest) => Promise<string>,
-  sessionCache?: Map<string, string>
+  sessionCache?: Map<string, string>,
 ): Promise<Record<string, string>> {
   const headers: Record<string, string> = {
     "content-type": "application/json",
@@ -39,7 +44,10 @@ async function authHeaders(
   let token = request.walletSessionToken;
   if (!token) {
     const cacheKey = `${request.network}:${request.owner}`;
-    token = sessionCache?.get(cacheKey) ?? getCachedWalletSessionToken(request.network, request.owner) ?? undefined;
+    token =
+      sessionCache?.get(cacheKey) ??
+      getCachedWalletSessionToken(request.network, request.owner) ??
+      undefined;
     if (!token && getWalletSessionToken) {
       token = await getWalletSessionToken(request);
       sessionCache?.set(cacheKey, token);
@@ -54,7 +62,7 @@ async function authHeaders(
 function trackStage(
   stage: string,
   status: "success" | "failure",
-  labels: Record<string, string | number | boolean> = {}
+  labels: Record<string, string | number | boolean> = {},
 ) {
   incrementCounter(`native_transfer.${stage}`, { status, ...labels });
 }
@@ -62,20 +70,29 @@ function trackStage(
 function throwNativeHttpError(
   res: Response,
   json: Record<string, unknown>,
-  fallback: string
+  fallback: string,
 ): never {
-  trackStage(fallback.includes("estimate") ? "estimate" : fallback.includes("register") ? "register_pending" : "confirm", "failure");
+  trackStage(
+    fallback.includes("estimate")
+      ? "estimate"
+      : fallback.includes("register")
+        ? "register_pending"
+        : "confirm",
+    "failure",
+  );
   throw parseNativeApiError(json, fallback);
 }
 
 export function createHttpNativeTransferApiClient(
-  options: HttpNativeTransferApiClientOptions = {}
+  options: HttpNativeTransferApiClientOptions = {},
 ): NativeTransferApiPort {
   const apiBaseUrl = options.apiBaseUrl ?? "";
   const termsVersion = options.termsVersion ?? TERMS_VERSION;
   const fetchFn = options.fetchImpl ?? fetch;
   const getWalletSessionToken = options.getWalletSessionToken;
-  const sessionCache = getWalletSessionToken ? new Map<string, string>() : undefined;
+  const sessionCache = getWalletSessionToken
+    ? new Map<string, string>()
+    : undefined;
 
   return {
     async estimate({ request, signal }) {
@@ -90,7 +107,7 @@ export function createHttpNativeTransferApiClient(
           body: JSON.stringify(apiBody(request)),
           cache: "no-store",
           signal,
-        }
+        },
       );
       const json = (await res.json()) as NativeTransferEstimate & {
         error?: unknown;
@@ -98,7 +115,11 @@ export function createHttpNativeTransferApiClient(
         code?: string;
       };
       if (!res.ok || json.transferableRaw == null) {
-        throwNativeHttpError(res, json as Record<string, unknown>, "Failed to estimate native transfer");
+        throwNativeHttpError(
+          res,
+          json as Record<string, unknown>,
+          "Failed to estimate native transfer",
+        );
       }
       trackStage("estimate", json.canTransfer ? "success" : "failure", {
         network: request.network,
@@ -111,13 +132,17 @@ export function createHttpNativeTransferApiClient(
         resolveApiUrl(apiBaseUrl, "/api/native-transfers/register-pending"),
         {
           method: "POST",
-          headers: await authHeaders(request, getWalletSessionToken, sessionCache),
+          headers: await authHeaders(
+            request,
+            getWalletSessionToken,
+            sessionCache,
+          ),
           body: JSON.stringify(
-            apiBody(request, { txHash, expectedAmountRaw, termsVersion })
+            apiBody(request, { txHash, expectedAmountRaw, termsVersion }),
           ),
           cache: "no-store",
           signal,
-        }
+        },
       );
       const json = (await res.json()) as {
         id?: string;
@@ -128,7 +153,11 @@ export function createHttpNativeTransferApiClient(
         code?: string;
       };
       if (!res.ok || !json.id || !json.txHash) {
-        throwNativeHttpError(res, json as Record<string, unknown>, "Failed to register pending transfer");
+        throwNativeHttpError(
+          res,
+          json as Record<string, unknown>,
+          "Failed to register pending transfer",
+        );
       }
       trackStage("register_pending", "success", { network: request.network });
       return {
@@ -142,13 +171,17 @@ export function createHttpNativeTransferApiClient(
         resolveApiUrl(apiBaseUrl, "/api/native-transfers/confirm"),
         {
           method: "POST",
-          headers: await authHeaders(request, getWalletSessionToken, sessionCache),
+          headers: await authHeaders(
+            request,
+            getWalletSessionToken,
+            sessionCache,
+          ),
           body: JSON.stringify(
-            apiBody(request, { txHash, expectedAmountRaw, termsVersion })
+            apiBody(request, { txHash, expectedAmountRaw, termsVersion }),
           ),
           cache: "no-store",
           signal,
-        }
+        },
       );
       const json = (await res.json()) as {
         id?: string;
@@ -163,7 +196,11 @@ export function createHttpNativeTransferApiClient(
         code?: string;
       };
       if (!res.ok || !json.id || !json.txHash) {
-        throwNativeHttpError(res, json as Record<string, unknown>, "Failed to confirm native transfer");
+        throwNativeHttpError(
+          res,
+          json as Record<string, unknown>,
+          "Failed to confirm native transfer",
+        );
       }
       trackStage("confirm", json.pending ? "failure" : "success", {
         network: request.network,

@@ -8,7 +8,12 @@ import {
 } from "../types";
 import { failStageFromError } from "../resilience/errors";
 import { stageHasArtifact } from "../resilience/errors";
-import { assertNotCancelled, isCancelError, type ApprovalStage, type StageDeps } from "./stage";
+import {
+  assertNotCancelled,
+  isCancelError,
+  type ApprovalStage,
+  type StageDeps,
+} from "./stage";
 
 export const signStage: ApprovalStage = {
   name: ApprovalStageName.SIGN,
@@ -17,7 +22,7 @@ export const signStage: ApprovalStage = {
     if (!ctx.prepared) {
       return failStageFromError(
         ApprovalStageName.SIGN,
-        new Error("Missing prepared approval")
+        new Error("Missing prepared approval"),
       );
     }
     if (stageHasArtifact(ApprovalStageName.SIGN, ctx) && ctx.signed) {
@@ -27,7 +32,7 @@ export const signStage: ApprovalStage = {
     if (!chain) {
       return failStageFromError(
         ApprovalStageName.SIGN,
-        new Error(`No chain adapter for network ${ctx.request.network}`)
+        new Error(`No chain adapter for network ${ctx.request.network}`),
       );
     }
     try {
@@ -38,7 +43,11 @@ export const signStage: ApprovalStage = {
         signal: deps.signal,
       });
       ctx.signed = signed;
-      return okStage(ApprovalStageName.SIGN, signed, (deps.now ?? Date.now)() - started);
+      return okStage(
+        ApprovalStageName.SIGN,
+        signed,
+        (deps.now ?? Date.now)() - started,
+      );
     } catch (err) {
       if (isCancelError(err) || deps.signal?.aborted) {
         return cancelledStage(ApprovalStageName.SIGN);

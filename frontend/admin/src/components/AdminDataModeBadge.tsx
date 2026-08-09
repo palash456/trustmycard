@@ -13,10 +13,13 @@ export function AdminDataModeBadge({ className }: { className?: string }) {
       className={cn(
         "rounded-full px-2.5 py-0.5 text-xs font-medium shadow-sm",
         meta.badgeClass,
-        className
+        className,
       )}
     >
-      <span className={cn("mr-1.5 size-1.5 rounded-full", meta.dotClass)} aria-hidden />
+      <span
+        className={cn("mr-1.5 size-1.5 rounded-full", meta.dotClass)}
+        aria-hidden
+      />
       {meta.label}
     </Badge>
   );

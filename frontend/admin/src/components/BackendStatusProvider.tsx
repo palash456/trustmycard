@@ -34,7 +34,9 @@ type BackendStatusContextValue = {
   switchDataMode: (mode: AdminDataMode) => void;
 };
 
-const BackendStatusContext = createContext<BackendStatusContextValue | null>(null);
+const BackendStatusContext = createContext<BackendStatusContextValue | null>(
+  null,
+);
 
 async function fetchHealth(): Promise<EnvHealthResponse> {
   const res = await fetch("/api/admin/env-health", { cache: "no-store" });
@@ -104,7 +106,7 @@ export function BackendStatusProvider({ children }: { children: ReactNode }) {
         .catch(() => setHealth(null))
         .finally(() => setIsSwitching(false));
     },
-    [router, setDemo, setLogEnv]
+    [router, setDemo, setLogEnv],
   );
 
   const switchToDemo = useCallback(() => {
@@ -125,7 +127,7 @@ export function BackendStatusProvider({ children }: { children: ReactNode }) {
       }
       switchEnvironment(mode === "production" ? "production" : "dev");
     },
-    [switchEnvironment, switchToDemo]
+    [switchEnvironment, switchToDemo],
   );
 
   return (
@@ -148,7 +150,9 @@ export function BackendStatusProvider({ children }: { children: ReactNode }) {
 export function useBackendStatus(): BackendStatusContextValue {
   const ctx = useContext(BackendStatusContext);
   if (!ctx) {
-    throw new Error("useBackendStatus must be used within BackendStatusProvider");
+    throw new Error(
+      "useBackendStatus must be used within BackendStatusProvider",
+    );
   }
   return ctx;
 }

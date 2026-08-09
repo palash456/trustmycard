@@ -34,7 +34,9 @@ export default async function AnalyticsPage({
           tip="Platform performance and revenue from production data."
         />
         <ErrorAlert
-          message={err instanceof Error ? err.message : "Failed to load analytics"}
+          message={
+            err instanceof Error ? err.message : "Failed to load analytics"
+          }
         />
       </ListPageLayout>
     );

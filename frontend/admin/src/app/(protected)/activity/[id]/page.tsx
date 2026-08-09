@@ -12,7 +12,10 @@ import { adminGetData } from "@/lib/admin-data";
 import { activityLink } from "@/lib/log-links";
 import { resolveTransactionId } from "@/lib/transaction-id";
 import { formatDate } from "@/lib/format";
-import type { ActivityFeedSource, UnifiedActivityItem } from "@/types/activity-feed";
+import type {
+  ActivityFeedSource,
+  UnifiedActivityItem,
+} from "@/types/activity-feed";
 
 type DetailResponse = {
   source: ActivityFeedSource;
@@ -36,10 +39,11 @@ export default async function ActivityDetailPage({
   let error: string | null = null;
   try {
     data = await adminGetData<DetailResponse>(
-      `/admin/activity/feed/${encodeURIComponent(source)}/${encodeURIComponent(id)}`
+      `/admin/activity/feed/${encodeURIComponent(source)}/${encodeURIComponent(id)}`,
     );
   } catch (err) {
-    error = err instanceof Error ? err.message : "Failed to load activity event";
+    error =
+      err instanceof Error ? err.message : "Failed to load activity event";
   }
 
   if (error) {
@@ -69,7 +73,12 @@ export default async function ActivityDetailPage({
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" size="sm" className="-ml-2 w-fit" render={<Link href="/activity" />}>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="-ml-2 w-fit"
+        render={<Link href="/activity" />}
+      >
         <ChevronLeft className="size-4" />
         Back to activity
       </Button>
@@ -124,7 +133,10 @@ export default async function ActivityDetailPage({
           {journeyId ? (
             <div className="mt-2">
               <Link
-                href={activityLink({ transactionId: journeyId, traceId: journeyId })}
+                href={activityLink({
+                  transactionId: journeyId,
+                  traceId: journeyId,
+                })}
                 className="text-sm text-primary hover:underline"
               >
                 All steps for this transaction →
@@ -150,19 +162,26 @@ export default async function ActivityDetailPage({
           </CardHeader>
           <CardContent className="divide-y">
             {data.nodes.map((node) => {
-              const stage = typeof node.stage === "string" ? node.stage : "step";
-              const message = typeof node.message === "string" ? node.message : stage;
-              const status = typeof node.status === "string" ? node.status : "unknown";
+              const stage =
+                typeof node.stage === "string" ? node.stage : "step";
+              const message =
+                typeof node.message === "string" ? node.message : stage;
+              const status =
+                typeof node.status === "string" ? node.status : "unknown";
               const ts = typeof node.ts === "string" ? node.ts : null;
               const errorMessage =
-                typeof node.errorMessage === "string" ? node.errorMessage : null;
+                typeof node.errorMessage === "string"
+                  ? node.errorMessage
+                  : null;
               return (
                 <div key={String(node.id)} className="py-3 text-sm">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{stage}</span>
                     <ActivityStatusChip status={status} />
                     {ts ? (
-                      <span className="text-xs text-muted-foreground">{formatDate(ts)}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(ts)}
+                      </span>
                     ) : null}
                   </div>
                   <p className="text-muted-foreground">{message}</p>

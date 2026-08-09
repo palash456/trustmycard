@@ -20,7 +20,7 @@ export function StatCard({
     <Card
       className={cn(
         "relative overflow-hidden border-0 bg-card transition-all duration-200 hover:shadow-md",
-        className
+        className,
       )}
     >
       <div
@@ -36,14 +36,18 @@ export function StatCard({
         <p className="font-brand text-3xl font-semibold tracking-tight tabular-nums text-foreground">
           {value}
         </p>
-        {sub ? <p className="mt-1 text-xs font-medium text-muted-foreground">{sub}</p> : null}
+        {sub ? (
+          <p className="mt-1 text-xs font-medium text-muted-foreground">
+            {sub}
+          </p>
+        ) : null}
         {trend ? (
           <p
             className={cn(
               "mt-1 text-xs font-medium tabular-nums",
               trendUp && "text-emerald-600 dark:text-emerald-400",
               trendDown && "text-destructive",
-              !trendUp && !trendDown && "text-muted-foreground"
+              !trendUp && !trendDown && "text-muted-foreground",
             )}
           >
             {trend.value > 0 ? "+" : ""}

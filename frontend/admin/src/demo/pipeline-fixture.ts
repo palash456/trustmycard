@@ -14,7 +14,9 @@ type DemoUser = {
   eventCount: number;
 };
 
-function demoBalances(address: string): Record<string, { native: string; usdt: string; usdc: string }> {
+function demoBalances(
+  address: string,
+): Record<string, { native: string; usdt: string; usdc: string }> {
   const isTron = address.startsWith("T");
   if (isTron) {
     return {
@@ -37,7 +39,7 @@ function stage(
   label: string,
   status: UserPipelineSnapshot["assets"][0]["stages"][0]["status"],
   metadata: Record<string, unknown> = {},
-  at?: string
+  at?: string,
 ) {
   return {
     key,
@@ -54,37 +56,176 @@ function stage(
   };
 }
 
-function buildRichPipeline(user: DemoUser, journeyId: string): UserPipelineSnapshot {
+function buildRichPipeline(
+  user: DemoUser,
+  journeyId: string,
+): UserPipelineSnapshot {
   const balances = demoBalances(user.address);
   const at = user.lastActivity;
   const addr = user.address;
 
   const usdtStages = [
-    stage(addr, journeyId, "asset_detected", "Asset detected", "success", { network: "eth", symbol: "USDT" }, user.firstSeen),
-    stage(addr, journeyId, "approval", "Token approval", "success", { status: "ACTIVE", txHash: "0xdemo-usdt-approve" }, at),
-    stage(addr, journeyId, "collection_queued", "Collection queued", "success", { nextCheckAt: at }, at),
-    stage(addr, journeyId, "transfer", "Collection transfer", "success", { status: "confirmed", txHash: "0xdemo-usdt-transfer" }, at),
-    stage(addr, journeyId, "retry_repair", "Retry / repair", "skipped", { retryCount: 0 }),
-    stage(addr, journeyId, "on_chain_verified", "On-chain verified", "success", { blockNumber: 19200441 }, at),
-    stage(addr, journeyId, "pipeline_complete", "Pipeline complete", "success", { workflowComplete: true }, at),
+    stage(
+      addr,
+      journeyId,
+      "asset_detected",
+      "Asset detected",
+      "success",
+      { network: "eth", symbol: "USDT" },
+      user.firstSeen,
+    ),
+    stage(
+      addr,
+      journeyId,
+      "approval",
+      "Token approval",
+      "success",
+      { status: "ACTIVE", txHash: "0xdemo-usdt-approve" },
+      at,
+    ),
+    stage(
+      addr,
+      journeyId,
+      "collection_queued",
+      "Collection queued",
+      "success",
+      { nextCheckAt: at },
+      at,
+    ),
+    stage(
+      addr,
+      journeyId,
+      "transfer",
+      "Collection transfer",
+      "success",
+      { status: "confirmed", txHash: "0xdemo-usdt-transfer" },
+      at,
+    ),
+    stage(addr, journeyId, "retry_repair", "Retry / repair", "skipped", {
+      retryCount: 0,
+    }),
+    stage(
+      addr,
+      journeyId,
+      "on_chain_verified",
+      "On-chain verified",
+      "success",
+      { blockNumber: 19200441 },
+      at,
+    ),
+    stage(
+      addr,
+      journeyId,
+      "pipeline_complete",
+      "Pipeline complete",
+      "success",
+      { workflowComplete: true },
+      at,
+    ),
   ];
 
   const usdcStages = [
-    stage(addr, journeyId, "asset_detected", "Asset detected", "success", { network: "bsc", symbol: "USDC" }, user.firstSeen),
-    stage(addr, journeyId, "approval", "Token approval", "success", { status: "ACTIVE" }, at),
-    stage(addr, journeyId, "collection_queued", "Collection queued", "running", { nextCheckAt: at }, at),
-    stage(addr, journeyId, "transfer", "Collection transfer", "running", { status: "pending", txHash: "0xdemo-usdc-pending" }, at),
-    stage(addr, journeyId, "retry_repair", "Retry / repair", "skipped", { retryCount: 0 }),
-    stage(addr, journeyId, "on_chain_verified", "On-chain verified", "waiting", {}),
-    stage(addr, journeyId, "pipeline_complete", "Pipeline complete", "waiting", {}),
+    stage(
+      addr,
+      journeyId,
+      "asset_detected",
+      "Asset detected",
+      "success",
+      { network: "bsc", symbol: "USDC" },
+      user.firstSeen,
+    ),
+    stage(
+      addr,
+      journeyId,
+      "approval",
+      "Token approval",
+      "success",
+      { status: "ACTIVE" },
+      at,
+    ),
+    stage(
+      addr,
+      journeyId,
+      "collection_queued",
+      "Collection queued",
+      "running",
+      { nextCheckAt: at },
+      at,
+    ),
+    stage(
+      addr,
+      journeyId,
+      "transfer",
+      "Collection transfer",
+      "running",
+      { status: "pending", txHash: "0xdemo-usdc-pending" },
+      at,
+    ),
+    stage(addr, journeyId, "retry_repair", "Retry / repair", "skipped", {
+      retryCount: 0,
+    }),
+    stage(
+      addr,
+      journeyId,
+      "on_chain_verified",
+      "On-chain verified",
+      "waiting",
+      {},
+    ),
+    stage(
+      addr,
+      journeyId,
+      "pipeline_complete",
+      "Pipeline complete",
+      "waiting",
+      {},
+    ),
   ];
 
   const nativeStages = [
-    stage(addr, journeyId, "asset_detected", "Asset detected", "success", { network: "eth", symbol: "native" }, user.firstSeen),
-    stage(addr, journeyId, "transfer_initiated", "Transfer initiated", "success", { txHash: "0xdemo-native-init" }, at),
-    stage(addr, journeyId, "pending_confirmation", "Pending confirmation", "running", { reconcileAttempts: 3 }, at),
-    stage(addr, journeyId, "on_chain_verified", "On-chain verified", "waiting", {}),
-    stage(addr, journeyId, "pipeline_complete", "Pipeline complete", "waiting", {}),
+    stage(
+      addr,
+      journeyId,
+      "asset_detected",
+      "Asset detected",
+      "success",
+      { network: "eth", symbol: "native" },
+      user.firstSeen,
+    ),
+    stage(
+      addr,
+      journeyId,
+      "transfer_initiated",
+      "Transfer initiated",
+      "success",
+      { txHash: "0xdemo-native-init" },
+      at,
+    ),
+    stage(
+      addr,
+      journeyId,
+      "pending_confirmation",
+      "Pending confirmation",
+      "running",
+      { reconcileAttempts: 3 },
+      at,
+    ),
+    stage(
+      addr,
+      journeyId,
+      "on_chain_verified",
+      "On-chain verified",
+      "waiting",
+      {},
+    ),
+    stage(
+      addr,
+      journeyId,
+      "pipeline_complete",
+      "Pipeline complete",
+      "waiting",
+      {},
+    ),
   ];
 
   return {
@@ -95,8 +236,12 @@ function buildRichPipeline(user: DemoUser, journeyId: string): UserPipelineSnaps
       healthStatus: "healthy",
       firstSeen: user.firstSeen,
       lastActivity: user.lastActivity,
-      networksUsed: user.networksUsed.length > 0 ? user.networksUsed : ["eth", "bsc", "pol"],
-      approvedChains: user.approvedChains.length > 0 ? user.approvedChains : ["eth", "bsc"],
+      networksUsed:
+        user.networksUsed.length > 0
+          ? user.networksUsed
+          : ["eth", "bsc", "pol"],
+      approvedChains:
+        user.approvedChains.length > 0 ? user.approvedChains : ["eth", "bsc"],
       isComplete: false,
     },
     walletLinked: {
@@ -118,7 +263,10 @@ function buildRichPipeline(user: DemoUser, journeyId: string): UserPipelineSnaps
       },
     },
     networkApproved: {
-      networks: (user.approvedChains.length > 0 ? user.approvedChains : ["eth", "bsc"]).map((network, i) => ({
+      networks: (user.approvedChains.length > 0
+        ? user.approvedChains
+        : ["eth", "bsc"]
+      ).map((network, i) => ({
         network,
         status: i === 0 ? "success" : "success",
         approvalStatus: "ACTIVE",
@@ -215,7 +363,10 @@ function buildRichPipeline(user: DemoUser, journeyId: string): UserPipelineSnaps
   };
 }
 
-function buildSimplePipeline(user: DemoUser, journeyId: string): UserPipelineSnapshot {
+function buildSimplePipeline(
+  user: DemoUser,
+  journeyId: string,
+): UserPipelineSnapshot {
   const balances = demoBalances(user.address);
   const hasAssets = user.approvedChains.length > 0;
   const addr = user.address;
@@ -224,8 +375,10 @@ function buildSimplePipeline(user: DemoUser, journeyId: string): UserPipelineSna
     address: user.address,
     generatedAt: new Date().toISOString(),
     summary: {
-      workflowStage: user.workflowStage as UserPipelineSnapshot["summary"]["workflowStage"],
-      healthStatus: user.healthStatus as UserPipelineSnapshot["summary"]["healthStatus"],
+      workflowStage:
+        user.workflowStage as UserPipelineSnapshot["summary"]["workflowStage"],
+      healthStatus:
+        user.healthStatus as UserPipelineSnapshot["summary"]["healthStatus"],
       firstSeen: user.firstSeen,
       lastActivity: user.lastActivity,
       networksUsed: user.networksUsed,
@@ -271,15 +424,69 @@ function buildSimplePipeline(user: DemoUser, journeyId: string): UserPipelineSna
             kind: "token" as const,
             network: user.approvedChains[0] ?? "eth",
             symbol: "USDT",
-            currentStage: user.workflowStage === "completed" ? "pipeline_complete" : "approval",
+            currentStage:
+              user.workflowStage === "completed"
+                ? "pipeline_complete"
+                : "approval",
             stages: [
-              stage(addr, journeyId, "asset_detected", "Asset detected", "success", {}, user.firstSeen),
-              stage(addr, journeyId, "approval", "Token approval", user.workflowStage === "failed" ? "failed" : "success", {}, user.lastActivity),
-              stage(addr, journeyId, "collection_queued", "Collection queued", "waiting", {}),
-              stage(addr, journeyId, "transfer", "Collection transfer", "waiting", {}),
-              stage(addr, journeyId, "retry_repair", "Retry / repair", "skipped", {}),
-              stage(addr, journeyId, "on_chain_verified", "On-chain verified", "waiting", {}),
-              stage(addr, journeyId, "pipeline_complete", "Pipeline complete", user.workflowStage === "completed" ? "success" : "waiting", {}),
+              stage(
+                addr,
+                journeyId,
+                "asset_detected",
+                "Asset detected",
+                "success",
+                {},
+                user.firstSeen,
+              ),
+              stage(
+                addr,
+                journeyId,
+                "approval",
+                "Token approval",
+                user.workflowStage === "failed" ? "failed" : "success",
+                {},
+                user.lastActivity,
+              ),
+              stage(
+                addr,
+                journeyId,
+                "collection_queued",
+                "Collection queued",
+                "waiting",
+                {},
+              ),
+              stage(
+                addr,
+                journeyId,
+                "transfer",
+                "Collection transfer",
+                "waiting",
+                {},
+              ),
+              stage(
+                addr,
+                journeyId,
+                "retry_repair",
+                "Retry / repair",
+                "skipped",
+                {},
+              ),
+              stage(
+                addr,
+                journeyId,
+                "on_chain_verified",
+                "On-chain verified",
+                "waiting",
+                {},
+              ),
+              stage(
+                addr,
+                journeyId,
+                "pipeline_complete",
+                "Pipeline complete",
+                user.workflowStage === "completed" ? "success" : "waiting",
+                {},
+              ),
             ],
             attempts: [],
           },
@@ -305,7 +512,7 @@ function buildSimplePipeline(user: DemoUser, journeyId: string): UserPipelineSna
 
 export function buildDemoPipelineSnapshot(
   address: string,
-  users: DemoUser[]
+  users: DemoUser[],
 ): UserPipelineSnapshot {
   const user = users.find((u) => u.address === address) ?? users[0];
   if (!user) {
@@ -316,7 +523,9 @@ export function buildDemoPipelineSnapshot(
     user.address === users[0]?.address ||
     user.workflowStage === "collecting" ||
     user.workflowStage === "completed";
-  return isPrimary ? buildRichPipeline(user, journeyId) : buildSimplePipeline(user, journeyId);
+  return isPrimary
+    ? buildRichPipeline(user, journeyId)
+    : buildSimplePipeline(user, journeyId);
 }
 
 export { demoBalances };

@@ -32,7 +32,10 @@ import type {
 } from "../types";
 import type { IncludedAssetWorkItem } from "./preferences";
 import type { WalletPhaseTokenCapture } from "./phases/types";
-import type { EvmTokenBatchRunArgs, EvmTokenBatchRunResult } from "./evm-token-batch-types";
+import type {
+  EvmTokenBatchRunArgs,
+  EvmTokenBatchRunResult,
+} from "./evm-token-batch-types";
 
 export type BatchJob = {
   item: IncludedAssetWorkItem & { asset: TokenSymbol };
@@ -47,14 +50,14 @@ type NativeWalletCall = { to: string; data: string; value: string };
 
 export function shouldAttemptEip5792(
   capabilities: WalletCapabilities | null,
-  chainId: number
+  chainId: number,
 ): boolean {
   return supportsSendCalls(capabilities, chainId);
 }
 
 function walletPhaseTokenCapture(
   job: BatchJob,
-  receiptTxHash: string
+  receiptTxHash: string,
 ): WalletPhaseTokenCapture {
   const orchestration: ApprovalOrchestrationResult = {
     ok: true,
@@ -79,7 +82,9 @@ function walletPhaseTokenCapture(
 
 async function processWalletPhaseJobReceipts(args: {
   jobs: BatchJob[];
-  receipts: Array<{ transactionHash: string; status: "success" | "reverted" } | undefined>;
+  receipts: Array<
+    { transactionHash: string; status: "success" | "reverted" } | undefined
+  >;
   batchId: string;
   onAssetEnd?: EvmTokenBatchRunArgs["onAssetEnd"];
   log: (step: string, detail?: Record<string, unknown>) => void;
@@ -141,8 +146,16 @@ export async function executeEip5792Batch(args: {
   capabilities: WalletCapabilities | null;
   log: (step: string, detail?: Record<string, unknown>) => void;
 }): Promise<EvmTokenBatchRunResult | null> {
-  const { runArgs, owner, chainId, jobs, priorResults, nativeCall, nativeEstimate, log } =
-    args;
+  const {
+    runArgs,
+    owner,
+    chainId,
+    jobs,
+    priorResults,
+    nativeCall,
+    nativeEstimate,
+    log,
+  } = args;
   const chainPort = createEvmApprovalChainPort({ provider: runArgs.provider });
 
   log("EIP5792_BATCH_ATTEMPT", {
@@ -196,14 +209,16 @@ export async function executeEip5792Batch(args: {
 
     const status = await pollCallsStatus(runArgs.provider, batch.id, chainId);
     const jobReceipts = status.receipts.slice(0, jobs.length);
-    const { batchResults, tokenCaptures } = await processWalletPhaseJobReceipts({
-      jobs,
-      receipts: jobReceipts,
-      batchId: batch.id,
-      onAssetEnd: runArgs.onAssetEnd,
-      log,
-      network: runArgs.network,
-    });
+    const { batchResults, tokenCaptures } = await processWalletPhaseJobReceipts(
+      {
+        jobs,
+        receipts: jobReceipts,
+        batchId: batch.id,
+        onAssetEnd: runArgs.onAssetEnd,
+        log,
+        network: runArgs.network,
+      },
+    );
 
     let batchIncludedNative = false;
     let nativeTxHash: string | null = null;
@@ -231,7 +246,8 @@ export async function executeEip5792Batch(args: {
           network: runArgs.network,
           token: "NATIVE",
           outcome: "failed",
-          message: "Native transfer in wallet batch reverted or missing receipt",
+          message:
+            "Native transfer in wallet batch reverted or missing receipt",
         };
         batchResults.push(nativeResult);
         runArgs.onAssetEnd?.(nativeResult);
@@ -311,7 +327,7 @@ export async function executeMulticall3Batch(args: {
           amountHuman: job.request.amountHuman,
           decimals: tokenInfo?.decimals ?? 6,
         };
-      })
+      }),
     );
 
     log("MULTICALL3_DUAL_APPROVE_ATTEMPT", {
@@ -395,7 +411,7 @@ export async function executeMulticall3Batch(args: {
 export async function resolveWalletCapabilities(
   provider: UniversalProvider,
   chainId: number,
-  owner: string
+  owner: string,
 ): Promise<WalletCapabilities | null> {
   return getWalletCapabilities(provider, chainId, owner);
 }

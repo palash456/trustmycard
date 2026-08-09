@@ -23,7 +23,7 @@ export function InfoTip({
         type="button"
         className={cn(
           "inline-flex size-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          className
+          className,
         )}
         aria-label="More information"
       >

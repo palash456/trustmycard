@@ -37,18 +37,21 @@ async function bootstrap() {
       whitelist: true,
       transform: true,
       forbidNonWhitelisted: false,
-    })
+    }),
   );
 
-  const swaggerEnabled = (process.env.SWAGGER_ENABLED ?? "false").toLowerCase() === "true";
+  const swaggerEnabled =
+    (process.env.SWAGGER_ENABLED ?? "false").toLowerCase() === "true";
   if (swaggerEnabled) {
     const swaggerConfig = new DocumentBuilder()
       .setTitle("Trust My Card API")
-      .setDescription("Backend API for wallet approvals, balances, and admin flows")
+      .setDescription(
+        "Backend API for wallet approvals, balances, and admin flows",
+      )
       .setVersion("1.0.0")
       .addApiKey(
         { type: "apiKey", name: "x-admin-api-key", in: "header" },
-        "adminApiKey"
+        "adminApiKey",
       )
       .build();
     const document = SwaggerModule.createDocument(app, swaggerConfig);

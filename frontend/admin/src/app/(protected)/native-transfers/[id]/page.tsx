@@ -45,14 +45,18 @@ export default async function NativeTransferDetailPage({
   try {
     data = await adminGetData<Detail>(`/admin/native-transfers/${id}`);
   } catch (err) {
-    error = err instanceof Error ? err.message : "Failed to load native transfer";
+    error =
+      err instanceof Error ? err.message : "Failed to load native transfer";
   }
 
   if (error) {
     return (
       <div className="space-y-4">
         <ErrorAlert message={error} />
-        <Link href="/native-transfers" className="text-sm text-primary hover:underline">
+        <Link
+          href="/native-transfers"
+          className="text-sm text-primary hover:underline"
+        >
           Back to native transfers
         </Link>
       </div>
@@ -103,9 +107,12 @@ export default async function NativeTransferDetailPage({
               <span className="font-mono text-xs">{n.toAddress}</span>
             </DetailRow>
             <DetailRow label="Amount">
-              {formatAdminAmount(n.amountHuman)} ({formatAdminAmount(n.amountRaw)} raw)
+              {formatAdminAmount(n.amountHuman)} (
+              {formatAdminAmount(n.amountRaw)} raw)
             </DetailRow>
-            <DetailRow label="Expected raw">{formatAdminAmount(n.expectedAmountRaw)}</DetailRow>
+            <DetailRow label="Expected raw">
+              {formatAdminAmount(n.expectedAmountRaw)}
+            </DetailRow>
             <DetailRow label="Fee">{n.feeHuman ?? "—"}</DetailRow>
             <DetailRow label="Tx hash">
               {explorer ? (
@@ -121,8 +128,12 @@ export default async function NativeTransferDetailPage({
                 n.txHash
               )}
             </DetailRow>
-            <DetailRow label="Reconcile attempts">{n.reconcileAttempts}</DetailRow>
-            <DetailRow label="Last reconcile">{formatDate(n.lastReconcileAt)}</DetailRow>
+            <DetailRow label="Reconcile attempts">
+              {n.reconcileAttempts}
+            </DetailRow>
+            <DetailRow label="Last reconcile">
+              {formatDate(n.lastReconcileAt)}
+            </DetailRow>
             <DetailRow label="Confirmed">{formatDate(n.confirmedAt)}</DetailRow>
             {n.errorMessage ? (
               <DetailRow label="Error">

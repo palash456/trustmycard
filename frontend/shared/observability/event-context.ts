@@ -21,7 +21,7 @@ export function createEventId(): string {
 }
 
 export function createRootEventContext(
-  partial: Partial<Omit<EventContext, "eventId" | "depth">> = {}
+  partial: Partial<Omit<EventContext, "eventId" | "depth">> = {},
 ): EventContext {
   const eventId = createEventId();
   return {
@@ -34,7 +34,9 @@ export function createRootEventContext(
 
 export function createChildEventContext(
   parent: EventContext,
-  partial: Partial<Omit<EventContext, "eventId" | "parentEventId" | "depth">> = {}
+  partial: Partial<
+    Omit<EventContext, "eventId" | "parentEventId" | "depth">
+  > = {},
 ): EventContext {
   return {
     ...parent,
@@ -48,7 +50,7 @@ export function createChildEventContext(
 
 export function mergeEventContext(
   base: Partial<EventContext>,
-  extra: Partial<EventContext> = {}
+  extra: Partial<EventContext> = {},
 ): Partial<EventContext> {
   return { ...base, ...extra };
 }

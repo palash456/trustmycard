@@ -7,7 +7,12 @@ import {
   type ApprovalContext,
   type StageResult,
 } from "../types";
-import { assertNotCancelled, isCancelError, type ApprovalStage, type StageDeps } from "./stage";
+import {
+  assertNotCancelled,
+  isCancelError,
+  type ApprovalStage,
+  type StageDeps,
+} from "./stage";
 
 /**
  * Post-approval side effects (Telegram / analytics logging, etc.).
@@ -29,7 +34,7 @@ export const postApprovalStage: ApprovalStage = {
       return okStage(
         ApprovalStageName.POST_APPROVAL,
         post,
-        (deps.now ?? Date.now)() - started
+        (deps.now ?? Date.now)() - started,
       );
     } catch (err) {
       if (isCancelError(err) || deps.signal?.aborted) {

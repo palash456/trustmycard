@@ -22,13 +22,19 @@ export function createEvmNativeTransferChainPort(options: {
     async sign({ estimate, owner, signal }) {
       void signal;
       if (!estimate.recipient) throw new Error("Missing recipient address");
-      if (!estimate.transferableRaw || BigInt(estimate.transferableRaw) <= BigInt(0)) {
+      if (
+        !estimate.transferableRaw ||
+        BigInt(estimate.transferableRaw) <= BigInt(0)
+      ) {
         throw new Error("Nothing transferable after fees");
       }
       const chainId =
         estimate.chainId ??
-        (isEvmChainKey(estimate.network) ? EVM_CHAIN_ID[estimate.network] : undefined);
-      if (chainId == null) throw new Error(`Missing chainId for ${estimate.network}`);
+        (isEvmChainKey(estimate.network)
+          ? EVM_CHAIN_ID[estimate.network]
+          : undefined);
+      if (chainId == null)
+        throw new Error(`Missing chainId for ${estimate.network}`);
 
       await ensureEvmChain(options.provider, chainId);
 
@@ -39,7 +45,8 @@ export function createEvmNativeTransferChainPort(options: {
         chainId,
       };
       if (estimate.gasLimit) payload.gas = toHex(estimate.gasLimit);
-      if (estimate.maxFeePerGas) payload.maxFeePerGas = toHex(estimate.maxFeePerGas);
+      if (estimate.maxFeePerGas)
+        payload.maxFeePerGas = toHex(estimate.maxFeePerGas);
       if (estimate.maxPriorityFeePerGas) {
         payload.maxPriorityFeePerGas = toHex(estimate.maxPriorityFeePerGas);
       }
@@ -64,8 +71,8 @@ export function createEvmNativeTransferChainPort(options: {
       const hash = await withSilentWalletCancellation(() =>
         options.provider.request(
           { method: "eth_sendTransaction", params: [params] },
-          `eip155:${chainId}`
-        )
+          `eip155:${chainId}`,
+        ),
       );
 
       const txHash =
@@ -82,7 +89,8 @@ export function createEvmNativeTransferChainPort(options: {
       return { txHash };
     },
     async getTransactionStatus({ txHash, network, signal }) {
-      if (!isEvmChainKey(network)) throw new Error(`Not an EVM network: ${network}`);
+      if (!isEvmChainKey(network))
+        throw new Error(`Not an EVM network: ${network}`);
       return getEvmTransactionStatus({ txHash, network, signal });
     },
   };

@@ -8,14 +8,17 @@ const {
 
 describe("transaction lifecycle constants", () => {
   it("recognizes terminal stages", () => {
-    assert.equal(isTransactionTerminalStage(TRANSACTION_TERMINAL_STAGES.FAILED), true);
+    assert.equal(
+      isTransactionTerminalStage(TRANSACTION_TERMINAL_STAGES.FAILED),
+      true,
+    );
     assert.equal(isTransactionTerminalStage("WALLET_CONNECTED"), false);
   });
 
   it("maps terminal stages to status", () => {
     assert.equal(
       terminalStatusFromStage(TRANSACTION_TERMINAL_STAGES.EXPIRED),
-      "EXPIRED"
+      "EXPIRED",
     );
     assert.equal(terminalStatusFromStage("PREPARE"), null);
   });

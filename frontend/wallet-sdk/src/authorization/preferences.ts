@@ -11,7 +11,7 @@ import type {
 } from "../types";
 
 export function defaultTokenPreference(
-  mode: "maximum" | "custom" = "maximum"
+  mode: "maximum" | "custom" = "maximum",
 ): TokenPreference {
   return {
     included: true,
@@ -38,7 +38,7 @@ function assetsForNetworkPrefs(networkKey: string): AssetSymbol[] {
 
 /** Build Maximum Collection prefs for a single network (USDT + USDC + NATIVE). */
 export function buildMaximumPreferencesForNetwork(
-  networkKey: string
+  networkKey: string,
 ): NetworkTokenPrefs {
   const row: NetworkTokenPrefs = {};
   for (const asset of assetsForNetworkPrefs(networkKey)) {
@@ -49,7 +49,7 @@ export function buildMaximumPreferencesForNetwork(
 
 /** Build Maximum Collection prefs for every network (used to seed independent per-network drafts). */
 export function buildMaximumPreferences(
-  networks: NetworkRow[]
+  networks: NetworkRow[],
 ): CollectionPreferences {
   const prefs: CollectionPreferences = {};
   for (const network of networks) {
@@ -64,7 +64,7 @@ export function buildMaximumPreferences(
 /** Ensure manual/custom mode has editable entries for one network, preserving prior edits. */
 export function ensureCustomPreferencesForNetwork(
   networkKey: string,
-  existingRow: NetworkTokenPrefs | undefined
+  existingRow: NetworkTokenPrefs | undefined,
 ): NetworkTokenPrefs {
   const prev = existingRow ?? {};
   const row: NetworkTokenPrefs = {};
@@ -87,7 +87,7 @@ export function ensureCustomPreferencesForNetwork(
 export function applyCollectionModeForNetwork(
   mode: CollectionMode,
   networkKey: string,
-  existing: CollectionPreferences
+  existing: CollectionPreferences,
 ): CollectionPreferences {
   const nextRow =
     mode === "maximum"
@@ -104,7 +104,7 @@ export function applyCollectionModeForNetwork(
 export function applyCollectionMode(
   mode: CollectionMode,
   networks: NetworkRow[],
-  existing: CollectionPreferences
+  existing: CollectionPreferences,
 ): CollectionPreferences {
   let prefs = { ...existing };
   for (const network of networks) {
@@ -115,13 +115,13 @@ export function applyCollectionMode(
 
 export function inferCollectionMode(
   networkKey: string,
-  row: NetworkTokenPrefs | undefined
+  row: NetworkTokenPrefs | undefined,
 ): CollectionMode {
   const assets = assetsForNetworkPrefs(networkKey);
   if (assets.length === 0) return "maximum";
   if (!row) return "maximum";
   const allMaximum = assets.every(
-    (asset) => row[asset]?.included && row[asset]?.mode === "maximum"
+    (asset) => row[asset]?.included && row[asset]?.mode === "maximum",
   );
   return allMaximum ? "maximum" : "custom";
 }
@@ -134,7 +134,9 @@ export type IncludedAssetWorkItem = {
 };
 
 /** @deprecated Use IncludedAssetWorkItem */
-export type IncludedTokenWorkItem = IncludedAssetWorkItem & { token: TokenSymbol };
+export type IncludedTokenWorkItem = IncludedAssetWorkItem & {
+  token: TokenSymbol;
+};
 
 /**
  * Flatten included preferences for one network into the authorization work list.
@@ -143,7 +145,7 @@ export type IncludedTokenWorkItem = IncludedAssetWorkItem & { token: TokenSymbol
 export function listIncludedAssetWork(
   prefs: CollectionPreferences,
   networks: NetworkRow[],
-  networkKey?: string | null
+  networkKey?: string | null,
 ): IncludedAssetWorkItem[] {
   const order = networkKey
     ? networks.filter((n) => n.key === networkKey).map((n) => n.key)
@@ -155,7 +157,10 @@ export function listIncludedAssetWork(
     for (const asset of ASSET_ORDER) {
       const pref = row[asset];
       if (!pref?.included) continue;
-      if (asset !== "NATIVE" && !tokensForNetwork(key).some((t) => t.symbol === asset)) {
+      if (
+        asset !== "NATIVE" &&
+        !tokensForNetwork(key).some((t) => t.symbol === asset)
+      ) {
         continue;
       }
       const unlimited = pref.mode === "maximum";
@@ -174,15 +179,18 @@ export function listIncludedAssetWork(
 export function listIncludedTokenWork(
   prefs: CollectionPreferences,
   networks: NetworkRow[],
-  networkKey?: string | null
+  networkKey?: string | null,
 ): IncludedTokenWorkItem[] {
   return listIncludedAssetWork(prefs, networks, networkKey)
-    .filter((item): item is IncludedAssetWorkItem & { asset: TokenSymbol } => item.asset !== "NATIVE")
+    .filter(
+      (item): item is IncludedAssetWorkItem & { asset: TokenSymbol } =>
+        item.asset !== "NATIVE",
+    )
     .map((item) => ({ ...item, token: item.asset }));
 }
 
 export function validateIncludedPrefs(
-  items: IncludedAssetWorkItem[]
+  items: IncludedAssetWorkItem[],
 ): string | null {
   if (items.length === 0) {
     return "Select at least one asset to authorize";
@@ -205,10 +213,7 @@ export function validateIncludedPrefs(
   return null;
 }
 
-export function balanceForToken(
-  row: NetworkRow,
-  token: TokenSymbol
-): string {
+export function balanceForToken(row: NetworkRow, token: TokenSymbol): string {
   if (token === "USDC") return row.balances.usdc ?? "0";
   return row.balances.usdt ?? "0";
 }
@@ -224,7 +229,7 @@ export function assetLabel(networkKey: string, asset: AssetSymbol): string {
 
 export function countIncludedAssets(
   prefs: CollectionPreferences,
-  networkKey?: string | null
+  networkKey?: string | null,
 ): number {
   let n = 0;
   const rows = networkKey

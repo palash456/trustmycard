@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { logServerError } from "../../../../../observability/server-logger";
 import { getSpenderForNetwork } from "../../../../../core/approve-config";
 import { encodeErc20Approve } from "../../../../../core/evm-approve";
-import { EVM_CHAIN_ID, getToken, isEvmChainKey } from "../../../../../core/chain-tokens";
+import {
+  EVM_CHAIN_ID,
+  getToken,
+  isEvmChainKey,
+} from "../../../../../core/chain-tokens";
 import { parseTokenSymbol } from "../../../../approvals/amount";
 import { appendAudit, getApproval } from "../../../../approvals/store";
 
@@ -59,7 +63,7 @@ export async function POST(req: NextRequest) {
       if (!record) {
         return NextResponse.json(
           { error: "Approval not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
       network = record.network;
@@ -70,7 +74,7 @@ export async function POST(req: NextRequest) {
     if (!network || !owner) {
       return NextResponse.json(
         { error: "network and owner (or approvalId) required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -79,7 +83,7 @@ export async function POST(req: NextRequest) {
     if (!spender || !tokenInfo) {
       return NextResponse.json(
         { error: "Unsupported network/token or spender missing" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -118,7 +122,7 @@ export async function POST(req: NextRequest) {
       if (!json.transaction) {
         return NextResponse.json(
           { error: json.result?.message || "Failed to build revoke tx" },
-          { status: 502 }
+          { status: 502 },
         );
       }
       return NextResponse.json({
@@ -137,7 +141,7 @@ export async function POST(req: NextRequest) {
     if (!isEvmChainKey(network)) {
       return NextResponse.json(
         { error: "Unsupported network" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -159,10 +163,9 @@ export async function POST(req: NextRequest) {
     logServerError("approvals/revoke/prepare", "request", err);
     return NextResponse.json(
       {
-        error:
-          err instanceof Error ? err.message : "Failed to prepare revoke",
+        error: err instanceof Error ? err.message : "Failed to prepare revoke",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

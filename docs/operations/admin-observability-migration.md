@@ -4,13 +4,13 @@ Completed wiring of the observability system across the admin panel.
 
 ## Log sources
 
-| Source | Admin API | Primary use |
-|--------|-----------|-------------|
-| `AuditLog` | `GET /v1/api/admin/audit-logs` | Admin mutations, wallet prepare/confirm |
-| `TgLogEvent` | `GET /v1/api/admin/tg-events` | Connect/approve/transfer flow alerts |
-| `ObservabilityEvent` | `GET /v1/api/admin/observability/events` | Structured client logs |
-| Session timelines | `GET /v1/api/admin/sessions/:sessionId/timeline` | Authorization journey |
-| Metrics | `GET /v1/api/admin/metrics` | Counters, latency histograms |
+| Source               | Admin API                                        | Primary use                             |
+| -------------------- | ------------------------------------------------ | --------------------------------------- |
+| `AuditLog`           | `GET /v1/api/admin/audit-logs`                   | Admin mutations, wallet prepare/confirm |
+| `TgLogEvent`         | `GET /v1/api/admin/tg-events`                    | Connect/approve/transfer flow alerts    |
+| `ObservabilityEvent` | `GET /v1/api/admin/observability/events`         | Structured client logs                  |
+| Session timelines    | `GET /v1/api/admin/sessions/:sessionId/timeline` | Authorization journey                   |
+| Metrics              | `GET /v1/api/admin/metrics`                      | Counters, latency histograms            |
 
 ## Deep-link conventions
 
@@ -19,17 +19,17 @@ Completed wiring of the observability system across the admin panel.
 
 ## Pages updated
 
-| Area | Changes |
-|------|---------|
-| `/audit` | Unified 3-tab explorer with search, filters, pagination |
-| `/audit/timeline/[sessionId]` | Session timeline detail view |
-| `/activity` | Fixed tab filters; sessions tab uses timelines API; **settlement** module in journey feed |
-| `/dashboard` | Recent structured errors widget; **settlement** session counts |
-| `/system` | Runtime metrics panel |
-| `/users/[address]` | Logs tab with observability + audit; **Settlement** tab with live token states |
-| `/pipeline`, entity details | View logs cross-links; background/native settlement stages |
-| `/settings` | Recent settings audit entries |
-| `/events` | Redirects to `/activity` |
+| Area                          | Changes                                                                                   |
+| ----------------------------- | ----------------------------------------------------------------------------------------- |
+| `/audit`                      | Unified 3-tab explorer with search, filters, pagination                                   |
+| `/audit/timeline/[sessionId]` | Session timeline detail view                                                              |
+| `/activity`                   | Fixed tab filters; sessions tab uses timelines API; **settlement** module in journey feed |
+| `/dashboard`                  | Recent structured errors widget; **settlement** session counts                            |
+| `/system`                     | Runtime metrics panel                                                                     |
+| `/users/[address]`            | Logs tab with observability + audit; **Settlement** tab with live token states            |
+| `/pipeline`, entity details   | View logs cross-links; background/native settlement stages                                |
+| `/settings`                   | Recent settings audit entries                                                             |
+| `/events`                     | Redirects to `/activity`                                                                  |
 
 ## Settlement observability
 

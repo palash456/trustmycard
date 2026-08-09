@@ -2,12 +2,12 @@
 
 ## RPO / RTO targets (recommended)
 
-| Resource | RPO | RTO |
-|----------|-----|-----|
-| PostgreSQL | ≤ 5 min (PITR) | ≤ 4 hours |
-| Redis | N/A (ephemeral queue) | Rebuild empty; replay outbox |
-| Render services | N/A | ≤ 2 hours with `render.yaml` |
-| Marketing static | N/A | ≤ 30 min (re-upload `out/`) |
+| Resource         | RPO                   | RTO                          |
+| ---------------- | --------------------- | ---------------------------- |
+| PostgreSQL       | ≤ 5 min (PITR)        | ≤ 4 hours                    |
+| Redis            | N/A (ephemeral queue) | Rebuild empty; replay outbox |
+| Render services  | N/A                   | ≤ 2 hours with `render.yaml` |
+| Marketing static | N/A                   | ≤ 30 min (re-upload `out/`)  |
 
 ## PostgreSQL
 

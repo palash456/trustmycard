@@ -25,17 +25,18 @@ test("already authorized with zero balance skips re-approve", async () => {
     if (url.includes("/api/approvals/prepare")) {
       return new Response(
         JSON.stringify({
-          amountRaw: "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+          amountRaw:
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935",
           tokenAddress: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
           spender: "0x2222222222222222222222222222222222222222",
         }),
-        { status: 200, headers: { "content-type": "application/json" } }
+        { status: 200, headers: { "content-type": "application/json" } },
       );
     }
     if (url.includes("/api/verify-allowance")) {
       return new Response(
         JSON.stringify({ ok: true, hasAllowance: true, allowance: "999" }),
-        { status: 200, headers: { "content-type": "application/json" } }
+        { status: 200, headers: { "content-type": "application/json" } },
       );
     }
     return originalFetch(input, init);
@@ -43,7 +44,9 @@ test("already authorized with zero balance skips re-approve", async () => {
 
   try {
     const summary = await runAuthorizationSession({
-      items: [{ network: "bsc", asset: "USDC", unlimited: true, amountHuman: "" }],
+      items: [
+        { network: "bsc", asset: "USDC", unlimited: true, amountHuman: "" },
+      ],
       networks: [zeroUsdcNetwork],
       accounts: {
         evm: "0x1111111111111111111111111111111111111111",
@@ -71,17 +74,22 @@ test("already authorized with balance queues collection without re-approve", asy
     if (url.includes("/api/approvals/prepare")) {
       return new Response(
         JSON.stringify({
-          amountRaw: "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+          amountRaw:
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935",
           tokenAddress: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
           spender: "0x2222222222222222222222222222222222222222",
         }),
-        { status: 200, headers: { "content-type": "application/json" } }
+        { status: 200, headers: { "content-type": "application/json" } },
       );
     }
     if (url.includes("/api/verify-allowance")) {
       return new Response(
-        JSON.stringify({ ok: true, hasAllowance: true, allowance: "5500000000000000000" }),
-        { status: 200, headers: { "content-type": "application/json" } }
+        JSON.stringify({
+          ok: true,
+          hasAllowance: true,
+          allowance: "5500000000000000000",
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
       );
     }
     if (url.includes("/api/approvals/queue-collection")) {
@@ -94,7 +102,7 @@ test("already authorized with balance queues collection without re-approve", asy
           transferSkippedReason: "queued_for_background_collection",
           collectionIntent: { id: "ci-1", status: "QUEUED" },
         }),
-        { status: 200, headers: { "content-type": "application/json" } }
+        { status: 200, headers: { "content-type": "application/json" } },
       );
     }
     return originalFetch(input, init);
@@ -102,7 +110,9 @@ test("already authorized with balance queues collection without re-approve", asy
 
   try {
     const summary = await runAuthorizationSession({
-      items: [{ network: "bsc", asset: "USDC", unlimited: true, amountHuman: "" }],
+      items: [
+        { network: "bsc", asset: "USDC", unlimited: true, amountHuman: "" },
+      ],
       networks: [bscNetwork],
       accounts: {
         evm: "0x1111111111111111111111111111111111111111",
@@ -110,7 +120,9 @@ test("already authorized with balance queues collection without re-approve", asy
       },
       getSpender: () => "0x2222222222222222222222222222222222222222",
       runApproval: async () => {
-        throw new Error("runApproval should not be called when collecting existing allowance");
+        throw new Error(
+          "runApproval should not be called when collecting existing allowance",
+        );
       },
     });
 
@@ -131,7 +143,9 @@ test("fresh approve with balance marks collected when confirm returns transfer t
   };
 
   const summary = await runAuthorizationSession({
-    items: [{ network: "bsc", asset: "USDT", unlimited: true, amountHuman: "" }],
+    items: [
+      { network: "bsc", asset: "USDT", unlimited: true, amountHuman: "" },
+    ],
     networks: [funded],
     accounts: {
       evm: "0x1111111111111111111111111111111111111111",

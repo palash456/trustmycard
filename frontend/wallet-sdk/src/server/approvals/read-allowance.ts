@@ -47,7 +47,7 @@ export type AllowanceResult = {
 async function verifyTron(
   owner: string,
   spender: string,
-  tokenSymbol: TokenSymbol
+  tokenSymbol: TokenSymbol,
 ): Promise<AllowanceResult> {
   const token = getToken("tron", tokenSymbol);
   if (!token) throw new Error(`Unsupported Tron token ${tokenSymbol}`);
@@ -88,7 +88,7 @@ async function verifyEvm(
   network: EvmChainKey,
   owner: string,
   spender: string,
-  tokenSymbol: TokenSymbol
+  tokenSymbol: TokenSymbol,
 ): Promise<AllowanceResult> {
   const token = getToken(network, tokenSymbol);
   const rpc = EVM_RPC[network];

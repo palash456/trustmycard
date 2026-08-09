@@ -13,7 +13,14 @@ export const idsCorrelationPage: DocPage = {
   title: "IDs & Correlation",
   description:
     "Semantic journey IDs (flow-*), child publicIds, correlation headers, and how to trace across services.",
-  keywords: ["flow-id", "traceId", "publicId", "correlation", "x-correlation-id", "semantic"],
+  keywords: [
+    "flow-id",
+    "traceId",
+    "publicId",
+    "correlation",
+    "x-correlation-id",
+    "semantic",
+  ],
   sections: [
     {
       id: "id-hierarchy",
@@ -22,10 +29,30 @@ export const idsCorrelationPage: DocPage = {
         <DocTable
           headers={["Layer", "Field", "Format", "Purpose"]}
           rows={[
-            ["Journey", "traceId, clientSessionId, transactionId", "flow-*", "One end-to-end attempt"],
-            ["Child record", "publicId", "approval-usdt-*, transfer-*, etc.", "Human-readable entity ID"],
-            ["Internal", "id (Prisma)", "CUID", "Database PK — not primary admin label"],
-            ["On-chain", "txHash", "0x… / Tron hash", "Blockchain reference — separate from journey"],
+            [
+              "Journey",
+              "traceId, clientSessionId, transactionId",
+              "flow-*",
+              "One end-to-end attempt",
+            ],
+            [
+              "Child record",
+              "publicId",
+              "approval-usdt-*, transfer-*, etc.",
+              "Human-readable entity ID",
+            ],
+            [
+              "Internal",
+              "id (Prisma)",
+              "CUID",
+              "Database PK — not primary admin label",
+            ],
+            [
+              "On-chain",
+              "txHash",
+              "0x… / Tron hash",
+              "Blockchain reference — separate from journey",
+            ],
           ]}
         />
       ),
@@ -40,9 +67,9 @@ export const idsCorrelationPage: DocPage = {
 Example: flow-20260809-142315-A8F92C
   → 9 Aug 2026 14:23:15 IST, wallet suffix A8F92C`}</DocPre>
           <DocP>
-            Timestamps use IST (<DocCode>Asia/Kolkata</DocCode>). SUFFIX is last 6 alphanumeric
-            chars of wallet address, uppercased. Collision suffix <DocCode>01</DocCode>–
-            <DocCode>ZZ</DocCode> when base ID exists.
+            Timestamps use IST (<DocCode>Asia/Kolkata</DocCode>). SUFFIX is last
+            6 alphanumeric chars of wallet address, uppercased. Collision suffix{" "}
+            <DocCode>01</DocCode>–<DocCode>ZZ</DocCode> when base ID exists.
           </DocP>
         </>
       ),
@@ -69,9 +96,21 @@ Example: flow-20260809-142315-A8F92C
               headers={["Function", "Package", "Use"]}
               rows={[
                 ["generateFlowId", "shared/ids/flow-id.ts", "Build journey ID"],
-                ["generateUniqueFlowId", "shared/ids/flow-id.ts", "Retry with collision suffix"],
-                ["journeyCoreFromFlowId", "shared/ids/flow-id.ts", "Strip flow- for child IDs"],
-                ["isSemanticFlowId / isLegacyFlowId", "shared/ids/flow-id.ts", "Classification"],
+                [
+                  "generateUniqueFlowId",
+                  "shared/ids/flow-id.ts",
+                  "Retry with collision suffix",
+                ],
+                [
+                  "journeyCoreFromFlowId",
+                  "shared/ids/flow-id.ts",
+                  "Strip flow- for child IDs",
+                ],
+                [
+                  "isSemanticFlowId / isLegacyFlowId",
+                  "shared/ids/flow-id.ts",
+                  "Classification",
+                ],
               ]}
             />
           ),
@@ -92,8 +131,8 @@ Examples:
   transfer-native-trx-20260809-142315-A8F92C`}</DocPre>
           <DocCallout variant="warning">
             publicIds are <strong>server-allocated only</strong> via{" "}
-            <DocCode>backend/src/common/ids/public-id.helper.ts</DocCode>. Clients must not mint
-            child IDs.
+            <DocCode>backend/src/common/ids/public-id.helper.ts</DocCode>.
+            Clients must not mint child IDs.
           </DocCallout>
         </>
       ),
@@ -120,7 +159,8 @@ Examples:
       title: "Admin resolution",
       content: (
         <DocP>
-          Admin routes accept journey IDs and publicIds interchangeably where noted:
+          Admin routes accept journey IDs and publicIds interchangeably where
+          noted:
         </DocP>
       ),
       subsections: [
@@ -148,9 +188,10 @@ Examples:
       title: "Legacy flow IDs",
       content: (
         <DocP>
-          Older clients produced opaque IDs like <DocCode>flow-demo-1</DocCode>. These remain valid
-          for lookup via <DocCode>isLegacyFlowId()</DocCode>. New journeys use semantic format only.
-          Admin demo mode uses fixture IDs from <DocCode>admin/src/demo/traceability-fixture.ts</DocCode>.
+          Older clients produced opaque IDs like <DocCode>flow-demo-1</DocCode>.
+          These remain valid for lookup via <DocCode>isLegacyFlowId()</DocCode>.
+          New journeys use semantic format only. Admin demo mode uses fixture
+          IDs from <DocCode>admin/src/demo/traceability-fixture.ts</DocCode>.
         </DocP>
       ),
     },

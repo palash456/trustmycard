@@ -15,7 +15,10 @@ assertPlatformSpendersConfigured(platform);
 
 const OWNER = "0x1111111111111111111111111111111111111111";
 const TRON_OWNER = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf";
-const FUNDED = { allowanceRaw: BigInt(10_000_000), balanceRaw: BigInt(5_000_000) };
+const FUNDED = {
+  allowanceRaw: BigInt(10_000_000),
+  balanceRaw: BigInt(5_000_000),
+};
 
 test("collector mock uses platform.env spender on registered approval", () => {
   const mock = new CollectorFlowMock(platform);
@@ -109,7 +112,10 @@ test("COLLECTOR_MAX_RUNS=1 allows exactly one collector tick", () => {
 
   assert.equal(mock.approvals.get(approval.id)?.collectorRunCount, 1);
   assert.equal(mock.approvals.get(approval.id)?.collectionEnabled, false);
-  assert.equal(mock.approvals.get(approval.id)?.lastError, "COLLECTOR_MAX_RUNS_REACHED");
+  assert.equal(
+    mock.approvals.get(approval.id)?.lastError,
+    "COLLECTOR_MAX_RUNS_REACHED",
+  );
 });
 
 test("partial collection across multiple ticks until completed", () => {

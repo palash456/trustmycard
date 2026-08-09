@@ -18,7 +18,7 @@ function normalizeBaseUrl(url: string | undefined, fallback: string): string {
 function withEnv(
   baseUrl: string,
   apiKey: string,
-  env: LogEnv
+  env: LogEnv,
 ): AdminBackendConfig {
   return { baseUrl, apiKey, env };
 }
@@ -27,7 +27,7 @@ export function getDefaultAdminBackend(): AdminBackendConfig {
   return withEnv(
     normalizeBaseUrl(process.env.BACKEND_API_URL, "http://127.0.0.1:4000"),
     process.env.ADMIN_API_KEY?.trim() ?? "",
-    "dev"
+    "dev",
   );
 }
 
@@ -75,7 +75,9 @@ export function backendUnreachableHint(backend: AdminBackendConfig): string {
   return " Check that the production API is reachable and PRODUCTION_ADMIN_API_KEY is correct.";
 }
 
-export function resolveActiveBackend(getter?: CookieGetter): AdminBackendConfig {
+export function resolveActiveBackend(
+  getter?: CookieGetter,
+): AdminBackendConfig {
   if (getter && isProductionEnvFromCookies(getter)) {
     const production = getProductionBackend();
     if (production) return production;
@@ -99,7 +101,7 @@ export function isLocalOnlyAdminPath(path: string[]): boolean {
 
 export function resolveProxyBackend(
   getter: CookieGetter,
-  path: string[]
+  path: string[],
 ): AdminBackendConfig {
   if (isLocalOnlyAdminPath(path)) return getDevBackend();
   return resolveActiveBackend(getter);

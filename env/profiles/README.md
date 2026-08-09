@@ -20,11 +20,11 @@ env/profiles/
 
 ## Split backend roles (production)
 
-| `SERVICE_ROLE` | Overlay file | Collection keys |
-|----------------|--------------|-----------------|
-| `api` | `backend-api.env` | not allowed |
-| `worker` | `backend-worker.env` | required |
-| `all` | `backend.env` | optional (local dev) |
+| `SERVICE_ROLE` | Overlay file         | Collection keys      |
+| -------------- | -------------------- | -------------------- |
+| `api`          | `backend-api.env`    | not allowed          |
+| `worker`       | `backend-worker.env` | required             |
+| `all`          | `backend.env`        | optional (local dev) |
 
 See [docs/infrastructure/secrets.md](../../docs/infrastructure/secrets.md).
 
@@ -45,11 +45,11 @@ cp env/profiles/$PROFILE/marketing.env.example env/profiles/$PROFILE/marketing.e
 
 ## Switch environments
 
-| Goal | Commands |
-|------|----------|
-| Development | `npm run start:dev`, `npm run dev:website`, `npm run dev:marketing`, `npm run dev:admin` |
-| Production preview | `npm run preview`, `npm run preview:website`, `npm run preview:admin` |
-| Production | [render-hostinger-production.md](../../docs/infrastructure/render-hostinger-production.md) |
+| Goal               | Commands                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------ |
+| Development        | `npm run start:dev`, `npm run dev:website`, `npm run dev:marketing`, `npm run dev:admin`   |
+| Production preview | `npm run preview`, `npm run preview:website`, `npm run preview:admin`                      |
+| Production         | [render-hostinger-production.md](../../docs/infrastructure/render-hostinger-production.md) |
 
 Loader: [`config/load-env.mjs`](../../config/load-env.mjs).
 

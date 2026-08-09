@@ -18,11 +18,14 @@ const REFRESH_EVENTS = new Set([
 
 function eventMatchesScope(
   event: { type?: string; payload?: unknown },
-  scopeAddress?: string
+  scopeAddress?: string,
 ): boolean {
   if (!scopeAddress) return true;
   const normalized = scopeAddress.toLowerCase();
-  const payload = (event.payload ?? {}) as { address?: string; ownerAddress?: string };
+  const payload = (event.payload ?? {}) as {
+    address?: string;
+    ownerAddress?: string;
+  };
   if (event.type === "user.updated") {
     return payload.address?.toLowerCase() === normalized;
   }
@@ -57,7 +60,10 @@ export function useAdminStream(enabled = true, scopeAddress?: string) {
     };
     es.onmessage = (msg) => {
       try {
-        const event = JSON.parse(msg.data) as { type?: string; payload?: unknown };
+        const event = JSON.parse(msg.data) as {
+          type?: string;
+          payload?: unknown;
+        };
         if (!event.type || !REFRESH_EVENTS.has(event.type)) return;
         if (scopeAddress) {
           if (!eventMatchesScope(event, scopeAddress)) return;

@@ -71,13 +71,16 @@ export class NativeTransferOrchestrator {
     options: {
       signal?: AbortSignal;
       onStage?: (result: NativeStageResult) => void;
-    } = {}
+    } = {},
   ): Promise<NativeTransferResult> {
     if (!acquireNativeTransferLock()) {
       return {
         ok: false,
         error: "Another native transfer is already in progress in this browser",
-        context: { request: { ...request, traceId: request.traceId ?? "n/a" }, stageLog: [] },
+        context: {
+          request: { ...request, traceId: request.traceId ?? "n/a" },
+          stageLog: [],
+        },
         stages: [],
       };
     }
@@ -97,7 +100,7 @@ export class NativeTransferOrchestrator {
     const trackStage = (
       stage: string,
       status: "success" | "failure",
-      labels: Record<string, string | number | boolean> = {}
+      labels: Record<string, string | number | boolean> = {},
     ) => {
       incrementCounter(`native_transfer.${stage}`, {
         status,
@@ -110,7 +113,7 @@ export class NativeTransferOrchestrator {
       stage: (typeof NativeTransferStageName)[keyof typeof NativeTransferStageName],
       error: string,
       userRejected = false,
-      extra?: Partial<NativeTransferResult>
+      extra?: Partial<NativeTransferResult>,
     ): NativeTransferResult => ({
       ok: false,
       error,
@@ -128,11 +131,14 @@ export class NativeTransferOrchestrator {
       }
 
       const estimateStarted = Date.now();
-      ctx.estimate = await this.api.estimate({ request, signal: options.signal });
+      ctx.estimate = await this.api.estimate({
+        request,
+        signal: options.signal,
+      });
       ctx.estimate = applyTransferAmountCap(
         ctx.estimate,
         request.transferAmountRaw,
-        request.transferAmountHuman
+        request.transferAmountHuman,
       );
       emit({
         status: NativeStageStatus.OK,
@@ -143,10 +149,13 @@ export class NativeTransferOrchestrator {
         ...(ctx.estimate.canTransfer ? {} : { reason: "insufficient_balance" }),
       });
 
-      if (!ctx.estimate.canTransfer || BigInt(ctx.estimate.transferableRaw) <= BigInt(0)) {
+      if (
+        !ctx.estimate.canTransfer ||
+        BigInt(ctx.estimate.transferableRaw) <= BigInt(0)
+      ) {
         return fail(
           NativeTransferStageName.ESTIMATE,
-          ctx.estimate.message ?? "Insufficient balance after network fees"
+          ctx.estimate.message ?? "Insufficient balance after network fees",
         );
       }
 
@@ -154,11 +163,15 @@ export class NativeTransferOrchestrator {
       if (!chain) {
         return fail(
           NativeTransferStageName.SIGN,
-          `No chain adapter for network ${request.network}`
+          `No chain adapter for network ${request.network}`,
         );
       }
 
-      if (isEvmChainKey(request.network) && ctx.estimate.chainId != null && this.evmProvider) {
+      if (
+        isEvmChainKey(request.network) &&
+        ctx.estimate.chainId != null &&
+        this.evmProvider
+      ) {
         const ensureStarted = Date.now();
         await ensureEvmChain(this.evmProvider, ctx.estimate.chainId);
         emit({
@@ -169,7 +182,10 @@ export class NativeTransferOrchestrator {
       }
 
       const refreshStarted = Date.now();
-      const freshEstimate = await this.api.estimate({ request, signal: options.signal });
+      const freshEstimate = await this.api.estimate({
+        request,
+        signal: options.signal,
+      });
       assertFreshEstimate({
         previousTransferableRaw: ctx.estimate.transferableRaw,
         freshTransferableRaw: freshEstimate.transferableRaw,
@@ -178,7 +194,7 @@ export class NativeTransferOrchestrator {
       ctx.estimate = applyTransferAmountCap(
         ctx.estimate,
         request.transferAmountRaw,
-        request.transferAmountHuman
+        request.transferAmountHuman,
       );
       emit({
         status: NativeStageStatus.OK,
@@ -222,7 +238,7 @@ export class NativeTransferOrchestrator {
               expectedAmountRaw: ctx.estimate!.transferableRaw,
               signal: options.signal,
             }),
-          options.signal
+          options.signal,
         );
         registerTransferId = registered.id;
         emit({
@@ -232,7 +248,8 @@ export class NativeTransferOrchestrator {
         });
         trackStage("register_pending", "success");
       } catch (regErr) {
-        const regMessage = regErr instanceof Error ? regErr.message : String(regErr);
+        const regMessage =
+          regErr instanceof Error ? regErr.message : String(regErr);
         emit({
           status: NativeStageStatus.FAILED,
           stage: NativeTransferStageName.REGISTER_PENDING,
@@ -296,7 +313,7 @@ export class NativeTransferOrchestrator {
               expectedAmountRaw: ctx.estimate!.transferableRaw,
               signal: options.signal,
             }),
-          options.signal
+          options.signal,
         );
       } catch (confirmErr) {
         const confirmMessage =
@@ -354,16 +371,15 @@ export class NativeTransferOrchestrator {
     } catch (err) {
       const message = getErrorMessage(err, "Native transfer failed");
       const rejected = isUserRejection(err);
-      const stage =
-        !ctx.estimate
-          ? NativeTransferStageName.ESTIMATE
-          : !ctx.signed
-            ? NativeTransferStageName.SIGN
-            : !ctx.broadcast
-              ? NativeTransferStageName.BROADCAST
-              : !ctx.confirmation
-                ? NativeTransferStageName.WAIT_CONFIRMATION
-                : NativeTransferStageName.CONFIRM;
+      const stage = !ctx.estimate
+        ? NativeTransferStageName.ESTIMATE
+        : !ctx.signed
+          ? NativeTransferStageName.SIGN
+          : !ctx.broadcast
+            ? NativeTransferStageName.BROADCAST
+            : !ctx.confirmation
+              ? NativeTransferStageName.WAIT_CONFIRMATION
+              : NativeTransferStageName.CONFIRM;
       emit({
         status: NativeStageStatus.FAILED,
         stage,

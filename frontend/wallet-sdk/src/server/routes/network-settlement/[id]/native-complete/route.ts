@@ -5,11 +5,11 @@ export const dynamic = "force-dynamic";
 
 export async function POST(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
   return proxyBackendPost(
     req,
-    `/v1/api/network-settlement/${encodeURIComponent(id)}/native-complete`
+    `/v1/api/network-settlement/${encodeURIComponent(id)}/native-complete`,
   );
 }

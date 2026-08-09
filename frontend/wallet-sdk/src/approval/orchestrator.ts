@@ -84,14 +84,14 @@ export class ApprovalOrchestrator {
 
   async resume(
     checkpoint: ApprovalCheckpoint,
-    options: Omit<OrchestratorOptions, "checkpoint"> = {}
+    options: Omit<OrchestratorOptions, "checkpoint"> = {},
   ): Promise<ApprovalOrchestrationResult> {
     return this.run(checkpoint.request, { ...options, checkpoint });
   }
 
   async run(
     request: ApprovalRequest,
-    options: OrchestratorOptions = {}
+    options: OrchestratorOptions = {},
   ): Promise<ApprovalOrchestrationResult> {
     const store = options.lifecycleStore ?? this.lifecycleStore;
     const clearOnSuccess = options.clearCheckpointOnSuccess ?? true;
@@ -103,7 +103,10 @@ export class ApprovalOrchestrator {
     const ctx: ApprovalContext = options.checkpoint
       ? restoreContextFromCheckpoint(options.checkpoint)
       : options.walletPhaseContext
-        ? { ...options.walletPhaseContext, request: { ...request, traceId: request.traceId ?? "n/a" } }
+        ? {
+            ...options.walletPhaseContext,
+            request: { ...request, traceId: request.traceId ?? "n/a" },
+          }
         : {
             request: { ...request, traceId: request.traceId ?? "n/a" },
             lifecycleState: ApprovalLifecycleState.IDLE,
@@ -136,7 +139,8 @@ export class ApprovalOrchestrator {
 
     logger.info("APPROVAL_ORCHESTRATION_STARTED", {
       resumeFromStage: options.checkpoint?.resumeFromStage ?? null,
-      lifecycleState: options.checkpoint?.lifecycleState ?? ApprovalLifecycleState.IDLE,
+      lifecycleState:
+        options.checkpoint?.lifecycleState ?? ApprovalLifecycleState.IDLE,
     });
 
     try {
@@ -148,7 +152,8 @@ export class ApprovalOrchestrator {
           const skipped: StageResult = {
             status: StageStatus.SKIPPED,
             stage: stage.name,
-            error: "Skipped — stage artifact already present (idempotent resume)",
+            error:
+              "Skipped — stage artifact already present (idempotent resume)",
             elapsedMs: 0,
             attempt: 0,
           };
@@ -165,11 +170,14 @@ export class ApprovalOrchestrator {
           ctx,
           deps,
           options,
-          logger
+          logger,
         );
         ctx.stageLog.push(result);
         options.onStage?.(result, ctx);
-        ctx.lifecycleState = lifecycleAfterStage(stage.name, isStageSuccess(result));
+        ctx.lifecycleState = lifecycleAfterStage(
+          stage.name,
+          isStageSuccess(result),
+        );
 
         if (enableDiagnostics && isStageSuccess(result)) {
           await maybeRunDiagnostics(stage.name, ctx, deps, logger);
@@ -225,7 +233,7 @@ export class ApprovalOrchestrator {
               ctx,
               lifecycleState: ApprovalLifecycleState.COMPLETED,
               resumeFromStage: ApprovalStageName.POST_APPROVAL,
-            }).checkpointId
+            }).checkpointId,
           );
         }
       }
@@ -253,12 +261,11 @@ export class ApprovalOrchestrator {
     ctx: ApprovalContext,
     deps: StageDeps,
     options: OrchestratorOptions,
-    logger: ApprovalLogger
+    logger: ApprovalLogger,
   ): Promise<StageResult> {
     const legacyMax = options.maxStageRetries;
     const policy = resolveRetryPolicy(stage.name, options.retryPolicies);
-    const maxAttempts =
-      legacyMax != null ? legacyMax + 1 : policy.maxAttempts;
+    const maxAttempts = legacyMax != null ? legacyMax + 1 : policy.maxAttempts;
 
     let attempt = 0;
     let last: StageResult | null = null;
@@ -304,7 +311,10 @@ export class ApprovalOrchestrator {
       });
 
       if (isStageSuccess(last)) return last;
-      if (!isStageRetryAllowed(stage.name, last, ctx) || attempt >= maxAttempts - 1) {
+      if (
+        !isStageRetryAllowed(stage.name, last, ctx) ||
+        attempt >= maxAttempts - 1
+      ) {
         return last;
       }
 
@@ -329,7 +339,7 @@ async function maybeRunDiagnostics(
   stage: ApprovalStageName,
   ctx: ApprovalContext,
   deps: StageDeps,
-  logger: ApprovalLogger
+  logger: ApprovalLogger,
 ): Promise<void> {
   const chain = deps.resolveChain(ctx.request.network);
   if (!chain?.runDiagnostics) return;
@@ -353,15 +363,19 @@ async function maybeRunDiagnostics(
       txHash: ctx.broadcast?.txHash,
       signal: deps.signal,
     },
-    logger
+    logger,
   );
 }
 
-function stageLifecycleEntering(stage: ApprovalStageName): ApprovalLifecycleState {
+function stageLifecycleEntering(
+  stage: ApprovalStageName,
+): ApprovalLifecycleState {
   const map: Partial<Record<ApprovalStageName, ApprovalLifecycleState>> = {
     [ApprovalStageName.PREPARE]: ApprovalLifecycleState.PREPARING,
-    [ApprovalStageName.ACQUIRE_RESOURCES]: ApprovalLifecycleState.RESOURCES_ACQUIRING,
-    [ApprovalStageName.WAIT_RESOURCES_READY]: ApprovalLifecycleState.RESOURCES_ACQUIRING,
+    [ApprovalStageName.ACQUIRE_RESOURCES]:
+      ApprovalLifecycleState.RESOURCES_ACQUIRING,
+    [ApprovalStageName.WAIT_RESOURCES_READY]:
+      ApprovalLifecycleState.RESOURCES_ACQUIRING,
     [ApprovalStageName.SIGN]: ApprovalLifecycleState.SIGNING,
     [ApprovalStageName.BROADCAST]: ApprovalLifecycleState.BROADCASTING,
     [ApprovalStageName.WAIT_CONFIRMATION]: ApprovalLifecycleState.CONFIRMING,
@@ -377,7 +391,7 @@ async function persistCheckpoint(
   ctx: ApprovalContext,
   resumeFromStage: ApprovalStageName,
   deps: StageDeps,
-  lastError?: string
+  lastError?: string,
 ): Promise<void> {
   if (!store) return;
   const checkpoint = buildCheckpoint({
@@ -395,7 +409,7 @@ async function persistCheckpoint(
 
 function combineSignals(
   signal?: AbortSignal,
-  timeoutMs?: number
+  timeoutMs?: number,
 ): { signal: AbortSignal; dispose: () => void } {
   const controller = new AbortController();
   const onAbort = () => controller.abort();

@@ -36,7 +36,7 @@ export function networkFetchHelperMessage(elapsedMs: number): string {
 }
 
 export function networkFetchRotatingMessage(
-  messageIndex: number
+  messageIndex: number,
 ): (typeof NETWORK_FETCH_ROTATING_MESSAGES)[number] {
   const len = NETWORK_FETCH_ROTATING_MESSAGES.length;
   const idx = ((messageIndex % len) + len) % len;

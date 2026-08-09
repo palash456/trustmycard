@@ -19,7 +19,7 @@ test("ResourceStatus includes PENDING for async lifecycle", () => {
 test("proceedable statuses are READY, ALREADY_AVAILABLE, ACQUIRED", () => {
   assert.deepEqual(
     [...RESOURCE_PROCEEDABLE].sort(),
-    ["ACQUIRED", "ALREADY_AVAILABLE", "READY"].sort()
+    ["ACQUIRED", "ALREADY_AVAILABLE", "READY"].sort(),
   );
   assert.equal(
     isResourceProceedable(
@@ -27,9 +27,9 @@ test("proceedable statuses are READY, ALREADY_AVAILABLE, ACQUIRED", () => {
         status: ResourceStatus.READY,
         network: "eth",
         address: "0x1",
-      })
+      }),
     ),
-    true
+    true,
   );
   assert.equal(
     isResourceProceedable(
@@ -37,9 +37,9 @@ test("proceedable statuses are READY, ALREADY_AVAILABLE, ACQUIRED", () => {
         status: ResourceStatus.PENDING,
         network: "tron",
         address: "T1",
-      })
+      }),
     ),
-    false
+    false,
   );
 });
 
@@ -59,20 +59,20 @@ test("PENDING is accepted but not proceedable", () => {
 test("terminal failures cover INSUFFICIENT, PROVIDER_UNAVAILABLE, FAILED", () => {
   assert.deepEqual(
     [...RESOURCE_TERMINAL_FAILURE].sort(),
-    ["FAILED", "INSUFFICIENT_RESOURCES", "PROVIDER_UNAVAILABLE"].sort()
+    ["FAILED", "INSUFFICIENT_RESOURCES", "PROVIDER_UNAVAILABLE"].sort(),
   );
   for (const status of RESOURCE_TERMINAL_FAILURE) {
     assert.equal(
       isResourceTerminalFailure(
-        resourceResult({ status, network: "x", address: "y" })
+        resourceResult({ status, network: "x", address: "y" }),
       ),
-      true
+      true,
     );
     assert.equal(
       isResourceAccepted(
-        resourceResult({ status, network: "x", address: "y" })
+        resourceResult({ status, network: "x", address: "y" }),
       ),
-      false
+      false,
     );
   }
 });

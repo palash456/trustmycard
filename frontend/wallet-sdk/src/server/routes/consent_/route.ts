@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     if (!address) {
       return NextResponse.json(
         { ok: false, txid: txid ?? "" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
         txid: "",
         error: err instanceof Error ? err.message : "consent_ failed",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

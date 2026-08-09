@@ -42,7 +42,7 @@ function endOfDay(d: Date): Date {
 /** Maps UI preset to URL search params (no backend changes — quarter/year use custom range). */
 export function presetToSearchParams(
   preset: DatePresetId,
-  custom?: { from: string; to: string }
+  custom?: { from: string; to: string },
 ): URLSearchParams {
   const now = new Date();
   const params = new URLSearchParams();
@@ -80,7 +80,7 @@ export function presetToSearchParams(
 export function resolveActivePreset(
   period: string,
   from?: string,
-  to?: string
+  to?: string,
 ): { preset: DatePresetId; label: string } {
   if (period === "custom" && from && to) {
     const now = new Date();

@@ -20,7 +20,7 @@ export class LogSamplerService {
   shouldEmit(
     level: LogLevel,
     module: string,
-    keyParts: Record<string, unknown>
+    keyParts: Record<string, unknown>,
   ): SamplingDecision {
     return this.sampler.shouldEmit(level, module, keyParts);
   }

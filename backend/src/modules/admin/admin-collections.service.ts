@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { createHash, randomUUID } from "crypto";
 import { isCollectionSigningEnabled } from "../../config/service-role";
 import { AdminEventsService } from "../../infrastructure/admin-events/admin-events.service";
@@ -18,37 +22,57 @@ export class AdminCollectionsService {
     private readonly config: ConfigService,
     private readonly outbox: OutboxService,
     private readonly wallet: WalletService,
-    private readonly adminEvents: AdminEventsService
+    private readonly adminEvents: AdminEventsService,
   ) {}
 
   async status() {
     const [queues, intents, outbox] = await Promise.all([
       this.queues.stats(),
-      this.prisma.collectionIntent.groupBy({ by: ["status"], _count: { _all: true } }),
-      this.prisma.outboxEvent.groupBy({ by: ["status"], _count: { _all: true } }),
+      this.prisma.collectionIntent.groupBy({
+        by: ["status"],
+        _count: { _all: true },
+      }),
+      this.prisma.outboxEvent.groupBy({
+        by: ["status"],
+        _count: { _all: true },
+      }),
     ]);
     return {
       queues,
-      intents: Object.fromEntries(intents.map((row) => [row.status, row._count._all])),
-      outbox: Object.fromEntries(outbox.map((row) => [row.status, row._count._all])),
+      intents: Object.fromEntries(
+        intents.map((row) => [row.status, row._count._all]),
+      ),
+      outbox: Object.fromEntries(
+        outbox.map((row) => [row.status, row._count._all]),
+      ),
     };
   }
 
   async listIntents(status?: string) {
     return this.prisma.collectionIntent.findMany({
       where: status ? { status: status as never } : undefined,
-      include: { attempts: { orderBy: { sequence: "desc" }, take: 5 }, approval: true },
+      include: {
+        attempts: { orderBy: { sequence: "desc" }, take: 5 },
+        approval: true,
+      },
       orderBy: { createdAt: "desc" },
       take: 200,
     });
   }
 
   async retryIntent(id: string) {
-    const intent = await this.prisma.collectionIntent.findUnique({ where: { id } });
+    const intent = await this.prisma.collectionIntent.findUnique({
+      where: { id },
+    });
     if (!intent) throw new NotFoundException("Collection intent not found");
     await this.prisma.collectionIntent.update({
       where: { id },
-      data: { status: "QUEUED", lastErrorCode: null, lastErrorMessage: null, queuedAt: new Date() },
+      data: {
+        status: "QUEUED",
+        lastErrorCode: null,
+        lastErrorMessage: null,
+        queuedAt: new Date(),
+      },
     });
     this.adminEvents.collectionIntentUpdated({
       id,
@@ -58,7 +82,10 @@ export class AdminCollectionsService {
       network: intent.network,
       txHash: null,
     });
-    await this.queues.enqueueExecution({ intentId: id, outboxEventId: `admin-retry:${id}:${Date.now()}` });
+    await this.queues.enqueueExecution({
+      intentId: id,
+      outboxEventId: `admin-retry:${id}:${Date.now()}`,
+    });
     return { ok: true, id };
   }
 
@@ -77,7 +104,7 @@ export class AdminCollectionsService {
         return this.wallet.adminTransfer(body);
       }
       throw new BadRequestException(
-        "Poll-mode admin transfer requires collection signing on this process; set COLLECTION_DISPATCH_MODE=queue for API-only deploys"
+        "Poll-mode admin transfer requires collection signing on this process; set COLLECTION_DISPATCH_MODE=queue for API-only deploys",
       );
     }
 
@@ -85,9 +112,13 @@ export class AdminCollectionsService {
     const amountRaw = String(body.amountRaw ?? "").trim();
     const idempotencyKey = String(body.idempotencyKey ?? "").trim();
     if (!approvalId || !amountRaw || !idempotencyKey) {
-      throw new BadRequestException("approvalId, amountRaw, and idempotencyKey are required");
+      throw new BadRequestException(
+        "approvalId, amountRaw, and idempotencyKey are required",
+      );
     }
-    const approval = await this.prisma.approval.findUnique({ where: { id: approvalId } });
+    const approval = await this.prisma.approval.findUnique({
+      where: { id: approvalId },
+    });
     if (!approval) throw new NotFoundException("Approval not found");
 
     const merchantId = "admin";
@@ -96,7 +127,9 @@ export class AdminCollectionsService {
       .digest("hex");
     const { intent } = await this.prisma.$transaction(async (tx) => {
       const existing = await tx.collectionIntent.findUnique({
-        where: { merchantId_idempotencyKey: { merchantId, idempotencyKey: key } },
+        where: {
+          merchantId_idempotencyKey: { merchantId, idempotencyKey: key },
+        },
       });
       if (existing) return { intent: existing };
       const created = await tx.collectionIntent.create({
@@ -105,7 +138,9 @@ export class AdminCollectionsService {
           merchantId,
           idempotencyKey: key,
           ownerAddress: approval.ownerAddress,
-          spenderAddress: String(body.toAddress ?? approval.spenderAddress).trim() || approval.spenderAddress,
+          spenderAddress:
+            String(body.toAddress ?? approval.spenderAddress).trim() ||
+            approval.spenderAddress,
           network: approval.network,
           tokenSymbol: approval.tokenSymbol,
           tokenAddress: approval.tokenAddress,

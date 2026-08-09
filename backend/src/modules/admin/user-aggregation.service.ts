@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { ApprovalStatus, TransferStatus } from "@prisma/client";
-import { formatRawAmount, isUnlimitedRaw } from "../../common/utils/amount-format";
+import {
+  formatRawAmount,
+  isUnlimitedRaw,
+} from "../../common/utils/amount-format";
 import {
   paginatedResponse,
   parsePagination,
@@ -37,12 +40,16 @@ const ACTIVE_APPROVAL_STATUSES: ApprovalStatus[] = [
   "PARTIALLY_USED",
 ];
 
-export function partitionApprovalsForAdminView<T extends { status: string }>(approvals: T[]) {
+export function partitionApprovalsForAdminView<T extends { status: string }>(
+  approvals: T[],
+) {
   return {
     activeApprovals: approvals.filter(
-      (approval) => !["SUPERSEDED", "REVOKED"].includes(approval.status)
+      (approval) => !["SUPERSEDED", "REVOKED"].includes(approval.status),
     ),
-    revokedApprovals: approvals.filter((approval) => approval.status === "REVOKED"),
+    revokedApprovals: approvals.filter(
+      (approval) => approval.status === "REVOKED",
+    ),
   };
 }
 
@@ -78,7 +85,7 @@ function detectAddressType(address: string): "evm" | "tron" | "unknown" {
 }
 
 function computeReconciliationStatus(
-  native: { status: TransferStatus; reconcileAttempts: number } | null
+  native: { status: TransferStatus; reconcileAttempts: number } | null,
 ): string | null {
   if (!native) return null;
   if (native.status === "confirmed") return "confirmed";
@@ -93,7 +100,7 @@ function computeReconciliationStatus(
 export class UserAggregationService {
   constructor(
     private readonly walletService: WalletService,
-    private readonly activityFeed: ActivityFeedService
+    private readonly activityFeed: ActivityFeedService,
   ) {}
 
   async listUsers(query: Record<string, string | undefined>) {
@@ -109,14 +116,14 @@ export class UserAggregationService {
     const baseAddresses = await this.fetchAddressBase(search);
 
     const enriched = await Promise.all(
-      baseAddresses.map((base) => this.enrichAddressRow(base))
+      baseAddresses.map((base) => this.enrichAddressRow(base)),
     );
 
     let filtered = enriched;
 
     if (networkFilter) {
       filtered = filtered.filter((row) =>
-        row.networksUsed.some((n) => n.toLowerCase() === networkFilter)
+        row.networksUsed.some((n) => n.toLowerCase() === networkFilter),
       );
     }
     if (workflowFilter) {
@@ -127,12 +134,12 @@ export class UserAggregationService {
     }
     if (approvalStatusFilter) {
       filtered = filtered.filter(
-        (row) => row.approvalStatus === approvalStatusFilter
+        (row) => row.approvalStatus === approvalStatusFilter,
       );
     }
     if (collectionStatusFilter) {
       filtered = filtered.filter(
-        (row) => row.collectionStatus === collectionStatusFilter
+        (row) => row.collectionStatus === collectionStatusFilter,
       );
     }
     if (hasErrorFilter) {
@@ -281,7 +288,8 @@ export class UserAggregationService {
       events,
     });
 
-    const { activeApprovals, revokedApprovals } = partitionApprovalsForAdminView(approvals);
+    const { activeApprovals, revokedApprovals } =
+      partitionApprovalsForAdminView(approvals);
 
     const lifetimeCollected = this.aggregateCollected(approvals);
     const errors = this.buildErrorsList(
@@ -289,18 +297,18 @@ export class UserAggregationService {
       transfers,
       nativeTransfers,
       events,
-      observabilityEvents
+      observabilityEvents,
     );
     const retryHistory = this.buildRetryHistory(
       approvals,
       transfers,
-      nativeTransfers
+      nativeTransfers,
     );
     const analytics = this.computeAnalytics(
       approvals,
       transfers,
       nativeTransfers,
-      events
+      events,
     );
     const timeline = activityFeedResult.items.map((item) => ({
       type: item.source,
@@ -354,19 +362,26 @@ export class UserAggregationService {
             }>;
           } | null = null;
           try {
-            const plan = s.tokenPlan as
-              | Record<string, { shouldAttemptTransfer?: boolean; txHash?: string | null }>
-              | null;
-            const hasPlan = Boolean(plan && typeof plan === "object" && Object.keys(plan).length > 0);
+            const plan = s.tokenPlan as Record<
+              string,
+              { shouldAttemptTransfer?: boolean; txHash?: string | null }
+            > | null;
+            const hasPlan = Boolean(
+              plan && typeof plan === "object" && Object.keys(plan).length > 0,
+            );
             const tokens = hasPlan
               ? (["USDT", "USDC"] as const).map((token) => {
                   const entry = plan?.[token];
                   const txHash =
                     entry?.txHash ??
-                    (token === "USDT" ? s.usdtApprovalTxHash : s.usdcApprovalTxHash);
+                    (token === "USDT"
+                      ? s.usdtApprovalTxHash
+                      : s.usdcApprovalTxHash);
                   return {
                     token,
-                    shouldAttemptTransfer: Boolean(entry?.shouldAttemptTransfer),
+                    shouldAttemptTransfer: Boolean(
+                      entry?.shouldAttemptTransfer,
+                    ),
                     approvalTxHash: txHash,
                   };
                 })
@@ -399,7 +414,7 @@ export class UserAggregationService {
             tokenReadiness,
             nativeReady: tokenReadiness?.canExecuteNative ?? s.nativeReady,
           };
-        })
+        }),
       ),
       activityFeed: activityFeedResult.items,
       activityFeedTotal: activityFeedResult.total,
@@ -426,7 +441,10 @@ export class UserAggregationService {
     return this.walletService.getBalances(evm, tron);
   }
 
-  private sortValue(row: Record<string, unknown>, field: string): string | number {
+  private sortValue(
+    row: Record<string, unknown>,
+    field: string,
+  ): string | number {
     const v = row[field];
     if (v instanceof Date) return v.getTime();
     if (typeof v === "string" && !Number.isNaN(Date.parse(v))) {
@@ -525,13 +543,17 @@ export class UserAggregationService {
       transfers: Awaited<
         ReturnType<
           typeof prisma.transfer.findMany<{
-            include: { approval: { select: { network: true; tokenSymbol: true } } };
+            include: {
+              approval: { select: { network: true; tokenSymbol: true } };
+            };
           }>
         >
       >;
-      nativeTransfers: Awaited<ReturnType<typeof prisma.nativeTransfer.findMany>>;
+      nativeTransfers: Awaited<
+        ReturnType<typeof prisma.nativeTransfer.findMany>
+      >;
       events: Awaited<ReturnType<typeof prisma.tgLogEvent.findMany>>;
-    }
+    },
   ) {
     const { address } = base;
 
@@ -576,8 +598,8 @@ export class UserAggregationService {
     const hasConfirmedTransfer = transfers.some(isTransferConfirmed);
     const confirmedNetwork =
       representativeTransfer && isTransferConfirmed(representativeTransfer)
-        ? (representativeTransfer as { approval?: { network?: string } }).approval
-            ?.network ?? null
+        ? ((representativeTransfer as { approval?: { network?: string } })
+            .approval?.network ?? null)
         : null;
 
     const networksUsed = [
@@ -593,12 +615,12 @@ export class UserAggregationService {
       ...new Set(
         approvals
           .filter((a) => a.status !== "SUPERSEDED" && a.status !== "REVOKED")
-          .map((a) => a.network)
+          .map((a) => a.network),
       ),
     ];
 
     const activeApproval = approvals.find((a) =>
-      ACTIVE_APPROVAL_STATUSES.includes(a.status)
+      ACTIVE_APPROVAL_STATUSES.includes(a.status),
     );
 
     const latestError = findLatestPipelineError(
@@ -627,7 +649,7 @@ export class UserAggregationService {
         network: n.network,
       })),
       events,
-      { confirmedNetwork }
+      { confirmedNetwork },
     );
 
     const hasRecentError = Boolean(latestError);
@@ -711,7 +733,7 @@ export class UserAggregationService {
       latestApproval,
       latestTransfer,
       latestNative,
-      events[0] ?? null
+      events[0] ?? null,
     );
 
     const collectionStatus = activeApproval
@@ -754,16 +776,20 @@ export class UserAggregationService {
       remainingRaw: string;
       decimals: number;
       unlimited?: boolean;
-    }>
+    }>,
   ): CollectableItem[] {
     const active = approvals.filter((a) =>
-      ACTIVE_APPROVAL_STATUSES.includes(a.status)
+      ACTIVE_APPROVAL_STATUSES.includes(a.status),
     );
-    const map = new Map<string, CollectableItem & { unlimitedCount?: number }>();
+    const map = new Map<
+      string,
+      CollectableItem & { unlimitedCount?: number }
+    >();
     for (const a of active) {
       const key = `${a.network}:${a.tokenSymbol}`;
       const existing = map.get(key);
-      const isUnlimited = Boolean(a.unlimited) || isUnlimitedRaw(a.remainingRaw);
+      const isUnlimited =
+        Boolean(a.unlimited) || isUnlimitedRaw(a.remainingRaw);
 
       if (isUnlimited) {
         if (existing) {
@@ -810,7 +836,7 @@ export class UserAggregationService {
       tokenSymbol: string;
       collectedRaw: string;
       decimals: number;
-    }>
+    }>,
   ): CollectedTotal[] {
     const map = new Map<string, CollectedTotal>();
     for (const a of approvals) {
@@ -838,37 +864,61 @@ export class UserAggregationService {
   private findLatestTx(
     approvals: Array<{ txHash: string; updatedAt: Date }>,
     transfers: Array<{ txHash: string | null; updatedAt: Date }>,
-    nativeTransfers: Array<{ txHash: string; updatedAt: Date }>
+    nativeTransfers: Array<{ txHash: string; updatedAt: Date }>,
   ): { txHash: string; at: string; source: string } | null {
     const candidates: Array<{ at: Date; txHash: string; source: string }> = [];
     for (const a of approvals) {
       if (a.txHash)
-        candidates.push({ at: a.updatedAt, txHash: a.txHash, source: "approval" });
+        candidates.push({
+          at: a.updatedAt,
+          txHash: a.txHash,
+          source: "approval",
+        });
     }
     for (const t of transfers) {
       if (t.txHash)
-        candidates.push({ at: t.updatedAt, txHash: t.txHash, source: "transfer" });
+        candidates.push({
+          at: t.updatedAt,
+          txHash: t.txHash,
+          source: "transfer",
+        });
     }
     for (const n of nativeTransfers) {
       if (n.txHash)
-        candidates.push({ at: n.updatedAt, txHash: n.txHash, source: "native" });
+        candidates.push({
+          at: n.updatedAt,
+          txHash: n.txHash,
+          source: "native",
+        });
     }
     candidates.sort((a, b) => b.at.getTime() - a.at.getTime());
     const latest = candidates[0];
     return latest
-      ? { txHash: latest.txHash, at: latest.at.toISOString(), source: latest.source }
+      ? {
+          txHash: latest.txHash,
+          at: latest.at.toISOString(),
+          source: latest.source,
+        }
       : null;
   }
 
   private buildLatestActivity(
-    latestApproval: { network: string; tokenSymbol: string; updatedAt: Date } | null,
+    latestApproval: {
+      network: string;
+      tokenSymbol: string;
+      updatedAt: Date;
+    } | null,
     latestTransfer: {
       status: string;
       updatedAt: Date;
       approval?: { network: string; tokenSymbol: string };
     } | null,
-    latestNative: { network: string; assetSymbol: string; updatedAt: Date } | null,
-    latestEvent: { type: string; network: string; createdAt: Date } | null
+    latestNative: {
+      network: string;
+      assetSymbol: string;
+      updatedAt: Date;
+    } | null,
+    latestEvent: { type: string; network: string; createdAt: Date } | null,
   ): { at: string; type: string; label: string } | null {
     const candidates: Array<{ at: Date; type: string; label: string }> = [];
     if (latestApproval) {
@@ -945,7 +995,7 @@ export class UserAggregationService {
       module: string;
       message: string;
       stage: string | null;
-    }> = []
+    }> = [],
   ) {
     const errors: Array<{
       id: string;
@@ -1011,7 +1061,7 @@ export class UserAggregationService {
       }
     }
     return errors.sort(
-      (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()
+      (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime(),
     );
   }
 
@@ -1035,7 +1085,7 @@ export class UserAggregationService {
       errorMessage: string | null;
       network: string;
       updatedAt: Date;
-    }>
+    }>,
   ) {
     const retries: Array<{
       id: string;
@@ -1078,7 +1128,7 @@ export class UserAggregationService {
       }
     }
     return retries.sort(
-      (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()
+      (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime(),
     );
   }
 
@@ -1086,17 +1136,27 @@ export class UserAggregationService {
     approvals: Array<{ status: ApprovalStatus }>,
     transfers: Array<{ status: TransferStatus }>,
     nativeTransfers: Array<{ status: TransferStatus }>,
-    events: Array<{ status: string }>
+    events: Array<{ status: string }>,
   ) {
     const approvalSuccess = approvals.filter(
-      (a) => a.status === "COMPLETED" || a.status === "ACTIVE" || a.status === "PARTIALLY_USED"
+      (a) =>
+        a.status === "COMPLETED" ||
+        a.status === "ACTIVE" ||
+        a.status === "PARTIALLY_USED",
     ).length;
-    const transferSuccess = transfers.filter((t) => t.status === "confirmed").length;
-    const nativeSuccess = nativeTransfers.filter((n) => n.status === "confirmed").length;
+    const transferSuccess = transfers.filter(
+      (t) => t.status === "confirmed",
+    ).length;
+    const nativeSuccess = nativeTransfers.filter(
+      (n) => n.status === "confirmed",
+    ).length;
     const eventSuccess = events.filter((e) => e.status === "success").length;
 
     const totalOps =
-      approvals.length + transfers.length + nativeTransfers.length + events.length;
+      approvals.length +
+      transfers.length +
+      nativeTransfers.length +
+      events.length;
     const successOps =
       approvalSuccess + transferSuccess + nativeSuccess + eventSuccess;
 
@@ -1157,7 +1217,7 @@ export class UserAggregationService {
       resource: string;
       status: string;
       createdAt: Date;
-    }>
+    }>,
   ) {
     return [
       ...approvals.map((a) => ({

@@ -28,14 +28,14 @@ Admin APIs / schedulers / services
 
 ## What belongs where
 
-| Location | Contents |
-|----------|----------|
-| `env/profiles/$TMC_ENV/platform.env` | Per-environment platform overrides (wallets, flags, …) |
-| `config/platform.env` | Legacy platform config (still supported) |
-| `env/profiles/$TMC_ENV/backend.env` or `backend/.env.local` | **Infrastructure**: `DATABASE_URL`, `PORT`, `ADMIN_API_KEY`, `REDIS_URL`, `LOG_LEVEL` |
-| `env/profiles/$TMC_ENV/website.env` or `frontend/website/.env.local` | **App infra**: `NEXT_PUBLIC_PROJECT_ID`, `BACKEND_API_URL`, Telegram |
-| `env/profiles/$TMC_ENV/admin.env` or `frontend/admin/.env.local` | **Admin infra**: session/login secrets, `BACKEND_API_URL`, `ADMIN_API_KEY` |
-| `AppSettings` (Postgres) | **Runtime admin overrides** of tunable platform keys (collector interval, allow-self-spender, …). Defaults always come from `platform.env`. |
+| Location                                                             | Contents                                                                                                                                    |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `env/profiles/$TMC_ENV/platform.env`                                 | Per-environment platform overrides (wallets, flags, …)                                                                                      |
+| `config/platform.env`                                                | Legacy platform config (still supported)                                                                                                    |
+| `env/profiles/$TMC_ENV/backend.env` or `backend/.env.local`          | **Infrastructure**: `DATABASE_URL`, `PORT`, `ADMIN_API_KEY`, `REDIS_URL`, `LOG_LEVEL`                                                       |
+| `env/profiles/$TMC_ENV/website.env` or `frontend/website/.env.local` | **App infra**: `NEXT_PUBLIC_PROJECT_ID`, `BACKEND_API_URL`, Telegram                                                                        |
+| `env/profiles/$TMC_ENV/admin.env` or `frontend/admin/.env.local`     | **Admin infra**: session/login secrets, `BACKEND_API_URL`, `ADMIN_API_KEY`                                                                  |
+| `AppSettings` (Postgres)                                             | **Runtime admin overrides** of tunable platform keys (collector interval, allow-self-spender, …). Defaults always come from `platform.env`. |
 
 ## Spender addresses
 
@@ -64,19 +64,19 @@ The response includes `config` (`PublicPlatformConfig`) with wallets, approval d
 
 ## Key modules
 
-| Module | Role |
-|--------|------|
-| `backend/src/config/platform-config.loader.ts` | Parse + validate platform.env |
-| `backend/src/config/platform-config.service.ts` | Injectable platform snapshot |
-| `backend/src/config/config.service.ts` | Merged config + admin overrides |
-| `frontend/shared/platform-config/types.ts` | Shared public API types |
+| Module                                          | Role                            |
+| ----------------------------------------------- | ------------------------------- |
+| `backend/src/config/platform-config.loader.ts`  | Parse + validate platform.env   |
+| `backend/src/config/platform-config.service.ts` | Injectable platform snapshot    |
+| `backend/src/config/config.service.ts`          | Merged config + admin overrides |
+| `frontend/shared/platform-config/types.ts`      | Shared public API types         |
 
 ## Restart requirements
 
-| Change | Action |
-|--------|--------|
-| `platform.env` | Restart backend + website |
-| Admin Settings save | Hot-reload (no restart) |
-| `backend/.env.local` infra | Restart backend only |
+| Change                     | Action                    |
+| -------------------------- | ------------------------- |
+| `platform.env`             | Restart backend + website |
+| Admin Settings save        | Hot-reload (no restart)   |
+| `backend/.env.local` infra | Restart backend only      |
 
 See also: [change-spender-collector-guide.md](../operations/change-spender-collector-guide.md)

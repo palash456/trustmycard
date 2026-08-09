@@ -23,7 +23,7 @@ export function DetailRow({
     <div
       className={cn(
         "flex flex-col gap-1 py-3 text-sm sm:flex-row sm:items-start sm:justify-between sm:gap-4",
-        className
+        className,
       )}
     >
       <dt className="shrink-0 text-muted-foreground">{label}</dt>

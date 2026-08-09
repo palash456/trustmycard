@@ -7,7 +7,12 @@ import {
   type ApprovalContext,
   type StageResult,
 } from "../types";
-import { assertNotCancelled, isCancelError, type ApprovalStage, type StageDeps } from "./stage";
+import {
+  assertNotCancelled,
+  isCancelError,
+  type ApprovalStage,
+  type StageDeps,
+} from "./stage";
 
 export const prepareStage: ApprovalStage = {
   name: ApprovalStageName.PREPARE,
@@ -20,7 +25,11 @@ export const prepareStage: ApprovalStage = {
         signal: deps.signal,
       });
       ctx.prepared = prepared;
-      return okStage(ApprovalStageName.PREPARE, prepared, (deps.now ?? Date.now)() - started);
+      return okStage(
+        ApprovalStageName.PREPARE,
+        prepared,
+        (deps.now ?? Date.now)() - started,
+      );
     } catch (err) {
       if (isCancelError(err) || deps.signal?.aborted) {
         return cancelledStage(ApprovalStageName.PREPARE);

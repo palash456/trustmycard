@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   _req: Request,
-  ctx: { params: Promise<{ id: string }> }
+  ctx: { params: Promise<{ id: string }> },
 ) {
   const { id } = await ctx.params;
   const approval = getApproval(id);

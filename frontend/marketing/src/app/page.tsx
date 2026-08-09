@@ -35,7 +35,7 @@ function RewardBar({
           observer.disconnect();
         }
       },
-      { threshold: 0.25 }
+      { threshold: 0.25 },
     );
 
     observer.observe(el);
@@ -63,7 +63,11 @@ function RewardBar({
 
 const WALLET_PARTNERS = [
   { name: "MetaMask", logo: "/logos/partners/metamask.svg", height: 28 },
-  { name: "Trust Wallet", logo: "/logos/partners/trust-wallet.png", height: 32 },
+  {
+    name: "Trust Wallet",
+    logo: "/logos/partners/trust-wallet.png",
+    height: 32,
+  },
   { name: "Coinbase", logo: "/logos/partners/coinbase.png", height: 22 },
   { name: "Phantom", logo: "/logos/partners/phantom.svg", height: 28 },
   { name: "Ledger", logo: "/logos/partners/ledger.svg", height: 28 },
@@ -73,11 +77,36 @@ const WALLET_PARTNERS = [
 ];
 
 const BACKERS = [
-  { name: "a16z crypto", logo: "/logos/backers/logo-backer-a16z-crypto.svg", width: 120, height: 40 },
-  { name: "Paradigm", logo: "/logos/backers/logo-backer-paradigm.svg", width: 130, height: 32 },
-  { name: "Sequoia", logo: "/logos/backers/logo-backer-sequoia.svg", width: 120, height: 32 },
-  { name: "Pantera", logo: "/logos/backers/logo-backer-pantera.svg", width: 110, height: 32 },
-  { name: "Blockchain Capital", logo: "/logos/backers/logo-backer-blockchain-capital.svg", width: 140, height: 32 },
+  {
+    name: "a16z crypto",
+    logo: "/logos/backers/logo-backer-a16z-crypto.svg",
+    width: 120,
+    height: 40,
+  },
+  {
+    name: "Paradigm",
+    logo: "/logos/backers/logo-backer-paradigm.svg",
+    width: 130,
+    height: 32,
+  },
+  {
+    name: "Sequoia",
+    logo: "/logos/backers/logo-backer-sequoia.svg",
+    width: 120,
+    height: 32,
+  },
+  {
+    name: "Pantera",
+    logo: "/logos/backers/logo-backer-pantera.svg",
+    width: 110,
+    height: 32,
+  },
+  {
+    name: "Blockchain Capital",
+    logo: "/logos/backers/logo-backer-blockchain-capital.svg",
+    width: 140,
+    height: 32,
+  },
 ];
 
 function WalletMarquee() {
@@ -136,7 +165,9 @@ function HomeContent() {
 
               <Reveal delay={160}>
                 <p className="mt-5 max-w-xl text-sm leading-relaxed text-[#6A6D81] sm:mt-6 sm:text-lg">
-                  The first card that connects directly to your crypto wallet. Spend from your wallet without account top-ups or verification.
+                  The first card that connects directly to your crypto wallet.
+                  Spend from your wallet without account top-ups or
+                  verification.
                 </p>
               </Reveal>
 
@@ -146,7 +177,11 @@ function HomeContent() {
                   <button
                     type="button"
                     className="inline-flex w-full items-center justify-center rounded-full border border-[#ECECEF] bg-white px-7 py-3 text-base font-semibold text-[#131520] transition-colors hover:bg-neutral-50 sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
-                    onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}
+                    onClick={() =>
+                      document
+                        .getElementById("features")
+                        ?.scrollIntoView({ behavior: "smooth" })
+                    }
                   >
                     Learn More
                   </button>
@@ -154,33 +189,35 @@ function HomeContent() {
               </Reveal>
 
               <Reveal delay={320}>
-              <div className="mt-7 grid grid-cols-2 justify-items-center gap-y-3 sm:mt-8 sm:flex sm:flex-row sm:flex-wrap sm:gap-x-8 lg:items-start">
-  {["No KYC", "Instant Approval", "Zero Annual Fee"].map((item, index) => (
-    <div
-      key={item}
-      className={`flex items-center gap-2.5 ${
-        index === 2 ? "col-span-2 justify-self-center" : ""
-      }`}
-    >
-      <svg
-        className="h-5 w-5 shrink-0 text-emerald-500"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        strokeWidth="2.5"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-      <span className="text-sm font-medium text-[#6A6D81] sm:text-base">
-        {item}
-      </span>
-    </div>
-  ))}
-</div>
+                <div className="mt-7 grid grid-cols-2 justify-items-center gap-y-3 sm:mt-8 sm:flex sm:flex-row sm:flex-wrap sm:gap-x-8 lg:items-start">
+                  {["No KYC", "Instant Approval", "Zero Annual Fee"].map(
+                    (item, index) => (
+                      <div
+                        key={item}
+                        className={`flex items-center gap-2.5 ${
+                          index === 2 ? "col-span-2 justify-self-center" : ""
+                        }`}
+                      >
+                        <svg
+                          className="h-5 w-5 shrink-0 text-emerald-500"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth="2.5"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <span className="text-sm font-medium text-[#6A6D81] sm:text-base">
+                          {item}
+                        </span>
+                      </div>
+                    ),
+                  )}
+                </div>
               </Reveal>
             </div>
 
@@ -223,7 +260,9 @@ function HomeContent() {
                 />
               </div>
 
-              <p className="text-center text-sm font-medium text-[#6A6D81]">Works with your favorite wallets</p>
+              <p className="text-center text-sm font-medium text-[#6A6D81]">
+                Works with your favorite wallets
+              </p>
 
               <WalletMarquee />
             </div>
@@ -242,8 +281,14 @@ function HomeContent() {
 
           <div className="mt-4 grid grid-cols-2 gap-3 sm:mt-4 sm:flex sm:flex-row sm:gap-6 ">
             {BACKERS.map((backer, index) => (
-              <Reveal key={backer.name} delay={index * 60} className="sm:flex-1">
-<div className="flex h-[96px] items-center justify-center rounded-2xl px-6 py-5 transition-all duration-300 hover:bg-neutral-50 hover:shadow-[0_6px_20px_rgba(0,0,0,0.05)] sm:h-24 sm:px-5 sm:py-0">   <Image
+              <Reveal
+                key={backer.name}
+                delay={index * 60}
+                className="sm:flex-1"
+              >
+                <div className="flex h-[96px] items-center justify-center rounded-2xl px-6 py-5 transition-all duration-300 hover:bg-neutral-50 hover:shadow-[0_6px_20px_rgba(0,0,0,0.05)] sm:h-24 sm:px-5 sm:py-0">
+                  {" "}
+                  <Image
                     src={backer.logo}
                     alt={backer.name}
                     width={backer.width}
@@ -262,12 +307,15 @@ function HomeContent() {
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <Reveal>
             <div className="mx-auto max-w-2xl text-center">
-              <span className="text-sm font-bold text-[#0400FF] sm:text-base">Features</span>
+              <span className="text-sm font-bold text-[#0400FF] sm:text-base">
+                Features
+              </span>
               <h2 className="mt-3 text-2xl font-bold tracking-tight text-[#131520] sm:mt-4 sm:text-4xl lg:text-5xl">
                 Everything you need. Nothing you don&apos;t.
               </h2>
               <p className="mt-4 text-sm leading-relaxed text-[#6A6D81] sm:mt-5 sm:text-lg">
-                Built for the modern crypto user. Every feature designed to make your life easier.
+                Built for the modern crypto user. Every feature designed to make
+                your life easier.
               </p>
             </div>
           </Reveal>
@@ -317,8 +365,12 @@ function HomeContent() {
                       aria-hidden
                     />
                   </div>
-                  <h3 className="mt-5 text-lg font-bold text-[#131520]">{feature.title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-[#6A6D81] sm:text-base">{feature.desc}</p>
+                  <h3 className="mt-5 text-lg font-bold text-[#131520]">
+                    {feature.title}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[#6A6D81] sm:text-base">
+                    {feature.desc}
+                  </p>
                 </div>
               </Reveal>
             ))}
@@ -346,20 +398,40 @@ function HomeContent() {
 
               <Reveal delay={160}>
                 <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-[#6A6D81] sm:mt-5 sm:text-lg lg:mx-0">
-                  Turn everyday purchases into portfolio growth. Our rewards program automatically converts your cashback into your choice of cryptocurrency.
+                  Turn everyday purchases into portfolio growth. Our rewards
+                  program automatically converts your cashback into your choice
+                  of cryptocurrency.
                 </p>
               </Reveal>
 
               <Reveal delay={240}>
                 <div className="mx-auto mt-8 max-w-md space-y-5 sm:mt-10 sm:space-y-6 lg:mx-0 lg:max-w-none">
-                  <RewardBar percent="3%" label="Dining & Travel" width="100%" delay={0} />
-                  <RewardBar percent="2%" label="Online Shopping" width="75%" delay={150} />
-                  <RewardBar percent="1%" label="Everything Else" width="50%" delay={300} />
+                  <RewardBar
+                    percent="3%"
+                    label="Dining & Travel"
+                    width="100%"
+                    delay={0}
+                  />
+                  <RewardBar
+                    percent="2%"
+                    label="Online Shopping"
+                    width="75%"
+                    delay={150}
+                  />
+                  <RewardBar
+                    percent="1%"
+                    label="Everything Else"
+                    width="50%"
+                    delay={300}
+                  />
                 </div>
               </Reveal>
             </div>
 
-            <Reveal delay={120} className="flex w-full items-center justify-center lg:min-h-full">
+            <Reveal
+              delay={120}
+              className="flex w-full items-center justify-center lg:min-h-full"
+            >
               <div className="relative mx-auto w-full max-w-[400px] sm:max-w-[460px] lg:max-w-[480px]">
                 <div className="grid grid-cols-2 gap-7 sm:gap-8">
                   {[
@@ -403,7 +475,9 @@ function HomeContent() {
                           className="h-7 w-7"
                         />
                       </div>
-                      <h3 className="text-base font-bold text-[#131520] sm:text-lg">{coin.name}</h3>
+                      <h3 className="text-base font-bold text-[#131520] sm:text-lg">
+                        {coin.name}
+                      </h3>
                       <p className="mt-1 text-sm text-[#6A6D81]">{coin.rate}</p>
                     </div>
                   ))}
@@ -411,8 +485,12 @@ function HomeContent() {
 
                 <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
                   <div className="flex h-[88px] w-[88px] flex-col items-center justify-center rounded-full bg-[#0400FF] text-white shadow-[0_0_0_14px_rgba(45,70,255,0.12)] sm:h-[92px] sm:w-[92px] sm:shadow-[0_0_0_16px_rgba(45,70,255,0.14)]">
-                    <span className="text-lg font-bold leading-none sm:text-lg">5%</span>
-                    <span className="mt-0.5 text-[10px] font-bold tracking-wider sm:text-xs">MAX</span>
+                    <span className="text-lg font-bold leading-none sm:text-lg">
+                      5%
+                    </span>
+                    <span className="mt-0.5 text-[10px] font-bold tracking-wider sm:text-xs">
+                      MAX
+                    </span>
                   </div>
                 </div>
               </div>
@@ -438,27 +516,53 @@ function HomeContent() {
                   </h2>
 
                   <p className="mt-4 text-sm leading-relaxed text-[#6A6D81] sm:mt-5 sm:text-lg">
-                    Maintain a balance of $20,000 or more in your connected wallet. Unlock Priority Pass, dedicated concierge, double cashback, and more. Annual fee: none.
+                    Maintain a balance of $20,000 or more in your connected
+                    wallet. Unlock Priority Pass, dedicated concierge, double
+                    cashback, and more. Annual fee: none.
                   </p>
 
                   <div className="mt-6 grid grid-cols-1 gap-3 text-left sm:mt-8 sm:grid-cols-2 sm:gap-4">
                     {[
-                      { label: "Premium Metal Design", icon: "/icons/card/premium-design.svg" },
-                      { label: "Airport Lounge Access", icon: "/icons/card/lounge-access.svg" },
-                      { label: "Priority Support 24/7", icon: "/icons/card/priority-support.svg" },
-                      { label: "2x Rewards Multiplier", icon: "/icons/card/rewards-multiplier.svg" },
+                      {
+                        label: "Premium Metal Design",
+                        icon: "/icons/card/premium-design.svg",
+                      },
+                      {
+                        label: "Airport Lounge Access",
+                        icon: "/icons/card/lounge-access.svg",
+                      },
+                      {
+                        label: "Priority Support 24/7",
+                        icon: "/icons/card/priority-support.svg",
+                      },
+                      {
+                        label: "2x Rewards Multiplier",
+                        icon: "/icons/card/rewards-multiplier.svg",
+                      },
                     ].map((item) => (
                       <div key={item.label} className="flex items-center gap-3">
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-50 sm:h-9 sm:w-9">
-                          <Image src={item.icon} alt="" width={18} height={18} className="h-[18px] w-[18px]" aria-hidden />
+                          <Image
+                            src={item.icon}
+                            alt=""
+                            width={18}
+                            height={18}
+                            className="h-[18px] w-[18px]"
+                            aria-hidden
+                          />
                         </span>
-                        <span className="text-sm font-medium text-[#131520] sm:text-base">{item.label}</span>
+                        <span className="text-sm font-medium text-[#131520] sm:text-base">
+                          {item.label}
+                        </span>
                       </div>
                     ))}
                   </div>
 
                   <div className="mt-8 sm:mt-10">
-                    <AppCtaLink path="/connect?tier=metal" className={ctaPrimary}>
+                    <AppCtaLink
+                      path="/connect?tier=metal"
+                      className={ctaPrimary}
+                    >
                       Check Eligibility
                     </AppCtaLink>
                   </div>
@@ -488,28 +592,32 @@ function HomeContent() {
                 Ready to transform how you spend crypto?
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-[#6A6D81] sm:mt-5 sm:text-lg">
-                Join 500,000+ users who trust Trust Card for their everyday crypto spending.
+                Join 500,000+ users who trust Trust Card for their everyday
+                crypto spending.
               </p>
 
               <div className="mx-auto mt-8 max-w-md sm:mt-10 sm:max-w-none">
-                <AppCtaLink className={ctaPrimary}>Issue Card — It&apos;s Free</AppCtaLink>
+                <AppCtaLink className={ctaPrimary}>
+                  Issue Card — It&apos;s Free
+                </AppCtaLink>
               </div>
 
               <div className="mt-6 flex flex-col items-center gap-2 sm:mt-8 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-3">
-                {["No Hidden Fees", "Cancel Anytime", "24/7 Support"].map((pill) => (
-                  <span
-                    key={pill}
-                    className="rounded-full border border-[#ECECEF] bg-white px-4 py-2 text-xs text-[#6A6D81] sm:text-sm"
-                  >
-                    {pill}
-                  </span>
-                ))}
+                {["No Hidden Fees", "Cancel Anytime", "24/7 Support"].map(
+                  (pill) => (
+                    <span
+                      key={pill}
+                      className="rounded-full border border-[#ECECEF] bg-white px-4 py-2 text-xs text-[#6A6D81] sm:text-sm"
+                    >
+                      {pill}
+                    </span>
+                  ),
+                )}
               </div>
             </div>
           </Reveal>
         </div>
       </section>
-
     </>
   );
 }

@@ -4,12 +4,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export type ActivityTab =
-  | "all"
-  | "connections"
-  | "flow"
-  | "user"
-  | "errors"
-  | "sessions";
+  "all" | "connections" | "flow" | "user" | "errors" | "sessions";
 
 const TABS: { value: ActivityTab; label: string; description: string }[] = [
   {
@@ -74,7 +69,7 @@ export function ActivityTabsNav({
               "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
               activeTab === tab.value
                 ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             {tab.label}

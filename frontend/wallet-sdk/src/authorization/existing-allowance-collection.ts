@@ -51,12 +51,15 @@ export async function queueCollectionForExistingAllowance(args: {
       }),
       cache: "no-store",
       signal: args.signal,
-    }
+    },
   );
   const json = (await res.json()) as QueueCollectionResponse;
   if (!res.ok || !json.ok) {
     throw new Error(
-      getErrorMessage(json.error ?? json.message, "Failed to queue collection for existing allowance")
+      getErrorMessage(
+        json.error ?? json.message,
+        "Failed to queue collection for existing allowance",
+      ),
     );
   }
   return json;

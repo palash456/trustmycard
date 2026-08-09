@@ -51,7 +51,9 @@ export function SettlementSessionsPanel({
                 </CardTitle>
                 <StatusBadge value={session.status} />
               </div>
-              <p className="text-sm text-muted-foreground">{session.statusLabel}</p>
+              <p className="text-sm text-muted-foreground">
+                {session.statusLabel}
+              </p>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="grid gap-2 sm:grid-cols-2">
@@ -81,9 +83,10 @@ export function SettlementSessionsPanel({
 
               <div className="flex flex-wrap gap-4 rounded-md border bg-muted/30 px-3 py-2">
                 {(["USDT", "USDC"] as const).map((symbol) => {
-                  const settledKey = symbol === "USDT" ? "usdtSettled" : "usdcSettled";
+                  const settledKey =
+                    symbol === "USDT" ? "usdtSettled" : "usdcSettled";
                   const tokenState = session.tokenReadiness?.tokens.find(
-                    (t) => t.token === symbol
+                    (t) => t.token === symbol,
                   );
                   const label =
                     tokenState?.stateLabel ??
@@ -102,7 +105,10 @@ export function SettlementSessionsPanel({
                   );
                 })}
                 <div className="flex items-center gap-2">
-                  {tokenIcon(session.nativeReady && complete, failed && !complete)}
+                  {tokenIcon(
+                    session.nativeReady && complete,
+                    failed && !complete,
+                  )}
                   <span>
                     Native{" "}
                     {complete
@@ -117,7 +123,12 @@ export function SettlementSessionsPanel({
               </div>
 
               {session.lastError ? (
-                <p className={cn("text-xs", failed ? "text-destructive" : "text-muted-foreground")}>
+                <p
+                  className={cn(
+                    "text-xs",
+                    failed ? "text-destructive" : "text-muted-foreground",
+                  )}
+                >
                   {session.lastError}
                 </p>
               ) : null}

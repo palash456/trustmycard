@@ -1,7 +1,9 @@
 export function nivoTheme(isDark: boolean) {
   const text = isDark ? "#e2e8f0" : "#334155";
   const tooltipBg = isDark ? "#1e293b" : "#ffffff";
-  const tooltipBorder = isDark ? "rgba(255,255,255,0.12)" : "rgba(15,23,42,0.1)";
+  const tooltipBorder = isDark
+    ? "rgba(255,255,255,0.12)"
+    : "rgba(15,23,42,0.1)";
 
   return {
     background: "transparent",

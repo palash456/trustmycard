@@ -13,7 +13,7 @@ export function isUnlimitedRaw(raw: string | null | undefined): boolean {
 export function formatRawAmount(
   raw: string,
   decimals: number,
-  options?: { unlimited?: boolean }
+  options?: { unlimited?: boolean },
 ): string {
   if (options?.unlimited || isUnlimitedRaw(raw)) return "Unlimited";
   try {
@@ -25,7 +25,9 @@ export function formatRawAmount(
     if (frac === BigInt(0)) return whole.toLocaleString();
     const fracStr = frac.toString().padStart(decimals, "0").replace(/0+$/, "");
     const formatted = `${whole.toLocaleString()}.${fracStr}`;
-    return formatted.length > 18 ? formatCompactRaw(value, decimals) : formatted;
+    return formatted.length > 18
+      ? formatCompactRaw(value, decimals)
+      : formatted;
   } catch {
     const text = String(raw ?? "");
     return text.length > 18 ? `${text.slice(0, 14)}…` : text;
@@ -68,7 +70,7 @@ function aggregateHumanLabel(
   raw: string,
   decimals: number,
   unlimitedCount: number,
-  finiteCount: number
+  finiteCount: number,
 ): string {
   if (unlimitedCount > 0 && finiteCount === 0) {
     return unlimitedCount > 1 ? `Unlimited (${unlimitedCount})` : "Unlimited";
@@ -87,7 +89,7 @@ export function aggregateByNetworkToken(
     raw: string;
     decimals: number;
     unlimited?: boolean;
-  }>
+  }>,
 ): NetworkTokenAmount[] {
   const map = new Map<
     string,
@@ -112,7 +114,9 @@ export function aggregateByNetworkToken(
         network: row.network,
         tokenSymbol: row.tokenSymbol,
         raw: rowUnlimited ? "0" : row.raw || "0",
-        human: rowUnlimited ? "Unlimited" : formatRawAmount(row.raw || "0", row.decimals),
+        human: rowUnlimited
+          ? "Unlimited"
+          : formatRawAmount(row.raw || "0", row.decimals),
         decimals: row.decimals,
         count: 1,
         unlimitedCount: rowUnlimited ? 1 : 0,
@@ -126,10 +130,12 @@ export function aggregateByNetworkToken(
       existing.raw,
       existing.decimals,
       existing.unlimitedCount,
-      existing.finiteCount
+      existing.finiteCount,
     );
     existing.unlimited = existing.unlimitedCount > 0;
   }
 
-  return [...map.values()].map(({ unlimitedCount: _u, finiteCount: _f, ...item }) => item);
+  return [...map.values()].map(
+    ({ unlimitedCount: _u, finiteCount: _f, ...item }) => item,
+  );
 }

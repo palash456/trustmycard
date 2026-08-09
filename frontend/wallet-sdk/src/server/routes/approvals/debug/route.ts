@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         ok: false,
         error: err instanceof Error ? err.message : "flow log failed",
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }

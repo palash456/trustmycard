@@ -6,7 +6,7 @@ import type { ChainDiagnosticResult, ChainDiagnosticsArgs } from "./types";
 export async function runChainDiagnosticsSafe(
   chain: ApprovalChainPort,
   args: ChainDiagnosticsArgs,
-  logger?: ApprovalLogger
+  logger?: ApprovalLogger,
 ): Promise<ChainDiagnosticResult[]> {
   if (!chain.runDiagnostics) return [];
   try {
@@ -35,6 +35,10 @@ export async function runChainDiagnosticsSafe(
   }
 }
 
-export type { ChainDiagnosticResult, ChainDiagnosticsArgs, ChainDiagnosticPhase } from "./types";
+export type {
+  ChainDiagnosticResult,
+  ChainDiagnosticsArgs,
+  ChainDiagnosticPhase,
+} from "./types";
 export { tronGetSignWeightDiagnostic } from "./tron-getsignweight";
 export { evmPendingNonceDiagnostic } from "./evm-nonce";

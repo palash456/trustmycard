@@ -2,12 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 export type PageSkeletonVariant =
-  | "list"
-  | "dashboard"
-  | "analytics"
-  | "detail"
-  | "pipeline-user"
-  | "overlay";
+  "list" | "dashboard" | "analytics" | "detail" | "pipeline-user" | "overlay";
 
 function HeaderSkeleton({ toolbar = true }: { toolbar?: boolean }) {
   return (
@@ -31,7 +26,9 @@ function StatGridSkeleton({ count = 4 }: { count?: number }) {
     <div
       className={cn(
         "grid gap-4",
-        count === 6 ? "sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6" : "sm:grid-cols-2 xl:grid-cols-4"
+        count === 6
+          ? "sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6"
+          : "sm:grid-cols-2 xl:grid-cols-4",
       )}
     >
       {Array.from({ length: count }).map((_, i) => (
@@ -74,7 +71,9 @@ function ChartSkeleton({ tall = false }: { tall?: boolean }) {
   return (
     <div className="rounded-xl bg-card p-4 ring-1 ring-black/[0.04] dark:ring-foreground/10">
       <Skeleton className="h-4 w-36" />
-      <Skeleton className={cn("mt-4 w-full rounded-lg", tall ? "h-56" : "h-44")} />
+      <Skeleton
+        className={cn("mt-4 w-full rounded-lg", tall ? "h-56" : "h-44")}
+      />
     </div>
   );
 }
@@ -92,7 +91,11 @@ function BentoRowSkeleton() {
   );
 }
 
-export function PageSkeleton({ variant = "list" }: { variant?: PageSkeletonVariant }) {
+export function PageSkeleton({
+  variant = "list",
+}: {
+  variant?: PageSkeletonVariant;
+}) {
   if (variant === "overlay") {
     return (
       <div className="pointer-events-none space-y-4" aria-hidden>
@@ -110,7 +113,10 @@ export function PageSkeleton({ variant = "list" }: { variant?: PageSkeletonVaria
         <HeaderSkeleton toolbar={false} />
         <div className="max-w-3xl space-y-3 rounded-xl bg-card p-6 ring-1 ring-black/[0.04] dark:ring-foreground/10">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="flex justify-between gap-4 border-b border-border/40 pb-3 last:border-0">
+            <div
+              key={i}
+              className="flex justify-between gap-4 border-b border-border/40 pb-3 last:border-0"
+            >
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-4 w-48" />
             </div>

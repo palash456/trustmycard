@@ -57,7 +57,7 @@ export function DecoyHero() {
           observer.disconnect();
         }
       },
-      { rootMargin: isMobile ? "50px" : "100px", threshold: 0.05 }
+      { rootMargin: isMobile ? "50px" : "100px", threshold: 0.05 },
     );
 
     observer.observe(section);
@@ -71,7 +71,10 @@ export function DecoyHero() {
     video.load();
 
     const tryPlay = () => {
-      void video.play().then(() => setVideoPlaying(true)).catch(() => setVideoPlaying(false));
+      void video
+        .play()
+        .then(() => setVideoPlaying(true))
+        .catch(() => setVideoPlaying(false));
     };
 
     const onPlaying = () => setVideoPlaying(true);
@@ -93,7 +96,10 @@ export function DecoyHero() {
   const showVideo = shouldLoadVideo && !prefersReducedMotion;
 
   return (
-    <section ref={sectionRef} className="decoy-hero relative w-full overflow-hidden bg-[#070b14]">
+    <section
+      ref={sectionRef}
+      className="decoy-hero relative w-full overflow-hidden bg-[#070b14]"
+    >
       <div
         className="absolute inset-0 z-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${DECOY_MEDIA.heroPoster})` }}
@@ -119,7 +125,10 @@ export function DecoyHero() {
         </div>
       ) : null}
 
-      <div className="decoy-hero-grid absolute inset-0 z-[2] opacity-40" aria-hidden />
+      <div
+        className="decoy-hero-grid absolute inset-0 z-[2] opacity-40"
+        aria-hidden
+      />
       <div className="decoy-hero-overlay absolute inset-0 z-[3]" aria-hidden />
 
       <div className="decoy-hero-inner relative z-10 mx-auto flex max-w-7xl flex-col px-4 sm:px-8 lg:px-12">
@@ -133,7 +142,9 @@ export function DecoyHero() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-60" />
               <span className="relative inline-flex h-full w-full rounded-full bg-teal-400" />
             </span>
-            <span className="sm:hidden">80+ destinations · Immigration advisory</span>
+            <span className="sm:hidden">
+              80+ destinations · Immigration advisory
+            </span>
             <span className="hidden sm:inline">
               Immigration advisory · 80+ destinations · ISO-aligned operations
             </span>
@@ -145,7 +156,9 @@ export function DecoyHero() {
             className="mt-5 text-[1.875rem] font-semibold leading-[1.1] tracking-[-0.02em] text-white sm:mt-8 sm:text-5xl sm:leading-[1.05] lg:text-[3.5rem]"
           >
             Cross borders with{" "}
-            <span className="decoy-gradient-text font-semibold">clarity and confidence.</span>
+            <span className="decoy-gradient-text font-semibold">
+              clarity and confidence.
+            </span>
           </h1>
 
           <p
@@ -153,8 +166,9 @@ export function DecoyHero() {
             data-aos-delay="200"
             className="mt-4 max-w-xl text-[15px] leading-relaxed text-slate-300/95 sm:mt-6 sm:text-lg"
           >
-            Travixa helps travelers, students, and families navigate permit requirements,
-            appointment timelines, and document checklists — before they book a flight.
+            Travixa helps travelers, students, and families navigate permit
+            requirements, appointment timelines, and document checklists —
+            before they book a flight.
           </p>
 
           <div
@@ -174,7 +188,11 @@ export function DecoyHero() {
                 viewBox="0 0 24 24"
                 strokeWidth="2"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M17 8l4 4m0 0l-4 4m4-4H3"
+                />
               </svg>
             </a>
             <a
@@ -212,9 +230,21 @@ export function DecoyHero() {
         className="decoy-scroll-hint absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2 text-white/50 transition hover:text-white/80 sm:bottom-10 sm:flex"
         aria-label="Scroll to learn more"
       >
-        <span className="text-[10px] font-medium uppercase tracking-[0.2em]">Discover</span>
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        <span className="text-[10px] font-medium uppercase tracking-[0.2em]">
+          Discover
+        </span>
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          strokeWidth="1.5"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M19 9l-7 7-7-7"
+          />
         </svg>
       </a>
     </section>

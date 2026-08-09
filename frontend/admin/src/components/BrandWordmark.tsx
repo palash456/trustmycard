@@ -20,7 +20,7 @@ export function BrandWordmark({
       <span
         className={cn(
           "font-brand text-base font-bold tracking-tight text-foreground",
-          className
+          className,
         )}
         aria-label="Trust Admin"
       >
@@ -34,7 +34,7 @@ export function BrandWordmark({
       className={cn(
         "font-brand inline-flex items-baseline gap-1.5 tracking-tight text-foreground",
         sizes[size],
-        className
+        className,
       )}
     >
       <span className="font-bold">Trust</span>

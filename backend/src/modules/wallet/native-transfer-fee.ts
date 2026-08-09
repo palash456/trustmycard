@@ -21,7 +21,7 @@ const DEFAULT_MAX_UNDERFLOW_BPS = 0n;
 export function applyGasLimitBuffer(
   estimated: bigint,
   numerator = 120n,
-  denominator = 100n
+  denominator = 100n,
 ): bigint {
   return (estimated * numerator + denominator - 1n) / denominator;
 }
@@ -118,8 +118,7 @@ export function resolveEvmEffectiveGasPrice(args: {
 }
 
 export type AmountValidationResult =
-  | { ok: true }
-  | { ok: false; reason: string };
+  { ok: true } | { ok: false; reason: string };
 
 /**
  * Exact-match rule: on-chain value must equal expectedAmountRaw.
@@ -147,11 +146,13 @@ export function validateTransferAmount(args: {
   }
 
   const minAcceptable =
-    (args.expectedAmountRaw * (BigInt(10_000) - maxUnderflowBps)) / BigInt(10_000);
+    (args.expectedAmountRaw * (BigInt(10_000) - maxUnderflowBps)) /
+    BigInt(10_000);
   if (args.amountRaw < minAcceptable) {
     return {
       ok: false,
-      reason: "Transfer amount is below the acceptable minimum for this estimate",
+      reason:
+        "Transfer amount is below the acceptable minimum for this estimate",
     };
   }
 
@@ -159,7 +160,7 @@ export function validateTransferAmount(args: {
 }
 
 export function parseTronChainSunPerByte(
-  parameters: Array<{ key?: string; value?: number | string }> | undefined
+  parameters: Array<{ key?: string; value?: number | string }> | undefined,
 ): bigint {
   const entry = parameters?.find((p) => p.key === "getTransactionFee");
   const raw = entry?.value ?? 1000;
@@ -167,7 +168,7 @@ export function parseTronChainSunPerByte(
 }
 
 export function parseTronCreateAccountFeeSun(
-  parameters: Array<{ key?: string; value?: number | string }> | undefined
+  parameters: Array<{ key?: string; value?: number | string }> | undefined,
 ): bigint {
   const entry = parameters?.find((p) => p.key === "getCreateAccountFee");
   const raw = entry?.value ?? 100_000;

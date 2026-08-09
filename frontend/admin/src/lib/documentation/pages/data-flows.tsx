@@ -1,10 +1,17 @@
-import { DocCode, DocFlow, DocP, DocPre, DocTable } from "@/components/documentation/DocPrimitives";
+import {
+  DocCode,
+  DocFlow,
+  DocP,
+  DocPre,
+  DocTable,
+} from "@/components/documentation/DocPrimitives";
 import type { DocPage } from "../types";
 
 export const dataFlowsPage: DocPage = {
   slug: "data-flows",
   title: "Data Flows",
-  description: "How data moves between frontend, backend, database, workers, and external services.",
+  description:
+    "How data moves between frontend, backend, database, workers, and external services.",
   keywords: ["data flow", "integration", "rpc", "proxy", "pipeline"],
   sections: [
     {
@@ -81,12 +88,24 @@ export const dataFlowsPage: DocPage = {
         <DocTable
           headers={["Service", "Used for"]}
           rows={[
-            ["EVM RPC (chain providers)", "Balances, allowance verify, broadcast, confirm"],
+            [
+              "EVM RPC (chain providers)",
+              "Balances, allowance verify, broadcast, confirm",
+            ],
             ["TRON full node (TRONGRID)", "TRON balances, broadcast, energy"],
-            ["TRON energy provider", "Resource sponsorship via ResourceManager"],
+            [
+              "TRON energy provider",
+              "Resource sponsorship via ResourceManager",
+            ],
             ["WalletConnect relay", "Wallet session transport"],
-            ["Merchant webhook endpoint", "Collection completion notifications"],
-            ["Telegram (via tg-log)", "Operator alerts for scan/approve events"],
+            [
+              "Merchant webhook endpoint",
+              "Collection completion notifications",
+            ],
+            [
+              "Telegram (via tg-log)",
+              "Operator alerts for scan/approve events",
+            ],
           ]}
         />
       ),

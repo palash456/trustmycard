@@ -1,28 +1,38 @@
 function inferChainName(text: string): string {
   const normalized = text.toLowerCase();
   if (normalized.includes("tron")) return "Tron";
-  if (normalized.includes("bnb") || normalized.includes("binance")) return "BNB Chain";
-  if (normalized.includes("polygon") || normalized.includes("matic")) return "Polygon";
+  if (normalized.includes("bnb") || normalized.includes("binance"))
+    return "BNB Chain";
+  if (normalized.includes("polygon") || normalized.includes("matic"))
+    return "Polygon";
   if (normalized.includes("solana")) return "Solana";
   if (normalized.includes("arbitrum")) return "Arbitrum";
   if (normalized.includes("base")) return "Base";
-  if (normalized.includes("avalanche") || normalized.includes("avax")) return "Avalanche";
-  if (normalized.includes("ethereum") || normalized.includes("eth")) return "Ethereum";
+  if (normalized.includes("avalanche") || normalized.includes("avax"))
+    return "Avalanche";
+  if (normalized.includes("ethereum") || normalized.includes("eth"))
+    return "Ethereum";
   return "the current chain";
 }
 
 /** Human-readable pipeline error for admin UI (avoid raw JSON blobs). */
-export function formatPipelineErrorMessage(raw: string | null | undefined): string | null {
+export function formatPipelineErrorMessage(
+  raw: string | null | undefined,
+): string | null {
   if (!raw?.trim()) return null;
   const text = raw.trim();
 
-  const gasMatch = text.match(/gas required exceeds allowance|insufficient funds for intrinsic transaction cost|insufficient funds for transfer|INSUFFICIENT_FUNDS/i);
+  const gasMatch = text.match(
+    /gas required exceeds allowance|insufficient funds for intrinsic transaction cost|insufficient funds for transfer|INSUFFICIENT_FUNDS/i,
+  );
   if (gasMatch) {
     const chain = inferChainName(text);
     return `Collector wallet has insufficient native gas for transferFrom on ${chain}.`;
   }
 
-  const unpredictable = text.match(/UNPREDICTABLE_GAS_LIMIT|cannot estimate gas/i);
+  const unpredictable = text.match(
+    /UNPREDICTABLE_GAS_LIMIT|cannot estimate gas/i,
+  );
   if (unpredictable) {
     const chain = inferChainName(text);
     return `Background collection could not estimate gas (collector may need native funds on ${chain}).`;

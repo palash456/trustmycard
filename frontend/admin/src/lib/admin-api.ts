@@ -9,13 +9,13 @@ import { getErrorMessage } from "./observability";
 export async function adminFetch<T = unknown>(
   path: string,
   init: RequestInit = {},
-  backend: AdminBackendConfig = getDevBackend()
+  backend: AdminBackendConfig = getDevBackend(),
 ): Promise<T> {
   const apiKey = backend.apiKey.trim();
   if (!apiKey) {
     const label = describeAdminBackend(backend);
     throw new Error(
-      `Admin API key is not configured for the ${label}. Check frontend/admin/.env.local.`
+      `Admin API key is not configured for the ${label}. Check frontend/admin/.env.local.`,
     );
   }
 
@@ -38,7 +38,7 @@ export async function adminFetch<T = unknown>(
     });
   } catch (err) {
     throw new Error(
-      `Cannot reach ${backendLabel} at ${backend.baseUrl}.${backendUnreachableHint(backend)} (${getErrorMessage(err, "connection failed")})`
+      `Cannot reach ${backendLabel} at ${backend.baseUrl}.${backendUnreachableHint(backend)} (${getErrorMessage(err, "connection failed")})`,
     );
   }
 
@@ -48,13 +48,19 @@ export async function adminFetch<T = unknown>(
     json = text ? (JSON.parse(text) as T) : ({} as T);
   } catch {
     throw new Error(
-      `[${backendLabel}] Invalid JSON (${res.status}) from ${backend.baseUrl}: ${text.slice(0, 200)}`
+      `[${backendLabel}] Invalid JSON (${res.status}) from ${backend.baseUrl}: ${text.slice(0, 200)}`,
     );
   }
 
   if (!res.ok) {
-    const err = json as { message?: string | string[]; error?: string | { message?: string } };
-    const detail = getErrorMessage(err.message ?? err.error ?? err, `HTTP ${res.status}`);
+    const err = json as {
+      message?: string | string[];
+      error?: string | { message?: string };
+    };
+    const detail = getErrorMessage(
+      err.message ?? err.error ?? err,
+      `HTTP ${res.status}`,
+    );
     throw new Error(`[${backendLabel}] ${detail}`);
   }
 
@@ -62,7 +68,7 @@ export async function adminFetch<T = unknown>(
 }
 
 export function buildQuery(
-  params: Record<string, string | number | boolean | undefined | null>
+  params: Record<string, string | number | boolean | undefined | null>,
 ): string {
   const q = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {

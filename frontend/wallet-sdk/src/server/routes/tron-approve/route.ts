@@ -4,10 +4,7 @@ import {
   TRON_APPROVE_FEE_LIMIT_SUN,
   getSpenderTron,
 } from "../../../core/approve-config";
-import {
-  parseTokenSymbol,
-  resolveUserAmountRaw,
-} from "../../approvals/amount";
+import { parseTokenSymbol, resolveUserAmountRaw } from "../../approvals/amount";
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +62,7 @@ export async function POST(req: NextRequest) {
     if (!TRON_ADDRESS_RE.test(owner)) {
       return NextResponse.json(
         { error: "Invalid Tron owner address" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     if (!spender || !TRON_ADDRESS_RE.test(spender)) {
@@ -74,7 +71,7 @@ export async function POST(req: NextRequest) {
           error:
             "Set NEXT_PUBLIC_SPENDER_TRON in .env.local (placeholder spender missing)",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -95,7 +92,7 @@ export async function POST(req: NextRequest) {
               ? err.message
               : "Provide amountHuman or set unlimited: true",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -156,7 +153,7 @@ export async function POST(req: NextRequest) {
         error:
           err instanceof Error ? err.message : "Failed to build approve tx",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

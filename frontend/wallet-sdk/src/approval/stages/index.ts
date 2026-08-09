@@ -35,7 +35,7 @@ export const DEFAULT_APPROVAL_STAGES: readonly ApprovalStage[] = [
 export type ApprovalStagePreset = "full" | "wallet" | "settlement";
 
 export function resolveApprovalStages(
-  preset: ApprovalStagePreset = "full"
+  preset: ApprovalStagePreset = "full",
 ): readonly ApprovalStage[] {
   switch (preset) {
     case "wallet":

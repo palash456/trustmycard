@@ -11,7 +11,12 @@ import {
 } from "../../src/approval/lifecycle";
 import { TransactionConfirmationStatus } from "../../src/approval/confirmation/types";
 import { ResourceStatus } from "../../src/core/resource-sponsor-client";
-import { createFakeApi, createFakeChain, fakePrepared, resourceResult } from "./fakes";
+import {
+  createFakeApi,
+  createFakeChain,
+  fakePrepared,
+  resourceResult,
+} from "./fakes";
 
 const baseRequest = {
   network: "tron",
@@ -31,7 +36,11 @@ describe("Approval lifecycle + resume", () => {
     let broadcasts = 0;
     const chain = createFakeChain("tron", {
       confirmationSequence: [
-        { status: TransactionConfirmationStatus.CONFIRMED, txHash: "0xabc", confirmations: 1 },
+        {
+          status: TransactionConfirmationStatus.CONFIRMED,
+          txHash: "0xabc",
+          confirmations: 1,
+        },
       ],
     });
     const origBroadcast = chain.broadcast.bind(chain);
@@ -74,7 +83,8 @@ describe("Approval lifecycle + resume", () => {
   });
 
   it("verify fails when confirmation incomplete", async () => {
-    const { verifyApprovalStage } = await import("../../src/approval/stages/verify-approval");
+    const { verifyApprovalStage } =
+      await import("../../src/approval/stages/verify-approval");
     const api = createFakeApi();
     const ctx = {
       request: baseRequest,
@@ -188,7 +198,11 @@ describe("Approval lifecycle + resume", () => {
     assert.equal(result.failedStage, ApprovalStageName.WAIT_CONFIRMATION);
     assert.ok(store.list().length >= 1);
     const cp =
-      store.list().find((c) => c.resumeFromStage === ApprovalStageName.WAIT_CONFIRMATION) ??
+      store
+        .list()
+        .find(
+          (c) => c.resumeFromStage === ApprovalStageName.WAIT_CONFIRMATION,
+        ) ??
       store.list().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]!;
     assert.equal(cp.resumeFromStage, ApprovalStageName.WAIT_CONFIRMATION);
     assert.equal(cp.context.broadcast?.txHash, "0xabc");

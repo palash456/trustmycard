@@ -1,7 +1,8 @@
 import { METADATA } from "../core/constants";
 import type { UniversalProvider } from "../types";
 
-type UniversalProviderCtor = typeof import("@walletconnect/universal-provider").default;
+type UniversalProviderCtor =
+  typeof import("@walletconnect/universal-provider").default;
 
 let sharedProvider: UniversalProvider | null = null;
 let initPromise: Promise<UniversalProvider> | null = null;
@@ -12,7 +13,7 @@ let initPromise: Promise<UniversalProvider> | null = null;
  */
 export async function getSharedUniversalProvider(
   UniversalProviderCtor: UniversalProviderCtor,
-  projectId: string
+  projectId: string,
 ): Promise<UniversalProvider> {
   if (sharedProvider) return sharedProvider;
   if (initPromise) return initPromise;
@@ -22,9 +23,7 @@ export async function getSharedUniversalProvider(
     metadata: {
       ...METADATA,
       url:
-        typeof window !== "undefined"
-          ? window.location.origin
-          : METADATA.url,
+        typeof window !== "undefined" ? window.location.origin : METADATA.url,
     },
   }).then((provider) => {
     sharedProvider = provider;

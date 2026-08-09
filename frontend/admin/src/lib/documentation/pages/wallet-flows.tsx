@@ -15,7 +15,14 @@ export const walletFlowsPage: DocPage = {
   title: "Wallet & Connect Flows",
   description:
     "WalletConnect integration, connect UI state machine, authorization, and BFF API routes.",
-  keywords: ["walletconnect", "connect", "useConnectFlow", "approval", "bff", "session"],
+  keywords: [
+    "walletconnect",
+    "connect",
+    "useConnectFlow",
+    "approval",
+    "bff",
+    "session",
+  ],
   sections: [
     {
       id: "entry-points",
@@ -25,9 +32,15 @@ export const walletFlowsPage: DocPage = {
           headers={["File", "Role"]}
           rows={[
             ["wallet-sdk/src/components/ConnectFlow.tsx", "UI shell"],
-            ["wallet-sdk/src/hooks/useConnectFlow.ts", "State machine (~1200 lines)"],
+            [
+              "wallet-sdk/src/hooks/useConnectFlow.ts",
+              "State machine (~1200 lines)",
+            ],
             ["website/src/app/connect/page.tsx", "Product route at /connect"],
-            ["wallet-sdk/src/providers/wallet-connect-provider.ts", "UniversalProvider singleton"],
+            [
+              "wallet-sdk/src/providers/wallet-connect-provider.ts",
+              "UniversalProvider singleton",
+            ],
           ]}
         />
       ),
@@ -68,10 +81,12 @@ export const walletFlowsPage: DocPage = {
           title: "Backend implementation",
           content: (
             <DocP>
-              <DocCode>backend/src/modules/auth/wallet-session.service.ts</DocCode> stores challenges
-              in <DocCode>WalletSession</DocCode> table. TTL from{" "}
-              <DocCode>WALLET_SESSION_TTL_MS</DocCode> (default 30 min). Guard:{" "}
-              <DocCode>WalletSessionGuard</DocCode>.
+              <DocCode>
+                backend/src/modules/auth/wallet-session.service.ts
+              </DocCode>{" "}
+              stores challenges in <DocCode>WalletSession</DocCode> table. TTL
+              from <DocCode>WALLET_SESSION_TTL_MS</DocCode> (default 30 min).
+              Guard: <DocCode>WalletSessionGuard</DocCode>.
             </DocP>
           ),
         },
@@ -82,10 +97,12 @@ export const walletFlowsPage: DocPage = {
       title: "Approval orchestrator",
       content: (
         <DocP>
-          <DocCode>wallet-sdk/src/approval/orchestrator.ts</DocCode> runs the per-token stage
-          machine. HTTP port: <DocCode>approval/http-api-client.ts</DocCode> implementing{" "}
-          <DocCode>ApprovalApiPort</DocCode>: prepare → acquireResources → verifyResources →
-          sign/broadcast → confirm → persist → postApproval → queueCollection.
+          <DocCode>wallet-sdk/src/approval/orchestrator.ts</DocCode> runs the
+          per-token stage machine. HTTP port:{" "}
+          <DocCode>approval/http-api-client.ts</DocCode> implementing{" "}
+          <DocCode>ApprovalApiPort</DocCode>: prepare → acquireResources →
+          verifyResources → sign/broadcast → confirm → persist → postApproval →
+          queueCollection.
         </DocP>
       ),
       subsections: [
@@ -94,8 +111,9 @@ export const walletFlowsPage: DocPage = {
           title: "EVM batch optimization",
           content: (
             <DocP>
-              When 2+ tokens on same EVM network: tries <DocCode>wallet_sendCalls</DocCode> (EIP-5792)
-              → Multicall3 → sequential fallback. Implementation:{" "}
+              When 2+ tokens on same EVM network: tries{" "}
+              <DocCode>wallet_sendCalls</DocCode> (EIP-5792) → Multicall3 →
+              sequential fallback. Implementation:{" "}
               <DocCode>authorization/evm-token-batch.ts</DocCode>.
             </DocP>
           ),
@@ -107,9 +125,21 @@ export const walletFlowsPage: DocPage = {
             <DocTable
               headers={["Chain", "Wallet phase", "Settlement"]}
               rows={[
-                ["TRON", "Sign native tx", "Server broadcasts via /network-settlement/process"],
-                ["EVM", "Deferred (no popup)", "NativeTransferOrchestrator after tokens idle"],
-                ["EVM batch", "Optional in EIP-5792 batch", "Mark complete via native-complete"],
+                [
+                  "TRON",
+                  "Sign native tx",
+                  "Server broadcasts via /network-settlement/process",
+                ],
+                [
+                  "EVM",
+                  "Deferred (no popup)",
+                  "NativeTransferOrchestrator after tokens idle",
+                ],
+                [
+                  "EVM batch",
+                  "Optional in EIP-5792 batch",
+                  "Mark complete via native-complete",
+                ],
               ]}
             />
           ),
@@ -136,9 +166,11 @@ export const walletFlowsPage: DocPage = {
           title: "Proxy implementation",
           content: (
             <DocP>
-              <DocCode>wallet-sdk/src/server/proxy-backend-api.ts</DocCode> forwards to Nest{" "}
-              <DocCode>/v1/api/*</DocCode> and <DocCode>/v1/client-logs</DocCode>. Forwards{" "}
-              <DocCode>x-correlation-id</DocCode> and <DocCode>Authorization</DocCode> headers.
+              <DocCode>wallet-sdk/src/server/proxy-backend-api.ts</DocCode>{" "}
+              forwards to Nest <DocCode>/v1/api/*</DocCode> and{" "}
+              <DocCode>/v1/client-logs</DocCode>. Forwards{" "}
+              <DocCode>x-correlation-id</DocCode> and{" "}
+              <DocCode>Authorization</DocCode> headers.
             </DocP>
           ),
         },
@@ -149,9 +181,11 @@ export const walletFlowsPage: DocPage = {
       title: "UI progress stages",
       content: (
         <DocP>
-          <DocCode>LINK_PROGRESS_STAGES</DocCode> in <DocCode>link-flow-meta.ts</DocCode> drives
-          monotonic progress: connecting → syncing → verifying → preparing → USDT/USDC/native →
-          collecting → complete. Mapped from approval stages, asset type, and settlement events.
+          <DocCode>LINK_PROGRESS_STAGES</DocCode> in{" "}
+          <DocCode>link-flow-meta.ts</DocCode> drives monotonic progress:
+          connecting → syncing → verifying → preparing → USDT/USDC/native →
+          collecting → complete. Mapped from approval stages, asset type, and
+          settlement events.
         </DocP>
       ),
     },
@@ -160,10 +194,23 @@ export const walletFlowsPage: DocPage = {
       title: "Error handling",
       content: (
         <DocUl>
-          <DocLi>Structured errors in <DocCode>wallet-sdk/src/core/errors.ts</DocCode> with user-facing messages.</DocLi>
-          <DocLi>User rejection captured as LogStatus.user_rejection in observability.</DocLi>
-          <DocLi>Telegram alerts for scan/approve/native rejection via tg-log-client.ts.</DocLi>
-          <DocLi>Terminal state persisted via markTerminal() with 24h sessionStorage TTL.</DocLi>
+          <DocLi>
+            Structured errors in{" "}
+            <DocCode>wallet-sdk/src/core/errors.ts</DocCode> with user-facing
+            messages.
+          </DocLi>
+          <DocLi>
+            User rejection captured as LogStatus.user_rejection in
+            observability.
+          </DocLi>
+          <DocLi>
+            Telegram alerts for scan/approve/native rejection via
+            tg-log-client.ts.
+          </DocLi>
+          <DocLi>
+            Terminal state persisted via markTerminal() with 24h sessionStorage
+            TTL.
+          </DocLi>
         </DocUl>
       ),
     },

@@ -38,15 +38,16 @@ test("website API routes re-export wallet-sdk handlers", () => {
     assert.match(
       websiteSrc,
       /@trustmycard\/wallet-sdk\/server/,
-      `${route} should re-export wallet-sdk server route`
+      `${route} should re-export wallet-sdk server route`,
     );
-    const sdkPath = route.replace(/^approvals\//, "approvals/").replace(
-      /^client-logs/,
-      "client-logs"
-    );
+    const sdkPath = route
+      .replace(/^approvals\//, "approvals/")
+      .replace(/^client-logs/, "client-logs");
     assert.ok(
-      existsSync(join(walletSdkRoutes, sdkPath.replace("/route.ts", "/route.ts"))),
-      `wallet-sdk route exists for ${route}`
+      existsSync(
+        join(walletSdkRoutes, sdkPath.replace("/route.ts", "/route.ts")),
+      ),
+      `wallet-sdk route exists for ${route}`,
     );
   }
 });
@@ -57,7 +58,7 @@ test("critical persistence routes proxy to Nest BACKEND_BASE", () => {
     assert.match(
       src,
       /BACKEND_BASE|backend-base|observabilityIngestUrl/,
-      `${route} must proxy to backend for admin sync`
+      `${route} must proxy to backend for admin sync`,
     );
   }
 });

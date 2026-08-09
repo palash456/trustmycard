@@ -44,7 +44,11 @@ export function DecoyLogo({
 
   if (href) {
     return (
-      <Link href={href} className="inline-flex shrink-0 items-center" aria-label="Travixa home">
+      <Link
+        href={href}
+        className="inline-flex shrink-0 items-center"
+        aria-label="Travixa home"
+      >
         {image}
       </Link>
     );

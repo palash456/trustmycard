@@ -7,7 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 export type FilterField = {
@@ -19,14 +23,14 @@ export type FilterField = {
 
 const selectClass = cn(
   "flex h-8 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs text-foreground shadow-xs",
-  "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+  "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
 );
 
 const RESERVED_PARAMS = new Set(["page", "limit"]);
 
 function countActiveFilters(
   fields: FilterField[],
-  values: Record<string, string | undefined>
+  values: Record<string, string | undefined>,
 ): number {
   const fieldNames = new Set(fields.map((f) => f.name));
   let count = 0;
@@ -48,7 +52,10 @@ export function PageFilters({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const activeCount = useMemo(() => countActiveFilters(fields, values), [fields, values]);
+  const activeCount = useMemo(
+    () => countActiveFilters(fields, values),
+    [fields, values],
+  );
 
   function navigate(params: URLSearchParams) {
     const qs = params.toString();
@@ -136,7 +143,10 @@ export function PageFilters({
           <div className="grid max-h-[min(60vh,420px)] gap-3 overflow-y-auto px-4 py-3 sm:grid-cols-2">
             {fields.map((field) => (
               <div key={field.name} className="grid gap-1.5">
-                <Label htmlFor={`filter-${field.name}`} className="text-[11px] text-muted-foreground">
+                <Label
+                  htmlFor={`filter-${field.name}`}
+                  className="text-[11px] text-muted-foreground"
+                >
                   {field.label}
                 </Label>
                 {field.options ? (
@@ -167,7 +177,13 @@ export function PageFilters({
           </div>
 
           <div className="flex items-center justify-end gap-2 border-t border-border/60 px-4 py-3">
-            <Button type="button" variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => setOpen(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" size="sm" className="h-8 text-xs">

@@ -36,10 +36,13 @@ export function TransactionPipelinePanel({
       tokenOverride: selectedToken,
     }) ??
     (pipeline.assets.length === 1
-      ? { network: pipeline.assets[0]!.network, token: pipeline.assets[0]!.symbol }
+      ? {
+          network: pipeline.assets[0]!.network,
+          token: pipeline.assets[0]!.symbol,
+        }
       : null);
   const scopedPipeline = assetScope
-    ? scopePipelineToAsset(pipeline, assetScope) ?? pipeline
+    ? (scopePipelineToAsset(pipeline, assetScope) ?? pipeline)
     : pipeline;
   const availableTokens = tokensForJourneyNetwork(journey, journey.network);
 
@@ -51,11 +54,14 @@ export function TransactionPipelinePanel({
     return (
       <Card className="border-border/60 shadow-none">
         <CardHeader className="px-4 py-3">
-          <CardTitle className="text-sm font-medium">Pipeline for this transaction</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Pipeline for this transaction
+          </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4 text-sm text-muted-foreground">
-          No pipeline stages are linked to <span className="font-mono">{transactionId}</span> yet.
-          Open the wallet funnel for the full lifecycle.
+          No pipeline stages are linked to{" "}
+          <span className="font-mono">{transactionId}</span> yet. Open the
+          wallet funnel for the full lifecycle.
         </CardContent>
       </Card>
     );
@@ -64,17 +70,24 @@ export function TransactionPipelinePanel({
   return (
     <div className="space-y-3">
       <div>
-        <h2 className="text-base font-semibold">Pipeline for this transaction</h2>
+        <h2 className="text-base font-semibold">
+          Pipeline for this transaction
+        </h2>
         <p className="text-sm text-muted-foreground">
           {assetScope ? (
             <>
-              Showing the <span className="font-medium">{formatPipelineScopeLabel(assetScope)}</span>{" "}
-              flow for <span className="font-mono text-xs">{transactionId}</span>
+              Showing the{" "}
+              <span className="font-medium">
+                {formatPipelineScopeLabel(assetScope)}
+              </span>{" "}
+              flow for{" "}
+              <span className="font-mono text-xs">{transactionId}</span>
             </>
           ) : (
             <>
-              Stages scoped to <span className="font-mono text-xs">{transactionId}</span> — select a
-              token below when multiple assets were involved
+              Stages scoped to{" "}
+              <span className="font-mono text-xs">{transactionId}</span> —
+              select a token below when multiple assets were involved
             </>
           )}
         </p>
@@ -85,7 +98,8 @@ export function TransactionPipelinePanel({
           {availableTokens.map((token) => {
             const active =
               assetScope?.token.toUpperCase() === token.toUpperCase() ||
-              (!assetScope && selectedToken?.toUpperCase() === token.toUpperCase());
+              (!assetScope &&
+                selectedToken?.toUpperCase() === token.toUpperCase());
             return (
               <Link
                 key={token}
@@ -94,7 +108,7 @@ export function TransactionPipelinePanel({
                   "rounded-md border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors",
                   active
                     ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-muted/40 text-muted-foreground hover:bg-muted"
+                    : "border-border bg-muted/40 text-muted-foreground hover:bg-muted",
                 )}
               >
                 {token}

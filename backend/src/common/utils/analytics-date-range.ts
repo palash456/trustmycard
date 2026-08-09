@@ -38,7 +38,7 @@ function endOfMonth(d: Date): Date {
 
 function previousPeriod(
   start: Date,
-  end: Date
+  end: Date,
 ): { previousStart: Date; previousEnd: Date } {
   const durationMs = end.getTime() - start.getTime();
   const previousEnd = new Date(start.getTime() - 1);
@@ -47,7 +47,7 @@ function previousPeriod(
 }
 
 export function parseAnalyticsDateRange(
-  query: Record<string, string | undefined>
+  query: Record<string, string | undefined>,
 ): AnalyticsDateRange {
   const now = new Date();
   const preset = (query.period?.trim() || "last30d") as AnalyticsPeriodPreset;
@@ -80,13 +80,17 @@ export function parseAnalyticsDateRange(
     }
     case "last7d": {
       const end = endOfDay(now);
-      const start = startOfDay(new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000));
+      const start = startOfDay(
+        new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000),
+      );
       const { previousStart, previousEnd } = previousPeriod(start, end);
       return { preset, start, end, previousStart, previousEnd };
     }
     case "last30d": {
       const end = endOfDay(now);
-      const start = startOfDay(new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000));
+      const start = startOfDay(
+        new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000),
+      );
       const { previousStart, previousEnd } = previousPeriod(start, end);
       return { preset, start, end, previousStart, previousEnd };
     }
@@ -117,7 +121,7 @@ export function parseAnalyticsDateRange(
 
 export function dateFilterForRange(
   range: AnalyticsDateRange,
-  field: "createdAt" | "confirmedAt" | "updatedAt" = "createdAt"
+  field: "createdAt" | "confirmedAt" | "updatedAt" = "createdAt",
 ): Record<string, Date> | undefined {
   if (range.start === null) return undefined;
   if (field === "confirmedAt") {

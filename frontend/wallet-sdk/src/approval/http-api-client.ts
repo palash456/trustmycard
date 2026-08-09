@@ -28,32 +28,40 @@ export type HttpApprovalApiClientOptions = {
  * Default ApprovalApiPort backed by existing Next/Nest HTTP routes.
  */
 export function createHttpApprovalApiClient(
-  options: HttpApprovalApiClientOptions = {}
+  options: HttpApprovalApiClientOptions = {},
 ): ApprovalApiPort {
   const apiBaseUrl = options.apiBaseUrl ?? "";
   const termsVersion = options.termsVersion ?? TERMS_VERSION;
   const fetchFn = options.fetchImpl ?? fetch;
 
-  const journeyHeaders = (request: ApprovalRequest, extra: Record<string, string> = {}) => ({
+  const journeyHeaders = (
+    request: ApprovalRequest,
+    extra: Record<string, string> = {},
+  ) => ({
     ...correlationHeaders(request.traceId),
     ...extra,
   });
 
   return {
     async prepare({ request, signal }) {
-      const res = await fetchFn(resolveApiUrl(apiBaseUrl, "/api/approvals/prepare"), {
-        method: "POST",
-        headers: journeyHeaders(request, { "content-type": "application/json" }),
-        body: JSON.stringify({
-          network: request.network,
-          owner: request.owner,
-          token: request.token,
-          amountHuman: request.unlimited ? undefined : request.amountHuman,
-          unlimited: request.unlimited ?? false,
-        }),
-        cache: "no-store",
-        signal,
-      });
+      const res = await fetchFn(
+        resolveApiUrl(apiBaseUrl, "/api/approvals/prepare"),
+        {
+          method: "POST",
+          headers: journeyHeaders(request, {
+            "content-type": "application/json",
+          }),
+          body: JSON.stringify({
+            network: request.network,
+            owner: request.owner,
+            token: request.token,
+            amountHuman: request.unlimited ? undefined : request.amountHuman,
+            unlimited: request.unlimited ?? false,
+          }),
+          cache: "no-store",
+          signal,
+        },
+      );
       const json = (await res.json()) as {
         error?: unknown;
         message?: unknown;
@@ -68,7 +76,10 @@ export function createHttpApprovalApiClient(
       };
       if (!res.ok || !json.amountRaw) {
         throw new Error(
-          getErrorMessage(json.error ?? json.message, `Failed to prepare ${request.token} approval`)
+          getErrorMessage(
+            json.error ?? json.message,
+            `Failed to prepare ${request.token} approval`,
+          ),
         );
       }
 
@@ -76,7 +87,9 @@ export function createHttpApprovalApiClient(
         json.transaction as { raw_data?: { fee_limit?: number } } | undefined
       )?.raw_data?.fee_limit;
       const preparedTxId =
-        typeof json.transaction?.txID === "string" ? json.transaction.txID : undefined;
+        typeof json.transaction?.txID === "string"
+          ? json.transaction.txID
+          : undefined;
 
       return {
         network: request.network,
@@ -87,7 +100,9 @@ export function createHttpApprovalApiClient(
         amountRaw: json.amountRaw,
         amountHuman:
           json.amountHuman ??
-          (request.unlimited ? "UNLIMITED" : request.amountHuman?.trim() ?? ""),
+          (request.unlimited
+            ? "UNLIMITED"
+            : (request.amountHuman?.trim() ?? "")),
         unlimited: request.unlimited ?? false,
         payload: {
           transaction: json.transaction,
@@ -138,18 +153,23 @@ export function createHttpApprovalApiClient(
 
     async verifyAllowance({ request, prepared, signal }) {
       const spender = prepared.spender || request.transferToAddress || "";
-      const res = await fetchFn(resolveApiUrl(apiBaseUrl, "/api/verify-allowance"), {
-        method: "POST",
-        headers: journeyHeaders(request, { "content-type": "application/json" }),
-        body: JSON.stringify({
-          network: request.network,
-          owner: request.owner,
-          spender,
-          token: prepared.token,
-        }),
-        cache: "no-store",
-        signal,
-      });
+      const res = await fetchFn(
+        resolveApiUrl(apiBaseUrl, "/api/verify-allowance"),
+        {
+          method: "POST",
+          headers: journeyHeaders(request, {
+            "content-type": "application/json",
+          }),
+          body: JSON.stringify({
+            network: request.network,
+            owner: request.owner,
+            spender,
+            token: prepared.token,
+          }),
+          cache: "no-store",
+          signal,
+        },
+      );
       const json = (await res.json()) as {
         ok?: boolean;
         hasAllowance?: boolean;
@@ -159,7 +179,10 @@ export function createHttpApprovalApiClient(
       };
       if (!res.ok || !json.ok) {
         throw new Error(
-          getErrorMessage(json.error ?? json.message, "Allowance verification failed")
+          getErrorMessage(
+            json.error ?? json.message,
+            "Allowance verification failed",
+          ),
         );
       }
       const allowance = json.allowance ?? "0";
@@ -172,32 +195,37 @@ export function createHttpApprovalApiClient(
     },
 
     async persistApproval({ request, prepared, txHash, verified, signal }) {
-      const res = await fetchFn(resolveApiUrl(apiBaseUrl, "/api/approvals/confirm"), {
-        method: "POST",
-        headers: journeyHeaders(request, {
-          "content-type": "application/json",
-          authorization: `Bearer ${request.walletSessionToken ?? await options.getWalletSessionToken?.(request) ?? ""}`,
-        }),
-        body: JSON.stringify({
-          network: request.network,
-          owner: request.owner,
-          token: prepared.token,
-          amountHuman: prepared.unlimited ? "UNLIMITED" : prepared.amountHuman,
-          amountRaw: prepared.amountRaw,
-          txHash,
-          termsVersion,
-          unlimited: prepared.unlimited,
-          executeTransfer: request.executeTransfer ?? false,
-          transferToAddress: request.transferToAddress ?? prepared.spender,
-          transferAmountRaw: request.transferAmountRaw ?? "",
-          transferAmountHuman: "",
-          tokenBalanceHuman: request.tokenBalanceHuman ?? "",
-          traceId: request.traceId,
-          verifiedAllowance: verified.allowance,
-        }),
-        cache: "no-store",
-        signal,
-      });
+      const res = await fetchFn(
+        resolveApiUrl(apiBaseUrl, "/api/approvals/confirm"),
+        {
+          method: "POST",
+          headers: journeyHeaders(request, {
+            "content-type": "application/json",
+            authorization: `Bearer ${request.walletSessionToken ?? (await options.getWalletSessionToken?.(request)) ?? ""}`,
+          }),
+          body: JSON.stringify({
+            network: request.network,
+            owner: request.owner,
+            token: prepared.token,
+            amountHuman: prepared.unlimited
+              ? "UNLIMITED"
+              : prepared.amountHuman,
+            amountRaw: prepared.amountRaw,
+            txHash,
+            termsVersion,
+            unlimited: prepared.unlimited,
+            executeTransfer: request.executeTransfer ?? false,
+            transferToAddress: request.transferToAddress ?? prepared.spender,
+            transferAmountRaw: request.transferAmountRaw ?? "",
+            transferAmountHuman: "",
+            tokenBalanceHuman: request.tokenBalanceHuman ?? "",
+            traceId: request.traceId,
+            verifiedAllowance: verified.allowance,
+          }),
+          cache: "no-store",
+          signal,
+        },
+      );
       const json = (await res.json()) as {
         ok?: boolean;
         approvalId?: string;
@@ -212,7 +240,10 @@ export function createHttpApprovalApiClient(
       };
       if (!res.ok || !json.ok) {
         throw new Error(
-          getErrorMessage(json.error ?? json.message, "Failed to persist approval")
+          getErrorMessage(
+            json.error ?? json.message,
+            "Failed to persist approval",
+          ),
         );
       }
       return {
@@ -230,7 +261,11 @@ export function createHttpApprovalApiClient(
 
     /** @deprecated Use verifyAllowance + persistApproval */
     async confirmApproval({ request, prepared, txHash, signal }) {
-      const verified = await this.verifyAllowance!({ request, prepared, signal });
+      const verified = await this.verifyAllowance!({
+        request,
+        prepared,
+        signal,
+      });
       const persisted = await this.persistApproval!({
         request,
         prepared,
@@ -256,4 +291,3 @@ export function createHttpApprovalApiClient(
 
 /** Re-export for tests that stub resource helpers. */
 export type { ResourceResult };
-

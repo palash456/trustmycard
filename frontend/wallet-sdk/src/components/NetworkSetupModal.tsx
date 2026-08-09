@@ -14,7 +14,7 @@ type NetworkSetupModalProps = {
 
 function continueLabel(
   selectedKey: string | null,
-  rowStatus: Record<string, RowStatus>
+  rowStatus: Record<string, RowStatus>,
 ): string {
   if (!selectedKey) return "Continue →";
   const status = rowStatus[selectedKey];
@@ -69,7 +69,9 @@ export function NetworkSetupModal({
           </p>
 
           {error ? (
-            <p className="mb-3 rounded-2xl bg-red-50 px-4 py-3 text-sm text- !bg-indigo-500">{error}</p>
+            <p className="mb-3 rounded-2xl bg-red-50 px-4 py-3 text-sm text- !bg-indigo-500">
+              {error}
+            </p>
           ) : null}
 
           <ul className="space-y-2">

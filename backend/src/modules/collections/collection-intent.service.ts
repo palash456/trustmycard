@@ -28,7 +28,7 @@ export class CollectionIntentService {
   constructor(
     private readonly outbox: OutboxService,
     private readonly prisma: PrismaService,
-    private readonly adminEvents?: AdminEventsService
+    private readonly adminEvents?: AdminEventsService,
   ) {}
 
   private emitCollectionIntentUpdated(intent: {
@@ -51,13 +51,20 @@ export class CollectionIntentService {
     });
   }
 
-  async createForApproval(tx: Prisma.TransactionClient, input: CollectionIntentInput) {
+  async createForApproval(
+    tx: Prisma.TransactionClient,
+    input: CollectionIntentInput,
+  ) {
     if (BigInt(input.requestedRaw) <= BigInt(0)) {
-      throw new BadRequestException("Collection amount must be greater than zero");
+      throw new BadRequestException(
+        "Collection amount must be greater than zero",
+      );
     }
     const merchantId = input.merchantId?.trim() || "platform";
     const idempotencyKey = createHash("sha256")
-      .update(`${merchantId}:${input.approvalId}:${input.sourceTxHash}:${input.requestedRaw}`)
+      .update(
+        `${merchantId}:${input.approvalId}:${input.sourceTxHash}:${input.requestedRaw}`,
+      )
       .digest("hex");
 
     const existing = await tx.collectionIntent.findUnique({
@@ -68,7 +75,7 @@ export class CollectionIntentService {
           tx,
           "collectionIntent",
           tokenQualifier(input.tokenSymbol),
-          input.traceId
+          input.traceId,
         )
       : undefined;
     const intent = existing
@@ -128,7 +135,10 @@ export class CollectionIntentService {
         approval: { select: { ownerAddress: true } },
       },
     });
-    if (!intent || intent.ownerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
+    if (
+      !intent ||
+      intent.ownerAddress.toLowerCase() !== ownerAddress.toLowerCase()
+    ) {
       throw new BadRequestException("Collection intent not found");
     }
     return intent;

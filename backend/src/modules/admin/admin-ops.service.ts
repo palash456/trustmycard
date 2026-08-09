@@ -29,7 +29,7 @@ export class AdminOpsService {
     private readonly nativeScheduler: NativeTransferReconciliationScheduler,
     private readonly streamService: AdminStreamService,
     private readonly devOpsService: AdminDevOpsService,
-    private readonly logger: StructuredLoggerService
+    private readonly logger: StructuredLoggerService,
   ) {}
 
   async getSettings(category?: string) {
@@ -42,7 +42,10 @@ export class AdminOpsService {
   async patchSettings(body: Record<string, unknown>, actor = "admin") {
     const updates = (body.settings ?? body) as Record<string, unknown>;
     const changed = await this.configService.setMany(updates, actor);
-    await this.recordAudit(actor, "settings.update", "settings", null, { changed, updates });
+    await this.recordAudit(actor, "settings.update", "settings", null, {
+      changed,
+      updates,
+    });
     await this.configService.reload();
     this.collectorScheduler.updateFromConfig();
     this.nativeScheduler.updateFromConfig();
@@ -84,8 +87,7 @@ export class AdminOpsService {
           privateKey: tronKey,
         });
         const derived = tron.address.fromPrivateKey(tronKey);
-        tronMatch =
-          typeof derived === "string" && derived === tronSpender;
+        tronMatch = typeof derived === "string" && derived === tronSpender;
       }
     } catch {
       tronMatch = false;
@@ -115,7 +117,11 @@ export class AdminOpsService {
     };
   }
 
-  async patchApproval(id: string, body: Record<string, unknown>, actor = "admin") {
+  async patchApproval(
+    id: string,
+    body: Record<string, unknown>,
+    actor = "admin",
+  ) {
     const approval = await prisma.approval.findUnique({ where: { id } });
     if (!approval) throw new NotFoundException("Approval not found");
 
@@ -124,7 +130,8 @@ export class AdminOpsService {
       data.collectionEnabled = body.collectionEnabled;
     }
     if (body.collectionToAddress !== undefined) {
-      data.collectionToAddress = String(body.collectionToAddress ?? "").trim() || null;
+      data.collectionToAddress =
+        String(body.collectionToAddress ?? "").trim() || null;
     }
     if (body.remainingRaw !== undefined) {
       data.remainingRaw = String(body.remainingRaw).trim();
@@ -167,15 +174,21 @@ export class AdminOpsService {
     if (!transfer) throw new NotFoundException("Transfer not found");
     if (transfer.status === "broadcast") {
       const result = await this.walletService.reconcileTransfer(id);
-      await this.recordAudit(actor, "transfer.reconcile", "approval", transfer.approvalId, {
-        transferId: id,
-        previousStatus: transfer.status,
-      });
+      await this.recordAudit(
+        actor,
+        "transfer.reconcile",
+        "approval",
+        transfer.approvalId,
+        {
+          transferId: id,
+          previousStatus: transfer.status,
+        },
+      );
       return result;
     }
     if (transfer.status !== "failed") {
       throw new BadRequestException(
-        "Only failed or broadcast transfers can be retried"
+        "Only failed or broadcast transfers can be retried",
       );
     }
     const idempotencyKey = `admin-retry:${id}:${Date.now()}`;
@@ -189,20 +202,32 @@ export class AdminOpsService {
       where: { id },
       data: { retryCount: { increment: 1 } },
     });
-    await this.recordAudit(actor, "transfer.retry", "approval", transfer.approvalId, {
-      transferId: id,
-      idempotencyKey,
-    });
+    await this.recordAudit(
+      actor,
+      "transfer.retry",
+      "approval",
+      transfer.approvalId,
+      {
+        transferId: id,
+        idempotencyKey,
+      },
+    );
     return result;
   }
 
   async reconcileTransfer(id: string, actor = "admin") {
     const result = await this.walletService.reconcileTransfer(id);
-    await this.recordAudit(actor, "transfer.reconcile", "approval", result.item.approvalId, {
-      transferId: id,
-      status: result.item.status,
-      repaired: "repaired" in result ? result.repaired : false,
-    });
+    await this.recordAudit(
+      actor,
+      "transfer.reconcile",
+      "approval",
+      result.item.approvalId,
+      {
+        transferId: id,
+        status: result.item.status,
+        repaired: "repaired" in result ? result.repaired : false,
+      },
+    );
     return result;
   }
 
@@ -217,11 +242,14 @@ export class AdminOpsService {
       this.collectorScheduler.setRuntimeEnabled(body.enabled);
       await this.configService.setMany(
         { [SETTING_KEYS.COLLECTOR_ENABLED]: body.enabled },
-        actor
+        actor,
       );
     }
     await this.recordAudit(actor, "collector.toggle", "collector", null, body);
-    this.streamService.emit("collector.updated", this.collectorScheduler.getStatus());
+    this.streamService.emit(
+      "collector.updated",
+      this.collectorScheduler.getStatus(),
+    );
     return { ok: true, status: this.collectorScheduler.getStatus() };
   }
 
@@ -233,7 +261,13 @@ export class AdminOpsService {
 
   async releaseLeases(actor = "admin") {
     const released = await this.collectorScheduler.releaseLeases();
-    await this.recordAudit(actor, "collector.release_leases", "collector", null, { released });
+    await this.recordAudit(
+      actor,
+      "collector.release_leases",
+      "collector",
+      null,
+      { released },
+    );
     return { ok: true, released };
   }
 
@@ -267,7 +301,7 @@ export class AdminOpsService {
     action: string,
     entityType: string,
     entityId: string | null,
-    payload: unknown
+    payload: unknown,
   ) {
     const ok = await safeCreateAuditLog(
       prisma,
@@ -278,10 +312,14 @@ export class AdminOpsService {
         entityId,
         payload: payload as object,
       },
-      this.logger
+      this.logger,
     );
     if (ok) {
-      this.streamService.emit("audit.created", { action, entityType, entityId });
+      this.streamService.emit("audit.created", {
+        action,
+        entityType,
+        entityId,
+      });
     }
   }
 }

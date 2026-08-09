@@ -14,12 +14,16 @@ function getSecret(): string {
 function base64UrlEncode(bytes: Uint8Array): string {
   let binary = "";
   for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }
 
 function base64UrlDecode(str: string): Uint8Array {
   const padded = str.replace(/-/g, "+").replace(/_/g, "/");
-  const pad = padded.length % 4 === 0 ? "" : "=".repeat(4 - (padded.length % 4));
+  const pad =
+    padded.length % 4 === 0 ? "" : "=".repeat(4 - (padded.length % 4));
   const binary = atob(padded + pad);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
@@ -39,20 +43,28 @@ async function signPayload(payload: string): Promise<string> {
     new TextEncoder().encode(getSecret()),
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["sign"]
+    ["sign"],
   );
-  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
+  const sig = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(payload),
+  );
   return base64UrlEncode(new Uint8Array(sig));
 }
 
 export async function createSessionToken(): Promise<string> {
   const exp = Date.now() + SESSION_TTL_MS;
-  const payload = base64UrlEncode(new TextEncoder().encode(JSON.stringify({ exp })));
+  const payload = base64UrlEncode(
+    new TextEncoder().encode(JSON.stringify({ exp })),
+  );
   const sig = await signPayload(payload);
   return `${payload}.${sig}`;
 }
 
-export async function verifySessionToken(token: string | undefined): Promise<boolean> {
+export async function verifySessionToken(
+  token: string | undefined,
+): Promise<boolean> {
   if (!token) return false;
   const [payload, sig] = token.split(".");
   if (!payload || !sig) return false;
@@ -61,7 +73,9 @@ export async function verifySessionToken(token: string | undefined): Promise<boo
     const a = base64UrlDecode(sig);
     const b = base64UrlDecode(expected);
     if (!timingSafeEqual(a, b)) return false;
-    const data = JSON.parse(new TextDecoder().decode(base64UrlDecode(payload))) as {
+    const data = JSON.parse(
+      new TextDecoder().decode(base64UrlDecode(payload)),
+    ) as {
       exp?: number;
     };
     return typeof data.exp === "number" && data.exp > Date.now();

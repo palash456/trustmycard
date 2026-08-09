@@ -1,6 +1,9 @@
 "use client";
 
-import { StatusBarChart, StatusDonutChart } from "@/components/charts/StatusCharts";
+import {
+  StatusBarChart,
+  StatusDonutChart,
+} from "@/components/charts/StatusCharts";
 
 export function DashboardCharts({
   approvals,

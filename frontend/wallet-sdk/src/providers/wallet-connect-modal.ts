@@ -17,7 +17,7 @@ export function purgeExtraWcmModals(keep?: Element | null) {
 
 export function getSharedWcModal(
   WalletConnectModalCtor: typeof import("@walletconnect/modal").WalletConnectModal,
-  id: string
+  id: string,
 ): WalletConnectModal {
   const existing = document.querySelector("wcm-modal");
   if (sharedWcModal && existing) {

@@ -20,7 +20,13 @@ function canNative(...snapshots) {
 
 describe("native execution policy — scenarios", () => {
   it("scenario 1: USDT zero + USDC zero → native immediate", () => {
-    assert.equal(canNative({ shouldAttemptTransfer: false }, { shouldAttemptTransfer: false }), true);
+    assert.equal(
+      canNative(
+        { shouldAttemptTransfer: false },
+        { shouldAttemptTransfer: false },
+      ),
+      true,
+    );
   });
 
   it("scenario 2: USDT skipped + USDC failed → native waits until USDC succeeds or permanent failure", () => {
@@ -38,9 +44,9 @@ describe("native execution policy — scenarios", () => {
             failureCount: 2,
             nextCheckAt: FUTURE,
           },
-        }
+        },
       ),
-      false
+      false,
     );
   });
 
@@ -59,9 +65,9 @@ describe("native execution policy — scenarios", () => {
             nextCheckAt: FUTURE,
           },
         },
-        { shouldAttemptTransfer: false }
+        { shouldAttemptTransfer: false },
       ),
-      false
+      false,
     );
   });
 
@@ -105,9 +111,9 @@ describe("native execution policy — scenarios", () => {
             failureCount: 3,
             nextCheckAt: FUTURE,
           },
-        }
+        },
       ),
-      false
+      false,
     );
   });
 
@@ -135,9 +141,9 @@ describe("native execution policy — scenarios", () => {
             collectionEnabled: false,
           },
           hasConfirmedTransfer: true,
-        }
+        },
       ),
-      false
+      false,
     );
   });
 
@@ -165,9 +171,9 @@ describe("native execution policy — scenarios", () => {
             nextCheckAt: FUTURE,
             failureCount: 1,
           },
-        }
+        },
       ),
-      false
+      false,
     );
   });
 
@@ -195,9 +201,9 @@ describe("native execution policy — scenarios", () => {
             collectionEnabled: true,
           },
           intent: { status: "BROADCAST" },
-        }
+        },
       ),
-      false
+      false,
     );
   });
 
@@ -237,9 +243,9 @@ describe("native execution policy — scenarios", () => {
             collectionEnabled: true,
           },
           intent: { status: "EXECUTING" },
-        }
+        },
       ),
-      false
+      false,
     );
   });
 
@@ -265,9 +271,9 @@ describe("native execution policy — scenarios", () => {
             collectionEnabled: false,
           },
           hasConfirmedTransfer: true,
-        }
+        },
       ),
-      false
+      false,
     );
   });
 });
@@ -285,7 +291,7 @@ describe("resolveTokenCollectionState", () => {
         },
         intent: { status: "QUEUED" },
       },
-      NOW
+      NOW,
     );
     assert.equal(state, "pending");
     assert.equal(isTokenCollectionActive(state), true);
@@ -305,7 +311,7 @@ describe("resolveTokenCollectionState", () => {
           nextCheckAt: FUTURE,
         },
       },
-      NOW
+      NOW,
     );
     assert.equal(state, "failed_retry_scheduled");
     assert.equal(isTokenCollectionActive(state), false);
@@ -325,7 +331,7 @@ describe("resolveTokenCollectionState", () => {
         },
         intent: { status: "QUEUED" },
       },
-      NOW
+      NOW,
     );
     assert.equal(state, "success");
     assert.equal(isTokenCollectionBlockingNative(state, true), false);
@@ -343,7 +349,7 @@ describe("resolveTokenCollectionState", () => {
           lastError: "zero_balance_at_collection",
         },
       },
-      NOW
+      NOW,
     );
     assert.equal(state, "skipped_zero_balance");
     assert.equal(isTokenCollectionBlockingNative(state, true), false);

@@ -20,7 +20,13 @@ import { DeveloperTestsService } from "./developer-tests.service";
 import { TransactionJourneyService } from "./transaction-journey.service";
 
 @Module({
-  imports: [WalletModule, JobsModule, ObservabilityModule, CollectionQueueModule, CollectionsModule],
+  imports: [
+    WalletModule,
+    JobsModule,
+    ObservabilityModule,
+    CollectionQueueModule,
+    CollectionsModule,
+  ],
   controllers: [AdminController],
   providers: [
     AdminService,

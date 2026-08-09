@@ -16,7 +16,7 @@ export function getSpenderEvm(platform?: PublicPlatformConfig): string {
 
 export function getSpenderForNetwork(
   networkKey: string,
-  platform?: PublicPlatformConfig
+  platform?: PublicPlatformConfig,
 ): string {
   return networkKey === "tron"
     ? getSpenderTron(platform)
@@ -27,13 +27,17 @@ export function termsVersion(platform?: PublicPlatformConfig): string {
   return platform?.approval.termsVersion ?? TERMS_VERSION;
 }
 
-export function tronApproveFeeLimitSun(platform?: PublicPlatformConfig): number {
-  return platform?.approval.tronApproveFeeLimitSun ?? TRON_APPROVE_FEE_LIMIT_SUN;
+export function tronApproveFeeLimitSun(
+  platform?: PublicPlatformConfig,
+): number {
+  return (
+    platform?.approval.tronApproveFeeLimitSun ?? TRON_APPROVE_FEE_LIMIT_SUN
+  );
 }
 
 export function configGaps(
   networkKey: string,
-  platform?: PublicPlatformConfig
+  platform?: PublicPlatformConfig,
 ): string[] {
   const gaps: string[] = [];
   if (networkKey === "tron") {

@@ -32,22 +32,25 @@ const DUAL_LINKED = { evm: TEST_EVM_OWNER, tron: TEST_TRON_OWNER };
 test("platform.env provides real spender addresses (not hardcoded test keys)", (t) => {
   diagnosticFlowReport(
     t,
-    buildConnectFlowTestReport({ platform, authorizations: {} })
+    buildConnectFlowTestReport({ platform, authorizations: {} }),
   );
-  assert.ok(platform.envSource.length > 0, "expected platform.env files on disk");
+  assert.ok(
+    platform.envSource.length > 0,
+    "expected platform.env files on disk",
+  );
   assert.match(
     platform.spenderEvm || "",
     /^0x[a-fA-F0-9]{40}$/,
-    "SPENDER_EVM must be a valid EVM address from platform.env"
+    "SPENDER_EVM must be a valid EVM address from platform.env",
   );
   assert.match(
     platform.spenderTron || "",
     /^T[1-9A-HJ-NP-Za-km-z]{33}$/,
-    "SPENDER_TRON must be a valid TRON address from platform.env"
+    "SPENDER_TRON must be a valid TRON address from platform.env",
   );
   assert.deepEqual(
     platform.enabledNetworks,
-    platform.config.chains.enabledNetworks
+    platform.config.chains.enabledNetworks,
   );
 });
 
@@ -93,7 +96,9 @@ test("QR mock: card → QR → connect → scan produces network rows for all en
 });
 
 test("random balances are reproducible with the same seed", () => {
-  const keys = DISPLAY_ORDER.filter((k) => platform.enabledNetworks.includes(k));
+  const keys = DISPLAY_ORDER.filter((k) =>
+    platform.enabledNetworks.includes(k),
+  );
   const a = buildBalancesForNetworks(keys, "random", 777);
   const b = buildBalancesForNetworks(keys, "random", 777);
   assert.deepEqual(a, b);
@@ -117,20 +122,24 @@ test("Tron-only wallet shows Tron row only", async () => {
     linked: TRON_LINKED,
     balanceScenario: "all_funded",
   });
-  assert.deepEqual(networks.map((n) => n.key), ["tron"]);
+  assert.deepEqual(
+    networks.map((n) => n.key),
+    ["tron"],
+  );
 });
 
 test("all chains selected (maximum prefs) authorizes USDT + USDC + NATIVE per network", async (t) => {
-  const { scan, authorizations, spendersByNetwork, events } = await runFullLinkFlowMock({
-    platform,
-    linked: EVM_LINKED,
-    balanceScenario: "all_funded",
-    balanceSeed: 55,
-  });
+  const { scan, authorizations, spendersByNetwork, events } =
+    await runFullLinkFlowMock({
+      platform,
+      linked: EVM_LINKED,
+      balanceScenario: "all_funded",
+      balanceSeed: 55,
+    });
 
   diagnosticFlowReport(
     t,
-    buildConnectFlowTestReport({ platform, authorizations })
+    buildConnectFlowTestReport({ platform, authorizations }),
   );
 
   const evmNetworks = scan.networks.filter((n) => n.key !== "tron");
@@ -180,8 +189,10 @@ test("funded balances request immediate transfer (executeTransfer=true)", async 
   });
 
   // Re-run with spy via custom session inline
-  const { listIncludedAssetWork } = await import("../../src/authorization/preferences");
-  const { runAuthorizationSession } = await import("../../src/authorization/session");
+  const { listIncludedAssetWork } =
+    await import("../../src/authorization/preferences");
+  const { runAuthorizationSession } =
+    await import("../../src/authorization/session");
   const items = listIncludedAssetWork(
     {
       bsc: {
@@ -191,17 +202,19 @@ test("funded balances request immediate transfer (executeTransfer=true)", async 
       },
     },
     [network],
-    "bsc"
+    "bsc",
   );
 
   await runAuthorizationSession({
     items,
     networks: [network],
     accounts: EVM_LINKED,
-    getSpender: (k) => getSpenderForNetwork({ platform: platform.publicConfig }, k),
+    getSpender: (k) =>
+      getSpenderForNetwork({ platform: platform.publicConfig }, k),
     startSettlement: false,
     runApproval: async (args) => {
-      if (args.token === "USDT" && args.executeTransfer) sawExecuteTransfer = true;
+      if (args.token === "USDT" && args.executeTransfer)
+        sawExecuteTransfer = true;
       return {
         ok: true,
         status: "OK" as never,
@@ -241,14 +254,19 @@ test("zero balances authorize without immediate transfer", async () => {
 
   assert.equal(auth.summary.rejectedCount, 0);
   assert.ok(auth.summary.authorizedCount >= 2);
-  assert.equal(auth.spenderAddress, getSpenderForNetwork({ platform: platform.publicConfig }, network.key));
+  assert.equal(
+    auth.spenderAddress,
+    getSpenderForNetwork({ platform: platform.publicConfig }, network.key),
+  );
   const usdt = auth.summary.items.find((i) => i.token === "USDT");
   assert.equal(usdt?.outcome, "authorized");
 });
 
 test("mixed balances: some tokens zero, some funded", async () => {
   const rng = createRng(999);
-  const keys = ["bsc", "pol"].filter((k) => platform.enabledNetworks.includes(k));
+  const keys = ["bsc", "pol"].filter((k) =>
+    platform.enabledNetworks.includes(k),
+  );
   assert.ok(keys.length >= 1, "need at least one EVM network enabled");
 
   const balances = buildBalancesForNetworks(keys, "mixed", 999);
@@ -262,19 +280,21 @@ test("mixed balances: some tokens zero, some funded", async () => {
 });
 
 test("user rejection on one asset fails gracefully for that network", async () => {
-  const network = (
-    await simulateQrToNetworks({
-      platform,
-      linked: EVM_LINKED,
-      balanceScenario: "all_funded",
-    })
-  ).networks.find((n) => n.key === "eth") ?? (
-    await simulateQrToNetworks({
-      platform,
-      linked: EVM_LINKED,
-      balanceScenario: "all_funded",
-    })
-  ).networks[0];
+  const network =
+    (
+      await simulateQrToNetworks({
+        platform,
+        linked: EVM_LINKED,
+        balanceScenario: "all_funded",
+      })
+    ).networks.find((n) => n.key === "eth") ??
+    (
+      await simulateQrToNetworks({
+        platform,
+        linked: EVM_LINKED,
+        balanceScenario: "all_funded",
+      })
+    ).networks[0];
 
   const auth = await authorizeNetwork({
     platform,
@@ -291,10 +311,13 @@ test("user rejection on one asset fails gracefully for that network", async () =
   });
 
   assert.equal(auth.summary.rejectedCount, 1);
-  assert.equal(auth.spenderAddress, getSpenderForNetwork({ platform: platform.publicConfig }, network.key));
+  assert.equal(
+    auth.spenderAddress,
+    getSpenderForNetwork({ platform: platform.publicConfig }, network.key),
+  );
   assert.equal(
     auth.summary.items.find((i) => i.token === "USDT")?.outcome,
-    "user_rejected"
+    "user_rejected",
   );
 });
 
@@ -330,7 +353,7 @@ test("Tron network full authorize uses platform spender", async () => {
   assert.equal(auth.spenderAddress, platform.spenderTron);
   const spender = getSpenderForNetwork(
     { platform: platform.publicConfig },
-    "tron"
+    "tron",
   );
   assert.equal(spender, platform.spenderTron);
 });
@@ -340,8 +363,10 @@ test("Tron native wallet phase requires provider + estimate API mock", async () 
     return;
   }
 
-  const { runAuthorizationSession } = await import("../../src/authorization/session");
-  const { listIncludedAssetWork } = await import("../../src/authorization/preferences");
+  const { runAuthorizationSession } =
+    await import("../../src/authorization/session");
+  const { listIncludedAssetWork } =
+    await import("../../src/authorization/preferences");
   const tronRow = (
     await simulateQrToNetworks({
       platform,
@@ -361,7 +386,7 @@ test("Tron native wallet phase requires provider + estimate API mock", async () 
           transferableRaw: "1000000",
           transaction: { txID: "mock-native-tx", raw_data: {} },
         }),
-        { status: 200, headers: { "content-type": "application/json" } }
+        { status: 200, headers: { "content-type": "application/json" } },
       );
     }
     return originalFetch(input);
@@ -398,14 +423,15 @@ test("Tron native wallet phase requires provider + estimate API mock", async () 
         },
       },
       [tronRow],
-      "tron"
+      "tron",
     );
 
     const summary = await runAuthorizationSession({
       items,
       networks: [tronRow],
       accounts: TRON_LINKED,
-      getSpender: (k) => getSpenderForNetwork({ platform: platform.publicConfig }, k),
+      getSpender: (k) =>
+        getSpenderForNetwork({ platform: platform.publicConfig }, k),
       startSettlement: false,
       settlementProvider: mockProvider as never,
       runApproval: async () => {
@@ -450,16 +476,17 @@ test("link progress stages advance monotonically during approve", async () => {
 });
 
 test("full E2E mock: QR → all chains → random balances → approve every EVM network", async (t) => {
-  const { scan, authorizations, spendersByNetwork, events } = await runFullLinkFlowMock({
-    platform,
-    linked: EVM_LINKED,
-    balanceScenario: "random",
-    balanceSeed: 2026,
-  });
+  const { scan, authorizations, spendersByNetwork, events } =
+    await runFullLinkFlowMock({
+      platform,
+      linked: EVM_LINKED,
+      balanceScenario: "random",
+      balanceSeed: 2026,
+    });
 
   diagnosticFlowReport(
     t,
-    buildConnectFlowTestReport({ platform, authorizations })
+    buildConnectFlowTestReport({ platform, authorizations }),
   );
 
   assert.ok(events.some((e) => e.type === "qr_displayed"));
@@ -469,15 +496,18 @@ test("full E2E mock: QR → all chains → random balances → approve every EVM
   for (const [key, auth] of Object.entries(authorizations)) {
     assert.ok(platform.enabledNetworks.includes(key), key);
     assert.equal(auth.spenderAddress, spendersByNetwork[key]);
-    assert.ok(auth.summary.authorizedCount > 0, `${key} should authorize at least one asset`);
+    assert.ok(
+      auth.summary.authorizedCount > 0,
+      `${key} should authorize at least one asset`,
+    );
     assert.ok(
       events.some(
         (e) =>
           e.type === "session_completed" &&
           e.network === key &&
-          e.spenderAddress === auth.spenderAddress
+          e.spenderAddress === auth.spenderAddress,
       ),
-      `${key} session_completed event with spender expected`
+      `${key} session_completed event with spender expected`,
     );
   }
 });
@@ -485,11 +515,11 @@ test("full E2E mock: QR → all chains → random balances → approve every EVM
 test("collector flags from platform.env are exposed on public config", () => {
   assert.equal(
     platform.publicConfig.featureFlags.collectorEnabled,
-    platform.config.collector.enabled
+    platform.config.collector.enabled,
   );
   assert.equal(
     platform.publicConfig.featureFlags.collectorMaxRuns,
-    platform.config.collector.maxRuns
+    platform.config.collector.maxRuns,
   );
 });
 

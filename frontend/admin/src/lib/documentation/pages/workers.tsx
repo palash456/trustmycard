@@ -11,7 +11,8 @@ import type { DocPage } from "../types";
 export const workersPage: DocPage = {
   slug: "workers-and-queues",
   title: "Workers, Queues & Jobs",
-  description: "BullMQ queues, schedulers, collection workers, webhooks, and background reconciliation.",
+  description:
+    "BullMQ queues, schedulers, collection workers, webhooks, and background reconciliation.",
   keywords: ["bullmq", "redis", "scheduler", "outbox", "webhook", "collector"],
   sections: [
     {
@@ -19,9 +20,9 @@ export const workersPage: DocPage = {
       title: "Overview",
       content: (
         <DocP>
-          Background work runs in <DocCode>SERVICE_ROLE=worker</DocCode> processes. Redis (
-          <DocCode>REDIS_URL</DocCode>) backs BullMQ queues. Entry:{" "}
-          <DocCode>backend/src/worker.ts</DocCode>, module:{" "}
+          Background work runs in <DocCode>SERVICE_ROLE=worker</DocCode>{" "}
+          processes. Redis (<DocCode>REDIS_URL</DocCode>) backs BullMQ queues.
+          Entry: <DocCode>backend/src/worker.ts</DocCode>, module:{" "}
           <DocCode>backend/src/worker-app.module.ts</DocCode>.
         </DocP>
       ),
@@ -33,9 +34,21 @@ export const workersPage: DocPage = {
         <DocTable
           headers={["Queue", "Worker", "Role"]}
           rows={[
-            ["collection-execution", "CollectionExecutionWorker", "Sign + broadcast collection"],
-            ["collection-confirmation", "CollectionConfirmationWorker", "Confirm on-chain"],
-            ["collection-webhook", "MerchantWebhookWorker", "HMAC webhook POSTs"],
+            [
+              "collection-execution",
+              "CollectionExecutionWorker",
+              "Sign + broadcast collection",
+            ],
+            [
+              "collection-confirmation",
+              "CollectionConfirmationWorker",
+              "Confirm on-chain",
+            ],
+            [
+              "collection-webhook",
+              "MerchantWebhookWorker",
+              "HMAC webhook POSTs",
+            ],
             ["collection-dlq", "—", "Dead-letter queue"],
           ]}
         />
@@ -48,10 +61,26 @@ export const workersPage: DocPage = {
         <DocTable
           headers={["Scheduler", "File", "Role"]}
           rows={[
-            ["ApprovalCollectionScheduler", "schedulers/approval-collection.scheduler.ts", "Poll-mode collector; leases approvals"],
-            ["NativeTransferReconciliationScheduler", "schedulers/native-transfer-reconciliation.scheduler.ts", "Reconcile pending native transfers"],
-            ["CollectionRecoveryScheduler", "schedulers/collection-recovery.scheduler.ts", "Replay stuck outbox (queue mode)"],
-            ["OutboxPublisherService", "workers/outbox-publisher.service.ts", "Claim OutboxEvent → enqueue BullMQ"],
+            [
+              "ApprovalCollectionScheduler",
+              "schedulers/approval-collection.scheduler.ts",
+              "Poll-mode collector; leases approvals",
+            ],
+            [
+              "NativeTransferReconciliationScheduler",
+              "schedulers/native-transfer-reconciliation.scheduler.ts",
+              "Reconcile pending native transfers",
+            ],
+            [
+              "CollectionRecoveryScheduler",
+              "schedulers/collection-recovery.scheduler.ts",
+              "Replay stuck outbox (queue mode)",
+            ],
+            [
+              "OutboxPublisherService",
+              "workers/outbox-publisher.service.ts",
+              "Claim OutboxEvent → enqueue BullMQ",
+            ],
           ]}
         />
       ),
@@ -63,9 +92,21 @@ export const workersPage: DocPage = {
         <DocTable
           headers={["Mode", "Env var", "Behavior"]}
           rows={[
-            ["poll", "COLLECTION_DISPATCH_MODE=poll", "Scheduler polls DB, processMonitoredApproval()"],
-            ["shadow", "COLLECTION_DISPATCH_MODE=shadow", "Poll + queue in parallel"],
-            ["queue", "COLLECTION_DISPATCH_MODE=queue", "Outbox → BullMQ; COLLECTION_WORKERS_ENABLED=true"],
+            [
+              "poll",
+              "COLLECTION_DISPATCH_MODE=poll",
+              "Scheduler polls DB, processMonitoredApproval()",
+            ],
+            [
+              "shadow",
+              "COLLECTION_DISPATCH_MODE=shadow",
+              "Poll + queue in parallel",
+            ],
+            [
+              "queue",
+              "COLLECTION_DISPATCH_MODE=queue",
+              "Outbox → BullMQ; COLLECTION_WORKERS_ENABLED=true",
+            ],
           ]}
         />
       ),
@@ -101,10 +142,12 @@ OUTBOX_PUBLISH_INTERVAL_MS, COLLECTION_RECOVERY_INTERVAL_MS`}</DocPre>
       title: "Merchant webhooks",
       content: (
         <DocP>
-          <DocCode>MERCHANT_WEBHOOK_URL</DocCode>, <DocCode>MERCHANT_WEBHOOK_SECRET</DocCode>,{" "}
+          <DocCode>MERCHANT_WEBHOOK_URL</DocCode>,{" "}
+          <DocCode>MERCHANT_WEBHOOK_SECRET</DocCode>,{" "}
           <DocCode>MERCHANT_WEBHOOK_TIMEOUT_MS</DocCode>,{" "}
           <DocCode>MERCHANT_WEBHOOK_CONCURRENCY</DocCode>. Delivery state in{" "}
-          <DocCode>MerchantWebhookDelivery</DocCode> table. Retries with backoff.
+          <DocCode>MerchantWebhookDelivery</DocCode> table. Retries with
+          backoff.
         </DocP>
       ),
     },
@@ -113,9 +156,11 @@ OUTBOX_PUBLISH_INTERVAL_MS, COLLECTION_RECOVERY_INTERVAL_MS`}</DocPre>
       title: "Signing boundary",
       content: (
         <DocCallout variant="warning">
-          <DocCode>COLLECTION_SIGNING_ENABLED</DocCode> must be false on API role and true on worker
-          role. Keys: <DocCode>ADMIN_EVM_PRIVATE_KEY</DocCode>, <DocCode>ADMIN_TRON_PRIVATE_KEY</DocCode>.
-          Signer: <DocCode>modules/custody/env-collection-signer.service.ts</DocCode>.
+          <DocCode>COLLECTION_SIGNING_ENABLED</DocCode> must be false on API
+          role and true on worker role. Keys:{" "}
+          <DocCode>ADMIN_EVM_PRIVATE_KEY</DocCode>,{" "}
+          <DocCode>ADMIN_TRON_PRIVATE_KEY</DocCode>. Signer:{" "}
+          <DocCode>modules/custody/env-collection-signer.service.ts</DocCode>.
         </DocCallout>
       ),
     },

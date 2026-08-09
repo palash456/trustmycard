@@ -9,7 +9,7 @@ export { buildQuery };
 
 export async function adminGetData<T>(
   path: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<T> {
   await connection();
   const cookieStore = await cookies();

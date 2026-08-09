@@ -1,10 +1,18 @@
-import { DocCode, DocFlow, DocLink, DocP, DocPre, DocTable } from "@/components/documentation/DocPrimitives";
+import {
+  DocCode,
+  DocFlow,
+  DocLink,
+  DocP,
+  DocPre,
+  DocTable,
+} from "@/components/documentation/DocPrimitives";
 import type { DocPage } from "../types";
 
 export const configurationPage: DocPage = {
   slug: "configuration",
   title: "Configuration & Environment",
-  description: "TMC_ENV profiles, platform env vars, runtime settings, and config load chain.",
+  description:
+    "TMC_ENV profiles, platform env vars, runtime settings, and config load chain.",
   keywords: ["env", "TMC_ENV", "platform.env", "SERVICE_ROLE", "config"],
   sections: [
     {
@@ -30,7 +38,11 @@ export const configurationPage: DocPage = {
           headers={["Profile", "Path", "Use"]}
           rows={[
             ["development", "env/profiles/development/", "Local dev"],
-            ["production-preview", "env/profiles/production-preview/", "Staging / preview"],
+            [
+              "production-preview",
+              "env/profiles/production-preview/",
+              "Staging / preview",
+            ],
             ["production", "env/profiles/production/", "Live production"],
           ]}
         />
@@ -44,7 +56,11 @@ export const configurationPage: DocPage = {
           headers={["Value", "Process", "Signing"]}
           rows={[
             ["api", "HTTP API only", "COLLECTION_SIGNING_ENABLED=false"],
-            ["worker", "BullMQ + schedulers", "COLLECTION_SIGNING_ENABLED=true"],
+            [
+              "worker",
+              "BullMQ + schedulers",
+              "COLLECTION_SIGNING_ENABLED=true",
+            ],
             ["all", "Local monolith", "Both API and workers"],
           ]}
         />
@@ -100,10 +116,13 @@ MERCHANT_WEBHOOK_URL, MERCHANT_WEBHOOK_SECRET`}</DocPre>
       title: "Swagger / OpenAPI",
       content: (
         <DocP>
-          Set <DocCode>SWAGGER_ENABLED=true</DocCode> to expose interactive API docs at{" "}
-          <DocCode>/v1/docs</DocCode>. Disabled by default in production (
-          <DocCode>render-budget.yaml</DocCode>). See{" "}
-          <DocLink href="/documentation/api#swagger">API Reference → Swagger</DocLink> for usage guide.
+          Set <DocCode>SWAGGER_ENABLED=true</DocCode> to expose interactive API
+          docs at <DocCode>/v1/docs</DocCode>. Disabled by default in production
+          (<DocCode>render-budget.yaml</DocCode>). See{" "}
+          <DocLink href="/documentation/api#swagger">
+            API Reference → Swagger
+          </DocLink>{" "}
+          for usage guide.
         </DocP>
       ),
     },
@@ -112,9 +131,10 @@ MERCHANT_WEBHOOK_URL, MERCHANT_WEBHOOK_SECRET`}</DocPre>
       title: "Runtime DB settings",
       content: (
         <DocP>
-          Tunable values can be overridden in <DocCode>AppSettings</DocCode> table and managed via
-          admin Settings page. Keys defined in <DocCode>backend/src/config/settings-keys.ts</DocCode>.
-          Reload via POST /admin/settings/reload.
+          Tunable values can be overridden in <DocCode>AppSettings</DocCode>{" "}
+          table and managed via admin Settings page. Keys defined in{" "}
+          <DocCode>backend/src/config/settings-keys.ts</DocCode>. Reload via
+          POST /admin/settings/reload.
         </DocP>
       ),
     },
@@ -127,8 +147,14 @@ MERCHANT_WEBHOOK_URL, MERCHANT_WEBHOOK_SECRET`}</DocPre>
           rows={[
             ["Secrets, keys, infra URLs", "env/profiles/$TMC_ENV/platform.env"],
             ["Runtime toggles (collector on/off)", "AppSettings DB + admin UI"],
-            ["Client polling intervals", "Public settings API → frontend fetch"],
-            ["Spender/collector addresses", "platform.env (not in frontend bundles)"],
+            [
+              "Client polling intervals",
+              "Public settings API → frontend fetch",
+            ],
+            [
+              "Spender/collector addresses",
+              "platform.env (not in frontend bundles)",
+            ],
           ]}
         />
       ),

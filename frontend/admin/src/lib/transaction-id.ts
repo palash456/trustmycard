@@ -6,7 +6,7 @@ export function resolveTransactionId(
     sessionId?: string | null;
     clientSessionId?: string | null;
   },
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
 ): string | null {
   const direct =
     fields.transactionId?.trim() ||
@@ -16,7 +16,12 @@ export function resolveTransactionId(
   if (direct) return direct;
 
   if (!metadata) return null;
-  for (const key of ["transactionId", "traceId", "clientSessionId", "sessionId"]) {
+  for (const key of [
+    "transactionId",
+    "traceId",
+    "clientSessionId",
+    "sessionId",
+  ]) {
     const value = metadata[key];
     if (typeof value === "string" && value.trim()) return value.trim();
   }

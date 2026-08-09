@@ -1,6 +1,9 @@
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { PageFilters } from "@/components/FilterForm";
-import { ApprovalsListChart, TransfersListChart } from "@/components/charts/ListPageCharts";
+import {
+  ApprovalsListChart,
+  TransfersListChart,
+} from "@/components/charts/ListPageCharts";
 import { ListPageLayout } from "@/components/ListPageLayout";
 import { ListTableCard } from "@/components/ListTableCard";
 import { PageHeader } from "@/components/PageHeader";
@@ -114,7 +117,7 @@ export default async function PipelinePage({
     const summaryPromise = adminGetData<DashboardSummary>("/admin/dashboard");
     const userPromise = owner
       ? adminGetData<UserListResponse>(
-          `/admin/users${buildQuery({ search: owner, limit: "1" })}`
+          `/admin/users${buildQuery({ search: owner, limit: "1" })}`,
         ).catch(() => null)
       : Promise.resolve(null);
 
@@ -127,7 +130,7 @@ export default async function PipelinePage({
           network: baseQuery.network,
           owner: baseQuery.owner,
           status: baseQuery.status,
-        })}`
+        })}`,
       );
     } else if (tab === "native") {
       listPromise = adminGetData<Paginated<NativeRow>>(
@@ -137,7 +140,7 @@ export default async function PipelinePage({
           network: baseQuery.network,
           owner: baseQuery.owner,
           status: baseQuery.status,
-        })}`
+        })}`,
       );
     } else {
       listPromise = adminGetData<Paginated<ApprovalRow>>(
@@ -148,7 +151,7 @@ export default async function PipelinePage({
           owner: baseQuery.owner,
           status: baseQuery.status,
           collectionEnabled: baseQuery.collectionEnabled,
-        })}`
+        })}`,
       );
     }
 
@@ -197,7 +200,11 @@ export default async function PipelinePage({
       >
         <PageToolbar>
           <PageRefreshButton />
-          <PageFilters action="/pipeline" values={pipelineQuery} fields={[...filterFields]} />
+          <PageFilters
+            action="/pipeline"
+            values={pipelineQuery}
+            fields={[...filterFields]}
+          />
         </PageToolbar>
       </PageHeader>
 
@@ -209,7 +216,7 @@ export default async function PipelinePage({
         owner={owner}
         pipelineQuery={pipelineQuery}
         filtersActive={Boolean(
-          owner || sp.network || sp.status || sp.collectionEnabled
+          owner || sp.network || sp.status || sp.collectionEnabled,
         )}
       />
 

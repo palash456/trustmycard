@@ -5,7 +5,7 @@ function normalizeBackendOrigin(raw: string): string {
 
 /** Nest API origin for server-side BFF proxies (website `.env.local`: BACKEND_API_URL). */
 export const BACKEND_BASE = normalizeBackendOrigin(
-  process.env.BACKEND_API_URL?.replace(/\/$/, "") || "http://127.0.0.1:4000"
+  process.env.BACKEND_API_URL?.replace(/\/$/, "") || "http://127.0.0.1:4000",
 );
 
 /** Observability ingest lives at /v1/client-logs (not under /v1/api). */

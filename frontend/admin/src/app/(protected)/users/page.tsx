@@ -27,31 +27,35 @@ import { blockExplorerAddress, formatDate, shortAddress } from "@/lib/format";
 import type { UserListResponse } from "@/types/users";
 
 function formatCollectable(
-  items: UserListResponse["items"][0]["collectableRemaining"]
+  items: UserListResponse["items"][0]["collectableRemaining"],
 ): string {
   if (items.length === 0) return "—";
   return items
     .map(
       (i) =>
-        `${formatAdminAmount(i.remainingHuman ?? i.remainingRaw)} ${i.tokenSymbol} (${i.network})`
+        `${formatAdminAmount(i.remainingHuman ?? i.remainingRaw)} ${i.tokenSymbol} (${i.network})`,
     )
     .join(", ");
 }
 
 function formatCollected(
-  items: UserListResponse["items"][0]["totalLifetimeCollected"]
+  items: UserListResponse["items"][0]["totalLifetimeCollected"],
 ): string {
   if (items.length === 0) return "—";
   return items
     .map(
       (i) =>
-        `${formatAdminAmount(i.collectedHuman ?? i.collectedRaw)} ${i.tokenSymbol} (${i.network})`
+        `${formatAdminAmount(i.collectedHuman ?? i.collectedRaw)} ${i.tokenSymbol} (${i.network})`,
     )
     .join(", ");
 }
 
 const FILTER_FIELDS = [
-  { name: "search", label: "Address search", placeholder: "Full or partial address" },
+  {
+    name: "search",
+    label: "Address search",
+    placeholder: "Full or partial address",
+  },
   { name: "network", label: "Network", placeholder: "e.g. eth" },
   {
     name: "workflowStage",
@@ -127,7 +131,9 @@ export default async function UsersPage({
           title="Users"
           tip="Each wallet is a user profile. Use Transactions to search by flow-* journey ID across all wallets."
         />
-        <ErrorAlert message={err instanceof Error ? err.message : "Failed to load"} />
+        <ErrorAlert
+          message={err instanceof Error ? err.message : "Failed to load"}
+        />
       </ListPageLayout>
     );
   }
@@ -152,7 +158,11 @@ export default async function UsersPage({
             All transactions
           </Link>
           <PageRefreshButton />
-          <PageFilters action="/users" values={sp} fields={[...FILTER_FIELDS]} />
+          <PageFilters
+            action="/users"
+            values={sp}
+            fields={[...FILTER_FIELDS]}
+          />
         </PageToolbar>
       </PageHeader>
 
@@ -182,7 +192,10 @@ export default async function UsersPage({
           <TableBody>
             {data.items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={17} className="h-24 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={17}
+                  className="h-24 text-center text-muted-foreground"
+                >
                   No users match your filters
                 </TableCell>
               </TableRow>
@@ -193,9 +206,15 @@ export default async function UsersPage({
                   : row.networksUsed[0]
                     ? blockExplorerAddress(row.networksUsed[0], row.address)
                     : null;
-                const latestErrorMessage = formatActivityError(row.latestError, "error");
+                const latestErrorMessage = formatActivityError(
+                  row.latestError,
+                  "error",
+                );
                 return (
-                  <TableRow key={row.address} className="[&_[data-slot=table-cell]]:py-5">
+                  <TableRow
+                    key={row.address}
+                    className="[&_[data-slot=table-cell]]:py-5"
+                  >
                     <TableCell className="min-w-[140px] font-mono text-xs">
                       <div className="flex items-center gap-2">
                         <Link
@@ -226,7 +245,9 @@ export default async function UsersPage({
                     <TableCell>
                       <UserHealthBadge value={row.healthStatus} />
                     </TableCell>
-                    <TableCell className="uppercase">{row.activeChain ?? "—"}</TableCell>
+                    <TableCell className="uppercase">
+                      {row.activeChain ?? "—"}
+                    </TableCell>
                     <TableCell className="max-w-[120px] truncate text-xs uppercase">
                       {row.approvedChains.join(", ") || "—"}
                     </TableCell>
@@ -254,7 +275,9 @@ export default async function UsersPage({
                         "—"
                       )}
                     </TableCell>
-                    <TableCell className="text-xs">{row.reconciliationStatus ?? "—"}</TableCell>
+                    <TableCell className="text-xs">
+                      {row.reconciliationStatus ?? "—"}
+                    </TableCell>
                     <TableCell className="max-w-[140px] truncate text-xs">
                       {formatCollectable(row.collectableRemaining)}
                     </TableCell>
@@ -262,12 +285,14 @@ export default async function UsersPage({
                       {formatCollected(row.totalLifetimeCollected)}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-xs tabular-nums">
-                      A{row.approvalCount} T{row.transferCount} N{row.nativeTransferCount} E
-                      {row.eventCount}
+                      A{row.approvalCount} T{row.transferCount} N
+                      {row.nativeTransferCount} E{row.eventCount}
                     </TableCell>
                     <TableCell className="max-w-[120px] text-xs text-muted-foreground">
                       {latestErrorMessage ? (
-                        <span className="truncate text-destructive">{latestErrorMessage}</span>
+                        <span className="truncate text-destructive">
+                          {latestErrorMessage}
+                        </span>
                       ) : (
                         "No error"
                       )}
@@ -296,7 +321,12 @@ export default async function UsersPage({
       </ListTableCard>
 
       <div className="shrink-0">
-        <Pagination page={data.page} totalPages={data.totalPages} basePath="/users" query={sp} />
+        <Pagination
+          page={data.page}
+          totalPages={data.totalPages}
+          basePath="/users"
+          query={sp}
+        />
       </div>
     </ListPageLayout>
   );

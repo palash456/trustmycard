@@ -6,7 +6,9 @@ import {
 } from "../../core/chain-tokens";
 
 export function parseTokenSymbol(raw: unknown): TokenSymbol {
-  const s = String(raw ?? "USDT").trim().toUpperCase();
+  const s = String(raw ?? "USDT")
+    .trim()
+    .toUpperCase();
   if (s === "USDT" || s === "USDC") return s;
   throw new Error("token must be USDT or USDC");
 }

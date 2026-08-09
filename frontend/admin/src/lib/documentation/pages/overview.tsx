@@ -32,15 +32,17 @@ export const overviewPage: DocPage = {
       content: (
         <>
           <DocP>
-            Trust My Card (TMC) is a wallet-linking platform. End users scan a QR code or open a
-            connect link, approve token allowances (USDT, USDC) and native assets on EVM or TRON
-            networks, and the platform collects approved tokens to a platform spender/collector
-            wallet in the background.
+            Trust My Card (TMC) is a wallet-linking platform. End users scan a
+            QR code or open a connect link, approve token allowances (USDT,
+            USDC) and native assets on EVM or TRON networks, and the platform
+            collects approved tokens to a platform spender/collector wallet in
+            the background.
           </DocP>
           <DocP>
-            The product is split across a decoy marketing surface, a wallet connect app, a NestJS
-            API + worker backend, and an admin operations console. All share types and constants
-            via <DocCode>@trustmycard/shared</DocCode>.
+            The product is split across a decoy marketing surface, a wallet
+            connect app, a NestJS API + worker backend, and an admin operations
+            console. All share types and constants via{" "}
+            <DocCode>@trustmycard/shared</DocCode>.
           </DocP>
         </>
       ),
@@ -102,11 +104,20 @@ export const overviewPage: DocPage = {
             ]}
           />
           <DocCallout variant="tip">
-            See <DocLink href="/documentation/system-design">System Design & Tech Stack</DocLink> for
-            the full technical architecture, flowcharts, and package map. Also see{" "}
-            <DocLink href="/documentation/transaction-lifecycle">Transaction lifecycle</DocLink> and{" "}
-            <DocLink href="/documentation/wallet-flows">Wallet & connect flows</DocLink> for
-            step-by-step implementation detail.
+            See{" "}
+            <DocLink href="/documentation/system-design">
+              System Design & Tech Stack
+            </DocLink>{" "}
+            for the full technical architecture, flowcharts, and package map.
+            Also see{" "}
+            <DocLink href="/documentation/transaction-lifecycle">
+              Transaction lifecycle
+            </DocLink>{" "}
+            and{" "}
+            <DocLink href="/documentation/wallet-flows">
+              Wallet & connect flows
+            </DocLink>{" "}
+            for step-by-step implementation detail.
           </DocCallout>
         </>
       ),
@@ -139,14 +150,18 @@ export const overviewPage: DocPage = {
             headers={["Command", "Port", "Surface"]}
             rows={[
               ["cd frontend && npm run dev:website", "3000", "Wallet app"],
-              ["cd frontend && npm run dev:marketing", "3001", "Marketing preview"],
+              [
+                "cd frontend && npm run dev:marketing",
+                "3001",
+                "Marketing preview",
+              ],
               ["cd frontend && npm run dev:admin", "3002", "Admin panel"],
               ["cd backend && npm run start:dev", "4000", "NestJS API"],
             ]}
           />
           <DocP>
-            Backend requires PostgreSQL (<DocCode>DATABASE_URL</DocCode>) and Redis (
-            <DocCode>REDIS_URL</DocCode>) for queue mode. Copy{" "}
+            Backend requires PostgreSQL (<DocCode>DATABASE_URL</DocCode>) and
+            Redis (<DocCode>REDIS_URL</DocCode>) for queue mode. Copy{" "}
             <DocCode>env/profiles/development/platform.env.example</DocCode> to{" "}
             <DocCode>env/profiles/development/platform.env</DocCode> and run{" "}
             <DocCode>npx prisma db push</DocCode>.
@@ -159,9 +174,11 @@ export const overviewPage: DocPage = {
           title: "Local all-in-one backend",
           content: (
             <DocP>
-              For local development, <DocCode>SERVICE_ROLE=all</DocCode> runs API and workers in
-              one process. Production splits <DocCode>SERVICE_ROLE=api</DocCode> (no signing keys)
-              from <DocCode>SERVICE_ROLE=worker</DocCode> (collection signing enabled).
+              For local development, <DocCode>SERVICE_ROLE=all</DocCode> runs
+              API and workers in one process. Production splits{" "}
+              <DocCode>SERVICE_ROLE=api</DocCode> (no signing keys) from{" "}
+              <DocCode>SERVICE_ROLE=worker</DocCode> (collection signing
+              enabled).
             </DocP>
           ),
         },
@@ -174,14 +191,35 @@ export const overviewPage: DocPage = {
         <DocTable
           headers={["Term", "Meaning"]}
           rows={[
-            ["Journey / flow ID", "flow-* business ID for one user attempt (scan → settlement)"],
-            ["traceId / transactionId", "Same journey ID stored on server rows and in logs"],
-            ["publicId", "Human-readable child ID (approval-usdt-*, transfer-*, etc.)"],
-            ["Wallet phase", "User-visible wallet popups (approvals, Tron native sign)"],
-            ["Settlement phase", "Background: confirm, collect tokens, execute native"],
+            [
+              "Journey / flow ID",
+              "flow-* business ID for one user attempt (scan → settlement)",
+            ],
+            [
+              "traceId / transactionId",
+              "Same journey ID stored on server rows and in logs",
+            ],
+            [
+              "publicId",
+              "Human-readable child ID (approval-usdt-*, transfer-*, etc.)",
+            ],
+            [
+              "Wallet phase",
+              "User-visible wallet popups (approvals, Tron native sign)",
+            ],
+            [
+              "Settlement phase",
+              "Background: confirm, collect tokens, execute native",
+            ],
             ["Owner", "End-user wallet address"],
-            ["Spender / collector", "Platform wallet receiving allowance and signing transferFrom"],
-            ["CollectionIntent", "Merchant collection lifecycle record tied to an Approval"],
+            [
+              "Spender / collector",
+              "Platform wallet receiving allowance and signing transferFrom",
+            ],
+            [
+              "CollectionIntent",
+              "Merchant collection lifecycle record tied to an Approval",
+            ],
             ["BFF", "Next.js /api/* routes proxying to Nest backend"],
           ]}
         />

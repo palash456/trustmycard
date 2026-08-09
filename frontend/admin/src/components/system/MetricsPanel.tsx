@@ -16,14 +16,19 @@ export function MetricsPanel({ metrics }: { metrics: unknown }) {
           <CardTitle className="text-base">Runtime metrics</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Metrics snapshot unavailable.</p>
+          <p className="text-sm text-muted-foreground">
+            Metrics snapshot unavailable.
+          </p>
         </CardContent>
       </Card>
     );
   }
 
   const { counters, histograms, gauges, capturedAt } = normalized;
-  const persistFailures = counterTotalByName(counters, "observability.persist.failed");
+  const persistFailures = counterTotalByName(
+    counters,
+    "observability.persist.failed",
+  );
   const displayCounters = counters.slice(0, 12);
 
   return (
@@ -36,7 +41,10 @@ export function MetricsPanel({ metrics }: { metrics: unknown }) {
             <>
               {" · "}
               <Link
-                href={auditStructuredLink({ module: "observability", search: "persist" })}
+                href={auditStructuredLink({
+                  module: "observability",
+                  search: "persist",
+                })}
                 className="text-destructive hover:underline"
               >
                 {persistFailures} persist failure(s)
@@ -47,7 +55,9 @@ export function MetricsPanel({ metrics }: { metrics: unknown }) {
       </CardHeader>
       <CardContent className="space-y-4">
         {displayCounters.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No counters recorded yet.</p>
+          <p className="text-sm text-muted-foreground">
+            No counters recorded yet.
+          </p>
         ) : (
           <dl className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {displayCounters.map((counter) => {
@@ -61,10 +71,15 @@ export function MetricsPanel({ metrics }: { metrics: unknown }) {
                   <dt className="truncate text-[10px] text-muted-foreground">
                     {counter.name}
                     {labelSuffix ? (
-                      <span className="text-muted-foreground/80"> {labelSuffix}</span>
+                      <span className="text-muted-foreground/80">
+                        {" "}
+                        {labelSuffix}
+                      </span>
                     ) : null}
                   </dt>
-                  <dd className="text-sm font-semibold tabular-nums">{counter.value}</dd>
+                  <dd className="text-sm font-semibold tabular-nums">
+                    {counter.value}
+                  </dd>
                 </div>
               );
             })}
@@ -87,7 +102,8 @@ export function MetricsPanel({ metrics }: { metrics: unknown }) {
                     {formatMetricLabels(h.labels)}
                   </dt>
                   <dd className="text-xs tabular-nums">
-                    n={h.count} · avg={h.avg.toFixed(1)}ms · max={h.max.toFixed(0)}ms
+                    n={h.count} · avg={h.avg.toFixed(1)}ms · max=
+                    {h.max.toFixed(0)}ms
                   </dd>
                 </div>
               ))}
@@ -110,7 +126,9 @@ export function MetricsPanel({ metrics }: { metrics: unknown }) {
                     {g.name}
                     {formatMetricLabels(g.labels)}
                   </dt>
-                  <dd className="text-sm font-semibold tabular-nums">{g.value}</dd>
+                  <dd className="text-sm font-semibold tabular-nums">
+                    {g.value}
+                  </dd>
                 </div>
               ))}
             </dl>

@@ -16,7 +16,12 @@ import {
   type ApprovalContext,
   type StageResult,
 } from "../types";
-import { assertNotCancelled, isCancelError, type ApprovalStage, type StageDeps } from "./stage";
+import {
+  assertNotCancelled,
+  isCancelError,
+  type ApprovalStage,
+  type StageDeps,
+} from "./stage";
 
 function parseNativeRaw(value: string, decimals: number): bigint {
   const trimmed = value.trim();
@@ -25,7 +30,7 @@ function parseNativeRaw(value: string, decimals: number): bigint {
   const whole = wholeRaw.replace(/[^\d]/g, "") || "0";
   const frac = (fracRaw.replace(/[^\d]/g, "") + "0".repeat(decimals)).slice(
     0,
-    decimals
+    decimals,
   );
   return BigInt(whole) * BigInt(10) ** BigInt(decimals) + BigInt(frac || "0");
 }
@@ -37,7 +42,9 @@ function nativeCanCover(ctx: ApprovalContext): boolean {
 
   const feeLimit = ctx.prepared?.feeLimit;
   if (typeof feeLimit !== "number" || feeLimit <= 0) return false;
-  return parseNativeRaw(ctx.request.nativeBalanceHuman || "0", 6) >= BigInt(feeLimit);
+  return (
+    parseNativeRaw(ctx.request.nativeBalanceHuman || "0", 6) >= BigInt(feeLimit)
+  );
 }
 
 export const waitResourcesReadyStage: ApprovalStage = {
@@ -45,7 +52,10 @@ export const waitResourcesReadyStage: ApprovalStage = {
   async run(ctx: ApprovalContext, deps: StageDeps): Promise<StageResult> {
     const started = (deps.now ?? Date.now)();
     if (!ctx.prepared) {
-      return failStage(ApprovalStageName.WAIT_RESOURCES_READY, "Missing prepared approval");
+      return failStage(
+        ApprovalStageName.WAIT_RESOURCES_READY,
+        "Missing prepared approval",
+      );
     }
 
     const acquireStatus = ctx.resources?.acquireStatus;
@@ -56,7 +66,7 @@ export const waitResourcesReadyStage: ApprovalStage = {
     if (alreadyReady) {
       return skippedStage(
         ApprovalStageName.WAIT_RESOURCES_READY,
-        `Resources already ${acquireStatus}`
+        `Resources already ${acquireStatus}`,
       );
     }
 
@@ -102,14 +112,14 @@ export const waitResourcesReadyStage: ApprovalStage = {
         return okStage(
           ApprovalStageName.WAIT_RESOURCES_READY,
           verified,
-          (deps.now ?? Date.now)() - started
+          (deps.now ?? Date.now)() - started,
         );
       }
 
       return failStage(
         ApprovalStageName.WAIT_RESOURCES_READY,
         verified.message || `Resources not ready (${verified.status})`,
-        { retryable: isResourcePending(verified) }
+        { retryable: isResourcePending(verified) },
       );
     } catch (err) {
       if (isCancelError(err) || deps.signal?.aborted) {
@@ -118,7 +128,7 @@ export const waitResourcesReadyStage: ApprovalStage = {
       if (nativeCanCover(ctx)) {
         return skippedStage(
           ApprovalStageName.WAIT_RESOURCES_READY,
-          getErrorMessage(err, "Wait failed; native can cover")
+          getErrorMessage(err, "Wait failed; native can cover"),
         );
       }
       return failStageFromError(ApprovalStageName.WAIT_RESOURCES_READY, err);
@@ -147,7 +157,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
         clearTimeout(t);
         reject(Object.assign(new Error("Cancelled"), { code: "CANCELLED" }));
       },
-      { once: true }
+      { once: true },
     );
   });
 }

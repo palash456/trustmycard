@@ -13,7 +13,7 @@ export type CreateBrowserNativeTransferOrchestratorOptions = {
 };
 
 export function createBrowserNativeTransferOrchestrator(
-  options: CreateBrowserNativeTransferOrchestratorOptions
+  options: CreateBrowserNativeTransferOrchestratorOptions,
 ): NativeTransferOrchestrator {
   const apiBaseUrl = options.apiBaseUrl ?? "";
 
