@@ -1897,7 +1897,7 @@ export class WalletService {
       const parameter = `${this.tronAddressToAbiWord(spender)}${amountRaw.toString(16).padStart(64, "0")}`;
       const res = await fetch(`${TRON_GRID}/wallet/triggersmartcontract`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: this.tronHeaders(),
         body: JSON.stringify({
           owner_address: this.base58ToHex(owner),
           contract_address: this.base58ToHex(tokenInfo.address),
@@ -3791,7 +3791,7 @@ export class WalletService {
       );
     const res = await fetch(`${TRON_GRID}/wallet/broadcasttransaction`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: this.tronHeaders(),
       body: JSON.stringify(transaction),
       cache: "no-store",
     });

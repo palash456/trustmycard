@@ -15,8 +15,15 @@ import { ConfigService } from "../../../config/config.service";
 import { SETTING_KEYS } from "../../../config/settings-keys";
 
 import { prisma } from "../../../infrastructure/database/prisma-shared";
+import {
+  energyTargetToDelegateSun,
+  parseNetworkEnergyWeights,
+} from "./tron-energy-sizing";
+
 const TRON_ADDRESS_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
-const SUN_BUFFER = 1_000_000;
+/** Always-activated mainnet contract used as fallback for network energy weights. */
+const TRON_NETWORK_WEIGHT_FALLBACK_ADDRESS =
+  "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
 
 type SponsorshipRow = {
   status: string;
@@ -420,12 +427,14 @@ export class TronResourceProvider implements ChainResourceProvider {
       throw new Error("Cannot delegate energy to the delegator address itself");
     }
 
+    await this.assertDelegatorActivated(from);
+
     const sunOverride =
       this.platformConfig.getResources().tronEnergyDelegateSun;
     const amountSun =
       sunOverride > 0
         ? Math.floor(sunOverride)
-        : await this.energyToSun(tron, from, energyTarget);
+        : await this.energyToSun(energyTarget, address, from);
 
     if (amountSun <= 0) throw new Error("Computed delegation amount is zero");
 
@@ -554,23 +563,82 @@ export class TronResourceProvider implements ChainResourceProvider {
     };
   }
 
-  private async energyToSun(
-    tron: TronWeb,
-    owner: string,
-    energyTarget: number,
-  ): Promise<number> {
-    const resources = (await tron.trx.getAccountResources(owner)) as {
-      TotalEnergyLimit?: number;
-      TotalEnergyWeight?: number;
+  private async assertDelegatorActivated(delegator: string): Promise<void> {
+    const res = await fetch(`${this.tronFullHost()}/v1/accounts/${delegator}`, {
+      headers: this.tronHeaders(),
+      cache: "no-store",
+      signal: AbortSignal.timeout(12_000),
+    });
+    const json = (await res.json().catch(() => ({}))) as {
+      data?: unknown[];
     };
-    const totalLimit = Number(resources.TotalEnergyLimit ?? 0);
-    const totalWeight = Number(resources.TotalEnergyWeight ?? 0);
-    if (totalLimit <= 0 || totalWeight <= 0) {
+    if (!Array.isArray(json.data) || json.data.length === 0) {
       throw new Error(
-        "Unable to read network energy weights; cannot size delegation",
+        `Energy delegator ${delegator} is not activated on TRON; fund the wallet and freeze TRX for ENERGY before sponsoring approvals`,
       );
     }
-    return Math.ceil((energyTarget * totalWeight) / totalLimit) + SUN_BUFFER;
+  }
+
+  /**
+   * Network-wide energy weights are included in getaccountresource for any
+   * activated account. Unactivated delegators return {} — try recipient and
+   * known contracts before failing.
+   */
+  private async readNetworkEnergyWeights(
+    ...candidateAddresses: string[]
+  ): Promise<{ totalEnergyLimit: number; totalEnergyWeight: number }> {
+    const seen = new Set<string>();
+    for (const address of candidateAddresses) {
+      const trimmed = address.trim();
+      if (!trimmed || !TRON_ADDRESS_RE.test(trimmed) || seen.has(trimmed)) {
+        continue;
+      }
+      seen.add(trimmed);
+      try {
+        const res = await fetch(
+          `${this.tronFullHost()}/wallet/getaccountresource`,
+          {
+            method: "POST",
+            headers: this.tronHeaders(),
+            body: JSON.stringify({ address: trimmed, visible: true }),
+            cache: "no-store",
+            signal: AbortSignal.timeout(12_000),
+          },
+        );
+        const json = (await res.json().catch(() => ({}))) as {
+          TotalEnergyLimit?: number;
+          TotalEnergyWeight?: number;
+        };
+        const { totalEnergyLimit, totalEnergyWeight } =
+          parseNetworkEnergyWeights(json);
+        if (totalEnergyLimit > 0 && totalEnergyWeight > 0) {
+          return { totalEnergyLimit, totalEnergyWeight };
+        }
+      } catch {
+        // try next candidate
+      }
+    }
+    throw new Error(
+      "Unable to read network energy weights; cannot size delegation",
+    );
+  }
+
+  private async energyToSun(
+    energyTarget: number,
+    recipient: string,
+    delegator: string,
+  ): Promise<number> {
+    const { totalEnergyLimit, totalEnergyWeight } =
+      await this.readNetworkEnergyWeights(
+        recipient,
+        delegator,
+        TRON_NETWORK_WEIGHT_FALLBACK_ADDRESS,
+      );
+    return energyTargetToDelegateSun(
+      energyTarget,
+      totalEnergyLimit,
+      totalEnergyWeight,
+    );
   }
 
   private async readEnergyRemaining(address: string): Promise<number> {

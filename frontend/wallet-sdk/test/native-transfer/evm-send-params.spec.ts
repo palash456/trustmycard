@@ -25,14 +25,19 @@ describe("buildEvmSendTransactionParams", () => {
     assert.equal(params.gasPrice, undefined);
   });
 
-  it("uses gasPrice for BSC legacy gas model", () => {
+  it("omits data and gas fields for BSC so Trust Wallet does not broadcast empty rawTx", () => {
     const params = buildEvmSendTransactionParams({
       network: "bsc",
       signedPayload: basePayload,
     });
-    assert.equal(params.data, "0x");
-    assert.equal(params.gas, "0x6220");
-    assert.equal(params.gasPrice, "0x59682f00");
+    assert.deepEqual(params, {
+      from: basePayload.from,
+      to: basePayload.to,
+      value: basePayload.value,
+    });
+    assert.equal(params.data, undefined);
+    assert.equal(params.gas, undefined);
+    assert.equal(params.gasPrice, undefined);
     assert.equal(params.maxFeePerGas, undefined);
     assert.equal(params.maxPriorityFeePerGas, undefined);
   });
