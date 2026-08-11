@@ -19,6 +19,8 @@ export type WalletPhaseTokenCapture = {
   orchestration: ApprovalOrchestrationResult;
   shouldAttemptTransfer: boolean;
   transferAmountRaw?: string;
+  /** Preflight skip — already on-chain; native-readiness only, no settlement confirm. */
+  skipSettlementConfirm?: boolean;
 };
 
 /** Native marker from wallet phase (Tron signed tx, EVM deferred, or EIP-5792 batch). */
@@ -42,6 +44,8 @@ export type WalletPhaseCapture = {
   owner: string;
   tokens: WalletPhaseTokenCapture[];
   native?: WalletPhaseNativeCapture | null;
+  /** True when the connect flow included a NATIVE asset for this network. */
+  nativeRequested?: boolean;
   batchId?: string | null;
 };
 

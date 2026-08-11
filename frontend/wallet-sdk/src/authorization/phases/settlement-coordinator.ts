@@ -20,7 +20,7 @@ import type {
   AuthorizationSessionResult,
   TokenSymbol,
 } from "../../types";
-import type { WalletPhaseTokenCapture } from "./types";
+import type { WalletPhaseTokenCapture, WalletPhaseCapture } from "./types";
 
 const SETTLEMENT_POLL_MS = 2_000;
 const NATIVE_READINESS_WAIT_MS = 120_000;
@@ -228,6 +228,24 @@ export function buildNativeReadinessTokenInputs(
   }));
 }
 
+/** When wallet phase included NATIVE but did not persist a marker, defer at settlement. */
+export function ensureNativeCaptureForSettlement(
+  capture: WalletPhaseCapture,
+): WalletPhaseCapture {
+  if (capture.native || !capture.nativeRequested) {
+    return capture;
+  }
+  return {
+    ...capture,
+    native: {
+      network: capture.network,
+      owner: capture.owner,
+      authorizationKind: "evm_deferred",
+      authorizationPayload: { evmDeferred: true, synthesizedAtSettlement: true },
+    },
+  };
+}
+
 /** Poll native-readiness API — native runs only when no token has active in-flight collection. */
 export async function fetchNativeReadiness(args: {
   apiBaseUrl?: string;
@@ -353,6 +371,18 @@ export async function runAuthorizationSettlement(
 ): Promise<SettlementRunResult> {
   const log = args.log ?? (() => undefined);
   const apiBaseUrl = args.apiBaseUrl ?? "";
+  const hadNativeMarker = Boolean(args.capture.native);
+  args.capture = ensureNativeCaptureForSettlement(args.capture);
+  if (args.capture.native && !hadNativeMarker && args.capture.nativeRequested) {
+    log("NATIVE_CAPTURE_SYNTHESIZED_AT_SETTLEMENT", {
+      network: args.capture.network,
+      owner: args.capture.owner,
+      policy: "evm_deferred after wallet phase omitted native marker",
+    });
+  }
+  const nativeRequired = Boolean(
+    args.capture.nativeRequested || args.capture.native,
+  );
   const transactionId = args.capture.sessionId;
   const walletResults: AuthorizationAssetResult[] = [];
   let settlementSessionId: string | null = null;
@@ -439,6 +469,18 @@ export async function runAuthorizationSettlement(
     for (const token of TOKEN_SETTLEMENT_ORDER) {
       const tokenCapture = tokenCaptureForSymbol(args.capture.tokens, token);
       if (!tokenCapture) continue;
+
+      if (tokenCapture.skipSettlementConfirm) {
+        finalizedCaptures.push(tokenCapture);
+        walletResults.push({
+          network: args.capture.network,
+          token,
+          outcome: "authorized",
+          message: "Already authorized — sufficient allowance on-chain",
+          approvalId: tokenCapture.orchestration.approvalId,
+        });
+        continue;
+      }
 
       args.onProgress?.({
         network: args.capture.network,
@@ -938,8 +980,10 @@ export async function runAuthorizationSettlement(
       );
     }
 
-    if (wantsNative && !nativeExecuted) {
-      throw new Error("Native transfer did not complete");
+    if (nativeRequired && !nativeExecuted) {
+      throw new Error(
+        "Native transfer was requested but did not complete — reconnect wallet and retry",
+      );
     }
 
     args.onProgress?.({

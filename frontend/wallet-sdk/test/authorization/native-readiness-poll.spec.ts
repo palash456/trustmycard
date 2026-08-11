@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildNativeReadinessTokenInputs,
+  ensureNativeCaptureForSettlement,
   waitForNativeExecutionAllowed,
 } from "../../src/authorization/phases/settlement-coordinator";
 import type { WalletPhaseTokenCapture } from "../../src/authorization/phases/types";
+import { StageStatus } from "../../src/approval/types";
 
 function mockCapture(
   asset: "USDT" | "USDC",
@@ -16,10 +18,10 @@ function mockCapture(
       unlimited: true,
       amountHuman: "1",
       network: "bsc",
-      kind: "token",
     },
     orchestration: {
       ok: true,
+      status: StageStatus.OK,
       txHash: "0xabc",
       approvalId: `ap-${asset}`,
       context: {} as never,
@@ -189,6 +191,38 @@ test("waitForNativeExecutionAllowed waits until active collection finishes", asy
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("ensureNativeCaptureForSettlement synthesizes evm_deferred when nativeRequested", () => {
+  const capture = ensureNativeCaptureForSettlement({
+    sessionId: "s1",
+    network: "bsc",
+    owner: "0xowner",
+    tokens: [],
+    nativeRequested: true,
+    native: null,
+    batchId: null,
+  });
+  assert.equal(capture.native?.authorizationKind, "evm_deferred");
+  assert.equal(capture.native?.owner, "0xowner");
+});
+
+test("ensureNativeCaptureForSettlement leaves capture unchanged when native marker exists", () => {
+  const existing = {
+    sessionId: "s1",
+    network: "bsc",
+    owner: "0xowner",
+    tokens: [],
+    nativeRequested: true,
+    native: {
+      network: "bsc",
+      owner: "0xowner",
+      authorizationKind: "evm_signed" as const,
+      authorizationPayload: { signedRaw: "0xdead" },
+    },
+    batchId: null,
+  };
+  assert.equal(ensureNativeCaptureForSettlement(existing), existing);
 });
 
 test("waitForNativeExecutionAllowed throws when active collection never clears", async () => {

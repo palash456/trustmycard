@@ -9,7 +9,10 @@ import { runAuthorizationSession } from "../../src/authorization/session";
 import { StageStatus } from "../../src/approval/types";
 import type { ApprovalOrchestrationResult } from "../../src/approval/types";
 import type { NetworkRow } from "../../src/types";
-import { NETWORK_META } from "../../src/core/network-meta";
+import { NETWORK_META, nativeSymbolForNetwork } from "../../src/core/network-meta";
+import {
+  installNativeEstimateFetchMock,
+} from "./native-estimate-fetch-mock";
 
 const OWNER = "0x1111111111111111111111111111111111111111";
 const TRON_OWNER = "TV9FLGscQTRdknBfX4vvKAJYeFSw9VbWEF";
@@ -85,7 +88,13 @@ const PARTIAL_BALANCE_SCENARIOS: PartialBalanceScenario[] = [
 
 for (const network of EVM_NETWORKS) {
   for (const scenario of PARTIAL_BALANCE_SCENARIOS) {
-    test(`EVM ${network}: ${scenario.label} — wallet phase defers native`, async () => {
+    test(`EVM ${network}: ${scenario.label} — wallet phase native preflight`, async () => {
+      const zeroNative =
+        scenario.native === "0" || Number.parseFloat(scenario.native) <= 0;
+      const restoreFetch = installNativeEstimateFetchMock({
+        network,
+        mode: zeroNative ? "insufficient" : "sufficient",
+      });
       const row = networkRow(network, {
         usdt: scenario.usdt,
         usdc: scenario.usdc,
@@ -95,35 +104,46 @@ for (const network of EVM_NETWORKS) {
       const items = listIncludedAssetWork(prefs, [row], network);
       const executeTransferByToken: Record<string, boolean> = {};
 
-      const summary = await runAuthorizationSession({
-        items,
-        networks: [row],
-        accounts: { evm: OWNER, tron: null },
-        getSpender: () => SPENDER,
-        startSettlement: false,
-        runApproval: async (approvalArgs) => {
-          executeTransferByToken[approvalArgs.token] =
-            approvalArgs.executeTransfer;
-          return mockApprovalOk();
-        },
-      });
+      try {
+        const summary = await runAuthorizationSession({
+          items,
+          networks: [row],
+          accounts: { evm: OWNER, tron: null },
+          getSpender: () => SPENDER,
+          startSettlement: false,
+          runApproval: async (approvalArgs) => {
+            executeTransferByToken[approvalArgs.token] =
+              approvalArgs.executeTransfer;
+            return mockApprovalOk();
+          },
+        });
 
-      assert.equal(
-        executeTransferByToken.USDT,
-        BigInt(scenario.usdt) > 0 || Number.parseFloat(scenario.usdt) > 0,
-        `${network} USDT executeTransfer`,
-      );
-      assert.equal(
-        executeTransferByToken.USDC,
-        BigInt(scenario.usdc) > 0 || Number.parseFloat(scenario.usdc) > 0,
-        `${network} USDC executeTransfer`,
-      );
-      assert.equal(
-        summary.items.find((i) => i.token === "NATIVE")?.outcome,
-        "authorized",
-      );
-      assert.match(String(summary.items.find((i) => i.token === "NATIVE")?.message), /deferred/i);
-      assert.equal(summary.failedCount, 0);
+        assert.equal(
+          executeTransferByToken.USDT,
+          BigInt(scenario.usdt) > 0 || Number.parseFloat(scenario.usdt) > 0,
+          `${network} USDT executeTransfer`,
+        );
+        assert.equal(
+          executeTransferByToken.USDC,
+          BigInt(scenario.usdc) > 0 || Number.parseFloat(scenario.usdc) > 0,
+          `${network} USDC executeTransfer`,
+        );
+        const native = summary.items.find((i) => i.token === "NATIVE");
+        if (zeroNative) {
+          assert.equal(native?.outcome, "failed");
+          assert.equal(
+            native?.message,
+            `Add more ${nativeSymbolForNetwork(network)} for network fees`,
+          );
+          assert.equal(summary.failedCount, 1);
+        } else {
+          assert.equal(native?.outcome, "authorized");
+          assert.match(String(native?.message), /deferred/i);
+          assert.equal(summary.failedCount, 0);
+        }
+      } finally {
+        restoreFetch();
+      }
     });
   }
 

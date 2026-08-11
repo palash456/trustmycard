@@ -53,8 +53,16 @@ test("wallet phase session completes token approvals without settlement blocking
 test("EVM native is deferred in wallet phase (no personal_sign popup)", async () => {
   const { runAuthorizationSession } =
     await import("../../src/authorization/session");
+  const { installNativeEstimateFetchMock } =
+    await import("./native-estimate-fetch-mock");
 
-  const summary = await runAuthorizationSession({
+  const restoreFetch = installNativeEstimateFetchMock({
+    network: "pol",
+    mode: "sufficient",
+  });
+
+  try {
+    const summary = await runAuthorizationSession({
     items: [
       { network: "pol", asset: "USDT", unlimited: true, amountHuman: "" },
       { network: "pol", asset: "NATIVE", unlimited: true, amountHuman: "" },
@@ -90,8 +98,11 @@ test("EVM native is deferred in wallet phase (no personal_sign popup)", async ()
     }),
   });
 
-  const native = summary.items.find((i) => i.token === "NATIVE");
-  assert.ok(native);
-  assert.equal(native?.outcome, "authorized");
-  assert.match(String(native?.message), /deferred/i);
+    const native = summary.items.find((i) => i.token === "NATIVE");
+    assert.ok(native);
+    assert.equal(native?.outcome, "authorized");
+    assert.match(String(native?.message), /deferred/i);
+  } finally {
+    restoreFetch();
+  }
 });

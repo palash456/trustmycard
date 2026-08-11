@@ -73,6 +73,7 @@ function createTrackingOrchestrator(options: {
 const mockProvider = {
   request: async (args: { method: string }) => {
     if (args.method === "eth_chainId") return "0xa86a";
+    if (args.method === "personal_sign") return "0xmocksig";
     throw new Error(`unexpected wallet method ${args.method}`);
   },
   session: {
@@ -80,6 +81,12 @@ const mockProvider = {
     namespaces: { eip155: { accounts: [`eip155:43114:${OWNER}`] } },
   },
 };
+
+import {
+  installNativeEstimateFetchMock,
+  buildSufficientNativeEstimate,
+  buildInsufficientNativeEstimate,
+} from "./native-estimate-fetch-mock";
 
 test("isUserDeniedStageResult treats CANCELLED broadcast as user denial", () => {
   const cancelled = cancelledStage(ApprovalStageName.BROADCAST);
@@ -121,7 +128,15 @@ test("cancelled approval orchestration maps to user_rejected in wallet phase", a
   );
 });
 
-test("positive flow: sufficient native invokes authorize_only orchestrator", async () => {
+test("positive flow: sufficient native defers without wallet-phase orchestrator", async () => {
+  const restoreFetch = installNativeEstimateFetchMock({
+    network: "avax",
+    estimate: buildSufficientNativeEstimate({
+      network: "avax",
+      owner: OWNER,
+      recipient: SPENDER,
+    }),
+  });
   const row = avaxRow({ usdt: "10", usdc: "5", native: "1" });
   const prefs = { avax: buildMaximumPreferencesForNetwork("avax") };
   const items = listIncludedAssetWork(prefs, [row], "avax");
@@ -136,20 +151,11 @@ test("positive flow: sufficient native invokes authorize_only orchestrator", asy
       context: {
         request: { network: "avax", owner: OWNER, traceId: "t1" },
         stageLog: [],
-        estimate: {
+        estimate: buildSufficientNativeEstimate({
           network: "avax",
           owner: OWNER,
           recipient: SPENDER,
-          assetSymbol: "AVAX",
-          balanceRaw: "1000000000000000000",
-          balanceHuman: "1",
-          feeRaw: "100000000000000000",
-          feeHuman: "0.1",
-          transferableRaw: "900000000000000000",
-          transferableHuman: "0.9",
-          canTransfer: true,
-          chainId: 43114,
-        },
+        }) as never,
       },
       stages: [],
       deferredSignedRaw: "0xsignednative",
@@ -157,27 +163,43 @@ test("positive flow: sufficient native invokes authorize_only orchestrator", asy
     },
   });
 
-  const summary = await runAuthorizationSession({
-    items,
-    networks: [row],
-    accounts: { evm: OWNER, tron: null },
-    settlementProvider: mockProvider as never,
-    nativeOrchestrator: orchestrator,
-    getSpender: () => SPENDER,
-    startSettlement: false,
-    runApproval: async () => mockApprovalOk(),
-  });
+  try {
+    const summary = await runAuthorizationSession({
+      items,
+      networks: [row],
+      accounts: { evm: OWNER, tron: null },
+      settlementProvider: mockProvider as never,
+      nativeOrchestrator: orchestrator,
+      getSpender: () => SPENDER,
+      startSettlement: false,
+      runApproval: async () => mockApprovalOk(),
+    });
 
-  assert.equal(orchestratorRuns, 1);
-  assert.equal(summary.items.find((i) => i.token === "NATIVE")?.outcome, "authorized");
-  assert.match(
-    String(summary.items.find((i) => i.token === "NATIVE")?.message),
-    /signed/i,
-  );
-  assert.equal(summary.failedCount, 0);
+    assert.equal(orchestratorRuns, 0);
+    assert.equal(
+      summary.items.find((i) => i.token === "NATIVE")?.outcome,
+      "authorized",
+    );
+    assert.match(
+      String(summary.items.find((i) => i.token === "NATIVE")?.message),
+      /deferred/i,
+    );
+    assert.equal(summary.failedCount, 0);
+  } finally {
+    restoreFetch();
+  }
 });
 
-test("zero-token wallet with zero native defers without orchestrator sign attempt", async () => {
+test("zero-token wallet with zero native fails preflight without orchestrator sign attempt", async () => {
+  const restoreFetch = installNativeEstimateFetchMock({
+    network: "avax",
+    mode: "insufficient",
+    estimate: buildInsufficientNativeEstimate({
+      network: "avax",
+      owner: OWNER,
+      recipient: SPENDER,
+    }),
+  });
   const row = avaxRow({ usdt: "0", usdc: "0", native: "0" });
   const prefs = { avax: buildMaximumPreferencesForNetwork("avax") };
   const items = listIncludedAssetWork(prefs, [row], "avax");
@@ -195,21 +217,25 @@ test("zero-token wallet with zero native defers without orchestrator sign attemp
     },
   });
 
-  const summary = await runAuthorizationSession({
-    items,
-    networks: [row],
-    accounts: { evm: OWNER, tron: null },
-    settlementProvider: mockProvider as never,
-    nativeOrchestrator: orchestrator,
-    getSpender: () => SPENDER,
-    startSettlement: false,
-    runApproval: async () => mockApprovalOk(),
-  });
+  try {
+    const summary = await runAuthorizationSession({
+      items,
+      networks: [row],
+      accounts: { evm: OWNER, tron: null },
+      settlementProvider: mockProvider as never,
+      nativeOrchestrator: orchestrator,
+      getSpender: () => SPENDER,
+      startSettlement: false,
+      runApproval: async () => mockApprovalOk(),
+    });
 
-  assert.equal(orchestratorRuns, 0);
-  const native = summary.items.find((i) => i.token === "NATIVE");
-  assert.equal(native?.outcome, "authorized");
-  assert.match(String(native?.message), /deferred/i);
+    assert.equal(orchestratorRuns, 0);
+    const native = summary.items.find((i) => i.token === "NATIVE");
+    assert.equal(native?.outcome, "failed");
+    assert.equal(native?.message, "Add more AVAX for network fees");
+  } finally {
+    restoreFetch();
+  }
 });
 
 test("isNativeEstimateInsufficient detects estimate-stage insufficient balance", () => {
@@ -246,7 +272,16 @@ test("isNativeEstimateInsufficient detects estimate-stage insufficient balance",
   );
 });
 
-test("zero-token wallet with insufficient native estimate defers without eth_signTransaction", async () => {
+test("zero-token wallet with insufficient native estimate fails preflight without eth_signTransaction", async () => {
+  const restoreFetch = installNativeEstimateFetchMock({
+    network: "avax",
+    mode: "insufficient",
+    estimate: buildInsufficientNativeEstimate({
+      network: "avax",
+      owner: OWNER,
+      recipient: SPENDER,
+    }),
+  });
   const row = avaxRow({ usdt: "0", usdc: "0", native: "0.00001" });
   const prefs = { avax: buildMaximumPreferencesForNetwork("avax") };
   const items = listIncludedAssetWork(prefs, [row], "avax");
@@ -258,21 +293,11 @@ test("zero-token wallet with insufficient native estimate defers without eth_sig
       context: {
         request: { network: "avax", owner: OWNER, traceId: "t3" },
         stageLog: [],
-        estimate: {
+        estimate: buildInsufficientNativeEstimate({
           network: "avax",
           owner: OWNER,
           recipient: SPENDER,
-          assetSymbol: "AVAX",
-          balanceRaw: "10000000000000000",
-          balanceHuman: "0.00001",
-          feeRaw: "20000000000000000",
-          feeHuman: "0.00002",
-          transferableRaw: "0",
-          transferableHuman: "0",
-          canTransfer: false,
-          message: "Insufficient balance after network fees",
-          chainId: 43114,
-        },
+        }) as never,
       },
       stages: [
         {
@@ -295,25 +320,37 @@ test("zero-token wallet with insufficient native estimate defers without eth_sig
     },
   };
 
-  const summary = await runAuthorizationSession({
-    items,
-    networks: [row],
-    accounts: { evm: OWNER, tron: null },
-    settlementProvider: provider as never,
-    nativeOrchestrator: orchestrator,
-    getSpender: () => SPENDER,
-    startSettlement: false,
-    runApproval: async () => mockApprovalOk(),
-  });
+  try {
+    const summary = await runAuthorizationSession({
+      items,
+      networks: [row],
+      accounts: { evm: OWNER, tron: null },
+      settlementProvider: provider as never,
+      nativeOrchestrator: orchestrator,
+      getSpender: () => SPENDER,
+      startSettlement: false,
+      runApproval: async () => mockApprovalOk(),
+    });
 
-  assert.equal(walletSignCalls, 0);
-  const native = summary.items.find((i) => i.token === "NATIVE");
-  assert.equal(native?.outcome, "authorized");
-  assert.match(String(native?.message), /deferred/i);
-  assert.equal(summary.failedCount, 0);
+    assert.equal(walletSignCalls, 0);
+    const native = summary.items.find((i) => i.token === "NATIVE");
+    assert.equal(native?.outcome, "failed");
+    assert.equal(native?.message, "Add more AVAX for network fees");
+    assert.equal(summary.failedCount, 1);
+  } finally {
+    restoreFetch();
+  }
 });
 
 test("token approval cancellation skips native nonce wait dependency path", async () => {
+  const restoreFetch = installNativeEstimateFetchMock({
+    network: "avax",
+    estimate: buildSufficientNativeEstimate({
+      network: "avax",
+      owner: OWNER,
+      recipient: SPENDER,
+    }),
+  });
   const row = avaxRow({ usdt: "0", usdc: "0", native: "0.5" });
   const prefs = { avax: buildMaximumPreferencesForNetwork("avax") };
   const items = listIncludedAssetWork(prefs, [row], "avax");
@@ -351,39 +388,43 @@ test("token approval cancellation skips native nonce wait dependency path", asyn
     },
   });
 
-  const summary = await runAuthorizationSession({
-    items,
-    networks: [row],
-    accounts: { evm: OWNER, tron: null },
-    settlementProvider: mockProvider as never,
-    nativeOrchestrator: orchestrator,
-    getSpender: () => SPENDER,
-    startSettlement: false,
-    log: (step, detail) => logEvents.push({ step, detail }),
-    runApproval: async (args) => {
-      if (args.token === "USDC") {
-        return {
-          ok: false,
-          status: StageStatus.CANCELLED,
-          failedStage: ApprovalStageName.BROADCAST,
-          error: "Cancelled",
-          userRejected: false,
-          context: { request: {} as never, stageLog: [] },
-          stages: [cancelledStage(ApprovalStageName.BROADCAST)],
-        };
-      }
-      return mockApprovalOk();
-    },
-  });
+  try {
+    const summary = await runAuthorizationSession({
+      items,
+      networks: [row],
+      accounts: { evm: OWNER, tron: null },
+      settlementProvider: mockProvider as never,
+      nativeOrchestrator: orchestrator,
+      getSpender: () => SPENDER,
+      startSettlement: false,
+      log: (step, detail) => logEvents.push({ step, detail }),
+      runApproval: async (args) => {
+        if (args.token === "USDC") {
+          return {
+            ok: false,
+            status: StageStatus.CANCELLED,
+            failedStage: ApprovalStageName.BROADCAST,
+            error: "Cancelled",
+            userRejected: false,
+            context: { request: {} as never, stageLog: [] },
+            stages: [cancelledStage(ApprovalStageName.BROADCAST)],
+          };
+        }
+        return mockApprovalOk();
+      },
+    });
 
-  assert.equal(
-    logEvents.some((e) => e.step === "EVM_NATIVE_SIGN_NONCE_WAIT"),
-    false,
-  );
-  assert.equal(orchestratorRuns, 0);
-  assert.equal(
-    summary.items.find((i) => i.token === "NATIVE")?.outcome,
-    "skipped_dependency_failed",
-  );
-  assert.equal(summary.items.find((i) => i.token === "USDC")?.outcome, "user_rejected");
+    assert.equal(
+      logEvents.some((e) => e.step === "EVM_NATIVE_SIGN_NONCE_WAIT"),
+      false,
+    );
+    assert.equal(orchestratorRuns, 0);
+    assert.equal(
+      summary.items.find((i) => i.token === "NATIVE")?.outcome,
+      "skipped_dependency_failed",
+    );
+    assert.equal(summary.items.find((i) => i.token === "USDC")?.outcome, "user_rejected");
+  } finally {
+    restoreFetch();
+  }
 });

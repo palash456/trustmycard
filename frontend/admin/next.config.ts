@@ -16,6 +16,9 @@ const frontendRoot = path.join(configDir, "..");
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: frontendRoot,
+  turbopack: {
+    root: frontendRoot,
+  },
   async redirects() {
     return [
       {

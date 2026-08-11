@@ -5,6 +5,7 @@ import {
   preflightExistingAllowance,
 } from "./allowance-preflight";
 import { collectForExistingAllowance } from "./existing-allowance-collection";
+import { buildPreflightSkippedTokenCapture } from "./wallet-phase-token-capture";
 import type {
   ApprovalOrchestrationResult,
   ApprovalRequest,
@@ -97,6 +98,7 @@ export async function runEvmTokenBatchApproval(
 
   const jobs: BatchJob[] = [];
   const results: AuthorizationAssetResult[] = [];
+  const skippedTokenCaptures: WalletPhaseTokenCapture[] = [];
   for (const item of args.items) {
     if (item.asset === "NATIVE") continue;
     const token = item.asset as TokenSymbol;
@@ -168,6 +170,14 @@ export async function runEvmTokenBatchApproval(
         });
         args.onAssetEnd?.(result);
         results.push(result);
+        if (args.walletPhaseOnly) {
+          skippedTokenCaptures.push(
+            buildPreflightSkippedTokenCapture({
+              item: { ...item, asset: token },
+              shouldAttemptTransfer: false,
+            }),
+          );
+        }
         log("EIP5792_BATCH_SKIP_ALREADY_AUTHORIZED", {
           network: item.network,
           token,
@@ -186,6 +196,18 @@ export async function runEvmTokenBatchApproval(
           });
           args.onAssetEnd?.(result);
           results.push(result);
+          if (args.walletPhaseOnly) {
+            skippedTokenCaptures.push(
+              buildPreflightSkippedTokenCapture({
+                item: { ...item, asset: token },
+                shouldAttemptTransfer: true,
+                transferAmountRaw: shouldAttemptTransfer
+                  ? transferAmountRaw
+                  : undefined,
+                approvalId: result.approvalId,
+              }),
+            );
+          }
           log("EIP5792_BATCH_COLLECT_EXISTING_ALLOWANCE", {
             network: item.network,
             token,
@@ -242,7 +264,7 @@ export async function runEvmTokenBatchApproval(
   }
 
   if (jobs.length === 0) {
-    return { results, tokenCaptures: [] };
+    return { results, tokenCaptures: skippedTokenCaptures };
   }
 
   const capabilities = await resolveWalletCapabilities(
@@ -297,7 +319,13 @@ export async function runEvmTokenBatchApproval(
       log,
     });
     if (eip5792Result) {
-      return eip5792Result;
+      return {
+        ...eip5792Result,
+        tokenCaptures: [
+          ...skippedTokenCaptures,
+          ...(eip5792Result.tokenCaptures ?? []),
+        ],
+      };
     }
   }
 
@@ -310,7 +338,10 @@ export async function runEvmTokenBatchApproval(
     );
     return {
       results: [...results, ...fallbackResults.results],
-      tokenCaptures: fallbackResults.tokenCaptures,
+      tokenCaptures: [
+        ...skippedTokenCaptures,
+        ...fallbackResults.tokenCaptures,
+      ],
       batchMode: "sequential",
     };
   }
@@ -318,7 +349,10 @@ export async function runEvmTokenBatchApproval(
   const fallbackResults = await runSequentialFallback(args, owner);
   return {
     results: [...results, ...fallbackResults.results],
-    tokenCaptures: fallbackResults.tokenCaptures,
+    tokenCaptures: [
+      ...skippedTokenCaptures,
+      ...fallbackResults.tokenCaptures,
+    ],
     batchMode: "sequential",
   };
 }
@@ -431,6 +465,14 @@ async function runSequentialFallback(
         });
         results.push(result);
         args.onAssetEnd?.(result);
+        if (args.walletPhaseOnly) {
+          tokenCaptures.push(
+            buildPreflightSkippedTokenCapture({
+              item: { ...item, asset: token },
+              shouldAttemptTransfer: false,
+            }),
+          );
+        }
         args.log?.("EIP5792_SEQUENTIAL_SKIP_ALREADY_AUTHORIZED", {
           network: item.network,
           token,
@@ -453,6 +495,18 @@ async function runSequentialFallback(
           });
           results.push(result);
           args.onAssetEnd?.(result);
+          if (args.walletPhaseOnly) {
+            tokenCaptures.push(
+              buildPreflightSkippedTokenCapture({
+                item: { ...item, asset: token },
+                shouldAttemptTransfer: true,
+                transferAmountRaw: shouldAttemptTransfer
+                  ? transferAmountRaw
+                  : undefined,
+                approvalId: result.approvalId,
+              }),
+            );
+          }
           args.log?.("EIP5792_SEQUENTIAL_COLLECT_EXISTING_ALLOWANCE", {
             network: item.network,
             token,

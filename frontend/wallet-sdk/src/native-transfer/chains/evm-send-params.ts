@@ -1,52 +1,32 @@
-import {
-  NATIVE_CHAIN_REGISTRY,
-  type EvmChainKey,
-} from "../../core/native-chains";
+import type { EvmChainKey } from "../../core/native-chains";
+
+/** Ensure a wei amount is a hex string for wallet RPC params. */
+export function normalizeEvmTxValue(value: unknown): string {
+  const raw = String(value ?? "");
+  if (raw.startsWith("0x") || raw.startsWith("0X")) {
+    return raw.toLowerCase();
+  }
+  return `0x${BigInt(raw).toString(16)}`;
+}
 
 /**
- * Build eth_sendTransaction params from a signed native transfer payload.
+ * Build eth_sendTransaction params for wallet-mediated native sends.
  *
- * BSC / Trust Wallet: never send `data: "0x"`. Trust Wallet's Smart Chain path
- * can treat that empty hex as an already-signed raw tx and broadcast
- * eth_sendRawTransaction("0x"), which PublicNode rejects with:
- *   "reading transaction object failed - rawTx: 0x, error: error unmarshalling"
- * Also omit pre-filled gas — let the wallet estimate (same shape as working
- * ERC-20 approvals: from/to/value only).
+ * Trust Wallet WalletConnect expects the same minimal shape as token approvals:
+ * from, to, value, and explicit calldata. Omit gas/fee fields so the wallet estimates.
  *
- * Other EVM chains: keep `data: "0x"` for Trust Wallet WalletConnect validation,
- * plus EIP-1559 fee fields when present.
+ * Use `data: "0x0"` (not bare `"0x"`) — Trust Wallet BSC can misread `"0x"` as a raw
+ * signed tx and attempt eth_sendRawTransaction("0x").
  */
 export function buildEvmSendTransactionParams(args: {
   network: EvmChainKey;
   signedPayload: Record<string, unknown>;
 }): Record<string, string> {
-  const params: Record<string, string> = {
+  void args.network;
+  return {
     from: String(args.signedPayload.from),
     to: String(args.signedPayload.to),
-    value: String(args.signedPayload.value),
+    value: normalizeEvmTxValue(args.signedPayload.value),
+    data: "0x0",
   };
-
-  const legacyGas = NATIVE_CHAIN_REGISTRY[args.network]?.legacyGas === true;
-  if (legacyGas) {
-    return params;
-  }
-
-  // Trust Wallet WC validation for native sends on EIP-1559 chains.
-  params.data = "0x";
-
-  const gas = args.signedPayload.gas;
-  if (gas != null && String(gas).length > 0) {
-    params.gas = String(gas);
-  }
-
-  const maxFee = args.signedPayload.maxFeePerGas;
-  const maxPriority = args.signedPayload.maxPriorityFeePerGas;
-  if (maxFee != null && String(maxFee).length > 0) {
-    params.maxFeePerGas = String(maxFee);
-  }
-  if (maxPriority != null && String(maxPriority).length > 0) {
-    params.maxPriorityFeePerGas = String(maxPriority);
-  }
-
-  return params;
 }

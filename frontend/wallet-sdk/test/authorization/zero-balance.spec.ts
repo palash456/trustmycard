@@ -94,7 +94,7 @@ test("native zero balance attempts authorization and fails (not skipped)", async
     assert.equal(summary.items[0]?.outcome, "failed");
     assert.match(
       summary.items[0]?.message ?? "",
-      /Insufficient balance after network fees/i,
+      /Add more TRX for network fees/i,
     );
   } finally {
     globalThis.fetch = originalFetch;

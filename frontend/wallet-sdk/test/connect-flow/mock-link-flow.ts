@@ -7,6 +7,7 @@ import {
   listIncludedAssetWork,
 } from "../../src/authorization/preferences";
 import { runAuthorizationSession } from "../../src/authorization/session";
+import { installNativeEstimateFetchMock } from "../authorization/native-estimate-fetch-mock";
 import {
   LINK_PROGRESS_STAGE_LIST,
   mapWalletApprovalStageId,
@@ -313,8 +314,16 @@ export async function authorizeNetwork(
   );
 
   const progressStages: string[] = [];
+  const hasNative = items.some((item) => item.asset === "NATIVE");
+  const restoreFetch = hasNative
+    ? installNativeEstimateFetchMock({
+        network: opts.network.key,
+        mode: "sufficient",
+      })
+    : () => undefined;
 
-  const summary = await runAuthorizationSession({
+  try {
+    const summary = await runAuthorizationSession({
     items,
     networks: [opts.network],
     accounts: opts.linked,
@@ -410,6 +419,9 @@ export async function authorizeNetwork(
     spenderAddress: spender,
     summary,
   };
+  } finally {
+    restoreFetch();
+  }
 }
 
 /** Full mock: QR → all networks visible → authorize every selected network. */

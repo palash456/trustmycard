@@ -8,6 +8,10 @@ import {
 import { mergeTronSignedResult, tronSignTransaction } from "../core/tron-sign";
 import type { HttpNativeTransferApiClientOptions } from "./http-api-client";
 import { createHttpNativeTransferApiClient } from "./http-api-client";
+import {
+  formatInsufficientNativeFeeMessage,
+  isNativeTransferEstimateSufficient,
+} from "../authorization/native-preflight";
 import type { WalletPhaseNativeCapture } from "../authorization/phases/types";
 import type { UniversalProvider } from "../types";
 import type { NativeTransferOrchestrator } from "./orchestrator";
@@ -44,7 +48,7 @@ export type NativeWalletAuthorizeResult =
     };
 
 function isUnsupportedSignMethodError(message: string): boolean {
-  return /eth_signTransaction|method not found|not supported|unsupported method|does not support/i.test(
+  return /eth_signTransaction|method not found|not supported|unsupported method|does not support|couldn't be read because it is missing|data couldn't be read/i.test(
     message,
   );
 }
@@ -56,14 +60,8 @@ export function isNativeEstimateInsufficient(
   result: NativeTransferResult,
 ): boolean {
   const estimate = result.context.estimate;
-  if (estimate) {
-    try {
-      if (!estimate.canTransfer || BigInt(estimate.transferableRaw) <= BigInt(0)) {
-        return true;
-      }
-    } catch {
-      return true;
-    }
+  if (estimate && !isNativeTransferEstimateSufficient(estimate)) {
+    return true;
   }
 
   if (
@@ -214,8 +212,7 @@ export async function authorizeNativeInWalletPhase(
     ) {
       return {
         ok: false,
-        error:
-          estimate.message ?? "Insufficient native balance after network fees",
+        error: formatInsufficientNativeFeeMessage(args.network),
       };
     }
 

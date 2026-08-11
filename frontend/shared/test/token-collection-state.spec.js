@@ -357,6 +357,34 @@ describe("resolveTokenCollectionState", () => {
     assert.equal(isTokenCollectionBlockingNative(state, false), false);
   });
 
+  it("collector gas retry-scheduled does not block native", () => {
+    const state = resolveTokenCollectionState(
+      {
+        shouldAttemptTransfer: true,
+        approval: {
+          status: "FAILED",
+          remainingRaw: "100",
+          collectedRaw: "0",
+          collectionEnabled: true,
+          lastError:
+            "Collector wallet has insufficient native gas for transferFrom on BNB Chain.",
+          failureCount: 1,
+          nextCheckAt: FUTURE,
+        },
+      },
+      NOW,
+    );
+    assert.equal(state, "failed_retry_scheduled");
+    assert.equal(
+      isTokenCollectionBlockingNative(
+        state,
+        true,
+        "Collector wallet has insufficient native gas for transferFrom on BNB Chain.",
+      ),
+      false,
+    );
+  });
+
   it("collectedRaw without settled intent is success", () => {
     const state = resolveTokenCollectionState(
       {

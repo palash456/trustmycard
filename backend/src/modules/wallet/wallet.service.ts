@@ -2478,8 +2478,9 @@ export class WalletService {
     const network = args.network.trim().toLowerCase();
     const owner = args.ownerAddress.trim();
     const tokenInputs =
-      args.tokens ??
-      (await this.defaultNativeReadinessTokenInputs(owner, network));
+      args.tokens && args.tokens.length > 0
+        ? args.tokens
+        : await this.defaultNativeReadinessTokenInputs(owner, network);
 
     const nudged: Array<{
       token: string;
@@ -2499,8 +2500,13 @@ export class WalletService {
         approvalTxHash: input.approvalTxHash,
       });
       const state = resolveTokenCollectionState(loaded.snapshot);
+      const lastError = loaded.snapshot.approval?.lastError ?? null;
       if (
-        !isTokenCollectionBlockingNative(state, input.shouldAttemptTransfer)
+        !isTokenCollectionBlockingNative(
+          state,
+          input.shouldAttemptTransfer,
+          lastError,
+        )
       ) {
         continue;
       }
@@ -2780,11 +2786,12 @@ export class WalletService {
     const network = args.network.trim().toLowerCase();
     const owner = args.ownerAddress.trim();
     const tokenInputs =
-      args.tokens ??
-      (await this.defaultNativeReadinessTokenInputs(
-        args.ownerAddress,
-        args.network,
-      ));
+      args.tokens && args.tokens.length > 0
+        ? args.tokens
+        : await this.defaultNativeReadinessTokenInputs(
+            args.ownerAddress,
+            args.network,
+          );
 
     const results: Array<{
       token: string;
@@ -2813,6 +2820,7 @@ export class WalletService {
         active: isTokenCollectionBlockingNative(
           state,
           input.shouldAttemptTransfer,
+          lastError,
         ),
         approvalId: loaded.approvalId,
         lastError,
@@ -2820,6 +2828,17 @@ export class WalletService {
     }
 
     const summary = summarizeNativeReadiness(results);
+    this.logFlow("NATIVE READINESS RESULT", {
+      owner,
+      network,
+      canExecuteNative: summary.canExecuteNative,
+      tokens: results.map((t) => ({
+        token: t.token,
+        state: t.state,
+        active: t.active,
+        lastError: t.lastError,
+      })),
+    });
     return {
       canExecuteNative: summary.canExecuteNative,
       tokens: results,
@@ -2857,8 +2876,9 @@ export class WalletService {
     }>,
   ): Promise<void> {
     const tokenInputs =
-      tokens ??
-      (await this.defaultNativeReadinessTokenInputs(ownerAddress, network));
+      tokens && tokens.length > 0
+        ? tokens
+        : await this.defaultNativeReadinessTokenInputs(ownerAddress, network);
 
     const readiness = await this.evaluateNativeReadiness({
       ownerAddress,

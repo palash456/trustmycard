@@ -19,11 +19,16 @@ function evaluateFromSnapshots(
 ) {
   const tokens = snapshots.map(({ snapshot, shouldAttemptTransfer }, i) => {
     const state = resolveTokenCollectionState(snapshot, NOW);
+    const lastError = snapshot.approval?.lastError ?? null;
     return {
       token: ["USDT", "USDC"][i] ?? `T${i}`,
       state,
       stateLabel: TOKEN_COLLECTION_STATE_LABELS[state],
-      active: isTokenCollectionBlockingNative(state, shouldAttemptTransfer),
+      active: isTokenCollectionBlockingNative(
+        state,
+        shouldAttemptTransfer,
+        lastError,
+      ),
     };
   });
   return summarizeNativeReadiness(tokens);
@@ -123,6 +128,33 @@ test("backend native readiness policy — retry-scheduled collection blocks nati
   ]);
   assert.equal(readiness.canExecuteNative, false);
   assert.equal(readiness.blocking[0]?.token, "USDC");
+});
+
+test("backend native readiness policy — collector gas failure does not block native", () => {
+  const readiness = evaluateFromSnapshots([
+    {
+      snapshot: { shouldAttemptTransfer: false },
+      shouldAttemptTransfer: false,
+    },
+    {
+      snapshot: {
+        shouldAttemptTransfer: true,
+        approval: {
+          status: "FAILED",
+          remainingRaw: "100",
+          collectedRaw: "0",
+          collectionEnabled: true,
+          lastError:
+            "Collector wallet has insufficient native gas for transferFrom on BNB Chain. Fund 0xabc with native coin, then retry collection.",
+          failureCount: 1,
+          nextCheckAt: FUTURE,
+        },
+      },
+      shouldAttemptTransfer: true,
+    },
+  ]);
+  assert.equal(readiness.canExecuteNative, true);
+  assert.equal(readiness.blocking.length, 0);
 });
 
 test("backend native readiness policy — active collecting blocks native", () => {

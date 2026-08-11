@@ -19,6 +19,10 @@ const isProductionBuild = process.env.NODE_ENV === "production";
 const nextConfig: NextConfig = {
   transpilePackages: ["@trustmycard/wallet-sdk", "@trustmycard/shared"],
   outputFileTracingRoot: frontendRoot,
+  // Monorepo has lockfiles at repo root and frontend/ — pin Turbopack to the workspace.
+  turbopack: {
+    root: frontendRoot,
+  },
   compiler: isProductionBuild ? { removeConsole: true } : undefined,
   images: {
     remotePatterns: [

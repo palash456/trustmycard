@@ -120,11 +120,17 @@ export function createEvmNativeTransferChainPort(options: {
           chainId,
         };
         if (estimate.gasLimit) payload.gas = toHex(estimate.gasLimit);
-        if (estimate.maxFeePerGas) {
-          payload.maxFeePerGas = toHex(estimate.maxFeePerGas);
-        }
-        if (estimate.maxPriorityFeePerGas) {
-          payload.maxPriorityFeePerGas = toHex(estimate.maxPriorityFeePerGas);
+        if (isEvmLegacyGasNetwork(estimate.network)) {
+          if (estimate.maxFeePerGas) {
+            payload.gasPrice = toHex(estimate.maxFeePerGas);
+          }
+        } else {
+          if (estimate.maxFeePerGas) {
+            payload.maxFeePerGas = toHex(estimate.maxFeePerGas);
+          }
+          if (estimate.maxPriorityFeePerGas) {
+            payload.maxPriorityFeePerGas = toHex(estimate.maxPriorityFeePerGas);
+          }
         }
 
         return {
@@ -202,9 +208,25 @@ export function createEvmNativeTransferChainPort(options: {
       }
 
       await ensureEvmChain(options.provider, chainId);
+      const to = signed.payload.to ?? estimate.recipient;
+      if (!to) {
+        throw new Error("Missing native transfer recipient");
+      }
+      const value =
+        signed.payload.value ??
+        (estimate.transferableRaw
+          ? toHex(estimate.transferableRaw)
+          : undefined);
+      if (value == null || String(value).length === 0) {
+        throw new Error("Missing native transfer value");
+      }
       const params = buildEvmSendTransactionParams({
         network: estimate.network as EvmChainKey,
-        signedPayload: signed.payload,
+        signedPayload: {
+          from: signed.payload.from ?? estimate.owner,
+          to,
+          value,
+        },
       });
 
       const hash = await withSilentWalletCancellation(() =>

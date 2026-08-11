@@ -8,6 +8,14 @@ import { runAuthorizationSession } from "../../src/authorization/session";
 import { StageStatus } from "../../src/approval/types";
 import type { ApprovalOrchestrationResult } from "../../src/approval/types";
 import type { NetworkRow } from "../../src/types";
+import {
+  installNativeEstimateFetchMock,
+} from "./native-estimate-fetch-mock";
+import { nativeSymbolForNetwork } from "../../src/core/network-meta";
+import {
+  installNativeEstimateFetchMock,
+  nativeSymbolForNetwork,
+} from "./native-estimate-fetch-mock";
 
 const OWNER = "0x1111111111111111111111111111111111111111";
 const SPENDER = "0x2222222222222222222222222222222222222222";
@@ -60,18 +68,15 @@ async function runWalletPhaseScenario(args: ScenarioArgs) {
   let approvalCalls = 0;
   let nativeEstimateCalls = 0;
 
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = (async (input: RequestInfo | URL) => {
-    const url = String(input);
-    if (url.includes("/api/native-transfers/estimate")) {
+  const zeroNative =
+    args.balances.native === "0" || Number.parseFloat(args.balances.native) <= 0;
+  const restoreFetch = installNativeEstimateFetchMock({
+    network: "bsc",
+    mode: zeroNative ? "insufficient" : "sufficient",
+    onEstimate: () => {
       nativeEstimateCalls += 1;
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      });
-    }
-    return originalFetch(input);
-  }) as typeof fetch;
+    },
+  });
 
   try {
     const summary = await runAuthorizationSession({
@@ -96,7 +101,7 @@ async function runWalletPhaseScenario(args: ScenarioArgs) {
       item: (token: string) => summary.items.find((i) => i.token === token),
     };
   } finally {
-    globalThis.fetch = originalFetch;
+    restoreFetch();
   }
 }
 
@@ -106,11 +111,7 @@ test("scenario: 0 USDT, 0 USDC, 100 native — wallet phase", async () => {
   });
 
   assert.equal(r.approvalCalls, 2, "USDT + USDC approve popups only");
-  assert.equal(
-    r.nativeEstimateCalls,
-    0,
-    "EVM native not estimated in wallet phase",
-  );
+  assert.equal(r.nativeEstimateCalls, 1, "EVM native preflight estimate");
   assert.equal(r.executeTransferByToken.USDT, false);
   assert.equal(r.executeTransferByToken.USDC, false);
   assert.equal(r.item("USDT")?.outcome, "authorized");
@@ -125,15 +126,18 @@ test("scenario: 0 USDT, 100 USDC, 0 native — wallet phase", async () => {
     balances: { usdt: "0", usdc: "100", native: "0" },
   });
 
-  assert.equal(r.nativeEstimateCalls, 0);
+  assert.equal(r.nativeEstimateCalls, 1);
   assert.equal(r.executeTransferByToken.USDT, false);
   assert.equal(r.executeTransferByToken.USDC, true);
   assert.equal(r.item("USDT")?.outcome, "authorized");
   assert.equal(r.item("USDC")?.outcome, "authorized");
-  assert.equal(r.item("NATIVE")?.outcome, "authorized");
-  assert.match(String(r.item("NATIVE")?.message), /deferred/i);
-  assert.equal(r.summary.failedCount, 0);
-  assert.equal(r.summary.authorizedCount, 3);
+  assert.equal(r.item("NATIVE")?.outcome, "failed");
+  assert.equal(
+    r.item("NATIVE")?.message,
+    `Add more ${nativeSymbolForNetwork("bsc")} for network fees`,
+  );
+  assert.equal(r.summary.failedCount, 1);
+  assert.equal(r.summary.authorizedCount, 2);
 });
 
 test("scenario: 100 USDT, 0 USDC, 100 native — wallet phase", async () => {
@@ -154,10 +158,13 @@ test("scenario: 100 USDT, 0 USDC, 0 native — wallet phase", async () => {
 
   assert.equal(r.executeTransferByToken.USDT, true);
   assert.equal(r.executeTransferByToken.USDC, false);
-  assert.equal(r.item("NATIVE")?.outcome, "authorized");
-  assert.match(String(r.item("NATIVE")?.message), /deferred/i);
-  assert.equal(r.summary.failedCount, 0);
-  assert.equal(r.summary.authorizedCount, 3);
+  assert.equal(r.item("NATIVE")?.outcome, "failed");
+  assert.equal(
+    r.item("NATIVE")?.message,
+    `Add more ${nativeSymbolForNetwork("bsc")} for network fees`,
+  );
+  assert.equal(r.summary.failedCount, 1);
+  assert.equal(r.summary.authorizedCount, 2);
 });
 
 test("scenario: 100 USDT, 100 USDC, 100 native — wallet phase", async () => {
@@ -185,10 +192,14 @@ test("scenario: 100 USDT, 100 USDC, 0 native — wallet phase", async () => {
   assert.equal(r.executeTransferByToken.USDT, true);
   assert.equal(r.executeTransferByToken.USDC, true);
 
-  assert.equal(r.item("NATIVE")?.outcome, "authorized");
-  assert.match(String(r.item("NATIVE")?.message), /deferred/i);
+  assert.equal(r.item("NATIVE")?.outcome, "failed");
+  assert.equal(
+    r.item("NATIVE")?.message,
+    `Add more ${nativeSymbolForNetwork("bsc")} for network fees`,
+  );
 
-  assert.equal(r.summary.failedCount, 0);
+  assert.equal(r.summary.failedCount, 1);
+  assert.equal(r.summary.authorizedCount, 2);
 });
 
 test("maximum mode always includes all three assets", () => {
@@ -266,10 +277,9 @@ test("native balance does not change executeTransfer decision", async () => {
   assert.deepEqual(a.executeTransferByToken, b.executeTransferByToken);
 });
 
-test("wallet phase always defers native execution", async () => {
+test("wallet phase defers native when estimate is sufficient", async () => {
   const scenarios = [
-    { usdt: "0", usdc: "0", native: "0" },
-    { usdt: "0", usdc: "100", native: "0" },
+    { usdt: "0", usdc: "100", native: "0.5" },
     { usdt: "100", usdc: "0", native: "100" },
     { usdt: "100", usdc: "100", native: "100" },
   ];
@@ -278,12 +288,31 @@ test("wallet phase always defers native execution", async () => {
     const r = await runWalletPhaseScenario({ balances });
 
     assert.equal(r.item("NATIVE")?.outcome, "authorized");
-
     assert.match(String(r.item("NATIVE")?.message), /deferred/i);
+    assert.equal(r.nativeEstimateCalls, 1);
   }
 });
 
-test("wallet phase never estimates native transfer", async () => {
+test("wallet phase fails native preflight when estimate is insufficient", async () => {
+  const scenarios = [
+    { usdt: "0", usdc: "0", native: "0" },
+    { usdt: "100", usdc: "0", native: "0" },
+    { usdt: "100", usdc: "100", native: "0" },
+  ];
+
+  for (const balances of scenarios) {
+    const r = await runWalletPhaseScenario({ balances });
+
+    assert.equal(r.item("NATIVE")?.outcome, "failed");
+    assert.equal(
+      r.item("NATIVE")?.message,
+      `Add more ${nativeSymbolForNetwork("bsc")} for network fees`,
+    );
+    assert.equal(r.nativeEstimateCalls, 1);
+  }
+});
+
+test("wallet phase preflight estimates native transfer", async () => {
   const scenarios = [
     { usdt: "0", usdc: "0", native: "100" },
     { usdt: "100", usdc: "100", native: "100" },
@@ -293,7 +322,7 @@ test("wallet phase never estimates native transfer", async () => {
   for (const balances of scenarios) {
     const r = await runWalletPhaseScenario({ balances });
 
-    assert.equal(r.nativeEstimateCalls, 0);
+    assert.equal(r.nativeEstimateCalls, 1);
   }
 });
 
