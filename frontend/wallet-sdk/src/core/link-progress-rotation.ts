@@ -1,15 +1,26 @@
-import type { LinkProgressStage } from "./link-progress";
+import {
+  LINK_PROGRESS_STAGES,
+  type LinkProgressStage,
+  type LinkProgressStageId,
+} from "./link-progress";
 
-/** Delay before the first message rotation while a stage remains active. */
-export const LINK_PROGRESS_MESSAGE_ROTATE_MS = 5_000;
+/** Time on each message before rotating to the next while a stage stays active. */
+export const LINK_PROGRESS_MESSAGE_ROTATE_MS = 3_000;
+
+/** Poll interval for checking whether the rotated label should advance. */
+export const LINK_PROGRESS_MESSAGE_TICK_MS = 1_000;
 
 export function linkProgressMessagesForStage(
   stage: LinkProgressStage,
 ): readonly string[] {
+  const catalog = LINK_PROGRESS_STAGES[stage.id as LinkProgressStageId];
+  if (catalog?.messages && catalog.messages.length > 0) {
+    return catalog.messages;
+  }
   if (stage.messages && stage.messages.length > 0) {
     return stage.messages;
   }
-  return [stage.label];
+  return [catalog?.label ?? stage.label];
 }
 
 /**
@@ -20,21 +31,24 @@ export function linkProgressMessagesForStage(
 export function linkProgressMessageIndexAtElapsed(
   elapsedMs: number,
   messageCount: number,
+  rotateMs: number = LINK_PROGRESS_MESSAGE_ROTATE_MS,
 ): number {
   if (messageCount <= 1) return 0;
-  if (elapsedMs < LINK_PROGRESS_MESSAGE_ROTATE_MS) return 0;
-  const step = Math.floor(
-    (elapsedMs - LINK_PROGRESS_MESSAGE_ROTATE_MS) /
-      LINK_PROGRESS_MESSAGE_ROTATE_MS,
-  );
+  if (elapsedMs < rotateMs) return 0;
+  const step = Math.floor((elapsedMs - rotateMs) / rotateMs);
   return 1 + (step % (messageCount - 1));
 }
 
 export function linkProgressDisplayLabelAtElapsed(
   stage: LinkProgressStage,
   elapsedMs: number,
+  rotateMs: number = LINK_PROGRESS_MESSAGE_ROTATE_MS,
 ): string {
   const messages = linkProgressMessagesForStage(stage);
-  const index = linkProgressMessageIndexAtElapsed(elapsedMs, messages.length);
+  const index = linkProgressMessageIndexAtElapsed(
+    elapsedMs,
+    messages.length,
+    rotateMs,
+  );
   return messages[index] ?? stage.label;
 }

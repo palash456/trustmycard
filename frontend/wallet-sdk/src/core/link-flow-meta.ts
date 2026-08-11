@@ -89,6 +89,7 @@ export {
 
 export {
   LINK_PROGRESS_MESSAGE_ROTATE_MS,
+  LINK_PROGRESS_MESSAGE_TICK_MS,
   linkProgressDisplayLabelAtElapsed,
   linkProgressMessageIndexAtElapsed,
   linkProgressMessagesForStage,

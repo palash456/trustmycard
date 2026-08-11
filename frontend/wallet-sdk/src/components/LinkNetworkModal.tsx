@@ -1,3 +1,5 @@
+"use client";
+
 import { shortAddress } from "../core/network-meta";
 import {
   cardTierById,

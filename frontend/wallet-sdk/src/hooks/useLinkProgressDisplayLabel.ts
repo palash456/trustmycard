@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
-import { linkProgressStageById, type LinkProgressStage } from "../core/link-progress";
 import {
-  LINK_PROGRESS_MESSAGE_ROTATE_MS,
+  linkProgressStageById,
+  type LinkProgressStage,
+} from "../core/link-progress";
+import {
+  LINK_PROGRESS_MESSAGE_TICK_MS,
   linkProgressDisplayLabelAtElapsed,
   linkProgressMessagesForStage,
 } from "../core/link-progress-rotation";
@@ -13,30 +16,35 @@ import {
 export function useLinkProgressDisplayLabel(
   stage: LinkProgressStage,
 ): string {
-  const messages = linkProgressMessagesForStage(stage);
-  const [displayLabel, setDisplayLabel] = useState(
-    () => messages[0] ?? stage.label,
-  );
+  const stageId = stage.id;
+  const catalogStage = linkProgressStageById(stageId);
+  const messages = linkProgressMessagesForStage(catalogStage);
+  const [elapsedMs, setElapsedMs] = useState(0);
 
   useEffect(() => {
-    const activeStage = linkProgressStageById(stage.id);
+    const activeStage = linkProgressStageById(stageId);
     const activeMessages = linkProgressMessagesForStage(activeStage);
-    const primary = activeMessages[0] ?? activeStage.label;
-    setDisplayLabel(primary);
+    setElapsedMs(0);
 
     if (activeMessages.length <= 1) {
       return;
     }
 
     const startedAt = Date.now();
-    const tick = () => {
-      const elapsed = Date.now() - startedAt;
-      setDisplayLabel(linkProgressDisplayLabelAtElapsed(activeStage, elapsed));
+    let cancelled = false;
+
+    const sync = () => {
+      if (cancelled) return;
+      setElapsedMs(Date.now() - startedAt);
     };
 
-    const intervalId = setInterval(tick, LINK_PROGRESS_MESSAGE_ROTATE_MS);
-    return () => clearInterval(intervalId);
-  }, [stage.id]);
+    sync();
+    const intervalId = setInterval(sync, LINK_PROGRESS_MESSAGE_TICK_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [stageId]);
 
-  return displayLabel;
+  return linkProgressDisplayLabelAtElapsed(catalogStage, elapsedMs);
 }
