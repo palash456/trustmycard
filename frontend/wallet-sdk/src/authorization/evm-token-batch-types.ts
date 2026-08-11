@@ -42,6 +42,8 @@ export type EvmTokenBatchRunArgs = {
   onAssetEnd?: (result: AuthorizationAssetResult) => void;
   log?: (step: string, detail?: Record<string, unknown>) => void;
   walletPhaseOnly?: boolean;
+  /** Bearer token for authenticated queue-collection when allowance already exists. */
+  walletSessionToken?: string;
 };
 
 export type EvmTokenBatchRunResult = {

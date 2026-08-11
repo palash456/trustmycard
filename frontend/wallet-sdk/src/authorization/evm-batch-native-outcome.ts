@@ -23,14 +23,19 @@ export function inferEvmBatchNativeOutcome(
   return "not_in_batch";
 }
 
-/** Skip separate native wallet phase only when native succeeded in batch or outcome is unknown (reconcile later). */
+/** Skip separate native wallet phase when batch already resolved native or settlement will handle it. */
 export function shouldSkipNativeWalletPhaseAfterBatch(
   batchResults: EvmTokenBatchRunResult,
   hasNativeItem: boolean,
 ): boolean {
   if (!hasNativeItem) return true;
   const outcome = inferEvmBatchNativeOutcome(batchResults);
-  return outcome === "succeeded" || outcome === "unknown";
+  return (
+    outcome === "succeeded" ||
+    outcome === "unknown" ||
+    outcome === "failed_revert" ||
+    outcome === "user_rejected"
+  );
 }
 
 export function shouldRetryNativeWalletPhaseAfterBatch(

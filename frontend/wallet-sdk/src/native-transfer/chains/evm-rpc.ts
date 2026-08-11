@@ -2,6 +2,7 @@ import {
   evmRpcUrls,
   type EvmChainKey,
 } from "../../core/native-chains";
+import { normalizeEvmSignedRaw } from "./evm-signed-raw";
 
 async function evmRpcCall<T>(
   network: EvmChainKey,
@@ -51,11 +52,13 @@ export async function getEvmTransactionCount(args: {
   network: EvmChainKey;
   owner: string;
   signal?: AbortSignal;
+  /** Default `pending` so deferred native signs after in-flight approvals get a fresh nonce. */
+  blockTag?: "latest" | "pending";
 }): Promise<bigint> {
   const hex = await evmRpcCall<string>(
     args.network,
     "eth_getTransactionCount",
-    [args.owner, "latest"],
+    [args.owner, args.blockTag ?? "pending"],
     args.signal,
   );
   return BigInt(hex);
@@ -66,9 +69,8 @@ export async function broadcastEvmRawTransaction(args: {
   signedRaw: string;
   signal?: AbortSignal;
 }): Promise<string> {
-  const raw = args.signedRaw.startsWith("0x")
-    ? args.signedRaw
-    : `0x${args.signedRaw}`;
+  // Defense in depth: unwrap Trust Wallet protobuf if a stored payload skipped normalize-at-sign.
+  const raw = normalizeEvmSignedRaw(args.signedRaw);
   const hash = await evmRpcCall<string>(
     args.network,
     "eth_sendRawTransaction",

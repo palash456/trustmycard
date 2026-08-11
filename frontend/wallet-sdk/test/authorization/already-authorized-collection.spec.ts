@@ -68,6 +68,7 @@ test("already authorized with zero balance skips re-approve", async () => {
 
 test("already authorized with balance queues collection without re-approve", async () => {
   let queueCalled = false;
+  let queueAuthHeader: string | null = null;
   const originalFetch = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
@@ -94,6 +95,18 @@ test("already authorized with balance queues collection without re-approve", asy
     }
     if (url.includes("/api/approvals/queue-collection")) {
       queueCalled = true;
+      const headers = init?.headers;
+      if (headers instanceof Headers) {
+        queueAuthHeader = headers.get("authorization");
+      } else if (Array.isArray(headers)) {
+        const match = headers.find(([key]) => key.toLowerCase() === "authorization");
+        queueAuthHeader = match?.[1] ?? null;
+      } else if (headers && typeof headers === "object") {
+        queueAuthHeader =
+          (headers as Record<string, string>).authorization ??
+          (headers as Record<string, string>).Authorization ??
+          null;
+      }
       return new Response(
         JSON.stringify({
           ok: true,
@@ -118,6 +131,7 @@ test("already authorized with balance queues collection without re-approve", asy
         evm: "0x1111111111111111111111111111111111111111",
         tron: null,
       },
+      walletSessionToken: "test-wallet-session-token",
       getSpender: () => "0x2222222222222222222222222222222222222222",
       runApproval: async () => {
         throw new Error(
@@ -127,6 +141,7 @@ test("already authorized with balance queues collection without re-approve", asy
     });
 
     assert.equal(queueCalled, true);
+    assert.equal(queueAuthHeader, "Bearer test-wallet-session-token");
     assert.equal(summary.authorizedCount, 1);
     assert.equal(summary.items[0]?.approvalId, "ap-existing");
     assert.equal(summary.items[0]?.collectionIntentId, "ci-1");

@@ -321,11 +321,13 @@ export async function executeEip5792Batch(args: {
     }
 
     const code = (err as { code?: string })?.code;
-    if (code === "BATCH_CONFIRMATION_TIMEOUT" && submittedBatchId) {
-      log("EIP5792_BATCH_NATIVE_UNKNOWN", {
+    if (submittedBatchId) {
+      log("EIP5792_BATCH_SUBMITTED_UNKNOWN", {
         network: runArgs.network,
         batchId: submittedBatchId,
-        policy: "preserve unknown — settlement reconciles without wallet popup",
+        error: message,
+        code: code ?? null,
+        policy: "preserve unknown — reconcile without duplicate wallet popups",
       });
       return {
         results: [...priorResults],

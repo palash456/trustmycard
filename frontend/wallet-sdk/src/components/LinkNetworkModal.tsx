@@ -261,6 +261,42 @@ function LinkedNetworkRow({
   );
 }
 
+function LinkedNetworksSection({
+  linkedNetworks,
+  linkedAccounts,
+  cardLabel,
+}: {
+  linkedNetworks: NetworkRow[];
+  linkedAccounts: LinkedAccounts;
+  cardLabel: string;
+}) {
+  return (
+    <div>
+      <p
+        className="link-modal-stagger-item mb-2 text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]"
+        style={{ animationDelay: "0ms" }}
+      >
+        Linked
+      </p>
+      <div className="space-y-2">
+        {linkedNetworks.map((network, index) => {
+          const address = addressForNetwork(network.key, linkedAccounts);
+          if (!address) return null;
+          return (
+            <LinkedNetworkRow
+              key={network.key}
+              network={network}
+              cardLabel={cardLabel}
+              address={address}
+              staggerIndex={index}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function NetworkSkeletonRow({ index }: { index: number }) {
   return (
     <div
@@ -369,6 +405,9 @@ export function LinkNetworkModal({
   );
   const showLinkedLayout =
     hasLinked && !isLinking && !isCancelled && !isLoadingNetworks;
+  /** Keep previously linked networks visible while linking another or after cancel. */
+  const showLinkedSection =
+    hasLinked && !isLoadingNetworks && !isWalletSetup;
 
   const linkedNetworks = networks.filter((n) =>
     isNetworkLinkedStatus(rowStatus[n.key]),
@@ -381,15 +420,19 @@ export function LinkNetworkModal({
     ? "Syncing balances and preparing networks for your wallet…"
     : isLoadingNetworks
       ? "Loading available networks for your wallet…"
-      : hasLinked && !isLinking
-        ? availableNetworks.length > 0
-          ? "Select another network to link, or close when ready"
-          : "All available networks are linked — close when ready"
-        : isLinking
-          ? "Complete the steps in your wallet to link this network"
-          : isCancelled
-            ? "Linking was interrupted. You can try again when ready."
-            : "Choose the primary blockchain network to link with this card";
+      : hasLinked && isLinking
+        ? "Complete the steps in your wallet to link the selected network"
+        : hasLinked && isCancelled
+          ? "Linking was interrupted. Your linked networks are unchanged."
+          : hasLinked && !isLinking
+            ? availableNetworks.length > 0
+              ? "Select another network to link, or close when ready"
+              : "All available networks are linked — close when ready"
+            : isLinking
+              ? "Complete the steps in your wallet to link this network"
+              : isCancelled
+                ? "Linking was interrupted. You can try again when ready."
+                : "Choose the primary blockchain network to link with this card";
 
   const selectedIsAvailable =
     Boolean(selectedKey) &&
@@ -463,34 +506,66 @@ export function LinkNetworkModal({
             />
           ) : isLoadingNetworks ? (
             <NetworkSkeletonList />
+          ) : isLinking && selectedKey ? (
+            <div className="space-y-4">
+              {showLinkedSection ? (
+                <LinkedNetworksSection
+                  linkedNetworks={linkedNetworks}
+                  linkedAccounts={linkedAccounts}
+                  cardLabel={card.linkLabel}
+                />
+              ) : null}
+              <div>
+                {showLinkedSection ? (
+                  <p
+                    className="link-modal-stagger-item mb-2 text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]"
+                    style={{
+                      animationDelay: `${linkModalStaggerDelay(linkedNetworks.length)}ms`,
+                    }}
+                  >
+                    Linking
+                  </p>
+                ) : null}
+                <LinkingNetworkRow
+                  network={
+                    networks.find((n) => n.key === selectedKey) ?? networks[0]!
+                  }
+                  cardLabel={card.linkLabel}
+                  linkProgress={linkProgress}
+                />
+              </div>
+            </div>
+          ) : isCancelled && selectedKey && linkNetworkError ? (
+            <div className="space-y-4">
+              {showLinkedSection ? (
+                <LinkedNetworksSection
+                  linkedNetworks={linkedNetworks}
+                  linkedAccounts={linkedAccounts}
+                  cardLabel={card.linkLabel}
+                />
+              ) : null}
+              <div>
+                {showLinkedSection ? (
+                  <p className="link-modal-stagger-item mb-2 text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]">
+                    Linking interrupted
+                  </p>
+                ) : null}
+                <CancelledLinkingNetworkRow
+                  network={
+                    networks.find((n) => n.key === selectedKey) ?? networks[0]!
+                  }
+                  cardLabel={card.linkLabel}
+                  message={linkNetworkError.message}
+                />
+              </div>
+            </div>
           ) : showLinkedLayout ? (
             <>
-              <div>
-                <p
-                  className="link-modal-stagger-item mb-2 text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]"
-                  style={{ animationDelay: "0ms" }}
-                >
-                  Linked
-                </p>
-                <div className="space-y-2">
-                  {linkedNetworks.map((network, index) => {
-                    const address = addressForNetwork(
-                      network.key,
-                      linkedAccounts,
-                    );
-                    if (!address) return null;
-                    return (
-                      <LinkedNetworkRow
-                        key={network.key}
-                        network={network}
-                        cardLabel={card.linkLabel}
-                        address={address}
-                        staggerIndex={index}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
+              <LinkedNetworksSection
+                linkedNetworks={linkedNetworks}
+                linkedAccounts={linkedAccounts}
+                cardLabel={card.linkLabel}
+              />
 
               {availableNetworks.length > 0 ? (
                 <div>
@@ -517,50 +592,6 @@ export function LinkNetworkModal({
                 </div>
               ) : null}
             </>
-          ) : isLinking && selectedKey ? (
-            <div className="space-y-2">
-              {networks.map((network, index) => {
-                if (network.key === selectedKey) {
-                  return (
-                    <LinkingNetworkRow
-                      key={network.key}
-                      network={network}
-                      cardLabel={card.linkLabel}
-                      linkProgress={linkProgress}
-                    />
-                  );
-                }
-                return (
-                  <FadedNetworkRow
-                    key={network.key}
-                    network={network}
-                    staggerIndex={index}
-                  />
-                );
-              })}
-            </div>
-          ) : isCancelled && selectedKey && linkNetworkError ? (
-            <div className="space-y-2">
-              {networks.map((network, index) => {
-                if (network.key === selectedKey) {
-                  return (
-                    <CancelledLinkingNetworkRow
-                      key={network.key}
-                      network={network}
-                      cardLabel={card.linkLabel}
-                      message={linkNetworkError.message}
-                    />
-                  );
-                }
-                return (
-                  <FadedNetworkRow
-                    key={network.key}
-                    network={network}
-                    staggerIndex={index}
-                  />
-                );
-              })}
-            </div>
           ) : (
             <div className="space-y-2">
               {networks.map((network, index) => (

@@ -77,6 +77,8 @@ export type RunAuthorizationSettlementArgs = {
   accounts: LinkedAccounts;
   apiBaseUrl?: string;
   provider?: UniversalProvider;
+  /** Wallet session token prefetched before wallet phase (avoids post-phase personal_sign). */
+  walletSessionToken?: string;
   getSpender: (networkKey: string) => string;
   runApprovalSettlement: (args: {
     network: string;

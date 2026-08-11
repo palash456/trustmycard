@@ -287,7 +287,7 @@ test("reconcileEvmBatchNative returns failed_revert when native receipt reverted
   assert.equal(result.status, "failed_revert");
 });
 
-test("wallet phase retries native after batch native revert (tokens succeed)", async () => {
+test("batch native revert skips wallet phase — settlement handles recovery", async () => {
   const restoreFetch = installWalletApiMocks();
   let nativeWalletCalls = 0;
 
@@ -324,13 +324,13 @@ test("wallet phase retries native after batch native revert (tokens succeed)", a
       },
     });
 
-    assert.equal(nativeWalletCalls, 1);
+    assert.equal(nativeWalletCalls, 0);
     const usdt = summary.items.find((i) => i.token === "USDT");
     const usdc = summary.items.find((i) => i.token === "USDC");
     const native = summary.items.find((i) => i.token === "NATIVE");
     assert.equal(usdt?.outcome, "authorized");
     assert.equal(usdc?.outcome, "authorized");
-    assert.equal(native?.outcome, "authorized");
+    assert.equal(native?.outcome, "failed");
   } finally {
     restoreFetch();
   }
@@ -490,7 +490,7 @@ test("settlement reconciles unknown batch to success without wallet popup", asyn
   }
 });
 
-test("settlement recovery after reconcile failed_revert uses deferred path once", async () => {
+test("settlement recovery after reconcile failed_revert uses eth_sendTransaction once", async () => {
   const restoreSettlement = installSettlementFetchMock();
   const modes: string[] = [];
 
@@ -521,14 +521,6 @@ test("settlement recovery after reconcile failed_revert uses deferred path once"
       runApprovalSettlement: async () => mockApprovalOk(),
       runNativeTransfer: async (args) => {
         modes.push(args.mode ?? "full");
-        if (args.mode === "authorize_only") {
-          return {
-            ok: true,
-            context: { request: {} as never, stageLog: [] },
-            stages: [],
-            deferredSignedRaw: "0xsigned-recovery",
-          };
-        }
         return {
           ok: true,
           context: { request: {} as never, stageLog: [] },
@@ -538,7 +530,7 @@ test("settlement recovery after reconcile failed_revert uses deferred path once"
       },
     });
 
-    assert.deepEqual(modes, ["authorize_only", "execute_deferred"]);
+    assert.deepEqual(modes, ["full"]);
     assert.equal(result.ok, true);
     const nativeItem = result.sessionResult.items.find(
       (i) => i.token === "NATIVE",

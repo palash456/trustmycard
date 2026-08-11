@@ -59,7 +59,7 @@ test("inferEvmBatchNativeOutcome legacy unknown via nativeIncludedInBatchAttempt
   );
 });
 
-test("shouldSkipNativeWalletPhaseAfterBatch only for succeeded and unknown", () => {
+test("shouldSkipNativeWalletPhaseAfterBatch for succeeded, unknown, failed_revert, user_rejected", () => {
   assert.equal(
     shouldSkipNativeWalletPhaseAfterBatch(
       batchResult({ batchNativeOutcome: "succeeded", nativeTxHash: "0x1" }),
@@ -79,14 +79,14 @@ test("shouldSkipNativeWalletPhaseAfterBatch only for succeeded and unknown", () 
       batchResult({ batchNativeOutcome: "failed_revert" }),
       true,
     ),
-    false,
+    true,
   );
   assert.equal(
     shouldSkipNativeWalletPhaseAfterBatch(
       batchResult({ batchNativeOutcome: "user_rejected" }),
       true,
     ),
-    false,
+    true,
   );
   assert.equal(
     shouldSkipNativeWalletPhaseAfterBatch(

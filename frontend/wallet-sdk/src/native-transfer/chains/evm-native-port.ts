@@ -11,6 +11,7 @@ import type { UniversalProvider } from "../../types";
 import type { NativeTransferChainPort } from "../ports";
 import type { NativeTransferEstimate, SignedNativeTransfer } from "../types";
 import { buildEvmSendTransactionParams } from "./evm-send-params";
+import { normalizeEvmSignedRaw } from "./evm-signed-raw";
 import {
   broadcastEvmRawTransaction,
   getEvmTransactionCount,
@@ -162,7 +163,8 @@ export function createEvmNativeTransferChainPort(options: {
         payload: {
           ...params,
           chainId,
-          signedRaw: raw.startsWith("0x") ? raw : `0x${raw}`,
+          // Trust Wallet may return SigningOutput protobuf hex — unwrap first.
+          signedRaw: normalizeEvmSignedRaw(raw),
         },
       } satisfies SignedNativeTransfer;
     },

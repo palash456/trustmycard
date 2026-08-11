@@ -8,6 +8,7 @@ import {
   createWalletSessionRefresher,
   fetchWalletSessionToken,
 } from "../wallet-session-token";
+import { getCachedWalletSessionToken } from "../wallet-session-cache";
 import { registerWalletPhaseNativeAuthorization } from "../../native-transfer/native-wallet-authorize";
 import type {
   SettlementRunResult,
@@ -366,8 +367,14 @@ export async function runAuthorizationSettlement(
         })
       : undefined;
 
-    let walletSessionToken: string | undefined;
-    if (args.provider) {
+    let walletSessionToken =
+      args.walletSessionToken ??
+      getCachedWalletSessionToken(
+        args.capture.network,
+        args.capture.owner,
+      ) ??
+      undefined;
+    if (!walletSessionToken && args.provider) {
       walletSessionToken = await fetchWalletSessionToken({
         provider: args.provider,
         apiBaseUrl,
@@ -750,35 +757,6 @@ export async function runAuthorizationSettlement(
           message: "Recovering native after EIP-5792 batch revert",
         });
 
-        const authResult = await args.runNativeTransfer({
-          network: args.capture.network,
-          owner: args.capture.owner,
-          unlimited: true,
-          walletSessionToken,
-          nativeReadinessTokens: buildNativeReadinessTokenInputs(
-            finalizedCaptures.length > 0
-              ? finalizedCaptures
-              : args.capture.tokens,
-          ),
-          mode: "authorize_only",
-        });
-
-        if (!authResult.ok || !authResult.deferredSignedRaw) {
-          const message = authResult.userRejected
-            ? "Permission denied by user"
-            : getErrorMessage(
-                authResult.error,
-                "Native recovery authorization failed",
-              );
-          walletResults.push({
-            network: args.capture.network,
-            token: "NATIVE",
-            outcome: authResult.userRejected ? "user_rejected" : "failed",
-            message,
-          });
-          throw new Error(message);
-        }
-
         const nativeResult = await args.runNativeTransfer({
           network: args.capture.network,
           owner: args.capture.owner,
@@ -789,24 +767,17 @@ export async function runAuthorizationSettlement(
               ? finalizedCaptures
               : args.capture.tokens,
           ),
-          mode: "execute_deferred",
-          deferredSignedRaw: authResult.deferredSignedRaw,
-          deferredTransferableRaw:
-            authResult.deferredTransferableRaw ??
-            args.capture.native.estimateTransferableRaw ??
-            undefined,
+          mode: "full",
         });
 
         if (
           !nativeResult.ok &&
           !nativeResult.userRejected
         ) {
-          log("EVM_DEFERRED_BROADCAST_FAILED", {
+          log("EVM_NATIVE_RECOVERY_FAILED", {
             network: args.capture.network,
             error: nativeResult.error,
             txHash: nativeResult.txHash ?? null,
-            policy:
-              "no wallet re-prompt — signed authorization retained for backend retry/reconciliation",
           });
         }
 
