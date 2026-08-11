@@ -880,6 +880,64 @@ export class NativeTransferService {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  /** Mark an older pending row failed when a newer on-chain transfer is registered. */
+  private async supersedeStalePendingTransfer(args: {
+    stale: {
+      id: string;
+      txHash: string;
+      ownerAddress: string;
+      network: string;
+    };
+    replacementTxHash: string;
+    traceId?: string;
+  }): Promise<void> {
+    const errorMessage = `Superseded by newer transfer ${args.replacementTxHash}`;
+    const updated = await prisma.nativeTransfer.update({
+      where: { id: args.stale.id },
+      data: {
+        status: "failed",
+        errorMessage,
+      },
+    });
+
+    await this.recordAudit(
+      `owner:${args.stale.ownerAddress}`,
+      "supersede_pending",
+      {
+        network: args.stale.network,
+        staleTxHash: args.stale.txHash,
+        replacementTxHash: args.replacementTxHash,
+        traceId: args.traceId,
+      },
+      updated.id,
+    );
+
+    this.logger.emit({
+      level: "info",
+      module: "native-transfer",
+      operation: "supersede_pending",
+      stage: "SUPERSEDE_PENDING",
+      status: "success",
+      message: "Superseded stale pending native transfer",
+      network: args.stale.network,
+      txHash: args.stale.txHash,
+      walletAddress: args.stale.ownerAddress,
+      traceId: args.traceId,
+      context: {
+        replacementTxHash: args.replacementTxHash,
+        transferId: updated.id,
+      },
+    });
+
+    this.adminEvents.nativeTransferUpdated({
+      id: updated.id,
+      status: updated.status,
+      ownerAddress: updated.ownerAddress,
+      network: updated.network,
+      txHash: updated.txHash,
+    });
+  }
+
   /** Require the broadcast tx to exist on-chain before creating a pending row. */
   private async assertBroadcastTxVisible(args: {
     network: SupportedNetworkKey;
@@ -1056,20 +1114,6 @@ export class NativeTransferService {
       };
     }
 
-    const otherPending = await prisma.nativeTransfer.findFirst({
-      where: {
-        ownerAddress: owner,
-        network,
-        status: "pending",
-      },
-    });
-    if (otherPending) {
-      throw nativeTransferError(
-        NativeTransferErrorCode.PENDING_TRANSFER_EXISTS,
-        "Another native transfer is already pending for this wallet on this network",
-      );
-    }
-
     try {
       await this.assertBroadcastTxVisible({
         network: network as SupportedNetworkKey,
@@ -1096,6 +1140,21 @@ export class NativeTransferService {
         err,
       });
       throw err;
+    }
+
+    const otherPending = await prisma.nativeTransfer.findFirst({
+      where: {
+        ownerAddress: owner,
+        network,
+        status: "pending",
+      },
+    });
+    if (otherPending) {
+      await this.supersedeStalePendingTransfer({
+        stale: otherPending,
+        replacementTxHash: txHash,
+        traceId,
+      });
     }
 
     let evmNonce: string | null = null;

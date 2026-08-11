@@ -23,7 +23,7 @@ export type ClassifiedFailure = {
 };
 
 const TRANSIENT_RE =
-  /timeout|timed out|econnreset|econnrefused|enetunreach|network error|fetch failed|502|503|504|429|rate limit|too many requests|temporarily unavailable|connection reset|socket hang up|aborted request|confirmation timeout|node unavailable|provider unavailable|rpc error|server error|gateway/i;
+  /timeout|timed out|econnreset|econnrefused|enetunreach|network error|fetch failed|502|503|504|429|rate limit|allowed_rps|too many requests|temporarily unavailable|connection reset|socket hang up|aborted request|confirmation timeout|node unavailable|provider unavailable|rpc error|server error|gateway/i;
 
 const PERMANENT_RE =
   /invalid address|invalid tron|invalid evm|unsupported token|unsupported network|missing spender|insufficient resources|insufficient bandwidth|insufficient energy|insufficient trx|reverted|execution reverted|invalid signature|malformed|not a valid|permission denied by user|user rejected|denied by user|unauthorized|forbidden|bad request|400|404|invalid parameter|contract validate error|no chain adapter/i;
@@ -138,9 +138,20 @@ export function isUserDeniedStageResult(result: {
   failureKind?: string;
 }): boolean {
   if (result.userRejected) return true;
+  if (result.status === StageStatus.CANCELLED) return true;
+  if (result.failureKind === FailureKind.CANCELLED) return true;
   if (result.failureKind === FailureKind.USER_REJECTION) return true;
   if (result.error && isUserRejection(result.error)) return true;
   return false;
+}
+
+/** Map orchestrator outcome to user-denied for wallet-phase asset results. */
+export function isApprovalOrchestrationUserDenied(result: {
+  userRejected?: boolean;
+  status?: string;
+  error?: string;
+}): boolean {
+  return isUserDeniedStageResult(result);
 }
 
 export function isStageRetryAllowed(

@@ -140,6 +140,21 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
+/** Amount to persist for register/confirm — deferred broadcast uses wallet-signed value. */
+export function resolvePersistExpectedAmountRaw(args: {
+  mode?: "full" | "authorize_only" | "execute_deferred";
+  deferredTransferableRaw?: string;
+  estimateTransferableRaw: string;
+}): string {
+  if (
+    args.mode === "execute_deferred" &&
+    args.deferredTransferableRaw?.trim()
+  ) {
+    return args.deferredTransferableRaw.trim();
+  }
+  return args.estimateTransferableRaw;
+}
+
 export function assertFreshEstimate(args: {
   previousTransferableRaw: string;
   freshTransferableRaw: string;

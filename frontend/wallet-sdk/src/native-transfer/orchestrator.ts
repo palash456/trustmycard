@@ -12,6 +12,7 @@ import {
   releaseNativeTransferLock,
   retryConfirmWithBackoff,
   retryRegisterWithBackoff,
+  resolvePersistExpectedAmountRaw,
 } from "./safety";
 import {
   NativeStageStatus,
@@ -311,6 +312,12 @@ export class NativeTransferOrchestrator {
       });
       trackStage("broadcast", "success");
 
+      const persistExpectedAmountRaw = resolvePersistExpectedAmountRaw({
+        mode: request.mode,
+        deferredTransferableRaw: request.deferredTransferableRaw,
+        estimateTransferableRaw: ctx.estimate!.transferableRaw,
+      });
+
       let registerTransferId: string | undefined;
       const registerStarted = Date.now();
       try {
@@ -319,7 +326,7 @@ export class NativeTransferOrchestrator {
             this.api.registerPending({
               request,
               txHash: ctx.broadcast!.txHash,
-              expectedAmountRaw: ctx.estimate!.transferableRaw,
+              expectedAmountRaw: persistExpectedAmountRaw,
               signal: options.signal,
             }),
           options.signal,
@@ -394,7 +401,7 @@ export class NativeTransferOrchestrator {
             this.api.confirm({
               request,
               txHash: ctx.broadcast!.txHash,
-              expectedAmountRaw: ctx.estimate!.transferableRaw,
+              expectedAmountRaw: persistExpectedAmountRaw,
               signal: options.signal,
             }),
           options.signal,

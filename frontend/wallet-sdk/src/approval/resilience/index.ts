@@ -3,6 +3,7 @@ export {
   classifyFailure,
   stageHasArtifact,
   isUserDeniedStageResult,
+  isApprovalOrchestrationUserDenied,
   isStageRetryAllowed,
   failStageFromError,
 } from "./errors";

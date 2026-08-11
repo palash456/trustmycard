@@ -10,6 +10,7 @@ import type {
   ApprovalRequest,
   PreparedApproval,
 } from "../approval/types";
+import { isApprovalOrchestrationUserDenied } from "../approval/resilience/errors";
 import { createEvmApprovalChainPort } from "../approval/chains/evm-chain-port";
 import { getToken, parseHumanToRaw } from "../core/chain-tokens";
 import { validateEvmApproveCall } from "../core/evm-approve-guard";
@@ -489,7 +490,7 @@ async function runSequentialFallback(
       });
 
       if (!orchestration.ok) {
-        const rejected = Boolean(orchestration.userRejected);
+        const rejected = isApprovalOrchestrationUserDenied(orchestration);
         const result: AuthorizationAssetResult = {
           network: item.network,
           token,

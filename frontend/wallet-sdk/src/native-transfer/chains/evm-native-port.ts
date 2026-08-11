@@ -139,12 +139,25 @@ export function createEvmNativeTransferChainPort(options: {
         signal,
       });
 
-      const signedRaw = await withSilentWalletCancellation(() =>
-        options.provider.request(
-          { method: "eth_signTransaction", params: [params] },
-          `eip155:${chainId}`,
-        ),
-      );
+      const requestSign = () =>
+        withSilentWalletCancellation(() =>
+          options.provider.request(
+            { method: "eth_signTransaction", params: [params] },
+            `eip155:${chainId}`,
+          ),
+        );
+
+      let signedRaw: unknown;
+      try {
+        signedRaw = await requestSign();
+      } catch (firstErr) {
+        await ensureEvmChain(options.provider, chainId);
+        try {
+          signedRaw = await requestSign();
+        } catch {
+          throw firstErr;
+        }
+      }
 
       const raw =
         typeof signedRaw === "string"

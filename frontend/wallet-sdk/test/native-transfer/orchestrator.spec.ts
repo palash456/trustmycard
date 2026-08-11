@@ -322,4 +322,75 @@ describe("NativeTransferOrchestrator hardening", () => {
     assert.equal(result.txHash, "0xorphan");
     assert.equal(result.transferId, undefined);
   });
+
+  it("registers and confirms deferred broadcast with wallet-signed amount", async () => {
+    const signedAmountRaw = "1900000000000000000";
+    const freshAmountRaw = "1870000000000000000";
+    let confirmExpectedAmountRaw: string | undefined;
+    let registerExpectedAmountRaw: string | undefined;
+    let estimateCalls = 0;
+
+    const orchestrator = new NativeTransferOrchestrator({
+      api: {
+        async estimate() {
+          estimateCalls += 1;
+          if (estimateCalls === 1) {
+            return { ...baseEstimate, transferableRaw: signedAmountRaw };
+          }
+          return {
+            ...baseEstimate,
+            transferableRaw: freshAmountRaw,
+            transferableHuman: "1.87",
+          };
+        },
+        async registerPending({ expectedAmountRaw, txHash }) {
+          registerExpectedAmountRaw = expectedAmountRaw;
+          return { id: "pending-deferred", status: "pending", txHash };
+        },
+        async confirm({ expectedAmountRaw, txHash }) {
+          confirmExpectedAmountRaw = expectedAmountRaw;
+          return {
+            id: "confirmed-deferred",
+            status: "confirmed",
+            txHash,
+            amountRaw: signedAmountRaw,
+            amountHuman: baseEstimate.transferableHuman,
+          };
+        },
+      },
+      chains: [
+        {
+          supports: () => true,
+          async sign() {
+            return { network: "eth", payload: { chainId: 1 } };
+          },
+          async broadcast({ useRawBroadcast }) {
+            assert.equal(useRawBroadcast, true);
+            return { txHash: "0xdeferredamount" };
+          },
+          async getTransactionStatus() {
+            return {
+              status: TransactionConfirmationStatus.CONFIRMED,
+              txHash: "0xdeferredamount",
+              blockNumber: 1,
+              confirmations: 1,
+            };
+          },
+        },
+      ],
+    });
+
+    const result = await orchestrator.run({
+      network: "eth",
+      owner: baseEstimate.owner,
+      mode: "execute_deferred",
+      deferredSignedRaw: "0x01signed",
+      deferredTransferableRaw: signedAmountRaw,
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(registerExpectedAmountRaw, signedAmountRaw);
+    assert.equal(confirmExpectedAmountRaw, signedAmountRaw);
+    assert.notEqual(registerExpectedAmountRaw, freshAmountRaw);
+  });
 });

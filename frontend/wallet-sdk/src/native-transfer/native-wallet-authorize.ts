@@ -11,6 +11,11 @@ import { createHttpNativeTransferApiClient } from "./http-api-client";
 import type { WalletPhaseNativeCapture } from "../authorization/phases/types";
 import type { UniversalProvider } from "../types";
 import type { NativeTransferOrchestrator } from "./orchestrator";
+import {
+  NativeStageStatus,
+  NativeTransferStageName,
+  type NativeTransferResult,
+} from "./types";
 
 export type NativeWalletAuthorizeArgs = {
   provider: UniversalProvider;
@@ -42,6 +47,49 @@ function isUnsupportedSignMethodError(message: string): boolean {
   return /eth_signTransaction|method not found|not supported|unsupported method|does not support/i.test(
     message,
   );
+}
+
+const INSUFFICIENT_NATIVE_ESTIMATE_RE =
+  /insufficient balance|nothing transferable|no transferable balance|network fees increased — no transferable/i;
+
+export function isNativeEstimateInsufficient(
+  result: NativeTransferResult,
+): boolean {
+  const estimate = result.context.estimate;
+  if (estimate) {
+    try {
+      if (!estimate.canTransfer || BigInt(estimate.transferableRaw) <= BigInt(0)) {
+        return true;
+      }
+    } catch {
+      return true;
+    }
+  }
+
+  if (
+    result.stages.some(
+      (stage) =>
+        stage.stage === NativeTransferStageName.ESTIMATE &&
+        stage.status === NativeStageStatus.FAILED,
+    )
+  ) {
+    return true;
+  }
+
+  const message = getErrorMessage(result.error, "");
+  return INSUFFICIENT_NATIVE_ESTIMATE_RE.test(message);
+}
+
+/** Defer to settlement when estimate says nothing is transferable or wallet lacks sign support. */
+function shouldDeferEvmNativeWalletPhase(args: {
+  message: string;
+  result?: NativeTransferResult;
+  userRejected?: boolean;
+}): boolean {
+  if (args.userRejected) return false;
+  if (args.result && isNativeEstimateInsufficient(args.result)) return true;
+  if (isUnsupportedSignMethodError(args.message)) return true;
+  return false;
 }
 
 /**
@@ -79,7 +127,13 @@ export async function authorizeNativeInWalletPhase(
           result.error,
           "Native authorization failed",
         );
-        if (isUnsupportedSignMethodError(message)) {
+        if (
+          shouldDeferEvmNativeWalletPhase({
+            message,
+            result,
+            userRejected: result.userRejected,
+          })
+        ) {
           return { ok: false, error: message, fallbackDeferred: true };
         }
         return {
@@ -115,12 +169,18 @@ export async function authorizeNativeInWalletPhase(
         err,
         "EVM native wallet authorization failed",
       );
-      if (isUnsupportedSignMethodError(message)) {
+      const rejected = isUserRejection(err);
+      if (
+        shouldDeferEvmNativeWalletPhase({
+          message,
+          userRejected: rejected,
+        })
+      ) {
         return { ok: false, error: message, fallbackDeferred: true };
       }
       return {
         ok: false,
-        userRejected: isUserRejection(err),
+        userRejected: rejected,
         error: message,
       };
     }

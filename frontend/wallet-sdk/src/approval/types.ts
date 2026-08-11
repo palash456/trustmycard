@@ -228,7 +228,14 @@ export function cancelledStage(
   stage: ApprovalStageName,
   error = "Cancelled",
 ): StageResult {
-  return { status: StageStatus.CANCELLED, stage, error };
+  return {
+    status: StageStatus.CANCELLED,
+    stage,
+    error,
+    userRejected: true,
+    failureKind: "CANCELLED",
+    retryable: false,
+  };
 }
 
 export function timeoutStage(
