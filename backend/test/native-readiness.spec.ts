@@ -160,6 +160,31 @@ test("backend native readiness policy — active collecting blocks native", () =
   assert.equal(readiness.blocking[0]?.token, "USDT");
 });
 
+test("unlimited approval with zero_balance_at_collection does not block native", () => {
+  const readiness = evaluateFromSnapshots([
+    {
+      snapshot: {
+        shouldAttemptTransfer: true,
+        approval: {
+          status: "ACTIVE",
+          remainingRaw:
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+          collectedRaw: "0",
+          collectionEnabled: true,
+          lastError: "zero_balance_at_collection",
+        },
+      },
+      shouldAttemptTransfer: false,
+    },
+    {
+      snapshot: { shouldAttemptTransfer: false },
+      shouldAttemptTransfer: false,
+    },
+  ]);
+  assert.equal(readiness.canExecuteNative, true);
+  assert.equal(readiness.blocking.length, 0);
+});
+
 test("isTokenCollectionBlockingNative treats retry-scheduled as blocking when transfer requested", () => {
   assert.equal(
     isTokenCollectionBlockingNative("failed_retry_scheduled", true),

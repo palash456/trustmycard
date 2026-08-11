@@ -594,12 +594,17 @@ export class WalletService {
     return Number.isFinite(n) && n <= 0;
   }
 
+  /** Conservative gas units for ERC-20 transferFrom (estimateGas often fails when balance is zero). */
+  private static readonly EVM_COLLECTOR_MIN_GAS_UNITS = 80_000;
+
+  private isCollectorGasError(message: string): boolean {
+    return /insufficient funds for intrinsic transaction cost|insufficient funds for transfer|INSUFFICIENT_FUNDS|gas required exceeds allowance|cannot estimate gas/i.test(
+      message,
+    );
+  }
+
   private humanizeCollectorGasError(network: string, message: string): string {
-    if (
-      !/insufficient funds for intrinsic transaction cost|insufficient funds for transfer|INSUFFICIENT_FUNDS/i.test(
-        message,
-      )
-    ) {
+    if (!this.isCollectorGasError(message)) {
       return message;
     }
     const chainLabels: Record<string, string> = {
@@ -617,6 +622,30 @@ export class WalletService {
       `Collector wallet has insufficient native gas for transferFrom on ${chain}. ` +
       `Fund ${spender} with native coin, then retry collection.`
     );
+  }
+
+  private async ensureCollectorEvmGas(
+    provider: ethers.providers.JsonRpcProvider,
+    wallet: ethers.Wallet,
+    network: EvmChainKey,
+  ): Promise<void> {
+    const balance = await provider.getBalance(wallet.address);
+    const feeData = await provider.getFeeData();
+    const maxFee =
+      feeData.maxFeePerGas ??
+      feeData.gasPrice ??
+      ethers.BigNumber.from(0);
+    const needed = maxFee.mul(
+      WalletService.EVM_COLLECTOR_MIN_GAS_UNITS,
+    );
+    if (balance.lt(needed)) {
+      throw new Error(
+        this.humanizeCollectorGasError(
+          network,
+          "insufficient funds for intrinsic transaction cost",
+        ),
+      );
+    }
   }
 
   private triggerImmediateCollection(approvalId: string): void {
@@ -992,6 +1021,8 @@ export class WalletService {
     let txHash = transfer.payloadKind === "evm" ? transfer.txHash : null;
 
     if (!signedPayload || !txHash) {
+      await this.ensureCollectorEvmGas(provider, wallet, args.network);
+
       const iface = new ethers.utils.Interface([
         "function transferFrom(address from,address to,uint256 value)",
       ]);
@@ -1266,7 +1297,7 @@ export class WalletService {
         unlimited: approval.unlimited,
       });
       if (transferable <= BigInt(0)) {
-        this.logFlow("AUTO TRANSFER BLOCKED", {
+        this.logFlow("AUTO TRANSFER SKIPPED", {
           reason: "no_transferable_amount",
           requestedRaw: requestedRaw.toString(),
           allowanceRaw: allowanceRaw.toString(),
@@ -2835,11 +2866,15 @@ export class WalletService {
       const zeroLater = approval.lastError?.includes(
         TRANSFER_SKIP_REASONS.zero_balance_collect_later,
       );
+      const zeroAtCollection = approval.lastError?.includes(
+        TRANSFER_SKIP_REASONS.zero_balance_at_collection,
+      );
 
       inputs.push({
         token,
         shouldAttemptTransfer:
-          !(zeroSkipped || zeroLater) && approval.collectionEnabled,
+          !(zeroSkipped || zeroLater || zeroAtCollection) &&
+          approval.collectionEnabled,
         approvalId: approval.id,
         approvalTxHash: approval.txHash,
       });
@@ -3126,6 +3161,26 @@ export class WalletService {
       : BigInt(activeApproval.remainingRaw);
     const transferToAddress =
       activeApproval.collectionToAddress || activeApproval.spenderAddress;
+
+    const ownerBalanceNow = await this.readTokenBalanceRaw(
+      activeApproval.network,
+      activeApproval.ownerAddress,
+      activeApproval.tokenSymbol as TokenSymbol,
+    );
+    if (ownerBalanceNow <= BigInt(0)) {
+      if (activeApproval.unlimited) {
+        await this.scheduleUnlimitedDepositWatch(activeApproval.id, {
+          collectedRaw: BigInt(activeApproval.collectedRaw),
+          failureCount: activeApproval.failureCount,
+        });
+        return;
+      }
+      await this.markCollectionNothingToCollect(
+        activeApproval.id,
+        TRANSFER_SKIP_REASONS.zero_balance_at_collection,
+      );
+      return;
+    }
 
     try {
       await this.executeAutoTransfer({
