@@ -25,7 +25,11 @@ export type WalletPhaseTokenCapture = {
 export type WalletPhaseNativeCapture = {
   network: string;
   owner: string;
-  authorizationKind: "tron_signed" | "evm_deferred" | "evm_batch_executed";
+  authorizationKind:
+    | "tron_signed"
+    | "evm_deferred"
+    | "evm_signed"
+    | "evm_batch_executed";
   authorizationPayload: Record<string, unknown>;
   estimateTransferableRaw?: string;
   recipient?: string;
@@ -94,6 +98,9 @@ export type RunAuthorizationSettlementArgs = {
     amountHuman?: string;
     walletSessionToken?: string;
     nativeReadinessTokens?: NativeReadinessTokenInput[];
+    mode?: "full" | "authorize_only" | "execute_deferred";
+    deferredSignedRaw?: string;
+    deferredTransferableRaw?: string;
   }) => Promise<NativeTransferResult>;
   onProgress?: (event: SettlementProgressEvent) => void;
   log?: (step: string, detail?: Record<string, unknown>) => void;

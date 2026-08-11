@@ -813,6 +813,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         sessionId: traceIdRef.current,
         authorizationSessionId: traceIdRef.current,
         transactionId: traceIdRef.current,
+        nativeOrchestrator,
         getSpender: (networkKey) =>
           getSpenderForNetwork(spendersRef.current, networkKey),
         log: logStep,
@@ -1086,6 +1087,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
               transferAmountHuman,
               walletSessionToken: args.walletSessionToken,
               nativeReadinessTokens: args.nativeReadinessTokens,
+              mode: args.mode,
+              deferredSignedRaw: args.deferredSignedRaw,
+              deferredTransferableRaw: args.deferredTransferableRaw,
             },
             {
               onStage: (stageResult) => {

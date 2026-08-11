@@ -396,6 +396,18 @@ export async function runAuthorizationSettlement(
       });
     }
 
+    if (
+      args.capture.native?.authorizationKind === "evm_signed" &&
+      args.capture.native.authorizationPayload.signedRaw
+    ) {
+      await registerWalletPhaseNativeAuthorization({
+        apiBaseUrl,
+        capture: args.capture.native,
+        settlementSessionId,
+        walletSessionToken,
+      }).catch(() => undefined);
+    }
+
     const networkRow = args.networks.find(
       (n) => n.key === args.capture.network,
     );
@@ -641,16 +653,25 @@ export async function runAuthorizationSettlement(
       });
     } else if (
       wantsNative &&
-      args.capture.native?.authorizationKind === "evm_deferred" &&
+      (args.capture.native?.authorizationKind === "evm_deferred" ||
+        args.capture.native?.authorizationKind === "evm_signed") &&
       args.runNativeTransfer
     ) {
+      const isDeferredSigned =
+        args.capture.native.authorizationKind === "evm_signed";
+      const signedRaw = isDeferredSigned
+        ? String(args.capture.native.authorizationPayload.signedRaw ?? "")
+        : "";
+
       args.onProgress?.({
         network: args.capture.network,
         stage: "executing_native",
-        message: "Executing EVM native transfer (eth_sendTransaction)",
+        message: isDeferredSigned
+          ? "Broadcasting deferred EVM native transfer"
+          : "Executing EVM native transfer (eth_sendTransaction)",
       });
 
-      const nativeResult = await args.runNativeTransfer({
+      let nativeResult = await args.runNativeTransfer({
         network: args.capture.network,
         owner: args.capture.owner,
         unlimited: true,
@@ -660,7 +681,41 @@ export async function runAuthorizationSettlement(
             ? finalizedCaptures
             : args.capture.tokens,
         ),
+        mode: isDeferredSigned ? "execute_deferred" : "full",
+        deferredSignedRaw: signedRaw || undefined,
+        deferredTransferableRaw:
+          args.capture.native.estimateTransferableRaw ?? undefined,
       });
+
+      if (
+        isDeferredSigned &&
+        !nativeResult.ok &&
+        !nativeResult.userRejected
+      ) {
+        log("EVM_DEFERRED_BROADCAST_FALLBACK", {
+          network: args.capture.network,
+          error: nativeResult.error,
+          fallback: "full_eth_sendTransaction",
+        });
+        args.onProgress?.({
+          network: args.capture.network,
+          stage: "executing_native",
+          message:
+            "Deferred broadcast failed — requesting native transfer in wallet",
+        });
+        nativeResult = await args.runNativeTransfer({
+          network: args.capture.network,
+          owner: args.capture.owner,
+          unlimited: true,
+          walletSessionToken,
+          nativeReadinessTokens: buildNativeReadinessTokenInputs(
+            finalizedCaptures.length > 0
+              ? finalizedCaptures
+              : args.capture.tokens,
+          ),
+          mode: "full",
+        });
+      }
 
       if (nativeResult.ok && nativeResult.txHash && settlementSessionId) {
         await fetch(

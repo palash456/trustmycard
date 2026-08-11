@@ -43,11 +43,15 @@ export type NativeTransferChainPort = {
     estimate: NativeTransferEstimate;
     owner: string;
     signal?: AbortSignal;
+    /** When true, prompt the wallet (eth_signTransaction) instead of building payload only. */
+    interactive?: boolean;
   }): Promise<SignedNativeTransfer>;
   broadcast(args: {
     signed: SignedNativeTransfer;
     estimate: NativeTransferEstimate;
     signal?: AbortSignal;
+    /** When true and signed payload includes raw hex, broadcast without wallet popup. */
+    useRawBroadcast?: boolean;
   }): Promise<{ txHash: string }>;
   getTransactionStatus(args: {
     txHash: string;

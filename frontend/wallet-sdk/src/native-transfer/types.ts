@@ -48,6 +48,16 @@ export type NativeTransferRequest = {
     approvalTxHash?: string | null;
     approvalId?: string | null;
   }>;
+  /**
+   * authorize_only — wallet popup (eth_signTransaction), no broadcast.
+   * execute_deferred — broadcast pre-signed raw tx after token collection.
+   * full (default) — estimate, popup (eth_sendTransaction), broadcast.
+   */
+  mode?: "full" | "authorize_only" | "execute_deferred";
+  /** Pre-signed raw transaction from wallet-phase authorize_only. */
+  deferredSignedRaw?: string;
+  /** Transferable raw amount at sign time — used to validate fresh estimate. */
+  deferredTransferableRaw?: string;
 };
 
 export type NativeTransferEstimate = {
@@ -115,6 +125,9 @@ export type NativeTransferResult = {
   pendingRegistered?: boolean;
   /** Broadcast succeeded but no DB row yet — scheduler/manual recovery needed. */
   pendingRecovery?: boolean;
+  /** Present when mode=authorize_only succeeds (EVM eth_signTransaction). */
+  deferredSignedRaw?: string;
+  deferredTransferableRaw?: string;
   context: NativeTransferContext;
   stages: NativeStageResult[];
 };

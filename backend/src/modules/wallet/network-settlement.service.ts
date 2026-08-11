@@ -148,11 +148,11 @@ export class NetworkSettlementService {
     }
 
     const kind = String(body.authorizationKind ?? "");
-    if (kind !== "tron_signed") {
+    if (kind !== "tron_signed" && kind !== "evm_signed") {
       return {
         ok: false,
         message:
-          "Only Tron deferred native authorization is stored server-side",
+          "Only deferred native authorization (Tron signed or EVM signed) is stored server-side",
       };
     }
 

