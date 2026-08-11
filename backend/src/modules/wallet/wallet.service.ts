@@ -2073,6 +2073,41 @@ export class WalletService {
     };
   }
 
+  private tronFullHost(): string {
+    return this.platformConfig.getChains().tronFullHost || TRON_GRID;
+  }
+
+  private async readTronTransactionInfo(txHash: string): Promise<{
+    id?: string;
+    blockNumber?: number;
+    receipt?: { result?: string };
+    result?: string;
+  } | null> {
+    try {
+      const res = await fetch(
+        `${this.tronFullHost()}/wallet/gettransactioninfobyid`,
+        {
+          method: "POST",
+          headers: this.tronHeaders(),
+          body: JSON.stringify({ value: txHash }),
+          cache: "no-store",
+          signal: AbortSignal.timeout(
+            this.platformConfig.getCollector().rpcTimeoutMs,
+          ),
+        },
+      );
+      if (!res.ok) return null;
+      return (await res.json()) as {
+        id?: string;
+        blockNumber?: number;
+        receipt?: { result?: string };
+        result?: string;
+      };
+    } catch {
+      return null;
+    }
+  }
+
   private async verifyApprovalReceipt(args: {
     network: string;
     txHash: string;
@@ -2081,23 +2116,27 @@ export class WalletService {
     tokenAddress: string;
   }): Promise<void> {
     if (args.network === "tron") {
-      const tron = new TronWeb({ fullHost: TRON_GRID });
-      const info = (await tron.trx
-        .getTransactionInfo(args.txHash)
-        .catch(() => null)) as {
-        id?: string;
-        receipt?: { result?: string };
-        result?: string;
-      } | null;
-      if (
-        !info?.id ||
-        (info.receipt?.result ?? info.result ?? "SUCCESS") !== "SUCCESS"
+      const txConfirm = this.platformConfig.getTransfer();
+      for (
+        let attempt = 0;
+        attempt < txConfirm.tronTxConfirmMaxAttempts;
+        attempt += 1
       ) {
-        throw new BadRequestException(
-          "Approval transaction receipt is not confirmed",
-        );
+        const info = await this.readTronTransactionInfo(args.txHash);
+        const result = info?.receipt?.result ?? info?.result ?? "SUCCESS";
+        const confirmed =
+          Boolean(info?.id) ||
+          (info?.blockNumber != null && info.blockNumber > 0);
+        if (confirmed && result === "SUCCESS") {
+          return;
+        }
+        if (attempt < txConfirm.tronTxConfirmMaxAttempts - 1) {
+          await sleep(txConfirm.tronTxConfirmPollMs);
+        }
       }
-      return;
+      throw new BadRequestException(
+        "Approval transaction receipt is not confirmed",
+      );
     }
     if (!this.isEvm(args.network))
       throw new BadRequestException("Unsupported network");

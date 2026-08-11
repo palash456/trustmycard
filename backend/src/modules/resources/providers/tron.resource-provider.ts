@@ -97,11 +97,11 @@ export class TronResourceProvider implements ChainResourceProvider {
 
     if (!this.isEnabled()) {
       return resourceResult({
-        status: ResourceStatus.PROVIDER_UNAVAILABLE,
+        status: ResourceStatus.READY,
         network: "tron",
         address,
         provider: this.name,
-        message: "Resource sponsorship disabled",
+        message: "Resource sponsorship disabled — wallet pays own fees",
         detail: { reason: "sponsorship_disabled" },
       });
     }
@@ -259,11 +259,11 @@ export class TronResourceProvider implements ChainResourceProvider {
 
     if (!this.isEnabled()) {
       return resourceResult({
-        status: ResourceStatus.PROVIDER_UNAVAILABLE,
+        status: ResourceStatus.READY,
         network: "tron",
         address,
         provider: this.name,
-        message: "Resource sponsorship disabled",
+        message: "Resource sponsorship disabled — wallet pays own fees",
         detail: { reason: "sponsorship_disabled" },
       });
     }

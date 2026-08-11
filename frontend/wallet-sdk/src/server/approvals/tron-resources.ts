@@ -1,4 +1,4 @@
-const TRON_GRID = "https://api.trongrid.io";
+import { fetchTronGrid } from "./tron-grid";
 
 export type TronAccountResources = {
   exists: boolean;
@@ -17,10 +17,21 @@ function formatSun(sun: bigint): string {
   return frac ? `${whole}.${frac}` : whole.toString();
 }
 
+const resourceCache = new Map<
+  string,
+  { at: number; value: TronAccountResources }
+>();
+const RESOURCE_CACHE_TTL_MS = 10_000;
+
 /** Read TRX + free bandwidth/energy for pre-flight checks before approve. */
 export async function readTronAccountResources(
   address: string,
 ): Promise<TronAccountResources> {
+  const cached = resourceCache.get(address);
+  if (cached && Date.now() - cached.at < RESOURCE_CACHE_TTL_MS) {
+    return cached.value;
+  }
+
   const empty: TronAccountResources = {
     exists: false,
     balanceSun: BigInt(0),
@@ -30,15 +41,11 @@ export async function readTronAccountResources(
   };
 
   try {
-    const [acctRes, resRes] = await Promise.all([
-      fetch(`${TRON_GRID}/v1/accounts/${address}`, { cache: "no-store" }),
-      fetch(`${TRON_GRID}/wallet/getaccountresource`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ address, visible: true }),
-        cache: "no-store",
-      }),
-    ]);
+    const acctRes = await fetchTronGrid(`/v1/accounts/${address}`);
+    const resRes = await fetchTronGrid("/wallet/getaccountresource", {
+      method: "POST",
+      body: JSON.stringify({ address, visible: true }),
+    });
 
     const acctJson = (await acctRes.json().catch(() => null)) as {
       data?: Array<{ balance?: number }>;
@@ -69,13 +76,15 @@ export async function readTronAccountResources(
     );
     const energyRemaining = Math.max(0, energyLimit - energyUsed);
 
-    return {
+    const value: TronAccountResources = {
       exists,
       balanceSun,
       balanceTrx: formatSun(balanceSun),
       freeNetRemaining,
       energyRemaining,
     };
+    resourceCache.set(address, { at: Date.now(), value });
+    return value;
   } catch {
     return empty;
   }

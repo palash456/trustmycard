@@ -19,12 +19,12 @@ import {
   readTronAccountResources,
   tronResourceAdvisory,
 } from "../../../approvals/tron-resources";
+import { fetchTronGrid } from "../../../approvals/tron-grid";
 
 export const dynamic = "force-dynamic";
 
 const TRON_ADDRESS_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
 const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
-const TRON_GRID = "https://api.trongrid.io";
 
 const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
@@ -149,9 +149,8 @@ export async function POST(req: NextRequest) {
       const ownerHex = base58ToHex(owner);
       const contractHex = base58ToHex(tokenInfo.address);
 
-      const res = await fetch(`${TRON_GRID}/wallet/triggersmartcontract`, {
+      const res = await fetchTronGrid("/wallet/triggersmartcontract", {
         method: "POST",
-        headers: { "content-type": "application/json" },
         body: JSON.stringify({
           owner_address: ownerHex,
           contract_address: contractHex,
@@ -161,19 +160,25 @@ export async function POST(req: NextRequest) {
           call_value: 0,
           visible: false,
         }),
-        cache: "no-store",
       });
 
-      const json = (await res.json()) as {
+      const rawBody = await res.text();
+      let json: {
         result?: { result?: boolean; message?: string };
         transaction?: Record<string, unknown>;
         Error?: string;
       };
+      try {
+        json = JSON.parse(rawBody) as typeof json;
+      } catch {
+        json = {};
+      }
 
       if (!res.ok || json.result?.result === false || !json.transaction) {
         let decoded =
           json.result?.message ||
           json.Error ||
+          rawBody ||
           `TronGrid triggersmartcontract failed (${res.status})`;
         try {
           if (/^[0-9a-fA-F]+$/.test(decoded) && decoded.length % 2 === 0) {
