@@ -550,6 +550,20 @@ export function LinkNetworkModal({
                   linkProgress={linkProgress}
                 />
               </div>
+              {availableNetworks.filter((n) => n.key !== selectedKey).length >
+              0 ? (
+                <div className="space-y-2">
+                  {availableNetworks
+                    .filter((n) => n.key !== selectedKey)
+                    .map((network, index) => (
+                      <FadedNetworkRow
+                        key={network.key}
+                        network={network}
+                        staggerIndex={linkedNetworks.length + index + 2}
+                      />
+                    ))}
+                </div>
+              ) : null}
             </div>
           ) : isCancelled && selectedKey && linkNetworkError ? (
             <div className="space-y-4">

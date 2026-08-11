@@ -764,7 +764,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     setAuthorizingPhase("preparing");
     setAuthorizingProgress({ current: 0, total: items.length });
     linkingNetworkKeyRef.current = selectedKey;
-    advanceLinkProgress(LINK_PROGRESS_STAGE_IDS.preparing_authorization);
+    advanceLinkProgress(LINK_PROGRESS_STAGE_IDS.preparing_authorization, {
+      force: true,
+    });
 
     try {
       logStep("APPROVAL SESSION STARTED", {
