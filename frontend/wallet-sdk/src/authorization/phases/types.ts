@@ -93,6 +93,12 @@ export type RunAuthorizationSettlementArgs = {
     unlimited: boolean;
     amountHuman?: string;
     walletSessionToken?: string;
+    onStage?: (stageResult: {
+      stage: string;
+      status: string;
+      data?: unknown;
+      error?: string | null;
+    }) => void;
   }) => Promise<ApprovalOrchestrationResult>;
   runNativeTransfer?: (args: {
     network: string;
