@@ -43,7 +43,7 @@ export async function signTronWalletChallenge(args: {
 }): Promise<string> {
   const attempts: Array<{
     method: "tron_signMessageV2" | "tron_signMessage";
-    params: unknown;
+    params: object | unknown[] | Record<string, unknown>;
   }> = [
     { method: "tron_signMessageV2", params: [args.challenge] },
     {
