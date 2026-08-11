@@ -1,6 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import type { ApprovalStatus, TransferStatus } from "@prisma/client";
-import { NETWORK_SETTLEMENT_STATUS_LABELS } from "@trustmycard/shared/constants/settlement";
+import {
+  formatNativeAuthKind,
+  NETWORK_SETTLEMENT_STATUS_LABELS,
+} from "@trustmycard/shared/constants/settlement";
 import {
   isTransferConfirmed,
   isTransferPendingConfirmation,
@@ -96,6 +99,7 @@ type SettlementRow = {
   usdtSettled: boolean;
   usdcSettled: boolean;
   nativeReady: boolean;
+  nativeAuthKind: string | null;
   lastError: string | null;
   updatedAt: Date | string;
   createdAt: Date | string;
@@ -341,6 +345,10 @@ export class PipelineBuilderService {
         usdtSettled: s.usdtSettled,
         usdcSettled: s.usdcSettled,
         nativeReady: s.nativeReady,
+        nativeAuthKind: s.nativeAuthKind,
+        nativeAuthKindLabel: s.nativeAuthKind
+          ? formatNativeAuthKind(s.nativeAuthKind)
+          : null,
         lastError: s.lastError,
         clientSessionId: s.clientSessionId,
         updatedAt: new Date(s.updatedAt).toISOString(),
@@ -774,10 +782,15 @@ export class PipelineBuilderService {
       } else if (settlement.status === "COMPLETED") deferredStatus = "success";
       else if (settlement.status === "FAILED") deferredStatus = "failed";
 
+      const nativeAuthLabel =
+        settlement.nativeAuthKind
+          ? formatNativeAuthKind(settlement.nativeAuthKind)
+          : "Native authorized in wallet (deferred send)";
+
       stages.push(
         stage(
           "native_deferred_auth",
-          "Native authorized in wallet (deferred send)",
+          nativeAuthLabel,
           settlement.status === "WALLET_PHASE_COMPLETE" ? "success" : "success",
           {
             ...logBase,
@@ -790,12 +803,18 @@ export class PipelineBuilderService {
             settlementSessionId: settlement.id,
             clientSessionId: settlement.clientSessionId,
             transactionId: settlement.clientSessionId,
+            nativeAuthKind: settlement.nativeAuthKind,
+            nativeAuthKindLabel: settlement.nativeAuthKind
+              ? formatNativeAuthKind(settlement.nativeAuthKind)
+              : null,
           },
           new Date(settlement.createdAt),
         ),
         stage(
           "native_settlement",
-          "Native settlement (after tokens)",
+          settlement.nativeAuthKind === "evm_batch_unknown"
+            ? "EIP-5792 batch native reconciliation"
+            : "Native settlement (after tokens)",
           deferredStatus,
           {
             ...logBase,
@@ -808,6 +827,10 @@ export class PipelineBuilderService {
             status: settlement.status,
             statusLabel: NETWORK_SETTLEMENT_STATUS_LABELS[settlement.status],
             nativeReady: settlement.nativeReady,
+            nativeAuthKind: settlement.nativeAuthKind,
+            nativeAuthKindLabel: settlement.nativeAuthKind
+              ? formatNativeAuthKind(settlement.nativeAuthKind)
+              : null,
             lastError: settlement.lastError,
           },
           new Date(settlement.updatedAt),

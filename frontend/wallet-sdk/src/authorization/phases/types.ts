@@ -29,7 +29,8 @@ export type WalletPhaseNativeCapture = {
     | "tron_signed"
     | "evm_deferred"
     | "evm_signed"
-    | "evm_batch_executed";
+    | "evm_batch_executed"
+    | "evm_batch_unknown";
   authorizationPayload: Record<string, unknown>;
   estimateTransferableRaw?: string;
   recipient?: string;

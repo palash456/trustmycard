@@ -120,6 +120,8 @@ export type UserPipelineSnapshot = {
     usdtSettled: boolean;
     usdcSettled: boolean;
     nativeReady: boolean;
+    nativeAuthKind: string | null;
+    nativeAuthKindLabel: string | null;
     lastError: string | null;
     clientSessionId: string;
     updatedAt: string;

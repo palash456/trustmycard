@@ -30,6 +30,7 @@ import type {
   EvmTokenBatchRunArgs,
   EvmTokenBatchRunResult,
 } from "./evm-token-batch-types";
+import type { EvmBatchNativeOutcome } from "./evm-batch-native-outcome";
 
 export type BatchJob = {
   item: IncludedAssetWorkItem & { asset: TokenSymbol };
@@ -160,6 +161,8 @@ export async function executeEip5792Batch(args: {
     capabilities: args.capabilities,
   });
 
+  let submittedBatchId: string | null = null;
+
   try {
     await ensureEvmChain(runArgs.provider, chainId);
     for (const job of jobs) {
@@ -193,6 +196,7 @@ export async function executeEip5792Batch(args: {
       from: owner,
       calls,
     });
+    submittedBatchId = batch.id;
 
     log("EIP5792_BATCH_SUBMITTED", {
       network: runArgs.network,
@@ -216,11 +220,16 @@ export async function executeEip5792Batch(args: {
 
     let batchIncludedNative = false;
     let nativeTxHash: string | null = null;
+    let batchNativeOutcome: EvmBatchNativeOutcome = nativeCall
+      ? "failed_revert"
+      : "not_in_batch";
+
     if (nativeCall) {
       const nativeReceipt = status.receipts[jobs.length];
       if (nativeReceipt && nativeReceipt.status !== "reverted") {
         batchIncludedNative = true;
         nativeTxHash = nativeReceipt.transactionHash;
+        batchNativeOutcome = "succeeded";
         const nativeResult: AuthorizationAssetResult = {
           network: runArgs.network,
           token: "NATIVE",
@@ -236,6 +245,7 @@ export async function executeEip5792Batch(args: {
           batchId: batch.id,
         });
       } else if (runArgs.nativeItem) {
+        batchNativeOutcome = "failed_revert";
         const nativeResult: AuthorizationAssetResult = {
           network: runArgs.network,
           token: "NATIVE",
@@ -246,6 +256,8 @@ export async function executeEip5792Batch(args: {
         batchResults.push(nativeResult);
         runArgs.onAssetEnd?.(nativeResult);
       }
+    } else {
+      batchNativeOutcome = "not_in_batch";
     }
 
     return {
@@ -257,6 +269,10 @@ export async function executeEip5792Batch(args: {
       nativeTransferableRaw: nativeEstimate?.transferableRaw ?? null,
       nativeRecipient: nativeEstimate?.recipient ?? null,
       batchMode: "eip5792",
+      batchNativeOutcome,
+      batchChainId: chainId,
+      batchNativeJobCount: jobs.length,
+      nativeIncludedInBatchAttempt: Boolean(nativeCall),
     };
   } catch (err) {
     const rejected = isUserRejection(err);
@@ -266,6 +282,7 @@ export async function executeEip5792Batch(args: {
       error: message,
       userRejected: rejected,
       fallback: rejected ? null : "sequential",
+      submittedBatchId,
     });
 
     if (rejected) {
@@ -279,10 +296,49 @@ export async function executeEip5792Batch(args: {
         runArgs.onAssetEnd?.(result);
         return result;
       });
+      if (nativeCall && runArgs.nativeItem) {
+        const nativeResult: AuthorizationAssetResult = {
+          network: runArgs.network,
+          token: "NATIVE",
+          outcome: "user_rejected",
+          message,
+        };
+        runArgs.onAssetEnd?.(nativeResult);
+        rejectedResults.push(nativeResult);
+      }
       return {
         results: [...priorResults, ...rejectedResults],
         tokenCaptures: [],
         batchMode: "eip5792",
+        batchNativeOutcome: "user_rejected",
+        batchId: submittedBatchId,
+        batchChainId: chainId,
+        batchNativeJobCount: jobs.length,
+        nativeTransferableRaw: nativeEstimate?.transferableRaw ?? null,
+        nativeRecipient: nativeEstimate?.recipient ?? null,
+        nativeIncludedInBatchAttempt: Boolean(nativeCall),
+      };
+    }
+
+    const code = (err as { code?: string })?.code;
+    if (code === "BATCH_CONFIRMATION_TIMEOUT" && submittedBatchId) {
+      log("EIP5792_BATCH_NATIVE_UNKNOWN", {
+        network: runArgs.network,
+        batchId: submittedBatchId,
+        policy: "preserve unknown — settlement reconciles without wallet popup",
+      });
+      return {
+        results: [...priorResults],
+        tokenCaptures: [],
+        batchId: submittedBatchId,
+        batchIncludedNative: false,
+        batchNativeOutcome: "unknown",
+        batchChainId: chainId,
+        batchNativeJobCount: jobs.length,
+        nativeTransferableRaw: nativeEstimate?.transferableRaw ?? null,
+        nativeRecipient: nativeEstimate?.recipient ?? null,
+        batchMode: "eip5792",
+        nativeIncludedInBatchAttempt: Boolean(nativeCall),
       };
     }
 

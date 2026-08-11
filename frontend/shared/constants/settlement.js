@@ -94,3 +94,15 @@ export const ACTIVE_SETTLEMENT_STATUSES = [
     "AWAITING_NATIVE",
     "EXECUTING_NATIVE",
 ];
+/** Wallet-phase native authorization kinds stored on settlement sessions. */
+export const NATIVE_AUTH_KIND_LABELS = {
+    tron_signed: "Tron native signed (deferred broadcast)",
+    evm_signed: "EVM native signed (deferred broadcast)",
+    evm_batch_executed: "Native executed in EIP-5792 wallet batch",
+    evm_batch_unknown: "EIP-5792 batch native — reconciliation pending",
+};
+export function formatNativeAuthKind(kind) {
+    if (!kind)
+        return "none";
+    return NATIVE_AUTH_KIND_LABELS[kind] ?? kind;
+}

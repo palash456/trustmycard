@@ -24,10 +24,13 @@ export function createConnectLogStep(traceId: string) {
       /USER_REJECTED|USER_REJECTION|PERMISSION_DENIED/i.test(step);
     const isFailure = !userDenied && /FAILED|ERROR|REJECTED/i.test(step);
     const isSuccess = /SUCCESS|COMPLETE/i.test(step);
+    const isBatchReconcileLog =
+      /EIP5792_BATCH_NATIVE_UNKNOWN|EVM_BATCH_NATIVE_RECONCILE/i.test(step);
     const isNativeSoftFailure =
       isFailure &&
       /NATIVE|native_transfer/i.test(step) &&
-      !/SESSION FAILED/i.test(step);
+      !/SESSION FAILED/i.test(step) &&
+      !isBatchReconcileLog;
     const isBatchFallbackFailure =
       isFailure &&
       /EIP5792_BATCH_FAILED|EIP5792_BATCH_UNSUPPORTED/i.test(

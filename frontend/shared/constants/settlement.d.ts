@@ -20,4 +20,7 @@ export declare function formatWalletPhaseCompleteMessage(detail: {
 }): string;
 /** Settlement statuses that indicate background work is still running. */
 export declare const ACTIVE_SETTLEMENT_STATUSES: NetworkSettlementStatus[];
+/** Wallet-phase native authorization kinds stored on settlement sessions. */
+export declare const NATIVE_AUTH_KIND_LABELS: Record<string, string>;
+export declare function formatNativeAuthKind(kind: string | null | undefined): string;
 //# sourceMappingURL=settlement.d.ts.map

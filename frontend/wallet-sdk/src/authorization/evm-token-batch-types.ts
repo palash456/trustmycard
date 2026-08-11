@@ -8,6 +8,7 @@ import type {
 } from "../types";
 import type { IncludedAssetWorkItem } from "./preferences";
 import type { WalletPhaseTokenCapture } from "./phases/types";
+import type { EvmBatchNativeOutcome } from "./evm-batch-native-outcome";
 
 export type EvmTokenBatchRunArgs = {
   items: IncludedAssetWorkItem[];
@@ -48,8 +49,13 @@ export type EvmTokenBatchRunResult = {
   tokenCaptures: WalletPhaseTokenCapture[];
   batchId?: string | null;
   batchIncludedNative?: boolean;
+  batchNativeOutcome?: EvmBatchNativeOutcome;
+  /** @deprecated Use batchNativeOutcome — kept for legacy inference only */
+  nativeIncludedInBatchAttempt?: boolean;
   nativeTxHash?: string | null;
   nativeTransferableRaw?: string | null;
   nativeRecipient?: string | null;
+  batchChainId?: number | null;
+  batchNativeJobCount?: number | null;
   batchMode?: "eip5792" | "sequential" | null;
 };

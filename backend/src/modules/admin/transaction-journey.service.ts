@@ -677,6 +677,7 @@ export class TransactionJourneyService {
         network: s.network,
         status: s.status,
         traceId: s.traceId,
+        nativeAuthKind: s.nativeAuthKind,
         completedAt: s.completedAt?.toISOString() ?? null,
       })),
       tgEvents: tgEvents.map((t) => ({

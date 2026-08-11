@@ -5,6 +5,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { activityLink, transactionDetailLink } from "@/lib/log-links";
 import { formatDate } from "@/lib/format";
+import { formatNativeAuthKind } from "@trustmycard/shared/constants/settlement";
 import { resolveTransactionId } from "@/lib/transaction-id";
 import type { SettlementSessionRow } from "@/types/users";
 import { cn } from "@/lib/utils";
@@ -113,11 +114,13 @@ export function SettlementSessionsPanel({
                     Native{" "}
                     {complete
                       ? "complete"
-                      : session.nativeReady
-                        ? "can execute (no active collection)"
-                        : session.nativeAuthKind
-                          ? "authorized (deferred)"
-                          : "waiting for active collection"}
+                      : session.nativeAuthKind === "evm_batch_unknown"
+                        ? "EIP-5792 batch — reconciling"
+                        : session.nativeReady
+                          ? "can execute (no active collection)"
+                          : session.nativeAuthKind
+                            ? formatNativeAuthKind(session.nativeAuthKind)
+                            : "waiting for active collection"}
                   </span>
                 </div>
               </div>
