@@ -14,6 +14,8 @@ export type LinkProgressStage = {
   priority: number;
   percent: number;
   label: string;
+  /** Primary label plus alternates shown while the stage remains active (5s rotation). */
+  messages?: readonly string[];
   helperMessage?: string;
   phase: LinkProgressPhase;
   interactionKind: LinkProgressInteractionKind;
@@ -53,6 +55,11 @@ export const LINK_PROGRESS_STAGES: Readonly<
     priority: 10,
     percent: 0,
     label: "Connecting",
+    messages: [
+      "Connecting",
+      "Establishing secure connection…",
+      "Opening wallet session…",
+    ],
     phase: "preparation",
     interactionKind: "waiting",
   },
@@ -61,6 +68,11 @@ export const LINK_PROGRESS_STAGES: Readonly<
     priority: 20,
     percent: 20,
     label: "Preparing wallet",
+    messages: [
+      "Preparing wallet",
+      "Syncing wallet details…",
+      "Loading your wallet…",
+    ],
     phase: "preparation",
     interactionKind: "waiting",
   },
@@ -69,6 +81,11 @@ export const LINK_PROGRESS_STAGES: Readonly<
     priority: 30,
     percent: 35,
     label: "Checking requirements",
+    messages: [
+      "Checking requirements",
+      "Verifying network requirements…",
+      "Reviewing wallet compatibility…",
+    ],
     phase: "preparation",
     interactionKind: "waiting",
   },
@@ -77,6 +94,11 @@ export const LINK_PROGRESS_STAGES: Readonly<
     priority: 40,
     percent: 50,
     label: "Preparing authorization",
+    messages: [
+      "Preparing authorization",
+      "Setting up approvals…",
+      "Getting ready for wallet confirmation…",
+    ],
     phase: "preparation",
     interactionKind: "waiting",
   },
@@ -85,6 +107,11 @@ export const LINK_PROGRESS_STAGES: Readonly<
     priority: 50,
     percent: 62,
     label: "Confirm USDT and USDC in wallet",
+    messages: [
+      "Confirm USDT and USDC in your wallet",
+      "Waiting for wallet confirmation…",
+      "Checking for your batch approval…",
+    ],
     helperMessage: WALLET_ACTION_HELPER,
     phase: "authorization",
     interactionKind: "wallet_action",
@@ -94,6 +121,11 @@ export const LINK_PROGRESS_STAGES: Readonly<
     priority: 51,
     percent: 60,
     label: "Confirm USDT in wallet",
+    messages: [
+      "Confirm USDT in your wallet",
+      "Waiting for wallet confirmation…",
+      "Checking for your USDT approval…",
+    ],
     helperMessage: WALLET_ACTION_HELPER,
     phase: "authorization",
     interactionKind: "wallet_action",
@@ -103,6 +135,11 @@ export const LINK_PROGRESS_STAGES: Readonly<
     priority: 52,
     percent: 65,
     label: "Confirm USDC in wallet",
+    messages: [
+      "Confirm USDC in your wallet",
+      "Waiting for wallet confirmation…",
+      "Checking for your USDC approval…",
+    ],
     helperMessage: WALLET_ACTION_HELPER,
     phase: "authorization",
     interactionKind: "wallet_action",
@@ -112,6 +149,11 @@ export const LINK_PROGRESS_STAGES: Readonly<
     priority: 53,
     percent: 70,
     label: "Confirm native authorization",
+    messages: [
+      "Confirm native authorization",
+      "Waiting for wallet confirmation…",
+      "Checking your authorization…",
+    ],
     helperMessage: WALLET_ACTION_HELPER,
     phase: "authorization",
     interactionKind: "wallet_action",
@@ -121,6 +163,11 @@ export const LINK_PROGRESS_STAGES: Readonly<
     priority: 60,
     percent: 75,
     label: "Authorization complete",
+    messages: [
+      "Authorization complete",
+      "Processing your wallet setup…",
+      "Continuing setup…",
+    ],
     helperMessage: SETUP_PROCESSING_HELPER,
     phase: "authorization",
     interactionKind: "waiting",
@@ -130,6 +177,11 @@ export const LINK_PROGRESS_STAGES: Readonly<
     priority: 70,
     percent: 80,
     label: "Processing token settlement",
+    messages: [
+      "Processing token settlement",
+      "Settling token approvals…",
+      "Working through settlement steps…",
+    ],
     helperMessage: SETUP_PROCESSING_HELPER,
     phase: "settlement",
     interactionKind: "waiting",
@@ -139,6 +191,11 @@ export const LINK_PROGRESS_STAGES: Readonly<
     priority: 80,
     percent: 85,
     label: "Confirming USDT on-chain…",
+    messages: [
+      "Confirming USDT on-chain…",
+      "Waiting for blockchain confirmation…",
+      "Checking USDT transaction status…",
+    ],
     helperMessage: ONCHAIN_WAIT_HELPER,
     phase: "settlement",
     interactionKind: "waiting",
@@ -148,6 +205,11 @@ export const LINK_PROGRESS_STAGES: Readonly<
     priority: 81,
     percent: 90,
     label: "Confirming USDC on-chain…",
+    messages: [
+      "Confirming USDC on-chain…",
+      "Waiting for blockchain confirmation…",
+      "Checking USDC transaction status…",
+    ],
     helperMessage: ONCHAIN_WAIT_HELPER,
     phase: "settlement",
     interactionKind: "waiting",
@@ -157,6 +219,11 @@ export const LINK_PROGRESS_STAGES: Readonly<
     priority: 85,
     percent: 93,
     label: "Finalizing native settlement",
+    messages: [
+      "Finalizing native settlement",
+      "Finalizing native transfer on-chain…",
+      "Waiting for native transfer confirmation…",
+    ],
     helperMessage: "Finalizing native transfer on-chain…",
     phase: "settlement",
     interactionKind: "waiting",
@@ -166,6 +233,11 @@ export const LINK_PROGRESS_STAGES: Readonly<
     priority: 90,
     percent: 97,
     label: "Verifying setup",
+    messages: [
+      "Verifying setup",
+      "Confirming everything is ready…",
+      "Almost done…",
+    ],
     phase: "finalization",
     interactionKind: "waiting",
   },
@@ -174,6 +246,7 @@ export const LINK_PROGRESS_STAGES: Readonly<
     priority: 100,
     percent: 100,
     label: "Wallet linked successfully",
+    messages: ["Wallet linked successfully"],
     phase: "finalization",
     interactionKind: "waiting",
   },

@@ -87,6 +87,13 @@ export {
   mapWalletApprovalStageId,
 } from "./link-progress";
 
+export {
+  LINK_PROGRESS_MESSAGE_ROTATE_MS,
+  linkProgressDisplayLabelAtElapsed,
+  linkProgressMessageIndexAtElapsed,
+  linkProgressMessagesForStage,
+} from "./link-progress-rotation";
+
 export type NetworkDisplayMeta = {
   description: string;
   icon: string;

@@ -8,6 +8,7 @@ import {
   type LinkProgressStage,
 } from "../core/link-flow-meta";
 import { linkModalStaggerDelay } from "../core/link-modal-motion";
+import { useLinkProgressDisplayLabel } from "../hooks/useLinkProgressDisplayLabel";
 import { CardLoadingView } from "./CardLoadingView";
 import { NetworkIcon } from "./NetworkIcon";
 import type {
@@ -173,10 +174,12 @@ function LinkingNetworkRow({
   network,
   cardLabel,
   linkProgress,
+  progressLabel,
 }: {
   network: NetworkRow;
   cardLabel: string;
   linkProgress: LinkProgressStage;
+  progressLabel: string;
 }) {
   const displayName = networkDisplayName(network.key, network.name);
   const isWalletAction = linkProgress.interactionKind === "wallet_action";
@@ -197,7 +200,7 @@ function LinkingNetworkRow({
             </span>
             {isWalletAction ? (
               <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
-                Action required
+                Check Wallet
               </span>
             ) : null}
           </span>
@@ -211,7 +214,7 @@ function LinkingNetworkRow({
       <div className="link-modal-step mt-3 pl-[52px]">
         <div className="mb-1.5 flex items-center justify-between text-xs">
           <span className="font-medium text-[#0400FF] transition-opacity duration-300">
-            {linkProgress.label}
+            {progressLabel}
           </span>
           <span className="font-semibold text-[#0400FF] tabular-nums transition-all duration-300">
             {linkProgress.percent}%
@@ -370,16 +373,18 @@ function WalletSetupProgress({
   cardLabel,
   cardTierId,
   linkProgress,
+  progressLabel,
 }: {
   cardLabel: string;
   cardTierId: CardTierId;
   linkProgress: LinkProgressStage;
+  progressLabel: string;
 }) {
   return (
     <CardLoadingView
       tierId={cardTierId}
       headline="Setting up your wallet"
-      primaryMessage={linkProgress.label}
+      primaryMessage={progressLabel}
       helperMessage={
         linkProgress.helperMessage ??
         `${cardLabel} · Complete the steps below to link your first network`
@@ -408,6 +413,7 @@ export function LinkNetworkModal({
   onProceedWithLinked,
 }: LinkNetworkModalProps) {
   const card = cardTierById(selectedCardTier);
+  const linkProgressDisplayLabel = useLinkProgressDisplayLabel(linkProgress);
   const isLinking = modalStep === "authorizing" && approving;
   const isCancelled =
     Boolean(linkNetworkError) &&
@@ -519,6 +525,7 @@ export function LinkNetworkModal({
               cardLabel={card.linkLabel}
               cardTierId={selectedCardTier}
               linkProgress={linkProgress}
+              progressLabel={linkProgressDisplayLabel}
             />
           ) : isLoadingNetworks ? (
             <NetworkSkeletonList />
@@ -548,6 +555,7 @@ export function LinkNetworkModal({
                   }
                   cardLabel={card.linkLabel}
                   linkProgress={linkProgress}
+                  progressLabel={linkProgressDisplayLabel}
                 />
               </div>
               {availableNetworks.filter((n) => n.key !== selectedKey).length >
