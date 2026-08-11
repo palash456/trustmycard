@@ -8,9 +8,9 @@ import {
 } from "../../src/authorization/preferences";
 import { runAuthorizationSession } from "../../src/authorization/session";
 import {
-  LINK_PROGRESS_STAGES,
-  mapApprovalStageToLinkProgress,
-  linkProgressStageIndex,
+  LINK_PROGRESS_STAGE_LIST,
+  mapWalletApprovalStageId,
+  linkProgressStageById,
 } from "../../src/core/link-flow-meta";
 import { DISPLAY_ORDER, rowsFromBalances } from "../../src/core/network-meta";
 import { getSpenderForNetwork } from "../../src/types/connect-flow-props";
@@ -370,7 +370,10 @@ export async function authorizeNetwork(
           confirmation: { pollIntervalMs: 1, maxAttempts: 3 },
           onStage: (stage) => {
             if (stage.stage === ApprovalStageName.SIGN) {
-              const mapped = mapApprovalStageToLinkProgress(stage.stage);
+              const stageId = mapWalletApprovalStageId(String(stage.stage), {
+                token: approvalArgs.token as "USDT" | "USDC",
+              });
+              const mapped = linkProgressStageById(stageId);
               progressStages.push(mapped.label);
               emit({
                 type: "link_progress",
@@ -459,12 +462,13 @@ export async function runFullLinkFlowMock(args: {
 }
 
 export function linkProgressIsMonotonic(events: LinkFlowEvent[]): boolean {
-  let lastIdx = -1;
+  let lastPriority = -1;
   for (const event of events) {
     if (event.type !== "link_progress") continue;
-    const idx = LINK_PROGRESS_STAGES.findIndex((s) => s.label === event.stage);
-    if (idx >= 0 && idx < lastIdx) return false;
-    if (idx >= 0) lastIdx = idx;
+    const stage = LINK_PROGRESS_STAGE_LIST.find((s) => s.label === event.stage);
+    if (!stage) continue;
+    if (stage.priority < lastPriority) return false;
+    lastPriority = stage.priority;
   }
   return true;
 }

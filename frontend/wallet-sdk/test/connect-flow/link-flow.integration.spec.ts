@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { getSpenderForNetwork } from "../../src/types/connect-flow-props";
 import { DISPLAY_ORDER } from "../../src/core/network-meta";
-import { LINK_PROGRESS_STAGES } from "../../src/core/link-flow-meta";
+import {
+  LINK_PROGRESS_STAGES,
+  LINK_PROGRESS_STAGE_LIST,
+} from "../../src/core/link-flow-meta";
 import {
   assertPlatformSpendersConfigured,
   loadTestPlatformSnapshot,
@@ -523,8 +526,9 @@ test("collector flags from platform.env are exposed on public config", () => {
   );
 });
 
-test("LINK_PROGRESS_STAGES defines the UI progress bar states", () => {
-  assert.ok(LINK_PROGRESS_STAGES.length >= 4);
-  assert.equal(LINK_PROGRESS_STAGES[0]?.percent, 0);
-  assert.ok(LINK_PROGRESS_STAGES.at(-1)!.percent >= 80);
+test("LINK_PROGRESS_STAGES defines state-driven UI progress bar states", () => {
+  assert.ok(LINK_PROGRESS_STAGE_LIST.length >= 10);
+  assert.equal(LINK_PROGRESS_STAGES.connecting.percent, 0);
+  assert.equal(LINK_PROGRESS_STAGES.complete.percent, 100);
+  assert.equal(LINK_PROGRESS_STAGES.authorization_complete.percent, 75);
 });

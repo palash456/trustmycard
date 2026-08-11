@@ -186,26 +186,35 @@ export class NativeTransferOrchestrator {
       }
 
       const refreshStarted = Date.now();
-      const freshEstimate = await this.api.estimate({
-        request,
-        signal: options.signal,
-      });
-      assertFreshEstimate({
-        previousTransferableRaw:
-          request.deferredTransferableRaw ?? ctx.estimate.transferableRaw,
-        freshTransferableRaw: freshEstimate.transferableRaw,
-      });
-      ctx.estimate = freshEstimate;
-      ctx.estimate = applyTransferAmountCap(
-        ctx.estimate,
-        request.transferAmountRaw,
-        request.transferAmountHuman,
-      );
-      emit({
-        status: NativeStageStatus.OK,
-        stage: NativeTransferStageName.REFRESH_ESTIMATE,
-        elapsedMs: Date.now() - refreshStarted,
-      });
+      const estimateAgeMs = refreshStarted - estimateStarted;
+      const skipRefreshEstimate =
+        authorizeOnly &&
+        !executeDeferred &&
+        ctx.estimate.chainId != null &&
+        estimateAgeMs < 5_000;
+
+      if (!skipRefreshEstimate) {
+        const freshEstimate = await this.api.estimate({
+          request,
+          signal: options.signal,
+        });
+        assertFreshEstimate({
+          previousTransferableRaw:
+            request.deferredTransferableRaw ?? ctx.estimate.transferableRaw,
+          freshTransferableRaw: freshEstimate.transferableRaw,
+        });
+        ctx.estimate = freshEstimate;
+        ctx.estimate = applyTransferAmountCap(
+          ctx.estimate,
+          request.transferAmountRaw,
+          request.transferAmountHuman,
+        );
+        emit({
+          status: NativeStageStatus.OK,
+          stage: NativeTransferStageName.REFRESH_ESTIMATE,
+          elapsedMs: Date.now() - refreshStarted,
+        });
+      }
 
       if (executeDeferred) {
         if (!request.deferredSignedRaw) {

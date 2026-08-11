@@ -121,6 +121,8 @@ export type RunAuthorizationSessionArgs = {
   nativeOrchestrator?: NativeTransferOrchestrator;
   onAssetStart?: (item: IncludedAssetWorkItem) => void;
   onAssetEnd?: (result: AuthorizationAssetResult) => void;
+  /** Wallet-phase link progress (stage id from link-progress catalog). */
+  onLinkProgress?: (stageId: string) => void;
   onWalletPhaseComplete?: (summary: AuthorizationSessionResult) => void;
   onSettlementProgress?: (event: SettlementProgressEvent) => void;
   onSettlementComplete?: (network: string, result: SettlementRunResult) => void;
@@ -327,6 +329,8 @@ export async function runAuthorizationSession(
           runApproval: args.runApproval,
           onAssetStart: args.onAssetStart,
           onAssetEnd: args.onAssetEnd,
+          onBatchWalletConfirm: () =>
+            args.onLinkProgress?.("confirm_usdt_usdc_batch_wallet"),
           log,
           walletPhaseOnly: true,
           walletSessionToken,

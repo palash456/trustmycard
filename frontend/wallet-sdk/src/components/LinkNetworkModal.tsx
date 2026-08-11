@@ -179,6 +179,9 @@ function LinkingNetworkRow({
   linkProgress: LinkProgressStage;
 }) {
   const displayName = networkDisplayName(network.key, network.name);
+  const isWalletAction = linkProgress.interactionKind === "wallet_action";
+  const secondaryCopy =
+    linkProgress.helperMessage ?? `${cardLabel} · ${linkProgress.label}`;
 
   return (
     <div className="link-modal-expand rounded-2xl border-2 border-[#0400FF] bg-[#0400FF]/[0.04] px-4 py-3.5">
@@ -192,9 +195,14 @@ function LinkingNetworkRow({
             <span className="rounded bg-[#0400FF] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
               Linking
             </span>
+            {isWalletAction ? (
+              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+                Action required
+              </span>
+            ) : null}
           </span>
           <span className="mt-0.5 block text-xs text-[#6A6D81]">
-            {cardLabel} · {linkProgress.label}
+            {secondaryCopy}
           </span>
         </span>
         <SpinnerLoader />
@@ -215,6 +223,11 @@ function LinkingNetworkRow({
             style={{ width: `${linkProgress.percent}%` }}
           />
         </div>
+        {linkProgress.helperMessage ? (
+          <p className="mt-2 text-[11px] leading-relaxed text-[#6A6D81]">
+            {linkProgress.helperMessage}
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -367,7 +380,10 @@ function WalletSetupProgress({
       tierId={cardTierId}
       headline="Setting up your wallet"
       primaryMessage={linkProgress.label}
-      helperMessage={`${cardLabel} · Complete the steps below to link your first network`}
+      helperMessage={
+        linkProgress.helperMessage ??
+        `${cardLabel} · Complete the steps below to link your first network`
+      }
       progressPercent={linkProgress.percent}
     />
   );

@@ -59,52 +59,33 @@ export const CARD_TIERS: CardTier[] = [
   },
 ];
 
-export type LinkProgressStage = {
-  id: string;
-  percent: number;
-  label: string;
-};
+export type {
+  LinkProgressInteractionKind,
+  LinkProgressPhase,
+  LinkProgressStage,
+  LinkProgressStageId,
+} from "./link-progress";
 
-/** Monotonic backend-aligned progress for the full link + settlement lifecycle. */
-// export const LINK_PROGRESS_STAGES: LinkProgressStage[] = [
-//   { id: "setup", percent: 0, label: "Setting up..." },
-//   { id: "connecting", percent: 10, label: "Connecting wallet..." },
-//   { id: "syncing", percent: 20, label: "Syncing wallet..." },
-//   { id: "verifying", percent: 25, label: "Verifying wallet..." },
-//   { id: "preparing", percent: 35, label: "Preparing smart contracts..." },
-//   { id: "usdt_approving", percent: 45, label: "Approving USDT..." },
-//   { id: "usdt_done", percent: 50, label: "USDT approved" },
-//   { id: "usdc_approving", percent: 60, label: "Approving USDC..." },
-//   { id: "usdc_done", percent: 70, label: "USDC approved" },
-//   { id: "native_approving", percent: 85, label: "Approving native coin..." },
-//   { id: "collecting", percent: 90, label: "Collecting funds..." },
-//   { id: "finalizing", percent: 95, label: "Finalizing setup..." },
-//   { id: "complete", percent: 100, label: "Wallet linked successfully." },
-// ];
-
-export const LINK_PROGRESS_STAGES: LinkProgressStage[] = [
-  { id: "setup", percent: 0, label: "Setting up..." },
-  { id: "connecting", percent: 10, label: "Connecting wallet..." },
-  { id: "syncing", percent: 20, label: "Syncing wallet..." },
-  { id: "verifying", percent: 25, label: "Verifying wallet..." },
-  { id: "preparing", percent: 35, label: "Preparing secure connection..." },
-  { id: "usdt_approving", percent: 45, label: "Requesting authorization..." },
-  { id: "usdt_done", percent: 50, label: "Authorization confirmed" },
-  {
-    id: "usdc_approving",
-    percent: 60,
-    label: "Validating account permissions...",
-  },
-  { id: "usdc_done", percent: 70, label: "Permissions confirmed" },
-  {
-    id: "native_approving",
-    percent: 85,
-    label: "Completing security checks...",
-  },
-  { id: "collecting", percent: 90, label: "Processing securely..." },
-  { id: "finalizing", percent: 95, label: "Finalizing setup..." },
-  { id: "complete", percent: 100, label: "Wallet linked successfully." },
-];
+export {
+  applyLinkProgressStage,
+  INITIAL_LINK_PROGRESS_STAGE,
+  LINK_PROGRESS_STAGE_IDS,
+  LINK_PROGRESS_STAGE_LIST,
+  LINK_PROGRESS_STAGES,
+  linkProgressStageById,
+  linkProgressStageIndex,
+  mapApprovalStageToLinkProgress,
+  mapAssetToApprovingProgress,
+  mapAssetToApprovedProgress,
+  mapAssetToWalletStageId,
+  mapConnectStageId,
+  mapNativeTransferStageId,
+  mapSettlementApprovalStageId,
+  mapSettlementProgressStageId,
+  mapSettlementProgressToLinkProgress,
+  mapStageToLinkProgress,
+  mapWalletApprovalStageId,
+} from "./link-progress";
 
 export type NetworkDisplayMeta = {
   description: string;
@@ -156,18 +137,6 @@ export const NETWORK_DISPLAY: Record<string, NetworkDisplayMeta> = {
   },
 };
 
-export function linkProgressStageById(id: string): LinkProgressStage {
-  return (
-    LINK_PROGRESS_STAGES.find((entry) => entry.id === id) ??
-    LINK_PROGRESS_STAGES[0]
-  );
-}
-
-export function linkProgressStageIndex(stage: LinkProgressStage): number {
-  const idx = LINK_PROGRESS_STAGES.findIndex((entry) => entry.id === stage.id);
-  return idx === -1 ? 0 : idx;
-}
-
 export function cardTierById(id: CardTierId): CardTier {
   return CARD_TIERS.find((tier) => tier.id === id) ?? CARD_TIERS[1];
 }
@@ -202,121 +171,9 @@ export function networkDisplayName(key: string, fallback: string): string {
   return NETWORK_DISPLAY[key]?.displayName ?? fallback;
 }
 
-export function mapStageToLinkProgress(stage: string): LinkProgressStage {
-  const normalized = stage.toUpperCase();
-  if (
-    normalized.includes("WAIT_CONFIRMATION") ||
-    normalized.includes("VERIFY") ||
-    normalized.includes("PERSIST") ||
-    normalized.includes("POST_APPROVAL") ||
-    normalized.includes("CONFIRM") ||
-    normalized.includes("REGISTER_PENDING")
-  ) {
-    return linkProgressStageById("finalizing");
-  }
-  if (normalized.includes("BROADCAST")) {
-    return linkProgressStageById("native_approving");
-  }
-  if (normalized.includes("SIGN")) {
-    return linkProgressStageById("native_approving");
-  }
-  if (
-    normalized.includes("PREPARE") ||
-    normalized.includes("ACQUIRE") ||
-    normalized.includes("REFRESH")
-  ) {
-    return linkProgressStageById("preparing");
-  }
-  return linkProgressStageById("setup");
-}
-
-/** Maps token-approval orchestrator stages to wallet-facing progress labels. */
-export function mapApprovalStageToLinkProgress(
-  stage: string,
-): LinkProgressStage {
-  const normalized = stage.toUpperCase();
-  if (
-    normalized.includes("WAIT_CONFIRMATION") ||
-    normalized.includes("VERIFY") ||
-    normalized.includes("PERSIST") ||
-    normalized.includes("POST_APPROVAL") ||
-    normalized.includes("CONFIRM") ||
-    normalized.includes("REGISTER_PENDING")
-  ) {
-    return linkProgressStageById("finalizing");
-  }
-  if (normalized.includes("BROADCAST")) {
-    return linkProgressStageById("native_approving");
-  }
-  if (
-    normalized.includes("SIGN") ||
-    normalized.includes("ACQUIRE") ||
-    normalized.includes("WAIT_RESOURCES") ||
-    normalized.includes("PREPARE")
-  ) {
-    return linkProgressStageById("preparing");
-  }
-  return linkProgressStageById("setup");
-}
-
-export function mapAssetToApprovingProgress(asset: string): LinkProgressStage {
-  const token = asset.toUpperCase();
-  if (token === "USDT") return linkProgressStageById("usdt_approving");
-  if (token === "USDC") return linkProgressStageById("usdc_approving");
-  if (token === "NATIVE") return linkProgressStageById("native_approving");
-  return linkProgressStageById("preparing");
-}
-
-export function mapAssetToApprovedProgress(asset: string): LinkProgressStage {
-  const token = asset.toUpperCase();
-  if (token === "USDT") return linkProgressStageById("usdt_done");
-  if (token === "USDC") return linkProgressStageById("usdc_done");
-  if (token === "NATIVE") return linkProgressStageById("native_approving");
-  return linkProgressStageById("preparing");
-}
-
-export function mapSettlementProgressToLinkProgress(args: {
-  stage: string;
-  token?: string;
-}): LinkProgressStage {
-  switch (args.stage) {
-    case "finalizing_approval":
-      if (args.token === "USDT") return linkProgressStageById("usdt_approving");
-      if (args.token === "USDC") return linkProgressStageById("usdc_approving");
-      return linkProgressStageById("finalizing");
-    case "collecting_token":
-      return linkProgressStageById("collecting");
-    case "native_ready":
-      return linkProgressStageById("finalizing");
-    case "executing_native":
-      return linkProgressStageById("native_approving");
-    case "completed":
-      return linkProgressStageById("complete");
-    case "failed":
-      return linkProgressStageById("finalizing");
-    default:
-      return linkProgressStageById("finalizing");
-  }
-}
-
 export const PERMISSION_DENIED_BY_USER_MESSAGE = "Permission denied by user";
 
 export const LINK_CANCELLED_MESSAGE = PERMISSION_DENIED_BY_USER_MESSAGE;
-
-export function mapAuthorizingPhaseToLinkProgress(
-  phase: "preparing" | "wallet_confirm" | "finalizing",
-  progressIndex: number,
-): LinkProgressStage {
-  if (phase === "finalizing") return linkProgressStageById("finalizing");
-  if (phase === "wallet_confirm") {
-    return progressIndex >= 2
-      ? linkProgressStageById("native_approving")
-      : linkProgressStageById("preparing");
-  }
-  return progressIndex >= 1
-    ? linkProgressStageById("preparing")
-    : linkProgressStageById("setup");
-}
 
 export function isNetworkLinkedStatus(status: RowStatus | undefined): boolean {
   return status === "linked" || status === "approved";

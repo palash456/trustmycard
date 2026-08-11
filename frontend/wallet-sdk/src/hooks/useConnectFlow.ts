@@ -47,18 +47,19 @@ import type { SettlementRunResult } from "../authorization/phases/types";
 import type { SettlementProgressEvent } from "../authorization/phases/types";
 import { parseHumanToRaw } from "../core/chain-tokens";
 import {
-  LINK_PROGRESS_STAGES,
+  applyLinkProgressStage,
   CARD_CONNECTING_MIN_MS,
+  INITIAL_LINK_PROGRESS_STAGE,
   LINK_COMPLETE_MIN_MS,
-  mapStageToLinkProgress,
-  mapApprovalStageToLinkProgress,
-  mapAssetToApprovingProgress,
-  mapAssetToApprovedProgress,
-  mapSettlementProgressToLinkProgress,
-  linkProgressStageById,
+  LINK_PROGRESS_STAGE_IDS,
+  mapAssetToWalletStageId,
+  mapConnectStageId,
+  mapNativeTransferStageId,
+  mapSettlementApprovalStageId,
+  mapSettlementProgressStageId,
+  mapWalletApprovalStageId,
   LINK_CANCELLED_MESSAGE,
   PERMISSION_DENIED_BY_USER_MESSAGE,
-  linkProgressStageIndex,
   preloadCardTierImages,
   preloadNetworkIcons,
   preloadLinkFlowAssets,
@@ -84,6 +85,8 @@ import type {
   WalletConnectModal,
 } from "../types";
 
+const BALANCE_SNAPSHOT_MAX_AGE_MS = 30_000;
+
 export function useConnectFlow(props: ConnectFlowProps = {}) {
   const spendersRef = useRef(props);
   spendersRef.current = props;
@@ -95,7 +98,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const accountsRef = useRef<LinkedAccounts>({ evm: null, tron: null });
   const traceIdRef = useRef<string>("");
   const networksRef = useRef<NetworkRow[]>([]);
-  const linkProgressStageIndexRef = useRef(0);
+  const linkProgressRef = useRef<LinkProgressStage>(INITIAL_LINK_PROGRESS_STAGE);
+  const balancesSnapshotAtRef = useRef<number | null>(null);
+  const balancesSnapshotAccountsRef = useRef<LinkedAccounts | null>(null);
   const cardConnectStartedAtRef = useRef<number | null>(null);
   const pendingQrTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const revealWalletConnectQrRef = useRef<
@@ -170,7 +175,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const [selectedCardTier, setSelectedCardTier] =
     useState<CardTierId>("silver");
   const [linkProgress, setLinkProgress] = useState<LinkProgressStage>(
-    LINK_PROGRESS_STAGES[0],
+    INITIAL_LINK_PROGRESS_STAGE,
   );
   const [linkNetworkError, setLinkNetworkError] = useState<{
     networkKey: string;
@@ -194,12 +199,16 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   networksRef.current = networks;
   rowStatusRef.current = rowStatus;
 
-  const advanceLinkProgress = useCallback((stage: LinkProgressStage) => {
-    const idx = linkProgressStageIndex(stage);
-    if (idx < linkProgressStageIndexRef.current) return;
-    linkProgressStageIndexRef.current = idx;
-    setLinkProgress(LINK_PROGRESS_STAGES[idx] ?? stage);
-  }, []);
+  const advanceLinkProgress = useCallback(
+    (nextId: string, opts?: { force?: boolean }) => {
+      setLinkProgress((current) => {
+        const applied = applyLinkProgressStage(current, nextId, opts);
+        linkProgressRef.current = applied;
+        return applied;
+      });
+    },
+    [],
+  );
 
   cardModalHandlersRef.current.onQrDisplayed = () => {
     cardConnectStartedAtRef.current = null;
@@ -218,12 +227,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const handleSettlementProgress = useCallback(
     (event: SettlementProgressEvent) => {
       logStep("SETTLEMENT PROGRESS", event);
-      advanceLinkProgress(
-        mapSettlementProgressToLinkProgress({
-          stage: event.stage,
-          token: event.token,
-        }),
-      );
+      advanceLinkProgress(mapSettlementProgressStageId(event));
     },
     [advanceLinkProgress, logStep],
   );
@@ -272,8 +276,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     setNativeEstimates({});
     setNativeEstimateLoading({});
     setNativeEstimateErrors({});
-    linkProgressStageIndexRef.current = 0;
-    setLinkProgress(LINK_PROGRESS_STAGES[0]);
+    linkProgressRef.current = INITIAL_LINK_PROGRESS_STAGE;
+    setLinkProgress(INITIAL_LINK_PROGRESS_STAGE);
   }, []);
 
   const mapApprovalStageToPhase = useCallback(
@@ -312,7 +316,6 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         if (event === "STAGE_START" && detail?.stage) {
           const stage = String(detail.stage);
           setAuthorizingPhase(mapApprovalStageToPhase(stage));
-          advanceLinkProgress(mapApprovalStageToLinkProgress(stage));
         }
       },
       warn: (event: string, detail?: Record<string, unknown>) => {
@@ -322,7 +325,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         logStep(event, detail ?? {});
       },
     }),
-    [logStep, mapApprovalStageToPhase, advanceLinkProgress],
+    [logStep, mapApprovalStageToPhase],
   );
 
   const setStatus = useCallback((key: string, status: RowStatus) => {
@@ -337,8 +340,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       setError(null);
       setModalStep("preferences");
       setStatus(networkKey, "awaiting");
-      linkProgressStageIndexRef.current = 0;
-      setLinkProgress(LINK_PROGRESS_STAGES[0]);
+      linkProgressRef.current = INITIAL_LINK_PROGRESS_STAGE;
+      setLinkProgress(INITIAL_LINK_PROGRESS_STAGE);
     },
     [setStatus],
   );
@@ -389,7 +392,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       setRowStatus({});
       resetAuthorizeForm();
       setNetworksLoading(true);
-      advanceLinkProgress(linkProgressStageById("syncing"));
+      advanceLinkProgress(mapConnectStageId("syncing"));
 
       try {
         logStep("SCAN STARTED", { linked });
@@ -427,7 +430,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           fetchBalances(linked.evm, tron),
         ]);
         logStep("BALANCES FETCH SUCCESS", { networks: Object.keys(data) });
-        advanceLinkProgress(linkProgressStageById("verifying"));
+        balancesSnapshotAtRef.current = Date.now();
+        balancesSnapshotAccountsRef.current = linkedFinal;
+        advanceLinkProgress(mapConnectStageId("verifying"));
 
         const allRows = rowsFromBalances(data);
         const rows = allRows.filter((row) =>
@@ -585,7 +590,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       traceId: traceIdRef.current || "pending",
       transactionId: traceIdRef.current || "pending",
     });
-    advanceLinkProgress(linkProgressStageById("connecting"));
+    advanceLinkProgress(mapConnectStageId("connecting"));
     const provider = providerRef.current;
     const modal = modalRef.current;
     if (!provider || connectingRef.current) return;
@@ -758,10 +763,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     setSessionResult(null);
     setAuthorizingPhase("preparing");
     setAuthorizingProgress({ current: 0, total: items.length });
-    linkProgressStageIndexRef.current = 0;
-    setLinkProgress(LINK_PROGRESS_STAGES[0]);
     linkingNetworkKeyRef.current = selectedKey;
-    advanceLinkProgress(linkProgressStageById("preparing"));
+    advanceLinkProgress(LINK_PROGRESS_STAGE_IDS.preparing_authorization);
 
     try {
       logStep("APPROVAL SESSION STARTED", {
@@ -772,24 +775,41 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       });
 
       let sessionNetworks = networks;
-      try {
-        const refreshed = await fetchBalances(linked.evm, linked.tron);
-        const refreshedRows = rowsFromBalances(refreshed).filter((row) =>
-          row.key === "tron" ? Boolean(linked.tron) : Boolean(linked.evm),
-        );
-        if (refreshedRows.length > 0) {
-          sessionNetworks = refreshedRows;
-          setNetworks(refreshedRows);
-          logStep("BALANCES REFRESHED BEFORE AUTHORIZE", {
+      const snapshotAt = balancesSnapshotAtRef.current;
+      const snapshotAccounts = balancesSnapshotAccountsRef.current;
+      const snapshotFresh =
+        snapshotAt != null &&
+        Date.now() - snapshotAt < BALANCE_SNAPSHOT_MAX_AGE_MS &&
+        snapshotAccounts?.evm === linked.evm &&
+        snapshotAccounts?.tron === linked.tron;
+
+      if (snapshotFresh) {
+        logStep("BALANCE SNAPSHOT FRESH — SKIP PRE-AUTHORIZE REFRESH", {
+          network: selectedKey,
+          ageMs: Date.now() - snapshotAt,
+        });
+      } else {
+        try {
+          const refreshed = await fetchBalances(linked.evm, linked.tron);
+          const refreshedRows = rowsFromBalances(refreshed).filter((row) =>
+            row.key === "tron" ? Boolean(linked.tron) : Boolean(linked.evm),
+          );
+          if (refreshedRows.length > 0) {
+            sessionNetworks = refreshedRows;
+            setNetworks(refreshedRows);
+            balancesSnapshotAtRef.current = Date.now();
+            balancesSnapshotAccountsRef.current = linked;
+            logStep("BALANCES REFRESHED BEFORE AUTHORIZE", {
+              network: selectedKey,
+              balances: refreshedRows.find((r) => r.key === selectedKey),
+            });
+          }
+        } catch (refreshErr) {
+          logStep("BALANCE REFRESH FAILED — USING CONNECT SNAPSHOT", {
             network: selectedKey,
-            balances: refreshedRows.find((r) => r.key === selectedKey),
+            error: getErrorMessage(refreshErr, "refresh failed"),
           });
         }
-      } catch (refreshErr) {
-        logStep("BALANCE REFRESH FAILED — USING CONNECT SNAPSHOT", {
-          network: selectedKey,
-          error: getErrorMessage(refreshErr, "refresh failed"),
-        });
       }
 
       let assetIndex = 0;
@@ -823,7 +843,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           setAuthorizingAsset({ network: item.network, asset: item.asset });
           setAuthorizingPhase("preparing");
           setStatus(item.network, "waiting");
-          advanceLinkProgress(mapAssetToApprovingProgress(item.asset));
+          advanceLinkProgress(mapAssetToWalletStageId(item.asset));
         },
         onAssetEnd: (result) => {
           if (
@@ -832,11 +852,6 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             result.outcome === "pending"
           ) {
             setStatus(result.network, "finalizing");
-            if (result.token !== "NATIVE") {
-              advanceLinkProgress(mapAssetToApprovedProgress(result.token));
-            } else {
-              advanceLinkProgress(linkProgressStageById("native_approving"));
-            }
           } else if (result.outcome === "user_rejected") {
             setLinkCancelled(result.network, PERMISSION_DENIED_BY_USER_MESSAGE);
           } else if (
@@ -897,6 +912,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             });
           }
         },
+        onLinkProgress: (stageId) => {
+          advanceLinkProgress(stageId);
+        },
         runApproval: async (args) => {
           return approvalOrchestrator.run(
             {
@@ -920,7 +938,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
                 );
                 setAuthorizingPhase(phase);
                 advanceLinkProgress(
-                  mapApprovalStageToLinkProgress(String(stageResult.stage)),
+                  mapWalletApprovalStageId(String(stageResult.stage), {
+                    token: args.token,
+                  }),
                 );
                 if (
                   stageResult.stage === ApprovalStageName.BROADCAST &&
@@ -967,6 +987,20 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             {
               stagePreset: "settlement",
               walletPhaseContext: args.walletPhaseContext,
+              onStage: (stageResult) => {
+                advanceLinkProgress(
+                  mapSettlementApprovalStageId(
+                    String(stageResult.stage),
+                    args.token,
+                  ),
+                );
+                args.onStage?.({
+                  stage: stageResult.stage,
+                  status: stageResult.status,
+                  data: stageResult.data,
+                  error: stageResult.error ?? null,
+                });
+              },
             },
           );
         },
@@ -974,6 +1008,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         onWalletPhaseComplete: (walletSummary) => {
           setAuthorizingAsset(null);
           setSessionResult(walletSummary);
+          advanceLinkProgress(LINK_PROGRESS_STAGE_IDS.authorization_complete);
           logStep("WALLET PHASE COMPLETE — SETTLEMENT CONTINUES", {
             authorizedCount: walletSummary.authorizedCount,
             failedCount: walletSummary.failedCount,
@@ -1026,7 +1061,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
               settlementSessionId: settlementResult.settlementSessionId,
             });
             markTerminal("SUCCESS");
-            advanceLinkProgress(linkProgressStageById("complete"));
+            advanceLinkProgress(LINK_PROGRESS_STAGE_IDS.verifying_setup);
+            advanceLinkProgress(LINK_PROGRESS_STAGE_IDS.complete);
             setStatus(network, "linked");
             clearLinkCompleteTimer();
             linkCompleteTimerRef.current = setTimeout(
@@ -1099,7 +1135,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
                   stageResult.stage === "SIGN"
                 ) {
                   setAuthorizingPhase("wallet_confirm");
-                  advanceLinkProgress(mapStageToLinkProgress(stage));
+                  advanceLinkProgress(
+                    mapNativeTransferStageId(stage, { mode: args.mode }),
+                  );
                 } else if (
                   stageResult.stage === "BROADCAST" ||
                   stageResult.stage === "REGISTER_PENDING" ||
@@ -1111,16 +1149,15 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
                       ? "wallet_confirm"
                       : "finalizing";
                   setAuthorizingPhase(phase);
-                  advanceLinkProgress(mapStageToLinkProgress(stage));
+                  advanceLinkProgress(
+                    mapNativeTransferStageId(stage, { mode: args.mode }),
+                  );
                 }
                 if (
                   stageResult.stage === "BROADCAST" &&
                   stageResult.status === "OK"
                 ) {
                   setStatus(args.network, "finalizing");
-                  advanceLinkProgress(
-                    linkProgressStageById("native_approving"),
-                  );
                 }
                 if (
                   stageResult.status === "CANCELLED" ||

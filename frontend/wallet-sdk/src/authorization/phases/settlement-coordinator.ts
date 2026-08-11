@@ -392,6 +392,12 @@ export async function runAuthorizationSettlement(
     settlementSessionId = registered.settlementSessionId;
     walletSessionToken = registered.walletSessionToken ?? walletSessionToken;
 
+    args.onProgress?.({
+      network: args.capture.network,
+      stage: "collecting_token",
+      message: "Processing token settlement",
+    });
+
     if (
       args.capture.native?.authorizationKind === "tron_signed" &&
       args.capture.native.authorizationPayload.signed

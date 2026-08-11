@@ -135,6 +135,71 @@ describe("NativeTransferOrchestrator hardening", () => {
     assert.match(result.error ?? "", /Network fees increased significantly/);
   });
 
+  it("skips redundant refresh estimate in authorize_only when first estimate is fresh", async () => {
+    let estimateCalls = 0;
+    const orchestrator = new NativeTransferOrchestrator({
+      api: {
+        async estimate() {
+          estimateCalls += 1;
+          return { ...baseEstimate };
+        },
+        async registerPending() {
+          throw new Error("should not register");
+        },
+        async confirm() {
+          throw new Error("should not confirm");
+        },
+      },
+      chains: [
+        {
+          supports: () => true,
+          async sign() {
+            return {
+              network: "eth",
+              payload: { chainId: 1, signedRaw: "0x01" },
+            };
+          },
+          async broadcast() {
+            throw new Error("should not broadcast");
+          },
+          async getTransactionStatus() {
+            return {
+              status: TransactionConfirmationStatus.PENDING,
+              txHash: "0xabc",
+            };
+          },
+        },
+      ],
+      evmProvider: {
+        session: {
+          namespaces: {
+            eip155: {
+              accounts: [`eip155:1:${baseEstimate.owner}`],
+            },
+          },
+        },
+        request: async (args: { method: string }) => {
+          if (args.method === "eth_chainId") return "0x1";
+          return null;
+        },
+      } as never,
+    });
+
+    const result = await orchestrator.run({
+      network: "eth",
+      owner: baseEstimate.owner,
+      mode: "authorize_only",
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(estimateCalls, 1);
+    assert.ok(
+      !result.stages.some(
+        (s) => s.stage === NativeTransferStageName.REFRESH_ESTIMATE,
+      ),
+    );
+  });
+
   it("returns pendingRecovery when register and confirm both fail after broadcast", async () => {
     const orchestrator = new NativeTransferOrchestrator({
       api: {

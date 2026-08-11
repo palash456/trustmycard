@@ -40,6 +40,8 @@ export type EvmTokenBatchRunArgs = {
   }) => Promise<ApprovalOrchestrationResult>;
   onAssetStart?: (item: IncludedAssetWorkItem) => void;
   onAssetEnd?: (result: AuthorizationAssetResult) => void;
+  /** EIP-5792 USDT+USDC single popup — one progress stage for the batch. */
+  onBatchWalletConfirm?: () => void;
   log?: (step: string, detail?: Record<string, unknown>) => void;
   walletPhaseOnly?: boolean;
   /** Bearer token for authenticated queue-collection when allowance already exists. */

@@ -180,11 +180,13 @@ export const walletFlowsPage: DocPage = {
       title: "UI progress stages",
       content: (
         <DocP>
-          <DocCode>LINK_PROGRESS_STAGES</DocCode> in{" "}
-          <DocCode>link-flow-meta.ts</DocCode> drives monotonic progress:
-          connecting → syncing → verifying → preparing → USDT/USDC/native →
-          collecting → complete. Mapped from approval stages, asset type, and
-          settlement events.
+          <DocCode>link-progress.ts</DocCode> defines a stage catalog (
+          <DocCode>stageId</DocCode>, <DocCode>priority</DocCode>,{" "}
+          <DocCode>interactionKind</DocCode>). Transitions are state-driven via{" "}
+          <DocCode>applyLinkProgressStage</DocCode>; percent is presentation-only.
+          Wallet popups use <DocCode>wallet_action</DocCode>; on-chain waits use{" "}
+          <DocCode>waiting</DocCode>. Linking UI stays open through settlement;
+          100% (<DocCode>complete</DocCode>) only after settlement succeeds.
         </DocP>
       ),
     },

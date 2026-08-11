@@ -165,8 +165,17 @@ export async function executeEip5792Batch(args: {
 
   try {
     await ensureEvmChain(runArgs.provider, chainId);
+    const tokenAssets = jobs.map((j) => j.item.asset);
+    const isUsdtUsdcBatch =
+      tokenAssets.includes("USDT") && tokenAssets.includes("USDC");
+    if (isUsdtUsdcBatch && runArgs.onBatchWalletConfirm) {
+      runArgs.onBatchWalletConfirm();
+    } else {
+      for (const job of jobs) {
+        runArgs.onAssetStart?.(job.item);
+      }
+    }
     for (const job of jobs) {
-      runArgs.onAssetStart?.(job.item);
       validateEvmApproveCall({
         to: String(job.signed.payload.to),
         data: String(job.signed.payload.data),
@@ -174,7 +183,7 @@ export async function executeEip5792Batch(args: {
         expectedTokenAddress: job.prepared.tokenAddress,
       });
     }
-    if (nativeCall && runArgs.nativeItem) {
+    if (nativeCall && runArgs.nativeItem && !isUsdtUsdcBatch) {
       runArgs.onAssetStart?.(runArgs.nativeItem);
     }
 
