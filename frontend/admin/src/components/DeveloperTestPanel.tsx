@@ -343,7 +343,6 @@ export function DeveloperTestPanel({
         <Card className="border-amber-500/40 bg-amber-500/5 shadow-sm dark:border-amber-400/30">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="size-4 text-amber-600 dark:text-amber-400" />
               <CardTitle className="text-base">Full end-to-end test</CardTitle>
               <InfoTip text="Runs all wallet-sdk connect-flow tests in one go — same as: node --test test/connect-flow/*.spec.ts" />
             </div>

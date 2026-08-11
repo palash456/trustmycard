@@ -9,12 +9,14 @@ import {
   FlaskConical,
   GitBranch,
   LayoutDashboard,
+  Lock,
   Receipt,
   ScrollText,
   Server,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useDeveloperMode } from "@/components/DeveloperModeProvider";
 import { HeaderControls } from "@/components/HeaderControls";
 import { BrandWordmark } from "@/components/BrandWordmark";
 import { cn } from "@/lib/utils";
@@ -165,6 +167,7 @@ function SidebarBrand() {
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { tryNavigate, isProtectedRoute } = useDeveloperMode();
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -195,17 +198,31 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     {section.items.map((item) => {
                       const active = isNavActive(pathname, item.href);
                       const Icon = item.icon;
+                      const locked = isProtectedRoute(item.href);
                       return (
                         <SidebarMenuItem key={item.href}>
-                          <SidebarMenuButton
-                            isActive={active}
-                            tooltip={item.label}
-                            className="rounded-lg transition-colors duration-150"
-                            render={<Link href={item.href} />}
-                          >
-                            <Icon />
-                            <span>{item.label}</span>
-                          </SidebarMenuButton>
+                          {locked ? (
+                            <SidebarMenuButton
+                              isActive={active}
+                              tooltip={`${item.label} (locked)`}
+                              className="rounded-lg transition-colors duration-150"
+                              onClick={() => tryNavigate(item.href)}
+                            >
+                              <Icon />
+                              <span className="flex-1">{item.label}</span>
+                              <Lock className="size-3 shrink-0 opacity-50" />
+                            </SidebarMenuButton>
+                          ) : (
+                            <SidebarMenuButton
+                              isActive={active}
+                              tooltip={item.label}
+                              className="rounded-lg transition-colors duration-150"
+                              render={<Link href={item.href} />}
+                            >
+                              <Icon />
+                              <span>{item.label}</span>
+                            </SidebarMenuButton>
+                          )}
                         </SidebarMenuItem>
                       );
                     })}

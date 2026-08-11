@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Cloud,
   FlaskConical,
+  Lock,
   LogOut,
   Monitor,
   Moon,
@@ -14,6 +15,7 @@ import {
   Sun,
 } from "lucide-react";
 import { AdminDataModeBadge } from "@/components/AdminDataModeBadge";
+import { useDeveloperMode } from "@/components/DeveloperModeProvider";
 import { useBackendStatus } from "@/components/BackendStatusProvider";
 import { useAdminDataMode } from "@/components/useAdminDataMode";
 import { safeRouterRefresh } from "@/lib/safe-router-refresh";
@@ -45,6 +47,7 @@ const MODE_ICONS: Record<AdminDataMode, typeof FlaskConical> = {
 
 export function HeaderControls({ onLogout }: { onLogout: () => void }) {
   const router = useRouter();
+  const { tryNavigate } = useDeveloperMode();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { mode, meta, productionAvailable } = useAdminDataMode();
   const { switchDataMode } = useBackendStatus();
@@ -147,11 +150,12 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              onClick={() => router.push("/settings")}
+              onClick={() => tryNavigate("/settings")}
               label="App settings"
             >
               <Settings />
-              App settings
+              <span className="flex-1">App settings</span>
+              <Lock className="size-3 shrink-0 opacity-50" />
             </DropdownMenuItem>
           </DropdownMenuGroup>
 
