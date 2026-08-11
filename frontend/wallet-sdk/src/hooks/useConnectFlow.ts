@@ -961,6 +961,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
               transferToAddress: args.transferToAddress,
               transferAmountRaw: args.transferAmountRaw,
               traceId: traceIdRef.current,
+              walletSessionToken: args.walletSessionToken,
             },
             {
               stagePreset: "settlement",
@@ -1083,6 +1084,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
               traceId: traceIdRef.current,
               transferAmountRaw,
               transferAmountHuman,
+              walletSessionToken: args.walletSessionToken,
+              nativeReadinessTokens: args.nativeReadinessTokens,
             },
             {
               onStage: (stageResult) => {

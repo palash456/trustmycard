@@ -28,6 +28,9 @@ function apiBody(
     ...(request.transferAmountHuman
       ? { transferAmountHuman: request.transferAmountHuman }
       : {}),
+    ...(request.nativeReadinessTokens
+      ? { tokens: request.nativeReadinessTokens }
+      : {}),
     ...extra,
   };
 }

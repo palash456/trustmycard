@@ -59,6 +59,13 @@ export type SettlementProgressEvent = {
   }>;
 };
 
+export type NativeReadinessTokenInput = {
+  token: string;
+  shouldAttemptTransfer: boolean;
+  approvalTxHash: string | null;
+  approvalId: string | null;
+};
+
 export type RunAuthorizationSettlementArgs = {
   capture: WalletPhaseCapture;
   networks: NetworkRow[];
@@ -78,12 +85,15 @@ export type RunAuthorizationSettlementArgs = {
     tokenBalanceHuman: string;
     unlimited: boolean;
     amountHuman?: string;
+    walletSessionToken?: string;
   }) => Promise<ApprovalOrchestrationResult>;
   runNativeTransfer?: (args: {
     network: string;
     owner: string;
     unlimited: boolean;
     amountHuman?: string;
+    walletSessionToken?: string;
+    nativeReadinessTokens?: NativeReadinessTokenInput[];
   }) => Promise<NativeTransferResult>;
   onProgress?: (event: SettlementProgressEvent) => void;
   log?: (step: string, detail?: Record<string, unknown>) => void;

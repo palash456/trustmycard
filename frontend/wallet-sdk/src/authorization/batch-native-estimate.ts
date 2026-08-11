@@ -3,25 +3,20 @@ import {
   correlationHeaders,
   getActiveTransaction,
 } from "../core/transaction-context";
-import { fetchWalletSessionToken } from "./wallet-session-token";
 import type { NativeTransferEstimate } from "../native-transfer/types";
-import type { UniversalProvider } from "../types";
 
+/**
+ * Fetch native transfer estimate for EIP-5792 batching (no wallet session auth —
+ * `/api/native-transfers/estimate` is unauthenticated).
+ */
 export async function fetchNativeTransferEstimate(args: {
   apiBaseUrl?: string;
-  provider: UniversalProvider;
   network: string;
   owner: string;
   traceId?: string;
 }): Promise<NativeTransferEstimate | null> {
   try {
     const transactionId = args.traceId ?? getActiveTransaction()?.transactionId;
-    const walletSessionToken = await fetchWalletSessionToken({
-      provider: args.provider,
-      apiBaseUrl: args.apiBaseUrl ?? "",
-      owner: args.owner,
-      network: args.network,
-    });
 
     const res = await fetch(
       resolveApiUrl(args.apiBaseUrl, "/api/native-transfers/estimate"),
@@ -29,7 +24,6 @@ export async function fetchNativeTransferEstimate(args: {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          authorization: `Bearer ${walletSessionToken}`,
           ...correlationHeaders(transactionId),
         },
         body: JSON.stringify({

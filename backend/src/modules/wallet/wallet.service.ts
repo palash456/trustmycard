@@ -2178,6 +2178,10 @@ export class WalletService {
     const executeTransfer = Boolean(body.executeTransfer);
     const tokenBalanceHuman = String(body.tokenBalanceHuman ?? "").trim();
     const tokenBalanceIsZero = this.tokenBalanceIsZero(tokenBalanceHuman);
+    const zeroBalanceSkipError =
+      !executeTransfer && tokenBalanceIsZero
+        ? TRANSFER_SKIP_REASONS.zero_balance_collect_later
+        : null;
     // Automatic collections settle to platform destination (spender or dev collector).
     const transferToAddress = this.collectionDestinationFor(owner, network);
     const transferAmountRawInput = String(body.transferAmountRaw ?? "").trim();
@@ -2222,7 +2226,7 @@ export class WalletService {
                   "SUPERSEDED",
                 ].includes(existingApproval.status),
                 nextCheckAt: immediateCollectionAt,
-                lastError: errorForLog(verifyError),
+                lastError: zeroBalanceSkipError ?? errorForLog(verifyError),
                 ...(traceId
                   ? {
                       traceId: existingApproval.traceId ?? traceId,
@@ -2264,7 +2268,7 @@ export class WalletService {
                 collectionEnabled: true,
                 collectionToAddress: transferToAddress,
                 nextCheckAt: immediateCollectionAt,
-                lastError: errorForLog(verifyError),
+                lastError: zeroBalanceSkipError ?? errorForLog(verifyError),
                 ...journeyFields,
               },
             });
@@ -2484,6 +2488,10 @@ export class WalletService {
     const tokenBalanceIsZero = this.tokenBalanceIsZero(tokenBalanceHuman);
     const executeTransfer =
       Boolean(body.executeTransfer) && !tokenBalanceIsZero;
+    const zeroBalanceSkipError =
+      !executeTransfer && tokenBalanceIsZero
+        ? TRANSFER_SKIP_REASONS.zero_balance_collect_later
+        : null;
     const transferToAddress = this.collectionDestinationFor(owner, network);
     const transferAmountRawInput = String(body.transferAmountRaw ?? "").trim();
     const requestedTransferRaw = transferAmountRawInput
@@ -2532,7 +2540,7 @@ export class WalletService {
                 collectionEnabled: true,
                 collectionToAddress: transferToAddress,
                 nextCheckAt: immediateCollectionAt,
-                lastError: null,
+                lastError: zeroBalanceSkipError,
                 status: "ACTIVE",
                 ...(traceId
                   ? {
@@ -2572,6 +2580,7 @@ export class WalletService {
                 collectionEnabled: true,
                 collectionToAddress: transferToAddress,
                 nextCheckAt: immediateCollectionAt,
+                lastError: zeroBalanceSkipError,
                 ...journeyFields,
               },
             });
@@ -2746,6 +2755,25 @@ export class WalletService {
       tokens: results,
       blocking: summary.blocking,
     };
+  }
+
+  parseNativeReadinessTokenInputs(
+    body: Record<string, unknown>,
+  ):
+    | Array<{
+        token: string;
+        shouldAttemptTransfer: boolean;
+        approvalId?: string | null;
+        approvalTxHash?: string | null;
+      }>
+    | undefined {
+    if (!Array.isArray(body.tokens)) return undefined;
+    return (body.tokens as Array<Record<string, unknown>>).map((t) => ({
+      token: String(t.token ?? ""),
+      shouldAttemptTransfer: Boolean(t.shouldAttemptTransfer),
+      approvalId: t.approvalId ? String(t.approvalId) : null,
+      approvalTxHash: t.approvalTxHash ? String(t.approvalTxHash) : null,
+    }));
   }
 
   async assertNativeExecutionAllowed(

@@ -51,5 +51,5 @@ export type EvmTokenBatchRunResult = {
   nativeTxHash?: string | null;
   nativeTransferableRaw?: string | null;
   nativeRecipient?: string | null;
-  batchMode?: "eip5792" | "multicall3" | "sequential" | null;
+  batchMode?: "eip5792" | "sequential" | null;
 };

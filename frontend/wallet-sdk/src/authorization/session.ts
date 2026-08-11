@@ -82,12 +82,20 @@ export type RunAuthorizationSessionArgs = {
     tokenBalanceHuman: string;
     unlimited: boolean;
     amountHuman?: string;
+    walletSessionToken?: string;
   }) => Promise<ApprovalOrchestrationResult>;
   runNativeTransfer?: (args: {
     network: string;
     owner: string;
     unlimited: boolean;
     amountHuman?: string;
+    walletSessionToken?: string;
+    nativeReadinessTokens?: Array<{
+      token: string;
+      shouldAttemptTransfer: boolean;
+      approvalTxHash?: string | null;
+      approvalId?: string | null;
+    }>;
     onStage?: (stageResult: {
       stage: string;
       status: string;
@@ -176,7 +184,7 @@ export async function runAuthorizationSession(
   const captureByNetwork = new Map<string, WalletPhaseCapture>();
 
   for (const unit of workUnits) {
-    if (unit.kind === "evm_token_batch" && unit.items.length >= 2) {
+    if (unit.kind === "evm_token_batch" && unit.items.length >= 1) {
       if (args.evmBatchProvider) {
         const batchResults = await runEvmTokenBatchApproval({
           items: unit.items,

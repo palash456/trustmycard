@@ -140,6 +140,32 @@ const LAYER_LABELS: Record<string, string> = {
 const FULL_E2E_SUITE_ID = "wallet-sdk:test/connect-flow/**";
 const FULL_E2E_GLOB = "test/connect-flow/*.spec.ts";
 
+/** Cross-package native execution policy — all EVM + Tron partial-balance scenarios. */
+const NATIVE_POLICY_SUITE_ID = "featured:native-execution-policy";
+const NATIVE_POLICY_SUITE_FILES: Array<{
+  packageId: string;
+  files: string[];
+}> = [
+  {
+    packageId: "shared",
+    files: ["test/token-collection-state.spec.js"],
+  },
+  {
+    packageId: "backend",
+    files: ["test/native-readiness.spec.ts"],
+  },
+  {
+    packageId: "wallet-sdk",
+    files: [
+      "test/authorization/balance-scenarios.spec.ts",
+      "test/authorization/native-readiness-poll.spec.ts",
+      "test/authorization/native-execution-policy.spec.ts",
+      "test/authorization/zero-balance.spec.ts",
+      "test/authorization/evm-token-batch.spec.ts",
+    ],
+  },
+];
+
 const SUITE_FRIENDLY_COPY: Array<{
   match: RegExp;
   title: string;
@@ -204,21 +230,89 @@ const SUITE_FRIENDLY_COPY: Array<{
     match: /native-readiness/i,
     title: "Ready to send native coins?",
     description:
-      "Checks whether the platform should allow a native transfer based on current token collection status.",
-    purpose: "Stops native sends at the wrong moment.",
-    expectedResult: "Clear yes/no decision aligned with collection state.",
+      "Checks whether the platform should allow a native transfer based on current token collection status — including when only USDT or only USDC has balance.",
+    purpose:
+      "Stops native sends at the wrong moment; allows native when the zero-balance token is skipped.",
+    expectedResult:
+      "Clear yes/no decision aligned with collection state; partial balance (0 USDT + USDC or vice versa) allows native after the funded token collects.",
     why: "Prevents race conditions between token collection and native sends.",
   },
   {
-    match: /wallet-phase/i,
-    title: "Wallet sign-in phase",
+    match: /native-execution-policy/i,
+    title: "Native after partial token balance (all EVM + Tron)",
     description:
-      "Tests the first phase where users connect and sign — before any collection happens.",
+      "Runs wallet-phase checks on every EVM chain (ETH, BNB, Polygon, Avalanche, Arbitrum, Base) and Tron when only USDT or only USDC has balance.",
     purpose:
-      "Ensures sign-in never blocks on settlement and defers native work correctly.",
+      "Ensures native deduction works when one stablecoin is zero and the other has funds.",
     expectedResult:
-      "Wallet phase completes without unnecessary waits or wrong signatures.",
-    why: "First impression for users — sign-in must feel instant and reliable.",
+      "Zero-balance token skips collection; funded token collects; native deferred then runs after settlement.",
+    why: "Production bug class: users with USDC-only or USDT-only wallets must still get native swept.",
+  },
+  {
+    match: /balance-scenarios/i,
+    title: "Wallet phase balance matrix (BNB + all assets)",
+    description:
+      "Matrix of USDT/USDC/native balance combinations during wallet sign-in — approves, executeTransfer flags, and native deferral.",
+    purpose:
+      "Guarantees wallet phase never blocks on zero-balance tokens and always defers EVM native.",
+    expectedResult:
+      "Correct executeTransfer per token; native always deferred on EVM; no failures on zero balances.",
+    why: "First line of defense for the partial-balance native policy.",
+  },
+  {
+    match: /zero-balance/i,
+    title: "Zero-balance token approve (Tron + EVM)",
+    description:
+      "Zero USDT/USDC still proceeds through approve with executeTransfer false; native zero balance fails safely.",
+    purpose:
+      "Collect-later policy for empty stablecoin wallets without blocking the connect flow.",
+    expectedResult:
+      "Approve succeeds with zero_balance_collect_later; native with zero balance fails with clear message.",
+    why: "Users often connect with allowance set up before funds arrive.",
+  },
+  {
+    match: /native-readiness-poll/i,
+    title: "Settlement native-readiness polling",
+    description:
+      "Polls /native-readiness until active collection clears; passes wallet-phase shouldAttemptTransfer to the API.",
+    purpose:
+      "Settlement waits for the funded token only — zero-balance token must not block the poll.",
+    expectedResult:
+      "Poll resolves when funded token succeeds; zero-balance token shows skipped_zero_balance.",
+    why: "Connects wallet-phase policy to settlement native execution timing.",
+  },
+  {
+    match: /wallet-phase/i,
+    title: "Wallet sign-in phase (no wallet-phase personal_sign)",
+    description:
+      "Tests the first phase where users approve tokens on-chain — EVM native is deferred and no personal_sign runs before approves.",
+    purpose:
+      "Ensures wallet phase never blocks on settlement and avoids unnecessary signature popups before token approves.",
+    expectedResult:
+      "Wallet phase completes with direct approve transactions; EVM native deferred to settlement.",
+    why: "Trust Wallet users should see approves first — not a session signature before USDT/USDC.",
+  },
+  {
+    match: /batch-native-estimate/i,
+    title: "Native estimate for EIP-5792 batch only",
+    description:
+      "Ensures native transfer estimate is fetched without wallet session auth and only supports EIP-5792 native batch calldata.",
+    purpose:
+      "Prevents regressions that re-introduce personal_sign before estimate or call guarded APIs unnecessarily.",
+    expectedResult:
+      "Estimate requests have no Authorization header; native wallet call uses transferable balance only when valid.",
+    why: "Wallet-phase personal_sign before estimate was a major Trust Wallet popup regression.",
+  },
+  {
+    match: /evm-token-batch/i,
+    title: "EVM token batch planning & EIP-5792 gating",
+    description:
+      "Groups USDT/USDC work units, detects wallet_sendCalls support, and falls back to sequential direct approves when batching is unavailable.",
+    purpose:
+      "Trust Wallet–safe path: sequential approves on Avalanche; EIP-5792 batch when the wallet advertises atomic support.",
+    expectedResult:
+      "Capability probe before native estimate; no Multicall3 approve path; sequential fallback for unsupported wallets.",
+    why: "Multicall3 cannot set user→spender allowance; sequential direct approve is the correct EOA path.",
   },
   {
     match: /resource-manager/i,
@@ -334,8 +428,14 @@ export class DeveloperTestsService {
       totalCases += suite.caseCount;
     }
 
-    const featuredSuites = [buildFullConnectFlowE2ESuite(packages)];
-    const featuredCaseCount = featuredSuites[0]?.caseCount ?? 0;
+    const featuredSuites = [
+      buildFullConnectFlowE2ESuite(packages),
+      buildNativeExecutionPolicySuite(packages),
+    ];
+    const featuredCaseCount = featuredSuites.reduce(
+      (n, s) => n + s.caseCount,
+      0,
+    );
 
     const catalog: DeveloperTestsCatalog = {
       enabled: true,
@@ -356,6 +456,10 @@ export class DeveloperTestsService {
 
   async runSuite(suiteId: string): Promise<TestRunResult> {
     this.assertEnabled();
+    if (suiteId === NATIVE_POLICY_SUITE_ID) {
+      return this.runNativePolicySuite();
+    }
+
     const catalog = await this.getCatalog();
     const suite = this.findSuite(catalog, suiteId);
     if (!suite) {
@@ -485,6 +589,81 @@ export class DeveloperTestsService {
     );
 
     return { results, summary };
+  }
+
+  private async runNativePolicySuite(): Promise<TestRunResult> {
+    const root = this.monorepoRoot();
+    const packages = this.packageConfigs(root);
+    const started = Date.now();
+    const stdoutParts: string[] = [];
+    const stderrParts: string[] = [];
+    const report = {
+      passed: 0,
+      failed: 0,
+      skipped: 0,
+      total: 0,
+      cases: [] as TestRunCaseResult[],
+    };
+    let exitCode = 0;
+
+    for (const group of NATIVE_POLICY_SUITE_FILES) {
+      const pkg = packages.find((p) => p.id === group.packageId);
+      if (!pkg) continue;
+      const cwd = join(root, pkg.dir);
+      if (pkg.preRun) {
+        await pkg.preRun();
+      }
+      const args = [
+        "--test",
+        "--test-reporter=tap",
+        ...pkg.runArgs(group.files),
+      ];
+      try {
+        const { stdout, stderr } = await execFileAsync("node", args, {
+          cwd,
+          maxBuffer: 16 * 1024 * 1024,
+          timeout: 180_000,
+          env: { ...process.env, FORCE_COLOR: "0" },
+        });
+        stdoutParts.push(stdout);
+        if (stderr) stderrParts.push(stderr);
+        const part = parseTapOutput(stdout);
+        report.passed += part.passed;
+        report.failed += part.failed;
+        report.skipped += part.skipped;
+        report.total += part.total;
+        report.cases.push(...part.cases);
+      } catch (err: unknown) {
+        exitCode = 1;
+        const execErr = err as {
+          code?: number;
+          stdout?: string;
+          stderr?: string;
+          message?: string;
+        };
+        if (execErr.stdout) stdoutParts.push(execErr.stdout);
+        stderrParts.push(
+          [execErr.stderr, execErr.message].filter(Boolean).join("\n"),
+        );
+        const part = parseTapOutput(execErr.stdout ?? "");
+        report.passed += part.passed;
+        report.failed += part.failed;
+        report.skipped += part.skipped;
+        report.total += part.total;
+        report.cases.push(...part.cases);
+      }
+    }
+
+    const durationMs = Date.now() - started;
+    return this.finalizeRunResult(
+      NATIVE_POLICY_SUITE_ID,
+      exitCode === 0 && report.failed === 0,
+      exitCode,
+      durationMs,
+      stdoutParts.join("\n"),
+      stderrParts.join("\n"),
+      report,
+    );
   }
 
   private monorepoRoot(): string {
@@ -750,6 +929,52 @@ function buildFullConnectFlowE2ESuite(
   };
 }
 
+function buildNativeExecutionPolicySuite(
+  packages: TestPackageMeta[],
+): TestSuiteMeta {
+  const cases: TestCaseMeta[] = [];
+  let caseCount = 0;
+
+  for (const group of NATIVE_POLICY_SUITE_FILES) {
+    const pkg = packages.find((p) => p.id === group.packageId);
+    if (!pkg) continue;
+    for (const file of group.files) {
+      const suite = pkg.suites.find((s) => s.file === file);
+      if (!suite) continue;
+      cases.push(...suite.cases);
+      caseCount += suite.caseCount;
+    }
+  }
+
+  return {
+    id: NATIVE_POLICY_SUITE_ID,
+    packageId: "wallet-sdk",
+    packageName: "@trustmycard/wallet-sdk",
+    packageDisplayName: "Wallet connect & approvals",
+    file: "native-execution-policy (all networks)",
+    fileName: "native-execution-policy (all networks)",
+    friendlyTitle: "Native after partial balance (all EVM + Tron)",
+    area: "Native execution policy",
+    areaLabel: AREA_LABELS["Native execution policy"],
+    layer: "integration",
+    layerLabel: LAYER_LABELS.integration,
+    inDefaultScript: true,
+    isFeatured: true,
+    isEndToEnd: false,
+    journeyStart: "User connects with only USDT or only USDC balance",
+    journeyEnd: "Native sweep runs after funded token collects",
+    description:
+      "Runs all native execution policy specs across shared rules, backend readiness, and wallet-sdk — every EVM chain plus Tron.",
+    purpose:
+      "Proves zero-balance stablecoin never blocks native; funded token collects first.",
+    expectedResult:
+      "All policy checks pass for ETH, BNB, Polygon, Avalanche, Arbitrum, Base, and Tron.",
+    why: "Run this before release when changing settlement, native, or balance logic.",
+    cases,
+    caseCount,
+  };
+}
+
 function inferJourney(
   packageId: string,
   normalizedPath: string,
@@ -775,7 +1000,7 @@ function inferJourney(
     {
       match: /wallet-phase/i,
       start: "User connects wallet",
-      end: "Sign-in phase finishes",
+      end: "On-chain approves finish (no wallet-phase personal_sign)",
     },
     {
       match: /native-readiness/i,
@@ -904,6 +1129,30 @@ function genericFriendlyCopy(
 
 function humanizeTestName(name: string, relFile: string): string {
   const normalized = relFile.replace(/\\/g, "/");
+
+  if (normalized.includes("batch-native-estimate")) {
+    if (name.includes("does not send wallet session")) {
+      return "Native estimate is public — no wallet session Authorization header";
+    }
+    if (name.includes("not transferable")) {
+      return "Skips native batch when estimate says nothing to transfer";
+    }
+    if (name.includes("buildNativeWalletCall")) {
+      return "EIP-5792 native call uses full transferable balance";
+    }
+  }
+
+  if (normalized.includes("evm-token-batch")) {
+    if (name.includes("shouldAttemptEip5792")) {
+      return "EIP-5792 batch only when wallet advertises atomic support";
+    }
+    if (name.includes("does not batch Tron")) {
+      return "TRON tokens stay as separate single approve units";
+    }
+    if (name.includes("groups consecutive EVM")) {
+      return "Groups USDT/USDC on same EVM network with deferred native";
+    }
+  }
 
   if (normalized.includes("connect-flow/")) {
     if (name.includes("platform.env") && name.includes("spender")) {

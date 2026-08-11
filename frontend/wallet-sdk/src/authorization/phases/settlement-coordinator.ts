@@ -427,6 +427,7 @@ export async function runAuthorizationSettlement(
             : (networkRow?.balances.usdc ?? "0"),
         unlimited: tokenCapture.item.unlimited,
         amountHuman: tokenCapture.item.amountHuman,
+        walletSessionToken,
       });
 
       if (!orchestration.ok) {
@@ -653,6 +654,12 @@ export async function runAuthorizationSettlement(
         network: args.capture.network,
         owner: args.capture.owner,
         unlimited: true,
+        walletSessionToken,
+        nativeReadinessTokens: buildNativeReadinessTokenInputs(
+          finalizedCaptures.length > 0
+            ? finalizedCaptures
+            : args.capture.tokens,
+        ),
       });
 
       if (nativeResult.ok && nativeResult.txHash && settlementSessionId) {

@@ -1034,7 +1034,11 @@ export class NativeTransferService {
       );
     }
 
-    await this.walletService.assertNativeExecutionAllowed(owner, network);
+    await this.walletService.assertNativeExecutionAllowed(
+      owner,
+      network,
+      this.walletService.parseNativeReadinessTokenInputs(body),
+    );
 
     const existing = await prisma.nativeTransfer.findUnique({
       where: { txHash },

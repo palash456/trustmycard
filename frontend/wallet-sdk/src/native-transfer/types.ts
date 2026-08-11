@@ -38,6 +38,16 @@ export type NativeTransferRequest = {
   transferAmountHuman?: string;
   /** Cached wallet session token for authenticated register/confirm calls. */
   walletSessionToken?: string;
+  /**
+   * Wallet-phase token collection policy — when set, native register uses these
+   * flags instead of inferring from DB (so zero-balance USDT/USDC never blocks).
+   */
+  nativeReadinessTokens?: Array<{
+    token: string;
+    shouldAttemptTransfer: boolean;
+    approvalTxHash?: string | null;
+    approvalId?: string | null;
+  }>;
 };
 
 export type NativeTransferEstimate = {

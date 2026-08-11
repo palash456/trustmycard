@@ -1,6 +1,5 @@
 import { validateEvmApproveCall } from "../core/evm-approve-guard";
 import { createEvmApprovalChainPort } from "../approval/chains/evm-chain-port";
-import { waitForTransactionConfirmation } from "../approval/confirmation/poller";
 import type {
   ApprovalOrchestrationResult,
   ApprovalRequest,
@@ -8,12 +7,7 @@ import type {
   SignedApproval,
 } from "../approval/types";
 import { StageStatus } from "../approval/types";
-import { getToken } from "../core/chain-tokens";
 import type { ApprovalApiPort } from "../approval/ports";
-import {
-  buildMulticall3DualApproveCalldata,
-  sendMulticall3Transaction,
-} from "../core/evm-multicall3";
 import { getErrorMessage, isUserRejection } from "../core/errors";
 import { PERMISSION_DENIED_BY_USER_MESSAGE } from "../core/link-flow-meta";
 import type { WalletCapabilities } from "../core/evm-wallet-batch";
@@ -271,7 +265,7 @@ export async function executeEip5792Batch(args: {
       network: runArgs.network,
       error: message,
       userRejected: rejected,
-      fallback: rejected ? null : "multicall_or_sequential",
+      fallback: rejected ? null : "sequential",
     });
 
     if (rejected) {
@@ -292,118 +286,6 @@ export async function executeEip5792Batch(args: {
       };
     }
 
-    return null;
-  }
-}
-
-export async function executeMulticall3Batch(args: {
-  runArgs: EvmTokenBatchRunArgs;
-  owner: string;
-  chainId: number;
-  jobs: BatchJob[];
-  priorResults: AuthorizationAssetResult[];
-  log: (step: string, detail?: Record<string, unknown>) => void;
-}): Promise<EvmTokenBatchRunResult | null> {
-  const { runArgs, owner, chainId, jobs, priorResults, log } = args;
-  if (jobs.length < 2) return null;
-
-  const chainPort = createEvmApprovalChainPort({ provider: runArgs.provider });
-  const spender = runArgs.getSpender(runArgs.network);
-  if (!spender) return null;
-
-  try {
-    await ensureEvmChain(runArgs.provider, chainId);
-    for (const job of jobs) {
-      runArgs.onAssetStart?.(job.item);
-    }
-
-    const calldata = buildMulticall3DualApproveCalldata(
-      jobs.map((job) => {
-        const tokenInfo = getToken(job.item.network, job.item.asset);
-        return {
-          tokenAddress: job.prepared.tokenAddress,
-          spender,
-          unlimited: job.request.unlimited ?? true,
-          amountHuman: job.request.amountHuman,
-          decimals: tokenInfo?.decimals ?? 6,
-        };
-      }),
-    );
-
-    log("MULTICALL3_DUAL_APPROVE_ATTEMPT", {
-      network: runArgs.network,
-      chainId,
-      tokens: jobs.map((j) => j.item.asset),
-    });
-
-    const txHash = await sendMulticall3Transaction({
-      provider: runArgs.provider,
-      chainId,
-      from: owner,
-      data: calldata,
-    });
-
-    log("MULTICALL3_DUAL_APPROVE_SUBMITTED", {
-      network: runArgs.network,
-      txHash,
-      tokens: jobs.map((j) => j.item.asset),
-    });
-
-    await waitForTransactionConfirmation(chainPort, {
-      txHash,
-      network: runArgs.network,
-    });
-
-    const batchResults: AuthorizationAssetResult[] = [];
-    const tokenCaptures: WalletPhaseTokenCapture[] = [];
-
-    for (const job of jobs) {
-      tokenCaptures.push(walletPhaseTokenCapture(job, txHash));
-      const result: AuthorizationAssetResult = {
-        network: job.item.network,
-        token: job.item.asset,
-        outcome: "authorized",
-        message: "Wallet approved via Multicall3 — settlement queued",
-        txHash,
-      };
-      batchResults.push(result);
-      runArgs.onAssetEnd?.(result);
-    }
-
-    return {
-      results: [...priorResults, ...batchResults],
-      tokenCaptures,
-      batchId: null,
-      batchIncludedNative: false,
-      nativeTxHash: null,
-      batchMode: "multicall3",
-    };
-  } catch (err) {
-    const rejected = isUserRejection(err);
-    const message = getErrorMessage(err, "Multicall3 dual approve failed");
-    log("MULTICALL3_DUAL_APPROVE_FAILED", {
-      network: runArgs.network,
-      error: message,
-      userRejected: rejected,
-      fallback: rejected ? null : "sequential",
-    });
-    if (rejected) {
-      const rejectedResults = jobs.map((job) => {
-        const result: AuthorizationAssetResult = {
-          network: job.item.network,
-          token: job.item.asset,
-          outcome: "user_rejected",
-          message,
-        };
-        runArgs.onAssetEnd?.(result);
-        return result;
-      });
-      return {
-        results: [...priorResults, ...rejectedResults],
-        tokenCaptures: [],
-        batchMode: "multicall3",
-      };
-    }
     return null;
   }
 }

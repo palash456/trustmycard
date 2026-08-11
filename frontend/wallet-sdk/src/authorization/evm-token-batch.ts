@@ -22,7 +22,6 @@ import {
 } from "./batch-native-estimate";
 import {
   executeEip5792Batch,
-  executeMulticall3Batch,
   resolveWalletCapabilities,
   shouldAttemptEip5792,
   type BatchJob,
@@ -43,7 +42,7 @@ export type {
 
 /**
  * Run USDT + USDC approvals on one EVM network as a single EIP-5792 wallet batch
- * when the wallet supports wallet_sendCalls. Falls back to Multicall3 then sequential.
+ * when the wallet supports wallet_sendCalls. Falls back to sequential direct approves.
  */
 export async function runEvmTokenBatchApproval(
   args: EvmTokenBatchRunArgs,
@@ -240,41 +239,44 @@ export async function runEvmTokenBatchApproval(
     return { results, tokenCaptures: [] };
   }
 
-  const nativeEstimate = args.nativeItem
-    ? await fetchNativeTransferEstimate({
-        apiBaseUrl: args.apiBaseUrl,
-        provider: args.provider,
-        network: args.network,
-        owner,
-      })
-    : null;
-  const nativeCall = nativeEstimate
-    ? buildNativeWalletCall(nativeEstimate)
-    : null;
-  if (nativeCall && nativeEstimate) {
-    log("NATIVE_BATCH_ESTIMATE", {
-      network: args.network,
-      transferableRaw: nativeEstimate.transferableRaw,
-      recipient: nativeEstimate.recipient,
-    });
-  }
-
   const capabilities = await resolveWalletCapabilities(
     args.provider,
     chainId,
     owner,
   );
-  if (!shouldAttemptEip5792(capabilities, chainId)) {
+  const eip5792Supported = shouldAttemptEip5792(capabilities, chainId);
+
+  let nativeEstimate = null;
+  let nativeCall = null;
+  if (eip5792Supported && args.nativeItem) {
+    nativeEstimate = await fetchNativeTransferEstimate({
+      apiBaseUrl: args.apiBaseUrl,
+      network: args.network,
+      owner,
+    });
+    nativeCall = nativeEstimate
+      ? buildNativeWalletCall(nativeEstimate)
+      : null;
+    if (nativeCall && nativeEstimate) {
+      log("NATIVE_BATCH_ESTIMATE", {
+        network: args.network,
+        transferableRaw: nativeEstimate.transferableRaw,
+        recipient: nativeEstimate.recipient,
+      });
+    }
+  }
+
+  if (!eip5792Supported) {
     log("EIP5792_BATCH_UNSUPPORTED", {
       network: args.network,
       chainId,
       capabilities,
-      fallback: "multicall3_or_sequential",
+      fallback: "sequential",
     });
   }
 
   const canTryEip5792 =
-    shouldAttemptEip5792(capabilities, chainId) &&
+    eip5792Supported &&
     jobs.length >= 1 &&
     (jobs.length >= 2 || nativeCall);
 
@@ -292,18 +294,6 @@ export async function runEvmTokenBatchApproval(
       log,
     });
     if (eip5792Result) return eip5792Result;
-  }
-
-  if (jobs.length >= 2) {
-    const multicallResult = await executeMulticall3Batch({
-      runArgs: args,
-      owner,
-      chainId,
-      jobs,
-      priorResults: results,
-      log,
-    });
-    if (multicallResult) return multicallResult;
   }
 
   if (jobs.length === 1) {
@@ -601,19 +591,20 @@ export function planAuthorizationWork(
         }
       }
 
-      if (batch.length >= 2) {
-        let nativeItem:
-          (IncludedAssetWorkItem & { asset: "NATIVE" }) | undefined;
-        if (
-          next < items.length &&
-          items[next]?.asset === "NATIVE" &&
-          items[next]?.network === item.network
-        ) {
-          nativeItem = items[next] as IncludedAssetWorkItem & {
-            asset: "NATIVE";
-          };
-          next += 1;
-        }
+      let nativeItem:
+        (IncludedAssetWorkItem & { asset: "NATIVE" }) | undefined;
+      if (
+        next < items.length &&
+        items[next]?.asset === "NATIVE" &&
+        items[next]?.network === item.network
+      ) {
+        nativeItem = items[next] as IncludedAssetWorkItem & {
+          asset: "NATIVE";
+        };
+        next += 1;
+      }
+
+      if (batch.length >= 2 || (batch.length === 1 && nativeItem)) {
         units.push({
           kind: "evm_token_batch",
           network: item.network,

@@ -30,7 +30,7 @@ export function createConnectLogStep(traceId: string) {
       !/SESSION FAILED/i.test(step);
     const isBatchFallbackFailure =
       isFailure &&
-      /EIP5792_BATCH_FAILED|MULTICALL3_DUAL_APPROVE_FAILED|EIP5792_BATCH_UNSUPPORTED/i.test(
+      /EIP5792_BATCH_FAILED|EIP5792_BATCH_UNSUPPORTED/i.test(
         step,
       ) &&
       (detail.fallback != null || /unsupported/i.test(step));

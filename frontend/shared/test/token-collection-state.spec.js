@@ -29,6 +29,44 @@ describe("native execution policy — scenarios", () => {
     );
   });
 
+  it("scenario 1b: USDT zero + USDC success → native immediate", () => {
+    assert.equal(
+      canNative(
+        { shouldAttemptTransfer: false },
+        {
+          shouldAttemptTransfer: true,
+          approval: {
+            status: "COMPLETED",
+            remainingRaw: "0",
+            collectedRaw: "100",
+            collectionEnabled: false,
+          },
+          hasConfirmedTransfer: true,
+        },
+      ),
+      true,
+    );
+  });
+
+  it("scenario 1c: USDT success + USDC zero → native immediate", () => {
+    assert.equal(
+      canNative(
+        {
+          shouldAttemptTransfer: true,
+          approval: {
+            status: "COMPLETED",
+            remainingRaw: "0",
+            collectedRaw: "100",
+            collectionEnabled: false,
+          },
+          hasConfirmedTransfer: true,
+        },
+        { shouldAttemptTransfer: false },
+      ),
+      true,
+    );
+  });
+
   it("scenario 2: USDT skipped + USDC failed → native waits until USDC succeeds or permanent failure", () => {
     assert.equal(
       canNative(

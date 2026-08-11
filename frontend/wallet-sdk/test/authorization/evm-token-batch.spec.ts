@@ -48,6 +48,23 @@ test("planAuthorizationWork keeps single EVM token as single unit", () => {
   assert.equal(units[0]?.kind, "single");
 });
 
+test("planAuthorizationWork batches single EVM token when native follows on same network", () => {
+  const items: IncludedAssetWorkItem[] = [
+    { network: "bsc", asset: "USDC", unlimited: true, amountHuman: "" },
+    { network: "bsc", asset: "NATIVE", unlimited: true, amountHuman: "" },
+  ];
+  const units = planAuthorizationWork(items);
+  assert.equal(units.length, 1);
+  assert.equal(units[0]?.kind, "evm_token_batch");
+  if (units[0]?.kind === "evm_token_batch") {
+    assert.deepEqual(
+      units[0].items.map((i) => i.asset),
+      ["USDC"],
+    );
+    assert.equal(units[0].nativeItem?.asset, "NATIVE");
+  }
+});
+
 test("supportsSendCalls detects atomic batch capability", () => {
   assert.equal(
     supportsSendCalls({ "0x1": { atomic: { status: "ready" } } }, 1),

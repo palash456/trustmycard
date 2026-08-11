@@ -4,13 +4,14 @@
  */
 /** Run sync observability work; swallow any thrown error. */
 export function safeObservability(fn) {
-  try {
-    fn();
-  } catch {
-    /* fail-open */
-  }
+    try {
+        fn();
+    }
+    catch {
+        /* fail-open */
+    }
 }
 /** Run async observability work; swallow rejections. */
 export function safeObservabilityAsync(fn) {
-  void fn().catch(() => undefined);
+    void fn().catch(() => undefined);
 }
