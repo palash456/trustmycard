@@ -18,10 +18,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { JourneyTableCell } from "@/components/JourneyPageHeader";
-import { pipelineUserPath } from "@/lib/pipeline-paths";
+import { NetworkBadge } from "@/components/NetworkBadge";
+import { TokenSymbol } from "@/components/TokenSymbol";
+import { WalletAddressLink } from "@/components/WalletAddressLink";
 import { formatAdminAmount } from "@/lib/amount-display";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
-import { formatDate, shortAddress } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 
 type Approval = {
   id: string;
@@ -150,17 +152,17 @@ export default async function ApprovalsPage({
                   <TableCell>
                     <JourneyTableCell transactionId={row.traceId} />
                   </TableCell>
-                  <TableCell className="font-medium uppercase">
-                    {row.network}
+                  <TableCell>
+                    <NetworkBadge network={row.network} />
                   </TableCell>
-                  <TableCell>{row.tokenSymbol}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    <Link
-                      href={pipelineUserPath(row.ownerAddress)}
-                      className="text-primary hover:underline"
-                    >
-                      {shortAddress(row.ownerAddress)}
-                    </Link>
+                  <TableCell>
+                    <TokenSymbol symbol={row.tokenSymbol} />
+                  </TableCell>
+                  <TableCell>
+                    <WalletAddressLink
+                      address={row.ownerAddress}
+                      profile="pipeline"
+                    />
                   </TableCell>
                   <TableCell>
                     <StatusBadge value={row.status} />

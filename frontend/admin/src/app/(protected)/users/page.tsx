@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { ExternalLink, Receipt } from "lucide-react";
-import { CopyButton } from "@/components/CopyButton";
-import { formatActivityError } from "@/components/activity/ActivityErrorCell";
+import { NetworkBadge } from "@/components/NetworkBadge";
+import { TokenSymbol } from "@/components/TokenSymbol";
+import { WalletAddressLink } from "@/components/WalletAddressLink";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { PageFilters } from "@/components/FilterForm";
 import { ListPageLayout } from "@/components/ListPageLayout";
@@ -23,31 +24,98 @@ import {
 } from "@/components/ui/table";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
 import { formatAdminAmount } from "@/lib/amount-display";
-import { blockExplorerAddress, formatDate, shortAddress } from "@/lib/format";
-import type { UserListResponse } from "@/types/users";
+import { blockExplorerAddress, formatDate } from "@/lib/format";
+import type {
+  CollectableItem,
+  CollectedTotal,
+  UserListResponse,
+} from "@/types/users";
 
-function formatCollectable(
-  items: UserListResponse["items"][0]["collectableRemaining"],
-): string {
-  if (items.length === 0) return "—";
-  return items
-    .map(
-      (i) =>
-        `${formatAdminAmount(i.remainingHuman ?? i.remainingRaw)} ${i.tokenSymbol} (${i.network})`,
-    )
-    .join(", ");
+const AMOUNT_COLUMN_CLASS = "min-w-[720px] max-w-[720px]";
+
+function TokenAmountRow({
+  amount,
+  tokenSymbol,
+  network,
+}: {
+  amount: string;
+  tokenSymbol: string;
+  network: string;
+}) {
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1 text-xs">
+      <span className="tabular-nums text-foreground">{amount}</span>
+      <TokenSymbol symbol={tokenSymbol} className="text-xs" />
+      <NetworkBadge network={network} />
+    </span>
+  );
 }
 
-function formatCollected(
-  items: UserListResponse["items"][0]["totalLifetimeCollected"],
-): string {
-  if (items.length === 0) return "—";
-  return items
-    .map(
-      (i) =>
-        `${formatAdminAmount(i.collectedHuman ?? i.collectedRaw)} ${i.tokenSymbol} (${i.network})`,
-    )
-    .join(", ");
+function CollectableAmounts({ items }: { items: CollectableItem[] }) {
+  if (items.length === 0) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  return (
+    <span
+      className={`inline-flex flex-wrap items-center gap-x-2 gap-y-1 ${AMOUNT_COLUMN_CLASS}`}
+    >
+      {items.map((item, index) => (
+        <span
+          key={`${item.network}-${item.tokenSymbol}`}
+          className="inline-flex items-center gap-2"
+        >
+          {index > 0 ? (
+            <span className="text-muted-foreground/40">·</span>
+          ) : null}
+          <TokenAmountRow
+            amount={formatAdminAmount(item.remainingHuman ?? item.remainingRaw)}
+            tokenSymbol={item.tokenSymbol}
+            network={item.network}
+          />
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function CollectedAmounts({ items }: { items: CollectedTotal[] }) {
+  if (items.length === 0) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  return (
+    <span
+      className={`inline-flex flex-wrap items-center gap-x-2 gap-y-1 ${AMOUNT_COLUMN_CLASS}`}
+    >
+      {items.map((item, index) => (
+        <span
+          key={`${item.network}-${item.tokenSymbol}`}
+          className="inline-flex items-center gap-2"
+        >
+          {index > 0 ? (
+            <span className="text-muted-foreground/40">·</span>
+          ) : null}
+          <TokenAmountRow
+            amount={formatAdminAmount(item.collectedHuman ?? item.collectedRaw)}
+            tokenSymbol={item.tokenSymbol}
+            network={item.network}
+          />
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function NetworkBadgeList({ networks }: { networks: string[] }) {
+  if (networks.length === 0) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  return (
+    <span className="flex max-w-[140px] flex-wrap gap-1">
+      {networks.map((network) => (
+        <NetworkBadge key={network} network={network} />
+      ))}
+    </span>
+  );
 }
 
 const FILTER_FIELDS = [
@@ -181,11 +249,10 @@ export default async function UsersPage({
               <TableHead>Collection</TableHead>
               <TableHead>Transfer</TableHead>
               <TableHead>Native</TableHead>
-              <TableHead>Reconcile</TableHead>
-              <TableHead>Collectable</TableHead>
-              <TableHead>Lifetime collected</TableHead>
-              <TableHead>Counts</TableHead>
-              <TableHead>Latest error</TableHead>
+              <TableHead className={AMOUNT_COLUMN_CLASS}>Collectable</TableHead>
+              <TableHead className={AMOUNT_COLUMN_CLASS}>
+                Lifetime collected
+              </TableHead>
               <TableHead>Explorer</TableHead>
             </TableRow>
           </TableHeader>
@@ -193,7 +260,7 @@ export default async function UsersPage({
             {data.items.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={17}
+                  colSpan={14}
                   className="h-24 text-center text-muted-foreground"
                 >
                   No users match your filters
@@ -206,24 +273,19 @@ export default async function UsersPage({
                   : row.networksUsed[0]
                     ? blockExplorerAddress(row.networksUsed[0], row.address)
                     : null;
-                const latestErrorMessage = formatActivityError(
-                  row.latestError,
-                  "error",
-                );
                 return (
                   <TableRow
                     key={row.address}
-                    className="[&_[data-slot=table-cell]]:py-5"
+                    className="[&_[data-slot=table-cell]]:py-3"
                   >
-                    <TableCell className="min-w-[140px] font-mono text-xs">
+                    <TableCell className="min-w-[140px]">
                       <div className="flex items-center gap-2">
-                        <Link
-                          href={`/users/${encodeURIComponent(row.address)}`}
-                          className="text-primary hover:underline"
-                        >
-                          {shortAddress(row.address, 8, 6)}
-                        </Link>
-                        <CopyButton value={row.address} label="Copy" />
+                        <WalletAddressLink
+                          address={row.address}
+                          head={8}
+                          tail={6}
+                          showCopy
+                        />
                         <Link
                           href={`/transactions?walletAddress=${encodeURIComponent(row.address)}`}
                           className="text-[10px] text-primary hover:underline"
@@ -245,11 +307,11 @@ export default async function UsersPage({
                     <TableCell>
                       <UserHealthBadge value={row.healthStatus} />
                     </TableCell>
-                    <TableCell className="uppercase">
-                      {row.activeChain ?? "—"}
+                    <TableCell>
+                      <NetworkBadge network={row.activeChain} />
                     </TableCell>
-                    <TableCell className="max-w-[120px] truncate text-xs uppercase">
-                      {row.approvedChains.join(", ") || "—"}
+                    <TableCell>
+                      <NetworkBadgeList networks={row.approvedChains} />
                     </TableCell>
                     <TableCell>
                       {row.approvalStatus ? (
@@ -275,27 +337,11 @@ export default async function UsersPage({
                         "—"
                       )}
                     </TableCell>
-                    <TableCell className="text-xs">
-                      {row.reconciliationStatus ?? "—"}
+                    <TableCell className={AMOUNT_COLUMN_CLASS}>
+                      <CollectableAmounts items={row.collectableRemaining} />
                     </TableCell>
-                    <TableCell className="max-w-[140px] truncate text-xs">
-                      {formatCollectable(row.collectableRemaining)}
-                    </TableCell>
-                    <TableCell className="max-w-[140px] truncate text-xs">
-                      {formatCollected(row.totalLifetimeCollected)}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-xs tabular-nums">
-                      A{row.approvalCount} T{row.transferCount} N
-                      {row.nativeTransferCount} E{row.eventCount}
-                    </TableCell>
-                    <TableCell className="max-w-[120px] text-xs text-muted-foreground">
-                      {latestErrorMessage ? (
-                        <span className="truncate text-destructive">
-                          {latestErrorMessage}
-                        </span>
-                      ) : (
-                        "No error"
-                      )}
+                    <TableCell className={AMOUNT_COLUMN_CLASS}>
+                      <CollectedAmounts items={row.totalLifetimeCollected} />
                     </TableCell>
                     <TableCell>
                       {explorer ? (

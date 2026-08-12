@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { WalletAddressText } from "@/components/WalletAddressLink";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -101,8 +102,11 @@ export default async function WalletDetailPage({
       </Button>
 
       <div>
-        <h1 className="break-all font-mono text-lg font-semibold tracking-tight">
-          {data.address}
+        <h1 className="text-lg font-semibold tracking-tight">
+          <WalletAddressText
+            address={data.address}
+            className="text-lg font-semibold"
+          />
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Wallet activity overview

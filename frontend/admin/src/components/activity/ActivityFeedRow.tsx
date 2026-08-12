@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { ActivityErrorCell } from "@/components/activity/ActivityErrorCell";
 import { ActivityStatusChip } from "@/components/activity/ActivityStatusChip";
+import { NetworkBadge } from "@/components/NetworkBadge";
 import { TransactionIdLink } from "@/components/TransactionIdLink";
+import { TransactionIdMissing } from "@/components/JourneyPageHeader";
+import { WalletAddressLink } from "@/components/WalletAddressLink";
 import { TableCell } from "@/components/ui/table";
 import { activityDetailLink } from "@/lib/log-links";
 import { resolveTransactionId } from "@/lib/transaction-id";
 import { cn } from "@/lib/utils";
-import { formatDate, shortAddress } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import type { UnifiedActivityItem } from "@/types/activity-feed";
 import { ACTIVITY_COL, ACTIVITY_ROW_CELL } from "./activity-table-columns";
 
@@ -50,24 +53,18 @@ export function ActivityFeedRow({
         {journeyId ? (
           <TransactionIdLink id={journeyId} showCopy={false} />
         ) : (
+          <TransactionIdMissing />
+        )}
+      </TableCell>
+      <TableCell className={cellClass("wallet")}>
+        {row.address ? (
+          <WalletAddressLink address={row.address} showCopy={false} />
+        ) : (
           <span className="text-xs text-muted-foreground">—</span>
         )}
       </TableCell>
-      <TableCell className={cellClass("wallet", "font-mono text-xs")}>
-        {row.address ? (
-          <Link
-            href={`/users/${encodeURIComponent(row.address)}`}
-            className="block truncate text-primary hover:underline"
-            title={row.address}
-          >
-            {shortAddress(row.address)}
-          </Link>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        )}
-      </TableCell>
-      <TableCell className={cellClass("network", "text-xs uppercase")}>
-        <span className="block truncate">{row.network ?? "—"}</span>
+      <TableCell className={cellClass("network")}>
+        <NetworkBadge network={row.network} />
       </TableCell>
       <TableCell className={cellClass("step", "text-sm font-medium")}>
         <span className="block truncate" title={row.step}>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronLeft, ExternalLink, Receipt } from "lucide-react";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { CopyButton } from "@/components/CopyButton";
+import { WalletAddressText } from "@/components/WalletAddressLink";
 import { DetailList, DetailRow } from "@/components/DetailList";
 import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -149,8 +150,11 @@ export default async function UserDetailPage({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="break-all font-mono text-lg font-semibold tracking-tight">
-              {data.address}
+            <h1 className="text-lg font-semibold tracking-tight">
+              <WalletAddressText
+                address={data.address}
+                className="text-lg font-semibold"
+              />
             </h1>
             <CopyButton value={data.address} />
           </div>

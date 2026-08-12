@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { CopyButton } from "@/components/CopyButton";
 import { transactionDetailLink } from "@/lib/log-links";
-import {
-  shortTransactionId,
-  transactionIdColorClass,
-} from "@/lib/transaction-id";
+import { transactionIdColorClass } from "@/lib/entity-colors";
+import { shortTransactionId } from "@/lib/transaction-id";
 import { cn } from "@/lib/utils";
 
 export function TransactionIdLink({
@@ -12,7 +10,7 @@ export function TransactionIdLink({
   className,
   showCopy = true,
   truncate = true,
-  colorize = false,
+  colorize = true,
   copyVariant = "text",
   token,
 }: {

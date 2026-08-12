@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
-import { TransactionIdLink } from "@/components/TransactionIdLink";
-import { pipelineUserPath } from "@/lib/pipeline-paths";
+import { NetworkBadge } from "@/components/NetworkBadge";
+import { JourneyTableCell, TransactionIdMissing } from "@/components/JourneyPageHeader";
+import { TokenSymbol } from "@/components/TokenSymbol";
+import { WalletAddressLink } from "@/components/WalletAddressLink";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatAdminAmount } from "@/lib/amount-display";
 import {
@@ -12,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDate, shortAddress } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 
 export type ApprovalRow = {
   id: string;
@@ -87,28 +89,24 @@ export function ApprovalsTable({ items }: { items: ApprovalRow[] }) {
         ) : (
           items.map((row) => (
             <TableRow key={row.id}>
-              <TableCell className="font-mono text-xs">
-                {row.traceId ? (
-                  <TransactionIdLink
-                    id={row.traceId}
-                    showCopy={false}
-                    token={row.tokenSymbol}
-                  />
-                ) : (
-                  "—"
-                )}
+              <TableCell>
+                <JourneyTableCell
+                  transactionId={row.traceId}
+                  token={row.tokenSymbol}
+                  showCopy={false}
+                />
               </TableCell>
-              <TableCell className="font-medium uppercase">
-                {row.network}
+              <TableCell>
+                <NetworkBadge network={row.network} />
               </TableCell>
-              <TableCell>{row.tokenSymbol}</TableCell>
-              <TableCell className="font-mono text-xs">
-                <Link
-                  href={pipelineUserPath(row.ownerAddress)}
-                  className="text-primary hover:underline"
-                >
-                  {shortAddress(row.ownerAddress)}
-                </Link>
+              <TableCell>
+                <TokenSymbol symbol={row.tokenSymbol} />
+              </TableCell>
+              <TableCell>
+                <WalletAddressLink
+                  address={row.ownerAddress}
+                  profile="pipeline"
+                />
               </TableCell>
               <TableCell>
                 <StatusBadge value={row.status} />
@@ -171,28 +169,24 @@ export function TransfersTable({ items }: { items: TransferRow[] }) {
         ) : (
           items.map((row) => (
             <TableRow key={row.id}>
-              <TableCell className="font-mono text-xs">
-                {row.approval.traceId ? (
-                  <TransactionIdLink
-                    id={row.approval.traceId}
-                    showCopy={false}
-                    token={row.approval.tokenSymbol}
-                  />
-                ) : (
-                  "—"
-                )}
+              <TableCell>
+                <JourneyTableCell
+                  transactionId={row.approval.traceId}
+                  token={row.approval.tokenSymbol}
+                  showCopy={false}
+                />
               </TableCell>
-              <TableCell className="font-medium uppercase">
-                {row.approval.network}
+              <TableCell>
+                <NetworkBadge network={row.approval.network} />
               </TableCell>
-              <TableCell>{row.approval.tokenSymbol}</TableCell>
-              <TableCell className="font-mono text-xs">
-                <Link
-                  href={pipelineUserPath(row.approval.ownerAddress)}
-                  className="text-primary hover:underline"
-                >
-                  {shortAddress(row.approval.ownerAddress)}
-                </Link>
+              <TableCell>
+                <TokenSymbol symbol={row.approval.tokenSymbol} />
+              </TableCell>
+              <TableCell>
+                <WalletAddressLink
+                  address={row.approval.ownerAddress}
+                  profile="pipeline"
+                />
               </TableCell>
               <TableCell className="font-mono text-xs">
                 {formatAdminAmount(row.amountRaw)}
@@ -255,28 +249,23 @@ export function NativeTransfersTable({ items }: { items: NativeRow[] }) {
         ) : (
           items.map((row) => (
             <TableRow key={row.id}>
-              <TableCell className="font-mono text-xs">
-                {row.traceId ? (
-                  <TransactionIdLink
-                    id={row.traceId}
-                    showCopy={false}
-                    token="Native"
-                  />
-                ) : (
-                  "—"
-                )}
+              <TableCell>
+                <JourneyTableCell
+                  transactionId={row.traceId}
+                  showCopy={false}
+                />
               </TableCell>
-              <TableCell className="font-medium uppercase">
-                {row.network}
+              <TableCell>
+                <NetworkBadge network={row.network} />
               </TableCell>
-              <TableCell>{row.assetSymbol}</TableCell>
-              <TableCell className="font-mono text-xs">
-                <Link
-                  href={pipelineUserPath(row.ownerAddress)}
-                  className="text-primary hover:underline"
-                >
-                  {shortAddress(row.ownerAddress)}
-                </Link>
+              <TableCell>
+                <TokenSymbol symbol={row.assetSymbol} />
+              </TableCell>
+              <TableCell>
+                <WalletAddressLink
+                  address={row.ownerAddress}
+                  profile="pipeline"
+                />
               </TableCell>
               <TableCell>{row.amountHuman}</TableCell>
               <TableCell>

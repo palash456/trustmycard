@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronLeft, ExternalLink } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
+import { WalletAddressText } from "@/components/WalletAddressLink";
 import { ListPageLayout } from "@/components/ListPageLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { PageRefreshButton } from "@/components/PageRefreshButton";
@@ -107,9 +108,10 @@ export default async function UserPipelinePage({
         description={
           <>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="break-all font-mono text-sm font-medium">
-                {pipeline.address}
-              </span>
+              <WalletAddressText
+                address={pipeline.address}
+                className="text-sm font-medium"
+              />
               <CopyButton value={pipeline.address} />
             </div>
             <p className="text-xs text-muted-foreground">

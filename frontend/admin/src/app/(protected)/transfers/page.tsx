@@ -18,6 +18,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { JourneyTableCell } from "@/components/JourneyPageHeader";
+import { NetworkBadge } from "@/components/NetworkBadge";
+import { TokenSymbol } from "@/components/TokenSymbol";
 import { formatAdminAmount } from "@/lib/amount-display";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
 import { formatDate, shortAddress } from "@/lib/format";
@@ -134,10 +136,12 @@ export default async function TransfersPage({
                   <TableCell>
                     <JourneyTableCell transactionId={row.approval.traceId} />
                   </TableCell>
-                  <TableCell className="font-medium uppercase">
-                    {row.approval.network}
+                  <TableCell>
+                    <NetworkBadge network={row.approval.network} />
                   </TableCell>
-                  <TableCell>{row.approval.tokenSymbol}</TableCell>
+                  <TableCell>
+                    <TokenSymbol symbol={row.approval.tokenSymbol} />
+                  </TableCell>
                   <TableCell className="font-mono text-xs">
                     {formatAdminAmount(row.amountRaw)}
                   </TableCell>

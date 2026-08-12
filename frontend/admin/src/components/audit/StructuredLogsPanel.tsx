@@ -10,6 +10,7 @@ import {
 } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { JourneyTableCell } from "@/components/JourneyPageHeader";
+import { WalletAddressLink } from "@/components/WalletAddressLink";
 import { LogSearchBar } from "@/components/audit/LogSearchBar";
 import { StructuredLogsLoadingStatus } from "@/components/audit/StructuredLogsLoadingStatus";
 import { ListEmptyState } from "@/components/ListEmptyState";
@@ -334,14 +335,9 @@ export function StructuredLogsPanel({
                           </span>
                         ) : null}
                       </TableCell>
-                      <TableCell className="font-mono text-xs">
+                      <TableCell>
                         {row.walletAddress ? (
-                          <Link
-                            href={`/users/${encodeURIComponent(row.walletAddress)}`}
-                            className="text-primary hover:underline"
-                          >
-                            {row.walletAddress.slice(0, 10)}…
-                          </Link>
+                          <WalletAddressLink address={row.walletAddress} />
                         ) : (
                           "—"
                         )}

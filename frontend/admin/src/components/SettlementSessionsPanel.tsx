@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { TransactionIdLink } from "@/components/TransactionIdLink";
+import { TransactionIdMissing } from "@/components/JourneyPageHeader";
+import { TokenSymbol } from "@/components/TokenSymbol";
+import { tokenSymbolColorClass } from "@/lib/entity-colors";
 import { CheckCircle2, Circle, XCircle } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -77,7 +80,7 @@ export function SettlementSessionsPanel({
                   {transactionId ? (
                     <TransactionIdLink id={transactionId} />
                   ) : (
-                    "—"
+                    <TransactionIdMissing />
                   )}
                 </div>
               </div>
@@ -100,7 +103,7 @@ export function SettlementSessionsPanel({
                     <div key={symbol} className="flex items-center gap-2">
                       {tokenIcon(!active && !tokenFailed, tokenFailed)}
                       <span>
-                        {symbol} {label}
+                        <TokenSymbol symbol={symbol} /> {label}
                       </span>
                     </div>
                   );
@@ -110,7 +113,7 @@ export function SettlementSessionsPanel({
                     session.nativeReady && complete,
                     failed && !complete,
                   )}
-                  <span>
+                  <span className={tokenSymbolColorClass("ETH")}>
                     Native{" "}
                     {complete
                       ? "complete"

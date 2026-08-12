@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { PageFilters } from "@/components/FilterForm";
 import { ListPageLayout } from "@/components/ListPageLayout";
@@ -8,7 +7,10 @@ import { PageRefreshButton } from "@/components/PageRefreshButton";
 import { PageToolbar } from "@/components/PageToolbar";
 import { Pagination } from "@/components/Pagination";
 import { StatusBadge } from "@/components/StatusBadge";
+import { NetworkBadge } from "@/components/NetworkBadge";
+import { TokenSymbolList } from "@/components/TokenSymbol";
 import { TransactionIdLink } from "@/components/TransactionIdLink";
+import { WalletAddressLink } from "@/components/WalletAddressLink";
 import {
   Table,
   TableBody,
@@ -18,8 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
-import { formatDate, shortAddress } from "@/lib/format";
-import { pipelineUserPath } from "@/lib/pipeline-paths";
+import { formatDate } from "@/lib/format";
 import type { TransactionListResponse } from "@/types/transaction-journey";
 
 const FILTER_FIELDS = [
@@ -145,23 +146,21 @@ export default async function TransactionsPage({
                   <TableCell>
                     <StatusBadge value={row.terminalStatus} />
                   </TableCell>
-                  <TableCell className="font-mono text-xs">
+                  <TableCell>
                     {row.walletAddress ? (
-                      <Link
-                        href={pipelineUserPath(row.walletAddress)}
-                        className="text-primary hover:underline"
-                      >
-                        {shortAddress(row.walletAddress)}
-                      </Link>
+                      <WalletAddressLink
+                        address={row.walletAddress}
+                        profile="pipeline"
+                      />
                     ) : (
                       "—"
                     )}
                   </TableCell>
-                  <TableCell className="text-xs uppercase">
-                    {row.network ?? "—"}
+                  <TableCell>
+                    <NetworkBadge network={row.network} />
                   </TableCell>
-                  <TableCell className="text-xs uppercase">
-                    {row.token ?? "—"}
+                  <TableCell>
+                    <TokenSymbolList value={row.token} />
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {formatDate(row.startedAt)}

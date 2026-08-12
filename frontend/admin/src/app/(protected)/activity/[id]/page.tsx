@@ -6,6 +6,7 @@ import { CopyButton } from "@/components/CopyButton";
 import { DetailList, DetailRow } from "@/components/DetailList";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { JourneyPageHeader } from "@/components/JourneyPageHeader";
+import { WalletAddressLink } from "@/components/WalletAddressLink";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { adminGetData } from "@/lib/admin-data";
@@ -105,8 +106,7 @@ export default async function ActivityDetailPage({
             </DetailRow>
             <DetailRow label="Time">{formatDate(e.at)}</DetailRow>
             <DetailRow label="Wallet">
-              <span className="font-mono text-xs">{e.address}</span>
-              <CopyButton value={e.address} />
+              <WalletAddressLink address={e.address} truncate={false} showCopy />
             </DetailRow>
             {e.network ? (
               <DetailRow label="Network">{e.network.toUpperCase()}</DetailRow>

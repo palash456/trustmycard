@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
+import { NetworkBadge } from "@/components/NetworkBadge";
 import { TransactionIdLink } from "@/components/TransactionIdLink";
+import { TransactionIdMissing } from "@/components/JourneyPageHeader";
+import { WalletAddressLink } from "@/components/WalletAddressLink";
 import { DashboardCharts } from "@/components/charts/DashboardCharts";
 import { StatCard } from "@/components/StatCard";
 import { buttonVariants } from "@/components/ui/button";
@@ -15,7 +18,6 @@ import {
 import { formatActivityError } from "@/components/activity/ActivityErrorCell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate } from "@/lib/format";
-import { pipelineUserPath } from "@/lib/pipeline-paths";
 import { transactionDetailLink } from "@/lib/log-links";
 import type { TransactionListItem } from "@/types/transaction-journey";
 
@@ -340,20 +342,19 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                       <td className="py-2.5 pr-3">
                         <StatusBadge value={row.terminalStatus} />
                       </td>
-                      <td className="max-w-[140px] truncate py-2.5 pr-3 font-mono text-xs">
+                      <td className="max-w-[140px] truncate py-2.5 pr-3">
                         {row.walletAddress ? (
-                          <Link
-                            href={pipelineUserPath(row.walletAddress)}
-                            className="text-primary hover:underline"
-                          >
-                            {row.walletAddress}
-                          </Link>
+                          <WalletAddressLink
+                            address={row.walletAddress}
+                            profile="pipeline"
+                            truncate={false}
+                          />
                         ) : (
                           "—"
                         )}
                       </td>
-                      <td className="py-2.5 pr-3 text-xs uppercase">
-                        {row.network ?? "—"}
+                      <td className="py-2.5 pr-3">
+                        <NetworkBadge network={row.network} />
                       </td>
                       <td className="py-2.5 text-xs text-muted-foreground">
                         {formatDate(row.lastActivityAt)}
@@ -416,16 +417,15 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                             showCopy={false}
                           />
                         ) : (
-                          "—"
+                          <TransactionIdMissing />
                         )}
                       </td>
-                      <td className="max-w-[140px] truncate py-2.5 pr-3 font-mono text-xs">
-                        <Link
-                          href={pipelineUserPath(row.owner)}
-                          className="text-primary hover:underline"
-                        >
-                          {row.owner}
-                        </Link>
+                      <td className="max-w-[140px] truncate py-2.5 pr-3">
+                        <WalletAddressLink
+                          address={row.owner}
+                          profile="pipeline"
+                          truncate={false}
+                        />
                       </td>
                       <td className="py-2.5 pr-3">
                         <StatusBadge value={row.status} />
@@ -469,7 +469,10 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                     {e.ts ? <span>{formatDate(e.ts)}</span> : null}
                     {e.network ? <span>{e.network.toUpperCase()}</span> : null}
                     {e.walletAddress ? (
-                      <span className="font-mono">{e.walletAddress}</span>
+                      <WalletAddressLink
+                        address={e.walletAddress}
+                        profile="pipeline"
+                      />
                     ) : null}
                   </div>
                 </div>

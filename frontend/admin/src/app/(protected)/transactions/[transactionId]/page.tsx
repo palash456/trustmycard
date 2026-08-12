@@ -2,6 +2,9 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { SessionTimelineView } from "@/components/audit/SessionTimelineView";
 import { JourneyPageHeader } from "@/components/JourneyPageHeader";
+import { NetworkBadge } from "@/components/NetworkBadge";
+import { TokenSymbolList } from "@/components/TokenSymbol";
+import { WalletAddressLink } from "@/components/WalletAddressLink";
 import { StatusBadge } from "@/components/StatusBadge";
 import { JourneyEntitySections } from "@/components/transactions/JourneyEntitySections";
 import { TransactionPipelinePanel } from "@/components/transactions/TransactionPipelinePanel";
@@ -12,7 +15,7 @@ import {
   auditTimelineLink,
   transactionLogsLink,
 } from "@/lib/log-links";
-import { formatDate, shortAddress } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import type { TransactionJourneyDetail } from "@/types/transaction-journey";
 
 export default async function TransactionDetailPage({
@@ -58,23 +61,18 @@ export default async function TransactionDetailPage({
           <div>
             <span className="text-muted-foreground">Wallet </span>
             {data.walletAddress ? (
-              <Link
-                href={`/users/${encodeURIComponent(data.walletAddress)}`}
-                className="font-mono text-primary hover:underline"
-              >
-                {shortAddress(data.walletAddress)}
-              </Link>
+              <WalletAddressLink address={data.walletAddress} />
             ) : (
               "—"
             )}
           </div>
           <div>
             <span className="text-muted-foreground">Network </span>
-            {data.network ?? "—"}
+            <NetworkBadge network={data.network} />
           </div>
           <div>
             <span className="text-muted-foreground">Token </span>
-            {data.token ?? "—"}
+            <TokenSymbolList value={data.token} />
           </div>
           <div>
             <span className="text-muted-foreground">Started </span>

@@ -2,7 +2,9 @@ import Link from "next/link";
 import type { UserPipelineSnapshot } from "@/types/pipeline";
 import type { TransactionJourneyDetail } from "@/types/transaction-journey";
 import { PipelineLifecycleDashboard } from "@/components/pipeline/PipelineLifecycleDashboard";
+import { TokenSymbol } from "@/components/TokenSymbol";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { transactionIdColorClass } from "@/lib/entity-colors";
 import {
   formatPipelineScopeLabel,
   resolveJourneyPipelineScope,
@@ -60,7 +62,10 @@ export function TransactionPipelinePanel({
         </CardHeader>
         <CardContent className="px-4 pb-4 text-sm text-muted-foreground">
           No pipeline stages are linked to{" "}
-          <span className="font-mono">{transactionId}</span> yet. Open the
+          <span className={cn("font-mono", transactionIdColorClass(transactionId))}>
+            {transactionId}
+          </span>{" "}
+          yet. Open the
           wallet funnel for the full lifecycle.
         </CardContent>
       </Card>
@@ -81,12 +86,27 @@ export function TransactionPipelinePanel({
                 {formatPipelineScopeLabel(assetScope)}
               </span>{" "}
               flow for{" "}
-              <span className="font-mono text-xs">{transactionId}</span>
+              <span
+                className={cn(
+                  "font-mono text-xs",
+                  transactionIdColorClass(transactionId),
+                )}
+              >
+                {transactionId}
+              </span>
             </>
           ) : (
             <>
               Stages scoped to{" "}
-              <span className="font-mono text-xs">{transactionId}</span> —
+              <span
+                className={cn(
+                  "font-mono text-xs",
+                  transactionIdColorClass(transactionId),
+                )}
+              >
+                {transactionId}
+              </span>{" "}
+              —
               select a token below when multiple assets were involved
             </>
           )}
@@ -111,7 +131,7 @@ export function TransactionPipelinePanel({
                     : "border-border bg-muted/40 text-muted-foreground hover:bg-muted",
                 )}
               >
-                {token}
+                <TokenSymbol symbol={token} />
               </Link>
             );
           })}

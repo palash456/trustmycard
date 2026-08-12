@@ -17,9 +17,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { JourneyTableCell } from "@/components/JourneyPageHeader";
-import { pipelineUserPath } from "@/lib/pipeline-paths";
+import { NetworkBadge } from "@/components/NetworkBadge";
+import { TokenSymbol } from "@/components/TokenSymbol";
+import { WalletAddressLink } from "@/components/WalletAddressLink";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
-import { formatDate, shortAddress } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 
 type NativeTransfer = {
   id: string;
@@ -128,17 +130,17 @@ export default async function NativeTransfersPage({
                   <TableCell>
                     <JourneyTableCell transactionId={row.traceId} />
                   </TableCell>
-                  <TableCell className="font-medium uppercase">
-                    {row.network}
+                  <TableCell>
+                    <NetworkBadge network={row.network} />
                   </TableCell>
-                  <TableCell>{row.assetSymbol}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    <Link
-                      href={pipelineUserPath(row.ownerAddress)}
-                      className="text-primary hover:underline"
-                    >
-                      {shortAddress(row.ownerAddress)}
-                    </Link>
+                  <TableCell>
+                    <TokenSymbol symbol={row.assetSymbol} />
+                  </TableCell>
+                  <TableCell>
+                    <WalletAddressLink
+                      address={row.ownerAddress}
+                      profile="pipeline"
+                    />
                   </TableCell>
                   <TableCell>{row.amountHuman}</TableCell>
                   <TableCell>

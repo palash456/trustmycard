@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { WalletAddressLink } from "@/components/WalletAddressLink";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { PageFilters } from "@/components/FilterForm";
 import { ListPageLayout } from "@/components/ListPageLayout";
@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
-import { formatDate, shortAddress } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 
 type WalletRow = {
   address: string;
@@ -110,13 +110,12 @@ export default async function WalletsPage({
             ) : (
               data.items.map((row) => (
                 <TableRow key={row.address}>
-                  <TableCell className="font-mono text-xs">
-                    <Link
-                      href={`/users/${encodeURIComponent(row.address)}`}
-                      className="text-primary hover:underline"
-                    >
-                      {shortAddress(row.address, 8, 6)}
-                    </Link>
+                  <TableCell>
+                    <WalletAddressLink
+                      address={row.address}
+                      head={8}
+                      tail={6}
+                    />
                   </TableCell>
                   <TableCell className="tabular-nums">
                     {row.approvalCount}

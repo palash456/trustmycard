@@ -16,6 +16,7 @@ import { systemDesignPage } from "./pages/system-design";
 import { testingPage } from "./pages/testing";
 import { transactionLifecyclePage } from "./pages/transaction-lifecycle";
 import { troubleshootingPage } from "./pages/troubleshooting";
+import { visualEncodingPage } from "./pages/visual-encoding";
 import { walletFlowsPage } from "./pages/wallet-flows";
 import { workersPage } from "./pages/workers";
 import type { DocNavGroup, DocPage, TocEntry } from "./types";
@@ -35,6 +36,7 @@ export const DOC_PAGES: DocPage[] = [
   workersPage,
   adminPanelPage,
   observabilityPage,
+  visualEncodingPage,
   securityPage,
   configurationPage,
   deploymentPage,
@@ -136,6 +138,11 @@ export const DOC_NAV_GROUPS: DocNavGroup[] = [
         slug: "observability",
         title: "Logging & Observability",
         keywords: observabilityPage.keywords,
+      },
+      {
+        slug: "visual-encoding",
+        title: "Visual encoding & colors",
+        keywords: visualEncodingPage.keywords,
       },
       { slug: "security", title: "Security", keywords: securityPage.keywords },
     ],

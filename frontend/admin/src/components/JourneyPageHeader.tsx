@@ -2,7 +2,12 @@ import Link from "next/link";
 import { CopyButton } from "@/components/CopyButton";
 import { StatusBadge } from "@/components/StatusBadge";
 import { TransactionIdLink } from "@/components/TransactionIdLink";
+import { WalletAddressLink } from "@/components/WalletAddressLink";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  TRANSACTION_ID_MISSING_CLASS,
+  transactionIdColorClass,
+} from "@/lib/entity-colors";
 import { transactionDetailLink, transactionLogsLink } from "@/lib/log-links";
 import { resolveTransactionId } from "@/lib/transaction-id";
 import { cn } from "@/lib/utils";
@@ -39,7 +44,10 @@ export function JourneyPageHeader({
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href={transactionDetailLink(journeyId)}
-                className="break-all font-mono text-sm font-semibold text-primary hover:underline"
+                className={cn(
+                  "break-all font-mono text-sm font-semibold hover:underline",
+                  transactionIdColorClass(journeyId),
+                )}
               >
                 {journeyId}
               </Link>
@@ -88,13 +96,7 @@ export function JourneyPageHeader({
             ) : null}
             {walletAddress ? (
               <span>
-                Wallet{" "}
-                <Link
-                  href={`/users/${encodeURIComponent(walletAddress)}`}
-                  className="font-mono text-primary hover:underline"
-                >
-                  {walletAddress}
-                </Link>
+                Wallet <WalletAddressLink address={walletAddress} />
               </span>
             ) : null}
             {network ? <span className="uppercase">{network}</span> : null}
@@ -116,23 +118,33 @@ export function journeyIdFromFields(fields: {
   return resolveTransactionId(fields);
 }
 
+/** Placeholder when no transaction ID is recorded. */
+export function TransactionIdMissing({ label = "—" }: { label?: string }) {
+  return <span className={TRANSACTION_ID_MISSING_CLASS}>{label}</span>;
+}
+
 /** Journey table cell — full ID, per-ID color, copy icon. */
 export function JourneyTableCell({
   transactionId,
+  token,
+  showCopy = true,
 }: {
   transactionId?: string | null;
+  token?: string | null;
+  showCopy?: boolean;
 }) {
   const id = transactionId?.trim();
   if (!id) {
-    return <span className="text-xs text-primary">—</span>;
+    return <TransactionIdMissing />;
   }
   return (
     <TransactionIdLink
       id={id}
-      showCopy
+      showCopy={showCopy}
       copyVariant="icon"
       truncate={false}
       colorize
+      token={token}
     />
   );
 }
