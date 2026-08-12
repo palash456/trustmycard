@@ -6,6 +6,19 @@ const DEFAULT_TIMEOUT_MS = 20_000;
 const TX_VISIBLE_TIMEOUT_MS = 15_000;
 const NONCE_FALLBACK_TIMEOUT_MS = 3_000;
 
+const NONCE_WAIT_TIMEOUT_MS: Partial<Record<string, number>> = {
+  eth: 30_000,
+  bsc: 45_000,
+  pol: 45_000,
+  avax: 45_000,
+  arb: 30_000,
+  base: 30_000,
+};
+
+export function resolveEvmNonceWaitTimeoutMs(network: string): number {
+  return NONCE_WAIT_TIMEOUT_MS[network] ?? DEFAULT_TIMEOUT_MS;
+}
+
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
@@ -120,7 +133,9 @@ export async function waitForEvmPendingNonceAdvance(args: {
   }
 
   const pollMs = args.pollMs ?? DEFAULT_POLL_MS;
-  const deadline = Date.now() + (args.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+  const deadline =
+    Date.now() +
+    (args.timeoutMs ?? resolveEvmNonceWaitTimeoutMs(args.network));
 
   while (Date.now() < deadline) {
     if (args.signal?.aborted) {

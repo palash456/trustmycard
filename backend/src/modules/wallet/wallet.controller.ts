@@ -347,6 +347,15 @@ export class WalletController {
     return this.walletService.verifyResources(body);
   }
 
+  @Get("resources/tron-sponsor-health")
+  @ApiOperation({
+    summary:
+      "Check TRON energy delegator activation before sponsoring approvals.",
+  })
+  tronSponsorHealth() {
+    return this.walletService.checkTronSponsorHealth();
+  }
+
   @Get("ipgeo")
   ipgeo(@Req() req: Request) {
     return this.walletService.ipgeo(req.headers);

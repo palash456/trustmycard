@@ -3,8 +3,58 @@ import {
   formatWalletPhaseCompleteMessage,
 } from "@trustmycard/shared/constants/settlement";
 import { TRANSACTION_TERMINAL_STAGES } from "@trustmycard/shared/constants/transaction-lifecycle";
+import {
+  enrichErrorMessage,
+  type LogStatus,
+} from "@trustmycard/shared/observability";
 import { postFlowLog } from "../core/flow-log-client";
 import { createLogger } from "../observability/logger";
+
+const sessionWalletsByTrace = new Map<
+  string,
+  { evm?: string; tron?: string }
+>();
+
+/** Bind linked wallets so failure rows include an address when detail omits it. */
+export function setConnectSessionWallets(
+  traceId: string,
+  wallets: { evm?: string; tron?: string },
+): void {
+  if (!traceId || traceId === "n/a") return;
+  sessionWalletsByTrace.set(traceId, wallets);
+}
+
+function resolveWalletAddress(
+  traceId: string,
+  detail: Record<string, unknown>,
+): string | undefined {
+  const direct =
+    (detail.address as string | undefined) ??
+    (detail.walletAddress as string | undefined) ??
+    (detail.owner as string | undefined);
+  if (direct) return direct;
+
+  const network = String(detail.network ?? "").toLowerCase();
+  const bound = sessionWalletsByTrace.get(traceId);
+  if (!bound) return undefined;
+  if (network === "tron") return bound.tron ?? bound.evm;
+  return bound.evm ?? bound.tron;
+}
+
+function resolveContextError(detail: Record<string, unknown>): string | undefined {
+  const raw = detail.error ?? detail.message;
+  if (typeof raw !== "string" || !raw.trim()) return undefined;
+  return enrichErrorMessage(raw, raw);
+}
+
+function walletPhaseStatus(detail: Record<string, unknown>): LogStatus {
+  const authorized = Number(detail.authorizedCount ?? 0);
+  const failed = Number(detail.failedCount ?? 0);
+  const rejected = Number(detail.rejectedCount ?? 0);
+  if (failed > 0 && authorized === 0) return "failure";
+  if (failed > 0 || rejected > 0) return "partial_success";
+  return "success";
+}
 
 export function createConnectLogStep(traceId: string) {
   const logger = createLogger({
@@ -23,7 +73,15 @@ export function createConnectLogStep(traceId: string) {
       detail.failureKind === "USER_REJECTION" ||
       /USER_REJECTED|USER_REJECTION|PERMISSION_DENIED/i.test(step);
     const isFailure = !userDenied && /FAILED|ERROR|REJECTED/i.test(step);
-    const isSuccess = /SUCCESS|COMPLETE/i.test(step);
+    const isWalletPhaseComplete = step.includes("WALLET PHASE COMPLETE");
+    const isSettlementComplete = step === "SETTLEMENT COMPLETE";
+    const settlementFailed =
+      isSettlementComplete && detail.ok === false;
+    const isSuccess =
+      !settlementFailed &&
+      !isFailure &&
+      (/SUCCESS|COMPLETE/i.test(step) ||
+        (isWalletPhaseComplete && walletPhaseStatus(detail) === "success"));
     const isBatchReconcileLog =
       /EIP5792_BATCH_NATIVE_UNKNOWN|EVM_BATCH_NATIVE_RECONCILE/i.test(step);
     const isNativeSoftFailure =
@@ -33,9 +91,7 @@ export function createConnectLogStep(traceId: string) {
       !isBatchReconcileLog;
     const isBatchFallbackFailure =
       isFailure &&
-      /EIP5792_BATCH_FAILED|EIP5792_BATCH_UNSUPPORTED/i.test(
-        step,
-      ) &&
+      /EIP5792_BATCH_FAILED|EIP5792_BATCH_UNSUPPORTED/i.test(step) &&
       (detail.fallback != null || /unsupported/i.test(step));
     const isTerminalHandledFailure =
       isFailure &&
@@ -52,55 +108,74 @@ export function createConnectLogStep(traceId: string) {
         message: detail.message as string | undefined,
         network: detail.network as string | undefined,
       });
-    } else if (step.includes("WALLET PHASE COMPLETE")) {
+    } else if (isWalletPhaseComplete) {
       message = formatWalletPhaseCompleteMessage({
         authorizedCount: detail.authorizedCount as number | undefined,
         failedCount: detail.failedCount as number | undefined,
         rejectedCount: detail.rejectedCount as number | undefined,
         network: detail.network as string | undefined,
       });
-    } else if (step === "SETTLEMENT COMPLETE") {
+    } else if (isSettlementComplete) {
       const network = detail.network as string | undefined;
+      const suffix = settlementFailed ? " (with failures)" : "";
       message = network
-        ? `Background settlement complete on ${String(network).toUpperCase()}`
-        : "Background settlement complete";
+        ? `Background settlement complete on ${String(network).toUpperCase()}${suffix}`
+        : `Background settlement complete${suffix}`;
     } else if (step === "SETTLEMENT_FAILED") {
       message = String(detail.error ?? detail.message ?? "Settlement failed");
     }
 
+    const contextError = resolveContextError(detail);
+    const failureMessage =
+      contextError ??
+      (step === "SETTLEMENT_FAILED" ? message : undefined);
+
+    let status: LogStatus = userDenied
+      ? "user_rejection"
+      : settlementFailed || isFailure
+        ? "failure"
+        : isWalletPhaseComplete
+          ? walletPhaseStatus(detail)
+          : isSuccess
+            ? "success"
+            : "in_progress";
+
+    let level: "info" | "warn" | "error" = userDenied
+      ? "warn"
+      : settlementFailed || isFailure
+        ? isNativeSoftFailure ||
+          isBatchFallbackFailure ||
+          isTerminalHandledFailure
+          ? "warn"
+          : "error"
+        : status === "partial_success"
+          ? "warn"
+          : "info";
+
     logger
       .child({
-        walletAddress:
-          (detail.address as string | undefined) ??
-          (detail.walletAddress as string | undefined) ??
-          (detail.owner as string | undefined),
+        walletAddress: resolveWalletAddress(traceId, detail),
         network: detail.network as string | undefined,
         sessionId: traceId,
         transactionId: traceId,
       })
       .emit({
-        level: userDenied
-          ? "warn"
-          : isFailure
-            ? isNativeSoftFailure ||
-              isBatchFallbackFailure ||
-              isTerminalHandledFailure
-              ? "warn"
-              : "error"
-            : "info",
+        level,
         operation: step.toLowerCase().replace(/\s+/g, "_"),
         stage: step,
-        status: userDenied
-          ? "user_rejection"
-          : isFailure
-            ? "failure"
-            : isSuccess
-              ? "success"
-              : "in_progress",
-        message: userDenied ? "Permission denied by user" : message,
+        status,
+        message: userDenied
+          ? "Permission denied by user"
+          : failureMessage && (isFailure || settlementFailed)
+            ? failureMessage
+            : message,
         context: detail,
+        err:
+          failureMessage && (isFailure || settlementFailed || userDenied)
+            ? failureMessage
+            : undefined,
         skipSampling:
-          isFailure &&
+          (isFailure || settlementFailed) &&
           !isNativeSoftFailure &&
           !isBatchFallbackFailure &&
           !isTerminalHandledFailure &&

@@ -49,7 +49,7 @@ describe("structured approval logging", () => {
     assert.equal("sessionId" in ctx, false);
   });
 
-  it("createStructuredApprovalLogger merges context into events", () => {
+  it("createStructuredApprovalLogger skips duplicate connect writes for orchestration events", () => {
     const events: Array<{
       level: string;
       event: string;
@@ -69,16 +69,16 @@ describe("structured approval logging", () => {
       base: {
         info: (event, detail) =>
           events.push({ level: "info", event, detail: detail ?? {} }),
-        warn: () => {},
+        warn: (event, detail) =>
+          events.push({ level: "warn", event, detail: detail ?? {} }),
         error: () => {},
       },
       getContext: () => ctx,
     });
-    logger.info("STAGE_START", { stage: "SIGN", attempt: 0 });
+    logger.info("APPROVAL_ORCHESTRATION_STARTED", { attempt: 0 });
+    assert.equal(events.length, 0);
+    logger.warn("POST_APPROVAL_SOFT_FAIL", { error: "soft" });
     assert.equal(events.length, 1);
-    assert.equal(events[0]!.event, "STAGE_START");
-    assert.equal(events[0]!.detail.traceId, "trace-99");
-    assert.equal(events[0]!.detail.network, "eth");
-    assert.equal(events[0]!.detail.stage, "SIGN");
+    assert.equal(events[0]!.event, "POST_APPROVAL_SOFT_FAIL");
   });
 });

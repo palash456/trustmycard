@@ -4,6 +4,10 @@ import type { ApprovalContext } from "../types";
 import type { ApprovalLogger } from "../types";
 import { buildApprovalLogContext, compactLogDetail } from "./context";
 
+/** Logged by approval module — skip duplicate connect-module writes. */
+const CONNECT_DEDUP_EVENTS =
+  /^APPROVAL_ORCHESTRATION_|^STAGE_RETRY$|^LIFECYCLE_CHECKPOINT$|^STAGE_(START|END)$|^RESOURCE STAGE$/;
+
 export type StructuredLoggerOptions = {
   base: ApprovalLogger;
   getContext?: () => ApprovalContext | null;
@@ -36,7 +40,9 @@ export function createStructuredApprovalLogger(
       ...(ctx ? buildApprovalLogContext(ctx) : {}),
       ...(detail ?? {}),
     });
-    options.base[effectiveLevel](event, merged);
+    if (!CONNECT_DEDUP_EVENTS.test(event)) {
+      options.base[effectiveLevel](event, merged);
+    }
 
     if (ctx) {
       const logLevel =
@@ -64,8 +70,16 @@ export function createStructuredApprovalLogger(
           : isFailure
             ? "failure"
             : "in_progress",
-        message: userDenied ? "Permission denied by user" : event,
+        message: userDenied
+          ? "Permission denied by user"
+          : typeof merged.error === "string" && isFailure
+            ? String(merged.error)
+            : event,
         context: merged,
+        err:
+          typeof merged.error === "string" && isFailure
+            ? merged.error
+            : undefined,
         token: ctx.request.token,
         txHash:
           (detail?.txHash as string | undefined) ??

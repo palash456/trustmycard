@@ -1,6 +1,7 @@
 import {
   compactLogDetail,
   createEventId,
+  enrichErrorMessage,
   getErrorCode,
   getErrorMessage,
   incrementCounter,
@@ -104,6 +105,24 @@ export function createLogger(
         const error =
           input.error ??
           (input.err !== undefined ? serializeError(input.err) : undefined);
+        const contextError =
+          input.context &&
+          typeof input.context === "object" &&
+          typeof (input.context as Record<string, unknown>).error === "string"
+            ? enrichErrorMessage(
+                (input.context as Record<string, unknown>).error,
+                String((input.context as Record<string, unknown>).error),
+              )
+            : undefined;
+        const resolvedMessage =
+          input.status === "failure" ||
+          input.status === "user_rejection" ||
+          input.level === "error"
+            ? enrichErrorMessage(
+                input.message,
+                contextError ?? input.message,
+              )
+            : input.message;
         const event: LogEvent = {
           ts: new Date().toISOString(),
           module: options.module,
@@ -126,7 +145,7 @@ export function createLogger(
           operation: input.operation,
           stage: input.stage,
           status: input.status,
-          message: input.message,
+          message: resolvedMessage,
           token: input.token,
           asset: input.asset,
           txHash: input.txHash,
@@ -134,7 +153,9 @@ export function createLogger(
           retryCount: input.retryCount,
           rpcEndpoint: input.rpcEndpoint,
           apiEndpoint: input.apiEndpoint,
-          error,
+          error:
+            error ??
+            (contextError ? serializeError(contextError) : undefined),
           errorCode:
             input.errorCode ??
             (error ? (getErrorCode(error) ?? undefined) : undefined),

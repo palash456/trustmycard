@@ -347,7 +347,7 @@ async function awaitEvmNativeSignNonceGap(args: {
   batchResults: EvmTokenBatchRunResult;
   baselineNonce: bigint;
   log: RunAuthorizationSessionArgs["log"];
-}): Promise<void> {
+}): Promise<boolean> {
   const anchorTx = args.batchResults.results.find(
     (r) => r.txHash && r.token !== "NATIVE",
   )?.txHash;
@@ -358,24 +358,26 @@ async function awaitEvmNativeSignNonceGap(args: {
   });
   try {
     if (anchorTx) {
-      await awaitEvmSequentialApprovalGap({
+      const advanced = await awaitEvmSequentialApprovalGap({
         network: args.network,
         owner: args.owner,
         txHash: anchorTx,
         baselineNonce: args.baselineNonce,
       });
-    } else {
-      await waitForEvmPendingNonceAdvance({
-        network: args.network,
-        owner: args.owner,
-        baselineNonce: args.baselineNonce,
-      });
+      return advanced != null;
     }
+    await waitForEvmPendingNonceAdvance({
+      network: args.network,
+      owner: args.owner,
+      baselineNonce: args.baselineNonce,
+    });
+    return true;
   } catch (nonceErr) {
     args.log?.("EVM_NATIVE_SIGN_NONCE_WAIT_FAILED", {
       network: args.network,
       error: getErrorMessage(nonceErr, "Nonce wait failed"),
     });
+    return false;
   }
 }
 
@@ -552,13 +554,27 @@ export async function runAuthorizationSession(
               evmOwner &&
               isEvmChainKey(unit.network)
             ) {
-              await awaitEvmNativeSignNonceGap({
+              const nonceReady = await awaitEvmNativeSignNonceGap({
                 network: unit.network,
                 owner: evmOwner,
                 batchResults,
                 baselineNonce: batchBaselineNonce,
                 log,
               });
+              if (!nonceReady) {
+                recordEvmNativeDeferred({
+                  item: unit.nativeItem,
+                  results,
+                  captureByNetwork,
+                  sessionId,
+                  owner: evmOwner,
+                  log,
+                  onAssetEnd: args.onAssetEnd,
+                  reason: "nonce_wait_timeout",
+                });
+                captureByNetwork.set(unit.network, existing);
+                continue;
+              }
             }
             captureByNetwork.set(unit.network, existing);
             await runNativeWalletPhase({
@@ -659,7 +675,7 @@ export async function runAuthorizationSession(
             )
             .at(-1)?.txHash;
           if (lastTokenTx) {
-            await awaitEvmNativeSignNonceGap({
+            const nonceReady = await awaitEvmNativeSignNonceGap({
               network: unit.network,
               owner: evmOwner,
               batchResults: {
@@ -669,6 +685,19 @@ export async function runAuthorizationSession(
               baselineNonce: evmPendingNonce,
               log,
             });
+            if (!nonceReady && unit.nativeItem) {
+              recordEvmNativeDeferred({
+                item: unit.nativeItem,
+                results,
+                captureByNetwork,
+                sessionId,
+                owner: evmOwner,
+                log,
+                onAssetEnd: args.onAssetEnd,
+                reason: "nonce_wait_timeout",
+              });
+              continue;
+            }
           }
         }
         await runNativeWalletPhase({

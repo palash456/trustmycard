@@ -98,6 +98,26 @@ export class ResourceManager {
     return result;
   }
 
+  async checkTronSponsorHealth(): Promise<{
+    ok: boolean;
+    message?: string;
+    delegator?: string;
+  }> {
+    const provider = this.resolveProvider("tron");
+    if (!provider || !("checkSponsorHealth" in provider)) {
+      return { ok: true };
+    }
+    return (
+      provider as {
+        checkSponsorHealth: () => Promise<{
+          ok: boolean;
+          message?: string;
+          delegator?: string;
+        }>;
+      }
+    ).checkSponsorHealth();
+  }
+
   private resolveProvider(network: string): ChainResourceProvider | null {
     const key = network.toLowerCase();
     return this.providers.find((p) => p.supports(key)) ?? null;

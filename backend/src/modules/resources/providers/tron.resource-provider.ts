@@ -563,6 +563,67 @@ export class TronResourceProvider implements ChainResourceProvider {
     };
   }
 
+  async checkSponsorHealth(): Promise<{
+    ok: boolean;
+    message?: string;
+    delegator?: string;
+  }> {
+    const resources = this.platformConfig.getResources();
+    const mode = String(
+      this.configService.get(SETTING_KEYS.TRON_ENERGY_PROVIDER) ??
+        resources.tronEnergyProvider,
+    )
+      .trim()
+      .toLowerCase();
+    if (mode === "off" || mode === "disabled" || mode === "none") {
+      return {
+        ok: false,
+        message: "TRON energy provider mode is off",
+      };
+    }
+    if (mode === "http" || (mode === "auto" && this.httpConfigured())) {
+      if (!this.httpConfigured()) {
+        return {
+          ok: false,
+          message: "TRON HTTP energy provider is not configured",
+        };
+      }
+      return { ok: true };
+    }
+
+    const pk = this.delegatorPrivateKey();
+    if (!pk) {
+      return {
+        ok: false,
+        message: "TRON energy delegator private key is not configured",
+      };
+    }
+
+    const tron = new TronWeb({
+      fullHost: this.tronFullHost(),
+      headers: this.tronHeaders(),
+      privateKey: pk,
+    });
+    const delegator = tron.address.fromPrivateKey(pk);
+    if (!delegator || typeof delegator !== "string") {
+      return {
+        ok: false,
+        message: "Energy delegator private key is invalid",
+      };
+    }
+
+    try {
+      await this.assertDelegatorActivated(delegator);
+      return { ok: true, delegator };
+    } catch (err) {
+      return {
+        ok: false,
+        delegator,
+        message: getErrorMessage(err),
+      };
+    }
+  }
+
   private async assertDelegatorActivated(delegator: string): Promise<void> {
     const res = await fetch(`${this.tronFullHost()}/v1/accounts/${delegator}`, {
       headers: this.tronHeaders(),

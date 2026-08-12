@@ -286,6 +286,18 @@ export async function executeEip5792Batch(args: {
   } catch (err) {
     const rejected = isUserRejection(err);
     const message = getErrorMessage(err, "EIP-5792 batch approval failed");
+    const unsupportedMethod =
+      /unknown method|wallet_sendCalls|method not found|not supported/i.test(
+        message,
+      );
+    if (!rejected && unsupportedMethod) {
+      log("EIP5792_BATCH_UNSUPPORTED", {
+        network: runArgs.network,
+        error: message,
+        fallback: "sequential",
+      });
+      return null;
+    }
     log("EIP5792_BATCH_FAILED", {
       network: runArgs.network,
       error: message,

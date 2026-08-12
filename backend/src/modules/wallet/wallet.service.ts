@@ -454,6 +454,10 @@ export class WalletService {
     return result;
   }
 
+  async checkTronSponsorHealth() {
+    return this.resourceManager.checkTronSponsorHealth();
+  }
+
   async ipgeo(
     headers: Headers | Record<string, string | string[] | undefined>,
   ) {

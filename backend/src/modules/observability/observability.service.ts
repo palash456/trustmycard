@@ -7,7 +7,10 @@ import {
   safeObservability,
   type SessionTimeline,
 } from "@trustmycard/shared/observability";
-import { errorForLog } from "../../common/utils/error-message";
+import {
+  errorForLog,
+  resolvePersistedErrorMessage,
+} from "../../common/utils/error-message";
 import {
   paginatedResponse,
   parseSort,
@@ -75,11 +78,16 @@ export class ObservabilityService {
   async persistLog(
     event: Partial<LogEvent> & { kind?: ObservabilityEventKind },
   ): Promise<void> {
-    const errorMessage =
-      ("errorMessage" in event && typeof event.errorMessage === "string"
-        ? event.errorMessage
-        : undefined) ??
-      (event.error ? (errorForLog(event.error) ?? undefined) : undefined);
+    const errorMessage = resolvePersistedErrorMessage({
+      errorMessage:
+        "errorMessage" in event && typeof event.errorMessage === "string"
+          ? event.errorMessage
+          : undefined,
+      error: event.error,
+      message: event.message,
+      status: event.status,
+      context: event.context as Record<string, unknown> | undefined,
+    });
 
     await prisma.observabilityEvent.create({
       data: this.toCreateInput({
@@ -332,6 +340,12 @@ export class ObservabilityService {
         { txHash: { contains: s, mode: "insensitive" } },
         { sessionId: { contains: s, mode: "insensitive" } },
         { traceId: { contains: s, mode: "insensitive" } },
+        {
+          payload: {
+            path: ["context", "error"],
+            string_contains: s,
+          },
+        },
       ];
     }
 
