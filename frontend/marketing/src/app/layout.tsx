@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 
+import { MetaPixel } from "@/components/MetaPixel";
 import "./globals.css";
 
 const geist = Geist({
@@ -24,6 +25,9 @@ export default function RootLayout({
       className={`${geist.variable} font-sans`}
       suppressHydrationWarning
     >
+      <head>
+        <MetaPixel />
+      </head>
       <body className="antialiased" suppressHydrationWarning>
         {children}
       </body>
