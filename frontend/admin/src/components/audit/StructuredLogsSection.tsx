@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import { StructuredLogTimeRangeSelect } from "@/components/audit/StructuredLogTimeRangeSelect";
-import { StructuredLogTransactionIdFilter } from "@/components/audit/StructuredLogTransactionIdFilter";
 import { StructuredLogsPanel } from "@/components/audit/StructuredLogsPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -100,17 +99,11 @@ export function StructuredLogsSection({
   ].join("|");
 
   return (
-    <div className="mt-4 space-y-3">
-      <StructuredLogTransactionIdFilter
-        key={query.transactionId ?? query.sessionId ?? query.traceId ?? ""}
-        query={query}
-      />
-      <StructuredLogsPanel
-        key={panelKey}
-        query={query}
-        timeRange={resolved}
-        toolbar={<StructuredLogTimeRangeSelect query={query} />}
-      />
-    </div>
+    <StructuredLogsPanel
+      key={panelKey}
+      query={query}
+      timeRange={resolved}
+      toolbar={<StructuredLogTimeRangeSelect query={query} />}
+    />
   );
 }

@@ -49,7 +49,7 @@ export default async function SystemPage() {
       <SystemPanel status={status} />
       <p className="text-sm">
         <Link
-          href="/audit?tab=structured&module=observability"
+          href="/audit?module=observability"
           className="text-primary hover:underline"
         >
           View observability persist logs →

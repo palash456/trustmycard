@@ -10,12 +10,14 @@ import {
 } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { JourneyTableCell } from "@/components/JourneyPageHeader";
+import { LogSearchBar } from "@/components/audit/LogSearchBar";
 import { StructuredLogsLoadingStatus } from "@/components/audit/StructuredLogsLoadingStatus";
 import { ListEmptyState } from "@/components/ListEmptyState";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -39,24 +41,17 @@ import type {
   ObservabilityEventRow,
   PaginatedResponse,
 } from "@/lib/observability";
-import { resolveTransactionId } from "@/lib/transaction-id";
+import {
+  resolveStructuredLogSearchText,
+  resolveStructuredLogTransactionId,
+  resolveTransactionId,
+} from "@/lib/transaction-id";
 
 /** Smaller batches = faster first paint; scroll loads more. */
 const PAGE_SIZE = 30;
 const EXPORT_PAGE_SIZE = 500;
 
 type FilterQuery = Record<string, string | undefined>;
-
-function resolveTransactionIdFilter(
-  filters: FilterQuery,
-): string | undefined {
-  return (
-    filters.transactionId?.trim() ||
-    filters.sessionId?.trim() ||
-    filters.traceId?.trim() ||
-    undefined
-  );
-}
 
 async function fetchStructuredPage(
   filters: FilterQuery,
@@ -72,13 +67,14 @@ async function fetchStructuredPage(
 ): Promise<PaginatedResponse<ObservabilityEventRow>> {
   const limit = opts?.limit ?? PAGE_SIZE;
   const started = performance.now();
-  const transactionId = resolveTransactionIdFilter(filters);
+  const transactionId = resolveStructuredLogTransactionId(filters);
+  const search = resolveStructuredLogSearchText(filters);
   const qs = buildQuery({
     tab: "structured",
     page: String(page),
     limit: String(limit),
     sort: filters.sort ?? "ts:desc",
-    search: filters.search,
+    search,
     module: filters.module,
     operation: filters.operation,
     stage: filters.stage,
@@ -247,6 +243,19 @@ export function StructuredLogsPanel({
               : null}
         </p>
         <div className="flex flex-wrap items-center gap-2">
+          <LogSearchBar
+            action="/audit"
+            className="w-80 min-w-0 gap-1 sm:w-96"
+            defaultValue={
+              query.search ??
+              query.transactionId ??
+              query.sessionId ??
+              query.traceId
+            }
+            query={query}
+            placeholder="Search logs"
+          />
+          <Separator orientation="vertical" className="h-8" />
           {toolbar}
           <DownloadLogsButton timeRange={timeRange} filters={query} />
         </div>
@@ -428,7 +437,7 @@ function DownloadLogsButton({
       } while (page <= totalPages);
 
       const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const transactionId = resolveTransactionIdFilter(filters);
+      const transactionId = resolveStructuredLogTransactionId(filters);
       downloadJsonFile(`structured-logs-${stamp}.json`, {
         exportedAt: new Date().toISOString(),
         range: timeRange.label,

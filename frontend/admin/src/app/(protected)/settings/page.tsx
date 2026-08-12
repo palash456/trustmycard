@@ -50,7 +50,7 @@ export default async function SettingsPage() {
               href={auditAdminLink({ entityType: "settings" })}
               className="text-primary hover:underline"
             >
-              View all in Audit & logs →
+              View all in Admin actions →
             </Link>
           </CardContent>
         </Card>

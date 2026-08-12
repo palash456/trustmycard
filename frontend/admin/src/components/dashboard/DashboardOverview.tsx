@@ -514,7 +514,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
           <ArrowRight className="size-4" />
         </Link>
         <Link
-          href="/audit?tab=structured&level=error"
+          href="/audit?level=error"
           className={buttonVariants({ variant: "outline", size: "sm" })}
         >
           Structured error logs

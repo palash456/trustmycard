@@ -5,17 +5,20 @@ import { FormEvent, useState } from "react";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 export function LogSearchBar({
   action,
   defaultValue,
   query,
   placeholder = "Search logs…",
+  className,
 }: {
   action: string;
   defaultValue?: string;
   query: Record<string, string | undefined>;
   placeholder?: string;
+  className?: string;
 }) {
   const router = useRouter();
   const [value, setValue] = useState(defaultValue ?? "");
@@ -24,7 +27,16 @@ export function LogSearchBar({
     e.preventDefault();
     const params = new URLSearchParams();
     for (const [k, v] of Object.entries(query)) {
-      if (v && k !== "search" && k !== "page") params.set(k, v);
+      if (
+        v &&
+        k !== "search" &&
+        k !== "page" &&
+        k !== "transactionId" &&
+        k !== "sessionId" &&
+        k !== "traceId"
+      ) {
+        params.set(k, v);
+      }
     }
     const trimmed = value.trim();
     if (trimmed) params.set("search", trimmed);
@@ -35,7 +47,10 @@ export function LogSearchBar({
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex w-full max-w-md gap-2">
+    <form
+      onSubmit={onSubmit}
+      className={cn("flex w-full max-w-md gap-2", className)}
+    >
       <div className="relative flex-1">
         <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input

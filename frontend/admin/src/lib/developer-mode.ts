@@ -3,6 +3,7 @@ export const DEVELOPER_PROTECTED_ROUTE_PREFIXES = [
   "/developer-test",
   "/settings",
   "/system",
+  "/admin-actions",
 ] as const;
 
 export type DeveloperProtectedPrefix =

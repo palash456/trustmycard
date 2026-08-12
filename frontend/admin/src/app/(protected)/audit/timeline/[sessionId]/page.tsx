@@ -33,10 +33,10 @@ export default async function AuditTimelineDetailPage({
         variant="ghost"
         size="sm"
         className="-ml-2 w-fit"
-        render={<Link href="/audit?tab=timelines" />}
+        render={<Link href="/audit" />}
       >
         <ChevronLeft className="size-4" />
-        Back to timelines
+        Back to Audit & logs
       </Button>
 
       <JourneyPageHeader
@@ -57,13 +57,6 @@ export default async function AuditTimelineDetailPage({
                 href={auditTimelineLink({
                   walletAddress: timeline.walletAddress,
                 })}
-                className="text-primary hover:underline"
-              >
-                All timelines for this wallet
-              </Link>
-              {" · "}
-              <Link
-                href={`/transactions?walletAddress=${encodeURIComponent(timeline.walletAddress)}`}
                 className="text-primary hover:underline"
               >
                 All transactions for this wallet

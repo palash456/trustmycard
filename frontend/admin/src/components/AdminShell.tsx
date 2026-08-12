@@ -6,6 +6,7 @@ import {
   Activity,
   BarChart3,
   BookOpen,
+  ClipboardList,
   FlaskConical,
   GitBranch,
   LayoutDashboard,
@@ -76,8 +77,9 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "Administration",
     items: [
-      { href: "/documentation", label: "Documentation", icon: BookOpen },
       { href: "/system", label: "System", icon: Server },
+      { href: "/admin-actions", label: "Admin actions", icon: ClipboardList },
+      { href: "/documentation", label: "Documentation", icon: BookOpen },
       { href: "/developer-test", label: "Developer Test", icon: FlaskConical },
     ],
   },

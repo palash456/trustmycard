@@ -125,7 +125,6 @@ export function buildStructuredLogRangeParams(
     }
     params.set(key, value.trim());
   }
-  params.set("tab", "structured");
   params.set("range", rangeId);
   if (rangeId === "custom" && custom) {
     params.set("from", custom.from);

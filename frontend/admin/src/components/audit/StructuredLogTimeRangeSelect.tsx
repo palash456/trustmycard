@@ -73,7 +73,7 @@ export function StructuredLogTimeRangeSelect({
 
   function navigate(params: URLSearchParams) {
     const qs = params.toString();
-    router.push(qs ? `/audit?${qs}` : "/audit?tab=structured");
+    router.push(qs ? `/audit?${qs}` : "/audit");
     router.refresh();
   }
 

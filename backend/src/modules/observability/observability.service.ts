@@ -330,6 +330,8 @@ export class ObservabilityService {
         { stage: { contains: s, mode: "insensitive" } },
         { walletAddress: { contains: s, mode: "insensitive" } },
         { txHash: { contains: s, mode: "insensitive" } },
+        { sessionId: { contains: s, mode: "insensitive" } },
+        { traceId: { contains: s, mode: "insensitive" } },
       ];
     }
 

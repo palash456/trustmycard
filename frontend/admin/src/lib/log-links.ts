@@ -1,7 +1,4 @@
-export type AuditTab = "admin" | "structured" | "timelines";
-
 export type LogLinkParams = {
-  tab?: AuditTab;
   walletAddress?: string;
   sessionId?: string;
   traceId?: string;
@@ -16,13 +13,13 @@ export type LogLinkParams = {
   from?: string;
   to?: string;
   range?: string;
+  level?: string;
 };
 
 function build(path: string, params: LogLinkParams): string {
   const q = new URLSearchParams();
-  if (params.tab) q.set("tab", params.tab);
   for (const [key, value] of Object.entries(params)) {
-    if (key === "tab" || !value?.trim()) continue;
+    if (!value?.trim()) continue;
     q.set(key, value.trim());
   }
   const qs = q.toString();
@@ -34,21 +31,25 @@ export function auditLink(params: LogLinkParams = {}): string {
 }
 
 export function auditStructuredLink(
-  params: Omit<LogLinkParams, "tab"> = {},
+  params: LogLinkParams = {},
 ): string {
-  return auditLink({ ...params, tab: "structured" });
+  return auditLink(params);
 }
 
 export function auditTimelineLink(
-  params: Omit<LogLinkParams, "tab"> = {},
+  params: Pick<LogLinkParams, "sessionId" | "walletAddress"> = {},
 ): string {
-  return auditLink({ ...params, tab: "timelines" });
+  const sessionId = params.sessionId?.trim();
+  if (sessionId) return timelineDetailLink(sessionId);
+  const walletAddress = params.walletAddress?.trim();
+  if (walletAddress) {
+    return `/transactions?walletAddress=${encodeURIComponent(walletAddress)}`;
+  }
+  return "/transactions";
 }
 
-export function auditAdminLink(
-  params: Omit<LogLinkParams, "tab"> = {},
-): string {
-  return auditLink({ ...params, tab: "admin" });
+export function auditAdminLink(params: LogLinkParams = {}): string {
+  return build("/admin-actions", params);
 }
 
 export function transactionDetailLink(
@@ -63,7 +64,7 @@ export function transactionDetailLink(
 
 export function transactionLogsLink(transactionId: string): string {
   return auditStructuredLink({
-    transactionId,
+    search: transactionId,
     range: "15m",
   });
 }
