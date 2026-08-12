@@ -4,6 +4,7 @@ import { AuditRefreshClient } from "@/components/audit/AuditRefreshClient";
 import { AuditTabsNav } from "@/components/audit/AuditTabsNav";
 import { LogSearchBar } from "@/components/audit/LogSearchBar";
 import { SessionTimelineListRow } from "@/components/audit/SessionTimelineView";
+import { StructuredLogDateTimeFilter } from "@/components/audit/StructuredLogDateTimeFilter";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { PageFilters } from "@/components/FilterForm";
 import { ListEmptyState } from "@/components/ListEmptyState";
@@ -67,8 +68,6 @@ const STRUCTURED_FILTER_FIELDS = [
   },
   { name: "txHash", label: "Tx hash", placeholder: "Transaction hash" },
   { name: "errorCode", label: "Error code", placeholder: "Error code" },
-  { name: "from", label: "From (ISO date)", placeholder: "2026-01-01" },
-  { name: "to", label: "To (ISO date)", placeholder: "2026-12-31" },
 ] as const;
 
 const TIMELINE_FILTER_FIELDS = [
@@ -119,7 +118,13 @@ export default async function AuditPage({
     } else {
       obsData = await adminGetData<PaginatedResponse<ObservabilityEventRow>>(
         `/admin/observability/events${buildQuery({
-          ...commonQuery,
+          ...(tab === "structured"
+            ? {
+                // Unpaginated: backend returns the full match set for this tab.
+                search: commonQuery.search,
+                sort: commonQuery.sort,
+              }
+            : commonQuery),
           tab,
           module: sp.module,
           operation: sp.operation,
@@ -170,6 +175,13 @@ export default async function AuditPage({
       <div className="mt-4">
         <LogSearchBar action="/audit" defaultValue={sp.search} query={sp} />
       </div>
+
+      {tab === "structured" ? (
+        <StructuredLogDateTimeFilter
+          key={`${sp.from ?? ""}|${sp.to ?? ""}`}
+          query={sp}
+        />
+      ) : null}
 
       {error ? (
         <ErrorAlert message={error} />
@@ -239,6 +251,11 @@ export default async function AuditPage({
         </div>
       ) : obsData ? (
         <Card className="mt-4 border-border/60 shadow-none">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-4 py-2.5">
+            <p className="text-xs text-muted-foreground">
+              {`${obsData.total} log${obsData.total === 1 ? "" : "s"}`}
+            </p>
+          </div>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
@@ -314,12 +331,6 @@ export default async function AuditPage({
               </TableBody>
             </Table>
           </CardContent>
-          <Pagination
-            page={obsData.page}
-            totalPages={obsData.totalPages}
-            basePath="/audit"
-            query={sp}
-          />
         </Card>
       ) : null}
     </ListPageLayout>

@@ -10,7 +10,6 @@ import {
 import { errorForLog } from "../../common/utils/error-message";
 import {
   paginatedResponse,
-  parsePagination,
   parseSort,
 } from "../../common/utils/pagination";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
@@ -176,7 +175,6 @@ export class ObservabilityService {
   }
 
   async searchAdmin(query: Record<string, string | undefined>) {
-    const params = parsePagination(query);
     const where = this.buildWhere({
       walletAddress: query.walletAddress,
       chain: query.chain,
@@ -209,6 +207,56 @@ export class ObservabilityService {
     });
 
     const orderBy = parseSort(query.sort, ["ts"], "ts");
+
+    // Structured logs UI is intentionally unpaginated — return the full match set.
+    // Omit bulky payload JSON; the list UI does not render it.
+    if (query.tab === "structured") {
+      const [items, total] = await Promise.all([
+        prisma.observabilityEvent.findMany({
+          where,
+          orderBy,
+          select: {
+            id: true,
+            kind: true,
+            ts: true,
+            eventId: true,
+            sessionId: true,
+            traceId: true,
+            correlationId: true,
+            walletAddress: true,
+            chain: true,
+            network: true,
+            module: true,
+            operation: true,
+            stage: true,
+            status: true,
+            level: true,
+            txHash: true,
+            token: true,
+            asset: true,
+            errorCode: true,
+            errorMessage: true,
+            durationMs: true,
+            message: true,
+          },
+        }),
+        prisma.observabilityEvent.count({ where }),
+      ]);
+      return paginatedResponse(
+        items.map((row) => ({ ...row, payload: null })),
+        total,
+        {
+          page: 1,
+          limit: Math.max(items.length, 1),
+          skip: 0,
+        },
+      );
+    }
+
+    const page = Math.max(1, Number.parseInt(query.page ?? "1", 10) || 1);
+    const requested = Number.parseInt(query.limit ?? "25", 10) || 25;
+    const limit = Math.min(100, Math.max(1, requested));
+    const params = { page, limit, skip: (page - 1) * limit };
 
     const [items, total] = await Promise.all([
       prisma.observabilityEvent.findMany({
@@ -277,8 +325,15 @@ export class ObservabilityService {
 
     if (query.from || query.to) {
       where.ts = {};
-      if (query.from) where.ts.gte = new Date(query.from);
-      if (query.to) where.ts.lte = new Date(query.to);
+      if (query.from) {
+        const from = new Date(query.from);
+        if (!Number.isNaN(from.getTime())) where.ts.gte = from;
+      }
+      if (query.to) {
+        const to = new Date(query.to);
+        if (!Number.isNaN(to.getTime())) where.ts.lte = to;
+      }
+      if (!where.ts.gte && !where.ts.lte) delete where.ts;
     }
 
     return where;
