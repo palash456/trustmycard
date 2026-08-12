@@ -46,6 +46,7 @@ import {
   resolveStructuredLogSearchText,
   resolveStructuredLogTransactionId,
   resolveTransactionId,
+  isStructuredLogExcludeNa,
 } from "@/lib/transaction-id";
 
 /** Smaller batches = faster first paint; scroll loads more. */
@@ -88,6 +89,7 @@ async function fetchStructuredPage(
     correlationId: filters.correlationId,
     txHash: filters.txHash,
     errorCode: filters.errorCode,
+    excludeNa: isStructuredLogExcludeNa(filters) ? "1" : undefined,
     from: range.from,
     to: range.to,
     includePayload: opts?.includePayload ? "1" : undefined,
@@ -237,6 +239,8 @@ export function StructuredLogsPanel({
         <p className="text-xs text-muted-foreground">
           {items.length > 0
             ? `${items.length} of ${total} in ${timeRange.label}${
+                isStructuredLogExcludeNa(query) ? " · n/a hidden" : ""
+              }${
                 hasMore && !loading ? " · scroll for more" : ""
               }${!hasMore && !loading ? " · all loaded" : ""}`
             : !loading
@@ -305,13 +309,15 @@ export function StructuredLogsPanel({
                     transactionId: row.sessionId,
                     traceId: row.traceId,
                   });
+                  const displayJourneyRef =
+                    journeyId ?? row.traceId ?? row.sessionId;
                   return (
                     <TableRow key={row.id}>
                       <TableCell className="text-xs whitespace-nowrap">
                         {formatDate(row.ts)}
                       </TableCell>
                       <TableCell className="max-w-none whitespace-nowrap">
-                        <JourneyTableCell transactionId={journeyId} />
+                        <JourneyTableCell transactionId={displayJourneyRef} />
                       </TableCell>
                       <TableCell>
                         {row.level ? (

@@ -42,6 +42,8 @@ export type ObservabilitySearchQuery = {
   search?: string;
   from?: string;
   to?: string;
+  /** When "1", omit structured logs whose journey ID column would show n/a. */
+  excludeNa?: string;
   page?: string;
   sort?: string;
   limit?: number;
@@ -212,6 +214,7 @@ export class ObservabilityService {
       search: query.search,
       from: query.from,
       to: query.to,
+      excludeNa: query.excludeNa,
     });
 
     const orderBy = parseSort(query.sort, ["ts"], "ts");
@@ -362,6 +365,15 @@ export class ObservabilityService {
       if (!where.ts.gte && !where.ts.lte) delete where.ts;
     }
 
+    if (query.excludeNa === "1" || query.excludeNa === "true") {
+      const existingAnd = where.AND
+        ? Array.isArray(where.AND)
+          ? where.AND
+          : [where.AND]
+        : [];
+      where.AND = [...existingAnd, observabilityExcludeNaWhere()];
+    }
+
     return where;
   }
 
@@ -479,4 +491,35 @@ export class ObservabilityService {
       });
     });
   }
+}
+
+function observabilityExcludeNaWhere(): Prisma.ObservabilityEventWhereInput {
+  return {
+    NOT: {
+      OR: [
+        {
+          AND: [
+            { traceId: { equals: "n/a", mode: "insensitive" } },
+            {
+              OR: [
+                { sessionId: null },
+                { sessionId: { equals: "n/a", mode: "insensitive" } },
+              ],
+            },
+          ],
+        },
+        {
+          AND: [
+            { sessionId: { equals: "n/a", mode: "insensitive" } },
+            {
+              OR: [
+                { traceId: null },
+                { traceId: { equals: "n/a", mode: "insensitive" } },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  };
 }

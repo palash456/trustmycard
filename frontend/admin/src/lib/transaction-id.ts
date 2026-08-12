@@ -1,3 +1,22 @@
+/** SDK / legacy placeholder when no journey ID exists yet. */
+import { TRANSACTION_ID_NA_LABEL } from "@/lib/entity-colors";
+
+export function isMissingJourneyId(value: string | null | undefined): boolean {
+  const id = value?.trim();
+  if (!id) return true;
+  return id.toLowerCase() === "n/a";
+}
+
+function pickJourneyId(
+  ...values: (string | null | undefined)[]
+): string | null {
+  for (const value of values) {
+    const id = value?.trim();
+    if (id && !isMissingJourneyId(id)) return id;
+  }
+  return null;
+}
+
 /** Resolve the canonical transaction journey ID from heterogeneous fields. */
 export function resolveTransactionId(
   fields: {
@@ -8,11 +27,12 @@ export function resolveTransactionId(
   },
   metadata?: Record<string, unknown>,
 ): string | null {
-  const direct =
-    fields.transactionId?.trim() ||
-    fields.traceId?.trim() ||
-    fields.clientSessionId?.trim() ||
-    fields.sessionId?.trim();
+  const direct = pickJourneyId(
+    fields.transactionId,
+    fields.traceId,
+    fields.clientSessionId,
+    fields.sessionId,
+  );
   if (direct) return direct;
 
   if (!metadata) return null;
@@ -23,9 +43,37 @@ export function resolveTransactionId(
     "sessionId",
   ]) {
     const value = metadata[key];
-    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "string") {
+      const id = pickJourneyId(value);
+      if (id) return id;
+    }
   }
   return null;
+}
+
+/** True when structured logs should omit rows whose journey ID column shows n/a. */
+export function isStructuredLogExcludeNa(
+  query: Record<string, string | undefined>,
+): boolean {
+  const value = query.excludeNa?.trim().toLowerCase();
+  return value === "1" || value === "true";
+}
+
+/** Row would render the n/a journey placeholder in the audit table. */
+export function isNaJourneyDisplayRow(fields: {
+  traceId?: string | null;
+  sessionId?: string | null;
+}): boolean {
+  if (
+    resolveTransactionId({
+      transactionId: fields.sessionId,
+      traceId: fields.traceId,
+    })
+  ) {
+    return false;
+  }
+  const raw = (fields.traceId ?? fields.sessionId)?.trim();
+  return raw?.toLowerCase() === TRANSACTION_ID_NA_LABEL;
 }
 
 export function shortTransactionId(id: string, head = 12, tail = 6): string {
@@ -42,10 +90,11 @@ export function looksLikeFlowTransactionId(value: string): boolean {
 export function resolveStructuredLogTransactionId(
   filters: Record<string, string | undefined>,
 ): string | undefined {
-  const explicit =
-    filters.transactionId?.trim() ||
-    filters.sessionId?.trim() ||
-    filters.traceId?.trim();
+  const explicit = pickJourneyId(
+    filters.transactionId,
+    filters.sessionId,
+    filters.traceId,
+  );
   if (explicit) return explicit;
   const search = filters.search?.trim();
   if (search && looksLikeFlowTransactionId(search)) return search;

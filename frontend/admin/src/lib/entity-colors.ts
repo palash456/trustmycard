@@ -14,9 +14,12 @@ export function stableEntityColorClass(
   return palette[hash % palette.length];
 }
 
+/** Placeholder label when the SDK logs without a journey ID yet. */
+export const TRANSACTION_ID_NA_LABEL = "n/a";
+
 /** Dull style for missing / N/A transaction IDs (tables, cells, placeholders). */
 export const TRANSACTION_ID_MISSING_CLASS =
-  "text-xs text-muted-foreground/45 dark:text-muted-foreground/35";
+  "font-mono text-xs text-neutral-400 dark:text-neutral-200";
 
 /** Transaction journey IDs (flow-*). Same ID → same accent on every page. */
 export const TRANSACTION_ID_COLOR_CLASSES = [
@@ -41,7 +44,7 @@ export function transactionIdColorClass(id: string): string {
   return stableEntityColorClass(id, TRANSACTION_ID_COLOR_CLASSES);
 }
 
-/** Wallet addresses — separate 15-color palette (distinct from transaction IDs). */
+/** Wallet addresses — separate 30-color palette (distinct from transaction IDs). */
 export const WALLET_ADDRESS_COLOR_CLASSES = [
   "text-purple-600 dark:text-purple-400",
   "text-teal-700 dark:text-teal-300",
@@ -58,6 +61,21 @@ export const WALLET_ADDRESS_COLOR_CLASSES = [
   "text-amber-700 dark:text-amber-300",
   "text-violet-700 dark:text-violet-300",
   "text-emerald-700 dark:text-emerald-300",
+  "text-red-700 dark:text-red-300",
+  "text-yellow-700 dark:text-yellow-300",
+  "text-red-600 dark:text-red-400",
+  "text-yellow-600 dark:text-yellow-400",
+  "text-purple-700 dark:text-purple-300",
+  "text-teal-500 dark:text-teal-200",
+  "text-green-500 dark:text-green-200",
+  "text-blue-500 dark:text-blue-200",
+  "text-orange-500 dark:text-orange-200",
+  "text-pink-500 dark:text-pink-200",
+  "text-rose-500 dark:text-rose-200",
+  "text-sky-500 dark:text-sky-200",
+  "text-lime-500 dark:text-lime-200",
+  "text-fuchsia-500 dark:text-fuchsia-200",
+  "text-indigo-500 dark:text-indigo-200",
 ] as const;
 
 export function walletAddressColorClass(address: string): string {

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
+import { StructuredLogNaToggle } from "@/components/audit/StructuredLogNaToggle";
 import { StructuredLogTimeRangeSelect } from "@/components/audit/StructuredLogTimeRangeSelect";
 import { StructuredLogsPanel } from "@/components/audit/StructuredLogsPanel";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -95,6 +96,7 @@ export function StructuredLogsSection({
     query.correlationId,
     query.txHash,
     query.errorCode,
+    query.excludeNa,
     query.sort,
   ].join("|");
 
@@ -103,7 +105,12 @@ export function StructuredLogsSection({
       key={panelKey}
       query={query}
       timeRange={resolved}
-      toolbar={<StructuredLogTimeRangeSelect query={query} />}
+      toolbar={
+        <>
+          <StructuredLogNaToggle query={query} />
+          <StructuredLogTimeRangeSelect query={query} />
+        </>
+      }
     />
   );
 }

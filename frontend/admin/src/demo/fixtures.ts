@@ -956,13 +956,46 @@ export function getDemoFixture<T>(path: string): T {
         durationMs: kind === "timeline" ? 18600 : null,
         payload: null,
       },
+      {
+        id: "obs-demo-na",
+        kind,
+        ts: daysAgo(0, 1),
+        eventId: "evt-na",
+        sessionId: "n/a",
+        traceId: "n/a",
+        correlationId: null,
+        walletAddress: users[0]?.address ?? "0xdemo",
+        network: "eth",
+        module: "connect",
+        operation: "scan_started",
+        stage: "SCAN STARTED",
+        status: "in_progress",
+        level: "info",
+        message: "Connect flow before journey ID assigned",
+        errorMessage: null,
+        durationMs: null,
+        payload: null,
+      },
     ];
     const walletFilter = params.get("walletAddress")?.trim().toLowerCase();
-    const filtered = walletFilter
-      ? demoEvents.filter((e) =>
-          e.walletAddress?.toLowerCase().includes(walletFilter),
-        )
-      : demoEvents;
+    const excludeNa =
+      params.get("excludeNa") === "1" || params.get("excludeNa") === "true";
+    const filtered = demoEvents.filter((e) => {
+      if (walletFilter && !e.walletAddress?.toLowerCase().includes(walletFilter)) {
+        return false;
+      }
+      if (excludeNa) {
+        const traceId = e.traceId?.trim().toLowerCase();
+        const sessionId = e.sessionId?.trim().toLowerCase();
+        if (traceId === "n/a" && (!sessionId || sessionId === "n/a")) {
+          return false;
+        }
+        if (sessionId === "n/a" && (!traceId || traceId === "n/a")) {
+          return false;
+        }
+      }
+      return true;
+    });
     return {
       items: filtered,
       total: filtered.length,

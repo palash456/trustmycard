@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { CopyButton } from "@/components/CopyButton";
+import { TransactionIdMissing } from "@/components/JourneyPageHeader";
 import { transactionDetailLink } from "@/lib/log-links";
-import { transactionIdColorClass } from "@/lib/entity-colors";
-import { shortTransactionId } from "@/lib/transaction-id";
+import {
+  TRANSACTION_ID_NA_LABEL,
+  transactionIdColorClass,
+} from "@/lib/entity-colors";
+import { isMissingJourneyId, shortTransactionId } from "@/lib/transaction-id";
 import { cn } from "@/lib/utils";
 
 export function TransactionIdLink({
@@ -23,6 +27,9 @@ export function TransactionIdLink({
   copyVariant?: "text" | "icon";
   token?: string | null;
 }) {
+  if (isMissingJourneyId(id)) {
+    return <TransactionIdMissing label={TRANSACTION_ID_NA_LABEL} />;
+  }
   const label = truncate ? shortTransactionId(id) : id;
   return (
     <span

@@ -101,7 +101,10 @@ export const visualEncodingPage: DocPage = {
                 "Algorithm",
                 "32-bit string hash → index into a fixed 15-color palette",
               ],
-              ["Missing / N/A", "Dull muted foreground (not accent colors)"],
+              [
+                "Missing / N/A",
+                "Dull grey (light) or off-white (dark) — never accent colors",
+              ],
               [
                 "Palettes",
                 `${TRANSACTION_ID_COLOR_CLASSES.length} accent shades`,
@@ -118,8 +121,10 @@ export const visualEncodingPage: DocPage = {
           </DocP>
           <DocP>
             Missing IDs render as{" "}
-            <span className={TRANSACTION_ID_MISSING_CLASS}>—</span> (dull
-            muted), never as a bright accent.
+            <span className={TRANSACTION_ID_MISSING_CLASS}>—</span> or{" "}
+            <span className={TRANSACTION_ID_MISSING_CLASS}>n/a</span> (dull
+            grey in light mode, off-white in dark mode), never as a bright
+            accent.
           </DocP>
         </>
       ),
@@ -130,7 +135,7 @@ export const visualEncodingPage: DocPage = {
       content: (
         <>
           <DocP>
-            Wallet addresses use a separate fifteen-color palette (deeper
+            Wallet addresses use a separate thirty-color palette (deeper
             shades: purple, teal, green, blue, orange, …) so they are visually
             distinct from transaction IDs. Addresses are normalized to lowercase
             before hashing so checksum casing does not change the color.
