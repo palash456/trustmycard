@@ -1,9 +1,10 @@
 const STORAGE_KEY = "tmc:structured-logs-fetch-samples";
-const MAX_SAMPLES = 12;
+const MAX_SAMPLES = 16;
 
 export type StructuredLogsFetchSample = {
   durationMs: number;
   pageSize: number;
+  rangeId: string;
   at: number;
 };
 
@@ -35,21 +36,39 @@ function writeSamples(samples: StructuredLogsFetchSample[]) {
 export function recordStructuredLogsFetchSample(
   durationMs: number,
   pageSize: number,
+  rangeId: string,
 ) {
   const samples = readSamples();
-  samples.push({ durationMs, pageSize, at: Date.now() });
+  samples.push({ durationMs, pageSize, rangeId, at: Date.now() });
   writeSamples(samples);
 }
 
 /** Predict how long one page fetch should take (ms), learned from recent loads. */
-export function predictStructuredLogsFetchMs(pageSize: number): number {
+export function predictStructuredLogsFetchMs(
+  pageSize: number,
+  rangeId: string,
+): number {
   const samples = readSamples();
-  if (samples.length === 0) {
-    // Cold start: conservative guess scales with page size.
-    return Math.round(900 + pageSize * 18);
+  const matching = samples.filter((s) => s.rangeId === rangeId);
+  const pool = matching.length >= 2 ? matching : samples;
+
+  if (pool.length === 0) {
+    const rangeFactor =
+      rangeId === "15m"
+        ? 1
+        : rangeId === "1h"
+          ? 1.15
+          : rangeId === "6h"
+            ? 1.35
+            : rangeId === "24h"
+              ? 1.6
+              : rangeId === "7d"
+                ? 2
+                : 1.25;
+    return Math.round((700 + pageSize * 14) * rangeFactor);
   }
 
-  const recent = samples.slice(-6);
+  const recent = pool.slice(-6);
   const weighted = recent.reduce(
     (acc, sample, index) => {
       const weight = index + 1;
@@ -63,11 +82,11 @@ export function predictStructuredLogsFetchMs(pageSize: number): number {
   );
 
   const perRowMs = weighted.total / Math.max(weighted.weightSum, 1);
-  return Math.round(perRowMs * pageSize + 120);
+  return Math.round(perRowMs * pageSize + 80);
 }
 
 export function formatEtaSeconds(remainingMs: number): string {
-  if (remainingMs <= 0) return "0s";
+  if (remainingMs <= 500) return "0s";
   const seconds = Math.ceil(remainingMs / 1000);
   if (seconds < 60) return `${seconds}s`;
   const minutes = Math.floor(seconds / 60);
@@ -75,6 +94,8 @@ export function formatEtaSeconds(remainingMs: number): string {
   return rest > 0 ? `${minutes}m ${rest}s` : `${minutes}m`;
 }
 
-export function hasStructuredLogsSamples(): boolean {
-  return readSamples().length > 0;
+export function hasStructuredLogsSamples(rangeId?: string): boolean {
+  const samples = readSamples();
+  if (!rangeId) return samples.length > 0;
+  return samples.some((s) => s.rangeId === rangeId);
 }

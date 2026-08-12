@@ -6,6 +6,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { JourneyTableCell } from "@/components/JourneyPageHeader";
@@ -15,16 +16,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import {
   Table,
   TableBody,
@@ -37,49 +29,50 @@ import { buildQuery } from "@/lib/admin-api";
 import { readAdminProxyError } from "@/lib/admin-proxy-client";
 import { formatDate } from "@/lib/format";
 import {
-  istLocalToUtcIso,
-  isValidDateYmd,
-  isValidTimeHms,
-  todayIstYmd,
-} from "@/lib/ist-datetime";
+  getStructuredLogFetchWindow,
+  type ResolvedStructuredLogRange,
+  type StructuredLogRangeId,
+} from "@/lib/structured-logs-range";
+import { recordStructuredLogsFetchSample } from "@/lib/structured-logs-eta";
 import { timelineDetailLink } from "@/lib/log-links";
 import type {
   ObservabilityEventRow,
   PaginatedResponse,
 } from "@/lib/observability";
-import { recordStructuredLogsFetchSample } from "@/lib/structured-logs-eta";
 import { resolveTransactionId } from "@/lib/transaction-id";
 
 /** Smaller batches = faster first paint; scroll loads more. */
 const PAGE_SIZE = 30;
 const EXPORT_PAGE_SIZE = 500;
 
-const DURATION_PRESETS = [
-  { id: "15m", label: "Last 15 minutes", ms: 15 * 60 * 1000 },
-  { id: "1h", label: "Last 1 hour", ms: 60 * 60 * 1000 },
-  { id: "6h", label: "Last 6 hours", ms: 6 * 60 * 60 * 1000 },
-  { id: "24h", label: "Last 24 hours", ms: 24 * 60 * 60 * 1000 },
-  { id: "7d", label: "Last 7 days", ms: 7 * 24 * 60 * 60 * 1000 },
-] as const;
-
-type DurationPresetId = (typeof DURATION_PRESETS)[number]["id"] | "custom";
-
 type FilterQuery = Record<string, string | undefined>;
+
+function resolveTransactionIdFilter(
+  filters: FilterQuery,
+): string | undefined {
+  return (
+    filters.transactionId?.trim() ||
+    filters.sessionId?.trim() ||
+    filters.traceId?.trim() ||
+    undefined
+  );
+}
 
 async function fetchStructuredPage(
   filters: FilterQuery,
   page: number,
+  range: { from: string; to: string },
   opts?: {
     limit?: number;
     includePayload?: boolean;
-    from?: string;
-    to?: string;
     skipCount?: boolean;
     knownTotal?: number;
+    rangeId: StructuredLogRangeId;
   },
 ): Promise<PaginatedResponse<ObservabilityEventRow>> {
   const limit = opts?.limit ?? PAGE_SIZE;
   const started = performance.now();
+  const transactionId = resolveTransactionIdFilter(filters);
   const qs = buildQuery({
     tab: "structured",
     page: String(page),
@@ -92,13 +85,14 @@ async function fetchStructuredPage(
     status: filters.status,
     level: filters.level,
     walletAddress: filters.walletAddress,
-    sessionId: filters.sessionId,
-    traceId: filters.traceId,
+    transactionId,
+    sessionId: transactionId ?? filters.sessionId,
+    traceId: transactionId ?? filters.traceId,
     correlationId: filters.correlationId,
     txHash: filters.txHash,
     errorCode: filters.errorCode,
-    from: opts?.from ?? filters.from,
-    to: opts?.to ?? filters.to,
+    from: range.from,
+    to: range.to,
     includePayload: opts?.includePayload ? "1" : undefined,
     skipCount: opts?.skipCount ? "1" : undefined,
     knownTotal:
@@ -113,7 +107,11 @@ async function fetchStructuredPage(
     );
   }
   const data = (await res.json()) as PaginatedResponse<ObservabilityEventRow>;
-  recordStructuredLogsFetchSample(performance.now() - started, limit);
+  recordStructuredLogsFetchSample(
+    performance.now() - started,
+    limit,
+    opts?.rangeId ?? "15m",
+  );
   return data;
 }
 
@@ -129,31 +127,59 @@ function downloadJsonFile(filename: string, data: unknown) {
   URL.revokeObjectURL(url);
 }
 
-export function StructuredLogsPanel({ query }: { query: FilterQuery }) {
+export function StructuredLogsPanel({
+  query,
+  timeRange,
+  toolbar,
+}: {
+  query: FilterQuery;
+  timeRange: ResolvedStructuredLogRange;
+  toolbar?: ReactNode;
+}) {
   const [items, setItems] = useState<ObservabilityEventRow[]>([]);
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
   const [loadingPhase, setLoadingPhase] = useState<"initial" | "more" | null>(
     "initial",
   );
+  const [fetchStartedAt, setFetchStartedAt] = useState(() => performance.now());
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const inFlightRef = useRef(false);
+  const pagingRef = useRef(false);
+  const loadGenerationRef = useRef(0);
   const totalRef = useRef(0);
-  const unfiltered = !query.from && !query.to;
 
   const loadPage = useCallback(
     async (nextPage: number, replace: boolean) => {
-      if (inFlightRef.current) return;
-      inFlightRef.current = true;
+      const generation = (loadGenerationRef.current += 1);
+      const window = getStructuredLogFetchWindow(timeRange);
+
+      if (!replace) {
+        if (pagingRef.current) return;
+        pagingRef.current = true;
+      }
+
+      setFetchStartedAt(performance.now());
       setLoadingPhase(replace ? "initial" : "more");
       setError(null);
+      if (replace) {
+        totalRef.current = 0;
+      }
+
       try {
-        const data = await fetchStructuredPage(query, nextPage, {
-          skipCount: !replace && nextPage > 1,
-          knownTotal: totalRef.current,
-        });
+        const data = await fetchStructuredPage(
+          query,
+          nextPage,
+          window,
+          {
+            skipCount: !replace && nextPage > 1,
+            knownTotal: totalRef.current,
+            rangeId: timeRange.rangeId,
+          },
+        );
+        if (generation !== loadGenerationRef.current) return;
+
         totalRef.current = data.total;
         setTotal(data.total);
         setPage(data.page);
@@ -162,51 +188,29 @@ export function StructuredLogsPanel({ query }: { query: FilterQuery }) {
         );
         setHasMore(data.page * data.limit < data.total);
       } catch (err) {
+        if (generation !== loadGenerationRef.current) return;
         setError(err instanceof Error ? err.message : "Failed to load logs");
         if (replace) {
           setItems([]);
           setHasMore(false);
         }
       } finally {
-        setLoadingPhase(null);
-        inFlightRef.current = false;
+        if (!replace) pagingRef.current = false;
+        if (generation === loadGenerationRef.current) {
+          setLoadingPhase(null);
+        }
       }
     },
-    [query],
+    [query, timeRange],
   );
 
   useEffect(() => {
-    let cancelled = false;
-    totalRef.current = 0;
-    void (async () => {
-      if (inFlightRef.current) return;
-      inFlightRef.current = true;
-      setLoadingPhase("initial");
-      setError(null);
-      try {
-        const data = await fetchStructuredPage(query, 1);
-        if (cancelled) return;
-        totalRef.current = data.total;
-        setTotal(data.total);
-        setPage(data.page);
-        setItems(data.items);
-        setHasMore(data.page * data.limit < data.total);
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Failed to load logs");
-        setItems([]);
-        setHasMore(false);
-      } finally {
-        if (!cancelled) setLoadingPhase(null);
-        inFlightRef.current = false;
-      }
-    })();
+    void loadPage(1, true);
     return () => {
-      cancelled = true;
+      loadGenerationRef.current += 1;
+      pagingRef.current = false;
     };
-    // Parent remounts this panel when filters change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadPage]);
 
   useEffect(() => {
     const node = sentinelRef.current;
@@ -216,7 +220,7 @@ export function StructuredLogsPanel({ query }: { query: FilterQuery }) {
       (entries) => {
         if (
           entries.some((e) => e.isIntersecting) &&
-          !inFlightRef.current &&
+          !pagingRef.current &&
           page >= 1
         ) {
           void loadPage(page + 1, false);
@@ -235,12 +239,17 @@ export function StructuredLogsPanel({ query }: { query: FilterQuery }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
           {items.length > 0
-            ? `${items.length} of ${total} log${total === 1 ? "" : "s"} loaded${
+            ? `${items.length} of ${total} in ${timeRange.label}${
                 hasMore && !loading ? " · scroll for more" : ""
               }${!hasMore && !loading ? " · all loaded" : ""}`
-            : null}
+            : !loading
+              ? `No logs in ${timeRange.label}`
+              : null}
         </p>
-        <DownloadLogsButton />
+        <div className="flex flex-wrap items-center gap-2">
+          {toolbar}
+          <DownloadLogsButton timeRange={timeRange} filters={query} />
+        </div>
       </div>
 
       {loadingPhase === "initial" ? (
@@ -248,7 +257,9 @@ export function StructuredLogsPanel({ query }: { query: FilterQuery }) {
           active
           phase="initial"
           pageSize={PAGE_SIZE}
-          unfiltered={unfiltered}
+          rangeId={timeRange.rangeId}
+          fetchStartedAt={fetchStartedAt}
+          rangeLabel={timeRange.label}
         />
       ) : null}
 
@@ -259,15 +270,18 @@ export function StructuredLogsPanel({ query }: { query: FilterQuery }) {
       <Card className="border-border/60 shadow-none">
         <CardContent className="p-0">
           {items.length === 0 && !loading ? (
-            <ListEmptyState message="No structured logs found" />
+            <ListEmptyState
+              message={`No structured logs in ${timeRange.label}`}
+            />
           ) : items.length === 0 && loading ? (
             <StructuredLogsTableSkeleton />
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Time</TableHead>
-                  <TableHead>Transaction ID</TableHead>
+                  <TableHead className="min-w-[280px]">Transaction ID</TableHead>
                   <TableHead>Level</TableHead>
                   <TableHead>Module</TableHead>
                   <TableHead>Status</TableHead>
@@ -286,7 +300,7 @@ export function StructuredLogsPanel({ query }: { query: FilterQuery }) {
                       <TableCell className="text-xs whitespace-nowrap">
                         {formatDate(row.ts)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="max-w-none whitespace-nowrap">
                         <JourneyTableCell transactionId={journeyId} />
                       </TableCell>
                       <TableCell>
@@ -336,6 +350,7 @@ export function StructuredLogsPanel({ query }: { query: FilterQuery }) {
                 })}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -346,6 +361,9 @@ export function StructuredLogsPanel({ query }: { query: FilterQuery }) {
             active
             phase="more"
             pageSize={PAGE_SIZE}
+            rangeId={timeRange.rangeId}
+            fetchStartedAt={fetchStartedAt}
+            rangeLabel={timeRange.label}
             itemsLoaded={items.length}
             total={total}
           />
@@ -377,64 +395,29 @@ function StructuredLogsTableSkeleton() {
   );
 }
 
-function DownloadLogsButton() {
-  const [open, setOpen] = useState(false);
-  const [preset, setPreset] = useState<DurationPresetId>("1h");
-  const [fromDate, setFromDate] = useState(todayIstYmd());
-  const [fromTime, setFromTime] = useState("00:00:00");
-  const [toDate, setToDate] = useState(todayIstYmd());
-  const [toTime, setToTime] = useState("23:59:59");
-  const [status, setStatus] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+function DownloadLogsButton({
+  timeRange,
+  filters,
+}: {
+  timeRange: ResolvedStructuredLogRange;
+  filters: FilterQuery;
+}) {
   const [pending, setPending] = useState(false);
-
-  function resolveRange(): { from: string; to: string } | null {
-    if (preset !== "custom") {
-      const found = DURATION_PRESETS.find((p) => p.id === preset);
-      if (!found) return null;
-      const to = new Date();
-      const from = new Date(to.getTime() - found.ms);
-      return { from: from.toISOString(), to: to.toISOString() };
-    }
-    if (!isValidDateYmd(fromDate) || !isValidDateYmd(toDate)) {
-      setError("Custom range needs valid dates (YYYY-MM-DD).");
-      return null;
-    }
-    if (!isValidTimeHms(fromTime) || !isValidTimeHms(toTime)) {
-      setError("Times must be HH:mm:ss.");
-      return null;
-    }
-    const from = istLocalToUtcIso(fromDate, fromTime);
-    const to = istLocalToUtcIso(toDate, toTime);
-    if (!from || !to) {
-      setError("Could not parse custom range.");
-      return null;
-    }
-    if (new Date(from).getTime() > new Date(to).getTime()) {
-      setError("From must be earlier than To.");
-      return null;
-    }
-    return { from, to };
-  }
+  const [error, setError] = useState<string | null>(null);
 
   async function onDownload() {
     setError(null);
-    setStatus(null);
-    const range = resolveRange();
-    if (!range) return;
-
+    const range = getStructuredLogFetchWindow(timeRange);
     setPending(true);
     try {
       const all: ObservabilityEventRow[] = [];
       let page = 1;
       let totalPages = 1;
       do {
-        setStatus(`Fetching page ${page}…`);
-        const data = await fetchStructuredPage({}, page, {
+        const data = await fetchStructuredPage(filters, page, range, {
           limit: EXPORT_PAGE_SIZE,
           includePayload: true,
-          from: range.from,
-          to: range.to,
+          rangeId: timeRange.rangeId,
         });
         all.push(...data.items);
         totalPages = data.totalPages;
@@ -445,179 +428,48 @@ function DownloadLogsButton() {
       } while (page <= totalPages);
 
       const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const transactionId = resolveTransactionIdFilter(filters);
       downloadJsonFile(`structured-logs-${stamp}.json`, {
         exportedAt: new Date().toISOString(),
+        range: timeRange.label,
         from: range.from,
         to: range.to,
+        transactionId: transactionId ?? null,
+        search: filters.search ?? null,
+        module: filters.module ?? null,
+        operation: filters.operation ?? null,
+        stage: filters.stage ?? null,
+        status: filters.status ?? null,
+        level: filters.level ?? null,
+        walletAddress: filters.walletAddress ?? null,
         count: all.length,
         items: all,
       });
-      setStatus(`Downloaded ${all.length} log${all.length === 1 ? "" : "s"}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Download failed");
-      setStatus(null);
     } finally {
       setPending(false);
     }
   }
 
   return (
-    <>
+    <div className="flex flex-col items-end gap-1">
       <Button
         type="button"
         variant="outline"
         size="sm"
         className="h-8 gap-1.5 text-xs"
-        onClick={() => setOpen(true)}
+        disabled={pending}
+        onClick={() => void onDownload()}
       >
-        <Download className="size-3.5 opacity-70" />
-        Download logs
+        {pending ? (
+          <Loader2 className="size-3.5 animate-spin" />
+        ) : (
+          <Download className="size-3.5 opacity-70" />
+        )}
+        {pending ? "Downloading…" : "Download logs"}
       </Button>
-
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>Download structured logs</SheetTitle>
-            <SheetDescription>
-              Pick a duration. All matching logs in that window are exported as
-              JSON (including payloads).
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
-            <div className="grid gap-2">
-              <Label className="text-[11px] text-muted-foreground">
-                Duration
-              </Label>
-              <div className="grid gap-1.5">
-                {DURATION_PRESETS.map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => setPreset(opt.id)}
-                    className={
-                      preset === opt.id
-                        ? "rounded-md border border-primary/50 bg-primary/10 px-3 py-2 text-left text-xs font-medium"
-                        : "rounded-md border border-border/60 bg-background px-3 py-2 text-left text-xs hover:bg-muted/40"
-                    }
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setPreset("custom")}
-                  className={
-                    preset === "custom"
-                      ? "rounded-md border border-primary/50 bg-primary/10 px-3 py-2 text-left text-xs font-medium"
-                      : "rounded-md border border-border/60 bg-background px-3 py-2 text-left text-xs hover:bg-muted/40"
-                  }
-                >
-                  Custom date & time (IST)
-                </button>
-              </div>
-            </div>
-
-            {preset === "custom" ? (
-              <div className="grid grid-cols-2 gap-3 rounded-md border border-border/60 bg-muted/15 p-3">
-                <div className="grid gap-1">
-                  <Label
-                    htmlFor="dl-from-date"
-                    className="text-[10px] text-muted-foreground"
-                  >
-                    From date
-                  </Label>
-                  <Input
-                    id="dl-from-date"
-                    type="date"
-                    value={fromDate}
-                    onChange={(e) => setFromDate(e.target.value)}
-                    className="h-8 text-xs"
-                  />
-                </div>
-                <div className="grid gap-1">
-                  <Label
-                    htmlFor="dl-from-time"
-                    className="text-[10px] text-muted-foreground"
-                  >
-                    From time
-                  </Label>
-                  <Input
-                    id="dl-from-time"
-                    type="time"
-                    step={1}
-                    value={fromTime}
-                    onChange={(e) =>
-                      setFromTime(
-                        /^\d{2}:\d{2}$/.test(e.target.value)
-                          ? `${e.target.value}:00`
-                          : e.target.value,
-                      )
-                    }
-                    className="h-8 text-xs tabular-nums"
-                  />
-                </div>
-                <div className="grid gap-1">
-                  <Label
-                    htmlFor="dl-to-date"
-                    className="text-[10px] text-muted-foreground"
-                  >
-                    To date
-                  </Label>
-                  <Input
-                    id="dl-to-date"
-                    type="date"
-                    value={toDate}
-                    onChange={(e) => setToDate(e.target.value)}
-                    className="h-8 text-xs"
-                  />
-                </div>
-                <div className="grid gap-1">
-                  <Label
-                    htmlFor="dl-to-time"
-                    className="text-[10px] text-muted-foreground"
-                  >
-                    To time
-                  </Label>
-                  <Input
-                    id="dl-to-time"
-                    type="time"
-                    step={1}
-                    value={toTime}
-                    onChange={(e) =>
-                      setToTime(
-                        /^\d{2}:\d{2}$/.test(e.target.value)
-                          ? `${e.target.value}:00`
-                          : e.target.value,
-                      )
-                    }
-                    className="h-8 text-xs tabular-nums"
-                  />
-                </div>
-              </div>
-            ) : null}
-
-            {error ? <p className="text-xs text-destructive">{error}</p> : null}
-            {status ? (
-              <p className="text-xs text-muted-foreground">{status}</p>
-            ) : null}
-
-            <Button
-              type="button"
-              className="mt-auto h-9 gap-1.5 text-xs"
-              disabled={pending}
-              onClick={onDownload}
-            >
-              {pending ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Download className="size-3.5" />
-              )}
-              {pending ? "Preparing download…" : "Download JSON"}
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
-    </>
+      {error ? <p className="max-w-[200px] text-right text-[10px] text-destructive">{error}</p> : null}
+    </div>
   );
 }

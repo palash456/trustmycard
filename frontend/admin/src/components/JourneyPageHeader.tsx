@@ -116,7 +116,7 @@ export function journeyIdFromFields(fields: {
   return resolveTransactionId(fields);
 }
 
-/** Compact journey cell for tables — full ID in title, truncated link in cell. */
+/** Journey table cell — full ID, per-ID color, copy icon. */
 export function JourneyTableCell({
   transactionId,
 }: {
@@ -124,7 +124,15 @@ export function JourneyTableCell({
 }) {
   const id = transactionId?.trim();
   if (!id) {
-    return <span className="text-xs text-muted-foreground">—</span>;
+    return <span className="text-xs text-primary">—</span>;
   }
-  return <TransactionIdLink id={id} showCopy={false} />;
+  return (
+    <TransactionIdLink
+      id={id}
+      showCopy
+      copyVariant="icon"
+      truncate={false}
+      colorize
+    />
+  );
 }

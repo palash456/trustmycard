@@ -2,8 +2,7 @@ import { AuditRefreshClient } from "@/components/audit/AuditRefreshClient";
 import { AuditTabsNav } from "@/components/audit/AuditTabsNav";
 import { LogSearchBar } from "@/components/audit/LogSearchBar";
 import { SessionTimelineListRow } from "@/components/audit/SessionTimelineView";
-import { StructuredLogDateTimeFilter } from "@/components/audit/StructuredLogDateTimeFilter";
-import { StructuredLogsPanel } from "@/components/audit/StructuredLogsPanel";
+import { StructuredLogsSection } from "@/components/audit/StructuredLogsSection";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { PageFilters } from "@/components/FilterForm";
 import { ListEmptyState } from "@/components/ListEmptyState";
@@ -42,12 +41,6 @@ const STRUCTURED_FILTER_FIELDS = [
     options: ["trace", "debug", "info", "warn", "error", "fatal"],
   },
   { name: "walletAddress", label: "Wallet", placeholder: "Address" },
-  { name: "sessionId", label: "Transaction ID", placeholder: "flow-…" },
-  {
-    name: "traceId",
-    label: "Transaction ID (legacy alias)",
-    placeholder: "flow-…",
-  },
   {
     name: "correlationId",
     label: "Correlation ID",
@@ -151,33 +144,7 @@ export default async function AuditPage({
       </div>
 
       {tab === "structured" ? (
-        <StructuredLogDateTimeFilter
-          key={`${sp.from ?? ""}|${sp.to ?? ""}`}
-          query={sp}
-        />
-      ) : null}
-
-      {tab === "structured" ? (
-        <StructuredLogsPanel
-          key={[
-            sp.search,
-            sp.module,
-            sp.operation,
-            sp.stage,
-            sp.status,
-            sp.level,
-            sp.walletAddress,
-            sp.sessionId,
-            sp.traceId,
-            sp.correlationId,
-            sp.txHash,
-            sp.errorCode,
-            sp.from,
-            sp.to,
-            sp.sort,
-          ].join("|")}
-          query={sp}
-        />
+        <StructuredLogsSection query={sp} />
       ) : error ? (
         <ErrorAlert message={error} />
       ) : !pageData || pageData.items.length === 0 ? (

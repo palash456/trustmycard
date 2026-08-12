@@ -7,6 +7,7 @@ import {
   hasStructuredLogsSamples,
   predictStructuredLogsFetchMs,
 } from "@/lib/structured-logs-eta";
+import type { StructuredLogRangeId } from "@/lib/structured-logs-range";
 import { cn } from "@/lib/utils";
 
 type LoadingPhase = "initial" | "more";
@@ -15,61 +16,62 @@ export function StructuredLogsLoadingStatus({
   active,
   phase,
   pageSize,
+  rangeId,
+  fetchStartedAt,
+  rangeLabel,
   itemsLoaded = 0,
   total = 0,
-  unfiltered,
 }: {
   active: boolean;
   phase: LoadingPhase;
   pageSize: number;
+  rangeId: StructuredLogRangeId;
+  /** `performance.now()` when the in-flight fetch began. */
+  fetchStartedAt: number;
+  rangeLabel?: string;
   itemsLoaded?: number;
   total?: number;
-  /** No date range — large scan likely. */
-  unfiltered?: boolean;
 }) {
-  const [tick, setTick] = useState(0);
+  const [now, setNow] = useState(() => performance.now());
 
   useEffect(() => {
     if (!active) return;
-    setTick(0);
-    const id = window.setInterval(() => setTick((t) => t + 1), 200);
+    setNow(performance.now());
+    const id = window.setInterval(() => setNow(performance.now()), 100);
     return () => window.clearInterval(id);
-  }, [active, phase, pageSize]);
+  }, [active, fetchStartedAt, phase, pageSize, rangeId]);
 
   if (!active) return null;
 
-  const predictedMs = predictStructuredLogsFetchMs(pageSize);
-  const elapsedMs = tick * 200;
+  const predictedMs = predictStructuredLogsFetchMs(pageSize, rangeId);
+  const elapsedMs = Math.max(0, now - fetchStartedAt);
   const remainingMs = Math.max(0, predictedMs - elapsedMs);
-  const overdue = elapsedMs > predictedMs * 1.15;
-  const progress = Math.min(0.92, elapsedMs / Math.max(predictedMs, 1));
-  const learned = hasStructuredLogsSamples();
+  const overdue = elapsedMs > predictedMs * 1.2;
+  const progress = Math.min(
+    overdue ? 0.94 : 0.97,
+    elapsedMs / Math.max(predictedMs, 1),
+  );
+  const learned = hasStructuredLogsSamples(rangeId);
+  const countdown = formatEtaSeconds(remainingMs);
 
   const headline =
     phase === "initial"
       ? overdue
-        ? "Still pulling logs — large volume, almost there"
-        : "Fetching structured logs from the database"
+        ? "Still fetching logs — finishing up"
+        : `Fetching logs · ${rangeLabel ?? "selected range"}`
       : overdue
         ? "Loading more entries…"
         : `Loading next ${pageSize} logs`;
 
-  const detail =
-    phase === "initial"
-      ? overdue
-        ? unfiltered
-          ? "This can take longer without a date filter. Narrow the IST range above for faster loads."
-          : "The server is still working through your filters. This usually finishes within a few more seconds."
-        : learned
-          ? `About ${formatEtaSeconds(remainingMs)} remaining (estimated from your recent loads)`
-          : `About ${formatEtaSeconds(remainingMs)} remaining (calibrating from this request)`
-      : overdue
-        ? total > 0
-          ? `${itemsLoaded} of ${total} loaded so far`
-          : `${itemsLoaded} loaded so far`
-        : learned
-          ? `~${formatEtaSeconds(remainingMs)} for this batch`
-          : `~${formatEtaSeconds(remainingMs)} for this batch (calibrating)`;
+  const detail = overdue
+    ? phase === "initial"
+      ? "Taking longer than usual — the server is still querying your time window."
+      : total > 0
+        ? `${itemsLoaded} of ${total} loaded`
+        : `${itemsLoaded} loaded`
+    : `${countdown} remaining${
+        learned ? " (based on your recent loads)" : " (calibrating)"
+      }`;
 
   return (
     <div
@@ -84,11 +86,18 @@ export function StructuredLogsLoadingStatus({
       <div className="flex items-start gap-2">
         <Loader2 className="mt-0.5 size-3.5 shrink-0 animate-spin text-primary" />
         <div className="min-w-0 flex-1 space-y-1.5">
-          <p className="text-xs font-medium text-foreground">{headline}</p>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-xs font-medium text-foreground">{headline}</p>
+            {!overdue ? (
+              <p className="font-mono text-sm font-semibold tabular-nums text-primary">
+                {countdown}
+              </p>
+            ) : null}
+          </div>
           <p className="text-[11px] text-muted-foreground">{detail}</p>
           <div className="h-1 overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-primary/70 transition-[width] duration-200 ease-out"
+              className="h-full rounded-full bg-primary/70 transition-[width] duration-100 ease-linear"
               style={{ width: `${Math.round(progress * 100)}%` }}
             />
           </div>

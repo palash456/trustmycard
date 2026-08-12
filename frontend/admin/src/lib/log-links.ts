@@ -15,6 +15,7 @@ export type LogLinkParams = {
   search?: string;
   from?: string;
   to?: string;
+  range?: string;
 };
 
 function build(path: string, params: LogLinkParams): string {
@@ -61,7 +62,10 @@ export function transactionDetailLink(
 }
 
 export function transactionLogsLink(transactionId: string): string {
-  return auditStructuredLink({ traceId: transactionId, transactionId });
+  return auditStructuredLink({
+    transactionId,
+    range: "15m",
+  });
 }
 
 export function activityLink(

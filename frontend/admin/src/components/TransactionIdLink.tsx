@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { CopyButton } from "@/components/CopyButton";
 import { transactionDetailLink } from "@/lib/log-links";
-import { shortTransactionId } from "@/lib/transaction-id";
+import {
+  shortTransactionId,
+  transactionIdColorClass,
+} from "@/lib/transaction-id";
 import { cn } from "@/lib/utils";
 
 export function TransactionIdLink({
@@ -9,27 +12,36 @@ export function TransactionIdLink({
   className,
   showCopy = true,
   truncate = true,
+  colorize = false,
+  copyVariant = "text",
   token,
 }: {
   id: string;
   className?: string;
   showCopy?: boolean;
   truncate?: boolean;
+  /** Assign a stable accent color per transaction ID. */
+  colorize?: boolean;
+  copyVariant?: "text" | "icon";
   token?: string | null;
 }) {
   const label = truncate ? shortTransactionId(id) : id;
   return (
     <span
-      className={cn("inline-flex max-w-full items-center gap-1", className)}
+      className={cn("inline-flex max-w-full items-center gap-0.5", className)}
     >
       <Link
         href={transactionDetailLink(id, { token })}
-        className="truncate font-mono text-xs text-primary hover:underline"
+        className={cn(
+          "font-mono text-xs hover:underline",
+          truncate ? "truncate" : "whitespace-nowrap",
+          colorize ? transactionIdColorClass(id) : "text-primary",
+        )}
         title={id}
       >
         {label}
       </Link>
-      {showCopy ? <CopyButton value={id} /> : null}
+      {showCopy ? <CopyButton value={id} variant={copyVariant} /> : null}
     </span>
   );
 }
