@@ -209,15 +209,16 @@ export class ObservabilityService {
     const orderBy = parseSort(query.sort, ["ts"], "ts");
     const page = Math.max(1, Number.parseInt(query.page ?? "1", 10) || 1);
     const requested = Number.parseInt(query.limit ?? "25", 10) || 25;
-    // Structured list uses 80/page; export pages may request up to 500.
+    // Structured list: 30/page for fast first paint; export pages may request up to 500.
     const maxLimit =
       query.tab === "structured"
         ? query.includePayload === "1"
           ? 500
-          : 100
+          : 50
         : 100;
     const limit = Math.min(maxLimit, Math.max(1, requested));
     const params = { page, limit, skip: (page - 1) * limit };
+    const skipCount = query.skipCount === "1";
 
     if (query.tab === "structured" && query.includePayload !== "1") {
       const [items, total] = await Promise.all([
@@ -251,7 +252,14 @@ export class ObservabilityService {
             message: true,
           },
         }),
-        prisma.observabilityEvent.count({ where }),
+        skipCount
+          ? Promise.resolve(
+              Math.max(
+                0,
+                Number.parseInt(query.knownTotal ?? "0", 10) || 0,
+              ),
+            )
+          : prisma.observabilityEvent.count({ where }),
       ]);
       return paginatedResponse(
         items.map((row) => ({ ...row, payload: null })),

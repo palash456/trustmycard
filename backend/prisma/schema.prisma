@@ -331,6 +331,7 @@ model ObservabilityEvent {
   message                String
   payload                Json?
 
+  @@index([kind, ts])
   @@index([walletAddress, ts])
   @@index([sessionId, ts])
   @@index([authorizationSessionId, ts])

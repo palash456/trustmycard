@@ -9,6 +9,7 @@ import {
 } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { JourneyTableCell } from "@/components/JourneyPageHeader";
+import { StructuredLogsLoadingStatus } from "@/components/audit/StructuredLogsLoadingStatus";
 import { ListEmptyState } from "@/components/ListEmptyState";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Sheet,
   SheetContent,
@@ -45,9 +47,11 @@ import type {
   ObservabilityEventRow,
   PaginatedResponse,
 } from "@/lib/observability";
+import { recordStructuredLogsFetchSample } from "@/lib/structured-logs-eta";
 import { resolveTransactionId } from "@/lib/transaction-id";
 
-const PAGE_SIZE = 80;
+/** Smaller batches = faster first paint; scroll loads more. */
+const PAGE_SIZE = 30;
 const EXPORT_PAGE_SIZE = 500;
 
 const DURATION_PRESETS = [
@@ -65,12 +69,21 @@ type FilterQuery = Record<string, string | undefined>;
 async function fetchStructuredPage(
   filters: FilterQuery,
   page: number,
-  opts?: { limit?: number; includePayload?: boolean; from?: string; to?: string },
+  opts?: {
+    limit?: number;
+    includePayload?: boolean;
+    from?: string;
+    to?: string;
+    skipCount?: boolean;
+    knownTotal?: number;
+  },
 ): Promise<PaginatedResponse<ObservabilityEventRow>> {
+  const limit = opts?.limit ?? PAGE_SIZE;
+  const started = performance.now();
   const qs = buildQuery({
     tab: "structured",
     page: String(page),
-    limit: String(opts?.limit ?? PAGE_SIZE),
+    limit: String(limit),
     sort: filters.sort ?? "ts:desc",
     search: filters.search,
     module: filters.module,
@@ -87,6 +100,9 @@ async function fetchStructuredPage(
     from: opts?.from ?? filters.from,
     to: opts?.to ?? filters.to,
     includePayload: opts?.includePayload ? "1" : undefined,
+    skipCount: opts?.skipCount ? "1" : undefined,
+    knownTotal:
+      opts?.knownTotal != null ? String(opts.knownTotal) : undefined,
   });
   const res = await fetch(`/api/admin/observability/events${qs}`, {
     cache: "no-store",
@@ -96,7 +112,9 @@ async function fetchStructuredPage(
       await readAdminProxyError(res, `Failed to load logs (${res.status})`),
     );
   }
-  return (await res.json()) as PaginatedResponse<ObservabilityEventRow>;
+  const data = (await res.json()) as PaginatedResponse<ObservabilityEventRow>;
+  recordStructuredLogsFetchSample(performance.now() - started, limit);
+  return data;
 }
 
 function downloadJsonFile(filename: string, data: unknown) {
@@ -115,20 +133,28 @@ export function StructuredLogsPanel({ query }: { query: FilterQuery }) {
   const [items, setItems] = useState<ObservabilityEventRow[]>([]);
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loadingPhase, setLoadingPhase] = useState<"initial" | "more" | null>(
+    "initial",
+  );
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const inFlightRef = useRef(false);
+  const totalRef = useRef(0);
+  const unfiltered = !query.from && !query.to;
 
   const loadPage = useCallback(
     async (nextPage: number, replace: boolean) => {
       if (inFlightRef.current) return;
       inFlightRef.current = true;
-      setLoading(true);
+      setLoadingPhase(replace ? "initial" : "more");
       setError(null);
       try {
-        const data = await fetchStructuredPage(query, nextPage);
+        const data = await fetchStructuredPage(query, nextPage, {
+          skipCount: !replace && nextPage > 1,
+          knownTotal: totalRef.current,
+        });
+        totalRef.current = data.total;
         setTotal(data.total);
         setPage(data.page);
         setItems((prev) =>
@@ -142,7 +168,7 @@ export function StructuredLogsPanel({ query }: { query: FilterQuery }) {
           setHasMore(false);
         }
       } finally {
-        setLoading(false);
+        setLoadingPhase(null);
         inFlightRef.current = false;
       }
     },
@@ -151,14 +177,16 @@ export function StructuredLogsPanel({ query }: { query: FilterQuery }) {
 
   useEffect(() => {
     let cancelled = false;
+    totalRef.current = 0;
     void (async () => {
       if (inFlightRef.current) return;
       inFlightRef.current = true;
-      setLoading(true);
+      setLoadingPhase("initial");
       setError(null);
       try {
         const data = await fetchStructuredPage(query, 1);
         if (cancelled) return;
+        totalRef.current = data.total;
         setTotal(data.total);
         setPage(data.page);
         setItems(data.items);
@@ -169,7 +197,7 @@ export function StructuredLogsPanel({ query }: { query: FilterQuery }) {
         setItems([]);
         setHasMore(false);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setLoadingPhase(null);
         inFlightRef.current = false;
       }
     })();
@@ -182,7 +210,7 @@ export function StructuredLogsPanel({ query }: { query: FilterQuery }) {
 
   useEffect(() => {
     const node = sentinelRef.current;
-    if (!node || !hasMore) return;
+    if (!node || !hasMore || loadingPhase) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -198,19 +226,31 @@ export function StructuredLogsPanel({ query }: { query: FilterQuery }) {
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [hasMore, loadPage, page]);
+  }, [hasMore, loadPage, loadingPhase, page]);
+
+  const loading = loadingPhase !== null;
 
   return (
     <div className="mt-4 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          {loading && items.length === 0
-            ? "Loading logs…"
-            : `${items.length} of ${total} log${total === 1 ? "" : "s"} loaded`}
-          {hasMore && items.length > 0 ? " · scroll for more" : null}
+          {items.length > 0
+            ? `${items.length} of ${total} log${total === 1 ? "" : "s"} loaded${
+                hasMore && !loading ? " · scroll for more" : ""
+              }${!hasMore && !loading ? " · all loaded" : ""}`
+            : null}
         </p>
         <DownloadLogsButton />
       </div>
+
+      {loadingPhase === "initial" ? (
+        <StructuredLogsLoadingStatus
+          active
+          phase="initial"
+          pageSize={PAGE_SIZE}
+          unfiltered={unfiltered}
+        />
+      ) : null}
 
       {error ? (
         <p className="text-xs text-destructive">{error}</p>
@@ -220,6 +260,8 @@ export function StructuredLogsPanel({ query }: { query: FilterQuery }) {
         <CardContent className="p-0">
           {items.length === 0 && !loading ? (
             <ListEmptyState message="No structured logs found" />
+          ) : items.length === 0 && loading ? (
+            <StructuredLogsTableSkeleton />
           ) : (
             <Table>
               <TableHeader>
@@ -298,17 +340,39 @@ export function StructuredLogsPanel({ query }: { query: FilterQuery }) {
         </CardContent>
       </Card>
 
-      <div ref={sentinelRef} className="flex h-10 items-center justify-center">
-        {loading && items.length > 0 ? (
-          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Loader2 className="size-3.5 animate-spin" />
-            Loading more…
-          </span>
+      <div ref={sentinelRef} className="space-y-2">
+        {loadingPhase === "more" ? (
+          <StructuredLogsLoadingStatus
+            active
+            phase="more"
+            pageSize={PAGE_SIZE}
+            itemsLoaded={items.length}
+            total={total}
+          />
         ) : null}
-        {!hasMore && items.length > 0 ? (
-          <span className="text-xs text-muted-foreground">End of logs</span>
-        ) : null}
+        <div className="flex h-8 items-center justify-center">
+          {!loading && !hasMore && items.length > 0 ? (
+            <span className="text-xs text-muted-foreground">End of logs</span>
+          ) : null}
+        </div>
       </div>
+    </div>
+  );
+}
+
+function StructuredLogsTableSkeleton() {
+  return (
+    <div className="divide-y divide-border/60">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 px-4 py-3">
+          <Skeleton className="h-3.5 w-28" />
+          <Skeleton className="h-3.5 w-24" />
+          <Skeleton className="h-5 w-12 rounded-full" />
+          <Skeleton className="hidden h-3.5 w-32 sm:block" />
+          <Skeleton className="h-5 w-14 rounded-full" />
+          <Skeleton className="hidden h-3.5 flex-1 md:block" />
+        </div>
+      ))}
     </div>
   );
 }
