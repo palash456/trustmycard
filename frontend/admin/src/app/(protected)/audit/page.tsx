@@ -1,10 +1,9 @@
-import Link from "next/link";
-import { JourneyTableCell } from "@/components/JourneyPageHeader";
 import { AuditRefreshClient } from "@/components/audit/AuditRefreshClient";
 import { AuditTabsNav } from "@/components/audit/AuditTabsNav";
 import { LogSearchBar } from "@/components/audit/LogSearchBar";
 import { SessionTimelineListRow } from "@/components/audit/SessionTimelineView";
 import { StructuredLogDateTimeFilter } from "@/components/audit/StructuredLogDateTimeFilter";
+import { StructuredLogsPanel } from "@/components/audit/StructuredLogsPanel";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { PageFilters } from "@/components/FilterForm";
 import { ListEmptyState } from "@/components/ListEmptyState";
@@ -13,22 +12,10 @@ import { PageHeader } from "@/components/PageHeader";
 import { PageRefreshButton } from "@/components/PageRefreshButton";
 import { PageToolbar } from "@/components/PageToolbar";
 import { Pagination } from "@/components/Pagination";
-import { StatusBadge } from "@/components/StatusBadge";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
 import { formatDate } from "@/lib/format";
 import type { AuditTab } from "@/lib/log-links";
-import { timelineDetailLink } from "@/lib/log-links";
-import { resolveTransactionId } from "@/lib/transaction-id";
 import type {
   AuditLogRow,
   ObservabilityEventRow,
@@ -115,34 +102,20 @@ export default async function AuditPage({
           to: sp.to,
         })}`,
       );
-    } else {
+    } else if (tab === "timelines") {
       obsData = await adminGetData<PaginatedResponse<ObservabilityEventRow>>(
         `/admin/observability/events${buildQuery({
-          ...(tab === "structured"
-            ? {
-                // Unpaginated: backend returns the full match set for this tab.
-                search: commonQuery.search,
-                sort: commonQuery.sort,
-              }
-            : commonQuery),
+          ...commonQuery,
           tab,
-          module: sp.module,
-          operation: sp.operation,
-          stage: sp.stage,
-          status: sp.status,
-          level: sp.level,
           walletAddress: sp.walletAddress,
           sessionId: sp.sessionId,
-          traceId: sp.traceId,
-          correlationId: sp.correlationId,
-          txHash: sp.txHash,
-          errorCode: sp.errorCode,
           network: sp.network,
           from: sp.from,
           to: sp.to,
         })}`,
       );
     }
+    // Structured tab loads client-side with infinite scroll (80/page).
   } catch (err) {
     error = err instanceof Error ? err.message : "Failed to load";
   }
@@ -154,7 +127,8 @@ export default async function AuditPage({
         ? STRUCTURED_FILTER_FIELDS
         : TIMELINE_FILTER_FIELDS;
 
-  const pageData = tab === "admin" ? adminData : obsData;
+  const pageData =
+    tab === "admin" ? adminData : tab === "timelines" ? obsData : null;
 
   return (
     <ListPageLayout>
@@ -183,7 +157,28 @@ export default async function AuditPage({
         />
       ) : null}
 
-      {error ? (
+      {tab === "structured" ? (
+        <StructuredLogsPanel
+          key={[
+            sp.search,
+            sp.module,
+            sp.operation,
+            sp.stage,
+            sp.status,
+            sp.level,
+            sp.walletAddress,
+            sp.sessionId,
+            sp.traceId,
+            sp.correlationId,
+            sp.txHash,
+            sp.errorCode,
+            sp.from,
+            sp.to,
+            sp.sort,
+          ].join("|")}
+          query={sp}
+        />
+      ) : error ? (
         <ErrorAlert message={error} />
       ) : !pageData || pageData.items.length === 0 ? (
         <Card className="mt-4 border-border/60 shadow-none">
@@ -249,89 +244,6 @@ export default async function AuditPage({
             query={sp}
           />
         </div>
-      ) : obsData ? (
-        <Card className="mt-4 border-border/60 shadow-none">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-4 py-2.5">
-            <p className="text-xs text-muted-foreground">
-              {`${obsData.total} log${obsData.total === 1 ? "" : "s"}`}
-            </p>
-          </div>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Transaction ID</TableHead>
-                  <TableHead>Level</TableHead>
-                  <TableHead>Module</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Message</TableHead>
-                  <TableHead>Wallet</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {obsData.items.map((row) => {
-                  const journeyId = resolveTransactionId({
-                    transactionId: row.sessionId,
-                    traceId: row.traceId,
-                  });
-                  return (
-                    <TableRow key={row.id}>
-                      <TableCell className="text-xs whitespace-nowrap">
-                        {formatDate(row.ts)}
-                      </TableCell>
-                      <TableCell>
-                        <JourneyTableCell transactionId={journeyId} />
-                      </TableCell>
-                      <TableCell>
-                        {row.level ? (
-                          <Badge variant="outline" className="text-[10px]">
-                            {row.level}
-                          </Badge>
-                        ) : null}
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        {row.module}/{row.operation}
-                        {row.stage ? ` · ${row.stage}` : ""}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge value={row.status} />
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate text-xs">
-                        {row.message}
-                        {row.errorMessage ? (
-                          <span className="block text-destructive">
-                            {row.errorMessage}
-                          </span>
-                        ) : null}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {row.walletAddress ? (
-                          <Link
-                            href={`/users/${encodeURIComponent(row.walletAddress)}`}
-                            className="text-primary hover:underline"
-                          >
-                            {row.walletAddress.slice(0, 10)}…
-                          </Link>
-                        ) : (
-                          "—"
-                        )}
-                        {journeyId ? (
-                          <Link
-                            href={timelineDetailLink(journeyId)}
-                            className="ml-1 block text-primary hover:underline"
-                          >
-                            timeline
-                          </Link>
-                        ) : null}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
       ) : null}
     </ListPageLayout>
   );

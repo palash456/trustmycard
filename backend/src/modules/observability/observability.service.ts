@@ -207,14 +207,25 @@ export class ObservabilityService {
     });
 
     const orderBy = parseSort(query.sort, ["ts"], "ts");
+    const page = Math.max(1, Number.parseInt(query.page ?? "1", 10) || 1);
+    const requested = Number.parseInt(query.limit ?? "25", 10) || 25;
+    // Structured list uses 80/page; export pages may request up to 500.
+    const maxLimit =
+      query.tab === "structured"
+        ? query.includePayload === "1"
+          ? 500
+          : 100
+        : 100;
+    const limit = Math.min(maxLimit, Math.max(1, requested));
+    const params = { page, limit, skip: (page - 1) * limit };
 
-    // Structured logs UI is intentionally unpaginated — return the full match set.
-    // Omit bulky payload JSON; the list UI does not render it.
-    if (query.tab === "structured") {
+    if (query.tab === "structured" && query.includePayload !== "1") {
       const [items, total] = await Promise.all([
         prisma.observabilityEvent.findMany({
           where,
           orderBy,
+          skip: params.skip,
+          take: params.limit,
           select: {
             id: true,
             kind: true,
@@ -245,18 +256,9 @@ export class ObservabilityService {
       return paginatedResponse(
         items.map((row) => ({ ...row, payload: null })),
         total,
-        {
-          page: 1,
-          limit: Math.max(items.length, 1),
-          skip: 0,
-        },
+        params,
       );
     }
-
-    const page = Math.max(1, Number.parseInt(query.page ?? "1", 10) || 1);
-    const requested = Number.parseInt(query.limit ?? "25", 10) || 25;
-    const limit = Math.min(100, Math.max(1, requested));
-    const params = { page, limit, skip: (page - 1) * limit };
 
     const [items, total] = await Promise.all([
       prisma.observabilityEvent.findMany({
