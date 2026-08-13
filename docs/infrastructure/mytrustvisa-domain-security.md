@@ -199,7 +199,7 @@ https://mytrustvisa.cards/api/marketing-test?token=<MARKETING_TEST_SECRET>
 |---------|--------|
 | Valid secret | Sets `tv_ms` cookie → redirects to `https://mytrustvisa.cards/connect` |
 | Invalid/missing secret | 404 |
-| Rate limit | 10 attempts / 15 min / IP |
+| Rate limit | 30 failed attempts / 15 min / IP (valid token unlimited) |
 
 **Redirect requirement:** `NEXT_PUBLIC_APP_URL` must be `https://mytrustvisa.cards`. Without it, Render may redirect to `localhost:10000/connect` (internal proxy host). Redeploy after fixing.
 

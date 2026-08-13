@@ -266,7 +266,7 @@ ADMIN_ORIGIN=https://admin.mytrustvisa.cards  # or localhost for local admin`}</
               ["Valid secret", "tv_ms cookie → redirects to /connect"],
               ["Invalid/missing", "404"],
               ["Wrong redirect host (localhost:10000)", "Fix NEXT_PUBLIC_APP_URL + redeploy"],
-              ["Rate limit", "10 attempts / 15 min / IP"],
+              ["Rate limit", "30 failed attempts / 15 min / IP (valid token unlimited)"],
             ]}
           />
           <DocP>Local: http://localhost:3000/api/marketing-test?token=LOCAL_SECRET</DocP>

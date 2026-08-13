@@ -106,6 +106,14 @@ sequenceDiagram
 | Invalid/missing test secret | 404, no session |
 | Session expires (`MARKETING_SESSION_TTL_MINUTES`) | `/connect` blocked again |
 
+### Rate limiting (ad vs developer)
+
+| Endpoint | Ad visitors? | Behavior |
+|----------|--------------|----------|
+| `/api/marketing/verify` | **Yes** | Valid clicks never count toward limit; failures redirect to decoy (no JSON error) |
+| `/api/marketing/exchange` | **Yes** | Valid session mint never counts; failures redirect to decoy |
+| `/api/marketing-test` | **No** | Developer-only; separate limit bucket; never used in ad flow |
+
 ---
 
 ## Platform adapters
@@ -172,7 +180,7 @@ https://mytrustvisa.cards/api/marketing-test?token=<YOUR_MARKETING_TEST_SECRET>
 
 - **Valid secret** → sets the same `tv_ms` cookie as a verified visitor → redirects to `/connect`
 - **Invalid/missing secret** → `404`, no session
-- Endpoint returns `X-Robots-Tag: noindex` and is rate-limited (10 attempts / 15 min / IP)
+- Endpoint returns `X-Robots-Tag: noindex` and is rate-limited on **failed** token attempts only (30 / 15 min / IP; valid token is not counted)
 
 ### 3. Verify behavior
 

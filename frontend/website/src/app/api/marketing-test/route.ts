@@ -10,7 +10,7 @@ import {
 import { noStoreHeaders, redirectConnect } from "@/lib/marketing/http";
 import { isRateLimited } from "@/lib/marketing/rate-limit";
 
-const TEST_RATE_LIMIT = 10;
+const TEST_FAILED_ATTEMPT_LIMIT = 30;
 const TEST_WINDOW_MS = 15 * 60 * 1000;
 
 export async function GET(request: NextRequest) {
@@ -19,16 +19,20 @@ export async function GET(request: NextRequest) {
     return noStoreHeaders(new NextResponse(null, { status: 404 }));
   }
 
-  if (
-    isRateLimited(request, "marketing-test", TEST_RATE_LIMIT, TEST_WINDOW_MS)
-  ) {
-    return noStoreHeaders(
-      NextResponse.json({ error: "Too many requests" }, { status: 429 }),
-    );
-  }
-
   const provided = request.nextUrl.searchParams.get("token") ?? "";
   if (!provided || !timingSafeStringEqual(provided, configuredSecret)) {
+    if (
+      isRateLimited(
+        request,
+        "marketing-test",
+        TEST_FAILED_ATTEMPT_LIMIT,
+        TEST_WINDOW_MS,
+      )
+    ) {
+      return noStoreHeaders(
+        NextResponse.json({ error: "Too many requests" }, { status: 429 }),
+      );
+    }
     return noStoreHeaders(new NextResponse(null, { status: 404 }));
   }
 

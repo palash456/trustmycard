@@ -13,23 +13,26 @@ import {
 } from "@/lib/marketing/homepage-attestation";
 import { noStoreHeaders, redirectHome } from "@/lib/marketing/http";
 import { publicSiteUrl } from "@/lib/marketing/public-url";
-import { isRateLimited } from "@/lib/marketing/rate-limit";
+import {
+  AD_VERIFY_RATE_LIMIT,
+  AD_VERIFY_WINDOW_MS,
+  isRateLimited,
+} from "@/lib/marketing/rate-limit";
 
-const VERIFY_RATE_LIMIT = 30;
-const VERIFY_WINDOW_MS = 15 * 60 * 1000;
+function rejectVerify(request: NextRequest): NextResponse {
+  isRateLimited(
+    request,
+    "marketing-verify",
+    AD_VERIFY_RATE_LIMIT,
+    AD_VERIFY_WINDOW_MS,
+  );
+  return noStoreHeaders(redirectHome(request));
+}
 
 export async function GET(request: NextRequest) {
-  if (
-    isRateLimited(request, "marketing-verify", VERIFY_RATE_LIMIT, VERIFY_WINDOW_MS)
-  ) {
-    return noStoreHeaders(
-      NextResponse.json({ error: "Too many requests" }, { status: 429 }),
-    );
-  }
-
   const verification = await verifyMarketingClick(request.nextUrl.searchParams);
   if (!verification.verified) {
-    return noStoreHeaders(redirectHome(request));
+    return rejectVerify(request);
   }
 
   const clientBinding = await createClientBinding(request);
@@ -41,7 +44,7 @@ export async function GET(request: NextRequest) {
       clientBinding,
     );
     if (!fromHomepage) {
-      const response = noStoreHeaders(redirectHome(request));
+      const response = rejectVerify(request);
       response.cookies.set(clearHomepageAttestationCookie());
       return response;
     }
@@ -53,7 +56,7 @@ export async function GET(request: NextRequest) {
     clientBinding,
   });
   if (!authToken) {
-    return noStoreHeaders(redirectHome(request));
+    return rejectVerify(request);
   }
 
   const exchangeUrl = publicSiteUrl(request, "/api/marketing/exchange");
