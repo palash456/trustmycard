@@ -143,22 +143,17 @@ Never commit real secrets. `MARKETING_TEST_SECRET` must **only** live in Render 
 ### 1. Set the test secret on Render
 
 1. Render → **tmc-wallet-app** → **Environment**
-2. Add `MARKETING_TEST_SECRET` with this value (same as `env/profiles/production/website.env`):
-
-```text
-tvmt_c299926df9740c90e1e745960f9b21768ab5a487437dae76
-```
-
+2. Add `MARKETING_TEST_SECRET` — a long random value prefixed with `tvmt_` (e.g. `tvmt_` + output of `openssl rand -hex 32`). **Never commit this value to git.**
 3. **Redeploy** the wallet app after saving.
 
-> **Internal use only.** Do not share this URL publicly or link it from the website. Rotate the secret if it is ever exposed.
+> **Internal use only.** Do not share this URL publicly or link it from the website. **Rotate the secret immediately** if it was ever committed to docs, chat, or a shared channel.
 
 ### 2. Open the protected test URL (browser only)
 
 In your browser (not shared, not linked from the site):
 
 ```text
-https://trustvisa.cards/api/marketing-test?token=tvmt_c299926df9740c90e1e745960f9b21768ab5a487437dae76
+https://trustvisa.cards/api/marketing-test?token=<YOUR_MARKETING_TEST_SECRET>
 ```
 
 - **Valid secret** → sets the same `tv_ms` cookie as a verified visitor → redirects to `/connect`
@@ -204,6 +199,7 @@ UTM parameters may still be present for **analytics** but are **never** used for
 
 ## Security notes
 
+- `/connect`, `/api/marketing/*`, and `/api/marketing-test` are excluded via `robots.txt`, HTML `robots` metadata, and `X-Robots-Tag` response headers.
 - Credentials and verification logic run **only on the server** (API routes + middleware).
 - UTM parameters alone are never used for authorization.
 - Meta `fbclid` is accepted only when the visitor lands on `/` first (signed `tv_mh` homepage attestation cookie, 120s TTL, client-bound).

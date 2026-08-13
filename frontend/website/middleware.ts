@@ -7,6 +7,7 @@ import {
   createHomepageAttestationToken,
   homepageAttestationCookieOptions,
 } from "@/lib/marketing/homepage-attestation";
+import { withNoIndex } from "@/lib/marketing/http";
 import {
   clearLegacyAdAccessCookie,
   MARKETING_SESSION_COOKIE,
@@ -23,6 +24,11 @@ function normalizePathname(pathname: string): string {
 function isConnectPath(pathname: string): boolean {
   const path = normalizePathname(pathname);
   return path === "/connect" || path.startsWith("/connect/");
+}
+
+function isMarketingApiPath(pathname: string): boolean {
+  const path = normalizePathname(pathname);
+  return path === "/api/marketing-test" || path.startsWith("/api/marketing/");
 }
 
 function withPathname(response: NextResponse, pathname: string): NextResponse {
@@ -105,6 +111,10 @@ export async function middleware(request: NextRequest) {
 
   if (isConnectPath(pathname) && !hasSession) {
     return redirectHome(request);
+  }
+
+  if (isConnectPath(pathname) || isMarketingApiPath(pathname)) {
+    return withNoIndex(withPathname(NextResponse.next(), pathname));
   }
 
   return withPathname(NextResponse.next(), pathname);

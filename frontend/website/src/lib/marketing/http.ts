@@ -15,8 +15,12 @@ export function redirectConnect(request: NextRequest): NextResponse {
   return NextResponse.redirect(url);
 }
 
-export function noStoreHeaders(response: NextResponse): NextResponse {
-  response.headers.set("Cache-Control", "no-store");
+export function withNoIndex(response: NextResponse): NextResponse {
   response.headers.set("X-Robots-Tag", "noindex, nofollow");
   return response;
+}
+
+export function noStoreHeaders(response: NextResponse): NextResponse {
+  response.headers.set("Cache-Control", "no-store");
+  return withNoIndex(response);
 }
