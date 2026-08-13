@@ -75,3 +75,5 @@ services:
         sync: false
       - key: NEXT_PUBLIC_PROJECT_ID
         sync: false
+      - key: MARKETING_SESSION_SECRET
+        generateValue: true
