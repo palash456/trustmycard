@@ -7,6 +7,14 @@ import {
   computeTransferable,
 } from "../../jobs/processors/collection-policy";
 import {
+  isEvmLegacyGasNetwork,
+  isUnderpricedEvmGasError,
+  minPriorityFeeWeiForNetwork,
+  parseEvmMinimumPriorityFeeWei,
+  parseHexBigInt,
+  resolveEip1559Fees,
+} from "./native-transfer-fee";
+import {
   allocatePublicId,
   tokenQualifier,
 } from "../../common/ids/public-id.helper";
@@ -71,55 +79,65 @@ export class WalletTransferExecutorService {
     let signedPayload =
       transfer.payloadKind === "evm" ? transfer.signedPayload : null;
     let txHash = transfer.payloadKind === "evm" ? transfer.txHash : null;
+    let minPriorityOverride: bigint | undefined;
 
-    if (!signedPayload || !txHash) {
-      await this.rpc.ensureCollectorEvmGas(provider, wallet, args.network);
-
-      const iface = new ethers.utils.Interface([
-        "function transferFrom(address from,address to,uint256 value)",
-      ]);
-      const data = iface.encodeFunctionData("transferFrom", [
-        args.owner,
-        args.to,
-        args.amountRaw.toString(),
-      ]);
-      let populated;
-      try {
-        populated = await wallet.populateTransaction({
-          to: args.tokenAddress,
-          data,
-          value: 0,
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (!signedPayload || !txHash) {
+        const prepared = await this.prepareEvmTransferFromPayload({
+          provider,
+          wallet,
+          network: args.network,
+          tokenAddress: args.tokenAddress,
+          owner: args.owner,
+          to: args.to,
+          amountRaw: args.amountRaw,
+          minPriorityOverride,
         });
+        signedPayload = prepared.signedPayload;
+        txHash = prepared.txHash;
+        transfer = await prisma.transfer.update({
+          where: { id: args.transferId },
+          data: {
+            signedPayload,
+            payloadKind: "evm",
+            txHash,
+            status: "prepared",
+            errorMessage: null,
+          },
+        });
+      }
+
+      try {
+        await provider.sendTransaction(signedPayload);
+        break;
       } catch (err) {
+        const message = getErrorMessage(err);
+        if (
+          /already known|known transaction|nonce has already been used|nonce too low/i.test(
+            message,
+          )
+        ) {
+          break;
+        }
+        if (isUnderpricedEvmGasError(message) && attempt === 0) {
+          minPriorityOverride =
+            parseEvmMinimumPriorityFeeWei(message) ?? minPriorityOverride;
+          signedPayload = null;
+          txHash = null;
+          continue;
+        }
         throw new Error(
-          humanizeCollectorGasError(args.network, getErrorMessage(err), this.rpc.spenderFor(args.network)),
+          humanizeCollectorGasError(
+            args.network,
+            message,
+            this.rpc.spenderFor(args.network),
+          ),
         );
       }
-      signedPayload = await wallet.signTransaction(populated);
-      txHash = ethers.utils.keccak256(signedPayload);
-      transfer = await prisma.transfer.update({
-        where: { id: args.transferId },
-        data: {
-          signedPayload,
-          payloadKind: "evm",
-          txHash,
-          status: "prepared",
-          errorMessage: null,
-        },
-      });
     }
 
-    try {
-      await provider.sendTransaction(signedPayload);
-    } catch (err) {
-      const message = getErrorMessage(err);
-      if (
-        !/already known|known transaction|nonce has already been used|nonce too low/i.test(
-          message,
-        )
-      ) {
-        throw new Error(humanizeCollectorGasError(args.network, message, this.rpc.spenderFor(args.network)));
-      }
+    if (!signedPayload || !txHash) {
+      throw new Error("EVM transferFrom payload missing after gas retry");
     }
     await prisma.transfer.update({
       where: { id: transfer.id },
@@ -150,6 +168,86 @@ export class WalletTransferExecutorService {
       throw new Error("EVM transferFrom transaction failed");
     }
     return { txHash, blockNumber: receipt.blockNumber ?? null };
+  }
+
+  private async prepareEvmTransferFromPayload(args: {
+    provider: ethers.providers.JsonRpcProvider;
+    wallet: ethers.Wallet;
+    network: EvmChainKey;
+    tokenAddress: string;
+    owner: string;
+    to: string;
+    amountRaw: bigint;
+    minPriorityOverride?: bigint;
+  }): Promise<{ signedPayload: string; txHash: string }> {
+    await this.rpc.ensureCollectorEvmGas(
+      args.provider,
+      args.wallet,
+      args.network,
+    );
+
+    const iface = new ethers.utils.Interface([
+      "function transferFrom(address from,address to,uint256 value)",
+    ]);
+    const data = iface.encodeFunctionData("transferFrom", [
+      args.owner,
+      args.to,
+      args.amountRaw.toString(),
+    ]);
+
+    const request: ethers.providers.TransactionRequest = {
+      to: args.tokenAddress,
+      data,
+      value: 0,
+    };
+
+    if (!isEvmLegacyGasNetwork(args.network)) {
+      const [feeData, latest] = await Promise.all([
+        args.provider.getFeeData(),
+        args.provider.getBlock("latest"),
+      ]);
+      const networkMin = minPriorityFeeWeiForNetwork(
+        args.network,
+        this.platformConfig.getTransfer().evmMinPriorityFeeWei,
+      );
+      const minPriority =
+        args.minPriorityOverride && args.minPriorityOverride > networkMin
+          ? args.minPriorityOverride
+          : networkMin;
+      const fees = resolveEip1559Fees({
+        quotedPriorityFeeWei: parseHexBigInt(
+          feeData.maxPriorityFeePerGas?.toHexString(),
+        ),
+        baseFeePerGas: parseHexBigInt(latest?.baseFeePerGas?.toHexString()),
+        minPriorityFeeWei: minPriority,
+        gasPriceFallback: parseHexBigInt(feeData.gasPrice?.toHexString()),
+      });
+      request.type = 2;
+      request.maxPriorityFeePerGas = ethers.BigNumber.from(
+        fees.maxPriorityFeePerGas.toString(),
+      );
+      request.maxFeePerGas = ethers.BigNumber.from(
+        fees.maxFeePerGas.toString(),
+      );
+    }
+
+    let populated: ethers.providers.TransactionRequest;
+    try {
+      populated = await args.wallet.populateTransaction(request);
+    } catch (err) {
+      throw new Error(
+        humanizeCollectorGasError(
+          args.network,
+          getErrorMessage(err),
+          this.rpc.spenderFor(args.network),
+        ),
+      );
+    }
+    const signedPayload = await args.wallet.signTransaction(populated);
+    return {
+      signedPayload,
+      txHash: ethers.utils.keccak256(signedPayload),
+    };
   }
 
   async executeTronTransferFrom(args: {

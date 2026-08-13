@@ -32,6 +32,7 @@
     "./server/routes/native-transfers/register-pending": "./src/server/routes/native-transfers/register-pending/route.ts",
     "./server/routes/native-transfers/confirm": "./src/server/routes/native-transfers/confirm/route.ts",
     "./server/routes/resources/verify": "./src/server/routes/resources/verify/route.ts",
+    "./server/routes/resources/tron-sponsor-health": "./src/server/routes/resources/tron-sponsor-health/route.ts",
     "./server/routes/network-settlement/register": "./src/server/routes/network-settlement/register/route.ts",
     "./server/routes/network-settlement/register-native-authorization": "./src/server/routes/network-settlement/register-native-authorization/route.ts",
     "./server/routes/network-settlement/process": "./src/server/routes/network-settlement/process/route.ts",

@@ -45,7 +45,9 @@ import {
   estimateTronBandwidthFee,
   formatUnits,
   isEvmLegacyGasNetwork,
+  minPriorityFeeWeiForNetwork,
   parseHexBigInt,
+  resolveEip1559Fees,
   parseTronChainSunPerByte,
   parseTronCreateAccountFeeSun,
   tronSunAmountString,
@@ -445,14 +447,17 @@ export class NativeTransferService {
           ["latest", false],
         ),
       ]);
-      maxPriorityFeePerGas = parseHexBigInt(priorityHex);
-      const minPriority =
-        this.platformConfig.getTransfer().evmMinPriorityFeeWei;
-      if (maxPriorityFeePerGas < minPriority) {
-        maxPriorityFeePerGas = minPriority + minPriority / BigInt(2);
-      }
-      const baseFee = parseHexBigInt(latestBlock?.baseFeePerGas);
-      maxFeePerGas = baseFee * BigInt(2) + maxPriorityFeePerGas;
+      const quotedPriority = parseHexBigInt(priorityHex);
+      const fees = resolveEip1559Fees({
+        quotedPriorityFeeWei: quotedPriority,
+        baseFeePerGas: parseHexBigInt(latestBlock?.baseFeePerGas),
+        minPriorityFeeWei: minPriorityFeeWeiForNetwork(
+          args.network,
+          this.platformConfig.getTransfer().evmMinPriorityFeeWei,
+        ),
+      });
+      maxPriorityFeePerGas = fees.maxPriorityFeePerGas;
+      maxFeePerGas = fees.maxFeePerGas;
       if (maxFeePerGas === BigInt(0)) {
         maxFeePerGas = parseHexBigInt(
           await this.evmRpcCall(args.network, "eth_gasPrice", []),

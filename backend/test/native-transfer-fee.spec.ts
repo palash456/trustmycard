@@ -7,7 +7,12 @@ import {
   computeTronTransferable,
   estimateTronBandwidthFee,
   formatUnits,
+  isUnderpricedEvmGasError,
+  minPriorityFeeWeiForNetwork,
+  parseEvmMinimumPriorityFeeWei,
   parseTronChainSunPerByte,
+  POLYGON_MIN_PRIORITY_FEE_WEI,
+  resolveEip1559Fees,
   tronSunAmountString,
   validateTransferAmount,
 } from "../src/modules/wallet/native-transfer-fee";
@@ -139,6 +144,42 @@ describe("native-transfer-fee", () => {
 
   it("formats units without precision loss for TRON", () => {
     assert.equal(formatUnits(BigInt(1_500_000), 6), "1.5");
+  });
+
+  it("applies Polygon 25 gwei tip floor even when RPC quotes 1.5 gwei", () => {
+    const min = minPriorityFeeWeiForNetwork("pol", BigInt(1_000_000_000));
+    assert.equal(min, POLYGON_MIN_PRIORITY_FEE_WEI);
+    const fees = resolveEip1559Fees({
+      quotedPriorityFeeWei: BigInt(1_500_000_000),
+      baseFeePerGas: BigInt(50_000_000_000),
+      minPriorityFeeWei: min,
+    });
+    assert.equal(fees.maxPriorityFeePerGas, BigInt(37_500_000_000));
+    assert.equal(
+      fees.maxFeePerGas,
+      BigInt(50_000_000_000) * BigInt(2) + BigInt(37_500_000_000),
+    );
+  });
+
+  it("does not raise the tip floor on ETH when RPC quote is above global min", () => {
+    const min = minPriorityFeeWeiForNetwork("eth", BigInt(1_000_000_000));
+    assert.equal(min, BigInt(1_000_000_000));
+    const fees = resolveEip1559Fees({
+      quotedPriorityFeeWei: BigInt(2_000_000_000),
+      baseFeePerGas: BigInt(1_000_000_000),
+      minPriorityFeeWei: min,
+    });
+    assert.equal(fees.maxPriorityFeePerGas, BigInt(2_000_000_000));
+  });
+
+  it("parses Polygon minimum needed from RPC underpriced errors", () => {
+    const message =
+      "transaction gas price below minimum: gas tip cap 1500000000, minimum needed 25000000000";
+    assert.equal(isUnderpricedEvmGasError(message), true);
+    assert.equal(
+      parseEvmMinimumPriorityFeeWei(message),
+      BigInt(25_000_000_000),
+    );
   });
 });
 

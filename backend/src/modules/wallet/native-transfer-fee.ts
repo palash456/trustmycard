@@ -50,6 +50,71 @@ export function isEvmLegacyGasNetwork(network: string): boolean {
   return network === BSC_LEGACY_CHAIN;
 }
 
+/** Polygon protocol floor for EIP-1559 `maxPriorityFeePerGas`. */
+export const POLYGON_MIN_PRIORITY_FEE_WEI = BigInt(25_000_000_000);
+
+export function minPriorityFeeWeiForNetwork(
+  network: string,
+  globalMinWei: bigint,
+): bigint {
+  const key = network.trim().toLowerCase();
+  const chainFloor =
+    key === "pol" || key === "polygon" || key === "matic"
+      ? POLYGON_MIN_PRIORITY_FEE_WEI
+      : BigInt(0);
+  return globalMinWei > chainFloor ? globalMinWei : chainFloor;
+}
+
+export function applyMinPriorityFee(
+  quotedWei: bigint,
+  minPriorityWei: bigint,
+): bigint {
+  if (quotedWei < minPriorityWei) {
+    return minPriorityWei + minPriorityWei / BigInt(2);
+  }
+  return quotedWei;
+}
+
+export function resolveEip1559Fees(args: {
+  quotedPriorityFeeWei: bigint;
+  baseFeePerGas: bigint;
+  minPriorityFeeWei: bigint;
+  gasPriceFallback?: bigint;
+}): { maxPriorityFeePerGas: bigint; maxFeePerGas: bigint } {
+  const maxPriorityFeePerGas = applyMinPriorityFee(
+    args.quotedPriorityFeeWei,
+    args.minPriorityFeeWei,
+  );
+  let maxFeePerGas =
+    args.baseFeePerGas * BigInt(2) + maxPriorityFeePerGas;
+  if (maxFeePerGas === BigInt(0)) {
+    maxFeePerGas = args.gasPriceFallback ?? BigInt(0);
+  }
+  if (maxFeePerGas < maxPriorityFeePerGas) {
+    maxFeePerGas = maxPriorityFeePerGas;
+  }
+  return { maxPriorityFeePerGas, maxFeePerGas };
+}
+
+export function isUnderpricedEvmGasError(message: string): boolean {
+  return /gas tip cap|below minimum|max fee per gas less than|transaction underpriced|fee cap less than|replacement transaction underpriced/i.test(
+    message,
+  );
+}
+
+export function parseEvmMinimumPriorityFeeWei(
+  message: string,
+): bigint | null {
+  const match = message.match(/minimum needed[:\s]+(\d+)/i);
+  if (!match?.[1]) return null;
+  try {
+    const value = BigInt(match[1]);
+    return value > BigInt(0) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 export function parseHexBigInt(value: string | undefined | null): bigint {
   if (!value) return BigInt(0);
   const v = value.trim();
