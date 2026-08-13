@@ -1,41 +1,17 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { copyClickIdentifiers } from "@/lib/marketing/detect-click";
+import { createClientBinding } from "@/lib/marketing/client-binding";
 import {
-  createMarketingSessionToken,
-  LEGACY_AD_ACCESS_COOKIE,
+  createHomepageAttestationToken,
+  homepageAttestationCookieOptions,
+} from "@/lib/marketing/homepage-attestation";
+import {
+  clearLegacyAdAccessCookie,
   MARKETING_SESSION_COOKIE,
-  marketingSessionCookieOptions,
   verifyMarketingSessionToken,
 } from "@/lib/marketing-session";
-
-const AD_UTM_SOURCES = new Set([
-  "instagram",
-  "facebook",
-  "fb",
-  "ig",
-  "meta",
-  "google",
-]);
-
-const AD_UTM_MEDIUMS = new Set(["paid", "cpc", "ppc", "paidsocial"]);
-
-function isMarketingTraffic(searchParams: URLSearchParams): boolean {
-  const source = (searchParams.get("utm_source") ?? "").toLowerCase();
-  const medium = (searchParams.get("utm_medium") ?? "").toLowerCase();
-
-  if (AD_UTM_SOURCES.has(source)) return true;
-  if (AD_UTM_MEDIUMS.has(medium)) return true;
-  if (
-    searchParams.has("fbclid") ||
-    searchParams.has("gclid") ||
-    searchParams.has("gbraid") ||
-    searchParams.has("wbraid")
-  ) {
-    return true;
-  }
-  return false;
-}
 
 function normalizePathname(pathname: string): string {
   if (pathname.length > 1 && pathname.endsWith("/")) {
@@ -54,38 +30,53 @@ function withPathname(response: NextResponse, pathname: string): NextResponse {
   return response;
 }
 
-function clearLegacyCookie(response: NextResponse): NextResponse {
-  response.cookies.set(LEGACY_AD_ACCESS_COOKIE, "", {
-    path: "/",
-    maxAge: 0,
-  });
-  return response;
-}
-
-function attachMarketingSession(
-  response: NextResponse,
-  token: string,
-): NextResponse {
-  const cookie = marketingSessionCookieOptions(token);
-  response.cookies.set(cookie);
-  return clearLegacyCookie(response);
-}
-
 function redirectHome(request: NextRequest): NextResponse {
   const url = request.nextUrl.clone();
   url.pathname = "/";
   url.search = "";
-  return clearLegacyCookie(NextResponse.redirect(url));
+  const response = NextResponse.redirect(url);
+  response.cookies.set(clearLegacyAdAccessCookie());
+  return response;
 }
 
-function redirectConnect(
-  request: NextRequest,
-  preserveSearch: boolean,
-): NextResponse {
+function redirectConnect(request: NextRequest): NextResponse {
   const url = request.nextUrl.clone();
   url.pathname = "/connect";
-  if (!preserveSearch) url.search = "";
+  url.search = "";
   return NextResponse.redirect(url);
+}
+
+function redirectMarketingVerify(request: NextRequest): NextResponse {
+  const url = request.nextUrl.clone();
+  url.pathname = "/api/marketing/verify";
+  url.search = "";
+  const verifyParams = new URLSearchParams();
+  copyClickIdentifiers(request.nextUrl.searchParams, verifyParams);
+  url.search = verifyParams.toString();
+  return NextResponse.redirect(url);
+}
+
+async function redirectMarketingVerifyFromHome(
+  request: NextRequest,
+): Promise<NextResponse> {
+  const response = redirectMarketingVerify(request);
+  const clientBinding = await createClientBinding(request);
+  const attestation = await createHomepageAttestationToken(clientBinding);
+  if (attestation) {
+    response.cookies.set(homepageAttestationCookieOptions(attestation));
+  }
+  return response;
+}
+
+function hasClickIdentifier(searchParams: URLSearchParams): boolean {
+  return (
+    searchParams.has("gclid") ||
+    searchParams.has("gbraid") ||
+    searchParams.has("wbraid") ||
+    searchParams.has("fbclid") ||
+    searchParams.has("ttclid") ||
+    searchParams.has("li_fat_id")
+  );
 }
 
 export async function middleware(request: NextRequest) {
@@ -99,19 +90,17 @@ export async function middleware(request: NextRequest) {
     : false;
 
   if (path === "/") {
-    if (isMarketingTraffic(searchParams)) {
-      const token = await createMarketingSessionToken();
-      if (!token) {
-        return withPathname(NextResponse.next(), pathname);
-      }
-      return attachMarketingSession(redirectConnect(request, true), token);
+    if (hasClickIdentifier(searchParams)) {
+      return redirectMarketingVerifyFromHome(request);
     }
 
     if (hasSession) {
-      return redirectConnect(request, false);
+      return redirectConnect(request);
     }
 
-    return withPathname(clearLegacyCookie(NextResponse.next()), pathname);
+    const response = withPathname(NextResponse.next(), pathname);
+    response.cookies.set(clearLegacyAdAccessCookie());
+    return response;
   }
 
   if (isConnectPath(pathname) && !hasSession) {

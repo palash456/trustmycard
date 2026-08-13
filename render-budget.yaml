@@ -77,3 +77,17 @@ services:
         sync: false
       - key: MARKETING_SESSION_SECRET
         generateValue: true
+      - key: MARKETING_TEST_SECRET
+        sync: false
+      - key: GOOGLE_ADS_DEVELOPER_TOKEN
+        sync: false
+      - key: GOOGLE_ADS_CLIENT_ID
+        sync: false
+      - key: GOOGLE_ADS_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_ADS_REFRESH_TOKEN
+        sync: false
+      - key: GOOGLE_ADS_CUSTOMER_ID
+        sync: false
+      - key: GOOGLE_ADS_LOGIN_CUSTOMER_ID
+        sync: false
