@@ -161,7 +161,7 @@ export const marketingAccessPage: DocPage = {
             rows={[
               ["Ad destination URL", "https://mytrustvisa.cards/"],
               ["Do NOT use", "https://mytrustvisa.cards/connect"],
-              ["Meta Pixel ID", "1682517452850789 (in code — /connect only)"],
+              ["Meta Pixel ID", "2158981564683913 (in code — /connect only)"],
               ["Do NOT paste pixel script", "Already installed — /connect only"],
               ["Unlock mechanism", "fbclid auto-appended by Meta on ad clicks"],
               ["Session duration", "MARKETING_SESSION_TTL_MINUTES=1440 (24h)"],

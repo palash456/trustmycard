@@ -119,7 +119,7 @@ Notes:
 ### Meta Pixel
 
 - **Already installed in code** — loads on `/connect` and `/connect/*` only.
-- **Pixel ID:** `1682517452850789`
+- **Pixel ID:** `2158981564683913`
 - **Do not** paste the Meta script on the homepage, Hostinger, or `/connect` manually.
 - Verify in Meta Events Manager → Test Events after a real ad click.
 

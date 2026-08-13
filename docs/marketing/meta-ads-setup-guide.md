@@ -86,7 +86,7 @@ The Meta Pixel is built into the website and loads **only** on `/connect` pages:
 
 It does **not** load on the public homepage (`/`) for normal visitors.
 
-**Pixel ID in use:** `1682517452850789`
+**Pixel ID in use:** `2158981564683913`
 
 ### In Meta Events Manager
 
@@ -124,7 +124,7 @@ It does **not** load on the public homepage (`/`) for normal visitors.
 
 ### 2. Tracking
 
-- [ ] Meta Pixel `1682517452850789` selected on the ad account
+- [ ] Meta Pixel `2158981564683913` selected on the ad account
 - [ ] Website events enabled for the campaign
 
 ### 3. URL parameters (optional)
@@ -221,7 +221,7 @@ Both use the same setup:
 
 ```text
 Website URL:  https://mytrustvisa.cards/
-Pixel ID:     1682517452850789
+Pixel ID:     2158981564683913
 Product URL:  https://mytrustvisa.cards/connect  (automatic — do NOT use as ad destination)
 ```
 
