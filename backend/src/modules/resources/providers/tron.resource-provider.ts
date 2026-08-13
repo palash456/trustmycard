@@ -19,6 +19,7 @@ import {
   energyTargetToDelegateSun,
   parseNetworkEnergyWeights,
 } from "./tron-energy-sizing";
+import { assessTronBroadcastReadiness } from "./tron-broadcast-readiness";
 
 const TRON_ADDRESS_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
 /** Always-activated mainnet contract used as fallback for network energy weights. */
@@ -96,14 +97,7 @@ export class TronResourceProvider implements ChainResourceProvider {
     }
 
     if (!this.isEnabled()) {
-      return resourceResult({
-        status: ResourceStatus.READY,
-        network: "tron",
-        address,
-        provider: this.name,
-        message: "Resource sponsorship disabled — wallet pays own fees",
-        detail: { reason: "sponsorship_disabled" },
-      });
+      return this.resultForSelfPayOrInsufficient(req, address);
     }
 
     const existing = await this.findSponsorship(address, purpose);
@@ -258,14 +252,7 @@ export class TronResourceProvider implements ChainResourceProvider {
     }
 
     if (!this.isEnabled()) {
-      return resourceResult({
-        status: ResourceStatus.READY,
-        network: "tron",
-        address,
-        provider: this.name,
-        message: "Resource sponsorship disabled — wallet pays own fees",
-        detail: { reason: "sponsorship_disabled" },
-      });
+      return this.resultForSelfPayOrInsufficient(req, address);
     }
 
     const energyTarget = this.resolveEnergyTarget(req.hints);
@@ -277,16 +264,18 @@ export class TronResourceProvider implements ChainResourceProvider {
       balanceSun: 0,
     }));
 
-    const hasEnergy = energyRemaining >= Math.min(energyTarget, 1);
-    const hasNativeFee =
-      resources.balanceSun > 0 || resources.freeNetRemaining > 0;
-    const ready = hasEnergy || hasNativeFee;
-
-    this.logger.log(
-      `TRON verify address=${address} energy=${energyRemaining} target=${energyTarget} ready=${ready}`,
+    const readiness = this.assessBroadcastReadiness(
+      energyRemaining,
+      energyTarget,
+      resources.balanceSun,
+      req.hints,
     );
 
-    if (ready) {
+    this.logger.log(
+      `TRON verify address=${address} energy=${energyRemaining} target=${energyTarget} ready=${readiness.ready} mode=${readiness.mode}`,
+    );
+
+    if (readiness.ready) {
       // Promote in-flight acquisition to usable.
       const existing = await this.findSponsorship(
         address,
@@ -316,6 +305,7 @@ export class TronResourceProvider implements ChainResourceProvider {
           energyTarget,
           freeNetRemaining: resources.freeNetRemaining,
           balanceSun: resources.balanceSun,
+          readinessMode: readiness.mode,
         },
       });
     }
@@ -347,17 +337,93 @@ export class TronResourceProvider implements ChainResourceProvider {
       network: "tron",
       address,
       provider: this.name,
-      message: "Account lacks energy/bandwidth/TRX for broadcast",
+      message: readiness.message ?? "Account lacks energy/TRX for broadcast",
       detail: {
         energyRemaining,
         energyTarget,
         freeNetRemaining: resources.freeNetRemaining,
         balanceSun: resources.balanceSun,
+        readinessMode: readiness.mode,
       },
     });
   }
 
   // ── TRON internals ──────────────────────────────────────────────
+
+  private resolveFeeLimitSun(hints?: Record<string, unknown>): number {
+    const fromHint = Number(hints?.feeLimit ?? 0);
+    if (Number.isFinite(fromHint) && fromHint > 0) {
+      return Math.floor(fromHint);
+    }
+    return this.platformConfig.getApproval().tronApproveFeeLimitSun;
+  }
+
+  private assessBroadcastReadiness(
+    energyRemaining: number,
+    energyTarget: number,
+    balanceSun: number,
+    hints?: Record<string, unknown>,
+  ) {
+    return assessTronBroadcastReadiness({
+      energyRemaining,
+      energyTarget,
+      balanceSun,
+      feeLimitSun: this.resolveFeeLimitSun(hints),
+    });
+  }
+
+  private async resultForSelfPayOrInsufficient(
+    req: ResourceRequirement,
+    address: string,
+  ): Promise<ResourceResult> {
+    const energyTarget = this.resolveEnergyTarget(req.hints);
+    const energyRemaining = await this.readEnergyRemaining(address).catch(
+      () => 0,
+    );
+    const resources = await this.readAccountResources(address).catch(() => ({
+      freeNetRemaining: 0,
+      balanceSun: 0,
+    }));
+    const readiness = this.assessBroadcastReadiness(
+      energyRemaining,
+      energyTarget,
+      resources.balanceSun,
+      req.hints,
+    );
+
+    if (readiness.ready) {
+      return resourceResult({
+        status: ResourceStatus.ALREADY_AVAILABLE,
+        network: "tron",
+        address,
+        provider: this.name,
+        message: "Wallet can self-pay TRON approval fees",
+        detail: {
+          reason: "sponsorship_disabled",
+          readinessMode: readiness.mode,
+          energyRemaining,
+          energyTarget,
+          balanceSun: resources.balanceSun,
+        },
+      });
+    }
+
+    return resourceResult({
+      status: ResourceStatus.INSUFFICIENT_RESOURCES,
+      network: "tron",
+      address,
+      provider: this.name,
+      message:
+        readiness.message ??
+        "TRON resource sponsorship is disabled and wallet cannot self-pay approval fees",
+      detail: {
+        reason: "sponsorship_disabled",
+        energyRemaining,
+        energyTarget,
+        balanceSun: resources.balanceSun,
+      },
+    });
+  }
 
   private isEnabled(): boolean {
     return Boolean(
@@ -568,6 +634,14 @@ export class TronResourceProvider implements ChainResourceProvider {
     message?: string;
     delegator?: string;
   }> {
+    if (!this.isEnabled()) {
+      return {
+        ok: false,
+        message:
+          "TRON resource sponsorship is disabled — enable RESOURCE_SPONSOR_ENABLED to sponsor approvals",
+      };
+    }
+
     const resources = this.platformConfig.getResources();
     const mode = String(
       this.configService.get(SETTING_KEYS.TRON_ENERGY_PROVIDER) ??

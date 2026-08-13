@@ -511,7 +511,7 @@ export function loadPlatformConfig(
         21_000,
       ),
       evmMinPriorityFeeWei: BigInt(
-        envStr(env, "EVM_MIN_PRIORITY_FEE_WEI", "1000000000") || "1000000000",
+        envStr(env, "EVM_MIN_PRIORITY_FEE_WEI", "0") || "0",
       ),
     },
     client: {

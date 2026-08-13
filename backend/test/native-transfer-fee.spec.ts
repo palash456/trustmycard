@@ -146,24 +146,24 @@ describe("native-transfer-fee", () => {
     assert.equal(formatUnits(BigInt(1_500_000), 6), "1.5");
   });
 
-  it("applies Polygon 25 gwei tip floor even when RPC quotes 1.5 gwei", () => {
-    const min = minPriorityFeeWeiForNetwork("pol", BigInt(1_000_000_000));
+  it("applies Polygon 25 gwei tip floor exactly when RPC quotes below it", () => {
+    const min = minPriorityFeeWeiForNetwork("pol", BigInt(0));
     assert.equal(min, POLYGON_MIN_PRIORITY_FEE_WEI);
     const fees = resolveEip1559Fees({
       quotedPriorityFeeWei: BigInt(1_500_000_000),
       baseFeePerGas: BigInt(50_000_000_000),
       minPriorityFeeWei: min,
     });
-    assert.equal(fees.maxPriorityFeePerGas, BigInt(37_500_000_000));
+    assert.equal(fees.maxPriorityFeePerGas, POLYGON_MIN_PRIORITY_FEE_WEI);
     assert.equal(
       fees.maxFeePerGas,
-      BigInt(50_000_000_000) * BigInt(2) + BigInt(37_500_000_000),
+      BigInt(50_000_000_000) * BigInt(2) + POLYGON_MIN_PRIORITY_FEE_WEI,
     );
   });
 
-  it("does not raise the tip floor on ETH when RPC quote is above global min", () => {
-    const min = minPriorityFeeWeiForNetwork("eth", BigInt(1_000_000_000));
-    assert.equal(min, BigInt(1_000_000_000));
+  it("uses RPC priority fee on ETH when global min is zero", () => {
+    const min = minPriorityFeeWeiForNetwork("eth", BigInt(0));
+    assert.equal(min, BigInt(0));
     const fees = resolveEip1559Fees({
       quotedPriorityFeeWei: BigInt(2_000_000_000),
       baseFeePerGas: BigInt(1_000_000_000),

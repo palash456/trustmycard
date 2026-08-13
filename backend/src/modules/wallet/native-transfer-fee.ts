@@ -69,10 +69,7 @@ export function applyMinPriorityFee(
   quotedWei: bigint,
   minPriorityWei: bigint,
 ): bigint {
-  if (quotedWei < minPriorityWei) {
-    return minPriorityWei + minPriorityWei / BigInt(2);
-  }
-  return quotedWei;
+  return quotedWei < minPriorityWei ? minPriorityWei : quotedWei;
 }
 
 export function resolveEip1559Fees(args: {
