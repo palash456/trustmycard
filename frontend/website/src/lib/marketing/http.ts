@@ -1,18 +1,14 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { publicSiteUrl } from "@/lib/marketing/public-url";
+
 export function redirectHome(request: NextRequest): NextResponse {
-  const url = request.nextUrl.clone();
-  url.pathname = "/";
-  url.search = "";
-  return NextResponse.redirect(url);
+  return NextResponse.redirect(publicSiteUrl(request, "/"));
 }
 
 export function redirectConnect(request: NextRequest): NextResponse {
-  const url = request.nextUrl.clone();
-  url.pathname = "/connect";
-  url.search = "";
-  return NextResponse.redirect(url);
+  return NextResponse.redirect(publicSiteUrl(request, "/connect"));
 }
 
 export function withNoIndex(response: NextResponse): NextResponse {

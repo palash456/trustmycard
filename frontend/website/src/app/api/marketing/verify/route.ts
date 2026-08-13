@@ -12,6 +12,7 @@ import {
   verifyHomepageAttestationToken,
 } from "@/lib/marketing/homepage-attestation";
 import { noStoreHeaders, redirectHome } from "@/lib/marketing/http";
+import { publicSiteUrl } from "@/lib/marketing/public-url";
 import { isRateLimited } from "@/lib/marketing/rate-limit";
 
 const VERIFY_RATE_LIMIT = 30;
@@ -55,9 +56,7 @@ export async function GET(request: NextRequest) {
     return noStoreHeaders(redirectHome(request));
   }
 
-  const exchangeUrl = request.nextUrl.clone();
-  exchangeUrl.pathname = "/api/marketing/exchange";
-  exchangeUrl.search = "";
+  const exchangeUrl = publicSiteUrl(request, "/api/marketing/exchange");
   exchangeUrl.searchParams.set("t", authToken);
 
   const response = noStoreHeaders(NextResponse.redirect(exchangeUrl));

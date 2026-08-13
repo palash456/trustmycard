@@ -7,7 +7,8 @@ import {
   createHomepageAttestationToken,
   homepageAttestationCookieOptions,
 } from "@/lib/marketing/homepage-attestation";
-import { withNoIndex } from "@/lib/marketing/http";
+import { redirectConnect, redirectHome, withNoIndex } from "@/lib/marketing/http";
+import { publicSiteUrl } from "@/lib/marketing/public-url";
 import {
   clearLegacyAdAccessCookie,
   MARKETING_SESSION_COOKIE,
@@ -36,26 +37,14 @@ function withPathname(response: NextResponse, pathname: string): NextResponse {
   return response;
 }
 
-function redirectHome(request: NextRequest): NextResponse {
-  const url = request.nextUrl.clone();
-  url.pathname = "/";
-  url.search = "";
-  const response = NextResponse.redirect(url);
+function redirectHomeWithCookieClear(request: NextRequest): NextResponse {
+  const response = redirectHome(request);
   response.cookies.set(clearLegacyAdAccessCookie());
   return response;
 }
 
-function redirectConnect(request: NextRequest): NextResponse {
-  const url = request.nextUrl.clone();
-  url.pathname = "/connect";
-  url.search = "";
-  return NextResponse.redirect(url);
-}
-
 function redirectMarketingVerify(request: NextRequest): NextResponse {
-  const url = request.nextUrl.clone();
-  url.pathname = "/api/marketing/verify";
-  url.search = "";
+  const url = publicSiteUrl(request, "/api/marketing/verify");
   const verifyParams = new URLSearchParams();
   copyClickIdentifiers(request.nextUrl.searchParams, verifyParams);
   url.search = verifyParams.toString();
@@ -110,7 +99,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isConnectPath(pathname) && !hasSession) {
-    return redirectHome(request);
+    return redirectHomeWithCookieClear(request);
   }
 
   if (isConnectPath(pathname) || isMarketingApiPath(pathname)) {
