@@ -129,6 +129,7 @@ MERCHANT_WEBHOOK_URL, MERCHANT_WEBHOOK_SECRET`}</DocPre>
 NEXT_PUBLIC_MARKETING_URL=https://www.mytrustvisa.cards
 BACKEND_API_URL=https://api.mytrustvisa.cards
 MARKETING_SESSION_SECRET          # HMAC — sessions + one-time tokens
+MARKETING_SESSION_TTL_MINUTES=1440  # /connect gate — also in platform.env
 MARKETING_TEST_SECRET             # Developer test only (Render dashboard)
 GOOGLE_ADS_DEVELOPER_TOKEN        # Google ad verify only
 GOOGLE_ADS_CLIENT_ID
@@ -140,7 +141,7 @@ GOOGLE_ADS_LOGIN_CUSTOMER_ID      # optional MCC`}</DocPre>
             <DocCode>NEXT_PUBLIC_*</DocCode> are baked at build time — redeploy
             wallet app after changes. See{" "}
             <DocLink href="/documentation/marketing-access">
-              Marketing & Domains
+              Domain Security & Access
             </DocLink>
             .
           </DocP>

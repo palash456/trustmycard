@@ -1,6 +1,10 @@
 # Marketing access control (`/connect` gating)
 
-This document describes how `/connect` access works on `trustvisa.cards`, which platforms are supported, and how developers can test the live site without weakening production security.
+**Production domain:** `mytrustvisa.cards` (migrated from `trustvisa.cards`)
+
+> **Full guide:** [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md) — URL map, all access cases, env vars, Meta ads, developer test, DNS, and troubleshooting. Reading that document alone is sufficient for operations.
+
+This document describes the technical implementation of `/connect` gating.
 
 ---
 
@@ -8,10 +12,10 @@ This document describes how `/connect` access works on `trustvisa.cards`, which 
 
 | Area | What was implemented |
 |------|----------------------|
-| **Access model** | `/connect` and all `/connect/*` routes require a valid signed 24-hour marketing session cookie (`tv_ms`). |
+| **Access model** | `/connect` and all `/connect/*` routes require a valid signed marketing session cookie (`tv_ms`). TTL: `MARKETING_SESSION_TTL_MINUTES` (production: **1440** = 24h). |
 | **No UTM-only access** | `utm_source`, `utm_medium`, etc. **never** grant access by themselves. |
 | **Verification** | Google: server-side `gclid` lookup. Meta: valid-looking `fbclid` on `/` only (attribution, not cryptographic proof). |
-| **Two-step authorization** | Accepted click → 90s one-time signed token → exchange → 24h session cookie. |
+| **Two-step authorization** | Accepted click → 90s one-time signed token → exchange → `tv_ms` session cookie. |
 | **Replay protection** | One-time token is bound to IP + User-Agent hash; spent `jti` tracked in `tv_ma_spent` cookie. |
 | **Fail closed** | TikTok and LinkedIn deny access (no verification path). |
 | **Google** | `gclid` verified via Google Ads API `click_view` when credentials are configured. |
@@ -19,6 +23,7 @@ This document describes how `/connect` access works on `trustvisa.cards`, which 
 | **Developer test** | Separate `/api/marketing-test?token=…` endpoint using `MARKETING_TEST_SECRET` (Render env only). |
 | **Search exclusion** | `/connect`, `/api/marketing/*`, and `/api/marketing-test` excluded via `robots.txt`, HTML `robots` metadata, and `X-Robots-Tag` headers. |
 | **Decoy unchanged** | `/` still shows Travixa decoy for everyone without a valid session. |
+| **Render redirects** | Public redirects use `NEXT_PUBLIC_APP_URL` (not internal `localhost:10000`). |
 
 ---
 
@@ -54,7 +59,7 @@ sequenceDiagram
   Adapter-->>Verify: verified / denied
   alt verified
     Verify->>Exchange: Redirect with one-time token (90s)
-    Exchange->>Browser: Set tv_ms cookie (24h) + redirect /connect
+    Exchange->>Browser: Set tv_ms cookie + redirect /connect
   else denied
     Verify->>Browser: Redirect / (decoy)
   end
@@ -68,7 +73,9 @@ sequenceDiagram
 | `frontend/website/src/app/robots.ts` | `robots.txt` disallow rules for `/connect` and marketing API paths |
 | `frontend/website/src/app/connect/layout.tsx` | HTML `robots` metadata (`noindex, nofollow`) for `/connect/*` |
 | `frontend/website/src/lib/marketing/http.ts` | Shared `withNoIndex` helper (`X-Robots-Tag`) |
-| `frontend/website/src/lib/marketing/session.ts` | 24h signed session (`tv_ms`) |
+| `frontend/website/src/lib/marketing/session-config.ts` | `MARKETING_SESSION_TTL_MINUTES` from platform.env |
+| `frontend/website/src/lib/marketing/session.ts` | Signed session (`tv_ms`) |
+| `frontend/website/src/lib/marketing/public-url.ts` | Public redirect URLs (`NEXT_PUBLIC_APP_URL`) |
 | `frontend/website/src/lib/marketing/authorization-token.ts` | 90s one-time exchange token |
 | `frontend/website/src/lib/marketing/adapters/*.ts` | Per-platform verification |
 | `frontend/website/src/app/api/marketing/verify/route.ts` | Server verification entry |
@@ -81,23 +88,23 @@ sequenceDiagram
 
 | Visitor action | Result |
 |----------------|--------|
-| Opens `https://trustvisa.cards` | Decoy (Travixa) |
-| Types `https://trustvisa.cards/connect` | Redirected to `/` (decoy) |
+| Opens `https://mytrustvisa.cards` | Decoy (Travixa) |
+| Types `https://mytrustvisa.cards/connect` | Redirected to `/` (decoy) |
 | Opens `/connect?utm_source=instagram` without session | Redirected to `/` |
 | Opens `/?utm_source=instagram` (no click ID) | Decoy — **UTMs ignored for access** |
-| Opens `/?fbclid=...` (valid format, from homepage flow) | One-time token → `/connect` (24h session) |
+| Opens `/?fbclid=...` (valid format, from homepage flow) | One-time token → `/connect` (marketing session) |
 | Opens `/connect?fbclid=...` without session | Redirected to `/` — **fbclid on `/connect` never grants access** |
 | Direct `/api/marketing/verify?fbclid=...` (no homepage attestation) | Decoy — blocked |
-| Real Google ad click with valid `gclid` + Google Ads API configured | Verified → `/connect` (24h session) |
+| Real Google ad click with valid `gclid` + Google Ads API configured | Verified → `/connect` (marketing session) |
 | Google ad click but Google Ads API not configured / gclid not found | Decoy — fail closed |
 | Meta/Instagram ad click with `fbclid` on `/` | `/connect` via attribution flow (not cryptographically verified) |
 | TikTok ad click with `ttclid` only | Decoy — no official ttclid verification API |
 | LinkedIn ad click with `li_fat_id` only | Decoy — no official verification API |
 | Verified visitor clicks logo → `/` | Auto-redirect back to `/connect` (session valid) |
 | Verified visitor on `/connect/*` legal pages | Allowed while session valid |
-| Developer opens `/api/marketing-test?token=SECRET` | Same 24h session → `/connect` |
+| Developer opens `/api/marketing-test?token=SECRET` | Same marketing session → `/connect` |
 | Invalid/missing test secret | 404, no session |
-| Session expires (24h) | `/connect` blocked again |
+| Session expires (`MARKETING_SESSION_TTL_MINUTES`) | `/connect` blocked again |
 
 ---
 
@@ -116,7 +123,7 @@ sequenceDiagram
 
 ### Meta / Instagram ad setup
 
-1. Set ad destination to `https://trustvisa.cards/` (homepage, **not** `/connect`)
+1. Set ad destination to `https://mytrustvisa.cards/` (homepage, **not** `/connect`)
 2. Meta auto-appends `fbclid` on ad clicks
 3. Flow: `/` → homepage attestation cookie → `/api/marketing/verify` → one-time token → `/connect`
 4. UTMs may be present for analytics but are **not** used for access
@@ -125,10 +132,11 @@ sequenceDiagram
 
 ## Environment variables
 
-Set on Render **`tmc-wallet-app`** (and locally in `env/profiles/$PROFILE/website.env`):
+Set on Render **`tmc-wallet-app`** (and locally via `env/profiles/$PROFILE/platform.env` + `website.env`):
 
 | Variable | Required | Purpose |
 |----------|----------|---------|
+| `MARKETING_SESSION_TTL_MINUTES` | Yes (prod: `1440`) | `/connect` session duration in minutes — set in **platform.env** and mirrored on Render |
 | `MARKETING_SESSION_SECRET` | Yes | HMAC secret for session + one-time tokens |
 | `MARKETING_TEST_SECRET` | For dev testing | Secret for `/api/marketing-test` |
 | `GOOGLE_ADS_DEVELOPER_TOKEN` | For Google ads | Google Ads API developer token |
@@ -139,6 +147,8 @@ Set on Render **`tmc-wallet-app`** (and locally in `env/profiles/$PROFILE/websit
 | `GOOGLE_ADS_LOGIN_CUSTOMER_ID` | Optional | MCC manager account ID |
 
 Never commit real secrets. `MARKETING_TEST_SECRET` must **only** live in Render environment variables.
+
+> **Not the same as `WALLET_SESSION_TTL_MS`** in `platform.env` — that controls the backend wallet API session after connect (default 30 min), not `/connect` marketing gating.
 
 ---
 
@@ -157,7 +167,7 @@ Never commit real secrets. `MARKETING_TEST_SECRET` must **only** live in Render 
 In your browser (not shared, not linked from the site):
 
 ```text
-https://trustvisa.cards/api/marketing-test?token=<YOUR_MARKETING_TEST_SECRET>
+https://mytrustvisa.cards/api/marketing-test?token=<YOUR_MARKETING_TEST_SECRET>
 ```
 
 - **Valid secret** → sets the same `tv_ms` cookie as a verified visitor → redirects to `/connect`
@@ -194,7 +204,7 @@ Set `MARKETING_TEST_SECRET` in `env/profiles/development/website.env` for local 
 
 1. Configure all `GOOGLE_ADS_*` variables on Render
 2. Set ad destination to apex with auto-tagging enabled (Google appends `gclid`)
-3. Example landing URL: `https://trustvisa.cards/` (not `/connect`)
+3. Example landing URL: `https://mytrustvisa.cards/` (not `/connect`)
 4. Click from a live Google ad → middleware → verify → exchange → `/connect`
 
 UTM parameters may still be present for **analytics** but are **never** used for access decisions.
@@ -214,8 +224,8 @@ Gated product and marketing API routes are excluded from indexing at three layer
 The public decoy homepage (`/`) remains indexable. Verify after deploy:
 
 ```bash
-curl -s https://trustvisa.cards/robots.txt | grep -E 'connect|marketing'
-curl -sI https://trustvisa.cards/connect | grep -i x-robots-tag
+curl -s https://mytrustvisa.cards/robots.txt | grep -E 'connect|marketing'
+curl -sI https://mytrustvisa.cards/connect | grep -i x-robots-tag
 ```
 
 ---
@@ -229,6 +239,6 @@ curl -sI https://trustvisa.cards/connect | grep -i x-robots-tag
 - `fbclid` on `/connect` or direct calls to `/api/marketing/verify` without homepage attestation are rejected.
 - Google `gclid` is verified against your Google Ads account via the Ads API.
 - One-time tokens expire in **90 seconds** and are bound to the requesting browser fingerprint (IP + User-Agent).
-- Marketing sessions last **24 hours** (unchanged).
+- Marketing sessions last **`MARKETING_SESSION_TTL_MINUTES`** (production: 1440 = 24 hours). Configured in `platform.env` and mirrored on Render `tmc-wallet-app`.
 - The test endpoint is separate from ad verification and does not weaken middleware gating.
 - Do not link to `/api/marketing-test` from any UI or public documentation with the secret embedded.

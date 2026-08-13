@@ -8,9 +8,11 @@ Deployment guides and environment reference for Trust My Card production.
 | ------------------------------------------------------------------ | ----------- | -------------------------------------------------------- |
 | [render-budget-production.md](./render-budget-production.md)       | **~$14/mo** | **Recommended for launch** — 2× Starter + Neon + Upstash |
 | [render-hostinger-production.md](./render-hostinger-production.md) | ~$60/mo     | Full split: API, worker, Postgres, Redis, admin          |
-| [trustvisa-single-domain.md](./trustvisa-single-domain.md)         | —           | **trustvisa.cards** — decoy `/`, product `/connect`      |
-| [domain-migration.md](./domain-migration.md) | —           | **Generic** domain migration checklist (DNS + Render + verification) |
-| [marketing-access.md](./marketing-access.md)                       | —           | `/connect` gating — sessions, adapters, developer test   |
+| [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md) | **Current production** — domain, access, env, troubleshooting |
+| [trustvisa-single-domain.md](./trustvisa-single-domain.md)         | Legacy **trustvisa.cards** layout |
+| [domain-migration.md](./domain-migration.md) | **Generic** domain migration checklist (DNS + Render + verification) |
+| [domain-migration-mytrustvisa.md](./domain-migration-mytrustvisa.md) | **mytrustvisa.cards** migration quick reference |
+| [marketing-access.md](./marketing-access.md)                       | `/connect` gating — technical implementation |
 | [../marketing/meta-ads-setup-guide.md](../marketing/meta-ads-setup-guide.md) | — | **Meta / Instagram ads** — URL, pixel, UTMs (media buyers) |
 | [production-architecture.md](./production-architecture.md)         | —           | Blast-radius zones                                       |
 
@@ -34,4 +36,4 @@ Deployment guides and environment reference for Trust My Card production.
 | [scripts/render-*.sh](../../scripts/)              | Render build and migrate scripts                                                                     |
 | [env/profiles/](../../env/profiles/)               | Profile env templates (`platform`, `backend-api`, `backend-worker`, `website`, `marketing`, `admin`) |
 
-Marketing is **not** on Render — static files upload to Hostinger **www** only when using split legal pages. For **trustvisa.cards** decoy + `/connect` on apex, see [trustvisa-single-domain.md](./trustvisa-single-domain.md).
+Marketing is **not** on Render — static files upload to Hostinger **www** only when using split legal pages. For **mytrustvisa.cards** decoy + `/connect` on apex, see [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md).

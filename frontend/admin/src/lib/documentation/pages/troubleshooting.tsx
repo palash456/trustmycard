@@ -96,6 +96,18 @@ export const troubleshootingPage: DocPage = {
           headers={["Symptom", "Action"]}
           rows={[
             [
+              "502 fetch failed / wallet broken",
+              "api.mytrustvisa.cards DNS missing — add CNAME api → Render tmc-backend; set BACKEND_API_URL + APP_ORIGIN; redeploy both",
+            ],
+            [
+              "Redirect to localhost:10000/connect",
+              "Set NEXT_PUBLIC_APP_URL=https://mytrustvisa.cards on tmc-wallet-app and redeploy",
+            ],
+            [
+              "Duplicate MARKETING_SESSION_TTL_MINUTES on Render",
+              "Keep one row only — 1440 for production ads, 15 optional for dev",
+            ],
+            [
               "Ad click stays on decoy /",
               "Confirm ad URL is mytrustvisa.cards/ (not /connect); check fbclid in URL; verify MARKETING_SESSION_SECRET on Render",
             ],

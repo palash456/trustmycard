@@ -17,6 +17,8 @@ Throughout this guide, placeholders show the relationship between hosts:
 
 Replace these with your real hostnames when executing the migration.
 
+**Current production example:** `mytrustvisa.cards` — see [domain-migration-mytrustvisa.md](./domain-migration-mytrustvisa.md) and [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md).
+
 **Time needed:** ~30–60 minutes (+ DNS propagation up to 24–48 hours, often faster).
 
 ---
@@ -93,6 +95,7 @@ Replace these with your real hostnames when executing the migration.
 | `NEXT_PUBLIC_APP_URL` | `https://new-domain.example` |
 | `NEXT_PUBLIC_MARKETING_URL` | `https://www.new-domain.example` |
 | `BACKEND_API_URL` | `https://api.new-domain.example` |
+| `MARKETING_SESSION_TTL_MINUTES` | `1440` (24h for ad users — mirror in `platform.env`) |
 
 **Keep unchanged:** `MARKETING_SESSION_SECRET`, `MARKETING_TEST_SECRET`, `NEXT_PUBLIC_PROJECT_ID`.
 

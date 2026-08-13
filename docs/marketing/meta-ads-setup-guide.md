@@ -1,6 +1,8 @@
 # Meta / Instagram Ads — Setup Guide for Media Buyers
 
-This guide is for the person running Meta (Facebook / Instagram) ads for **trustvisa.cards**.
+This guide is for the person running Meta (Facebook / Instagram) ads for **mytrustvisa.cards**.
+
+For the complete domain, security, and access reference, see [mytrustvisa-domain-security.md](../infrastructure/mytrustvisa-domain-security.md).
 
 It explains which URL to use, what visitors see, how tracking works, and what **not** to change.
 
@@ -12,8 +14,8 @@ For technical / developer details, see [marketing-access.md](../infrastructure/m
 
 | Question | Answer |
 |----------|--------|
-| **What URL should ads point to?** | `https://trustvisa.cards/` |
-| **Will ad users see the Trust Card site?** | Yes — they are redirected to `https://trustvisa.cards/connect` automatically |
+| **What URL should ads point to?** | `https://mytrustvisa.cards/` |
+| **Will ad users see the Trust Card site?** | Yes — they are redirected to `https://mytrustvisa.cards/connect` automatically |
 | **Should ads point to `/connect`?** | **No** — never use `/connect` as the ad destination |
 | **Do UTMs open the product site?** | **No** — UTMs are for reporting only |
 | **What actually unlocks `/connect`?** | Meta’s `fbclid` on the homepage (added automatically on ad clicks) |
@@ -26,13 +28,13 @@ For technical / developer details, see [marketing-access.md](../infrastructure/m
 ### Use this
 
 ```text
-https://trustvisa.cards/
+https://mytrustvisa.cards/
 ```
 
 ### Optional — UTMs for your reports (recommended)
 
 ```text
-https://trustvisa.cards/?utm_source=instagram&utm_medium=paid&utm_campaign=YOUR_CAMPAIGN_NAME
+https://mytrustvisa.cards/?utm_source=instagram&utm_medium=paid&utm_campaign=YOUR_CAMPAIGN_NAME
 ```
 
 Meta will still append `fbclid` on top of this when someone clicks.
@@ -40,8 +42,8 @@ Meta will still append `fbclid` on top of this when someone clicks.
 ### Never use this
 
 ```text
-https://trustvisa.cards/connect
-https://trustvisa.cards/connect?utm_source=instagram
+https://mytrustvisa.cards/connect
+https://mytrustvisa.cards/connect?utm_source=instagram
 ```
 
 Manual `/connect` visits are blocked. Ad clicks to `/connect` will **not** open the product site.
@@ -53,11 +55,11 @@ Manual `/connect` visits are blocked. Ad clicks to `/connect` will **not** open 
 ```text
 User clicks Meta/Instagram ad
         ↓
-https://trustvisa.cards/?fbclid=...&utm_...
+https://mytrustvisa.cards/?fbclid=...&utm_...
         ↓
 Server checks fbclid (homepage only)
         ↓
-https://trustvisa.cards/connect
+https://mytrustvisa.cards/connect
         ↓
 Trust Card product site + Meta Pixel fires
 ```
@@ -67,7 +69,7 @@ Notes:
 - The user may only see the homepage (`/`) for a **split second** before redirect.
 - That homepage is a **cover site** (Travixa) — this is intentional.
 - After redirect, they land on the **real product** at `/connect`.
-- Access lasts **24 hours** in the same browser (refresh, legal pages, logo click back to home → still returns to `/connect`).
+- Access lasts **`MARKETING_SESSION_TTL_MINUTES`** (production: **1440** = 24 hours) in the same browser.
 
 ---
 
@@ -117,7 +119,7 @@ It does **not** load on the public homepage (`/`) for normal visitors.
 
 ### 1. Ad set / ad level — Website URL
 
-- [ ] Destination: `https://trustvisa.cards/`
+- [ ] Destination: `https://mytrustvisa.cards/`
 - [ ] **Not** `/connect`
 
 ### 2. Tracking
@@ -137,7 +139,7 @@ utm_source=instagram&utm_medium=paid&utm_campaign={{campaign.name}}
 
 1. Open an **incognito / private** browser window.
 2. Click a test ad (or use Meta’s preview link).
-3. Confirm you end up on `https://trustvisa.cards/connect`.
+3. Confirm you end up on `https://mytrustvisa.cards/connect`.
 4. In Events Manager → **Test Events**, confirm **PageView** appears.
 
 ### 5. After launch — spot checks
@@ -182,7 +184,7 @@ Only ad clicks with `fbclid` on the homepage (or returning visitors with an acti
 
 Both use the same setup:
 
-- Same destination: `https://trustvisa.cards/`
+- Same destination: `https://mytrustvisa.cards/`
 - Same `fbclid` behavior on click
 - Same redirect to `/connect`
 - Use `utm_source=instagram` or `utm_source=facebook` only for your reports
@@ -193,7 +195,7 @@ Both use the same setup:
 
 ### Ad click does not reach `/connect`
 
-1. Confirm ad URL is exactly `https://trustvisa.cards/` (not `/connect`).
+1. Confirm ad URL is exactly `https://mytrustvisa.cards/` (not `/connect`).
 2. Check the landing URL in the browser address bar — is `fbclid=...` present?
 3. If `fbclid` is missing, check Meta auto-tagging / URL settings.
 4. If using a shortener, confirm it keeps query parameters.
@@ -218,9 +220,9 @@ Both use the same setup:
 **Give Meta Ads this:**
 
 ```text
-Website URL:  https://trustvisa.cards/
+Website URL:  https://mytrustvisa.cards/
 Pixel ID:     1682517452850789
-Product URL:  https://trustvisa.cards/connect  (automatic — do NOT use as ad destination)
+Product URL:  https://mytrustvisa.cards/connect  (automatic — do NOT use as ad destination)
 ```
 
 **One-line rule:**

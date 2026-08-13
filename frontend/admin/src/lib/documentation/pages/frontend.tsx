@@ -100,7 +100,7 @@ src/app/api/marketing-test/     # Developer test bypass`}</DocPre>
             Meta Pixel (<DocCode>ConnectMetaPixel.tsx</DocCode>) loads on{" "}
             <DocCode>/connect</DocCode> only. See{" "}
             <DocLink href="/documentation/marketing-access">
-              Marketing & Domains
+              Domain Security & Access
             </DocLink>
             .
           </DocP>

@@ -102,6 +102,10 @@ Deploy guide (full): [infrastructure/render-hostinger-production.md](./infrastru
 | [production-architecture.md](./infrastructure/production-architecture.md)         | Blast-radius zones         |
 | [environments.md](./infrastructure/environments.md)                               | `TMC_ENV` profiles         |
 | [secrets.md](./infrastructure/secrets.md)                                         | Env var matrix per service |
+| [mytrustvisa-domain-security.md](./infrastructure/mytrustvisa-domain-security.md) | **Current production** domain, access & security |
+| [domain-migration-mytrustvisa.md](./infrastructure/domain-migration-mytrustvisa.md) | mytrustvisa.cards migration quick ref |
+| [marketing-access.md](./infrastructure/marketing-access.md) | `/connect` gating implementation |
+| [meta-ads-setup-guide.md](./marketing/meta-ads-setup-guide.md) | Meta / Instagram ads (media buyers) |
 | [cloudflare-edge.md](./infrastructure/cloudflare-edge.md)                         | WAF and admin SSO          |
 | [disaster-recovery.md](./infrastructure/disaster-recovery.md)                     | Backups and rebuild        |
 

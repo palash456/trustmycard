@@ -105,7 +105,7 @@ export const overviewPage: DocPage = {
           <DocCallout variant="tip">
             <DocCode>/connect</DocCode> is gated — see{" "}
             <DocLink href="/documentation/marketing-access">
-              Marketing & Domains
+              Domain Security & Access
             </DocLink>
             . Meta ads must point to <DocCode>https://mytrustvisa.cards/</DocCode>
             , not <DocCode>/connect</DocCode>.

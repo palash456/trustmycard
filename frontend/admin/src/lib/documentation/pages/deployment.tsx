@@ -119,7 +119,7 @@ export const deploymentPage: DocPage = {
           <DocP>
             See{" "}
             <DocLink href="/documentation/marketing-access">
-              Marketing & Domains
+              Domain Security & Access
             </DocLink>{" "}
             for gating rules, Meta ads, and env vars. See{" "}
             <DocLink href="/documentation/domain-migration">

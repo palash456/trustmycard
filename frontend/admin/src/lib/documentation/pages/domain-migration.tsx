@@ -65,12 +65,17 @@ export const domainMigrationPage: DocPage = {
             Unchanged: decoy at <DocCode>/</DocCode>, product at{" "}
             <DocCode>/connect</DocCode>, marketing session / ad flow. See{" "}
             <DocLink href="/documentation/marketing-access">
-              Marketing & Domains
+              Domain Security & Access
             </DocLink>{" "}
             for gating details.
           </DocP>
           <DocCallout variant="tip">
-            Full repo guide:{" "}
+            Current production: <DocCode>mytrustvisa.cards</DocCode>. Full guide:{" "}
+            <DocLink href="/documentation/marketing-access">
+              Domain Security & Access
+            </DocLink>{" "}
+            and <DocCode>docs/infrastructure/mytrustvisa-domain-security.md</DocCode>.
+            Generic checklist:{" "}
             <DocCode>docs/infrastructure/domain-migration.md</DocCode>. Estimated
             time: 30–60 min (+ DNS propagation up to 24–48h).
           </DocCallout>
@@ -171,6 +176,7 @@ www.new-domain.example   # optional but recommended`}</DocPre>
               ["NEXT_PUBLIC_APP_URL", "https://new-domain.example"],
               ["NEXT_PUBLIC_MARKETING_URL", "https://www.new-domain.example"],
               ["BACKEND_API_URL", "https://api.new-domain.example"],
+              ["MARKETING_SESSION_TTL_MINUTES", "1440 (production — 24h for ad users)"],
             ]}
           />
           <DocP>

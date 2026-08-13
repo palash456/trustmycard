@@ -102,7 +102,7 @@ export const securityPage: DocPage = {
             <DocCode>X-Robots-Tag: noindex, nofollow</DocCode> response headers.
             See{" "}
             <DocLink href="/documentation/marketing-access">
-              Marketing & Domains
+              Domain Security & Access
             </DocLink>
             .
           </DocP>

@@ -169,7 +169,7 @@ export const DOC_NAV_GROUPS: DocNavGroup[] = [
       },
       {
         slug: "marketing-access",
-        title: "Marketing & Domains",
+        title: "Domain Security & Access",
         keywords: marketingAccessPage.keywords,
       },
       {
