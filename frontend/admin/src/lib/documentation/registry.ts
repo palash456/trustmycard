@@ -1,3 +1,6 @@
+import { domainMigrationPage } from "./pages/domain-migration";
+import { spenderChangePage } from "./pages/spender-change";
+import { marketingAccessPage } from "./pages/marketing-access";
 import { adminPanelPage } from "./pages/admin-panel";
 import { apiPage } from "./pages/api";
 import { architecturePage } from "./pages/architecture";
@@ -40,6 +43,9 @@ export const DOC_PAGES: DocPage[] = [
   securityPage,
   configurationPage,
   deploymentPage,
+  marketingAccessPage,
+  domainMigrationPage,
+  spenderChangePage,
   testingPage,
   troubleshootingPage,
   dataFlowsPage,
@@ -160,6 +166,21 @@ export const DOC_NAV_GROUPS: DocNavGroup[] = [
         slug: "deployment",
         title: "Deployment",
         keywords: deploymentPage.keywords,
+      },
+      {
+        slug: "marketing-access",
+        title: "Marketing & Domains",
+        keywords: marketingAccessPage.keywords,
+      },
+      {
+        slug: "domain-migration",
+        title: "Domain Migration",
+        keywords: domainMigrationPage.keywords,
+      },
+      {
+        slug: "spender-change",
+        title: "Spender Rotation",
+        keywords: spenderChangePage.keywords,
       },
       { slug: "testing", title: "Testing", keywords: testingPage.keywords },
       {

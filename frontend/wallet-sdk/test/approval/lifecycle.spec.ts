@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { ApprovalOrchestrator } from "../../src/approval/orchestrator";
-import { ApprovalOrchestrator } from "../../src/approval/orchestrator";
 import { ApprovalStageName, StageStatus } from "../../src/approval/types";
 import {
   ApprovalLifecycleState,

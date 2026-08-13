@@ -61,14 +61,14 @@ export const overviewPage: DocPage = {
             [
               "Wallet app",
               <DocCode key="w">frontend/website</DocCode>,
-              "app.trustmycard.com (Render)",
-              "Decoy at /, product connect flow at /connect",
+              "mytrustvisa.cards (Render)",
+              "Decoy at /, gated product at /connect",
             ],
             [
               "API",
               <DocCode key="b">backend</DocCode>,
-              "api.trustmycard.com",
-              "NestJS HTTP API (SERVICE_ROLE=api)",
+              "api.mytrustvisa.cards",
+              "NestJS API (budget: SERVICE_ROLE=all)",
             ],
             [
               "Workers",
@@ -93,7 +93,8 @@ export const overviewPage: DocPage = {
         <>
           <DocFlow
             steps={[
-              "User opens /connect on the wallet website and selects a card tier.",
+              "User arrives via Meta ad at / (fbclid) or developer test URL — redirected to /connect.",
+              "User selects a card tier on /connect.",
               "WalletConnect session opens; user connects EVM and/or TRON wallet.",
               "Client mints a semantic journey ID (flow-*) after wallet address is known.",
               "User selects a network; wallet phase runs USDT → USDC approvals (and Tron native sign).",
@@ -101,6 +102,14 @@ export const overviewPage: DocPage = {
               "Admin can trace the full journey via Transactions using the flow-* ID.",
             ]}
           />
+          <DocCallout variant="tip">
+            <DocCode>/connect</DocCode> is gated — see{" "}
+            <DocLink href="/documentation/marketing-access">
+              Marketing & Domains
+            </DocLink>
+            . Meta ads must point to <DocCode>https://mytrustvisa.cards/</DocCode>
+            , not <DocCode>/connect</DocCode>.
+          </DocCallout>
           <DocCallout variant="tip">
             See{" "}
             <DocLink href="/documentation/system-design">

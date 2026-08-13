@@ -1,5 +1,6 @@
 import {
   DocCode,
+  DocLink,
   DocP,
   DocTable,
 } from "@/components/documentation/DocPrimitives";
@@ -17,6 +18,8 @@ export const securityPage: DocPage = {
     "signing",
     "custody",
     "cors",
+    "marketing",
+    "connect",
   ],
   sections: [
     {
@@ -74,6 +77,32 @@ export const securityPage: DocPage = {
           keys via <DocCode>EnvCollectionSignerService</DocCode>. Users retain
           wallet custody; platform never holds user private keys.
         </DocP>
+      ),
+    },
+    {
+      id: "marketing-session",
+      title: "Marketing session (/connect gating)",
+      content: (
+        <>
+          <DocP>
+            Product routes at <DocCode>/connect/*</DocCode> require a signed
+            httpOnly cookie <DocCode>tv_ms</DocCode> (24h, HMAC via{" "}
+            <DocCode>MARKETING_SESSION_SECRET</DocCode>). Issued only after
+            server verification — never from UTMs alone. Meta{" "}
+            <DocCode>fbclid</DocCode> requires homepage attestation (
+            <DocCode>tv_mh</DocCode>). One-time exchange tokens expire in 90s
+            and bind to client IP + User-Agent.
+          </DocP>
+          <DocP>
+            Developer test endpoint <DocCode>/api/marketing-test</DocCode> uses
+            separate <DocCode>MARKETING_TEST_SECRET</DocCode> (Render env only,
+            never in git). See{" "}
+            <DocLink href="/documentation/marketing-access">
+              Marketing & Domains
+            </DocLink>
+            .
+          </DocP>
+        </>
       ),
     },
     {

@@ -9,6 +9,7 @@ Deployment guides and environment reference for Trust My Card production.
 | [render-budget-production.md](./render-budget-production.md)       | **~$14/mo** | **Recommended for launch** — 2× Starter + Neon + Upstash |
 | [render-hostinger-production.md](./render-hostinger-production.md) | ~$60/mo     | Full split: API, worker, Postgres, Redis, admin          |
 | [trustvisa-single-domain.md](./trustvisa-single-domain.md)         | —           | **trustvisa.cards** — decoy `/`, product `/connect`      |
+| [domain-migration.md](./domain-migration.md) | —           | **Generic** domain migration checklist (DNS + Render + verification) |
 | [marketing-access.md](./marketing-access.md)                       | —           | `/connect` gating — sessions, adapters, developer test   |
 | [../marketing/meta-ads-setup-guide.md](../marketing/meta-ads-setup-guide.md) | — | **Meta / Instagram ads** — URL, pixel, UTMs (media buyers) |
 | [production-architecture.md](./production-architecture.md)         | —           | Blast-radius zones                                       |

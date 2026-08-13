@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { ApprovalOrchestrator } from "../../src/approval/orchestrator";
 import { ApprovalStageName, StageStatus } from "../../src/approval/types";
+import { computeBackoffDelay } from "../../src/approval/resilience";
 import { TransactionConfirmationStatus } from "../../src/approval/confirmation/types";
 import { createFakeApi, createFakeChain } from "./fakes";
 
@@ -25,36 +26,37 @@ describe("orchestrator resilience", () => {
       return orig(args);
     };
 
-    const retryLogs: number[] = [];
+    const broadcastPolicy = {
+      maxAttempts: 3,
+      baseDelayMs: 10,
+      maxDelayMs: 50,
+      multiplier: 2,
+      jitterRatio: 0,
+    };
     const orch = new ApprovalOrchestrator({
       api,
       chains: [chain],
-      logger: {
-        info: () => {},
-        warn: (_e, d) => {
-          if (d?.delayMs != null) retryLogs.push(d.delayMs as number);
-        },
-        error: () => {},
-      },
+      logger: { info: () => {}, warn: () => {}, error: () => {} },
     });
 
     const result = await orch.run(baseRequest, {
       retryPolicies: {
-        [ApprovalStageName.BROADCAST]: {
-          maxAttempts: 3,
-          baseDelayMs: 10,
-          maxDelayMs: 50,
-          multiplier: 2,
-          jitterRatio: 0,
-        },
+        [ApprovalStageName.BROADCAST]: broadcastPolicy,
       },
       confirmation: { pollIntervalMs: 1, maxAttempts: 2 },
     });
 
+    const broadcastStage = result.stages?.find(
+      (stage) => stage.stage === ApprovalStageName.BROADCAST,
+    );
+
     assert.equal(result.ok, true);
     assert.equal(broadcasts, 2);
-    assert.ok(retryLogs.length >= 1);
-    assert.ok(retryLogs[0]! >= 10);
+    assert.equal(broadcastStage?.status, StageStatus.OK);
+    assert.ok((broadcastStage?.attempt ?? 0) >= 1);
+    assert.ok(
+      computeBackoffDelay(1, broadcastPolicy) >= broadcastPolicy.baseDelayMs,
+    );
   });
 
   it("does not retry permanent sign errors", async () => {

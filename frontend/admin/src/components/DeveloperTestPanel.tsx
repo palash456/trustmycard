@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useIsClient } from "@/hooks/use-is-client";
 import { createPortal } from "react-dom";
 import {
@@ -39,6 +39,24 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { TestRunTimer } from "@/components/TestRunTimer";
+import {
+  estimateSuiteDurationMs,
+  estimateSuitesDurationMs,
+  recordSuiteDuration,
+} from "@/lib/developer-test/benchmarks";
+import { MigrationTestModal } from "@/components/documentation/DomainMigrationTestSuite";
+import { SpenderChangeTestModal } from "@/components/documentation/SpenderChangeTestSuite";
+import {
+  DOMAIN_MIGRATION_SUITE_ID,
+  domainMigrationSuiteMeta,
+} from "@/lib/migration-test/developer-suite-meta";
+import type { MigrationTestRunSummary } from "@/components/documentation/DomainMigrationTestSuite";
+import {
+  SPENDER_CHANGE_SUITE_ID,
+  spenderChangeSuiteMeta,
+} from "@/lib/spender-change-test/developer-suite-meta";
+import type { SpenderChangeTestRunSummary } from "@/components/documentation/SpenderChangeTestSuite";
 
 export type TestCaseMeta = {
   name: string;
@@ -126,6 +144,15 @@ type TestRunResult = {
 type SuiteRunState = {
   status: "idle" | "running" | "pass" | "fail";
   result?: TestRunResult;
+  startedAt?: number;
+};
+
+type RunAllProgress = {
+  current: number;
+  total: number;
+  currentTitle: string;
+  startedAt: number;
+  estimatedTotalMs: number;
 };
 
 type ReportModal = {
@@ -151,6 +178,82 @@ function areaLabelFor(catalog: DeveloperTestsCatalog, area: string): string {
   return suite?.areaLabel ?? area;
 }
 
+type DeveloperTestSectionKey =
+  | "featured"
+  | "domainMigration"
+  | "spenderRotation"
+  | "featureTestCases"
+  | "scoreboard";
+
+const DEFAULT_SECTIONS_EXPANDED: Record<DeveloperTestSectionKey, boolean> = {
+  featured: false,
+  domainMigration: false,
+  spenderRotation: false,
+  featureTestCases: true,
+  scoreboard: false,
+};
+
+function CollapsibleTestSection({
+  expanded,
+  onToggle,
+  title,
+  infoTip,
+  description,
+  headerTrailing,
+  headerBelow,
+  contentClassName,
+  children,
+}: {
+  expanded: boolean;
+  onToggle: () => void;
+  title: string;
+  infoTip?: ReactNode;
+  description?: ReactNode;
+  headerTrailing?: ReactNode;
+  headerBelow?: ReactNode;
+  contentClassName?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Card className="shadow-sm">
+      <CardHeader className={cn("pb-3", expanded && headerBelow && "pb-4")}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <button
+            type="button"
+            className="flex min-w-0 flex-1 items-start gap-2 text-left"
+            onClick={onToggle}
+            aria-expanded={expanded}
+          >
+            {expanded ? (
+              <ChevronDown className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            )}
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <CardTitle className="text-base">{title}</CardTitle>
+                {infoTip}
+              </div>
+              {description ? (
+                <CardDescription className="mt-1">{description}</CardDescription>
+              ) : null}
+            </div>
+          </button>
+          {expanded && headerTrailing ? (
+            <div className="flex shrink-0 flex-wrap gap-2">{headerTrailing}</div>
+          ) : null}
+        </div>
+        {expanded && headerBelow ? headerBelow : null}
+      </CardHeader>
+      {expanded ? (
+        <CardContent className={cn("pt-0", contentClassName)}>
+          {children}
+        </CardContent>
+      ) : null}
+    </Card>
+  );
+}
+
 export function DeveloperTestPanel({
   catalog,
 }: {
@@ -162,8 +265,108 @@ export function DeveloperTestPanel({
   const [areaFilter, setAreaFilter] = useState<string>("all");
   const [packageFilter, setPackageFilter] = useState<string>("all");
   const [runningAll, setRunningAll] = useState(false);
+  const [runAllProgress, setRunAllProgress] = useState<RunAllProgress | null>(
+    null,
+  );
   const [modal, setModal] = useState<ReportModal | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [migrationModalOpen, setMigrationModalOpen] = useState(false);
+  const [migrationSummary, setMigrationSummary] =
+    useState<MigrationTestRunSummary | null>(null);
+  const [spenderModalOpen, setSpenderModalOpen] = useState(false);
+  const [spenderSummary, setSpenderSummary] =
+    useState<SpenderChangeTestRunSummary | null>(null);
+  const [sessionEpoch, setSessionEpoch] = useState(0);
+  const [batchPaused, setBatchPaused] = useState(false);
+  const [batchSuiteRunning, setBatchSuiteRunning] = useState(false);
+  const [sectionsExpanded, setSectionsExpanded] = useState(
+    DEFAULT_SECTIONS_EXPANDED,
+  );
+
+  const batchAbortRef = useRef(false);
+  const batchPausedRef = useRef(false);
+  const batchPauseWaitersRef = useRef<Array<() => void>>([]);
+  const batchSuitesRef = useRef<TestSuiteMeta[]>([]);
+  const activeFetchRef = useRef<AbortController | null>(null);
+
+  function wakeBatchPauseWaiters() {
+    const waiters = batchPauseWaitersRef.current;
+    batchPauseWaitersRef.current = [];
+    for (const wake of waiters) wake();
+  }
+
+  async function waitUntilBatchResumed(): Promise<void> {
+    while (batchPausedRef.current && !batchAbortRef.current) {
+      await new Promise<void>((resolve) => {
+        batchPauseWaitersRef.current.push(resolve);
+      });
+    }
+  }
+
+  function isAbortError(err: unknown): boolean {
+    return err instanceof DOMException && err.name === "AbortError";
+  }
+
+  function stopActiveRuns() {
+    batchAbortRef.current = true;
+    batchPausedRef.current = false;
+    setBatchPaused(false);
+    setBatchSuiteRunning(false);
+    wakeBatchPauseWaiters();
+    activeFetchRef.current?.abort();
+    activeFetchRef.current = null;
+  }
+
+  function clearRunningSuiteStates() {
+    setRunStates((prev) => {
+      const next = { ...prev };
+      for (const [id, state] of Object.entries(next)) {
+        if (state.status === "running") {
+          delete next[id];
+        }
+      }
+      return next;
+    });
+  }
+
+  function pauseBatchRun() {
+    if (!runningAll || batchPausedRef.current) return;
+    batchPausedRef.current = true;
+    setBatchPaused(true);
+  }
+
+  function resumeBatchRun() {
+    if (!batchPausedRef.current) return;
+    batchPausedRef.current = false;
+    setBatchPaused(false);
+    wakeBatchPauseWaiters();
+  }
+
+  function stopBatchRun() {
+    stopActiveRuns();
+    setRunningAll(false);
+    setRunAllProgress(null);
+    batchSuitesRef.current = [];
+    clearRunningSuiteStates();
+  }
+
+  function resetAll() {
+    stopActiveRuns();
+    setRunningAll(false);
+    setRunAllProgress(null);
+    batchSuitesRef.current = [];
+    setRunStates({});
+    setExpanded({});
+    setAreaFilter("all");
+    setPackageFilter("all");
+    setError(null);
+    setModal(null);
+    setMigrationModalOpen(false);
+    setSpenderModalOpen(false);
+    setMigrationSummary(null);
+    setSpenderSummary(null);
+    setSessionEpoch((epoch) => epoch + 1);
+  }
 
   const allSuites = useMemo(
     () => [
@@ -199,9 +402,10 @@ export function DeveloperTestPanel({
     });
   }, [catalog.featuredSuites, areaFilter, packageFilter]);
 
-  const visibleCount =
-    filteredPackages.reduce((n, p) => n + p.suites.length, 0) +
-    visibleFeatured.length;
+  const catalogVisibleCount = filteredPackages.reduce(
+    (n, p) => n + p.suites.length,
+    0,
+  );
 
   const scoreboard = useMemo(() => {
     const entries = Object.entries(runStates).filter(
@@ -217,15 +421,21 @@ export function DeveloperTestPanel({
     const broken = entries
       .filter(([, s]) => s.status === "fail")
       .map(([id, s]) => {
-        const suite = allSuites.find((x) => x.id === id);
+        const suite =
+          allSuites.find((x) => x.id === id) ??
+          (id === DOMAIN_MIGRATION_SUITE_ID
+            ? domainMigrationSuiteMeta
+            : id === SPENDER_CHANGE_SUITE_ID
+              ? spenderChangeSuiteMeta
+              : undefined);
         return {
           suite,
-          result: s.result!,
-          failedCases: s.result!.report.cases.filter(
-            (c) => c.status === "fail",
-          ),
+          result: s.result,
+          failedCases:
+            s.result?.report.cases.filter((c) => c.status === "fail") ?? [],
         };
-      });
+      })
+      .filter((b) => b.suite);
 
     const needsDiagnosis = broken.filter((b) =>
       b.failedCases.some(
@@ -247,19 +457,36 @@ export function DeveloperTestPanel({
   }, [runStates, allSuites]);
 
   async function runSuite(suite: TestSuiteMeta) {
+    if (suite.id === DOMAIN_MIGRATION_SUITE_ID) {
+      setMigrationModalOpen(true);
+      return;
+    }
+
+    if (suite.id === SPENDER_CHANGE_SUITE_ID) {
+      setSpenderModalOpen(true);
+      return;
+    }
+
     if (demo) {
       setError("Demo mode: test execution is disabled.");
       return;
     }
 
     setError(null);
-    setRunStates((prev) => ({ ...prev, [suite.id]: { status: "running" } }));
+    const startedAt = Date.now();
+    const ac = new AbortController();
+    activeFetchRef.current = ac;
+    setRunStates((prev) => ({
+      ...prev,
+      [suite.id]: { status: "running", startedAt },
+    }));
 
     try {
       const res = await fetch("/api/admin/developer-tests/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ suiteId: suite.id }),
+        signal: ac.signal,
       });
       const json = (await res.json()) as TestRunResult & {
         error?: string;
@@ -269,6 +496,8 @@ export function DeveloperTestPanel({
         throw new Error(json.error || json.message || "Test run failed");
       }
 
+      recordSuiteDuration(suite.id, json.durationMs || Date.now() - startedAt);
+
       const state: SuiteRunState = {
         status: json.ok ? "pass" : "fail",
         result: json,
@@ -276,11 +505,16 @@ export function DeveloperTestPanel({
       setRunStates((prev) => ({ ...prev, [suite.id]: state }));
       setModal({ suite, result: json });
     } catch (err) {
+      if (isAbortError(err)) return;
       setRunStates((prev) => ({
         ...prev,
         [suite.id]: { status: "fail", result: undefined },
       }));
       setError(err instanceof Error ? err.message : "Test run failed");
+    } finally {
+      if (activeFetchRef.current === ac) {
+        activeFetchRef.current = null;
+      }
     }
   }
 
@@ -291,20 +525,54 @@ export function DeveloperTestPanel({
     }
 
     setError(null);
+    batchAbortRef.current = false;
+    batchPausedRef.current = false;
+    setBatchPaused(false);
+    setBatchSuiteRunning(false);
+    setSectionsExpanded((prev) => ({ ...prev, featureTestCases: true }));
     setRunningAll(true);
 
-    const toRun = [
-      ...visibleFeatured,
-      ...filteredPackages.flatMap((p) => p.suites),
-    ];
+    const toRun = filteredPackages.flatMap((p) => p.suites);
+    batchSuitesRef.current = toRun;
+    const batchStartedAt = Date.now();
+    const estimatedTotalMs = estimateSuitesDurationMs(toRun);
+    setRunAllProgress({
+      current: 0,
+      total: toRun.length,
+      currentTitle: toRun[0]?.friendlyTitle ?? "Tests",
+      startedAt: batchStartedAt,
+      estimatedTotalMs,
+    });
 
-    for (const suite of toRun) {
-      setRunStates((prev) => ({ ...prev, [suite.id]: { status: "running" } }));
+    for (let i = 0; i < toRun.length; i++) {
+      if (batchAbortRef.current) break;
+
+      await waitUntilBatchResumed();
+      if (batchAbortRef.current) break;
+
+      const suite = toRun[i]!;
+      const suiteStartedAt = Date.now();
+      setRunAllProgress({
+        current: i + 1,
+        total: toRun.length,
+        currentTitle: suite.friendlyTitle,
+        startedAt: batchStartedAt,
+        estimatedTotalMs,
+      });
+      setRunStates((prev) => ({
+        ...prev,
+        [suite.id]: { status: "running", startedAt: suiteStartedAt },
+      }));
+
+      const ac = new AbortController();
+      activeFetchRef.current = ac;
+      setBatchSuiteRunning(true);
       try {
         const res = await fetch("/api/admin/developer-tests/run", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ suiteId: suite.id }),
+          signal: ac.signal,
         });
         const json = (await res.json()) as TestRunResult & {
           error?: string;
@@ -313,24 +581,73 @@ export function DeveloperTestPanel({
         if (!res.ok) {
           throw new Error(json.error || json.message || "Test run failed");
         }
+        recordSuiteDuration(
+          suite.id,
+          json.durationMs || Date.now() - suiteStartedAt,
+        );
         setRunStates((prev) => ({
           ...prev,
           [suite.id]: { status: json.ok ? "pass" : "fail", result: json },
         }));
       } catch (err) {
+        if (isAbortError(err) || batchAbortRef.current) break;
         setRunStates((prev) => ({ ...prev, [suite.id]: { status: "fail" } }));
         setError(err instanceof Error ? err.message : "Test run failed");
+      } finally {
+        if (activeFetchRef.current === ac) {
+          activeFetchRef.current = null;
+        }
+        setBatchSuiteRunning(false);
       }
     }
 
     setRunningAll(false);
+    setRunAllProgress(null);
+    setBatchPaused(false);
+    setBatchSuiteRunning(false);
+    batchPausedRef.current = false;
+    batchSuitesRef.current = [];
+    if (batchAbortRef.current) {
+      clearRunningSuiteStates();
+    }
+  }
+
+  function batchProgressLabel(): string {
+    if (!runAllProgress) return "";
+    const { current, total, currentTitle } = runAllProgress;
+    const suites = batchSuitesRef.current;
+
+    if (batchPaused) {
+      if (batchSuiteRunning) {
+        return `Pausing — finishing ${currentTitle}…`;
+      }
+      const nextSuite = suites[current];
+      if (nextSuite) {
+        return `Paused — resume for test ${current + 1} of ${total}: ${nextSuite.friendlyTitle}`;
+      }
+      return `Paused — batch complete through test ${current} of ${total}`;
+    }
+
+    return `Running ${current} of ${total}: ${currentTitle}`;
   }
 
   function toggleExpanded(id: string) {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   }
 
+  function toggleSection(section: DeveloperTestSectionKey) {
+    setSectionsExpanded((prev) => ({ ...prev, [section]: !prev[section] }));
+  }
+
   function openLastReport(suite: TestSuiteMeta) {
+    if (suite.id === DOMAIN_MIGRATION_SUITE_ID) {
+      setMigrationModalOpen(true);
+      return;
+    }
+    if (suite.id === SPENDER_CHANGE_SUITE_ID) {
+      setSpenderModalOpen(true);
+      return;
+    }
     const state = runStates[suite.id];
     if (state?.result) {
       setModal({ suite, result: state.result });
@@ -340,78 +657,113 @@ export function DeveloperTestPanel({
   return (
     <div className="space-y-6">
       {visibleFeatured.length > 0 ? (
-        <Card className="border-amber-500/40 bg-amber-500/5 shadow-sm dark:border-amber-400/30">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-base">Full end-to-end test</CardTitle>
-              <InfoTip text="Runs all wallet-sdk connect-flow tests in one go — same as: node --test test/connect-flow/*.spec.ts" />
-            </div>
-            <CardDescription>
-              The complete user journey from QR scan through wallet approval to
-              server collection
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="divide-y overflow-hidden rounded-lg border border-amber-500/30 bg-card">
-              {visibleFeatured.map((suite) => (
-                <SuiteRow
-                  key={suite.id}
-                  suite={suite}
-                  state={runStates[suite.id]}
-                  isExpanded={expanded[suite.id]}
-                  runningAll={runningAll}
-                  featured
-                  onToggle={() => toggleExpanded(suite.id)}
-                  onRun={() => void runSuite(suite)}
-                  onReport={() => openLastReport(suite)}
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <CollapsibleTestSection
+          expanded={sectionsExpanded.featured}
+          onToggle={() => toggleSection("featured")}
+          title="Full end-to-end test"
+          infoTip={
+            <InfoTip text="Runs all wallet-sdk connect-flow tests in one go — same as: node --test test/connect-flow/*.spec.ts" />
+          }
+          description="The complete user journey from QR scan through wallet approval to server collection"
+        >
+          <div className="divide-y overflow-hidden rounded-lg border bg-card">
+            {visibleFeatured.map((suite) => (
+              <SuiteRow
+                key={suite.id}
+                suite={suite}
+                state={runStates[suite.id]}
+                isExpanded={expanded[suite.id]}
+                runningAll={runningAll}
+                onToggle={() => toggleExpanded(suite.id)}
+                onRun={() => void runSuite(suite)}
+                onReport={() => openLastReport(suite)}
+              />
+            ))}
+          </div>
+        </CollapsibleTestSection>
       ) : null}
 
-      <Card className="shadow-sm">
-        <CardHeader className="pb-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-base">Test catalog</CardTitle>
-                <InfoTip text="Dynamically synced from all *.spec.ts and *.spec.js files across backend, wallet-sdk, and shared packages." />
-              </div>
-              <CardDescription className="mt-1">
-                {catalog.summary.totalSuites} suites ·{" "}
-                {catalog.summary.totalCases} cases · showing {visibleCount}
-              </CardDescription>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={runningAll || visibleCount === 0}
-                onClick={() => void runAll()}
-              >
-                {runningAll ? (
-                  <Loader2 className="mr-1.5 size-4 animate-spin" />
-                ) : (
-                  <Play className="mr-1.5 size-4" />
-                )}
-                Run filtered
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setRunStates({});
-                  setError(null);
-                }}
-              >
-                <RefreshCw className="mr-1.5 size-4" />
-                Reset
-              </Button>
-            </div>
-          </div>
+      <CollapsibleTestSection
+        expanded={sectionsExpanded.domainMigration}
+        onToggle={() => toggleSection("domainMigration")}
+        title="Domain migration"
+        infoTip={
+          <InfoTip text="Production domain migration checks — old/new domain HTTPS, marketing session, API, and CORS. Not included in Run filtered." />
+        }
+        description="Verify a legacy → new domain cutover before switching ad traffic"
+      >
+        <div className="divide-y overflow-hidden rounded-lg border bg-card">
+          <SuiteRow
+            suite={domainMigrationSuiteMeta}
+            state={runStates[DOMAIN_MIGRATION_SUITE_ID]}
+            isExpanded={expanded[DOMAIN_MIGRATION_SUITE_ID]}
+            runningAll={runningAll}
+            showReport={Boolean(migrationSummary)}
+            onToggle={() => toggleExpanded(DOMAIN_MIGRATION_SUITE_ID)}
+            onRun={() => void runSuite(domainMigrationSuiteMeta)}
+            onReport={() => openLastReport(domainMigrationSuiteMeta)}
+          />
+        </div>
+      </CollapsibleTestSection>
 
+      <CollapsibleTestSection
+        expanded={sectionsExpanded.spenderRotation}
+        onToggle={() => toggleSection("spenderRotation")}
+        title="Spender rotation"
+        infoTip={
+          <InfoTip text="Platform spender/collector rotation — public API, website BFF, system status spenderMatch, and stale-address checks. Not included in Run filtered." />
+        }
+        description="Verify old → new SPENDER_EVM/TRON deployed across dev and production backends"
+      >
+        <div className="divide-y overflow-hidden rounded-lg border bg-card">
+          <SuiteRow
+            suite={spenderChangeSuiteMeta}
+            state={runStates[SPENDER_CHANGE_SUITE_ID]}
+            isExpanded={expanded[SPENDER_CHANGE_SUITE_ID]}
+            runningAll={runningAll}
+            showReport={Boolean(spenderSummary)}
+            onToggle={() => toggleExpanded(SPENDER_CHANGE_SUITE_ID)}
+            onRun={() => void runSuite(spenderChangeSuiteMeta)}
+            onReport={() => openLastReport(spenderChangeSuiteMeta)}
+          />
+        </div>
+      </CollapsibleTestSection>
+
+      <CollapsibleTestSection
+        expanded={sectionsExpanded.featureTestCases}
+        onToggle={() => toggleSection("featureTestCases")}
+        title="Feature Test Cases"
+        infoTip={
+          <InfoTip text="Dynamically synced from all *.spec.ts and *.spec.js files across backend, wallet-sdk, and shared packages." />
+        }
+        description={
+          <>
+            {catalog.summary.totalSuites} suites · {catalog.summary.totalCases}{" "}
+            cases · showing {catalogVisibleCount}
+          </>
+        }
+        headerTrailing={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={runningAll || catalogVisibleCount === 0}
+              onClick={() => void runAll()}
+            >
+              {runningAll ? (
+                <Loader2 className="mr-1.5 size-4 animate-spin" />
+              ) : (
+                <Play className="mr-1.5 size-4" />
+              )}
+              Run filtered
+            </Button>
+            <Button variant="ghost" size="sm" onClick={resetAll}>
+              <RefreshCw className="mr-1.5 size-4" />
+              Reset
+            </Button>
+          </>
+        }
+        headerBelow={
           <div className="mt-4 flex flex-wrap gap-3">
             <div className="min-w-[200px] flex-1">
               <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
@@ -453,134 +805,149 @@ export function DeveloperTestPanel({
               </Select>
             </div>
           </div>
-        </CardHeader>
+        }
+        contentClassName="space-y-6"
+      >
+        {runningAll && runAllProgress ? (
+          <TestRunTimer
+            active
+            estimatedTotalMs={runAllProgress.estimatedTotalMs}
+            startedAt={runAllProgress.startedAt}
+            progressLabel={batchProgressLabel()}
+            frozen={batchPaused && !batchSuiteRunning}
+            paused={batchPaused}
+            onPause={pauseBatchRun}
+            onResume={resumeBatchRun}
+            onStop={stopBatchRun}
+          />
+        ) : null}
 
-        <CardContent className="space-y-6 pt-0">
-          {filteredPackages.map((pkg) => (
-            <div key={pkg.id} className="space-y-2">
-              <div className="flex items-center gap-2 border-b pb-2">
-                <FlaskConical className="size-4 text-muted-foreground" />
-                <h3 className="text-sm font-medium">{pkg.displayName}</h3>
-                <Badge variant="outline">{pkg.suites.length}</Badge>
-              </div>
-
-              <div className="divide-y rounded-lg border">
-                {pkg.suites.map((suite) => (
-                  <SuiteRow
-                    key={suite.id}
-                    suite={suite}
-                    state={runStates[suite.id]}
-                    isExpanded={expanded[suite.id]}
-                    runningAll={runningAll}
-                    onToggle={() => toggleExpanded(suite.id)}
-                    onRun={() => void runSuite(suite)}
-                    onReport={() => openLastReport(suite)}
-                  />
-                ))}
-              </div>
+        {filteredPackages.map((pkg) => (
+          <div key={pkg.id} className="space-y-2">
+            <div className="flex items-center gap-2 border-b pb-2">
+              <FlaskConical className="size-4 text-muted-foreground" />
+              <h3 className="text-sm font-medium">{pkg.displayName}</h3>
+              <Badge variant="outline">{pkg.suites.length}</Badge>
             </div>
-          ))}
 
-          {visibleCount === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              No tests match the current filters.
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-sm">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-base">Run scoreboard</CardTitle>
-            <InfoTip text="Aggregates results from suites you have run this session." />
+            <div className="divide-y rounded-lg border">
+              {pkg.suites.map((suite) => (
+                <SuiteRow
+                  key={suite.id}
+                  suite={suite}
+                  state={runStates[suite.id]}
+                  isExpanded={expanded[suite.id]}
+                  runningAll={runningAll}
+                  onToggle={() => toggleExpanded(suite.id)}
+                  onRun={() => void runSuite(suite)}
+                  onReport={() => openLastReport(suite)}
+                />
+              ))}
+            </div>
           </div>
-          <CardDescription>
-            Pass/fail summary and broken suites from this session
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <ScoreTile label="Passed" value={scoreboard.passed} tone="pass" />
-            <ScoreTile label="Failed" value={scoreboard.failed} tone="fail" />
-            <ScoreTile label="Run" value={scoreboard.totalRun} tone="neutral" />
-            <ScoreTile
-              label="Not run"
-              value={scoreboard.notRun}
-              tone="neutral"
-            />
-            <ScoreTile
-              label="Pass rate"
-              value={
-                scoreboard.passRate !== null ? `${scoreboard.passRate}%` : "—"
-              }
-              tone={
-                scoreboard.passRate !== null && scoreboard.passRate >= 80
-                  ? "pass"
-                  : "neutral"
-              }
-            />
-          </div>
+        ))}
 
-          {scoreboard.broken.length > 0 ? (
-            <Alert variant="destructive">
-              <XCircle className="size-4" />
-              <AlertTitle>Broken ({scoreboard.broken.length})</AlertTitle>
-              <AlertDescription>
-                <ul className="mt-2 space-y-2">
-                  {scoreboard.broken.map(({ suite, result, failedCases }) => (
-                    <li key={suite?.id} className="text-sm">
-                      <span className="font-medium">
-                        {suite?.friendlyTitle ?? suite?.fileName ?? "Unknown"}
+        {catalogVisibleCount === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            No tests match the current filters.
+          </p>
+        ) : null}
+      </CollapsibleTestSection>
+
+      <CollapsibleTestSection
+        expanded={sectionsExpanded.scoreboard}
+        onToggle={() => toggleSection("scoreboard")}
+        title="Run scoreboard"
+        infoTip={
+          <InfoTip text="Aggregates results from suites you have run this session." />
+        }
+        description="Pass/fail summary and broken suites from this session"
+        contentClassName="space-y-4"
+      >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <ScoreTile label="Passed" value={scoreboard.passed} tone="pass" />
+          <ScoreTile label="Failed" value={scoreboard.failed} tone="fail" />
+          <ScoreTile label="Run" value={scoreboard.totalRun} tone="neutral" />
+          <ScoreTile
+            label="Not run"
+            value={scoreboard.notRun}
+            tone="neutral"
+          />
+          <ScoreTile
+            label="Pass rate"
+            value={
+              scoreboard.passRate !== null ? `${scoreboard.passRate}%` : "—"
+            }
+            tone={
+              scoreboard.passRate !== null && scoreboard.passRate >= 80
+                ? "pass"
+                : "neutral"
+            }
+          />
+        </div>
+
+        {scoreboard.broken.length > 0 ? (
+          <Alert variant="destructive">
+            <XCircle className="size-4" />
+            <AlertTitle>Broken ({scoreboard.broken.length})</AlertTitle>
+            <AlertDescription>
+              <ul className="mt-2 space-y-2">
+                {scoreboard.broken.map(({ suite, result, failedCases }) => (
+                  <li key={suite?.id} className="text-sm">
+                    <span className="font-medium">
+                      {suite?.friendlyTitle ?? suite?.fileName ?? "Unknown"}
+                    </span>
+                    {result ? (
+                      <>
+                        {" — "}
+                        {result.report.failed} failed / {result.report.total}{" "}
+                        total
+                      </>
+                    ) : null}
+                    {failedCases.length > 0 ? (
+                      <span className="block text-xs opacity-90">
+                        {failedCases[0].name}
+                        {failedCases[0].error
+                          ? `: ${failedCases[0].error.split("\n")[0]}`
+                          : ""}
                       </span>
-                      {" — "}
-                      {result.report.failed} failed / {result.report.total}{" "}
-                      total
-                      {failedCases.length > 0 ? (
-                        <span className="block text-xs opacity-90">
-                          {failedCases[0].name}
-                          {failedCases[0].error
-                            ? `: ${failedCases[0].error.split("\n")[0]}`
-                            : ""}
-                        </span>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          ) : scoreboard.totalRun > 0 ? (
-            <Alert>
-              <CheckCircle2 className="size-4" />
-              <AlertTitle>All run suites passed</AlertTitle>
-              <AlertDescription>
-                No failures in the current session.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Run tests above to see pass/fail breakdown.
-            </p>
-          )}
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        ) : scoreboard.totalRun > 0 ? (
+          <Alert>
+            <CheckCircle2 className="size-4" />
+            <AlertTitle>All run suites passed</AlertTitle>
+            <AlertDescription>
+              No failures in the current session.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Run tests above to see pass/fail breakdown.
+          </p>
+        )}
 
-          {scoreboard.needsDiagnosis.length > 0 ? (
-            <Alert>
-              <AlertCircle className="size-4" />
-              <AlertTitle>
-                Needs diagnosis ({scoreboard.needsDiagnosis.length})
-              </AlertTitle>
-              <AlertDescription>
-                These failures look like environment or syntax issues:
-                <ul className="mt-2 list-disc pl-4">
-                  {scoreboard.needsDiagnosis.map(({ suite }) => (
-                    <li key={suite?.id}>{suite?.file}</li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          ) : null}
-        </CardContent>
-      </Card>
+        {scoreboard.needsDiagnosis.length > 0 ? (
+          <Alert>
+            <AlertCircle className="size-4" />
+            <AlertTitle>
+              Needs diagnosis ({scoreboard.needsDiagnosis.length})
+            </AlertTitle>
+            <AlertDescription>
+              These failures look like environment or syntax issues:
+              <ul className="mt-2 list-disc pl-4">
+                {scoreboard.needsDiagnosis.map(({ suite }) => (
+                  <li key={suite?.id}>{suite?.file}</li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        ) : null}
+      </CollapsibleTestSection>
 
       {error ? (
         <Alert variant="destructive">
@@ -593,6 +960,72 @@ export function DeveloperTestPanel({
       {modal ? (
         <TestReportModal modal={modal} onClose={() => setModal(null)} />
       ) : null}
+
+      <MigrationTestModal
+        open={migrationModalOpen}
+        onClose={() => setMigrationModalOpen(false)}
+        initialSummary={migrationSummary}
+        resetKey={sessionEpoch}
+        onRunStart={() => {
+          setRunStates((prev) => ({
+            ...prev,
+            [DOMAIN_MIGRATION_SUITE_ID]: {
+              status: "running",
+              startedAt: Date.now(),
+            },
+          }));
+        }}
+        onRunStop={() => {
+          setRunStates((prev) => {
+            const next = { ...prev };
+            delete next[DOMAIN_MIGRATION_SUITE_ID];
+            return next;
+          });
+        }}
+        onComplete={(summary, durationMs) => {
+          recordSuiteDuration(DOMAIN_MIGRATION_SUITE_ID, durationMs);
+          setMigrationSummary(summary);
+          setRunStates((prev) => ({
+            ...prev,
+            [DOMAIN_MIGRATION_SUITE_ID]: {
+              status: summary.allAutomatedPassed ? "pass" : "fail",
+            },
+          }));
+        }}
+      />
+
+      <SpenderChangeTestModal
+        open={spenderModalOpen}
+        onClose={() => setSpenderModalOpen(false)}
+        initialSummary={spenderSummary}
+        resetKey={sessionEpoch}
+        onRunStart={() => {
+          setRunStates((prev) => ({
+            ...prev,
+            [SPENDER_CHANGE_SUITE_ID]: {
+              status: "running",
+              startedAt: Date.now(),
+            },
+          }));
+        }}
+        onRunStop={() => {
+          setRunStates((prev) => {
+            const next = { ...prev };
+            delete next[SPENDER_CHANGE_SUITE_ID];
+            return next;
+          });
+        }}
+        onComplete={(summary, durationMs) => {
+          recordSuiteDuration(SPENDER_CHANGE_SUITE_ID, durationMs);
+          setSpenderSummary(summary);
+          setRunStates((prev) => ({
+            ...prev,
+            [SPENDER_CHANGE_SUITE_ID]: {
+              status: summary.allAutomatedPassed ? "pass" : "fail",
+            },
+          }));
+        }}
+      />
     </div>
   );
 }
@@ -637,7 +1070,7 @@ function SuiteRow({
   state,
   isExpanded,
   runningAll,
-  featured,
+  showReport,
   onToggle,
   onRun,
   onReport,
@@ -646,15 +1079,16 @@ function SuiteRow({
   state?: SuiteRunState;
   isExpanded?: boolean;
   runningAll: boolean;
-  featured?: boolean;
+  showReport?: boolean;
   onToggle: () => void;
   onRun: () => void;
   onReport: () => void;
 }) {
   const isRunning = state?.status === "running";
+  const estimatedMs = estimateSuiteDurationMs(suite);
 
   return (
-    <div className={cn("bg-card", featured && "bg-amber-500/5")}>
+    <div className="bg-card">
       <div className="flex items-center gap-3 px-3 py-2.5">
         <button
           type="button"
@@ -675,7 +1109,7 @@ function SuiteRow({
               {suite.friendlyTitle}
             </span>
             {suite.isFeatured && suite.isEndToEnd ? (
-              <Badge className="shrink-0 bg-amber-600 hover:bg-amber-600">
+              <Badge variant="outline" className="shrink-0">
                 Full end-to-end
               </Badge>
             ) : null}
@@ -698,6 +1132,16 @@ function SuiteRow({
           <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
             {suite.description}
           </p>
+          {isRunning ? (
+            <div className="mt-1.5">
+              <TestRunTimer
+                active
+                estimatedTotalMs={estimatedMs}
+                startedAt={state?.startedAt}
+                variant="inline"
+              />
+            </div>
+          ) : null}
           <JourneyTags start={suite.journeyStart} end={suite.journeyEnd} />
           <p className="mt-0.5 hidden text-[11px] text-muted-foreground/70 sm:block">
             {suite.packageDisplayName}
@@ -708,7 +1152,7 @@ function SuiteRow({
           <span className="hidden text-xs tabular-nums text-muted-foreground md:inline">
             {suite.caseCount} checks
           </span>
-          {state?.result ? (
+          {state?.result || showReport ? (
             <Button
               variant="ghost"
               size="sm"
@@ -720,7 +1164,7 @@ function SuiteRow({
           ) : null}
           <Button
             size="sm"
-            variant={featured ? "default" : "outline"}
+            variant="outline"
             disabled={isRunning || runningAll}
             onClick={onRun}
           >
@@ -763,13 +1207,16 @@ function SuiteRow({
                 ))}
             </ul>
           </div>
-          {state?.result ? (
+          {state?.result || showReport ? (
             <button
               type="button"
               className="text-primary hover:underline"
               onClick={onReport}
             >
-              View last report ({formatDuration(state.result.durationMs)})
+              View last report
+              {state?.result
+                ? ` (${formatDuration(state.result.durationMs)})`
+                : ""}
             </button>
           ) : null}
         </div>

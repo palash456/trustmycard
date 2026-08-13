@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { ApprovalOrchestrator } from "../../src/approval/orchestrator";
+import { ApprovalLifecycleState } from "../../src/approval/lifecycle";
 import { ApprovalStageName, StageStatus } from "../../src/approval/types";
 import { ResourceStatus } from "../../src/core/resource-sponsor-client";
 import { TransactionConfirmationStatus } from "../../src/approval/confirmation/types";
@@ -60,7 +61,6 @@ describe("ApprovalOrchestrator integration", () => {
   });
 
   it("lifecycle: PENDING acquire → poll → sign → broadcast → confirm", async () => {
-    const events: string[] = [];
     const api = createFakeApi();
     api.state.acquireSequence = [
       resourceResult(ResourceStatus.PENDING, { retryAfterMs: 1 }),
@@ -74,11 +74,7 @@ describe("ApprovalOrchestrator integration", () => {
     const orch = new ApprovalOrchestrator({
       api,
       chains: [createFakeChain()],
-      logger: {
-        info: (e) => events.push(e),
-        warn: (e) => events.push(e),
-        error: (e) => events.push(e),
-      },
+      logger: { info: () => {}, warn: () => {}, error: () => {} },
     });
 
     const result = await orch.run(
@@ -101,9 +97,8 @@ describe("ApprovalOrchestrator integration", () => {
 
     assert.equal(result.ok, true);
     assert.equal(result.status, StageStatus.OK);
+    assert.equal(result.context?.lifecycleState, ApprovalLifecycleState.COMPLETED);
     assert.ok(api.state.verifyCalls >= 3);
-    assert.ok(events.includes("APPROVAL_ORCHESTRATION_STARTED"));
-    assert.ok(events.includes("APPROVAL_ORCHESTRATION_SUCCESS"));
     assert.equal(
       result.stages.filter(
         (s) => s.status === StageStatus.OK || s.status === StageStatus.SKIPPED,

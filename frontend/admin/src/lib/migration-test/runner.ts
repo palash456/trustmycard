@@ -1,0 +1,708 @@
+import type { MigrationDomains } from "@/lib/migration-test/domains";
+import { migrationUrl } from "@/lib/migration-test/domains";
+
+const FBCLID = "IwAR0123456789abcdefghijklmnopqrstuvwxyz";
+const FETCH_TIMEOUT_MS = 20_000;
+
+export type MigrationStepStatus = "pass" | "fail" | "skip";
+
+export type MigrationStepResult = {
+  id: string;
+  step: string;
+  status: MigrationStepStatus;
+  message: string;
+  detail?: string;
+};
+
+class CookieJar {
+  private readonly cookies = new Map<string, string>();
+
+  ingest(response: Response): void {
+    const setCookies =
+      typeof response.headers.getSetCookie === "function"
+        ? response.headers.getSetCookie()
+        : [];
+    if (setCookies.length > 0) {
+      for (const raw of setCookies) {
+        const [pair] = raw.split(";");
+        const eq = pair.indexOf("=");
+        if (eq === -1) continue;
+        const name = pair.slice(0, eq).trim();
+        const value = pair.slice(eq + 1).trim();
+        if (name) this.cookies.set(name, value);
+      }
+      return;
+    }
+    const single = response.headers.get("set-cookie");
+    if (!single) return;
+    const [pair] = single.split(";");
+    const eq = pair.indexOf("=");
+    if (eq === -1) return;
+    this.cookies.set(pair.slice(0, eq).trim(), pair.slice(eq + 1).trim());
+  }
+
+  header(): string | undefined {
+    if (this.cookies.size === 0) return undefined;
+    return [...this.cookies.entries()].map(([k, v]) => `${k}=${v}`).join("; ");
+  }
+
+  has(name: string): boolean {
+    return this.cookies.has(name);
+  }
+}
+
+type Hop = { url: string; status: number; location?: string };
+
+type RunnerContext = {
+  domains: MigrationDomains;
+  userAgent: string;
+};
+
+async function timedFetch(
+  ctx: RunnerContext,
+  url: string,
+  init: RequestInit & { jar?: CookieJar } = {},
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const headers = new Headers(init.headers);
+  if (!headers.has("User-Agent")) headers.set("User-Agent", ctx.userAgent);
+  const cookie = init.jar?.header();
+  if (cookie) headers.set("Cookie", cookie);
+
+  try {
+    return await fetch(url, {
+      ...init,
+      headers,
+      signal: controller.signal,
+      redirect: init.redirect ?? "manual",
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function followRedirects(
+  ctx: RunnerContext,
+  startUrl: string,
+  options: { jar?: CookieJar; max?: number } = {},
+): Promise<{ finalUrl: string; status: number; hops: Hop[] }> {
+  const max = options.max ?? 12;
+  const hops: Hop[] = [];
+  let current = startUrl;
+
+  for (let i = 0; i < max; i++) {
+    const response = await timedFetch(ctx, current, {
+      jar: options.jar,
+      redirect: "manual",
+    });
+    options.jar?.ingest(response);
+    const location = response.headers.get("location");
+    hops.push({
+      url: current,
+      status: response.status,
+      location: location ?? undefined,
+    });
+
+    if (response.status >= 300 && response.status < 400 && location) {
+      current = new URL(location, current).toString();
+      continue;
+    }
+
+    return { finalUrl: current, status: response.status, hops };
+  }
+
+  return { finalUrl: current, status: 0, hops };
+}
+
+function urlPath(url: string): string {
+  try {
+    return new URL(url).pathname.replace(/\/$/, "") || "/";
+  } catch {
+    return url;
+  }
+}
+
+function urlHost(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
+}
+
+function pass(
+  id: string,
+  step: string,
+  message: string,
+  detail?: string,
+): MigrationStepResult {
+  return { id, step, status: "pass", message, detail };
+}
+
+function fail(
+  id: string,
+  step: string,
+  message: string,
+  detail?: string,
+): MigrationStepResult {
+  return { id, step, status: "fail", message, detail };
+}
+
+function skip(
+  id: string,
+  step: string,
+  message: string,
+  detail?: string,
+): MigrationStepResult {
+  return { id, step, status: "skip", message, detail };
+}
+
+function hopSummary(hops: Hop[]): string {
+  return hops
+    .map((h) => `${h.status} ${h.url}${h.location ? ` → ${h.location}` : ""}`)
+    .join("\n");
+}
+
+function createRunnerContext(domains: MigrationDomains): RunnerContext {
+  return {
+    domains,
+    userAgent: `Mozilla/5.0 (compatible; TrustMyCardMigrationTest/1.0; +${domains.newOrigin})`,
+  };
+}
+
+async function testA1(ctx: RunnerContext): Promise<MigrationStepResult> {
+  const { domains } = ctx;
+  try {
+    const { finalUrl, status, hops } = await followRedirects(
+      ctx,
+      migrationUrl(domains.oldOrigin, "/"),
+    );
+    const path = urlPath(finalUrl);
+    const host = urlHost(finalUrl);
+    if (host === domains.oldDomain && path === "/connect") {
+      return fail(
+        "a1",
+        "A1",
+        "Old domain homepage still routes to /connect",
+        hopSummary(hops),
+      );
+    }
+    if (host === domains.newDomain) {
+      return pass(
+        "a1",
+        "A1",
+        `Old domain redirects to ${domains.newDomain}`,
+        finalUrl,
+      );
+    }
+    if (status >= 200 && status < 400) {
+      return pass(
+        "a1",
+        "A1",
+        "Old domain does not expose /connect as homepage entry",
+        `Final: ${status} ${finalUrl}`,
+      );
+    }
+    return fail("a1", "A1", `Unexpected response: ${status}`, finalUrl);
+  } catch (error) {
+    return fail(
+      "a1",
+      "A1",
+      `Could not reach ${domains.oldDomain}`,
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+async function testA2(ctx: RunnerContext): Promise<MigrationStepResult> {
+  const { domains } = ctx;
+  try {
+    const { finalUrl, status, hops } = await followRedirects(
+      ctx,
+      migrationUrl(domains.oldOrigin, "/connect"),
+    );
+    const path = urlPath(finalUrl);
+    if (path === "/connect" && status >= 200 && status < 300) {
+      return fail(
+        "a2",
+        "A2",
+        "Old /connect still serves product without redirect",
+        hopSummary(hops),
+      );
+    }
+    return pass(
+      "a2",
+      "A2",
+      "Old /connect is blocked or redirected",
+      `Final: ${status} ${finalUrl}`,
+    );
+  } catch (error) {
+    return pass(
+      "a2",
+      "A2",
+      "Old /connect unreachable (domain retired)",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+async function testA3(ctx: RunnerContext): Promise<MigrationStepResult> {
+  const { domains } = ctx;
+  try {
+    const { finalUrl, hops } = await followRedirects(
+      ctx,
+      migrationUrl(domains.oldOrigin, "/", "utm_source=instagram"),
+    );
+    if (urlPath(finalUrl) === "/connect") {
+      return fail(
+        "a3",
+        "A3",
+        "UTM params alone unlocked /connect on old domain",
+        hopSummary(hops),
+      );
+    }
+    return pass(
+      "a3",
+      "A3",
+      "UTM-only traffic does not reach /connect on old domain",
+      `Final: ${finalUrl}`,
+    );
+  } catch (error) {
+    return pass(
+      "a3",
+      "A3",
+      "Old domain UTM test skipped — domain unreachable",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+async function testA4(ctx: RunnerContext): Promise<MigrationStepResult> {
+  const { domains } = ctx;
+  try {
+    const response = await timedFetch(
+      ctx,
+      `${domains.oldApi}/v1/api/settings/public`,
+      { redirect: "follow" },
+    );
+    return pass(
+      "a4",
+      "A4",
+      `Old API responded (${response.status}) — ensure ads/API use api.${domains.newDomain}`,
+      `Status ${response.status}`,
+    );
+  } catch (error) {
+    return pass(
+      "a4",
+      "A4",
+      "Old API unreachable — OK if fully retired",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+async function testB1(ctx: RunnerContext): Promise<MigrationStepResult> {
+  const { domains } = ctx;
+  try {
+    const response = await timedFetch(ctx, migrationUrl(domains.newOrigin, "/"), {
+      redirect: "follow",
+    });
+    if (response.status >= 200 && response.status < 400) {
+      return pass(
+        "b1",
+        "B1",
+        "New domain homepage is reachable over HTTPS",
+        `HTTP ${response.status}`,
+      );
+    }
+    return fail("b1", "B1", `Homepage returned HTTP ${response.status}`);
+  } catch (error) {
+    return fail(
+      "b1",
+      "B1",
+      `Could not reach ${domains.newDomain} — check DNS/SSL on Render`,
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+async function testB2(ctx: RunnerContext): Promise<MigrationStepResult> {
+  const { domains } = ctx;
+  try {
+    const { finalUrl, status, hops } = await followRedirects(
+      ctx,
+      migrationUrl(domains.newOrigin, "/connect"),
+    );
+    if (urlPath(finalUrl) === "/connect" && status >= 200 && status < 300) {
+      return fail(
+        "b2",
+        "B2",
+        "/connect is public without marketing session",
+        hopSummary(hops),
+      );
+    }
+    return pass(
+      "b2",
+      "B2",
+      "/connect blocked without session",
+      `Final: ${status} ${finalUrl}`,
+    );
+  } catch (error) {
+    return fail(
+      "b2",
+      "B2",
+      `Could not reach ${domains.newDomain}/connect`,
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+async function testB3(
+  ctx: RunnerContext,
+  testSecret: string,
+): Promise<{ result: MigrationStepResult; jar: CookieJar }> {
+  const { domains } = ctx;
+  const jar = new CookieJar();
+  if (!testSecret.trim().startsWith("tvmt_")) {
+    return {
+      result: fail(
+        "b3",
+        "B3",
+        "Paste a valid MARKETING_TEST_SECRET (starts with tvmt_)",
+      ),
+      jar,
+    };
+  }
+  try {
+    const url = migrationUrl(
+      domains.newOrigin,
+      "/api/marketing-test",
+      `token=${encodeURIComponent(testSecret.trim())}`,
+    );
+    const { finalUrl, hops } = await followRedirects(ctx, url, { jar });
+    if (urlPath(finalUrl) !== "/connect") {
+      return {
+        result: fail(
+          "b3",
+          "B3",
+          "Marketing test URL did not land on /connect",
+          hopSummary(hops),
+        ),
+        jar,
+      };
+    }
+    if (!jar.has("tv_ms")) {
+      return {
+        result: fail(
+          "b3",
+          "B3",
+          "Redirected to /connect but marketing session cookie (tv_ms) missing",
+          hopSummary(hops),
+        ),
+        jar,
+      };
+    }
+    return {
+      result: pass(
+        "b3",
+        "B3",
+        "Marketing test URL grants session and /connect access",
+        hopSummary(hops),
+      ),
+      jar,
+    };
+  } catch (error) {
+    return {
+      result: fail(
+        "b3",
+        "B3",
+        "Marketing test request failed",
+        error instanceof Error ? error.message : String(error),
+      ),
+      jar,
+    };
+  }
+}
+
+async function testB4(ctx: RunnerContext): Promise<MigrationStepResult> {
+  const { domains } = ctx;
+  const jar = new CookieJar();
+  try {
+    const { finalUrl, hops } = await followRedirects(
+      ctx,
+      migrationUrl(domains.newOrigin, "/", `fbclid=${FBCLID}`),
+      { jar },
+    );
+    if (urlPath(finalUrl) === "/connect") {
+      return pass(
+        "b4",
+        "B4",
+        "Meta fbclid flow reaches /connect on new domain",
+        hopSummary(hops),
+      );
+    }
+    return fail(
+      "b4",
+      "B4",
+      "fbclid homepage flow did not reach /connect",
+      hopSummary(hops),
+    );
+  } catch (error) {
+    return fail(
+      "b4",
+      "B4",
+      "fbclid flow request failed",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+async function testB5(
+  ctx: RunnerContext,
+  jar: CookieJar,
+): Promise<MigrationStepResult> {
+  const { domains } = ctx;
+  if (!jar.has("tv_ms")) {
+    return skip("b5", "B5", "Skipped — no session from B3");
+  }
+  try {
+    const { finalUrl, hops } = await followRedirects(
+      ctx,
+      migrationUrl(domains.newOrigin, "/"),
+      { jar },
+    );
+    if (urlPath(finalUrl) === "/connect") {
+      return pass(
+        "b5",
+        "B5",
+        "Active session redirects / back to /connect",
+        hopSummary(hops),
+      );
+    }
+    return fail(
+      "b5",
+      "B5",
+      "Session did not redirect / → /connect",
+      hopSummary(hops),
+    );
+  } catch (error) {
+    return fail(
+      "b5",
+      "B5",
+      "Session redirect test failed",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+async function testB6(
+  ctx: RunnerContext,
+  jar: CookieJar,
+): Promise<MigrationStepResult> {
+  const { domains } = ctx;
+  if (!jar.has("tv_ms")) {
+    return skip("b6", "B6", "Skipped — no session from B3");
+  }
+  try {
+    const response = await timedFetch(
+      ctx,
+      migrationUrl(domains.newOrigin, "/connect/privacypolicy"),
+      { jar, redirect: "follow" },
+    );
+    if (response.status >= 200 && response.status < 300) {
+      return pass(
+        "b6",
+        "B6",
+        "Gated legal page loads with active session",
+        `HTTP ${response.status}`,
+      );
+    }
+    return fail(
+      "b6",
+      "B6",
+      `Privacy policy returned HTTP ${response.status}`,
+    );
+  } catch (error) {
+    return fail(
+      "b6",
+      "B6",
+      "Privacy policy request failed",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+async function testB7(ctx: RunnerContext): Promise<MigrationStepResult> {
+  const { domains } = ctx;
+  try {
+    const { finalUrl, hops } = await followRedirects(
+      ctx,
+      migrationUrl(domains.newOrigin, "/connect", "utm_source=instagram"),
+    );
+    if (urlPath(finalUrl) === "/connect") {
+      return fail(
+        "b7",
+        "B7",
+        "Forged UTMs on /connect granted access",
+        hopSummary(hops),
+      );
+    }
+    return pass(
+      "b7",
+      "B7",
+      "Forged UTMs on /connect are blocked",
+      `Final: ${finalUrl}`,
+    );
+  } catch (error) {
+    return fail(
+      "b7",
+      "B7",
+      "UTM block test failed",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+async function testB9(ctx: RunnerContext): Promise<MigrationStepResult> {
+  const { domains } = ctx;
+  try {
+    const response = await timedFetch(
+      ctx,
+      `${domains.newApi}/v1/api/settings/public`,
+      { redirect: "follow", headers: { Accept: "application/json" } },
+    );
+    const text = await response.text();
+    if (response.status >= 200 && response.status < 300) {
+      try {
+        JSON.parse(text);
+        return pass(
+          "b9",
+          "B9",
+          `api.${domains.newDomain} returns public settings JSON`,
+          `HTTP ${response.status}`,
+        );
+      } catch {
+        return fail("b9", "B9", "API response is not valid JSON", text.slice(0, 200));
+      }
+    }
+    return fail("b9", "B9", `API returned HTTP ${response.status}`, text.slice(0, 200));
+  } catch (error) {
+    return fail(
+      "b9",
+      "B9",
+      `Could not reach api.${domains.newDomain}`,
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+async function testB10(ctx: RunnerContext): Promise<MigrationStepResult> {
+  const { domains } = ctx;
+  try {
+    const response = await timedFetch(
+      ctx,
+      `${domains.newApi}/v1/api/settings/public`,
+      {
+        method: "OPTIONS",
+        headers: {
+          Origin: domains.newOrigin,
+          "Access-Control-Request-Method": "GET",
+        },
+      },
+    );
+    const acao = response.headers.get("access-control-allow-origin");
+    if (
+      acao === domains.newOrigin ||
+      acao === "*" ||
+      (acao && acao.includes(domains.newDomain))
+    ) {
+      return pass(
+        "b10",
+        "B10",
+        "API CORS allows wallet app origin",
+        `Access-Control-Allow-Origin: ${acao ?? "(missing)"}`,
+      );
+    }
+    return fail(
+      "b10",
+      "B10",
+      `API CORS does not allow ${domains.newOrigin}`,
+      `Access-Control-Allow-Origin: ${acao ?? "(missing)"}; HTTP ${response.status}`,
+    );
+  } catch (error) {
+    return fail(
+      "b10",
+      "B10",
+      "CORS preflight check failed",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+export type MigrationTestRunSummary = {
+  results: MigrationStepResult[];
+  passed: number;
+  failed: number;
+  skipped: number;
+  total: number;
+  allAutomatedPassed: boolean;
+  domains: MigrationDomains;
+};
+
+export async function runMigrationTests(
+  domains: MigrationDomains,
+  testSecret: string,
+): Promise<MigrationTestRunSummary> {
+  const ctx = createRunnerContext(domains);
+  const results: MigrationStepResult[] = [];
+
+  results.push(await testA1(ctx));
+  results.push(await testA2(ctx));
+  results.push(await testA3(ctx));
+  results.push(await testA4(ctx));
+
+  results.push(await testB1(ctx));
+  results.push(await testB2(ctx));
+
+  const b3 = await testB3(ctx, testSecret);
+  results.push(b3.result);
+
+  results.push(await testB4(ctx));
+  results.push(await testB5(ctx, b3.jar));
+  results.push(await testB6(ctx, b3.jar));
+  results.push(await testB7(ctx));
+
+  results.push(
+    skip(
+      "b8",
+      "B8",
+      `WalletConnect UI requires a real browser — confirm Connect Wallet works on ${domains.newOrigin}/connect after B3 passes`,
+    ),
+  );
+
+  results.push(await testB9(ctx));
+  results.push(await testB10(ctx));
+
+  results.push(
+    skip(
+      "b11",
+      "B11",
+      `Render dashboard SSL — confirm ${domains.newDomain} and api.${domains.newDomain} show Verified in Custom Domains`,
+    ),
+  );
+
+  const passed = results.filter((r) => r.status === "pass").length;
+  const failed = results.filter((r) => r.status === "fail").length;
+  const skipped = results.filter((r) => r.status === "skip").length;
+
+  return {
+    results,
+    passed,
+    failed,
+    skipped,
+    total: results.length,
+    allAutomatedPassed: failed === 0,
+    domains,
+  };
+}

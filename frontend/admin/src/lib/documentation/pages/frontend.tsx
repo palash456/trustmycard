@@ -1,5 +1,6 @@
 import {
   DocCode,
+  DocLink,
   DocP,
   DocPre,
   DocTable,
@@ -11,7 +12,7 @@ export const frontendPage: DocPage = {
   title: "Frontend Structure",
   description:
     "Monorepo frontend packages, shared code, and admin app architecture.",
-  keywords: ["frontend", "nextjs", "wallet-sdk", "shared", "website", "admin"],
+  keywords: ["frontend", "nextjs", "wallet-sdk", "shared", "website", "admin", "marketing", "connect", "middleware"],
   sections: [
     {
       id: "packages",
@@ -63,8 +64,44 @@ export const frontendPage: DocPage = {
           <DocCode>/</DocCode> and product connect flow at{" "}
           <DocCode>/connect</DocCode>. API routes under{" "}
           <DocCode>app/api/</DocCode> proxy to Nest backend using wallet-sdk
-          server utilities.
+          server utilities. Production host:{" "}
+          <DocCode>mytrustvisa.cards</DocCode> (Render).
         </DocP>
+      ),
+    },
+    {
+      id: "marketing-middleware",
+      title: "Marketing access middleware",
+      content: (
+        <>
+          <DocP>
+            <DocCode>frontend/website/middleware.ts</DocCode> gates all{" "}
+            <DocCode>/connect/*</DocCode> routes behind a signed 24h session
+            cookie (<DocCode>tv_ms</DocCode>). Ad click IDs on{" "}
+            <DocCode>/</DocCode> trigger server verification via{" "}
+            <DocCode>/api/marketing/verify</DocCode> → one-time token →{" "}
+            <DocCode>/api/marketing/exchange</DocCode>. UTMs alone never grant
+            access.
+          </DocP>
+          <DocPre>{`src/lib/marketing/
+├── session.ts                 # 24h tv_ms cookie
+├── authorization-token.ts     # 90s one-time exchange token
+├── homepage-attestation.ts    # Meta fbclid homepage gate (tv_mh)
+├── adapters/                  # google, meta, tiktok, linkedin
+└── ...
+
+src/app/api/marketing/verify/   # Server verification
+src/app/api/marketing/exchange/ # Token → session
+src/app/api/marketing-test/     # Developer test bypass`}</DocPre>
+          <DocP>
+            Meta Pixel (<DocCode>ConnectMetaPixel.tsx</DocCode>) loads on{" "}
+            <DocCode>/connect</DocCode> only. See{" "}
+            <DocLink href="/documentation/marketing-access">
+              Marketing & Domains
+            </DocLink>
+            .
+          </DocP>
+        </>
       ),
     },
     {

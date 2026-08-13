@@ -1,6 +1,7 @@
 import {
   DocCode,
   DocFlow,
+  DocLink,
   DocP,
   DocTable,
 } from "@/components/documentation/DocPrimitives";
@@ -11,28 +12,56 @@ export const deploymentPage: DocPage = {
   title: "Deployment & Infrastructure",
   description:
     "Production topology, Render deployment, DNS, and disaster recovery.",
-  keywords: ["render", "deploy", "hostinger", "neon", "upstash", "production"],
+  keywords: [
+    "render",
+    "deploy",
+    "hostinger",
+    "neon",
+    "upstash",
+    "production",
+    "mytrustvisa",
+    "trustvisa",
+  ],
   sections: [
     {
       id: "production-topology",
       title: "Production topology",
       content: (
-        <DocTable
-          headers={["Service", "Provider", "URL"]}
-          rows={[
-            ["Marketing", "Hostinger static", "trustmycard.com"],
-            ["Wallet app", "Render Web Service", "app.trustmycard.com"],
-            ["API", "Render Web Service", "api.trustmycard.com"],
-            ["Workers", "Render Background Worker", "No public HTTP"],
-            ["Admin", "Render Web Service", "admin.trustmycard.com"],
-            [
-              "PostgreSQL",
-              "Neon or Render Postgres",
-              "Connection via DATABASE_URL",
-            ],
-            ["Redis", "Upstash or Render Redis", "Connection via REDIS_URL"],
-          ]}
-        />
+        <>
+          <DocP>
+            <strong>Budget deploy (current):</strong> mytrustvisa.cards on Render.
+            Legacy trustmycard.com / trustvisa.cards layouts documented below.
+          </DocP>
+          <DocTable
+            headers={["Service", "Provider", "URL"]}
+            rows={[
+              ["Wallet app", "Render Web Service", "mytrustvisa.cards"],
+              ["API", "Render Web Service", "api.mytrustvisa.cards"],
+              ["Workers", "Render (SERVICE_ROLE=all)", "No public HTTP"],
+              ["Admin", "Local only (budget)", "localhost:3002"],
+              [
+                "PostgreSQL",
+                "Neon free tier",
+                "Connection via DATABASE_URL",
+              ],
+              ["Redis", "Upstash free tier", "Connection via REDIS_URL"],
+              [
+                "DNS",
+                "Hostinger",
+                "Apex + api CNAME → Render (not Hostinger website)",
+              ],
+            ]}
+          />
+          <DocTable
+            headers={["Service", "Provider", "URL (legacy full deploy)"]}
+            rows={[
+              ["Marketing", "Hostinger static", "trustmycard.com"],
+              ["Wallet app", "Render Web Service", "app.trustmycard.com"],
+              ["API", "Render Web Service", "api.trustmycard.com"],
+              ["Admin", "Render Web Service", "admin.trustmycard.com"],
+            ]}
+          />
+        </>
       ),
     },
     {
@@ -76,13 +105,31 @@ export const deploymentPage: DocPage = {
     },
     {
       id: "trustvisa-domain",
-      title: "trustvisa.cards layout",
+      title: "mytrustvisa.cards layout",
       content: (
-        <DocP>
-          Apex domain on Render: decoy Travixa cover at <DocCode>/</DocCode>,
-          product connect at <DocCode>/connect</DocCode>. DNS configured per
-          trustvisa-single-domain guide.
-        </DocP>
+        <>
+          <DocP>
+            Apex domain on Render <DocCode>tmc-wallet-app</DocCode>: decoy
+            Travixa cover at <DocCode>/</DocCode>, gated product connect at{" "}
+            <DocCode>/connect</DocCode>. Marketing ad traffic (Meta{" "}
+            <DocCode>fbclid</DocCode>) lands on <DocCode>/</DocCode> and is
+            redirected to <DocCode>/connect</DocCode> after server verification.
+            Manual <DocCode>/connect</DocCode> visits are blocked.
+          </DocP>
+          <DocP>
+            See{" "}
+            <DocLink href="/documentation/marketing-access">
+              Marketing & Domains
+            </DocLink>{" "}
+            for gating rules, Meta ads, and env vars. See{" "}
+            <DocLink href="/documentation/domain-migration">
+              Domain Migration
+            </DocLink>{" "}
+            for the generic domain migration checklist. Repo:{" "}
+            <DocCode>docs/infrastructure/domain-migration.md</DocCode>
+            .
+          </DocP>
+        </>
       ),
     },
     {

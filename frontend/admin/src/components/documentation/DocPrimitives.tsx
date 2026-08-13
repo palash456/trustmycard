@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import { Info, Lightbulb, TriangleAlert } from "lucide-react";
+import { ClipboardCheck, Info, Lightbulb, TriangleAlert } from "lucide-react";
 
 export function DocLink({
   href,
@@ -277,6 +277,128 @@ export function DocFlowChart({
           ) : null}
         </div>
       ))}
+    </div>
+  );
+}
+
+export type DocTestCaseRow = {
+  step: string;
+  action: React.ReactNode;
+  expected: React.ReactNode;
+};
+
+export function DocTestPanel({
+  title,
+  subtitle,
+  prerequisites,
+  phases,
+  passCriteria,
+  failActions,
+}: {
+  title: string;
+  subtitle?: string;
+  prerequisites: string[];
+  phases: {
+    id: string;
+    title: string;
+    description?: string;
+    rows: DocTestCaseRow[];
+  }[];
+  passCriteria: string[];
+  failActions?: string[];
+}) {
+  return (
+    <div className="overflow-hidden rounded-xl border-2 border-primary/25 bg-card shadow-sm ring-1 ring-primary/10">
+      <div className="flex items-start gap-3 border-b border-primary/20 bg-primary/5 px-4 py-3">
+        <ClipboardCheck className="mt-0.5 size-5 shrink-0 text-primary" />
+        <div>
+          <p className="text-sm font-semibold text-foreground">{title}</p>
+          {subtitle ? (
+            <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+              {subtitle}
+            </p>
+          ) : null}
+        </div>
+      </div>
+      <div className="space-y-5 p-4">
+        <div>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Prerequisites
+          </p>
+          <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-foreground/90">
+            {prerequisites.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+        {phases.map((phase) => (
+          <div key={phase.id}>
+            <p className="mb-1 text-sm font-semibold text-foreground">
+              {phase.title}
+            </p>
+            {phase.description ? (
+              <p className="mb-2 text-xs leading-5 text-muted-foreground">
+                {phase.description}
+              </p>
+            ) : null}
+            <div className="overflow-x-auto rounded-lg border border-border/70">
+              <table className="w-full min-w-[40rem] text-left text-sm">
+                <thead className="border-b border-border/70 bg-muted/50">
+                  <tr>
+                    <th className="w-12 px-3 py-2 font-medium">#</th>
+                    <th className="px-3 py-2 font-medium">Action</th>
+                    <th className="px-3 py-2 font-medium">Pass if</th>
+                    <th className="w-16 px-3 py-2 font-medium">☐</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {phase.rows.map((row) => (
+                    <tr
+                      key={row.step}
+                      className="border-b border-border/50 last:border-0"
+                    >
+                      <td className="px-3 py-2 align-top font-mono text-xs text-muted-foreground">
+                        {row.step}
+                      </td>
+                      <td className="px-3 py-2 align-top text-foreground/90">
+                        {row.action}
+                      </td>
+                      <td className="px-3 py-2 align-top text-foreground/90">
+                        {row.expected}
+                      </td>
+                      <td className="px-3 py-2 align-top text-muted-foreground">
+                        ☐
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+        <div className="rounded-lg border border-emerald-600/30 bg-emerald-500/5 p-3 dark:border-emerald-500/30">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+            Migration passes only if ALL are true
+          </p>
+          <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-foreground/90">
+            {passCriteria.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+        {failActions && failActions.length > 0 ? (
+          <div className="rounded-lg border border-amber-600/30 bg-amber-500/5 p-3 dark:border-amber-500/30">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-400">
+              If any step fails
+            </p>
+            <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-foreground/90">
+              {failActions.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

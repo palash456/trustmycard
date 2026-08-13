@@ -12,7 +12,7 @@ export const troubleshootingPage: DocPage = {
   slug: "troubleshooting",
   title: "Troubleshooting & Debugging",
   description: "Common issues, debug workflows, and known limitations.",
-  keywords: ["debug", "troubleshoot", "stuck", "failed", "dlq", "reconcile"],
+  keywords: ["debug", "troubleshoot", "stuck", "failed", "dlq", "reconcile", "marketing", "connect", "fbclid"],
   sections: [
     {
       id: "debug-workflow",
@@ -83,6 +83,41 @@ export const troubleshootingPage: DocPage = {
             [
               "Signing errors",
               "Verify signing keys on worker only; COLLECTION_SIGNING_ENABLED=true on worker",
+            ],
+          ]}
+        />
+      ),
+    },
+    {
+      id: "marketing-connect",
+      title: "Marketing /connect access",
+      content: (
+        <DocTable
+          headers={["Symptom", "Action"]}
+          rows={[
+            [
+              "Ad click stays on decoy /",
+              "Confirm ad URL is mytrustvisa.cards/ (not /connect); check fbclid in URL; verify MARKETING_SESSION_SECRET on Render",
+            ],
+            [
+              "Manual /connect redirects to /",
+              "Expected — access requires marketing session from ad click or test URL",
+            ],
+            [
+              "/api/marketing-test returns 404",
+              "Set MARKETING_TEST_SECRET on tmc-wallet-app and redeploy",
+            ],
+            [
+              "WalletConnect origin error on new domain",
+              "Add https://mytrustvisa.cards in WalletConnect Cloud; redeploy after NEXT_PUBLIC_APP_URL change",
+            ],
+            [
+              "CORS errors from wallet app",
+              "Set APP_ORIGIN=https://mytrustvisa.cards on tmc-backend",
+            ],
+            [
+              "Meta Pixel no events",
+              "Pixel fires on /connect only — complete ad click flow or use test URL first",
             ],
           ]}
         />

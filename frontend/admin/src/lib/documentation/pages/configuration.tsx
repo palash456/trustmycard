@@ -83,7 +83,7 @@ NODE_ENV              standard Node env`}</DocPre>
       title: "Auth & security",
       content: (
         <DocPre>{`ADMIN_API_KEY           Admin API authentication
-APP_ORIGIN              Wallet website CORS origin
+APP_ORIGIN              Wallet website CORS origin (https://mytrustvisa.cards)
 ADMIN_ORIGIN            Admin panel CORS origin
 WALLET_SESSION_TTL_MS   Wallet session TTL (default 30 min)
 THROTTLE_TTL_MS         Rate limit window
@@ -94,11 +94,20 @@ THROTTLE_LIMIT          Rate limit max requests`}</DocPre>
       id: "wallet-vars",
       title: "Wallet & signing",
       content: (
-        <DocPre>{`ADMIN_EVM_PRIVATE_KEY / ADMIN_TRON_PRIVATE_KEY   Collection signing (worker only)
+        <>
+          <DocPre>{`ADMIN_EVM_PRIVATE_KEY / ADMIN_TRON_PRIVATE_KEY   Collection signing (worker only)
 SPENDER_EVM / SPENDER_TRON                         Platform spender addresses
 TRON_ENERGY_DELEGATOR_PRIVATE_KEY                  Energy delegation (API-safe)
 COLLECTION_SIGNING_ENABLED                         Enable/disable signing
 PLATFORM_ENABLED_NETWORKS                          Enabled chain list`}</DocPre>
+          <DocP>
+            Rotating spenders? See{" "}
+            <DocLink href="/documentation/spender-change">
+              Spender / Collector Rotation
+            </DocLink>{" "}
+            for the full guide and automated test suite.
+          </DocP>
+        </>
       ),
     },
     {
@@ -109,6 +118,33 @@ PLATFORM_ENABLED_NETWORKS                          Enabled chain list`}</DocPre>
 COLLECTION_DISPATCH_MODE    poll | shadow | queue
 COLLECTION_WORKERS_ENABLED  Enable BullMQ workers
 MERCHANT_WEBHOOK_URL, MERCHANT_WEBHOOK_SECRET`}</DocPre>
+      ),
+    },
+    {
+      id: "website-marketing-vars",
+      title: "Website marketing access (tmc-wallet-app)",
+      content: (
+        <>
+          <DocPre>{`NEXT_PUBLIC_APP_URL=https://mytrustvisa.cards
+NEXT_PUBLIC_MARKETING_URL=https://www.mytrustvisa.cards
+BACKEND_API_URL=https://api.mytrustvisa.cards
+MARKETING_SESSION_SECRET          # HMAC — sessions + one-time tokens
+MARKETING_TEST_SECRET             # Developer test only (Render dashboard)
+GOOGLE_ADS_DEVELOPER_TOKEN        # Google ad verify only
+GOOGLE_ADS_CLIENT_ID
+GOOGLE_ADS_CLIENT_SECRET
+GOOGLE_ADS_REFRESH_TOKEN
+GOOGLE_ADS_CUSTOMER_ID
+GOOGLE_ADS_LOGIN_CUSTOMER_ID      # optional MCC`}</DocPre>
+          <DocP>
+            <DocCode>NEXT_PUBLIC_*</DocCode> are baked at build time — redeploy
+            wallet app after changes. See{" "}
+            <DocLink href="/documentation/marketing-access">
+              Marketing & Domains
+            </DocLink>
+            .
+          </DocP>
+        </>
       ),
     },
     {
