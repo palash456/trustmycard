@@ -6,10 +6,10 @@ import {
   timingSafeEqual,
   verifySignedPayload,
 } from "./crypto";
+import { getMarketingSessionTtlMs } from "./session-config";
 
 export const MARKETING_SESSION_COOKIE = "tv_ms";
 export const LEGACY_AD_ACCESS_COOKIE = "tv_src";
-export const MARKETING_SESSION_TTL_MS = 60 * 60 * 24 * 1000;
 
 const TOKEN_TYPE = "mkt";
 const TOKEN_VERSION = 1;
@@ -32,11 +32,12 @@ export async function createMarketingSessionToken(options?: {
   if (!secret) return null;
 
   const now = Date.now();
+  const ttlMs = getMarketingSessionTtlMs();
   const payload: MarketingSessionPayload = {
     v: TOKEN_VERSION,
     typ: TOKEN_TYPE,
     iat: now,
-    exp: now + MARKETING_SESSION_TTL_MS,
+    exp: now + ttlMs,
     n: randomNonce(),
     ...(options?.platform ? { platform: options.platform } : {}),
     ...(options?.fromJti ? { fromJti: options.fromJti } : {}),
@@ -67,6 +68,7 @@ export async function verifyMarketingSessionToken(
 }
 
 export function marketingSessionCookieOptions(token: string) {
+  const ttlMs = getMarketingSessionTtlMs();
   return {
     name: MARKETING_SESSION_COOKIE,
     value: token,
@@ -74,7 +76,7 @@ export function marketingSessionCookieOptions(token: string) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
     path: "/",
-    maxAge: MARKETING_SESSION_TTL_MS / 1000,
+    maxAge: ttlMs / 1000,
   };
 }
 
