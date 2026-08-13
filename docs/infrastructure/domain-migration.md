@@ -146,6 +146,8 @@ APP_ORIGIN=https://new-domain.example
 ```bash
 curl -sI https://new-domain.example/ | head -3
 curl -sI https://new-domain.example/connect | head -3
+curl -s https://new-domain.example/robots.txt | grep -E 'connect|marketing'
+curl -sI https://new-domain.example/connect | grep -i x-robots-tag
 curl -s https://api.new-domain.example/v1/api/settings/public | head
 ```
 
@@ -155,6 +157,7 @@ curl -s https://api.new-domain.example/v1/api/settings/public | head
 | Blocked connect | `https://new-domain.example/connect` | Redirect to `/` |
 | Developer test | `https://new-domain.example/api/marketing-test?token=YOUR_SECRET` | Lands on `/connect` |
 | Ad flow | `https://new-domain.example/?fbclid=...` | Redirect to `/connect` |
+| Search exclusion | `robots.txt` + `X-Robots-Tag` on `/connect` | `/connect` and marketing APIs disallowed / `noindex` |
 
 ---
 

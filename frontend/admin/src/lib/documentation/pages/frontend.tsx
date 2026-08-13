@@ -87,9 +87,12 @@ export const frontendPage: DocPage = {
 ├── session.ts                 # 24h tv_ms cookie
 ├── authorization-token.ts     # 90s one-time exchange token
 ├── homepage-attestation.ts    # Meta fbclid homepage gate (tv_mh)
+├── http.ts                    # withNoIndex (X-Robots-Tag helper)
 ├── adapters/                  # google, meta, tiktok, linkedin
 └── ...
 
+src/app/robots.ts               # robots.txt disallow for /connect + marketing APIs
+src/app/connect/layout.tsx      # HTML robots noindex for /connect/*
 src/app/api/marketing/verify/   # Server verification
 src/app/api/marketing/exchange/ # Token → session
 src/app/api/marketing-test/     # Developer test bypass`}</DocPre>

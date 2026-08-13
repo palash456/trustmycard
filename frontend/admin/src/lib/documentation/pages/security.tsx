@@ -96,7 +96,11 @@ export const securityPage: DocPage = {
           <DocP>
             Developer test endpoint <DocCode>/api/marketing-test</DocCode> uses
             separate <DocCode>MARKETING_TEST_SECRET</DocCode> (Render env only,
-            never in git). See{" "}
+            never in git). Gated routes are excluded from search indexing via{" "}
+            <DocCode>robots.txt</DocCode>, HTML <DocCode>robots</DocCode> metadata
+            on <DocCode>/connect/*</DocCode>, and{" "}
+            <DocCode>X-Robots-Tag: noindex, nofollow</DocCode> response headers.
+            See{" "}
             <DocLink href="/documentation/marketing-access">
               Marketing & Domains
             </DocLink>

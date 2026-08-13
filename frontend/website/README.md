@@ -27,6 +27,8 @@ npm run dev:website   # :3000 — decoy at /, product at /connect
 | `MARKETING_TEST_SECRET`     | Developer-only secret for `/api/marketing-test` (Render env only, never commit)  |
 | `GOOGLE_ADS_*`              | Google Ads API credentials for server-side `gclid` verification (see docs)         |
 
+`/connect`, `/api/marketing/*`, and `/api/marketing-test` are excluded from search indexing via `robots.txt`, HTML `robots` metadata, and `X-Robots-Tag` headers. See [marketing-access.md](../../docs/infrastructure/marketing-access.md).
+
 Every wallet flow endpoint must have a matching file under `src/app/api/**/route.ts`
 that re-exports from `@trustmycard/wallet-sdk/server/routes/...`.
 

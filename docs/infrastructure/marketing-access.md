@@ -17,6 +17,7 @@ This document describes how `/connect` access works on `trustvisa.cards`, which 
 | **Google** | `gclid` verified via Google Ads API `click_view` when credentials are configured. |
 | **Meta / Instagram** | `fbclid` accepted on `/` only (homepage attestation cookie); format-validated, not server-verified. |
 | **Developer test** | Separate `/api/marketing-test?token=…` endpoint using `MARKETING_TEST_SECRET` (Render env only). |
+| **Search exclusion** | `/connect`, `/api/marketing/*`, and `/api/marketing-test` excluded via `robots.txt`, HTML `robots` metadata, and `X-Robots-Tag` headers. |
 | **Decoy unchanged** | `/` still shows Travixa decoy for everyone without a valid session. |
 
 ---
@@ -63,7 +64,10 @@ sequenceDiagram
 
 | File | Role |
 |------|------|
-| `frontend/website/middleware.ts` | Route gating, click-ID detection, session check |
+| `frontend/website/middleware.ts` | Route gating, click-ID detection, session check, `X-Robots-Tag` on gated paths |
+| `frontend/website/src/app/robots.ts` | `robots.txt` disallow rules for `/connect` and marketing API paths |
+| `frontend/website/src/app/connect/layout.tsx` | HTML `robots` metadata (`noindex, nofollow`) for `/connect/*` |
+| `frontend/website/src/lib/marketing/http.ts` | Shared `withNoIndex` helper (`X-Robots-Tag`) |
 | `frontend/website/src/lib/marketing/session.ts` | 24h signed session (`tv_ms`) |
 | `frontend/website/src/lib/marketing/authorization-token.ts` | 90s one-time exchange token |
 | `frontend/website/src/lib/marketing/adapters/*.ts` | Per-platform verification |
@@ -194,6 +198,25 @@ Set `MARKETING_TEST_SECRET` in `env/profiles/development/website.env` for local 
 4. Click from a live Google ad → middleware → verify → exchange → `/connect`
 
 UTM parameters may still be present for **analytics** but are **never** used for access decisions.
+
+---
+
+## Search engine exclusion
+
+Gated product and marketing API routes are excluded from indexing at three layers:
+
+| Layer | Mechanism | Paths |
+|-------|-----------|-------|
+| **robots.txt** | `Disallow` rules in `src/app/robots.ts` | `/connect`, `/api/marketing-test`, `/api/marketing/` |
+| **HTML metadata** | `robots: { index: false, follow: false }` in `connect/layout.tsx` | `/connect/*` pages |
+| **Response headers** | `X-Robots-Tag: noindex, nofollow` via middleware + `noStoreHeaders()` on API routes | `/connect`, `/connect/*`, `/api/marketing/*`, `/api/marketing-test` |
+
+The public decoy homepage (`/`) remains indexable. Verify after deploy:
+
+```bash
+curl -s https://trustvisa.cards/robots.txt | grep -E 'connect|marketing'
+curl -sI https://trustvisa.cards/connect | grep -i x-robots-tag
+```
 
 ---
 

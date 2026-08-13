@@ -243,6 +243,8 @@ APP_ORIGIN=https://new-domain.example`}</DocPre>
         <>
           <DocPre>{`curl -sI https://new-domain.example/ | head -3
 curl -sI https://new-domain.example/connect | head -3
+curl -s https://new-domain.example/robots.txt | grep -E 'connect|marketing'
+curl -sI https://new-domain.example/connect | grep -i x-robots-tag
 curl -s https://api.new-domain.example/v1/api/settings/public | head`}</DocPre>
           <DocTable
             headers={["Test (incognito)", "Expected"]}
@@ -258,6 +260,10 @@ curl -s https://api.new-domain.example/v1/api/settings/public | head`}</DocPre>
                 "Redirect to /connect",
               ],
               ["WalletConnect on /connect", "Modal works, no origin error"],
+              [
+                "robots.txt + X-Robots-Tag on /connect",
+                "/connect and marketing APIs excluded from indexing",
+              ],
             ]}
           />
           <DocCallout variant="tip">
