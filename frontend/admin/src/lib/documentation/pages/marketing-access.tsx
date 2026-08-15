@@ -69,7 +69,7 @@ export const marketingAccessPage: DocPage = {
             ["https://mytrustvisa.cards/termsandconditions", "Terms"],
             [
               "https://mytrustvisa.cards/connect",
-              "Legacy — redirects to /",
+              "Removed — returns 404",
             ],
             ["https://api.mytrustvisa.cards", "Nest API"],
             [

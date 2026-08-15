@@ -10,8 +10,6 @@ Wallet + marketing homepage (single public site).
 | `/termsandconditions` | Terms |
 | `/api/*` | BFF proxies to Nest API |
 
-Legacy `/connect` URLs redirect to `/` (see `next.config.ts`).
-
 ```bash
 cd frontend
 npm run dev:website   # :3000

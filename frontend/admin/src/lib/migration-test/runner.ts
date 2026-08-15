@@ -303,11 +303,19 @@ async function testB2(ctx: RunnerContext): Promise<MigrationStepResult> {
       ctx,
       migrationUrl(domains.newOrigin, "/connect"),
     );
-    if (urlPath(finalUrl) === "/") {
+    if (status === 404) {
       return pass(
         "b2",
         "B2",
-        "/connect redirects to / (legacy path)",
+        "/connect returns 404 (removed)",
+        hopSummary(hops),
+      );
+    }
+    if (urlPath(finalUrl) === "/" && hops.length > 0) {
+      return fail(
+        "b2",
+        "B2",
+        "/connect still redirects to / — legacy route should be removed",
         hopSummary(hops),
       );
     }
@@ -315,14 +323,14 @@ async function testB2(ctx: RunnerContext): Promise<MigrationStepResult> {
       return fail(
         "b2",
         "B2",
-        "/connect still serves product without redirect to /",
+        "/connect still serves content — route should be removed",
         hopSummary(hops),
       );
     }
     return pass(
       "b2",
       "B2",
-      "/connect does not serve product directly",
+      "/connect does not serve product",
       `Final: ${status} ${finalUrl}`,
     );
   } catch (error) {
@@ -466,11 +474,19 @@ async function testB6(ctx: RunnerContext): Promise<MigrationStepResult> {
 async function testB7(ctx: RunnerContext): Promise<MigrationStepResult> {
   const { domains } = ctx;
   try {
-    const { finalUrl, hops } = await followRedirects(
+    const { finalUrl, status, hops } = await followRedirects(
       ctx,
       migrationUrl(domains.newOrigin, "/connect", "utm_source=instagram"),
     );
-    if (urlPath(finalUrl) === "/connect") {
+    if (status === 404) {
+      return pass(
+        "b7",
+        "B7",
+        "/connect with UTMs returns 404 (removed)",
+        hopSummary(hops),
+      );
+    }
+    if (urlPath(finalUrl) === "/connect" && status >= 200 && status < 300) {
       return fail(
         "b7",
         "B7",
@@ -478,17 +494,25 @@ async function testB7(ctx: RunnerContext): Promise<MigrationStepResult> {
         hopSummary(hops),
       );
     }
+    if (urlPath(finalUrl) === "/" && hops.length > 0) {
+      return fail(
+        "b7",
+        "B7",
+        "/connect with UTMs still redirects to /",
+        hopSummary(hops),
+      );
+    }
     return pass(
       "b7",
       "B7",
-      "/connect with UTMs redirects away from legacy path",
-      `Final: ${finalUrl}`,
+      "/connect with UTMs does not serve product",
+      `Final: ${status} ${finalUrl}`,
     );
   } catch (error) {
     return fail(
       "b7",
       "B7",
-      "UTM redirect test failed",
+      "UTM /connect test failed",
       error instanceof Error ? error.message : String(error),
     );
   }

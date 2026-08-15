@@ -24,7 +24,7 @@ Related guides:
 | `https://mytrustvisa.cards/frequentlyaskedquestions` | FAQ | Public |
 | `https://mytrustvisa.cards/privacypolicy` | Privacy policy | Public |
 | `https://mytrustvisa.cards/termsandconditions` | Terms | Public |
-| `https://mytrustvisa.cards/connect` | Legacy path | **301 redirect → `/`** |
+| `https://mytrustvisa.cards/connect` | Removed | **404** — use `/` in ads |
 | `https://api.mytrustvisa.cards` | Nest API | `tmc-backend` |
 | `https://www.mytrustvisa.cards` | Optional static marketing host | Hostinger static export |
 
@@ -64,7 +64,7 @@ Both HTTPS endpoints must return JSON — not `Could not resolve host` or `502 f
 | Visitor action | Result |
 |----------------|--------|
 | Opens `https://mytrustvisa.cards/` | Trust Card product (public) |
-| Opens `https://mytrustvisa.cards/connect` | Redirected to `/` |
+| Opens `https://mytrustvisa.cards/connect` | **404** — route removed |
 | Opens `https://mytrustvisa.cards/frequentlyaskedquestions` | FAQ (public) |
 | **Meta/Instagram ad click** → `/?fbclid=...` | Lands on product at `/` |
 | Opens site in incognito | Same — no gating |
@@ -87,7 +87,7 @@ Optional UTMs (reporting only):
 https://mytrustvisa.cards/?utm_source=instagram&utm_medium=paid&utm_campaign=YOUR_CAMPAIGN
 ```
 
-`/connect` is a legacy redirect — do not use it in ads.
+`/connect` was removed — use `/` in all ads.
 
 ### Meta Pixel
 
@@ -141,7 +141,7 @@ curl -s https://mytrustvisa.cards/api/settings/public | head
 
 # TLS + redirects
 curl -sI http://mytrustvisa.cards/ | head -5          # 308 → HTTPS
-curl -sI https://mytrustvisa.cards/connect | head -5  # 301/308 → /
+curl -sI https://mytrustvisa.cards/connect | head -5  # 404
 
 # Containers (on VPS)
 ssh root@<VPS_IP> 'docker ps'
@@ -150,7 +150,7 @@ ssh root@<VPS_IP> 'docker ps'
 **Browser (incognito):**
 
 1. `https://mytrustvisa.cards/` — product loads, WalletConnect works
-2. `https://mytrustvisa.cards/connect` — redirects to `/`
+2. `https://mytrustvisa.cards/connect` — **404**
 3. Legal pages load at `/frequentlyaskedquestions`, `/privacypolicy`
 
 ---
@@ -172,7 +172,6 @@ ssh root@<VPS_IP> 'docker ps'
 | File | Role |
 |------|------|
 | `frontend/website/src/app/page.tsx` | Product homepage |
-| `frontend/website/next.config.ts` | `/connect` → `/` redirects |
-| `frontend/website/src/components/MetaPixel.tsx` | Meta Pixel |
+| `frontend/website/src/components/MetaPixel.tsx` | Meta Pixel (production only) |
 | `deploy/caddy/Caddyfile` | Caddy TLS + reverse proxy |
 | `deploy/compose/docker-compose.micro-edge.yml` | Caddy service on VPS |

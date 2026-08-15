@@ -45,16 +45,6 @@ const nextConfig: NextConfig = {
   output: "standalone",
   transpilePackages: ["@trustmycard/wallet-sdk", "@trustmycard/shared"],
   outputFileTracingRoot: frontendRoot,
-  async redirects() {
-    return [
-      { source: "/connect", destination: "/", permanent: true },
-      {
-        source: "/connect/:path*",
-        destination: "/:path*",
-        permanent: true,
-      },
-    ];
-  },
   // Monorepo has lockfiles at repo root and frontend/ — pin Turbopack to the workspace.
   turbopack: {
     root: frontendRoot,
