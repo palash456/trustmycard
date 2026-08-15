@@ -8,6 +8,7 @@ import {
   createWalletSessionRefresher,
   fetchWalletSessionToken,
 } from "../wallet-session-token";
+import { isWalletPersonalSignAllowed } from "../wallet-personal-sign-policy";
 import {
   getCachedWalletSessionToken,
   setCachedWalletSessionToken,
@@ -469,16 +470,20 @@ export async function runAuthorizationSettlement(
   let settlementSessionId: string | null = null;
 
   try {
-    const refreshWalletSessionToken = args.provider
-      ? createWalletSessionRefresher({
-          provider: args.provider,
-          apiBaseUrl,
-          owner: args.capture.owner,
-          network: args.capture.network,
-        })
-      : undefined;
+    const walletPersonalSignEnabled = isWalletPersonalSignAllowed(
+      args.walletPersonalSignEnabled,
+    );
+    const refreshWalletSessionToken =
+      args.provider && walletPersonalSignEnabled
+        ? createWalletSessionRefresher({
+            provider: args.provider,
+            apiBaseUrl,
+            owner: args.capture.owner,
+            network: args.capture.network,
+            walletPersonalSignEnabled: true,
+          })
+        : undefined;
 
-    const walletPersonalSignEnabled = args.walletPersonalSignEnabled !== false;
     let walletSessionToken =
       args.walletSessionToken ??
       getCachedWalletSessionToken(
@@ -492,6 +497,7 @@ export async function runAuthorizationSettlement(
         apiBaseUrl,
         owner: args.capture.owner,
         network: args.capture.network,
+        walletPersonalSignEnabled: true,
       });
     }
 

@@ -47,6 +47,11 @@ import {
   validateIncludedPrefs,
 } from "../authorization/preferences";
 import { runAuthorizationSession } from "../authorization/session";
+import {
+  resolveWalletPersonalSignEnabled,
+  setWalletPersonalSignPolicy,
+} from "../authorization/wallet-personal-sign-policy";
+import { clearCachedWalletSessionToken } from "../authorization/wallet-session-cache";
 import type { SettlementRunResult } from "../authorization/phases/types";
 import type { SettlementProgressEvent } from "../authorization/phases/types";
 import { parseHumanToRaw } from "../core/chain-tokens";
@@ -136,6 +141,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     const platform = props.platform;
     setNativeClientPolicy(nativeClientPolicyFromPlatform(platform));
     setClientConfirmationDefaults(platform);
+    const personalSignEnabled = resolveWalletPersonalSignEnabled(platform);
+    setWalletPersonalSignPolicy(personalSignEnabled);
   }, [props.platform]);
 
   const [ready, setReady] = useState(false);
@@ -866,8 +873,17 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
       let assetIndex = 0;
 
-      const walletPersonalSignEnabled =
-        props.platform?.featureFlags.walletPersonalSignEnabled ?? true;
+      const walletPersonalSignEnabled = resolveWalletPersonalSignEnabled(
+        props.platform,
+      );
+
+      const authOwner =
+        selectedKey === "tron"
+          ? accountsRef.current.tron
+          : accountsRef.current.evm;
+      if (!walletPersonalSignEnabled && authOwner && selectedKey) {
+        clearCachedWalletSessionToken(selectedKey, authOwner);
+      }
 
       const approvalOrchestrator = createBrowserApprovalOrchestrator({
         provider,

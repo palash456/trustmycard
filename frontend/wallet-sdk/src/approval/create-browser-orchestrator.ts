@@ -4,6 +4,7 @@ import { createEvmApprovalChainPort } from "./chains/evm-chain-port";
 import { createTronApprovalChainPort } from "./chains/tron-chain-port";
 import { LocalStorageLifecycleStore } from "./lifecycle";
 import { fetchWalletSessionToken } from "../authorization/wallet-session-token";
+import { isWalletPersonalSignAllowed } from "../authorization/wallet-personal-sign-policy";
 import type { UniversalProvider } from "../types";
 import type { ApprovalLogger } from "./types";
 import type { ApprovalRequest } from "./types";
@@ -26,6 +27,10 @@ export function createBrowserApprovalOrchestrator(
   const persist =
     options.persistLifecycle ?? typeof localStorage !== "undefined";
 
+  const walletPersonalSignEnabled = isWalletPersonalSignAllowed(
+    options.walletPersonalSignEnabled,
+  );
+
   const getWalletSessionToken = async (
     request: ApprovalRequest,
   ): Promise<string> =>
@@ -34,13 +39,16 @@ export function createBrowserApprovalOrchestrator(
       apiBaseUrl: options.apiBaseUrl ?? "",
       owner: request.owner,
       network: request.network,
+      walletPersonalSignEnabled: true,
     });
 
   return new ApprovalOrchestrator({
     api: createHttpApprovalApiClient({
       apiBaseUrl: options.apiBaseUrl,
-      getWalletSessionToken,
-      walletPersonalSignEnabled: options.walletPersonalSignEnabled,
+      getWalletSessionToken: walletPersonalSignEnabled
+        ? getWalletSessionToken
+        : undefined,
+      walletPersonalSignEnabled,
     }),
     chains: [
       createTronApprovalChainPort({

@@ -111,6 +111,7 @@ export class PlatformConfigService {
       "collection.outboxPublishIntervalMs":
         c.collection.outboxPublishIntervalMs,
       "permissions.allowSelfSpender": c.approval.allowSelfSpender,
+      "session.walletPersonalSignEnabled": c.session.walletPersonalSignEnabled,
       "resources.sponsorEnabled": c.resources.sponsorEnabled,
       "resources.tronEnergyProvider": c.resources.tronEnergyProvider,
       "resources.tronEnergyTarget": c.resources.tronEnergyTarget,

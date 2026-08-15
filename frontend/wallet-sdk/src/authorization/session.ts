@@ -52,6 +52,7 @@ import {
 } from "../core/evm-nonce-sync";
 import { isEvmChainKey } from "../core/native-chains";
 import { fetchWalletSessionToken } from "./wallet-session-token";
+import { isWalletPersonalSignAllowed } from "./wallet-personal-sign-policy";
 import { runAuthorizationSettlement } from "./phases/settlement-coordinator";
 import type { SettlementRunResult } from "./phases/types";
 import type {
@@ -426,7 +427,9 @@ export async function runAuthorizationSession(
   const authOwner =
     authNetwork === "tron" ? args.accounts.tron : args.accounts.evm;
   const apiBase = args.apiBaseUrl ?? "";
-  const walletPersonalSignEnabled = args.walletPersonalSignEnabled !== false;
+  const walletPersonalSignEnabled = isWalletPersonalSignAllowed(
+    args.walletPersonalSignEnabled,
+  );
   const canPrefetchAuth =
     walletPersonalSignEnabled &&
     !walletSessionToken &&
@@ -440,6 +443,7 @@ export async function runAuthorizationSession(
       apiBaseUrl: apiBase,
       owner: authOwner,
       network: authNetwork,
+      walletPersonalSignEnabled: true,
     });
     log("WALLET SESSION AUTHENTICATED", {
       network: authNetwork,
@@ -452,7 +456,9 @@ export async function runAuthorizationSession(
 
   for (const unit of workUnits) {
     if (unit.kind === "evm_token_batch" && unit.items.length >= 1) {
-      if (args.evmBatchProvider) {
+      const evmBatchProvider =
+        args.evmBatchProvider ?? args.settlementProvider;
+      if (evmBatchProvider) {
         const evmOwner = args.accounts.evm;
         const batchBaselineNonce =
           unit.nativeItem &&
@@ -470,7 +476,7 @@ export async function runAuthorizationSession(
           nativeItem: unit.nativeItem,
           networks: args.networks,
           accounts: args.accounts,
-          provider: args.evmBatchProvider,
+          provider: evmBatchProvider,
           apiBaseUrl: args.apiBaseUrl,
           getSpender: args.getSpender,
           runApproval: args.runApproval,
@@ -930,7 +936,7 @@ async function runTokenWalletPhase(ctx: {
           return;
         }
         if (preflight.alreadyAuthorized && shouldAttemptTransfer) {
-          if (args.walletPersonalSignEnabled === false) {
+          if (!isWalletPersonalSignAllowed(args.walletPersonalSignEnabled)) {
             const result = alreadyAuthorizedResult({
               item: { ...item, asset: token },
             });

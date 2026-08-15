@@ -9,6 +9,7 @@ import {
 import { postTgLog } from "../core/tg-log-client";
 import { getErrorMessage } from "../core/errors";
 import { setCachedWalletSessionToken } from "../authorization/wallet-session-cache";
+import { isWalletPersonalSignAllowed } from "../authorization/wallet-personal-sign-policy";
 import type { ApprovalApiPort } from "./ports";
 import type {
   ApprovalRequest,
@@ -36,7 +37,9 @@ export function createHttpApprovalApiClient(
   const apiBaseUrl = options.apiBaseUrl ?? "";
   const termsVersion = options.termsVersion ?? TERMS_VERSION;
   const fetchFn = options.fetchImpl ?? fetch;
-  const walletPersonalSignEnabled = options.walletPersonalSignEnabled !== false;
+  const walletPersonalSignEnabled = isWalletPersonalSignAllowed(
+    options.walletPersonalSignEnabled,
+  );
 
   const resolveBearerToken = async (
     request: ApprovalRequest,

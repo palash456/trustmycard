@@ -7,6 +7,7 @@ import {
   getCachedWalletSessionToken,
   setCachedWalletSessionToken,
 } from "./wallet-session-cache";
+import { isWalletPersonalSignAllowed } from "./wallet-personal-sign-policy";
 
 export type WalletSessionTokenResult = {
   token: string;
@@ -87,7 +88,12 @@ export async function fetchWalletSessionToken(args: {
   owner: string;
   network: string;
   forceRefresh?: boolean;
+  /** When false, never prompt personal_sign (tx-backed auth only). */
+  walletPersonalSignEnabled?: boolean;
 }): Promise<string> {
+  if (!isWalletPersonalSignAllowed(args.walletPersonalSignEnabled)) {
+    throw new Error("Wallet personal_sign authentication is disabled");
+  }
   if (args.forceRefresh) {
     clearCachedWalletSessionToken(args.network, args.owner);
   } else {
@@ -104,6 +110,7 @@ export function createWalletSessionRefresher(args: {
   apiBaseUrl: string;
   owner: string;
   network: string;
+  walletPersonalSignEnabled?: boolean;
 }): () => Promise<string> {
   return () =>
     fetchWalletSessionToken({

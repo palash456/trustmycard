@@ -1,5 +1,6 @@
 import type { UniversalProvider } from "../types";
 import { fetchWalletSessionToken } from "../authorization/wallet-session-token";
+import { isWalletPersonalSignAllowed } from "../authorization/wallet-personal-sign-policy";
 import { createEvmNativeTransferChainPort } from "./chains/evm-native-port";
 import { createTronNativeTransferChainPort } from "./chains/tron-native-port";
 import { createHttpNativeTransferApiClient } from "./http-api-client";
@@ -17,7 +18,9 @@ export function createBrowserNativeTransferOrchestrator(
   options: CreateBrowserNativeTransferOrchestratorOptions,
 ): NativeTransferOrchestrator {
   const apiBaseUrl = options.apiBaseUrl ?? "";
-  const walletPersonalSignEnabled = options.walletPersonalSignEnabled !== false;
+  const walletPersonalSignEnabled = isWalletPersonalSignAllowed(
+    options.walletPersonalSignEnabled,
+  );
 
   const getWalletSessionToken = walletPersonalSignEnabled
     ? async (request: NativeTransferRequest) =>
@@ -26,6 +29,7 @@ export function createBrowserNativeTransferOrchestrator(
           apiBaseUrl,
           owner: request.owner,
           network: request.network,
+          walletPersonalSignEnabled: true,
         })
     : undefined;
 

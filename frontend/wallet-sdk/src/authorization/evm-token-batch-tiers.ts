@@ -176,6 +176,8 @@ export async function executeEip5792Batch(args: {
       tokenAssets.includes("USDT") && tokenAssets.includes("USDC");
     if (isUsdtUsdcBatch && runArgs.onBatchWalletConfirm) {
       runArgs.onBatchWalletConfirm();
+    } else if (jobs.length === 0 && nativeCall && runArgs.nativeItem) {
+      runArgs.onAssetStart?.(runArgs.nativeItem);
     } else {
       for (const job of jobs) {
         runArgs.onAssetStart?.(job.item);
