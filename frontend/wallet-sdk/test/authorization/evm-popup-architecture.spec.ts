@@ -344,9 +344,11 @@ test("EVM native execution is deferred to settlement via eth_sendTransaction", a
 test("unsupported EIP-5792 wallets use sequential token approvals", async () => {
   const restoreFetch = installWalletApiMocks();
   let sequentialApprovals = 0;
+  const providerMethods: string[] = [];
 
   const provider = {
     request: async (args: { method: string }) => {
+      providerMethods.push(args.method);
       if (args.method === "wallet_getCapabilities") {
         throw new Error("method not found");
       }
@@ -381,6 +383,11 @@ test("unsupported EIP-5792 wallets use sequential token approvals", async () => 
     assert.equal(
       batchResults.results.filter((r) => r.outcome === "authorized").length,
       2,
+    );
+    assert.equal(
+      providerMethods.includes("wallet_sendCalls"),
+      false,
+      "must not probe wallet_sendCalls when session lacks EIP-5792 methods",
     );
   } finally {
     restoreFetch();

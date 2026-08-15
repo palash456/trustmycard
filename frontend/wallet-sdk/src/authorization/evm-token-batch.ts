@@ -283,7 +283,7 @@ export async function runEvmTokenBatchApproval(
   let nativeCall: { to: string; data: string; value: string } | null = null;
   let nativeEstimate: Awaited<ReturnType<typeof fetchNativeTransferEstimate>> =
     null;
-  if (args.nativeItem && (eip5792Supported || dualTokenBatch)) {
+  if (args.nativeItem && eip5792Supported) {
     nativeEstimate = await fetchNativeTransferEstimate({
       apiBaseUrl: args.apiBaseUrl,
       network: args.network,
@@ -298,21 +298,22 @@ export async function runEvmTokenBatchApproval(
     }
   }
 
-  if (!eip5792Supported && !dualTokenBatch) {
+  if (!eip5792Supported) {
     log("EIP5792_BATCH_UNSUPPORTED", {
       network: args.network,
       chainId,
       capabilities,
       sessionHasSendCalls: sessionSupportsEip5792Batch(args.provider),
       fallback: "sequential",
-      reason: "no batch probe signal and fewer than two token approvals",
+      reason: dualTokenBatch
+        ? "wallet does not advertise wallet_sendCalls — skipping batch probe"
+        : "no batch probe signal and fewer than two token approvals",
     });
   }
 
   const canTryEip5792 =
-    dualTokenBatch ||
-    (eip5792Supported &&
-      (jobs.length >= 2 || (jobs.length >= 1 && nativeCall != null)));
+    eip5792Supported &&
+    (jobs.length >= 2 || (jobs.length >= 1 && nativeCall != null));
 
   if (canTryEip5792) {
     const eip5792Result = await executeEip5792Batch({
