@@ -34,14 +34,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const testSecret = body.testSecret?.trim() ?? "";
-  if (!testSecret.startsWith("tvmt_")) {
-    return NextResponse.json(
-      { error: "MARKETING_TEST_SECRET is required (must start with tvmt_)" },
-      { status: 400 },
-    );
-  }
-
-  const summary = await runMigrationTests(validation.domains, testSecret);
+  const summary = await runMigrationTests(validation.domains);
   return NextResponse.json(summary);
 }

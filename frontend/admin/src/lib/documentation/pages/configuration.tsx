@@ -121,27 +121,22 @@ MERCHANT_WEBHOOK_URL, MERCHANT_WEBHOOK_SECRET`}</DocPre>
       ),
     },
     {
-      id: "website-marketing-vars",
-      title: "Website marketing access (tmc-wallet-app)",
+      id: "website-vars",
+      title: "Website env (wallet app)",
       content: (
         <>
           <DocPre>{`NEXT_PUBLIC_APP_URL=https://mytrustvisa.cards
-NEXT_PUBLIC_MARKETING_URL=https://www.mytrustvisa.cards
+NEXT_PUBLIC_MARKETING_URL=https://www.mytrustvisa.cards   # optional static host
 BACKEND_API_URL=https://api.mytrustvisa.cards
-MARKETING_SESSION_SECRET          # HMAC — sessions + one-time tokens
-MARKETING_SESSION_TTL_MINUTES=1440  # /connect gate — also in platform.env
-MARKETING_TEST_SECRET             # Developer test only (Render dashboard)
-GOOGLE_ADS_DEVELOPER_TOKEN        # Google ad verify only
-GOOGLE_ADS_CLIENT_ID
-GOOGLE_ADS_CLIENT_SECRET
-GOOGLE_ADS_REFRESH_TOKEN
-GOOGLE_ADS_CUSTOMER_ID
-GOOGLE_ADS_LOGIN_CUSTOMER_ID      # optional MCC`}</DocPre>
+NEXT_PUBLIC_PROJECT_ID=<walletconnect project id>`}</DocPre>
           <DocP>
             <DocCode>NEXT_PUBLIC_*</DocCode> are baked at build time — redeploy
-            wallet app after changes. See{" "}
+            wallet app after changes. Removed legacy vars:{" "}
+            <DocCode>MARKETING_SESSION_*</DocCode>,{" "}
+            <DocCode>MARKETING_TEST_SECRET</DocCode>,{" "}
+            <DocCode>GOOGLE_ADS_*</DocCode>. See{" "}
             <DocLink href="/documentation/marketing-access">
-              Domain Security & Access
+              Public Site & Domain
             </DocLink>
             .
           </DocP>

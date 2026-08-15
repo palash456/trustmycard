@@ -32,7 +32,9 @@ Replace these with your real hostnames when executing the migration.
 | `https://www.old-domain.example` (optional) | `https://www.new-domain.example` |
 | `https://admin.old-domain.example` (if used) | `https://admin.new-domain.example` |
 
-**Unchanged:** decoy at `/`, product at `/connect`, marketing session / ad flow.
+**Unchanged:** product at `/`, legal pages at root paths, legacy `/connect` redirects to `/`.
+
+> **Historical:** The decoy homepage and marketing-session gate were removed in 2026. Archive: [trustmycard-marketing-gate-archive](https://github.com/palash456/trustmycard-marketing-gate-archive).
 
 ---
 
@@ -49,7 +51,7 @@ Replace these with your real hostnames when executing the migration.
 
 ## Step 1 — Add custom domains on Render
 
-### `tmc-wallet-app` (wallet / decoy / connect)
+### `tmc-wallet-app` (wallet app)
 
 1. Render → **tmc-wallet-app** → **Settings** → **Custom Domains**
 2. **Add:**
@@ -95,9 +97,10 @@ Replace these with your real hostnames when executing the migration.
 | `NEXT_PUBLIC_APP_URL` | `https://new-domain.example` |
 | `NEXT_PUBLIC_MARKETING_URL` | `https://www.new-domain.example` |
 | `BACKEND_API_URL` | `https://api.new-domain.example` |
-| `MARKETING_SESSION_TTL_MINUTES` | `1440` (24h for ad users — mirror in `platform.env`) |
 
-**Keep unchanged:** `MARKETING_SESSION_SECRET`, `MARKETING_TEST_SECRET`, `NEXT_PUBLIC_PROJECT_ID`.
+**Keep unchanged:** `NEXT_PUBLIC_PROJECT_ID`.
+
+**Removed (legacy gate):** `MARKETING_SESSION_*`, `MARKETING_TEST_SECRET`, `GOOGLE_ADS_*`
 
 Click **Save, rebuild, and deploy** (`NEXT_PUBLIC_*` are baked at build time).
 

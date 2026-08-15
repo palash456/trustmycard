@@ -250,52 +250,21 @@ async function testA2(ctx: RunnerContext): Promise<MigrationStepResult> {
 async function testA3(ctx: RunnerContext): Promise<MigrationStepResult> {
   const { domains } = ctx;
   try {
-    const { finalUrl, hops } = await followRedirects(
-      ctx,
-      migrationUrl(domains.oldOrigin, "/", "utm_source=instagram"),
-    );
-    if (urlPath(finalUrl) === "/connect") {
-      return fail(
-        "a3",
-        "A3",
-        "UTM params alone unlocked /connect on old domain",
-        hopSummary(hops),
-      );
-    }
-    return pass(
-      "a3",
-      "A3",
-      "UTM-only traffic does not reach /connect on old domain",
-      `Final: ${finalUrl}`,
-    );
-  } catch (error) {
-    return pass(
-      "a3",
-      "A3",
-      "Old domain UTM test skipped — domain unreachable",
-      error instanceof Error ? error.message : String(error),
-    );
-  }
-}
-
-async function testA4(ctx: RunnerContext): Promise<MigrationStepResult> {
-  const { domains } = ctx;
-  try {
     const response = await timedFetch(
       ctx,
       `${domains.oldApi}/v1/api/settings/public`,
       { redirect: "follow" },
     );
     return pass(
-      "a4",
-      "A4",
+      "a3",
+      "A3",
       `Old API responded (${response.status}) — ensure ads/API use api.${domains.newDomain}`,
       `Status ${response.status}`,
     );
   } catch (error) {
     return pass(
-      "a4",
-      "A4",
+      "a3",
+      "A3",
       "Old API unreachable — OK if fully retired",
       error instanceof Error ? error.message : String(error),
     );
@@ -321,7 +290,7 @@ async function testB1(ctx: RunnerContext): Promise<MigrationStepResult> {
     return fail(
       "b1",
       "B1",
-      `Could not reach ${domains.newDomain} — check DNS/SSL on Render`,
+      `Could not reach ${domains.newDomain} — check DNS/TLS`,
       error instanceof Error ? error.message : String(error),
     );
   }
@@ -334,18 +303,26 @@ async function testB2(ctx: RunnerContext): Promise<MigrationStepResult> {
       ctx,
       migrationUrl(domains.newOrigin, "/connect"),
     );
+    if (urlPath(finalUrl) === "/") {
+      return pass(
+        "b2",
+        "B2",
+        "/connect redirects to / (legacy path)",
+        hopSummary(hops),
+      );
+    }
     if (urlPath(finalUrl) === "/connect" && status >= 200 && status < 300) {
       return fail(
         "b2",
         "B2",
-        "/connect is public without marketing session",
+        "/connect still serves product without redirect to /",
         hopSummary(hops),
       );
     }
     return pass(
       "b2",
       "B2",
-      "/connect blocked without session",
+      "/connect does not serve product directly",
       `Final: ${status} ${finalUrl}`,
     );
   } catch (error) {
@@ -358,94 +335,60 @@ async function testB2(ctx: RunnerContext): Promise<MigrationStepResult> {
   }
 }
 
-async function testB3(
-  ctx: RunnerContext,
-  testSecret: string,
-): Promise<{ result: MigrationStepResult; jar: CookieJar }> {
+async function testB3(ctx: RunnerContext): Promise<MigrationStepResult> {
   const { domains } = ctx;
-  const jar = new CookieJar();
-  if (!testSecret.trim().startsWith("tvmt_")) {
-    return {
-      result: fail(
-        "b3",
-        "B3",
-        "Paste a valid MARKETING_TEST_SECRET (starts with tvmt_)",
-      ),
-      jar,
-    };
-  }
   try {
-    const url = migrationUrl(
-      domains.newOrigin,
-      "/api/marketing-test",
-      `token=${encodeURIComponent(testSecret.trim())}`,
+    const response = await timedFetch(
+      ctx,
+      migrationUrl(domains.newOrigin, "/frequentlyaskedquestions"),
+      { redirect: "follow" },
     );
-    const { finalUrl, hops } = await followRedirects(ctx, url, { jar });
-    if (urlPath(finalUrl) !== "/connect") {
-      return {
-        result: fail(
-          "b3",
-          "B3",
-          "Marketing test URL did not land on /connect",
-          hopSummary(hops),
-        ),
-        jar,
-      };
-    }
-    if (!jar.has("tv_ms")) {
-      return {
-        result: fail(
-          "b3",
-          "B3",
-          "Redirected to /connect but marketing session cookie (tv_ms) missing",
-          hopSummary(hops),
-        ),
-        jar,
-      };
-    }
-    return {
-      result: pass(
+    if (response.status >= 200 && response.status < 400) {
+      return pass(
         "b3",
         "B3",
-        "Marketing test URL grants session and /connect access",
-        hopSummary(hops),
-      ),
-      jar,
-    };
+        "FAQ legal page is public",
+        `HTTP ${response.status}`,
+      );
+    }
+    return fail("b3", "B3", `FAQ returned HTTP ${response.status}`);
   } catch (error) {
-    return {
-      result: fail(
-        "b3",
-        "B3",
-        "Marketing test request failed",
-        error instanceof Error ? error.message : String(error),
-      ),
-      jar,
-    };
+    return fail(
+      "b3",
+      "B3",
+      "FAQ request failed",
+      error instanceof Error ? error.message : String(error),
+    );
   }
 }
 
 async function testB4(ctx: RunnerContext): Promise<MigrationStepResult> {
   const { domains } = ctx;
-  const jar = new CookieJar();
   try {
     const { finalUrl, hops } = await followRedirects(
       ctx,
       migrationUrl(domains.newOrigin, "/", `fbclid=${FBCLID}`),
-      { jar },
     );
-    if (urlPath(finalUrl) === "/connect") {
+    if (urlPath(finalUrl) === "/") {
       return pass(
         "b4",
         "B4",
-        "Meta fbclid flow reaches /connect on new domain",
+        "fbclid homepage stays on / (public product)",
+        hopSummary(hops),
+      );
+    }
+    if (urlPath(finalUrl) === "/connect") {
+      return fail(
+        "b4",
+        "B4",
+        "fbclid flow still redirects to legacy /connect",
         hopSummary(hops),
       );
     }
     return fail(
       "b4",
       "B4",
-      "fbclid homepage flow did not reach /connect",
+      "Unexpected final path for fbclid homepage",
       hopSummary(hops),
     );
   } catch (error) {
@@ -458,76 +401,63 @@ async function testB4(ctx: RunnerContext): Promise<MigrationStepResult> {
   }
 }
 
-async function testB5(
-  ctx: RunnerContext,
-  jar: CookieJar,
-): Promise<MigrationStepResult> {
+async function testB5(ctx: RunnerContext): Promise<MigrationStepResult> {
   const { domains } = ctx;
-  if (!jar.has("tv_ms")) {
-    return skip("b5", "B5", "Skipped — no session from B3");
-  }
   try {
-    const { finalUrl, hops } = await followRedirects(
+    const response = await timedFetch(
       ctx,
-      migrationUrl(domains.newOrigin, "/"),
-      { jar },
+      migrationUrl(domains.newOrigin, "/privacypolicy"),
+      { redirect: "follow" },
     );
-    if (urlPath(finalUrl) === "/connect") {
+    if (response.status >= 200 && response.status < 400) {
       return pass(
         "b5",
         "B5",
-        "Active session redirects / back to /connect",
-        hopSummary(hops),
+        "Privacy policy is public",
+        `HTTP ${response.status}`,
       );
     }
-    return fail(
-      "b5",
-      "B5",
-      "Session did not redirect / → /connect",
-      hopSummary(hops),
-    );
+    return fail("b5", "B5", `Privacy policy returned HTTP ${response.status}`);
   } catch (error) {
     return fail(
       "b5",
       "B5",
-      "Session redirect test failed",
+      "Privacy policy request failed",
       error instanceof Error ? error.message : String(error),
     );
   }
 }
 
-async function testB6(
-  ctx: RunnerContext,
-  jar: CookieJar,
-): Promise<MigrationStepResult> {
+async function testB6(ctx: RunnerContext): Promise<MigrationStepResult> {
   const { domains } = ctx;
-  if (!jar.has("tv_ms")) {
-    return skip("b6", "B6", "Skipped — no session from B3");
-  }
   try {
-    const response = await timedFetch(
-      ctx,
-      migrationUrl(domains.newOrigin, "/connect/privacypolicy"),
-      { jar, redirect: "follow" },
-    );
-    if (response.status >= 200 && response.status < 300) {
+    const response = await timedFetch(ctx, `http://${domains.newDomain}/`, {
+      redirect: "manual",
+    });
+    const location = response.headers.get("location") ?? "";
+    if (
+      response.status >= 300 &&
+      response.status < 400 &&
+      location.startsWith("https://")
+    ) {
       return pass(
         "b6",
         "B6",
-        "Gated legal page loads with active session",
-        `HTTP ${response.status}`,
+        "HTTP redirects to HTTPS",
+        `HTTP ${response.status} → ${location}`,
       );
     }
     return fail(
       "b6",
       "B6",
-      `Privacy policy returned HTTP ${response.status}`,
+      "HTTP does not redirect to HTTPS",
+      `HTTP ${response.status}; Location: ${location || "(missing)"}`,
     );
   } catch (error) {
     return fail(
       "b6",
       "B6",
-      "Privacy policy request failed",
+      "HTTP redirect check failed",
       error instanceof Error ? error.message : String(error),
     );
   }
@@ -544,21 +474,21 @@ async function testB7(ctx: RunnerContext): Promise<MigrationStepResult> {
       return fail(
         "b7",
         "B7",
-        "Forged UTMs on /connect granted access",
+        "/connect with UTMs still serves product",
         hopSummary(hops),
       );
     }
     return pass(
       "b7",
       "B7",
-      "Forged UTMs on /connect are blocked",
+      "/connect with UTMs redirects away from legacy path",
       `Final: ${finalUrl}`,
     );
   } catch (error) {
     return fail(
       "b7",
       "B7",
-      "UTM block test failed",
+      "UTM redirect test failed",
       error instanceof Error ? error.message : String(error),
     );
   }
@@ -652,7 +582,7 @@ export type MigrationTestRunSummary = {
 
 export async function runMigrationTests(
   domains: MigrationDomains,
-  testSecret: string,
+  _testSecret = "",
 ): Promise<MigrationTestRunSummary> {
   const ctx = createRunnerContext(domains);
   const results: MigrationStepResult[] = [];
@@ -660,24 +590,20 @@ export async function runMigrationTests(
   results.push(await testA1(ctx));
   results.push(await testA2(ctx));
   results.push(await testA3(ctx));
-  results.push(await testA4(ctx));
 
   results.push(await testB1(ctx));
   results.push(await testB2(ctx));
-
-  const b3 = await testB3(ctx, testSecret);
-  results.push(b3.result);
-
+  results.push(await testB3(ctx));
   results.push(await testB4(ctx));
-  results.push(await testB5(ctx, b3.jar));
-  results.push(await testB6(ctx, b3.jar));
+  results.push(await testB5(ctx));
+  results.push(await testB6(ctx));
   results.push(await testB7(ctx));
 
   results.push(
     skip(
       "b8",
       "B8",
-      `WalletConnect UI requires a real browser — confirm Connect Wallet works on ${domains.newOrigin}/connect after B3 passes`,
+      `WalletConnect UI requires a real browser — confirm Connect Wallet works on ${domains.newOrigin}/`,
     ),
   );
 
@@ -688,7 +614,7 @@ export async function runMigrationTests(
     skip(
       "b11",
       "B11",
-      `Render dashboard SSL — confirm ${domains.newDomain} and api.${domains.newDomain} show Verified in Custom Domains`,
+      `TLS dashboard check — confirm ${domains.newDomain} and api.${domains.newDomain} show active certificates`,
     ),
   );
 

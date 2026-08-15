@@ -260,7 +260,7 @@ export function buildSpenderChangeTest(
       {
         id: "g4",
         step: "G4",
-        action: "Connect flow: new approval on /connect",
+        action: "Connect flow: new approval on /",
         expected: `Approval.spenderAddress = ${input.newSpenderEvm} or ${input.newSpenderTron}`,
         kind: "manual",
       },

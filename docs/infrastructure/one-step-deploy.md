@@ -20,7 +20,7 @@ node deploy/test/micro-topology.test.mjs
 ./deploy/scripts/validate-micro-local.sh
 ```
 
-See [deploy/README.md](../../deploy/README.md#wallet-env-websiteenv).
+See [deploy/README.md](../../deploy/README.md#wallet-env-websiteenv). On VPS (`docker-vps`), Caddy auto-provisions Let's Encrypt TLS on ports 80/443.
 
 ## Safety
 

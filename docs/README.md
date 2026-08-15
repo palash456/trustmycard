@@ -10,15 +10,16 @@ Product monorepo documentation. Start here for architecture, deployment, and ope
 trustmycard/
 ├── backend/              # NestJS API + workers (own npm package)
 ├── frontend/
-│   ├── marketing/        # Static marketing site → Hostinger
-│   ├── website/          # Wallet app + BFF → Render (app.*)
-│   ├── admin/            # Ops console → Render (admin.*)
+│   ├── marketing/        # Static marketing site → Hostinger (optional)
+│   ├── website/          # Wallet app + BFF → VPS or Render
+│   ├── admin/            # Ops console (local in production micro/budget)
 │   ├── wallet-sdk/       # WalletConnect + approvals
 │   └── shared/           # Shared types, constants, observability
+├── deploy/               # Provider-independent Docker deploy (micro VPS + Caddy)
 ├── config/               # load-env.mjs + legacy platform.env
 ├── env/profiles/         # TMC_ENV profiles (development, production-preview, production)
 ├── docs/                 # This folder
-└── render.yaml           # Render blueprint (API, workers, wallet, admin, Postgres, Redis)
+└── render.yaml           # Render blueprint (alternative to VPS)
 ```
 
 ## Quick start (local)
@@ -28,7 +29,7 @@ trustmycard/
 ```bash
 cd frontend
 npm install
-npm run dev:website     # http://localhost:3000 — Travixa decoy at / · Trust Card at /connect
+npm run dev:website     # http://localhost:3000 — Trust Card product at /
 npm run dev:marketing   # http://localhost:3001 — static marketing preview
 npm run dev:admin       # http://localhost:3002
 npm run dev:sdk         # wallet-sdk watch/build
@@ -57,9 +58,9 @@ npm run start:dev      # http://localhost:4000
 
 | Location              | Name                      | Role                                                                  |
 | --------------------- | ------------------------- | --------------------------------------------------------------------- |
-| `frontend/marketing`  | `@trustmycard/marketing`  | Public marketing site (static export → Hostinger)                     |
-| `frontend/website`    | `@trustmycard/website`    | Wallet app + BFF on Render; decoy cover at `/`, product at `/connect` |
-| `frontend/admin`      | `@trustmycard/admin`      | Admin dashboard                                                       |
+| `frontend/marketing`  | `@trustmycard/marketing`  | Optional static marketing site (Hostinger)                            |
+| `frontend/website`    | `@trustmycard/website`    | Wallet app + BFF; product at `/` (legacy `/connect` redirects)        |
+| `frontend/admin`      | `@trustmycard/admin`      | Admin dashboard (local in production micro/budget)                    |
 | `frontend/wallet-sdk` | `@trustmycard/wallet-sdk` | Wallet connect + approvals                                            |
 | `frontend/shared`     | `@trustmycard/shared`     | FE types, constants, schemas, observability                           |
 | `backend`             | `@trustmycard/backend`    | NestJS API (`SERVICE_ROLE=api`) and workers (`SERVICE_ROLE=worker`)   |
@@ -68,14 +69,16 @@ npm run start:dev      # http://localhost:4000
 
 | Surface    | Host             | URL                                                   |
 | ---------- | ---------------- | ----------------------------------------------------- |
-| Marketing  | Hostinger static | `trustmycard.com`                                     |
-| Wallet app | Render           | `app.trustmycard.com` (`/` decoy, `/connect` product) |
-| API        | Render           | `api.trustmycard.com`                                 |
-| Workers    | Render           | (no public HTTP)                                      |
-| Admin      | Render           | `admin.trustmycard.com`                               |
+| Wallet app | VPS + Caddy TLS  | `mytrustvisa.cards` (product at `/`)                  |
+| API        | VPS + Caddy TLS  | `api.mytrustvisa.cards`                               |
+| Data       | Neon + Upstash   | External Postgres + Redis                             |
+| Marketing  | Hostinger static | `www.mytrustvisa.cards` (optional)                    |
+| Admin      | Local machine    | `localhost:3002` against remote API                    |
 
-Deploy guide (budget): [infrastructure/render-budget-production.md](./infrastructure/render-budget-production.md)  
-Deploy guide (full): [infrastructure/render-hostinger-production.md](./infrastructure/render-hostinger-production.md)
+Deploy guides:
+- **Micro VPS (current):** [deploy/README.md](../deploy/README.md)
+- **Render budget:** [infrastructure/render-budget-production.md](./infrastructure/render-budget-production.md)
+- **Render full:** [infrastructure/render-hostinger-production.md](./infrastructure/render-hostinger-production.md)
 
 ## Documentation index
 
@@ -97,14 +100,15 @@ Deploy guide (full): [infrastructure/render-hostinger-production.md](./infrastru
 | Doc                                                                               | Description                |
 | --------------------------------------------------------------------------------- | -------------------------- |
 | [infrastructure/README.md](./infrastructure/README.md)                            | Index                      |
-| [render-budget-production.md](./infrastructure/render-budget-production.md)       | **Budget deploy ~$14/mo**  |
-| [render-hostinger-production.md](./infrastructure/render-hostinger-production.md) | Full deploy ~$60/mo        |
+| [deploy/README.md](../deploy/README.md)                                           | **Micro VPS + Caddy TLS**  |
+| [render-budget-production.md](./infrastructure/render-budget-production.md)       | Budget deploy ~$14/mo      |
+| [render-hostinger-production.md](./infrastructure/render-hostinger-production.md) | Full deploy ~$60/mo (legacy layout) |
 | [production-architecture.md](./infrastructure/production-architecture.md)         | Blast-radius zones         |
 | [environments.md](./infrastructure/environments.md)                               | `TMC_ENV` profiles         |
 | [secrets.md](./infrastructure/secrets.md)                                         | Env var matrix per service |
-| [mytrustvisa-domain-security.md](./infrastructure/mytrustvisa-domain-security.md) | **Current production** domain, access & security |
+| [mytrustvisa-domain-security.md](./infrastructure/mytrustvisa-domain-security.md) | **Current production** domain & security |
 | [domain-migration-mytrustvisa.md](./infrastructure/domain-migration-mytrustvisa.md) | mytrustvisa.cards migration quick ref |
-| [marketing-access.md](./infrastructure/marketing-access.md) | `/connect` gating implementation |
+| [marketing-access.md](./infrastructure/marketing-access.md) | **Deprecated** — old `/connect` gate (archive linked) |
 | [meta-ads-setup-guide.md](./marketing/meta-ads-setup-guide.md) | Meta / Instagram ads (media buyers) |
 | [cloudflare-edge.md](./infrastructure/cloudflare-edge.md)                         | WAF and admin SSO          |
 | [disaster-recovery.md](./infrastructure/disaster-recovery.md)                     | Backups and rebuild        |
@@ -131,6 +135,8 @@ Deploy guide (full): [infrastructure/render-hostinger-production.md](./infrastru
 ## Key conventions
 
 - WalletConnect + approvals live in `frontend/wallet-sdk`. Website imports `<ConnectFlow />` only.
+- Product lives at `/` on the wallet app. Legacy `/connect` redirects to `/`.
 - Prisma schema: `backend/prisma/schema.prisma`
 - Config profiles: `env/profiles/$TMC_ENV/` — see [environments.md](./infrastructure/environments.md)
+- Marketing session gate removed — archive: https://github.com/palash456/trustmycard-marketing-gate-archive
 - Local all-in-one (optional): `ecosystem.config.cjs` + `SERVICE_ROLE=all`

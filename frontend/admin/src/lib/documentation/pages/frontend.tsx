@@ -24,7 +24,7 @@ export const frontendPage: DocPage = {
             [
               "frontend/website",
               "3000",
-              "Wallet app + BFF (/connect product route)",
+              "Wallet app + BFF (product at /)",
             ],
             ["frontend/marketing", "3001", "Static marketing site preview"],
             ["frontend/admin", "3002", "Operations console (this app)"],
@@ -60,47 +60,32 @@ export const frontendPage: DocPage = {
       title: "Website app structure",
       content: (
         <DocP>
-          <DocCode>frontend/website</DocCode> hosts the decoy Travixa cover at{" "}
-          <DocCode>/</DocCode> and product connect flow at{" "}
-          <DocCode>/connect</DocCode>. API routes under{" "}
-          <DocCode>app/api/</DocCode> proxy to Nest backend using wallet-sdk
-          server utilities. Production host:{" "}
-          <DocCode>mytrustvisa.cards</DocCode> (Render).
+          <DocCode>frontend/website</DocCode> hosts the Trust Card product at{" "}
+          <DocCode>/</DocCode>. Legal pages at{" "}
+          <DocCode>/frequentlyaskedquestions</DocCode>,{" "}
+          <DocCode>/privacypolicy</DocCode>,{" "}
+          <DocCode>/termsandconditions</DocCode>. Legacy{" "}
+          <DocCode>/connect</DocCode> redirects to <DocCode>/</DocCode>. API
+          routes under <DocCode>app/api/</DocCode> proxy to Nest backend.
+          Production host: <DocCode>mytrustvisa.cards</DocCode> (VPS + Caddy).
         </DocP>
       ),
     },
     {
-      id: "marketing-middleware",
-      title: "Marketing access middleware",
+      id: "meta-pixel",
+      title: "Meta Pixel",
       content: (
         <>
           <DocP>
-            <DocCode>frontend/website/middleware.ts</DocCode> gates all{" "}
-            <DocCode>/connect/*</DocCode> routes behind a signed 24h session
-            cookie (<DocCode>tv_ms</DocCode>). Ad click IDs on{" "}
-            <DocCode>/</DocCode> trigger server verification via{" "}
-            <DocCode>/api/marketing/verify</DocCode> → one-time token →{" "}
-            <DocCode>/api/marketing/exchange</DocCode>. UTMs alone never grant
-            access.
+            <DocCode>frontend/website/src/components/MetaPixel.tsx</DocCode>{" "}
+            loads in the root layout on all public pages. Pixel ID:{" "}
+            <DocCode>2158981564683913</DocCode>.
           </DocP>
-          <DocPre>{`src/lib/marketing/
-├── session.ts                 # 24h tv_ms cookie
-├── authorization-token.ts     # 90s one-time exchange token
-├── homepage-attestation.ts    # Meta fbclid homepage gate (tv_mh)
-├── http.ts                    # withNoIndex (X-Robots-Tag helper)
-├── adapters/                  # google, meta, tiktok, linkedin
-└── ...
-
-src/app/robots.ts               # robots.txt disallow for /connect + marketing APIs
-src/app/connect/layout.tsx      # HTML robots noindex for /connect/*
-src/app/api/marketing/verify/   # Server verification
-src/app/api/marketing/exchange/ # Token → session
-src/app/api/marketing-test/     # Developer test bypass`}</DocPre>
           <DocP>
-            Meta Pixel (<DocCode>ConnectMetaPixel.tsx</DocCode>) loads on{" "}
-            <DocCode>/connect</DocCode> only. See{" "}
+            The marketing-session middleware and decoy homepage were removed in
+            2026. See{" "}
             <DocLink href="/documentation/marketing-access">
-              Domain Security & Access
+              Public Site & Domain
             </DocLink>
             .
           </DocP>

@@ -29,27 +29,22 @@ export const deploymentPage: DocPage = {
       content: (
         <>
           <DocP>
-            <strong>Budget deploy (current):</strong> mytrustvisa.cards on Render.
-            Legacy trustmycard.com / trustvisa.cards layouts documented below.
+            <strong>Current production (micro VPS):</strong> mytrustvisa.cards on
+            a 512 MB DigitalOcean droplet with Caddy TLS. Alternative budget
+            path uses Render + Neon + Upstash.
           </DocP>
           <DocTable
             headers={["Service", "Provider", "URL"]}
             rows={[
-              ["Wallet app", "Render Web Service", "mytrustvisa.cards"],
-              ["API", "Render Web Service", "api.mytrustvisa.cards"],
-              ["Workers", "Render (SERVICE_ROLE=all)", "No public HTTP"],
-              ["Admin", "Local only (budget)", "localhost:3002"],
-              [
-                "PostgreSQL",
-                "Neon free tier",
-                "Connection via DATABASE_URL",
-              ],
-              ["Redis", "Upstash free tier", "Connection via REDIS_URL"],
-              [
-                "DNS",
-                "Hostinger",
-                "Apex + api CNAME → Render (not Hostinger website)",
-              ],
+              ["Wallet app", "Docker (VPS)", "mytrustvisa.cards (Caddy → :3000)"],
+              ["API", "Docker (VPS)", "api.mytrustvisa.cards (Caddy → :4000)"],
+              ["TLS", "Caddy (Let's Encrypt)", "Ports 80/443 on VPS"],
+              ["Workers", "Combined in backend", "No public HTTP"],
+              ["Admin", "Local only", "localhost:3002"],
+              ["PostgreSQL", "Neon", "DATABASE_URL"],
+              ["Redis", "Upstash", "REDIS_URL"],
+              ["Marketing (optional)", "Hostinger static", "www.mytrustvisa.cards"],
+              ["DNS", "Hostinger", "A records → VPS IP"],
             ]}
           />
           <DocTable
@@ -104,30 +99,51 @@ export const deploymentPage: DocPage = {
       ),
     },
     {
+      id: "micro-vps",
+      title: "Micro VPS deploy (current production)",
+      content: (
+        <>
+          <DocFlow
+            steps={[
+              "512 MB DigitalOcean VPS with Docker + 1 GB swap.",
+              "Images built locally, streamed via docker save | ssh docker load.",
+              "Containers: backend + wallet + Caddy (TLS).",
+              "External Neon Postgres + Upstash Redis.",
+              "Admin runs locally against api.mytrustvisa.cards.",
+              "Deploy: ./deploy.sh production --provider=docker-vps",
+            ]}
+          />
+          <DocP>
+            Caddy config: <DocCode>deploy/caddy/Caddyfile</DocCode>. Compose
+            edge: <DocCode>deploy/compose/docker-compose.micro-edge.yml</DocCode>
+            . See <DocCode>deploy/README.md</DocCode>.
+          </DocP>
+        </>
+      ),
+    },
+    {
       id: "trustvisa-domain",
       title: "mytrustvisa.cards layout",
       content: (
         <>
           <DocP>
-            Apex domain on Render <DocCode>tmc-wallet-app</DocCode>: decoy
-            Travixa cover at <DocCode>/</DocCode>, gated product connect at{" "}
-            <DocCode>/connect</DocCode>. Marketing ad traffic (Meta{" "}
-            <DocCode>fbclid</DocCode>) lands on <DocCode>/</DocCode> and is
-            redirected to <DocCode>/connect</DocCode> after server verification.
-            Manual <DocCode>/connect</DocCode> visits are blocked.
+            Apex domain serves the Trust Card product at{" "}
+            <DocCode>/</DocCode>. Legal pages at{" "}
+            <DocCode>/frequentlyaskedquestions</DocCode>,{" "}
+            <DocCode>/privacypolicy</DocCode>,{" "}
+            <DocCode>/termsandconditions</DocCode>. Legacy{" "}
+            <DocCode>/connect</DocCode> redirects to <DocCode>/</DocCode>.
           </DocP>
           <DocP>
             See{" "}
             <DocLink href="/documentation/marketing-access">
-              Domain Security & Access
+              Public Site & Domain
             </DocLink>{" "}
-            for gating rules, Meta ads, and env vars. See{" "}
+            for URL map, Meta ads, and env vars. See{" "}
             <DocLink href="/documentation/domain-migration">
               Domain Migration
             </DocLink>{" "}
-            for the generic domain migration checklist. Repo:{" "}
-            <DocCode>docs/infrastructure/domain-migration.md</DocCode>
-            .
+            for the generic checklist.
           </DocP>
         </>
       ),

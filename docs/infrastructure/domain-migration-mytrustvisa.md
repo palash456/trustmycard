@@ -1,7 +1,8 @@
 # Domain migration — mytrustvisa.cards (current production)
 
 **Current production domain:** `mytrustvisa.cards`  
-**Previous domain:** `trustvisa.cards`
+**Previous domain:** `trustvisa.cards`  
+**Current host:** 512 MB DigitalOcean VPS (micro topology + Caddy TLS)
 
 For the generic migration checklist, see [domain-migration.md](./domain-migration.md).
 
@@ -9,36 +10,43 @@ For the **complete** access, security, env, and troubleshooting guide, see:
 
 **[mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md)**
 
+Deploy guide: [deploy/README.md](../../deploy/README.md)
+
 ---
 
 ## Quick reference
 
 | Role | Hostname |
 |------|----------|
-| Wallet app (decoy + `/connect`) | `mytrustvisa.cards` |
+| Wallet app (product at `/`) | `mytrustvisa.cards` |
 | API | `api.mytrustvisa.cards` |
-| Optional www | `www.mytrustvisa.cards` |
+| Optional static marketing | `www.mytrustvisa.cards` |
 
 | Old | New |
 |-----|-----|
 | `https://trustvisa.cards` | `https://mytrustvisa.cards` |
 | `https://api.trustvisa.cards` | `https://api.mytrustvisa.cards` |
 
-## Render env (after migration)
+## Env (after migration)
 
-**tmc-wallet-app:**
+**website.env (wallet app):**
 
 ```env
 NEXT_PUBLIC_APP_URL=https://mytrustvisa.cards
 BACKEND_API_URL=https://api.mytrustvisa.cards
-MARKETING_SESSION_TTL_MINUTES=1440
+NEXT_PUBLIC_PROJECT_ID=<walletconnect>
 ```
 
-**tmc-backend:**
+**backend-budget.env:**
 
 ```env
 APP_ORIGIN=https://mytrustvisa.cards
+ADMIN_ORIGIN=http://localhost:3002
+DATABASE_URL=<Neon>
+REDIS_URL=<Upstash>
 ```
+
+**Removed (legacy gate):** `MARKETING_SESSION_*`, `MARKETING_TEST_SECRET`, `GOOGLE_ADS_*`
 
 ## Admin verification
 
@@ -46,4 +54,4 @@ Use **Documentation → Domain Migration → Run migration test suite** in the a
 
 ## DNS reminder
 
-Both apex **and** `api` subdomain must have CNAME records pointing to Render. Missing `api` DNS is the most common post-migration failure (wallet app 502).
+Both apex **and** `api` subdomain must resolve to the VPS IP (A records). Caddy handles TLS. Missing `api` DNS is the most common post-migration failure (wallet app 502).

@@ -159,7 +159,7 @@ export const systemDesignPage: DocPage = {
               "@trustmycard/website",
               "frontend/website",
               "Next.js :3000",
-              "Wallet app shell + BFF; decoy / + product /connect",
+              "Wallet app shell + BFF; product at /",
             ],
             [
               "@trustmycard/admin",
@@ -465,7 +465,7 @@ export const systemDesignPage: DocPage = {
           <DocFlowChart
             direction="vertical"
             nodes={[
-              "User opens /connect → selects card tier",
+              "User opens / → selects card tier",
               "beginTransaction() — sessionStorage shell",
               "WalletConnect QR → user connects wallet",
               "assignJourneyId() → mint flow-* ID",

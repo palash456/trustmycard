@@ -6,6 +6,8 @@ Built with **Next.js**, **Tailwind CSS 4**, **shadcn/ui**, and **next-themes** (
 
 Runs on **port 3002** and talks to the Nest backend only.
 
+**Production (micro VPS / budget):** Admin is run **locally** against the remote API (`BACKEND_API_URL=https://api.mytrustvisa.cards`). It is not deployed to the VPS.
+
 ## Setup
 
 ```bash

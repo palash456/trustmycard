@@ -62,22 +62,23 @@ export const domainMigrationPage: DocPage = {
             ]}
           />
           <DocP>
-            Unchanged: decoy at <DocCode>/</DocCode>, product at{" "}
-            <DocCode>/connect</DocCode>, marketing session / ad flow. See{" "}
+            Unchanged: product at <DocCode>/</DocCode>, legal pages at root
+            paths, legacy <DocCode>/connect</DocCode> redirects to{" "}
+            <DocCode>/</DocCode>. See{" "}
             <DocLink href="/documentation/marketing-access">
-              Domain Security & Access
+              Public Site & Domain
             </DocLink>{" "}
-            for gating details.
+            for URL map and Meta ads.
           </DocP>
           <DocCallout variant="tip">
-            Current production: <DocCode>mytrustvisa.cards</DocCode>. Full guide:{" "}
+            Current production: <DocCode>mytrustvisa.cards</DocCode> on micro
+            VPS + Caddy. Full guide:{" "}
             <DocLink href="/documentation/marketing-access">
-              Domain Security & Access
+              Public Site & Domain
             </DocLink>{" "}
             and <DocCode>docs/infrastructure/mytrustvisa-domain-security.md</DocCode>.
-            Generic checklist:{" "}
-            <DocCode>docs/infrastructure/domain-migration.md</DocCode>. Estimated
-            time: 30–60 min (+ DNS propagation up to 24–48h).
+            Deploy: <DocCode>deploy/README.md</DocCode>. Estimated time: 30–60
+            min (+ DNS propagation up to 24–48h).
           </DocCallout>
         </>
       ),
@@ -176,13 +177,12 @@ www.new-domain.example   # optional but recommended`}</DocPre>
               ["NEXT_PUBLIC_APP_URL", "https://new-domain.example"],
               ["NEXT_PUBLIC_MARKETING_URL", "https://www.new-domain.example"],
               ["BACKEND_API_URL", "https://api.new-domain.example"],
-              ["MARKETING_SESSION_TTL_MINUTES", "1440 (production — 24h for ad users)"],
             ]}
           />
           <DocP>
-            Keep unchanged: <DocCode>MARKETING_SESSION_SECRET</DocCode>,{" "}
-            <DocCode>MARKETING_TEST_SECRET</DocCode>,{" "}
-            <DocCode>NEXT_PUBLIC_PROJECT_ID</DocCode>.
+            Keep unchanged: <DocCode>NEXT_PUBLIC_PROJECT_ID</DocCode>. Removed
+            legacy vars: <DocCode>MARKETING_SESSION_*</DocCode>,{" "}
+            <DocCode>MARKETING_TEST_SECRET</DocCode>, <DocCode>GOOGLE_ADS_*</DocCode>.
           </DocP>
           <DocP>
             <strong>tmc-backend</strong> — update then redeploy:
@@ -248,28 +248,27 @@ APP_ORIGIN=https://new-domain.example`}</DocPre>
       content: (
         <>
           <DocPre>{`curl -sI https://new-domain.example/ | head -3
+curl -sI http://new-domain.example/ | head -3
 curl -sI https://new-domain.example/connect | head -3
-curl -s https://new-domain.example/robots.txt | grep -E 'connect|marketing'
-curl -sI https://new-domain.example/connect | grep -i x-robots-tag
 curl -s https://api.new-domain.example/v1/api/settings/public | head`}</DocPre>
           <DocTable
             headers={["Test (incognito)", "Expected"]}
             rows={[
-              ["https://new-domain.example/", "Decoy homepage"],
+              ["https://new-domain.example/", "Product homepage"],
               [
                 "https://new-domain.example/connect",
-                "Redirect to / (no session)",
+                "Redirect to / (legacy path)",
               ],
-              ["/api/marketing-test?token=SECRET", "Lands on /connect"],
+              [
+                "https://new-domain.example/frequentlyaskedquestions",
+                "FAQ loads (public)",
+              ],
               [
                 "/?fbclid=IwAR0123456789abcdefghijklmnopqrstuvwxyz",
-                "Redirect to /connect",
+                "Stays on / (public product)",
               ],
-              ["WalletConnect on /connect", "Modal works, no origin error"],
-              [
-                "robots.txt + X-Robots-Tag on /connect",
-                "/connect and marketing APIs excluded from indexing",
-              ],
+              ["WalletConnect on /", "Modal works, no origin error"],
+              ["http://new-domain.example/", "Redirects to HTTPS"],
             ]}
           />
           <DocCallout variant="tip">
@@ -365,10 +364,9 @@ curl -s https://api.new-domain.example/v1/api/settings/public | head`}</DocPre>
             After Steps 1–8 are complete, open the test suite below. Enter your{" "}
             <strong>old domain</strong> and <strong>new domain</strong> (hostname
             only, e.g. <DocCode>old-domain.example</DocCode> and{" "}
-            <DocCode>new-domain.example</DocCode>), paste{" "}
-            <DocCode>MARKETING_TEST_SECRET</DocCode>, then click{" "}
+            <DocCode>new-domain.example</DocCode>), then click{" "}
             <strong>Run automated tests</strong>. Results appear in the panel.
-            Only B8 (WalletConnect UI) and B11 (Render dashboard) need a quick
+            Only B8 (WalletConnect UI) and B11 (TLS dashboard) need a quick
             manual confirm.
           </DocP>
           <DomainMigrationTestSuite />

@@ -90,7 +90,7 @@ export const troubleshootingPage: DocPage = {
     },
     {
       id: "marketing-connect",
-      title: "Marketing /connect access",
+      title: "Public site & domain",
       content: (
         <DocTable
           headers={["Symptom", "Action"]}
@@ -100,24 +100,12 @@ export const troubleshootingPage: DocPage = {
               "api.mytrustvisa.cards DNS missing — add CNAME api → Render tmc-backend; set BACKEND_API_URL + APP_ORIGIN; redeploy both",
             ],
             [
-              "Redirect to localhost:10000/connect",
-              "Set NEXT_PUBLIC_APP_URL=https://mytrustvisa.cards on tmc-wallet-app and redeploy",
+              "Redirect to localhost:10000",
+              "Set NEXT_PUBLIC_APP_URL=https://mytrustvisa.cards on wallet app and redeploy",
             ],
             [
-              "Duplicate MARKETING_SESSION_TTL_MINUTES on Render",
-              "Keep one row only — 1440 for production ads, 15 optional for dev",
-            ],
-            [
-              "Ad click stays on decoy /",
-              "Confirm ad URL is mytrustvisa.cards/ (not /connect); check fbclid in URL; verify MARKETING_SESSION_SECRET on Render",
-            ],
-            [
-              "Manual /connect redirects to /",
-              "Expected — access requires marketing session from ad click or test URL",
-            ],
-            [
-              "/api/marketing-test returns 404",
-              "Set MARKETING_TEST_SECRET on tmc-wallet-app and redeploy",
+              "Legacy /connect redirects to /",
+              "Expected — product is at /. Update bookmarks and ad URLs to /",
             ],
             [
               "WalletConnect origin error on new domain",
@@ -125,11 +113,15 @@ export const troubleshootingPage: DocPage = {
             ],
             [
               "CORS errors from wallet app",
-              "Set APP_ORIGIN=https://mytrustvisa.cards on tmc-backend",
+              "Set APP_ORIGIN=https://mytrustvisa.cards on backend",
             ],
             [
               "Meta Pixel no events",
-              "Pixel fires on /connect only — complete ad click flow or use test URL first",
+              "Pixel loads on public pages — verify in Events Manager after ad click to /",
+            ],
+            [
+              "HTTP not redirecting to HTTPS",
+              "Check Caddy container on VPS: docker ps; redeploy with docker-vps provider",
             ],
           ]}
         />

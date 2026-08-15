@@ -51,7 +51,7 @@ export const transactionLifecyclePage: DocPage = {
       content: (
         <DocFlow
           steps={[
-            "User opens /connect and selects a card tier (useConnectFlow.startLinkFlow).",
+            "User opens / and selects a card tier (useConnectFlow.startLinkFlow).",
             "beginTransaction() creates an empty sessionStorage shell before wallet is known.",
             "WalletConnect opens; user scans QR and connects.",
             "scanWallet() extracts addresses, calls assignJourneyId() to mint flow-* ID.",

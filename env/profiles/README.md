@@ -9,10 +9,11 @@ env/profiles/
   production/
     platform.env.example
     backend.env.example         # local / VPS monolith
+    backend-budget.env.example  # Neon + Upstash (budget / micro VPS)
     backend-api.env.example     # Render API (no collection keys)
     backend-worker.env.example  # Render workers (signing)
-    website.env.example         # wallet app (app.*)
-    marketing.env.example       # static marketing build
+    website.env.example         # wallet app
+    marketing.env.example       # static marketing build (Hostinger)
     admin.env.example
 ```
 
@@ -24,7 +25,7 @@ env/profiles/
 | -------------- | -------------------- | -------------------- |
 | `api`          | `backend-api.env`    | not allowed          |
 | `worker`       | `backend-worker.env` | required             |
-| `all`          | `backend.env`        | optional (local dev) |
+| `all`          | `backend.env` / `backend-budget.env` | optional (local dev / micro VPS) |
 
 See [docs/infrastructure/secrets.md](../../docs/infrastructure/secrets.md).
 
@@ -41,6 +42,8 @@ cp env/profiles/$PROFILE/admin.env.example     env/profiles/$PROFILE/admin.env
 cp env/profiles/$PROFILE/backend-api.env.example env/profiles/$PROFILE/backend-api.env
 cp env/profiles/$PROFILE/backend-worker.env.example env/profiles/$PROFILE/backend-worker.env
 cp env/profiles/$PROFILE/marketing.env.example env/profiles/$PROFILE/marketing.env
+# Micro VPS / budget with external DB:
+cp env/profiles/$PROFILE/backend-budget.env.example env/profiles/$PROFILE/backend-budget.env
 ```
 
 ## Switch environments
@@ -49,7 +52,8 @@ cp env/profiles/$PROFILE/marketing.env.example env/profiles/$PROFILE/marketing.e
 | ------------------ | ------------------------------------------------------------------------------------------ |
 | Development        | `npm run start:dev`, `npm run dev:website`, `npm run dev:marketing`, `npm run dev:admin`   |
 | Production preview | `npm run preview`, `npm run preview:website`, `npm run preview:admin`                      |
-| Production         | [render-hostinger-production.md](../../docs/infrastructure/render-hostinger-production.md) |
+| Production (VPS)   | [deploy/README.md](../../deploy/README.md) — micro topology + Caddy                      |
+| Production (Render)| [render-budget-production.md](../../docs/infrastructure/render-budget-production.md)     |
 
 Loader: [`config/load-env.mjs`](../../config/load-env.mjs).
 

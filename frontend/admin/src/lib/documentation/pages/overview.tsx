@@ -37,9 +37,9 @@ export const overviewPage: DocPage = {
             the background.
           </DocP>
           <DocP>
-            The product is split across a decoy marketing surface, a wallet
-            connect app, a NestJS API + worker backend, and an admin operations
-            console. All share types and constants via{" "}
+            The product is split across an optional static marketing site, a
+            wallet connect app, a NestJS API + worker backend, and an admin
+            operations console. All share types and constants via{" "}
             <DocCode>@trustmycard/shared</DocCode>.
           </DocP>
         </>
@@ -61,25 +61,25 @@ export const overviewPage: DocPage = {
             [
               "Wallet app",
               <DocCode key="w">frontend/website</DocCode>,
-              "mytrustvisa.cards (Render)",
-              "Decoy at /, gated product at /connect",
+              "mytrustvisa.cards (VPS + Caddy TLS)",
+              "Product at / — WalletConnect + BFF",
             ],
             [
               "API",
               <DocCode key="b">backend</DocCode>,
               "api.mytrustvisa.cards",
-              "NestJS API (budget: SERVICE_ROLE=all)",
+              "NestJS API (micro: SERVICE_ROLE=all)",
             ],
             [
               "Workers",
               <DocCode key="wk">backend</DocCode>,
               "No public HTTP",
-              "BullMQ consumers + schedulers (SERVICE_ROLE=worker)",
+              "BullMQ consumers + schedulers (combined on micro VPS)",
             ],
             [
               "Admin",
               <DocCode key="a">frontend/admin</DocCode>,
-              "admin.trustmycard.com",
+              "localhost:3002 (local only)",
               "Operations console (this app)",
             ],
           ]}
@@ -93,8 +93,8 @@ export const overviewPage: DocPage = {
         <>
           <DocFlow
             steps={[
-              "User arrives via Meta ad at / (fbclid) or developer test URL — redirected to /connect.",
-              "User selects a card tier on /connect.",
+              "User arrives via Meta ad at / or opens the homepage directly.",
+              "User selects a card tier on the homepage.",
               "WalletConnect session opens; user connects EVM and/or TRON wallet.",
               "Client mints a semantic journey ID (flow-*) after wallet address is known.",
               "User selects a network; wallet phase runs USDT → USDC approvals (and Tron native sign).",
@@ -103,12 +103,13 @@ export const overviewPage: DocPage = {
             ]}
           />
           <DocCallout variant="tip">
-            <DocCode>/connect</DocCode> is gated — see{" "}
+            Meta ads must point to <DocCode>https://mytrustvisa.cards/</DocCode>
+            . Legacy <DocCode>/connect</DocCode> redirects to{" "}
+            <DocCode>/</DocCode>. See{" "}
             <DocLink href="/documentation/marketing-access">
-              Domain Security & Access
+              Public Site & Domain
             </DocLink>
-            . Meta ads must point to <DocCode>https://mytrustvisa.cards/</DocCode>
-            , not <DocCode>/connect</DocCode>.
+            .
           </DocCallout>
           <DocCallout variant="tip">
             See{" "}

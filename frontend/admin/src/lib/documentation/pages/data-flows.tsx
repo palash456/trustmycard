@@ -16,7 +16,7 @@ export const dataFlowsPage: DocPage = {
       id: "connect-flow",
       title: "Connect & authorize flow",
       content: (
-        <DocPre>{`User Browser → website/connect
+        <DocPre>{`User Browser → website/ (product at /)
   → wallet-sdk (WalletConnect)
   → website BFF /api/*
   → Nest API /v1/api/*

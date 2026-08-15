@@ -21,12 +21,12 @@ export const domainMigrationSuiteMeta: TestSuiteMeta = {
   journeyStart: "Old domain (legacy)",
   journeyEnd: "New domain (production)",
   description:
-    "Automated HTTPS redirects, marketing session, API, and CORS checks when migrating production domains.",
+    "Automated HTTPS, redirects, API, and CORS checks when migrating production domains.",
   purpose:
-    "Verifies the old domain no longer serves the product, and the new domain serves decoy, gated /connect, marketing flows, and API correctly.",
+    "Verifies the old domain no longer serves the product, and the new domain serves public /, legal pages, legacy /connect redirects, and API correctly.",
   expectedResult:
-    "All automated Phase A + B checks pass (B8 WalletConnect UI and B11 Render SSL are manual).",
-  why: "Catches DNS, env var, CORS, and marketing gating mistakes before switching ad traffic.",
+    "All automated Phase A + B checks pass (B8 WalletConnect UI and B11 TLS dashboard are manual).",
+  why: "Catches DNS, env var, CORS, and TLS mistakes before switching ad traffic.",
   cases: MIGRATION_TEST_STEP_IDS.map((id) => ({
     name: id,
     friendlyName: id.toUpperCase(),

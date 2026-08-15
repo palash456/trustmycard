@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 import { compileEnvBundles } from "../core/config-compiler.mjs";
 import { composeFiles } from "../core/compose.mjs";
 import { validateDeployContext } from "../core/validate.mjs";
-import { RELEASE_ORDER } from "../core/types.mjs";
+import { RELEASE_ORDER, releaseComponents } from "../core/types.mjs";
 
 const deployRoot = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 
@@ -52,7 +52,13 @@ test("micro VPS + external validates and omits bundled data services", () => {
   assert.deepEqual(files, [
     "docker-compose.base.yml",
     "docker-compose.micro.yml",
+    "docker-compose.micro-edge.yml",
     "docker-compose.external-data.yml",
+  ]);
+  assert.deepEqual(releaseComponents("micro", { provider: "docker-vps" }), [
+    "backend",
+    "wallet",
+    "caddy",
   ]);
 });
 

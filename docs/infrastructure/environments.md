@@ -6,7 +6,7 @@ Trust My Card uses one codebase and three configuration profiles. The active pro
 | -------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `development`        | Daily feature work                     | `npm run start:dev` (backend), `npm run dev:website`, `npm run dev:marketing`, `npm run dev:admin` |
 | `production-preview` | Test prod config locally before deploy | `npm run preview` (backend), `npm run preview:website`, `npm run preview:admin`                    |
-| `production`         | Live stack                             | Render services + Hostinger static marketing                                                       |
+| `production`         | Live stack                             | VPS micro (`deploy.sh`) or Render + Hostinger static marketing |
 
 ## How loading works
 
@@ -48,8 +48,8 @@ TMC_ENV=production-preview npm run prisma:migrate --prefix backend
 
 | Resource             | development         | production-preview          | production              |
 | -------------------- | ------------------- | --------------------------- | ----------------------- |
-| PostgreSQL           | local `trustmycard` | local `trustmycard_preview` | Render managed Postgres |
-| Redis                | `127.0.0.1:6379/0`  | `127.0.0.1:6379/1`          | Render managed Redis    |
+| PostgreSQL           | local `trustmycard` | local `trustmycard_preview` | Neon (external)         |
+| Redis                | `127.0.0.1:6379/0`  | `127.0.0.1:6379/1`          | Upstash (external)      |
 | Wallet keys          | Dev/test            | Prod keys (local only)      | Worker service only     |
 | `ALLOW_SELF_SPENDER` | optional `true`     | `false`                     | `false`                 |
 | Admin data           | Dev DB              | Preview DB                  | Production DB           |
@@ -64,7 +64,7 @@ Admin does **not** have a dropdown to switch environments. It shows data from wh
 | ----------------------- | ------------------------------- | --------------------------- | --------------------- |
 | `npm run dev:admin`     | `http://localhost:3002`         | dev backend (`start:dev`)   | `trustmycard`         |
 | `npm run preview:admin` | `http://localhost:3002`         | preview backend (`preview`) | `trustmycard_preview` |
-| Render `tmc-admin`      | `https://admin.trustmycard.com` | `tmc-api`                   | Render Postgres       |
+| Production (micro VPS)  | `http://localhost:3002`         | remote API                  | Neon (production)     |
 
 **To compare dev vs preview locally:** run one stack at a time (both use port 3002).
 
@@ -74,7 +74,7 @@ Admin does **not** have a dropdown to switch environments. It shows data from wh
 
 ```bash
 cd backend && npm run start:dev
-cd frontend && npm run dev:website    # :3000 — decoy / + /connect
+cd frontend && npm run dev:website    # :3000 — product at /
 cd frontend && npm run dev:marketing  # :3001 — marketing static preview
 cd frontend && npm run dev:admin      # :3002
 ```
@@ -89,9 +89,11 @@ cd frontend && npm run preview:admin
 
 Uses production-like flags and isolated DB/Redis while still on localhost. Website/admin run `next start` (production build), not dev hot-reload.
 
-### Production (Render + Hostinger)
+### Production
 
-See [render-hostinger-production.md](./render-hostinger-production.md).
+- **Micro VPS (current):** [deploy/README.md](../../deploy/README.md) — backend + wallet + Caddy on 512 MB droplet, Neon + Upstash.
+- **Render budget:** [render-budget-production.md](./render-budget-production.md)
+- **Render full (legacy):** [render-hostinger-production.md](./render-hostinger-production.md)
 
 `ecosystem.config.cjs` remains for optional local all-in-one (`SERVICE_ROLE=all`) — not the recommended production path.
 

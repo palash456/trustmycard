@@ -3,84 +3,79 @@
 **Production domain (current):** `mytrustvisa.cards`  
 **Legacy domain:** `trustvisa.cards` (migrated)
 
-This is the **single source of truth** for how the live site works: what each URL serves, who can reach the real product, how Meta ads unlock `/connect`, how developers test production, and which env vars must match across Render and `platform.env`.
+This is the **single source of truth** for how the live site works: what each URL serves, how ads should point to the product, env vars, DNS, TLS, and troubleshooting.
+
+> **Historical:** The decoy homepage and `/connect` marketing-session gate were removed in 2026. Archive: [trustmycard-marketing-gate-archive](https://github.com/palash456/trustmycard-marketing-gate-archive).
 
 Related guides:
 
 - [domain-migration.md](./domain-migration.md) — generic migration checklist
-- [marketing-access.md](./marketing-access.md) — technical `/connect` gating implementation
 - [../marketing/meta-ads-setup-guide.md](../marketing/meta-ads-setup-guide.md) — media buyer quick reference
+- [../../deploy/README.md](../../deploy/README.md) — micro VPS deploy (Caddy TLS)
+- [marketing-access.md](./marketing-access.md) — deprecated technical reference for the old gate
 
 ---
 
 ## Production URL map
 
-| URL | Who sees it | Gated? |
-|-----|-------------|--------|
-| `https://mytrustvisa.cards/` | Everyone (Travixa decoy cover site) | No |
-| `https://mytrustvisa.cards/connect` | Visitors with valid `tv_ms` marketing session only | **Yes** |
-| `https://mytrustvisa.cards/connect/privacypolicy` | Same session as `/connect` | **Yes** |
-| `https://mytrustvisa.cards/connect/frequentlyaskedquestions` | Same session as `/connect` | **Yes** |
-| `https://api.mytrustvisa.cards` | Nest API (`tmc-backend`) | API auth |
-| `https://www.mytrustvisa.cards` | Optional — apex or static host | — |
+| URL | What | Notes |
+|-----|------|-------|
+| `https://mytrustvisa.cards/` | Trust Card homepage + WalletConnect | Public product |
+| `https://mytrustvisa.cards/frequentlyaskedquestions` | FAQ | Public |
+| `https://mytrustvisa.cards/privacypolicy` | Privacy policy | Public |
+| `https://mytrustvisa.cards/termsandconditions` | Terms | Public |
+| `https://mytrustvisa.cards/connect` | Legacy path | **301 redirect → `/`** |
+| `https://api.mytrustvisa.cards` | Nest API | `tmc-backend` |
+| `https://www.mytrustvisa.cards` | Optional static marketing host | Hostinger static export |
 
-**Render services:**
+**Current production host (micro VPS):**
 
-| Host | Render service | Serves |
-|------|----------------|--------|
-| `mytrustvisa.cards` (apex) | `tmc-wallet-app` | Decoy `/` + product `/connect` + `/api/*` BFF proxy |
-| `api.mytrustvisa.cards` | `tmc-backend` | Nest API |
+| Host | Container | Serves |
+|------|-----------|--------|
+| `mytrustvisa.cards` (apex) | wallet (via Caddy) | Next.js wallet app + `/api/*` BFF |
+| `api.mytrustvisa.cards` | backend (via Caddy) | Nest API |
 
-> **Critical:** Both apex **and** `api` subdomain must be added as custom domains on Render **and** have DNS CNAME records. If `api.mytrustvisa.cards` does not resolve, the wallet app returns **502** on all backend calls.
+Caddy terminates TLS (Let's Encrypt) on ports 80/443 and reverse-proxies to the Docker containers.
 
 ---
 
-## DNS checklist (Hostinger / registrar)
+## DNS checklist (Hostinger)
 
 | Type | Name | Value | Notes |
 |------|------|-------|--------|
-| CNAME or ALIAS | `@` | Render hostname for `tmc-wallet-app` | Apex → wallet app |
-| CNAME | `www` | `mytrustvisa.cards` or Render `www` target | Optional |
-| **CNAME** | **`api`** | **Render hostname for `tmc-backend`** | **Required for wallet to work** |
+| A | `@` | VPS IP (`159.89.170.92`) | Apex → wallet (via Caddy) |
+| A | `api` | VPS IP | API subdomain → backend (via Caddy) |
+| A or CNAME | `www` | Static marketing host (optional) | Hostinger static site only |
 
-After DNS propagates, verify:
+After DNS propagates:
 
 ```bash
 curl -s https://api.mytrustvisa.cards/v1/api/settings/public | head
 curl -s https://mytrustvisa.cards/api/settings/public | head
+curl -sI http://mytrustvisa.cards/ | grep -i location   # HTTP → HTTPS redirect
 ```
 
-Both must return JSON — not `Could not resolve host` or `502 fetch failed`.
+Both HTTPS endpoints must return JSON — not `Could not resolve host` or `502 fetch failed`.
 
 ---
 
-## Who can access what (all cases)
+## Who can access what
 
 | Visitor action | Result |
 |----------------|--------|
-| Opens `https://mytrustvisa.cards/` directly | Travixa decoy |
-| Types `https://mytrustvisa.cards/connect` manually (no session) | Redirected to `/` (decoy) |
-| `/connect?utm_source=instagram` without session | Redirected to `/` |
-| `/?utm_source=instagram` without click ID | Decoy — **UTMs never grant access** |
-| **Meta/Instagram ad click** → `/?fbclid=...` | Verify → exchange → `/connect` (marketing session) |
-| **Google ad click** → `/?gclid=...` (Ads API configured) | Server verify → `/connect` |
-| Google ad click but Ads API not configured / gclid not found | Decoy — fail closed |
-| `fbclid` on `/connect` directly (no session) | Redirected to `/` — fbclid on `/connect` never grants access |
-| Direct `/api/marketing/verify?fbclid=...` without homepage attestation | Blocked → decoy |
-| TikTok `ttclid` only | Decoy — no verification API |
-| LinkedIn `li_fat_id` only | Decoy — no verification API |
-| Valid session + visits `/` | Auto-redirect to `/connect` |
-| Valid session + `/connect/*` legal pages | Allowed until session expires |
-| **Developer** opens `/api/marketing-test?token=SECRET` | Same session as ad visitors → `/connect` |
-| Invalid/missing test secret | 404, no session |
-| Session expired | `/connect` blocked → decoy until new ad click or test URL |
-| New incognito window → `/connect` | Decoy (no cookie) |
+| Opens `https://mytrustvisa.cards/` | Trust Card product (public) |
+| Opens `https://mytrustvisa.cards/connect` | Redirected to `/` |
+| Opens `https://mytrustvisa.cards/frequentlyaskedquestions` | FAQ (public) |
+| **Meta/Instagram ad click** → `/?fbclid=...` | Lands on product at `/` |
+| Opens site in incognito | Same — no gating |
+
+There is **no** marketing-session gate. All visitors see the product at `/`.
 
 ---
 
-## How real Meta ad users reach the product
+## Meta ads
 
-**Ad destination URL (Meta Ads Manager):**
+**Ad destination URL:**
 
 ```text
 https://mytrustvisa.cards/
@@ -92,88 +87,40 @@ Optional UTMs (reporting only):
 https://mytrustvisa.cards/?utm_source=instagram&utm_medium=paid&utm_campaign=YOUR_CAMPAIGN
 ```
 
-**Never use:** `https://mytrustvisa.cards/connect`
-
-### Flow
-
-```text
-User clicks Meta/Instagram ad
-        ↓
-https://mytrustvisa.cards/?fbclid=...&utm_...
-        ↓
-Middleware → homepage attestation → /api/marketing/verify
-        ↓
-One-time token (90s) → /api/marketing/exchange
-        ↓
-Set tv_ms cookie → redirect https://mytrustvisa.cards/connect
-        ↓
-Trust Card product + Meta Pixel PageView
-```
-
-Notes:
-
-- User may see Travixa decoy on `/` for a split second — intentional.
-- Meta auto-appends `fbclid` on paid ad clicks.
-- UTMs are for analytics only — they do **not** unlock `/connect`.
+`/connect` is a legacy redirect — do not use it in ads.
 
 ### Meta Pixel
 
-- **Already installed in code** — loads on `/connect` and `/connect/*` only.
+- Installed in code via `MetaPixel` in the root layout — loads on all public pages.
 - **Pixel ID:** `2158981564683913`
-- **Do not** paste the Meta script on the homepage, Hostinger, or `/connect` manually.
+- Do not paste a second copy on Hostinger static marketing or in ad dashboards.
 - Verify in Meta Events Manager → Test Events after a real ad click.
 
 ---
 
-## Marketing session duration
+## Environment variables
 
-Controlled by **`MARKETING_SESSION_TTL_MINUTES`** (not hardcoded).
-
-| Profile | Where to set | Recommended value |
-|---------|--------------|-------------------|
-| Production (Render) | `tmc-wallet-app` env | **`1440`** (24 hours) — real ad users |
-| Production (local profile) | `env/profiles/production/platform.env` | **`1440`** (match Render) |
-| Development | `env/profiles/development/platform.env` | `15` (optional — faster local testing) |
-
-> **Do not confuse with `WALLET_SESSION_TTL_MS`** in `platform.env` — that controls the **backend wallet API session** after wallet connect (default 30 min). It is unrelated to `/connect` marketing gating.
-
-Same TTL applies to **all** entry paths: Meta ads, Google ads, and developer test URL.
-
-After expiry, `/connect` redirects to the decoy until the user clicks a new ad or a developer uses the test URL again.
-
----
-
-## Environment variables (must match)
-
-### `tmc-wallet-app` (Render)
+### Wallet app (`website.env` / Docker / Render)
 
 ```env
 NEXT_PUBLIC_APP_URL=https://mytrustvisa.cards
 BACKEND_API_URL=https://api.mytrustvisa.cards
-NEXT_PUBLIC_MARKETING_URL=https://www.mytrustvisa.cards
 NEXT_PUBLIC_PROJECT_ID=<walletconnect project id>
-MARKETING_SESSION_SECRET=<long random HMAC secret>
-MARKETING_SESSION_TTL_MINUTES=1440
-MARKETING_TEST_SECRET=tvmt_<openssl rand -hex 32>   # Render only — never commit
+NEXT_PUBLIC_MARKETING_URL=https://www.mytrustvisa.cards   # optional static host
 ```
 
 `NEXT_PUBLIC_*` are baked at **build time** — redeploy after changes.
 
-### `tmc-backend` (Render)
+**Removed (legacy gate):** `MARKETING_SESSION_*`, `MARKETING_TEST_SECRET`, `GOOGLE_ADS_*`
+
+### Backend (`backend-budget.env` / platform)
 
 ```env
 APP_ORIGIN=https://mytrustvisa.cards
-ADMIN_ORIGIN=https://admin.mytrustvisa.cards   # or localhost for local admin
+ADMIN_ORIGIN=http://localhost:3002   # admin runs locally on micro/budget
+DATABASE_URL=<Neon pooled URL>
+REDIS_URL=<Upstash rediss URL>
 ```
-
-### `platform.env` (local / profile templates)
-
-```env
-MARKETING_SESSION_TTL_MINUTES=1440
-WALLET_SESSION_TTL_MS=1800000   # separate — backend wallet session only
-```
-
-Render does **not** read `platform.env` files — mirror `MARKETING_SESSION_TTL_MINUTES` in the Render dashboard.
 
 ### WalletConnect Cloud
 
@@ -185,66 +132,26 @@ https://mytrustvisa.cards
 
 ---
 
-## Developer production test
-
-Set `MARKETING_TEST_SECRET` on Render (`tmc-wallet-app`) only. **Never commit** the value.
-
-Open in browser (incognito), never link from UI:
-
-```text
-https://mytrustvisa.cards/api/marketing-test?token=<MARKETING_TEST_SECRET>
-```
-
-| Outcome | Result |
-|---------|--------|
-| Valid secret | Sets `tv_ms` cookie → redirects to `https://mytrustvisa.cards/connect` |
-| Invalid/missing secret | 404 |
-| Rate limit | 30 failed attempts / 15 min / IP (valid token unlimited) |
-
-**Redirect requirement:** `NEXT_PUBLIC_APP_URL` must be `https://mytrustvisa.cards`. Without it, Render may redirect to `localhost:10000/connect` (internal proxy host). Redeploy after fixing.
-
-Local dev:
-
-```text
-http://localhost:3000/api/marketing-test?token=<LOCAL_SECRET>
-```
-
----
-
-## Search engine exclusion
-
-Gated routes are excluded from indexing; the decoy homepage `/` remains indexable.
-
-| Layer | Paths |
-|-------|-------|
-| `robots.txt` | `/connect`, `/api/marketing-test`, `/api/marketing/` |
-| HTML `robots` metadata | `/connect/*` |
-| `X-Robots-Tag: noindex` | `/connect`, `/connect/*`, marketing API routes |
-
----
-
 ## Post-deploy smoke tests
 
 ```bash
-# DNS + API
+# DNS + API + BFF
 curl -s https://api.mytrustvisa.cards/v1/api/settings/public | head
 curl -s https://mytrustvisa.cards/api/settings/public | head
 
-# Decoy vs gated
-curl -sI https://mytrustvisa.cards/ | head -3
-curl -sI https://mytrustvisa.cards/connect | head -3
+# TLS + redirects
+curl -sI http://mytrustvisa.cards/ | head -5          # 308 → HTTPS
+curl -sI https://mytrustvisa.cards/connect | head -5  # 301/308 → /
 
-# SEO exclusion
-curl -s https://mytrustvisa.cards/robots.txt | grep -E 'connect|marketing'
-curl -sI https://mytrustvisa.cards/connect | grep -i x-robots-tag
+# Containers (on VPS)
+ssh root@<VPS_IP> 'docker ps'
 ```
 
 **Browser (incognito):**
 
-1. `/connect` → redirects to `/` (decoy)
-2. `/api/marketing-test?token=SECRET` → `/connect` (product loads)
-3. Real ad preview with `fbclid` in URL → `/connect`
-4. WalletConnect modal on `/connect` — no origin error
+1. `https://mytrustvisa.cards/` — product loads, WalletConnect works
+2. `https://mytrustvisa.cards/connect` — redirects to `/`
+3. Legal pages load at `/frequentlyaskedquestions`, `/privacypolicy`
 
 ---
 
@@ -252,13 +159,11 @@ curl -sI https://mytrustvisa.cards/connect | grep -i x-robots-tag
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| `502 fetch failed` on wallet app | `api.mytrustvisa.cards` DNS missing | Add CNAME `api` → Render backend; add custom domain on `tmc-backend` |
-| Redirect to `localhost:10000/connect` | `NEXT_PUBLIC_APP_URL` wrong or missing | Set `https://mytrustvisa.cards`, redeploy wallet app |
-| Ad click stays on decoy | Ad URL is `/connect`, or no `fbclid`, or `MARKETING_SESSION_SECRET` missing | Use `https://mytrustvisa.cards/`; check Render env |
+| `502 fetch failed` on wallet app | `api.mytrustvisa.cards` DNS or backend down | Check DNS A record; `docker ps` on VPS; Caddy logs |
+| WalletConnect origin error | `NEXT_PUBLIC_APP_URL` wrong | Set `https://mytrustvisa.cards`, rebuild wallet image, redeploy |
 | CORS errors | `APP_ORIGIN` mismatch | Set `APP_ORIGIN=https://mytrustvisa.cards` on backend, redeploy |
-| Duplicate `MARKETING_SESSION_TTL_MINUTES` on Render | Two env rows | Keep one row only (`1440` for production) |
-| Meta Pixel no events | Pixel only on `/connect` | Complete ad click flow or use test URL first |
-| Session expires quickly | `MARKETING_SESSION_TTL_MINUTES` too low | Use `1440` for production ads |
+| HTTP not redirecting | Caddy not running | `./deploy.sh production --provider=docker-vps` |
+| Cert renewal issues | Port 80 blocked | Ensure Caddy binds 80/443; DNS points to VPS |
 
 ---
 
@@ -266,10 +171,8 @@ curl -sI https://mytrustvisa.cards/connect | grep -i x-robots-tag
 
 | File | Role |
 |------|------|
-| `frontend/website/middleware.ts` | Route gating, click-ID detection |
-| `frontend/website/src/lib/marketing/session-config.ts` | `MARKETING_SESSION_TTL_MINUTES` reader |
-| `frontend/website/src/lib/marketing/session.ts` | Signed `tv_ms` cookie |
-| `frontend/website/src/lib/marketing/public-url.ts` | Public redirect URLs (Render proxy fix) |
-| `frontend/website/src/lib/marketing/http.ts` | Redirect helpers using `NEXT_PUBLIC_APP_URL` |
-| `frontend/website/src/app/api/marketing-test/route.ts` | Developer test bypass |
-| `frontend/website/src/components/ConnectMetaPixel.tsx` | Meta Pixel on `/connect` only |
+| `frontend/website/src/app/page.tsx` | Product homepage |
+| `frontend/website/next.config.ts` | `/connect` → `/` redirects |
+| `frontend/website/src/components/MetaPixel.tsx` | Meta Pixel |
+| `deploy/caddy/Caddyfile` | Caddy TLS + reverse proxy |
+| `deploy/compose/docker-compose.micro-edge.yml` | Caddy service on VPS |

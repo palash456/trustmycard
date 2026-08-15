@@ -108,7 +108,6 @@ export function MigrationTestModal({
   const fetchAbortRef = useRef<AbortController | null>(null);
   const [oldDomain, setOldDomain] = useState("");
   const [newDomain, setNewDomain] = useState("");
-  const [testSecret, setTestSecret] = useState("");
   const [running, setRunning] = useState(false);
   const [runStartedAt, setRunStartedAt] = useState<number | undefined>();
   const [error, setError] = useState<string | null>(null);
@@ -178,7 +177,6 @@ export function MigrationTestModal({
     validation.ok &&
     Boolean(oldDomain.trim()) &&
     Boolean(newDomain.trim()) &&
-    testSecret.trim().startsWith("tvmt_") &&
     !running;
 
   const estimatedMs = estimateModalTestMs("migration", 13);
@@ -213,7 +211,6 @@ export function MigrationTestModal({
         body: JSON.stringify({
           oldDomain: validation.domains.oldDomain,
           newDomain: validation.domains.newDomain,
-          testSecret,
         }),
         signal: ac.signal,
       });
@@ -239,7 +236,6 @@ export function MigrationTestModal({
     validation,
     oldDomain,
     newDomain,
-    testSecret,
     persistDomains,
     onComplete,
     onRunStart,
@@ -341,22 +337,6 @@ export function MigrationTestModal({
                 </p>
               )}
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="migration-test-secret" className="text-xs">
-              MARKETING_TEST_SECRET (required for step B3)
-            </Label>
-            <Input
-              id="migration-test-secret"
-              type="password"
-              autoComplete="off"
-              placeholder="e.g. tvmt_a1b2c3d4e5f6789012345678901234567890abcdef"
-              value={testSecret}
-              onChange={(e) => setTestSecret(e.target.value)}
-              className="font-mono text-xs"
-              disabled={running}
-            />
           </div>
 
           {summary ? (
@@ -496,7 +476,7 @@ export function MigrationTestModal({
                   : `${summary.failed} check(s) failed — fix issues and run again.`}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Steps B8 (WalletConnect UI) and B11 (Render dashboard) are
+                Steps B8 (WalletConnect UI) and B11 (TLS dashboard) are
                 manual confirmations only.
               </p>
             </div>
@@ -510,10 +490,8 @@ export function MigrationTestModal({
               : !canRun
                 ? !oldDomain.trim() || !newDomain.trim()
                   ? "Enter old and new domains to enable the run."
-                  : !testSecret.trim().startsWith("tvmt_")
-                    ? "Paste your tvmt_ marketing test secret to enable the run."
-                    : "Fix domain validation errors to enable the run."
-                : "Tests use your entered domains for HTTPS redirects, cookies, API, and CORS checks."}
+                  : "Fix domain validation errors to enable the run."
+                : "Tests use your entered domains for HTTPS, redirects, API, and CORS checks."}
           </p>
           <div className="flex shrink-0 items-center justify-end gap-2">
             <Button variant="secondary" onClick={onClose} disabled={running}>

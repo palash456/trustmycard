@@ -80,29 +80,24 @@ export const securityPage: DocPage = {
       ),
     },
     {
-      id: "marketing-session",
-      title: "Marketing session (/connect gating)",
+      id: "public-site",
+      title: "Public site access",
       content: (
         <>
           <DocP>
-            Product routes at <DocCode>/connect/*</DocCode> require a signed
-            httpOnly cookie <DocCode>tv_ms</DocCode> (24h, HMAC via{" "}
-            <DocCode>MARKETING_SESSION_SECRET</DocCode>). Issued only after
-            server verification — never from UTMs alone. Meta{" "}
-            <DocCode>fbclid</DocCode> requires homepage attestation (
-            <DocCode>tv_mh</DocCode>). One-time exchange tokens expire in 90s
-            and bind to client IP + User-Agent.
+            The Trust Card product is public at <DocCode>/</DocCode>. Legacy{" "}
+            <DocCode>/connect</DocCode> URLs redirect to <DocCode>/</DocCode>.
+            There is no marketing-session gate.
           </DocP>
           <DocP>
-            Developer test endpoint <DocCode>/api/marketing-test</DocCode> uses
-            separate <DocCode>MARKETING_TEST_SECRET</DocCode> (Render env only,
-            never in git). Gated routes are excluded from search indexing via{" "}
-            <DocCode>robots.txt</DocCode>, HTML <DocCode>robots</DocCode> metadata
-            on <DocCode>/connect/*</DocCode>, and{" "}
-            <DocCode>X-Robots-Tag: noindex, nofollow</DocCode> response headers.
-            See{" "}
+            The old decoy + gated <DocCode>/connect</DocCode> model was removed in
+            2026. Archive:{" "}
+            <DocCode>
+              github.com/palash456/trustmycard-marketing-gate-archive
+            </DocCode>
+            . See{" "}
             <DocLink href="/documentation/marketing-access">
-              Domain Security & Access
+              Public Site & Domain
             </DocLink>
             .
           </DocP>

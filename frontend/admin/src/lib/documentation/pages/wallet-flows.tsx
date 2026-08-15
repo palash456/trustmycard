@@ -35,7 +35,7 @@ export const walletFlowsPage: DocPage = {
               "wallet-sdk/src/hooks/useConnectFlow.ts",
               "State machine (~1200 lines)",
             ],
-            ["website/src/app/connect/page.tsx", "Product route at /connect"],
+            ["website/src/app/page.tsx", "Product homepage at /"],
             [
               "wallet-sdk/src/providers/wallet-connect-provider.ts",
               "UniversalProvider singleton",
@@ -221,7 +221,7 @@ export const walletFlowsPage: DocPage = {
       content: (
         <DocFlow
           steps={[
-            "Reproduce on localhost:3000/connect with browser devtools Network tab.",
+            "Reproduce on localhost:3000/ with browser devtools Network tab.",
             "Inspect sessionStorage key tmw-active-transaction for journey ID and terminal state.",
             "Enable wallet-sdk dev flow logs (flow-log-client) if ADMIN_DEV_OPS enabled.",
             "Trace x-correlation-id through BFF proxy to backend logs.",
