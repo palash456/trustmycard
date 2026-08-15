@@ -32,10 +32,6 @@ Loader: [`config/load-env.mjs`](../../config/load-env.mjs) — `SERVICE_ROLE` se
 | `NEXT_PUBLIC_MARKETING_URL`         | —        | —       | yes        | —     | —         |
 | `NEXT_PUBLIC_APP_URL` (CTA target)  | —        | —       | —          | —     | yes       |
 | `ADMIN_SESSION_SECRET`              | —        | —       | —          | yes   | —         |
-| `MARKETING_SESSION_SECRET`          | —        | —       | yes        | —     | —         |
-| `MARKETING_SESSION_TTL_MINUTES`     | —        | —       | yes        | —     | —         |
-| `MARKETING_TEST_SECRET`             | —        | —       | yes        | —     | —         |
-| `GOOGLE_ADS_*`                      | —        | —       | yes        | —     | —         |
 | `ADMIN_PANEL_PASSWORD`              | —        | —       | —          | yes   | —         |
 | `APP_ORIGIN` / `ADMIN_ORIGIN`       | yes      | —       | —          | —     | —         |
 

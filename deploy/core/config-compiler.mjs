@@ -129,11 +129,6 @@ export function compileEnvBundles(ctx) {
     ensureSecret(profile.backendApi, "ADMIN_API_KEY", "tmc-local-admin-key"),
   );
 
-  const marketingSessionSecret = ensureSecret(
-    website,
-    "MARKETING_SESSION_SECRET",
-    "tmc-local-marketing-session-secret-change-me",
-  );
   const adminSessionSecret = ensureSecret(
     admin,
     "ADMIN_SESSION_SECRET",
@@ -204,7 +199,6 @@ export function compileEnvBundles(ctx) {
       website.NEXT_PUBLIC_PROJECT_ID?.trim() ||
       platform.NEXT_PUBLIC_PROJECT_ID?.trim() ||
       "",
-    MARKETING_SESSION_SECRET: marketingSessionSecret,
     META_PIXEL_ID: platform.META_PIXEL_ID || website.META_PIXEL_ID || "",
   };
 

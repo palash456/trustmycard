@@ -10,6 +10,12 @@ export function composeFiles(ctx) {
     files.push(join(composeDir, "docker-compose.full.yml"));
   } else if (manifest.topology === "micro") {
     files.push(join(composeDir, "docker-compose.micro.yml"));
+    if ((manifest.data?.mode ?? "bundled") === "bundled") {
+      files.push(join(composeDir, "docker-compose.micro-bundled.yml"));
+    }
+    if (ctx.options?.provider === "docker-vps") {
+      files.push(join(composeDir, "docker-compose.micro-edge.yml"));
+    }
   } else {
     files.push(join(composeDir, "docker-compose.budget.yml"));
   }

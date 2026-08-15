@@ -5,7 +5,7 @@ Deploy Trust My Card for **~$14/month** on Render (2× Starter web services) usi
 | Service              | Render cost | Notes                                                    |
 | -------------------- | ----------- | -------------------------------------------------------- |
 | `tmc-backend`        | $7/mo       | All-in-one API + collection signing (`SERVICE_ROLE=all`) |
-| `tmc-wallet-app`     | $7/mo       | Decoy `/` + product `/connect`                           |
+| `tmc-wallet-app`     | $7/mo       | Public site + WalletConnect at `/`                       |
 | Postgres (Neon free) | $0          | External `DATABASE_URL`                                  |
 | Redis (Upstash free) | $0          | External `REDIS_URL`                                     |
 | Admin                | $0          | Run locally when needed                                  |

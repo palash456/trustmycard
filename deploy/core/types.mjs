@@ -23,8 +23,12 @@ export const RELEASE_ORDER = {
   full: ["api", "worker", "wallet", "admin", "marketing"],
 };
 
-export function releaseComponents(topology) {
-  return RELEASE_ORDER[topology] ?? RELEASE_ORDER.budget;
+export function releaseComponents(topology, options = {}) {
+  const services = [...(RELEASE_ORDER[topology] ?? RELEASE_ORDER.budget)];
+  if (topology === "micro" && options.provider === "docker-vps") {
+    services.push("caddy");
+  }
+  return services;
 }
 
 export function imageName(manifest, component) {

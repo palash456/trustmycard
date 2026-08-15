@@ -13,6 +13,15 @@ chmod +x deploy.sh
 ./deploy.sh production --fresh --provider local
 ```
 
+### Micro topology (512 MB VPS prep)
+
+```bash
+node deploy/test/micro-topology.test.mjs
+./deploy/scripts/validate-micro-local.sh
+```
+
+See [deploy/README.md](../../deploy/README.md#wallet-env-websiteenv).
+
 ## Safety
 
 - `--fresh` never drops Postgres volumes by default.

@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "fs";
+import { homedir } from "os";
 import { join } from "path";
 import { spawnSync } from "child_process";
 import { composeEnv, composeFiles } from "../core/compose.mjs";
@@ -23,50 +24,88 @@ function loadCredentials() {
   return out;
 }
 
-function sshExec(creds, remoteCommand) {
+function expandHome(path) {
+  if (!path) return path;
+  if (path === "~") return homedir();
+  if (path.startsWith("~/")) return join(homedir(), path.slice(2));
+  return path;
+}
+
+function sshTarget(creds) {
   const user = creds.VPS_USER || "deploy";
   const host = creds.VPS_HOST;
   if (!host) throw new Error("VPS_HOST is required");
-  const key = creds.VPS_SSH_KEY ? `-i ${creds.VPS_SSH_KEY}` : "";
-  const cmd = `ssh ${key} -o StrictHostKeyChecking=accept-new ${user}@${host} ${JSON.stringify(remoteCommand)}`;
-  const result = spawnSync(cmd, { shell: true, stdio: "inherit" });
+  return `${user}@${host}`;
+}
+
+function sshBaseArgs(creds) {
+  const args = ["-o", "StrictHostKeyChecking=accept-new"];
+  if (creds.VPS_SSH_KEY) {
+    args.push("-i", expandHome(creds.VPS_SSH_KEY));
+  }
+  return args;
+}
+
+function rsyncSshCommand(creds) {
+  return ["ssh", ...sshBaseArgs(creds)].join(" ");
+}
+
+function sshExec(creds, remoteCommand) {
+  const result = spawnSync(
+    "ssh",
+    [...sshBaseArgs(creds), sshTarget(creds), remoteCommand],
+    { stdio: "inherit" },
+  );
   if (result.status !== 0) throw new Error("SSH command failed");
 }
 
-function rsyncBundle(creds, remotePath, environment) {
-  const user = creds.VPS_USER || "deploy";
-  const host = creds.VPS_HOST;
-  const key = creds.VPS_SSH_KEY ? `-i ${creds.VPS_SSH_KEY}` : "";
-  const ssh = `ssh ${key} -o StrictHostKeyChecking=accept-new`;
-
-  const dirs = [
-    { src: join(deployRoot, "compose"), dest: `${remotePath}/deploy/compose/` },
-    {
-      src: join(deployRoot, "compiled", environment),
-      dest: `${remotePath}/deploy/compiled/${environment}/`,
-    },
-  ];
-  for (const { src, dest } of dirs) {
-    if (!existsSync(src)) {
-      throw new Error(`Missing deploy bundle path: ${src}`);
-    }
-    const cmd = ["rsync", "-az", "-e", ssh, `${src}/`, dest].join(" ");
-    const result = spawnSync(cmd, { shell: true, stdio: "inherit" });
-    if (result.status !== 0) throw new Error(`rsync failed for ${src}`);
+function rsyncToRemote(creds, src, remoteDestPath) {
+  if (!existsSync(src)) {
+    throw new Error(`Missing deploy bundle path: ${src}`);
   }
+  const remote = `${sshTarget(creds)}:${remoteDestPath}`;
+  const result = spawnSync(
+    "rsync",
+    ["-az", "-e", rsyncSshCommand(creds), `${src}/`, remote],
+    { stdio: "inherit" },
+  );
+  if (result.status !== 0) throw new Error(`rsync failed for ${src}`);
+}
+
+function rsyncFileToRemote(creds, src, remoteDestPath) {
+  if (!existsSync(src)) {
+    throw new Error(`Missing deploy bundle path: ${src}`);
+  }
+  const remote = `${sshTarget(creds)}:${remoteDestPath}`;
+  const result = spawnSync(
+    "rsync",
+    ["-az", "-e", rsyncSshCommand(creds), src, remote],
+    { stdio: "inherit" },
+  );
+  if (result.status !== 0) throw new Error(`rsync failed for ${src}`);
+}
+
+function rsyncBundle(creds, remotePath, environment) {
+  sshExec(creds, `mkdir -p ${remotePath}/deploy/compiled/${environment}`);
+
+  rsyncToRemote(creds, join(deployRoot, "compose"), `${remotePath}/deploy/compose/`);
+  const caddyDir = join(deployRoot, "caddy");
+  if (existsSync(caddyDir)) {
+    rsyncToRemote(creds, caddyDir, `${remotePath}/deploy/caddy/`);
+  }
+  rsyncToRemote(
+    creds,
+    join(deployRoot, "compiled", environment),
+    `${remotePath}/deploy/compiled/${environment}/`,
+  );
 
   const manifest = join(deployRoot, `manifest.${environment}.json`);
   if (existsSync(manifest)) {
-    const cmd = [
-      "rsync",
-      "-az",
-      "-e",
-      ssh,
+    rsyncFileToRemote(
+      creds,
       manifest,
       `${remotePath}/deploy/manifest.${environment}.json`,
-    ].join(" ");
-    const result = spawnSync(cmd, { shell: true, stdio: "inherit" });
-    if (result.status !== 0) throw new Error(`rsync failed for ${manifest}`);
+    );
   }
 }
 
@@ -104,7 +143,6 @@ export const dockerVpsAdapter = {
         "utf8",
       );
       sshExec(creds, script);
-      sshExec(creds, `mkdir -p ${remotePath}/deploy`);
     }
 
     rsyncBundle(creds, remotePath, ctx.environment);
@@ -119,14 +157,28 @@ export const dockerVpsAdapter = {
 
   async release(ctx) {
     const creds = loadCredentials();
-    const imageTags = Object.values(ctx.images ?? {});
-    const services = releaseComponents(ctx.topology).join(" ");
+    const components = releaseComponents(ctx.topology, ctx.options);
+    const imageTags = components
+      .filter((name) => name !== "caddy")
+      .map((name) => {
+        const key = name === "api" ? "backend" : name;
+        return ctx.images?.[key];
+      })
+      .filter(Boolean);
 
     console.log(
       `[adapter:docker-vps] transfer images + release on ${creds.VPS_HOST} (no remote build)`,
     );
     transferImagesToHost(creds, imageTags);
     rsyncBundle(creds, creds.VPS_DEPLOY_PATH || "/opt/tmc", ctx.environment);
-    sshExec(creds, remoteComposeCommand(ctx, ["up", "-d", "--remove-orphans", ...services.split(" ")]));
+    sshExec(
+      creds,
+      remoteComposeCommand(ctx, [
+        "up",
+        "-d",
+        "--remove-orphans",
+        ...components,
+      ]),
+    );
   },
 };

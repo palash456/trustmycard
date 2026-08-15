@@ -1,0 +1,10 @@
+# Local micro validation with bundled Postgres/Redis (provider=local only).
+# VPS micro deploys must use data.mode=external.
+
+services:
+  backend:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy

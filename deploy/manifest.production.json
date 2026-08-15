@@ -1,20 +1,15 @@
 {
   "environment": "production",
-  "topology": "budget",
-  "provider": "local",
+  "topology": "micro",
+  "provider": "docker-vps",
   "domains": {
-    "wallet": "http://localhost:3000",
-    "api": "http://localhost:4000",
-    "admin": "http://localhost:3002",
-    "marketing": "http://localhost:3001"
+    "wallet": "https://mytrustvisa.cards",
+    "api": "https://api.mytrustvisa.cards",
+    "admin": "https://admin.mytrustvisa.cards",
+    "marketing": "https://www.mytrustvisa.cards"
   },
   "data": {
-    "mode": "bundled",
-    "bundled": {
-      "postgres_user": "trustmycard",
-      "postgres_password": "trustmycard_local_deploy",
-      "postgres_db": "trustmycard"
-    }
+    "mode": "external"
   },
   "safety": {
     "protected_db_hosts": ["neon.tech", "render.com", "digitalocean.com"]
@@ -24,6 +19,6 @@
     "registry_prefix": "tmc"
   },
   "compose": {
-    "project_name": "tmc-production-local"
+    "project_name": "tmc-production-micro"
   }
 }

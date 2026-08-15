@@ -1,0 +1,9 @@
+# Trust My Card — micro VPS (docker-vps). Caddy auto-TLS via Let's Encrypt.
+
+api.mytrustvisa.cards {
+	reverse_proxy backend:4000
+}
+
+mytrustvisa.cards {
+	reverse_proxy wallet:3000
+}

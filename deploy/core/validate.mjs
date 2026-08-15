@@ -31,21 +31,41 @@ export function validateDeployContext(ctx) {
   }
 
   if (manifest.topology === "micro") {
-    if ((manifest.data?.mode ?? "bundled") !== "external") {
+    const dataMode = manifest.data?.mode ?? "bundled";
+    if (dataMode !== "external" && provider !== "local") {
       errors.push(
-        'topology "micro" requires data.mode=external (Neon Postgres + Upstash Redis) — bundled DB does not fit a 512 MB VPS',
+        'topology "micro" on a VPS requires data.mode=external (Neon Postgres + Upstash Redis) — bundled DB does not fit a 512 MB VPS',
       );
     }
-    if (!existsSync(profile.backendBudget._path)) {
+    if (!existsSync(profile.backendBudget._path) && provider !== "local") {
       errors.push(
         `Missing ${profile.backendBudget._path} — copy from backend-budget.env.example`,
       );
     }
-    if (!profile.backendBudget.DATABASE_URL?.trim()) {
-      errors.push("backend-budget.env: DATABASE_URL is required for micro topology");
-    }
-    if (!profile.backendBudget.REDIS_URL?.trim()) {
-      errors.push("backend-budget.env: REDIS_URL is required for micro topology");
+    if (dataMode === "external") {
+      const databaseUrl = profile.backendBudget.DATABASE_URL?.trim();
+      const redisUrl = profile.backendBudget.REDIS_URL?.trim();
+      if (!databaseUrl) {
+        errors.push(
+          "backend-budget.env: DATABASE_URL is required for micro + external data",
+        );
+      } else if (
+        databaseUrl.includes("USER:PASSWORD") ||
+        databaseUrl.includes("@HOST")
+      ) {
+        errors.push(
+          "backend-budget.env: DATABASE_URL is still a placeholder — paste your Neon connection string",
+        );
+      }
+      if (!redisUrl) {
+        errors.push(
+          "backend-budget.env: REDIS_URL is required for micro + external data",
+        );
+      } else if (redisUrl.includes("PASSWORD@HOST")) {
+        errors.push(
+          "backend-budget.env: REDIS_URL is still a placeholder — paste your Upstash rediss:// URL",
+        );
+      }
     }
   }
 

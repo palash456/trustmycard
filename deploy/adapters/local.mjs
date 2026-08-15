@@ -16,7 +16,7 @@ export const localAdapter = {
     if ((ctx.manifest.data?.mode ?? "bundled") === "bundled") {
       services.push("postgres", "redis");
     }
-    services.push(...releaseComponents(ctx.topology));
+    services.push(...releaseComponents(ctx.topology, ctx.options));
     const code = runCompose(ctx, ["up", "-d", "--remove-orphans", ...services], {});
     if (code !== 0) throw new Error("docker compose up failed");
   },

@@ -1,5 +1,7 @@
 # Marketing access control (`/connect` gating)
 
+> **Deprecated (2026):** The marketing session gate, decoy homepage, and `/connect` gating were removed from `frontend/website`. The product now lives at `/`; `/connect` redirects home. This doc is kept for historical reference. Archive: [trustmycard-marketing-gate-archive](https://github.com/palash456/trustmycard-marketing-gate-archive).
+
 **Production domain:** `mytrustvisa.cards` (migrated from `trustvisa.cards`)
 
 > **Full guide:** [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md) — URL map, all access cases, env vars, Meta ads, developer test, DNS, and troubleshooting. Reading that document alone is sufficient for operations.

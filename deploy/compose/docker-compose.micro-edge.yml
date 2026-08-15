@@ -1,0 +1,32 @@
+# Micro VPS edge — Caddy TLS termination (docker-vps + micro topology only).
+# Requires deploy/caddy/Caddyfile on the host bundle.
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+    mem_limit: 64m
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ../caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+      wallet:
+        condition: service_started
+    networks:
+      - tmc
+
+volumes:
+  caddy_data:
+  caddy_config:

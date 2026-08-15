@@ -3,10 +3,15 @@ import { join } from "path";
 import { compiledDir } from "./types.mjs";
 
 function serializeEnv(map) {
+  const encodeForDockerEnv = (value) => {
+    const s = String(value ?? "");
+    // Docker env files treat '&' specially; percent-encode so URLs stay unquoted.
+    return s.replace(/&/g, "%26");
+  };
   return (
     Object.entries(map)
       .filter(([key]) => !key.startsWith("_"))
-      .map(([key, value]) => `${key}=${String(value ?? "")}`)
+      .map(([key, value]) => `${key}=${encodeForDockerEnv(value)}`)
       .join("\n") + "\n"
   );
 }
