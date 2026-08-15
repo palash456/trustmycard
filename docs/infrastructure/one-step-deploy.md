@@ -25,7 +25,7 @@ chmod +x deploy.sh
 | Provider | Status |
 |----------|--------|
 | `local` | Docker Compose on this machine |
-| `docker-vps` | SSH + Docker Compose on a VPS |
+| `docker-vps` | Build locally → stream images → compose up on VPS (no remote build) |
 | `render` | Stub (not implemented) |
 | `hostinger-static` | Stub (marketing FTP upload) |
 

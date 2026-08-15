@@ -47,7 +47,9 @@ export function buildImages(ctx) {
   const components =
     topology === "full"
       ? ["backend", "worker", "wallet", "admin", "marketing"]
-      : ["backend", "wallet", "admin", "marketing"];
+      : topology === "micro"
+        ? ["backend", "wallet"]
+        : ["backend", "wallet", "admin", "marketing"];
 
   const built = {};
   for (const component of components) {

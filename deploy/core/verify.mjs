@@ -7,6 +7,7 @@ function sleep(ms) {
 
 export async function verifyDeployment(ctx) {
   const { manifest } = ctx;
+  const topology = manifest.topology ?? "budget";
   const api = manifest.domains.api.replace(/\/$/, "");
   const wallet = manifest.domains.wallet.replace(/\/$/, "");
   const admin = manifest.domains.admin.replace(/\/$/, "");
@@ -22,12 +23,15 @@ export async function verifyDeployment(ctx) {
       url: `${wallet}/api/settings/public`,
       expectStatus: 200,
     },
-    {
+  ];
+
+  if (topology !== "micro") {
+    checks.push({
       name: "admin login page",
       url: `${admin}/login`,
       expectStatus: [200, 307, 308],
-    },
-  ];
+    });
+  }
 
   const results = [];
   for (const check of checks) {

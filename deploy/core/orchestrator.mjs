@@ -81,7 +81,9 @@ export async function runDeploy(options) {
     await adapter.provision(ctx);
   }
 
-  ensureBundledDataLayer(ctx);
+  if (provider !== "docker-vps") {
+    ensureBundledDataLayer(ctx);
+  }
 
   if (!options.skipMigrate) {
     runMigrations(ctx);

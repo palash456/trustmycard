@@ -1,0 +1,60 @@
+# Micro topology for low-RAM VPS (512 MB): backend + wallet only.
+# Requires data.mode=external (Neon Postgres + Upstash Redis).
+# Admin: run locally. Marketing: static host (Hostinger/CDN).
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  backend:
+    image: ${TMC_IMAGE_BACKEND:-tmc/backend:production}
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 256m
+    memswap_limit: 320m
+    env_file:
+      - ${TMC_COMPILED_ENV_BACKEND:-../compiled/production/backend.env}
+    environment:
+      TMC_ENV: production
+      PORT: "4000"
+      NODE_OPTIONS: "--max-old-space-size=192"
+    ports:
+      - "${TMC_HOST_API_PORT:-4000}:4000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/v1/api/settings/public').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 60s
+    networks:
+      - tmc
+
+  wallet:
+    image: ${TMC_IMAGE_WALLET:-tmc/wallet:production}
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 192m
+    memswap_limit: 256m
+    env_file:
+      - ${TMC_COMPILED_ENV_WALLET:-../compiled/production/wallet.env}
+    environment:
+      TMC_ENV: production
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+      NODE_OPTIONS: "--max-old-space-size=128"
+    ports:
+      - "${TMC_HOST_WALLET_PORT:-3000}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - tmc

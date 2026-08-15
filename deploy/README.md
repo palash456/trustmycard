@@ -10,6 +10,32 @@ OCI images are the common artifact. Provider adapters only ship and start contai
 ./deploy.sh production --fresh --provider docker-vps
 ```
 
+### 512 MB VPS (`micro` topology)
+
+Runs **backend + wallet only** with **external** Neon Postgres + Upstash Redis. Images are built on your machine and streamed to the VPS (`docker save | ssh docker load`) — the VPS never runs `npm` or `docker build`.
+
+```bash
+cp deploy/manifest.production.micro.example.json deploy/manifest.production.json
+cp env/profiles/production/backend-budget.env.example env/profiles/production/backend-budget.env
+# fill backend-budget.env (DATABASE_URL, REDIS_URL, keys) + website.env
+
+cp deploy/provider.credentials.example.env deploy/provider.credentials.env
+# fill VPS_HOST, VPS_USER, VPS_SSH_KEY
+
+./deploy.sh production --fresh --provider docker-vps
+./deploy.sh production --provider docker-vps   # subsequent deploys
+```
+
+Admin runs locally; marketing stays on a static host. Add **1 GB swap** on the VPS and terminate TLS with Caddy/nginx in front of ports 3000/4000.
+
+## Topologies
+
+| Topology | Containers | Use case |
+|----------|------------|----------|
+| `micro` | backend + wallet | 512 MB VPS, external DB |
+| `budget` | + admin + marketing + optional bundled DB | local / larger VPS |
+| `full` | split API + worker | production split signing |
+
 ## Layout
 
 ```

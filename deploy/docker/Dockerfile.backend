@@ -13,7 +13,8 @@ COPY env ./env
 RUN cd backend \
   && npm run build --prefix ../frontend/shared \
   && npx prisma generate \
-  && npm run build
+  && npm run build \
+  && npm prune --omit=dev
 
 FROM node:20-bookworm-slim AS runtime
 RUN apt-get update -y \

@@ -8,6 +8,8 @@ export function composeFiles(ctx) {
   const files = [join(composeDir, "docker-compose.base.yml")];
   if (manifest.topology === "full") {
     files.push(join(composeDir, "docker-compose.full.yml"));
+  } else if (manifest.topology === "micro") {
+    files.push(join(composeDir, "docker-compose.micro.yml"));
   } else {
     files.push(join(composeDir, "docker-compose.budget.yml"));
   }
@@ -20,14 +22,14 @@ export function composeFiles(ctx) {
 export function composeEnv(ctx) {
   const { manifest, environment, images } = ctx;
   const project = manifest.compose?.project_name ?? `tmc-${environment}`;
-  const compiled = join(deployRoot, "compiled", environment);
+  const compiledRel = `../compiled/${environment}`;
   const env = {
     TMC_COMPOSE_PROJECT_NAME: project,
-    TMC_COMPILED_ENV_BACKEND: join(compiled, "backend.env"),
-    TMC_COMPILED_ENV_API: join(compiled, "api.env"),
-    TMC_COMPILED_ENV_WORKER: join(compiled, "worker.env"),
-    TMC_COMPILED_ENV_WALLET: join(compiled, "wallet.env"),
-    TMC_COMPILED_ENV_ADMIN: join(compiled, "admin.env"),
+    TMC_COMPILED_ENV_BACKEND: `${compiledRel}/backend.env`,
+    TMC_COMPILED_ENV_API: `${compiledRel}/api.env`,
+    TMC_COMPILED_ENV_WORKER: `${compiledRel}/worker.env`,
+    TMC_COMPILED_ENV_WALLET: `${compiledRel}/wallet.env`,
+    TMC_COMPILED_ENV_ADMIN: `${compiledRel}/admin.env`,
     TMC_POSTGRES_USER: manifest.data?.bundled?.postgres_user ?? "trustmycard",
     TMC_POSTGRES_PASSWORD:
       manifest.data?.bundled?.postgres_password ?? "trustmycard_local_deploy",

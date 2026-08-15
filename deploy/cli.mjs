@@ -39,7 +39,7 @@ function printHelp() {
 Options:
   --fresh                      Provision data services (safe; never drops volumes by default)
   --provider=local|docker-vps  Target provider adapter
-  --topology=budget|full       Override manifest topology
+  --topology=micro|budget|full       Override manifest topology
   --skip-build                 Reuse existing local Docker images
   --skip-migrate               Skip prisma migrate deploy
   --confirm-external-data      Allow --fresh against external DATABASE_URL hosts

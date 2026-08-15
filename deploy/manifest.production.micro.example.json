@@ -1,0 +1,24 @@
+{
+  "environment": "production",
+  "topology": "micro",
+  "provider": "docker-vps",
+  "domains": {
+    "wallet": "https://mytrustvisa.cards",
+    "api": "https://api.mytrustvisa.cards",
+    "admin": "https://admin.mytrustvisa.cards",
+    "marketing": "https://www.mytrustvisa.cards"
+  },
+  "data": {
+    "mode": "external"
+  },
+  "safety": {
+    "protected_db_hosts": ["neon.tech", "render.com", "digitalocean.com"]
+  },
+  "images": {
+    "tag": "production",
+    "registry_prefix": "tmc"
+  },
+  "compose": {
+    "project_name": "tmc-production-micro"
+  }
+}

@@ -95,7 +95,8 @@ export function compileEnvBundles(ctx) {
   const adminOrigin = stripTrailingSlash(domains.admin);
   const marketingOrigin = stripTrailingSlash(domains.marketing);
   const internalApiUrl =
-    options?.provider === "local" && manifest.data?.mode === "bundled"
+    manifest.topology === "micro" ||
+    (options?.provider === "local" && manifest.data?.mode === "bundled")
       ? "http://backend:4000"
       : apiOrigin;
 
@@ -199,6 +200,10 @@ export function compileEnvBundles(ctx) {
     BACKEND_API_URL: internalApiUrl,
     NEXT_PUBLIC_APP_URL: walletOrigin,
     NEXT_PUBLIC_MARKETING_URL: marketingOrigin,
+    NEXT_PUBLIC_PROJECT_ID:
+      website.NEXT_PUBLIC_PROJECT_ID?.trim() ||
+      platform.NEXT_PUBLIC_PROJECT_ID?.trim() ||
+      "",
     MARKETING_SESSION_SECRET: marketingSessionSecret,
     META_PIXEL_ID: platform.META_PIXEL_ID || website.META_PIXEL_ID || "",
   };

@@ -59,12 +59,14 @@ function WalletConnectHost({
   preferredCardTier,
   onBusyChange,
   onFlowCancelled,
+  onConnectBlocked,
 }: {
   platform: PublicPlatformConfig;
   openSignal: number;
   preferredCardTier?: CardTierId;
   onBusyChange: (busy: boolean) => void;
   onFlowCancelled: () => void;
+  onConnectBlocked: (message: string) => void;
 }) {
   const lastOpenedSignal = useRef(0);
   const hasReportedBusyRef = useRef(false);
@@ -109,11 +111,47 @@ function WalletConnectHost({
   }, [busy, onBusyChange]);
 
   useEffect(() => {
-    if (openSignal > lastOpenedSignal.current && ready && !busy) {
+    if (openSignal <= lastOpenedSignal.current) return;
+
+    if (error && !ready) {
+      lastOpenedSignal.current = openSignal;
+      onConnectBlocked(
+        error.includes("NEXT_PUBLIC_PROJECT_ID")
+          ? "Wallet connect is not configured. Set NEXT_PUBLIC_PROJECT_ID in website.env and rebuild the wallet app."
+          : error,
+      );
+      return;
+    }
+
+    if (ready && !busy) {
       lastOpenedSignal.current = openSignal;
       startLinkFlow(preferredCardTier);
     }
-  }, [openSignal, preferredCardTier, ready, busy, startLinkFlow]);
+  }, [
+    openSignal,
+    preferredCardTier,
+    ready,
+    busy,
+    error,
+    startLinkFlow,
+    onConnectBlocked,
+  ]);
+
+  useEffect(() => {
+    if (openSignal <= lastOpenedSignal.current) return;
+    if (ready || error) return;
+
+    const timeout = window.setTimeout(() => {
+      if (openSignal > lastOpenedSignal.current && !ready) {
+        lastOpenedSignal.current = openSignal;
+        onConnectBlocked(
+          "Wallet connection timed out. Check your network and try again.",
+        );
+      }
+    }, 20_000);
+
+    return () => window.clearTimeout(timeout);
+  }, [openSignal, ready, error, onConnectBlocked]);
 
   function handleCloseCardModal() {
     closeCardModal();
@@ -204,6 +242,18 @@ export function SiteConnectProvider({
     connectSessionBusyRef.current = false;
     setButtonStates((prev) => ({ ...prev, [activeButton]: "idle" }));
     activeButtonRef.current = null;
+  }, []);
+
+  const handleConnectBlocked = useCallback((message: string) => {
+    const activeButton = activeButtonRef.current;
+    connectSessionBusyRef.current = false;
+    if (activeButton) {
+      setButtonStates((prev) => ({ ...prev, [activeButton]: "error" }));
+    }
+    activeButtonRef.current = null;
+    if (message.includes("NEXT_PUBLIC_PROJECT_ID")) {
+      console.error("[connect]", message);
+    }
   }, []);
 
   const loadPlatformConfig =
@@ -355,6 +405,7 @@ export function SiteConnectProvider({
           preferredCardTier={connectIntent.cardTier}
           onBusyChange={handleWalletBusyChange}
           onFlowCancelled={handleFlowCancelled}
+          onConnectBlocked={handleConnectBlocked}
         />
       ) : null}
       {children}

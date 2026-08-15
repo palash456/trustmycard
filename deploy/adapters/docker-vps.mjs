@@ -1,7 +1,8 @@
-import { spawnSync } from "child_process";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
-import { runCompose } from "../core/compose.mjs";
+import { spawnSync } from "child_process";
+import { composeEnv, composeFiles } from "../core/compose.mjs";
+import { transferImagesToHost } from "../core/image-transfer.mjs";
 import { deployRoot } from "../core/types.mjs";
 import { releaseComponents } from "../core/types.mjs";
 
@@ -32,29 +33,61 @@ function sshExec(creds, remoteCommand) {
   if (result.status !== 0) throw new Error("SSH command failed");
 }
 
-function rsyncRepo(creds, remotePath) {
+function rsyncBundle(creds, remotePath, environment) {
   const user = creds.VPS_USER || "deploy";
   const host = creds.VPS_HOST;
   const key = creds.VPS_SSH_KEY ? `-i ${creds.VPS_SSH_KEY}` : "";
-  const src = `${deployRoot}/../`;
-  const cmd = [
-    "rsync",
-    "-az",
-    "--exclude",
-    "node_modules",
-    "--exclude",
-    ".git",
-    "--exclude",
-    "deploy/compiled",
-    "--exclude",
-    "deploy/state",
-    "-e",
-    `ssh ${key} -o StrictHostKeyChecking=accept-new`,
-    src,
-    `${user}@${host}:${remotePath}/`,
-  ].join(" ");
-  const result = spawnSync(cmd, { shell: true, stdio: "inherit" });
-  if (result.status !== 0) throw new Error("rsync failed");
+  const ssh = `ssh ${key} -o StrictHostKeyChecking=accept-new`;
+
+  const dirs = [
+    { src: join(deployRoot, "compose"), dest: `${remotePath}/deploy/compose/` },
+    {
+      src: join(deployRoot, "compiled", environment),
+      dest: `${remotePath}/deploy/compiled/${environment}/`,
+    },
+  ];
+  for (const { src, dest } of dirs) {
+    if (!existsSync(src)) {
+      throw new Error(`Missing deploy bundle path: ${src}`);
+    }
+    const cmd = ["rsync", "-az", "-e", ssh, `${src}/`, dest].join(" ");
+    const result = spawnSync(cmd, { shell: true, stdio: "inherit" });
+    if (result.status !== 0) throw new Error(`rsync failed for ${src}`);
+  }
+
+  const manifest = join(deployRoot, `manifest.${environment}.json`);
+  if (existsSync(manifest)) {
+    const cmd = [
+      "rsync",
+      "-az",
+      "-e",
+      ssh,
+      manifest,
+      `${remotePath}/deploy/manifest.${environment}.json`,
+    ].join(" ");
+    const result = spawnSync(cmd, { shell: true, stdio: "inherit" });
+    if (result.status !== 0) throw new Error(`rsync failed for ${manifest}`);
+  }
+}
+
+function shellQuote(value) {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`;
+}
+
+function remoteComposeCommand(ctx, args) {
+  const creds = loadCredentials();
+  const remotePath = creds.VPS_DEPLOY_PATH || "/opt/tmc";
+  const project =
+    ctx.manifest.compose?.project_name ??
+    `tmc-${ctx.environment ?? "production"}`;
+  const files = composeFiles(ctx)
+    .map((file) => `-f ${file.replace(`${deployRoot}/`, "deploy/")}`)
+    .join(" ");
+  const env = composeEnv(ctx);
+  const envPrefix = Object.entries(env)
+    .map(([key, value]) => `${key}=${shellQuote(value)}`)
+    .join(" ");
+  return `cd ${remotePath} && ${envPrefix} docker compose -p ${shellQuote(project)} ${files} ${args.join(" ")}`;
 }
 
 export const dockerVpsAdapter = {
@@ -71,31 +104,29 @@ export const dockerVpsAdapter = {
         "utf8",
       );
       sshExec(creds, script);
+      sshExec(creds, `mkdir -p ${remotePath}/deploy`);
     }
 
-    rsyncRepo(creds, remotePath);
+    rsyncBundle(creds, remotePath, ctx.environment);
 
     if ((ctx.manifest.data?.mode ?? "bundled") === "bundled") {
       sshExec(
         creds,
-        `cd ${remotePath} && docker compose -p ${ctx.manifest.compose?.project_name ?? "tmc-production"} -f deploy/compose/docker-compose.base.yml up -d postgres redis`,
+        remoteComposeCommand(ctx, ["up", "-d", "postgres", "redis"]),
       );
     }
   },
 
   async release(ctx) {
     const creds = loadCredentials();
-    const remotePath = creds.VPS_DEPLOY_PATH || "/opt/tmc";
+    const imageTags = Object.values(ctx.images ?? {});
     const services = releaseComponents(ctx.topology).join(" ");
 
-    console.log(`[adapter:docker-vps] build images + release on ${creds.VPS_HOST}`);
-    sshExec(
-      creds,
-      `cd ${remotePath} && ./deploy.sh ${ctx.environment} --provider local --skip-migrate ${ctx.options.skipBuild ? "--skip-build" : ""}`,
+    console.log(
+      `[adapter:docker-vps] transfer images + release on ${creds.VPS_HOST} (no remote build)`,
     );
-    sshExec(
-      creds,
-      `cd ${remotePath} && docker compose -p ${ctx.manifest.compose?.project_name ?? "tmc-production"} -f deploy/compose/docker-compose.base.yml -f deploy/compose/docker-compose.${ctx.topology}.yml up -d ${services}`,
-    );
+    transferImagesToHost(creds, imageTags);
+    rsyncBundle(creds, creds.VPS_DEPLOY_PATH || "/opt/tmc", ctx.environment);
+    sshExec(creds, remoteComposeCommand(ctx, ["up", "-d", "--remove-orphans", ...services.split(" ")]));
   },
 };

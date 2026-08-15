@@ -7,16 +7,18 @@ export const deployRoot = resolve(
 );
 export const repoRoot = resolve(deployRoot, "..");
 
-export const TOPOLOGIES = ["budget", "full"];
+export const TOPOLOGIES = ["micro", "budget", "full"];
 export const PROVIDERS = ["local", "docker-vps", "render", "hostinger-static"];
 export const DATA_MODES = ["bundled", "external"];
 
 export const COMPONENTS = {
+  micro: ["backend", "wallet"],
   budget: ["backend", "wallet", "admin", "marketing"],
   full: ["api", "worker", "wallet", "admin", "marketing"],
 };
 
 export const RELEASE_ORDER = {
+  micro: ["backend", "wallet"],
   budget: ["backend", "wallet", "admin", "marketing"],
   full: ["api", "worker", "wallet", "admin", "marketing"],
 };
