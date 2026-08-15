@@ -7,6 +7,7 @@ import { Reveal } from "@/components/site/Reveal";
 import { SiteChrome } from "@/components/site/SiteChrome";
 import { SparkleIcon } from "@/components/site/SparkleIcon";
 import { useSiteConnect } from "@/components/site/connect/SiteConnectProvider";
+import { useTranslation } from "@/lib/i18n/I18nProvider";
 
 function RewardBar({
   percent,
@@ -74,6 +75,29 @@ const WALLET_PARTNERS = [
   { name: "Atomic", logo: "/logos/partners/atomic-wallet.png", height: 24 },
 ];
 
+const FEATURE_ICONS = [
+  "/icons/features/wallet-integration.svg",
+  "/icons/features/global-acceptance.svg",
+  "/icons/features/apple-google-pay.svg",
+  "/icons/features/bank-security.svg",
+  "/icons/features/instant-approvals.svg",
+  "/icons/features/crypto-rewards.svg",
+] as const;
+
+const PREMIUM_ICONS = [
+  "/icons/card/premium-design.svg",
+  "/icons/card/lounge-access.svg",
+  "/icons/card/priority-support.svg",
+  "/icons/card/rewards-multiplier.svg",
+] as const;
+
+const COIN_ICONS = [
+  { key: "tron", icon: "/icons/crypto/tron.svg", iconBg: "bg-red-50" },
+  { key: "ethereum", icon: "/icons/crypto/ethereum.svg", iconBg: "bg-slate-100" },
+  { key: "bsc", icon: "/icons/crypto/bsc.svg", iconBg: "bg-amber-50" },
+  { key: "polygon", icon: "/icons/crypto/polygon.svg", iconBg: "bg-purple-50" },
+] as const;
+
 const BACKERS = [
   {
     name: "a16z crypto",
@@ -138,6 +162,15 @@ function WalletMarquee() {
 
 function MarketingHomeContent() {
   const { renderConnectButton } = useSiteConnect();
+  const { t, tRaw, dir } = useTranslation();
+  const heroCopyAlign =
+    dir === "rtl"
+      ? "lg:items-end lg:text-right"
+      : "lg:items-start lg:text-left";
+  const heroBadgesAlign =
+    dir === "rtl" ? "sm:justify-end" : "sm:justify-start";
+  const heroImageAlign =
+    dir === "rtl" ? "lg:justify-start" : "lg:justify-end";
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -155,33 +188,33 @@ function MarketingHomeContent() {
 
         <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-16">
-            <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
+            <div
+              className={`flex flex-col items-center text-center ${heroCopyAlign}`}
+            >
               <Reveal>
                 <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#ECECEF] bg-white px-4 py-2 text-xs font-semibold text-[#0400FF] sm:text-sm">
                   <SparkleIcon />
-                  Now Available Worldwide
+                  {t("home.hero.eyebrow")}
                 </div>
               </Reveal>
 
               <Reveal delay={80}>
                 <h1 className="text-[2.5rem] font-bold leading-[1.1] tracking-tight text-[#131520] sm:text-5xl lg:text-6xl xl:text-[72px]">
-                  Spend Crypto Like Cash.
-                  <span className="mt-1 block text-[#0400FF]">Everywhere.</span>
+                  {t("home.hero.title")}
+                  <span className="mt-1 block text-[#0400FF]">{t("home.hero.titleAccent")}</span>
                 </h1>
               </Reveal>
 
               <Reveal delay={160}>
                 <p className="mt-5 max-w-xl text-sm leading-relaxed text-[#6A6D81] sm:mt-6 sm:text-lg">
-                  The first card that connects directly to your crypto wallet.
-                  Spend from your wallet without account top-ups or
-                  verification.
+                  {t("home.hero.description")}
                 </p>
               </Reveal>
 
               <Reveal delay={240} className="w-full sm:w-auto">
                 <div className="mt-7 flex w-full flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
                   <div id="connect-primary">
-                    {renderConnectButton("hero", "Issue Card", "hero")}
+                    {renderConnectButton("hero", t("connect.issueCard"), "hero")}
                   </div>
                   <button
                     type="button"
@@ -192,14 +225,20 @@ function MarketingHomeContent() {
                         ?.scrollIntoView({ behavior: "smooth" })
                     }
                   >
-                    Learn More
+                    {t("home.hero.learnMore")}
                   </button>
                 </div>
               </Reveal>
 
               <Reveal delay={320}>
-                <div className="mt-7 grid grid-cols-2 justify-items-center gap-y-3 sm:mt-8 sm:flex sm:flex-row sm:flex-wrap sm:gap-x-8 lg:items-start">
-                  {["No KYC", "Instant Approval", "Zero Annual Fee"].map(
+                <div
+                  className={`mt-7 grid grid-cols-2 justify-items-center gap-y-3 sm:mt-8 sm:flex sm:flex-row sm:flex-wrap sm:gap-x-8 ${heroBadgesAlign}`}
+                >
+                  {[
+                    t("home.hero.badges.noKyc"),
+                    t("home.hero.badges.instantApproval"),
+                    t("home.hero.badges.zeroAnnualFee"),
+                  ].map(
                     (item, index) => (
                       <div
                         key={item}
@@ -230,7 +269,10 @@ function MarketingHomeContent() {
               </Reveal>
             </div>
 
-            <Reveal delay={200} className="flex justify-center lg:justify-end">
+            <Reveal
+              delay={200}
+              className={`flex justify-center ${heroImageAlign}`}
+            >
               <div className="relative w-full max-w-[400px] sm:max-w-[620px] lg:max-w-[560px]">
                 <div className="absolute inset-0 -z-10 scale-90 rounded-full bg-indigo-400/20 blur-3xl" />
                 <Image
@@ -239,7 +281,7 @@ function MarketingHomeContent() {
                   width={673}
                   height={634}
                   priority
-                  alt="Trust My Card app mockup"
+                  alt={t("home.hero.imageAlt")}
                 />
               </div>
             </Reveal>
@@ -255,14 +297,14 @@ function MarketingHomeContent() {
               <div className="flex items-center gap-3">
                 <Image
                   src="/logos/apple-pay-badge.png"
-                  alt="Apple Pay"
+                  alt={t("home.partners.applePayAlt")}
                   width={150}
                   height={96}
                   className="h-10 w-auto sm:h-12"
                 />
                 <Image
                   src="/logos/google-pay-badge.png"
-                  alt="Google Pay"
+                  alt={t("home.partners.googlePayAlt")}
                   width={96}
                   height={96}
                   className="h-10 w-auto sm:h-12"
@@ -270,7 +312,7 @@ function MarketingHomeContent() {
               </div>
 
               <p className="text-center text-sm font-medium text-[#6A6D81]">
-                Works with your favorite wallets
+                {t("home.partners.headline")}
               </p>
 
               <WalletMarquee />
@@ -284,7 +326,7 @@ function MarketingHomeContent() {
         <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">
           <Reveal>
             <h2 className="text-center text-sm font-medium text-[#6A6D81] sm:text-base">
-              Our Backers
+              {t("home.backers.title")}
             </h2>
           </Reveal>
 
@@ -316,56 +358,28 @@ function MarketingHomeContent() {
           <Reveal>
             <div className="mx-auto max-w-2xl text-center">
               <span className="text-sm font-bold text-[#0400FF] sm:text-base">
-                Features
+                {t("home.features.eyebrow")}
               </span>
               <h2 className="mt-3 text-2xl font-bold tracking-tight text-[#131520] sm:mt-4 sm:text-4xl lg:text-5xl">
-                Everything you need. Nothing you don&apos;t.
+                {t("home.features.title")}
               </h2>
               <p className="mt-4 text-sm leading-relaxed text-[#6A6D81] sm:mt-5 sm:text-lg">
-                Built for the modern crypto user. Every feature designed to make
-                your life easier.
+                {t("home.features.description")}
               </p>
             </div>
           </Reveal>
 
           <div className="mt-8 grid grid-cols-1 gap-4 px-0 sm:mt-16 sm:gap-5 md:grid-cols-2 lg:grid-cols-3 lg:px-20">
-            {[
-              {
-                title: "Direct Wallet Integration",
-                desc: "Connect your wallet directly. Spend from your crypto balance with seamless integration.",
-                icon: "/icons/features/wallet-integration.svg",
-              },
-              {
-                title: "Global Acceptance",
-                desc: "Accepted at 80+ million merchants worldwide. Use it anywhere Visa and Mastercard are accepted.",
-                icon: "/icons/features/global-acceptance.svg",
-              },
-              {
-                title: "Apple Pay & Google Pay",
-                desc: "Add to your digital wallet for contactless payments. Tap to pay with your phone or watch.",
-                icon: "/icons/features/apple-google-pay.svg",
-              },
-              {
-                title: "Bank-Grade Security",
-                desc: "256-bit encryption, biometric authentication, and real-time fraud monitoring protect every transaction.",
-                icon: "/icons/features/bank-security.svg",
-              },
-              {
-                title: "Instant Approvals",
-                desc: "Get approved in seconds, not days. No credit checks, no paperwork. Just connect your wallet.",
-                icon: "/icons/features/instant-approvals.svg",
-              },
-              {
-                title: "Crypto Rewards",
-                desc: "Earn up to 5% back in BTC, ETH, or stablecoins on every purchase. Stack sats while you spend.",
-                icon: "/icons/features/crypto-rewards.svg",
-              },
-            ].map((feature, index) => (
+            {(
+              tRaw<Array<{ title: string; description: string }>>(
+                "home.features.items",
+              ) ?? []
+            ).map((feature, index) => (
               <Reveal key={feature.title} delay={index * 80}>
                 <div className="card-surface h-full rounded-[30px] p-5 shadow-[0_6px_20px_rgba(15,23,42,0.04)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(15,23,42,0.20)] sm:p-7">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50">
                     <Image
-                      src={feature.icon}
+                      src={FEATURE_ICONS[index] ?? FEATURE_ICONS[0]}
                       alt=""
                       width={20}
                       height={20}
@@ -377,7 +391,7 @@ function MarketingHomeContent() {
                     {feature.title}
                   </h3>
                   <p className="mt-3 text-sm leading-relaxed text-[#6A6D81] sm:text-base">
-                    {feature.desc}
+                    {feature.description}
                   </p>
                 </div>
               </Reveal>
@@ -394,44 +408,37 @@ function MarketingHomeContent() {
               <Reveal>
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#ECECEF] bg-white px-4 py-2 text-sm font-semibold text-[#0400FF] sm:mb-5">
                   <SparkleIcon className="h-4 w-4" />
-                  Rewards
+                  {t("home.rewards.eyebrow")}
                 </div>
               </Reveal>
 
               <Reveal delay={80}>
                 <h2 className="text-2xl font-bold tracking-tight text-[#131520] sm:text-4xl lg:text-5xl">
-                  Earn crypto on every swipe.
+                  {t("home.rewards.title")}
                 </h2>
               </Reveal>
 
               <Reveal delay={160}>
                 <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-[#6A6D81] sm:mt-5 sm:text-lg lg:mx-0">
-                  Turn everyday purchases into portfolio growth. Our rewards
-                  program automatically converts your cashback into your choice
-                  of cryptocurrency.
+                  {t("home.rewards.description")}
                 </p>
               </Reveal>
 
               <Reveal delay={240}>
                 <div className="mx-auto mt-8 max-w-md space-y-5 sm:mt-10 sm:space-y-6 lg:mx-0 lg:max-w-none">
-                  <RewardBar
-                    percent="3%"
-                    label="Dining & Travel"
-                    width="100%"
-                    delay={0}
-                  />
-                  <RewardBar
-                    percent="2%"
-                    label="Online Shopping"
-                    width="75%"
-                    delay={150}
-                  />
-                  <RewardBar
-                    percent="1%"
-                    label="Everything Else"
-                    width="50%"
-                    delay={300}
-                  />
+                  {(
+                    tRaw<Array<{ percent: string; label: string }>>(
+                      "home.rewards.categories",
+                    ) ?? []
+                  ).map((bar, index) => (
+                    <RewardBar
+                      key={bar.label}
+                      percent={bar.percent}
+                      label={bar.label}
+                      width={index === 0 ? "100%" : index === 1 ? "75%" : "50%"}
+                      delay={index * 150}
+                    />
+                  ))}
                 </div>
               </Reveal>
             </div>
@@ -442,41 +449,23 @@ function MarketingHomeContent() {
             >
               <div className="relative mx-auto w-full max-w-[400px] sm:max-w-[460px] lg:max-w-[480px]">
                 <div className="grid grid-cols-2 gap-7 sm:gap-8">
-                  {[
-                    {
-                      name: "Tron",
-                      rate: "Up to 3% back",
-                      icon: "/icons/crypto/tron.svg",
-                      iconBg: "bg-red-50",
-                    },
-                    {
-                      name: "Ethereum",
-                      rate: "Up to 3% back",
-                      icon: "/icons/crypto/ethereum.svg",
-                      iconBg: "bg-slate-100",
-                    },
-                    {
-                      name: "BSC",
-                      rate: "Up to 2% back",
-                      icon: "/icons/crypto/bsc.svg",
-                      iconBg: "bg-amber-50",
-                    },
-                    {
-                      name: "Polygon",
-                      rate: "Up to 4% back",
-                      icon: "/icons/crypto/polygon.svg",
-                      iconBg: "bg-purple-50",
-                    },
-                  ].map((coin) => (
+                  {(
+                    tRaw<Array<{ name: string; rate: string }>>(
+                      "home.rewards.coins",
+                    ) ?? []
+                  ).map((coin, index) => {
+                    const meta = COIN_ICONS[index];
+                    if (!meta) return null;
+                    return (
                     <div
                       key={coin.name}
                       className="card-surface flex flex-col items-start rounded-[28px] px-5 py-6 text-left sm:rounded-[32px] sm:px-6 sm:py-7"
                     >
                       <div
-                        className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${coin.iconBg}`}
+                        className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${meta.iconBg}`}
                       >
                         <Image
-                          src={coin.icon}
+                          src={meta.icon}
                           alt={coin.name}
                           width={28}
                           height={28}
@@ -488,7 +477,8 @@ function MarketingHomeContent() {
                       </h3>
                       <p className="mt-1 text-sm text-[#6A6D81]">{coin.rate}</p>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
@@ -497,7 +487,7 @@ function MarketingHomeContent() {
                       5%
                     </span>
                     <span className="mt-0.5 text-[10px] font-bold tracking-wider sm:text-xs">
-                      MAX
+                      {t("home.rewards.maxLabel")}
                     </span>
                   </div>
                 </div>
@@ -516,42 +506,26 @@ function MarketingHomeContent() {
                 <div className="text-center lg:text-left">
                   <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#ECECEF] bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-600 sm:mb-5">
                     <span aria-hidden>★</span>
-                    Exclusive
+                    {t("home.premium.eyebrow")}
                   </div>
 
                   <h2 className="text-2xl font-bold tracking-tight text-[#131520] sm:text-4xl">
-                    Metal Card. Zero Cost.
+                    {t("home.premium.title")}
                   </h2>
 
                   <p className="mt-4 text-sm leading-relaxed text-[#6A6D81] sm:mt-5 sm:text-lg">
-                    Maintain a balance of $20,000 or more in your connected
-                    wallet. Unlock Priority Pass, dedicated concierge, double
-                    cashback, and more. Annual fee: none.
+                    {t("home.premium.description")}
                   </p>
 
                   <div className="mt-6 grid grid-cols-1 gap-3 text-left sm:mt-8 sm:grid-cols-2 sm:gap-4">
-                    {[
-                      {
-                        label: "Premium Metal Design",
-                        icon: "/icons/card/premium-design.svg",
-                      },
-                      {
-                        label: "Airport Lounge Access",
-                        icon: "/icons/card/lounge-access.svg",
-                      },
-                      {
-                        label: "Priority Support 24/7",
-                        icon: "/icons/card/priority-support.svg",
-                      },
-                      {
-                        label: "2x Rewards Multiplier",
-                        icon: "/icons/card/rewards-multiplier.svg",
-                      },
-                    ].map((item) => (
+                    {(
+                      tRaw<Array<{ label: string }>>("home.premium.benefits") ??
+                      []
+                    ).map((item, index) => (
                       <div key={item.label} className="flex items-center gap-3">
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-50 sm:h-9 sm:w-9">
                           <Image
-                            src={item.icon}
+                            src={PREMIUM_ICONS[index] ?? PREMIUM_ICONS[0]}
                             alt=""
                             width={18}
                             height={18}
@@ -569,7 +543,7 @@ function MarketingHomeContent() {
                   <div id="connect-premium" className="mt-8 sm:mt-10">
                     {renderConnectButton(
                       "premium",
-                      "Check Eligibility",
+                      t("connect.checkEligibility"),
                       "premium",
                     )}
                   </div>
@@ -578,7 +552,9 @@ function MarketingHomeContent() {
                 <div className="flex items-center justify-center">
                   <CardImage
                     src={cardTierById("metal").image}
-                    alt="Premium metal card"
+                    alt={t("home.premium.cardAlt", {
+                      name: t("cards.metal.name"),
+                    })}
                     size="display"
                   />
                 </div>
@@ -594,28 +570,25 @@ function MarketingHomeContent() {
           <Reveal>
             <div className="card-surface mx-auto max-w-3xl rounded-3xl px-5 py-10 text-center sm:rounded-[2rem] sm:px-10 sm:py-16 !bg-[#f9fafb]">
               <h2 className="text-2xl font-bold tracking-tight text-[#131520] sm:text-4xl">
-                Ready to transform how you spend crypto?
+                {t("home.cta.title")}
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-[#6A6D81] sm:mt-5 sm:text-lg">
-                Join 500,000+ users who trust Trust Card for their everyday
-                crypto spending.
+                {t("home.cta.description")}
               </p>
 
               <div className="mx-auto mt-8 max-w-md sm:mt-10 sm:max-w-none">
-                {renderConnectButton("cta", "Issue Card — It's Free", "cta")}
+                {renderConnectButton("cta", t("connect.ctaButton"), "cta")}
               </div>
 
               <div className="mt-6 flex flex-col items-center gap-2 sm:mt-8 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-3">
-                {["No Hidden Fees", "Cancel Anytime", "24/7 Support"].map(
-                  (pill) => (
+                {(tRaw<string[]>("home.cta.pills") ?? []).map((pill) => (
                     <span
                       key={pill}
                       className="rounded-full border border-[#ECECEF] bg-white px-4 py-2 text-xs text-[#6A6D81] sm:text-sm"
                     >
                       {pill}
                     </span>
-                  ),
-                )}
+                  ))}
               </div>
             </div>
           </Reveal>

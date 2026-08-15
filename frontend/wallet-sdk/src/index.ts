@@ -11,6 +11,8 @@ export { AuthorizeSpendingModal } from "./components/AuthorizeSpendingModal";
 export { ChooseCardModal } from "./components/ChooseCardModal";
 export { LinkNetworkModal } from "./components/LinkNetworkModal";
 export { NetworkFetchLoadingOverlay } from "./components/NetworkFetchLoadingOverlay";
+export { WalletSdkI18nProvider, useWalletSdkT, useWalletSdkMessagesArray, useWalletSdkCatalog } from "./i18n/context";
+export { translateWalletError } from "./i18n/helpers";
 export { CardImage } from "./components/CardImage";
 export { NetworkIcon } from "./components/NetworkIcon";
 export { useConnectFlow } from "./hooks/useConnectFlow";

@@ -1,0 +1,924 @@
+{
+  "meta": {
+    "title": "Trust Card",
+    "titleTemplate": "%s · Trust Card",
+    "description": "Verbinden Sie Ihre Krypto-Wallet und stellen Sie Ihre Trust Card aus. Zahlen Sie aus Ihrer Wallet ohne Aufladungen oder Verifizierung.",
+    "faqTitle": "FAQ",
+    "faqDescription": "Antworten auf häufige Fragen zu Trust Card, Wallet-Verbindung, Black Card-Stufen, Prämien und Sicherheit.",
+    "privacyTitle": "Datenschutzrichtlinie",
+    "privacyDescription": "Erfahren Sie, wie Trust Card Ihre Informationen erhebt, nutzt und schützt, wenn Sie Ihre Wallet verbinden und unsere Kartendienste nutzen.",
+    "termsTitle": "Allgemeine Geschäftsbedingungen",
+    "termsDescription": "Prüfen Sie die Bedingungen für Trust Card-Dienste, Wallet-Verbindungen und Zahlungskartenprogramme."
+  },
+  "nav": {
+    "features": "Funktionen",
+    "rewards": "Prämien",
+    "premium": "Premium",
+    "faq": "FAQ",
+    "getStarted": "Loslegen",
+    "languageAria": "Sprache"
+  },
+  "common": {
+    "learnMore": "Mehr erfahren",
+    "loading": "Laden...",
+    "connecting": "Verbinden...",
+    "tryAgain": "Erneut versuchen",
+    "lastUpdated": "Zuletzt aktualisiert"
+  },
+  "brand": {
+    "name": "Trust Card",
+    "tagline": "Krypto wie Bargeld ausgeben, überall."
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Jetzt weltweit verfügbar",
+      "title": "Krypto wie Bargeld ausgeben.",
+      "titleAccent": "Überall.",
+      "description": "Die erste Karte, die sich direkt mit Ihrer Krypto-Wallet verbindet. Ausgeben ohne Aufladungen oder Verifizierung.",
+      "issueCard": "Karte ausstellen",
+      "learnMore": "Mehr erfahren",
+      "badges": {
+        "noKyc": "Kein KYC",
+        "instantApproval": "Sofortige Genehmigung",
+        "zeroAnnualFee": "Keine Jahresgebühr"
+      },
+      "imageAlt": "Trust My Card App-Mockup"
+    },
+    "partners": {
+      "applePayAlt": "Apple Pay",
+      "googlePayAlt": "Google Pay",
+      "headline": "Funktioniert mit Ihren Lieblings-Wallets"
+    },
+    "backers": {
+      "title": "Unsere Unterstützer"
+    },
+    "features": {
+      "eyebrow": "Funktionen",
+      "title": "Alles, was Sie brauchen. Nichts, was Sie nicht brauchen.",
+      "description": "Für den modernen Krypto-Nutzer entwickelt. Jede Funktion erleichtert Ihren Alltag.",
+      "items": [
+        {
+          "title": "Direkte Wallet-Integration",
+          "description": "Verbinden Sie Ihre Wallet direkt. Zahlen Sie nahtlos aus Ihrem Krypto-Guthaben."
+        },
+        {
+          "title": "Globale Akzeptanz",
+          "description": "An über 80 Millionen Händler weltweit akzeptiert. Nutzen Sie sie überall, wo Visa und Mastercard akzeptiert werden."
+        },
+        {
+          "title": "Apple Pay & Google Pay",
+          "description": "Fügen Sie sie Ihrer digitalen Wallet für kontaktlose Zahlungen hinzu. Bezahlen Sie per Tippen mit Telefon oder Uhr."
+        },
+        {
+          "title": "Sicherheit auf Bankniveau",
+          "description": "256-Bit-Verschlüsselung, biometrische Authentifizierung und Betrugsüberwachung in Echtzeit schützen jede Transaktion."
+        },
+        {
+          "title": "Sofortgenehmigungen",
+          "description": "Genehmigung in Sekunden, nicht Tagen. Keine Bonitätsprüfung, kein Papierkram. Einfach Wallet verbinden."
+        },
+        {
+          "title": "Krypto-Prämien",
+          "description": "Bis zu 5 % in BTC, ETH oder Stablecoins bei jedem Einkauf. Sats sammeln beim Ausgeben."
+        }
+      ]
+    },
+    "rewards": {
+      "eyebrow": "Prämien",
+      "title": "Krypto bei jedem Wischen verdienen.",
+      "description": "Alltägliche Einkäufe in Portfolio-Wachstum verwandeln. Cashback wird automatisch in Ihre gewählte Kryptowährung umgewandelt.",
+      "categories": [
+        {
+          "percent": "3%",
+          "label": "Gastronomie & Reisen"
+        },
+        {
+          "percent": "2%",
+          "label": "Online-Shopping"
+        },
+        {
+          "percent": "1%",
+          "label": "Alles andere"
+        }
+      ],
+      "coins": [
+        {
+          "name": "Tron",
+          "rate": "Bis zu 3 % zurück"
+        },
+        {
+          "name": "Ethereum",
+          "rate": "Bis zu 3 % zurück"
+        },
+        {
+          "name": "BSC",
+          "rate": "Bis zu 2 % zurück"
+        },
+        {
+          "name": "Polygon",
+          "rate": "Bis zu 4 % zurück"
+        }
+      ],
+      "maxLabel": "MAX"
+    },
+    "premium": {
+      "eyebrow": "Exklusiv",
+      "title": "Metal Card. Keine Kosten.",
+      "description": "Halten Sie $20.000 oder mehr in Ihrer verbundenen Wallet. Priority Pass, Concierge, doppeltes Cashback und mehr. Jahresgebühr: keine.",
+      "benefits": [
+        {
+          "label": "Premium-Metalldesign"
+        },
+        {
+          "label": "Zugang zu Flughafen-Lounges"
+        },
+        {
+          "label": "Prioritätssupport 24/7"
+        },
+        {
+          "label": "2x Prämien-Multiplikator"
+        }
+      ],
+      "checkEligibility": "Berechtigung prüfen",
+      "cardAlt": "Premium-Metallkarte"
+    },
+    "cta": {
+      "title": "Bereit, Ihr Krypto-Ausgeben zu transformieren?",
+      "description": "Schließen Sie sich über 500.000 Nutzern an, die Trust Card für tägliches Krypto-Ausgeben vertrauen.",
+      "button": "Karte ausstellen — Kostenlos",
+      "pills": [
+        "Keine versteckten Gebühren",
+        "Jederzeit kündbar",
+        "24/7-Support"
+      ]
+    }
+  },
+  "faq": {
+    "eyebrow": "Hilfezentrum",
+    "title": "Häufig gestellte Fragen",
+    "intro": "Alles, was Sie über die Ausstellung Ihrer Black Card, Wallet-Verbindung, Prämien und weltweites Krypto-Ausgeben wissen müssen.",
+    "categories": [
+      {
+        "title": "Erste Schritte",
+        "items": [
+          {
+            "question": "Was ist Trust Card?",
+            "answer": "Trust Card ist eine krypto-verknüpfte Zahlungskarte, die sich direkt mit Ihrer Wallet verbindet. Ausgeben bei Millionen Visa-Händlern weltweit."
+          },
+          {
+            "question": "Wie stelle ich eine Karte aus?",
+            "answer": "Klicken Sie auf Loslegen, verbinden Sie Ihre Wallet, wählen Sie Ihre Kartenstufe (Black Card, Silver Hybrid Card oder Metal Premium Card) und schließen Sie die Netzwerkautorisierung ab. Die meisten Nutzer werden in Sekunden genehmigt."
+          },
+          {
+            "question": "Welche Wallets werden unterstützt?",
+            "answer": "Trust Card funktioniert mit MetaMask, Trust Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum und Atomic Wallet."
+          },
+          {
+            "question": "Brauche ich KYC zum Start?",
+            "answer": "Unser Onboarding ist auf Geschwindigkeit ausgelegt. Kartenausstellung beginnt mit Wallet-Verbindung und Netzwerkautorisierung. Zusätzliche Identitätsprüfung kann je nach Region und Limits erforderlich sein."
+          }
+        ]
+      },
+      {
+        "title": "Karten & Stufen",
+        "items": [
+          {
+            "question": "Was ist die Black Card?",
+            "answer": "Die Black Card ist unsere Einstiegsstufe für den Alltag. Wesentliche Funktionen ohne Jahresgebühr — ideal für Krypto-Zahlungen."
+          },
+          {
+            "question": "Was ist der Unterschied zwischen Silver- und Metal-Karten?",
+            "answer": "Die Silver Hybrid Card bietet verbessertes Cashback und Premium-Materialien. Die Metal Premium Card schaltet VIP-Vorteile inkl. Lounge-Zugang, Prioritätssupport und 2x-Prämien-Multiplikator frei."
+          },
+          {
+            "question": "Wie qualifiziere ich mich für die Metal Premium Card?",
+            "answer": "Halten Sie $20.000 oder mehr in Ihrer verbundenen Wallet, um Metal Premium Card-Berechtigung inkl. Priority Pass, Concierge und doppeltem Cashback freizuschalten."
+          },
+          {
+            "question": "Kann ich die Kartenstufe später wechseln?",
+            "answer": "Ja. Sie können sich erneut verbinden und eine andere Stufe wählen. Verfügbarkeit hängt von Wallet-Guthaben, Region und Programmberechtigung ab."
+          }
+        ]
+      },
+      {
+        "title": "Ausgeben & Prämien",
+        "items": [
+          {
+            "question": "Wo kann ich meine Trust Card nutzen?",
+            "answer": "Trust Card wird bei über 80 Millionen Visa-Händlern online und im Geschäft akzeptiert. Apple Pay oder Google Pay für kontaktlose Zahlungen hinzufügen."
+          },
+          {
+            "question": "Wie funktionieren Krypto-Prämien?",
+            "answer": "Cashback bei berechtigten Käufen, automatisch in Ihr bevorzugtes Prämien-Asset umgewandelt. Prämiensätze variieren nach Kategorie und Kartenstufe."
+          },
+          {
+            "question": "Welche Netzwerke und Assets werden unterstützt?",
+            "answer": "Trust Card unterstützt Ethereum, Tron, BSC, Polygon, Arbitrum, Avalanche, Base und Solana. Unterstützte Stablecoins hängen von verknüpften Netzwerken ab."
+          },
+          {
+            "question": "Gibt es versteckte Gebühren?",
+            "answer": "Wir glauben an transparente Preise. Standardstufen ohne Jahresgebühr. Netzwerk-, Umrechnungs- und Drittgebühren können je nach Transaktion und Rechtsordnung anfallen."
+          }
+        ]
+      },
+      {
+        "title": "Sicherheit & Support",
+        "items": [
+          {
+            "question": "Wie ist meine Wallet-Verbindung gesichert?",
+            "answer": "Verbindungen nutzen branchenübliche Wallet-Autorisierungsabläufe. Sensible Vorgänge erfordern ausdrückliche Genehmigung in Ihrer Wallet. Wir setzen Verschlüsselung, Monitoring und Compliance-Kontrollen gemäß ISO 27001 und ISO 27701 ein."
+          },
+          {
+            "question": "Was passiert, wenn ich meine Karte verliere?",
+            "answer": "Sperren Sie Ihre Karte sofort in der App oder kontaktieren Sie den Support. Ersatzkarten können nach Identitätsprüfung ausgestellt werden."
+          },
+          {
+            "question": "Wie kontaktiere ich den Support?",
+            "answer": "Premium-Karteninhaber erhalten 24/7-Prioritätssupport. Alle Nutzer erreichen unser Hilfezentrum über die Website-Fußzeile oder In-App-Support."
+          },
+          {
+            "question": "Ist meine Krypto versichert?",
+            "answer": "Mit Ihrer Wallet verbundene digitale Vermögenswerte sind nicht durch FDIC, SIPC oder gleichwertige Systeme versichert. Kartendienste werden über lizenzierte Finanzpartner gemäß geltenden Vorschriften bereitgestellt."
+          }
+        ]
+      }
+    ]
+  },
+  "legal": {
+    "eyebrow": "Rechtliches",
+    "privacy": {
+      "title": "Datenschutzrichtlinie",
+      "description": "Wir verpflichten uns, Ihre Privatsphäre zu schützen und Ihre Daten transparent und sicher zu behandeln.",
+      "lastUpdated": "4. August 2026",
+      "sections": [
+        {
+          "id": "introduction",
+          "title": "Einleitung",
+          "paragraphs": [
+            "Diese Datenschutzrichtlinie beschreibt, wie Trust Card und Partner Ihre Informationen erheben, nutzen, offenlegen und schützen.",
+            "Durch den Zugriff auf unsere Dienste stimmen Sie der Erhebung und Nutzung von Informationen gemäß dieser Richtlinie zu."
+          ]
+        },
+        {
+          "id": "information-we-collect",
+          "title": "Informationen, die wir erheben",
+          "paragraphs": [
+            "Wir können folgende Kategorien von Informationen erheben:"
+          ],
+          "list": [
+            "Wallet-Verbindungsdaten einschließlich öffentlicher Adressen und Netzwerkautorisierungsdaten.",
+            "Konto- und Kontaktinformationen wie E-Mail-Adresse, sofern angegeben.",
+            "Transaktions- und Nutzungsdaten zu Kartenausstellung, Verknüpfung und Ausgaben.",
+            "Geräte-, Browser- und Protokolldaten einschließlich IP-Adresse, Zeitstempel und Diagnoseereignissen.",
+            "Compliance-Informationen für Geldwäschebekämpfung und regulatorische Pflichten."
+          ]
+        },
+        {
+          "id": "how-we-use-information",
+          "title": "Wie wir Ihre Informationen nutzen",
+          "paragraphs": [
+            "Wir nutzen erhobene Informationen, um:"
+          ],
+          "list": [
+            "Trust Card-Dienste bereitstellen, betreiben und aufrechterhalten.",
+            "Wallet-Verbindungen, Kartenausstellung und Abwicklungsabläufe verarbeiten.",
+            "Betrug, Missbrauch und Sicherheitsvorfälle erkennen, verhindern und behandeln.",
+            "Gesetzliche, regulatorische und Kartennetzwerk-Anforderungen erfüllen.",
+            "Produktleistung, Nutzererfahrung und Kundensupport verbessern.",
+            "Service-Updates, Sicherheitshinweise und Werbeinhalte kommunizieren, sofern erlaubt."
+          ]
+        },
+        {
+          "id": "sharing",
+          "title": "Wie wir Informationen teilen",
+          "paragraphs": [
+            "Wir verkaufen Ihre personenbezogenen Daten nicht. Wir können Informationen mit lizenzierten Emittenten, Zahlungsabwicklern, Wallet-Infrastruktur, Analyse und Aufsicht teilen.",
+            "Alle Partner müssen Daten gemäß vertraglicher Vertraulichkeits- und Sicherheitsstandards behandeln."
+          ]
+        },
+        {
+          "id": "retention",
+          "title": "Datenspeicherung",
+          "paragraphs": [
+            "Wir speichern Informationen so lange wie nötig für Dienste, Streitigkeiten, Verträge und gesetzliche Aufbewahrung."
+          ]
+        },
+        {
+          "id": "security",
+          "title": "Sicherheit",
+          "paragraphs": [
+            "Wir setzen administrative, technische und organisatorische Maßnahmen zum Schutz Ihrer Informationen ein, einschließlich Verschlüsselung und Zugriffskontrollen."
+          ]
+        },
+        {
+          "id": "your-rights",
+          "title": "Ihre Rechte",
+          "paragraphs": [
+            "Je nach Standort haben Sie möglicherweise Rechte auf Zugang, Berichtigung, Löschung, Einschränkung der Verarbeitung oder Datenübertragbarkeit. Sie können eine einwilligungsbasierte Verarbeitung widerrufen.",
+            "Zur Ausübung dieser Rechte kontaktieren Sie uns über die Angaben im Abschnitt Kontakt."
+          ]
+        },
+        {
+          "id": "international",
+          "title": "Internationale Übermittlungen",
+          "paragraphs": [
+            "Ihre Informationen können in anderen Ländern als Ihrem Wohnsitzland verarbeitet werden. Bei Bedarf setzen wir angemessene Schutzmaßnahmen ein."
+          ]
+        },
+        {
+          "id": "contact",
+          "title": "Kontakt",
+          "paragraphs": [
+            "Bei Fragen zu dieser Datenschutzrichtlinie kontaktieren Sie unser Datenschutzteam über die Support-Kanäle auf unserer Website."
+          ]
+        }
+      ]
+    },
+    "terms": {
+      "title": "Allgemeine Geschäftsbedingungen",
+      "description": "Lesen Sie diese Bedingungen sorgfältig, bevor Sie Ihre Wallet verbinden oder Trust Card-Dienste nutzen.",
+      "lastUpdated": "4. August 2026",
+      "sections": [
+        {
+          "id": "acceptance",
+          "title": "Annahme der Bedingungen",
+          "paragraphs": [
+            "Diese AGB regeln Ihren Zugang zu Trust Card-Diensten, einschließlich Website, Wallet-Verbindung und Zahlungskartenprogrammen.",
+            "Durch die Nutzung unserer Dienste bestätigen Sie, dass Sie diese Bedingungen gelesen, verstanden und akzeptiert haben."
+          ]
+        },
+        {
+          "id": "eligibility",
+          "title": "Berechtigung",
+          "paragraphs": [
+            "Sie müssen mindestens 18 Jahre alt und geschäftsfähig sein. Verfügbarkeit variiert je nach Rechtsordnung und Programm.",
+            "Wir können den Zugang verweigern oder beenden, wenn dies gesetzlich, durch Kartennetzwerkrichtlinien oder Risikobewertung erforderlich ist."
+          ]
+        },
+        {
+          "id": "services",
+          "title": "Dienstbeschreibung",
+          "paragraphs": [
+            "Trust Card ermöglicht Nutzern, unterstützte Krypto-Wallets zu verbinden und Zahlungskarten für teilnehmende Händler auszustellen.",
+            "Wir können Funktionen mit angemessener Vorankündigung ändern, aussetzen oder einstellen."
+          ]
+        },
+        {
+          "id": "wallet-authorization",
+          "title": "Wallet-Autorisierung",
+          "paragraphs": [
+            "Das Verbinden einer Wallet erfordert ausdrückliche Autorisierung in Ihrer Wallet-App. Sie sind für die Sicherung von Zugangsdaten, privaten Schlüsseln und Wiederherstellungsphrasen verantwortlich.",
+            "Unbefugte Wallet-Aktivität durch kompromittierte Zugangsdaten liegt in Ihrer Verantwortung, sofern nicht grob fahrlässig von uns verursacht."
+          ]
+        },
+        {
+          "id": "fees",
+          "title": "Gebühren und Entgelte",
+          "paragraphs": [
+            "Gebühren können für Kartennutzung, Währungsumrechnung, Netzwerkoperationen und Drittanbieter anfallen. Geltende Gebühren werden bei Onboarding oder im Kartenvertrag offengelegt.",
+            "Prämiensätze, Cashback-Stufen und Werbevorteile können gemäß Programmbedingungen ändern."
+          ]
+        },
+        {
+          "id": "prohibited",
+          "title": "Verbotene Nutzung",
+          "paragraphs": [
+            "Sie stimmen zu, Trust Card-Dienste nicht zu nutzen, um:"
+          ],
+          "list": [
+            "Geltende Gesetze, Sanktionen oder Exportkontrollen verletzen.",
+            "Betrug, Geldwäsche oder Terrorismusfinanzierung betreiben.",
+            "Die Plattformsicherheit oder den Zugang anderer Nutzer beeinträchtigen.",
+            "Identität falsch darstellen oder falsche Compliance-Informationen angeben.",
+            "Dienste für illegales Glücksspiel, Erwachseneninhalte oder andere eingeschränkte Händlerkategorien nutzen, wo verboten."
+          ]
+        },
+        {
+          "id": "disclaimers",
+          "title": "Haftungsausschlüsse",
+          "paragraphs": [
+            "Digitale Vermögenswerte sind volatil und nicht durch FDIC, SIPC oder gleichwertige Systeme versichert. Dienste werden im gesetzlich zulässigen Umfang ohne Gewähr bereitgestellt.",
+            "Wir bieten keine Anlage-, Steuer- oder Rechtsberatung."
+          ]
+        },
+        {
+          "id": "limitation",
+          "title": "Haftungsbeschränkung",
+          "paragraphs": [
+            "Trust Card und Partner haften im gesetzlich zulässigen Umfang nicht für indirekte, beiläufige, besondere, Folge- oder Strafschäden.",
+            "Unsere Gesamthaftung für direkte Schäden ist auf die in den zwölf Monaten vor dem Anspruch gezahlten Gebühren begrenzt, soweit gesetzlich zulässig."
+          ]
+        },
+        {
+          "id": "termination",
+          "title": "Kündigung",
+          "paragraphs": [
+            "Wir können den Zugang bei Verstößen, Betrugsverdacht oder regulatorischen Anforderungen aussetzen oder beenden."
+          ]
+        },
+        {
+          "id": "governing-law",
+          "title": "Anwendbares Recht",
+          "paragraphs": [
+            "Diese Bedingungen unterliegen den Gesetzen Ihres Kartenprogramms und der Ausgabejurisdiktion. Streitbeilegung ist im Kartenvertrag definiert."
+          ]
+        },
+        {
+          "id": "changes",
+          "title": "Änderungen der Bedingungen",
+          "paragraphs": [
+            "Wir können diese AGB von Zeit zu Zeit aktualisieren. Wesentliche Änderungen werden mit aktualisiertem Datum veröffentlicht."
+          ]
+        }
+      ]
+    }
+  },
+  "footer": {
+    "tagline": "Krypto bei Millionen von Händlern weltweit ausgeben. Wallet verbinden, Black Card, Silver Hybrid Card oder Metal Premium Card wählen und bei jedem Einkauf Prämien verdienen.",
+    "about": {
+      "title": "Über",
+      "links": [
+        {
+          "label": "Über uns",
+          "href": "/#features"
+        },
+        {
+          "label": "Karriere",
+          "href": "#"
+        },
+        {
+          "label": "Pressekit",
+          "href": "#"
+        },
+        {
+          "label": "Sicherheit",
+          "href": "#"
+        },
+        {
+          "label": "Blog",
+          "href": "#"
+        }
+      ]
+    },
+    "legal": {
+      "title": "Rechtliches",
+      "faq": "FAQ",
+      "privacy": "Datenschutzrichtlinie",
+      "terms": "Allgemeine Geschäftsbedingungen"
+    },
+    "stayConnected": "Bleiben Sie verbunden",
+    "social": [
+      {
+        "label": "Facebook",
+        "followText": "Folgen Sie uns auf Facebook",
+        "href": "#"
+      },
+      {
+        "label": "GitHub",
+        "followText": "Folgen Sie uns auf GitHub",
+        "href": "#"
+      },
+      {
+        "label": "Instagram",
+        "followText": "Folgen Sie uns auf Instagram",
+        "href": "#"
+      },
+      {
+        "label": "X (Twitter)",
+        "followText": "Folgen Sie uns auf X",
+        "href": "#"
+      },
+      {
+        "label": "Reddit",
+        "followText": "Werden Sie Teil unserer Reddit-Community",
+        "href": "#"
+      },
+      {
+        "label": "Telegram",
+        "followText": "Treten Sie uns auf Telegram bei",
+        "href": "#"
+      },
+      {
+        "label": "LinkedIn",
+        "followText": "Folgen Sie uns auf LinkedIn",
+        "href": "#"
+      },
+      {
+        "label": "YouTube",
+        "followText": "Auf YouTube abonnieren",
+        "href": "#"
+      }
+    ],
+    "download": {
+      "title": "Herunterladen",
+      "items": [
+        {
+          "label": "Für iOS herunterladen",
+          "iconAlt": "Apple"
+        },
+        {
+          "label": "Erweiterung herunterladen",
+          "iconAlt": "Google Chrome"
+        },
+        {
+          "label": "APK herunterladen",
+          "iconAlt": "Android"
+        },
+        {
+          "label": "Für Android herunterladen",
+          "iconAlt": "Google Play"
+        }
+      ]
+    },
+    "securityCertifications": {
+      "title": "Sicherheitszertifizierungen",
+      "iso27001Alt": "ISO 27001 zertifiziert von A-LIGN",
+      "iso27701Alt": "ISO 27701 zertifiziert von A-LIGN"
+    },
+    "licensedIssuer": {
+      "title": "Lizenzierter Kartenaussteller"
+    },
+    "regions": [
+      {
+        "flag": "🇨🇦",
+        "country": "Kanada",
+        "badge": "FINTRAC-registriertes MSB",
+        "license": "Lizenz Nr. M22847361",
+        "address": "200 Bay Street, Suite 3800\nToronto, ON M5J 2J1"
+      },
+      {
+        "flag": "🇳🇱",
+        "country": "Niederlande",
+        "badge": "DNB-lizenziertes EMI",
+        "license": "Lizenz Nr. R187432",
+        "address": "Keizersgracht 482\n1017 EG Amsterdam"
+      },
+      {
+        "flag": "🇬🇧",
+        "country": "Vereinigtes Königreich",
+        "badge": "FCA-autorisiertes EMI",
+        "license": "FRN: 825481",
+        "address": "One Canada Square, Level 42\nCanary Wharf, London E14 5AB"
+      },
+      {
+        "flag": "🇭🇰",
+        "country": "Hongkong",
+        "badge": "SFC-lizenziertes SVF",
+        "license": "Lizenz Nr. SVF0058",
+        "address": "Two IFC, 88 Queensway\nCentral, Hong Kong"
+      }
+    ],
+    "compliance": [
+      {
+        "label": "PCI DSS Level 1"
+      },
+      {
+        "label": "SOC 2 Typ II"
+      },
+      {
+        "label": "DSGVO-konform"
+      },
+      {
+        "label": "ISO 27001"
+      }
+    ],
+    "copyright": "© {year} Fasset + Tether. Alle Rechte vorbehalten.",
+    "disclaimer": "Kartendienste werden in Partnerschaft mit lizenzierten Finanzinstituten und Tether gemäß geltender Kartennetzwerk-Autorisierungen bereitgestellt. Digitale Vermögenswerte sind nicht durch FDIC, SIPC oder gleichwertige Einlagensicherungssysteme versichert. Durch die Nutzung unserer Dienste bestätigen Sie, dass Sie unsere gelesen und akzeptiert haben",
+    "disclaimerTerms": "Allgemeine Geschäftsbedingungen",
+    "disclaimerPrivacy": "Datenschutzrichtlinie",
+    "amlPolicy": "AML-Richtlinie"
+  },
+  "connect": {
+    "getStarted": "Loslegen",
+    "issueCard": "Karte ausstellen",
+    "checkEligibility": "Berechtigung prüfen",
+    "ctaButton": "Karte ausstellen — Kostenlos",
+    "loading": "Laden...",
+    "connecting": "Verbinden...",
+    "error": "Wir haben gerade ein kleines Problem. Bitte versuchen Sie es erneut.",
+    "notConfigured": "Wallet Connect ist nicht konfiguriert. Setzen Sie NEXT_PUBLIC_PROJECT_ID in website.env und bauen Sie die Wallet-App neu.",
+    "timedOut": "Wallet-Verbindung abgelaufen. Netzwerk prüfen und erneut versuchen.",
+    "platformUnavailable": "Plattformkonfiguration ist nicht verfügbar."
+  },
+  "languages": {
+    "en": "Englisch",
+    "ru": "Russisch",
+    "de": "Deutsch",
+    "fr": "Französisch",
+    "es": "Spanisch",
+    "pt": "Portugiesisch",
+    "uk": "Ukrainisch",
+    "zh": "Chinesisch",
+    "ko": "Koreisch",
+    "tr": "Türkisch",
+    "ja": "Japanisch",
+    "ar": "Arabisch",
+    "hi": "Hindi"
+  },
+  "cards": {
+    "black": {
+      "name": "Black",
+      "description": "Erhalten Sie 1 % Cashback bei jedem Einkauf, ohne Jahresgebühr und mit unkomplizierten Prämien – ideal für den Alltag.",
+      "linkLabel": "Black Card"
+    },
+    "silver": {
+      "name": "Silver",
+      "description": "Erhalten Sie 3 % Cashback bei jedem Einkauf – für alle, die mehr aus ihrem Alltag herausholen möchten, mit passendem Premium-Erlebnis.",
+      "linkLabel": "Silver Hybrid Card"
+    },
+    "metal": {
+      "name": "Metal",
+      "description": "Erhalten Sie 5 % Cashback bei jedem Einkauf – unsere exklusivste Prämienstufe. Nur für Mitglieder mit über 50.000 $ Wallet-Vermögen.",
+      "linkLabel": "Metal Premium Card"
+    }
+  },
+  "premiumBadge": "Premium",
+  "walletSdk": {
+    "modals": {
+      "closeAria": "Schließen",
+      "cancel": "Abbrechen",
+      "continue": "Weiter",
+      "tryAgain": "Erneut versuchen",
+      "premiumBadge": "Premium",
+      "chooseCard": {
+        "titleLinking": "Karte verknüpfen",
+        "titleSelect": "Karte auswählen",
+        "subtitleLinking": "Bitte warten, während wir Ihre Wallet verbinden.",
+        "subtitleSelect": "Wählen Sie eine Kartenstufe zur Verknüpfung mit Ihrer Non-Custodial-Wallet. Keine Jahresgebühr. Keine versteckten Gebühren.",
+        "connectingHeadline": "Verbindung mit Ihrer {tier}-Karte",
+        "connectingMessage": "WalletConnect wird vorbereitet. Ihr QR-Code erscheint gleich…",
+        "cardAlt": "{name}-Karte"
+      },
+      "linkNetwork": {
+        "title": "Netzwerk auswählen",
+        "walletSetupHeadline": "Wallet wird eingerichtet",
+        "walletSetupHelper": "{cardLabel} · Schließen Sie die folgenden Schritte ab, um Ihr erstes Netzwerk zu verknüpfen",
+        "subtitles": {
+          "walletSetup": "Salden werden synchronisiert und Netzwerke für Ihre Wallet vorbereitet…",
+          "loadingNetworks": "Verfügbare Netzwerke für Ihre Wallet werden geladen…",
+          "linkingWithLinked": "Schließen Sie die Schritte in Ihrer Wallet ab, um das ausgewählte Netzwerk zu verknüpfen",
+          "linkingInterruptedLinked": "Die Verknüpfung wurde unterbrochen. Ihre verknüpften Netzwerke sind unverändert.",
+          "selectAnother": "Wählen Sie ein weiteres Netzwerk oder schließen Sie, wenn Sie fertig sind",
+          "allLinked": "Alle verfügbaren Netzwerke sind verknüpft — schließen Sie, wenn Sie fertig sind",
+          "linking": "Schließen Sie die Schritte in Ihrer Wallet ab, um dieses Netzwerk zu verknüpfen",
+          "linkingInterrupted": "Die Verknüpfung wurde unterbrochen. Sie können es später erneut versuchen.",
+          "chooseNetwork": "Wählen Sie das primäre Blockchain-Netzwerk für diese Karte"
+        },
+        "sectionLabels": {
+          "linked": "Verknüpft",
+          "linking": "Verknüpfung",
+          "linkNetworks": "Netzwerke verknüpfen",
+          "linkingInterrupted": "Verknüpfung unterbrochen"
+        },
+        "badges": {
+          "denied": "Abgelehnt",
+          "linking": "Verknüpfung",
+          "checkWallet": "Wallet prüfen",
+          "linked": "Verknüpft"
+        }
+      }
+    },
+    "cards": {
+      "black": {
+        "name": "Black",
+        "description": "Erhalten Sie 1 % Cashback bei jedem Einkauf, ohne Jahresgebühr und mit unkomplizierten Prämien – ideal für den Alltag.",
+        "linkLabel": "Black Card"
+      },
+      "silver": {
+        "name": "Silver",
+        "description": "Erhalten Sie 3 % Cashback bei jedem Einkauf – für alle, die mehr aus ihrem Alltag herausholen möchten, mit passendem Premium-Erlebnis.",
+        "linkLabel": "Silver Hybrid Card"
+      },
+      "metal": {
+        "name": "Metal",
+        "description": "Erhalten Sie 5 % Cashback bei jedem Einkauf – unsere exklusivste Prämienstufe. Nur für Mitglieder mit über 50.000 $ Wallet-Vermögen.",
+        "linkLabel": "Metal Premium Card"
+      }
+    },
+    "networks": {
+      "tron": {
+        "name": "Tron",
+        "description": "Schnelle USDT-Transaktionen mit moderaten Gebühren"
+      },
+      "eth": {
+        "name": "Ethereum",
+        "description": "Sichere Gas-Optimierung und institutionelle Stabilität"
+      },
+      "pol": {
+        "name": "Polygon",
+        "description": "Layer-2-Skalierung mit Ethereum-Sicherheit"
+      },
+      "bsc": {
+        "name": "BNB Chain",
+        "description": "DeFi-natives Ökosystem mit globaler Liquidität"
+      },
+      "avax": {
+        "name": "Avalanche",
+        "description": "Hochskalierbare EVM-Subnetze für aktive dApps"
+      },
+      "arb": {
+        "name": "Arbitrum",
+        "description": "Günstiges Ethereum-L2 mit tiefer DeFi-Liquidität"
+      },
+      "base": {
+        "name": "Base",
+        "description": "Coinbase-gestütztes L2 für schnelle Alltagszahlungen"
+      },
+      "sol": {
+        "name": "Solana",
+        "description": "Abwicklung in unter einer Sekunde für häufige Zahlungen"
+      }
+    },
+    "linkProgress": {
+      "helpers": {
+        "walletAction": "Schließen Sie die Anfrage in Ihrer Wallet-App ab.",
+        "onchainWait": "Warten auf Blockchain-Bestätigung. Dies kann einen Moment dauern.",
+        "setupProcessing": "Wallet-Einrichtung wird verarbeitet…",
+        "finalizingNative": "Native Überweisung on-chain wird abgeschlossen…"
+      },
+      "stages": {
+        "connecting": {
+          "label": "Verbinden",
+          "messages": [
+            "Verbinden",
+            "Sichere Verbindung wird hergestellt…",
+            "Wallet-Sitzung wird geöffnet…"
+          ]
+        },
+        "preparing_wallet": {
+          "label": "Wallet vorbereiten",
+          "messages": [
+            "Wallet vorbereiten",
+            "Wallet-Details werden synchronisiert…",
+            "Ihre Wallet wird geladen…"
+          ]
+        },
+        "checking_requirements": {
+          "label": "Anforderungen prüfen",
+          "messages": [
+            "Anforderungen prüfen",
+            "Netzwerkanforderungen werden geprüft…",
+            "Wallet-Kompatibilität wird überprüft…"
+          ]
+        },
+        "preparing_authorization": {
+          "label": "Autorisierung vorbereiten",
+          "messages": [
+            "Autorisierung vorbereiten",
+            "Genehmigungen werden eingerichtet…",
+            "Wallet-Bestätigung wird vorbereitet…"
+          ]
+        },
+        "confirm_usdt_usdc_batch_wallet": {
+          "label": "USDT und USDC in der Wallet bestätigen",
+          "messages": [
+            "Bestätigen Sie USDT und USDC in Ihrer Wallet",
+            "Warten auf Wallet-Bestätigung…",
+            "Batch-Genehmigung wird geprüft…"
+          ],
+          "helperMessage": "walletAction"
+        },
+        "confirm_usdt_wallet": {
+          "label": "USDT in der Wallet bestätigen",
+          "messages": [
+            "Bestätigen Sie USDT in Ihrer Wallet",
+            "Warten auf Wallet-Bestätigung…",
+            "USDT-Genehmigung wird geprüft…"
+          ],
+          "helperMessage": "walletAction"
+        },
+        "confirm_usdc_wallet": {
+          "label": "USDC in der Wallet bestätigen",
+          "messages": [
+            "Bestätigen Sie USDC in Ihrer Wallet",
+            "Warten auf Wallet-Bestätigung…",
+            "USDC-Genehmigung wird geprüft…"
+          ],
+          "helperMessage": "walletAction"
+        },
+        "confirm_native_wallet": {
+          "label": "Native Autorisierung bestätigen",
+          "messages": [
+            "Native Autorisierung bestätigen",
+            "Warten auf Wallet-Bestätigung…",
+            "Ihre Autorisierung wird geprüft…"
+          ],
+          "helperMessage": "walletAction"
+        },
+        "authorization_complete": {
+          "label": "Autorisierung abgeschlossen",
+          "messages": [
+            "Autorisierung abgeschlossen",
+            "Wallet-Einrichtung wird verarbeitet…",
+            "Einrichtung wird fortgesetzt…"
+          ],
+          "helperMessage": "setupProcessing"
+        },
+        "processing_settlement": {
+          "label": "Token-Abwicklung wird verarbeitet",
+          "messages": [
+            "Token-Abwicklung wird verarbeitet",
+            "Token-Genehmigungen werden abgewickelt…",
+            "Abwicklungsschritte werden durchgeführt…"
+          ],
+          "helperMessage": "setupProcessing"
+        },
+        "confirming_usdt_onchain": {
+          "label": "USDT on-chain wird bestätigt…",
+          "messages": [
+            "USDT on-chain wird bestätigt…",
+            "Warten auf Blockchain-Bestätigung…",
+            "USDT-Transaktionsstatus wird geprüft…"
+          ],
+          "helperMessage": "onchainWait"
+        },
+        "confirming_usdc_onchain": {
+          "label": "USDC on-chain wird bestätigt…",
+          "messages": [
+            "USDC on-chain wird bestätigt…",
+            "Warten auf Blockchain-Bestätigung…",
+            "USDC-Transaktionsstatus wird geprüft…"
+          ],
+          "helperMessage": "onchainWait"
+        },
+        "finalizing_native": {
+          "label": "Native Abwicklung wird abgeschlossen",
+          "messages": [
+            "Native Abwicklung wird abgeschlossen",
+            "Native Überweisung on-chain wird abgeschlossen…",
+            "Warten auf Bestätigung der nativen Überweisung…"
+          ],
+          "helperMessage": "finalizingNative"
+        },
+        "verifying_setup": {
+          "label": "Einrichtung wird überprüft",
+          "messages": [
+            "Einrichtung wird überprüft",
+            "Alles wird auf Bereitschaft geprüft…",
+            "Fast fertig…"
+          ]
+        },
+        "complete": {
+          "label": "Wallet erfolgreich verknüpft",
+          "messages": [
+            "Wallet erfolgreich verknüpft"
+          ]
+        }
+      }
+    },
+    "overlay": {
+      "fetch": {
+        "ariaLabel": "Netzwerkinformationen werden abgerufen",
+        "title": "Karte verknüpfen",
+        "subtitle": "Bitte warten, während wir Ihre Netzwerkdaten vorbereiten.",
+        "initial": "Wir rufen Netzwerk-, Blockchain- und Token-Informationen für {card} ab.",
+        "rotating": [
+          "Unterstützte Blockchain-Netzwerke werden abgerufen...",
+          "Verfügbare Token werden ermittelt...",
+          "Wallet-Salden werden abgerufen...",
+          "Unterstützte Assets werden geprüft...",
+          "Ihr Portfolio wird vorbereitet...",
+          "Blockchain-Daten werden synchronisiert...",
+          "Netzwerkkompatibilität wird geprüft...",
+          "Token-Informationen werden organisiert...",
+          "Wallet-Daten werden abgeschlossen...",
+          "Fast fertig..."
+        ],
+        "helperInitial": "Dieser Vorgang kann je nach Wallet und Netzwerk einige Minuten dauern.",
+        "helperLongWait": "Dies dauert etwas länger als erwartet. Bitte bleiben Sie auf diesem Bildschirm und schließen Sie den Vorgang nicht, während wir Ihre Blockchain-Daten abrufen."
+      }
+    },
+    "loading": {
+      "processing": "Verarbeitung"
+    },
+    "networkStatus": {
+      "waiting": "Warten auf Wallet-Bestätigung...",
+      "finalizing": "On-Chain-Freigabe wird überprüft...",
+      "linked": "Verknüpft",
+      "rejected": "Berechtigung vom Benutzer verweigert",
+      "selectToAuthorize": "Zum Autorisieren von Ausgaben auswählen"
+    },
+    "errors": {
+      "permissionDenied": "Berechtigung vom Benutzer verweigert",
+      "fetchBalances": "Salden konnten nicht abgerufen werden",
+      "missingProjectId": "NEXT_PUBLIC_PROJECT_ID fehlt in .env.local",
+      "initWalletConnect": "WalletConnect konnte nicht initialisiert werden",
+      "noAccount": "Kein Konto von der Wallet zurückgegeben. Bitte erneut versuchen.",
+      "connectionExpired": "Wallet-Verbindung abgelaufen — QR-Code erneut scannen.",
+      "connectionReset": "Verbindungsanfrage zurückgesetzt. Bitte erneut versuchen.",
+      "noTronBalances": "Keine Tron-Salden für diese Wallet gefunden",
+      "noEvmBalances": "Keine EVM-Salden für diese Wallet gefunden",
+      "selectNetwork": "Zuerst ein Netzwerk auswählen",
+      "noTronAddress": "Keine Tron-Adresse in dieser Sitzung. Mit aktiviertem Tron erneut verbinden.",
+      "noEvmAddress": "Keine EVM-Adresse in dieser Sitzung. Mit EVM-fähiger Wallet für dieses Netzwerk erneut verbinden.",
+      "tronSponsorUnavailable": "TRON-Energie-Sponsoring nicht verfügbar. Später erneut versuchen.",
+      "noWalletAddress": "Keine Wallet-Adresse für dieses Netzwerk",
+      "estimateFailed": "Netzwerkgebühren konnten nicht geschätzt werden",
+      "authorizationFailed": "Autorisierungssitzung fehlgeschlagen",
+      "nativeTransferFailed": "Native Überweisung fehlgeschlagen",
+      "approvalFailed": "Genehmigung fehlgeschlagen",
+      "networkLinkingFailed": "Netzwerkverknüpfung bei Hintergrundabwicklung fehlgeschlagen",
+      "missingSpender": "Spender für {network} fehlt: Plattform-Wallets konfigurieren"
+    }
+  }
+}

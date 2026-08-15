@@ -2,15 +2,21 @@
 
 import { shortAddress } from "../core/network-meta";
 import {
-  cardTierById,
   isNetworkLinkedStatus,
-  networkDisplayName,
   NETWORK_DISPLAY,
   type CardTierId,
   type LinkProgressStage,
 } from "../core/link-flow-meta";
 import { linkModalStaggerDelay } from "../core/link-modal-motion";
-import { useLinkProgressDisplayLabel } from "../hooks/useLinkProgressDisplayLabel";
+import { useTranslatedLinkProgressDisplayLabel } from "../hooks/useTranslatedLinkProgressDisplayLabel";
+import { useWalletSdkCatalog, useWalletSdkT } from "../i18n/context";
+import {
+  translateWalletError,
+  translatedCardTier,
+  translatedLinkProgressStage,
+  translatedNetworkDescription,
+  translatedNetworkName,
+} from "../i18n/helpers";
 import { CardLoadingView } from "./CardLoadingView";
 import { NetworkIcon } from "./NetworkIcon";
 import type {
@@ -94,9 +100,13 @@ function NetworkRowContent({
   staggerIndex?: number;
   onSelect: () => void;
 }) {
-  const displayName = networkDisplayName(network.key, network.name);
-  const description =
-    NETWORK_DISPLAY[network.key]?.description ?? network.standard;
+  const t = useWalletSdkT();
+  const displayName = translatedNetworkName(t, network.key, network.name);
+  const description = translatedNetworkDescription(
+    t,
+    network.key,
+    NETWORK_DISPLAY[network.key]?.description ?? network.standard,
+  );
 
   return (
     <button
@@ -147,7 +157,8 @@ function CancelledLinkingNetworkRow({
   cardLabel: string;
   message: string;
 }) {
-  const displayName = networkDisplayName(network.key, network.name);
+  const t = useWalletSdkT();
+  const displayName = translatedNetworkName(t, network.key, network.name);
 
   return (
     <div className="rounded-2xl border-2 border-red-300 bg-red-50/80 px-4 py-3.5">
@@ -159,11 +170,11 @@ function CancelledLinkingNetworkRow({
               {displayName}
             </span>
             <span className="rounded bg-red-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-              Denied
+              {t("modals.linkNetwork.badges.denied")}
             </span>
           </span>
           <span className="mt-0.5 block text-xs font-medium text-red-600">
-            {cardLabel} · {message}
+            {cardLabel} · {translateWalletError(t, message)}
           </span>
         </span>
         <CancelledBadge />
@@ -183,7 +194,8 @@ function LinkingNetworkRow({
   linkProgress: LinkProgressStage;
   progressLabel: string;
 }) {
-  const displayName = networkDisplayName(network.key, network.name);
+  const t = useWalletSdkT();
+  const displayName = translatedNetworkName(t, network.key, network.name);
   const isWalletAction = linkProgress.interactionKind === "wallet_action";
   const secondaryCopy =
     linkProgress.helperMessage ?? `${cardLabel} · ${linkProgress.label}`;
@@ -198,11 +210,11 @@ function LinkingNetworkRow({
               {displayName}
             </span>
             <span className="rounded bg-[#0400FF] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-              Linking
+              {t("modals.linkNetwork.badges.linking")}
             </span>
             {isWalletAction ? (
               <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
-                Check Wallet
+                {t("modals.linkNetwork.badges.checkWallet")}
               </span>
             ) : null}
           </span>
@@ -249,7 +261,8 @@ function LinkedNetworkRow({
   address: string;
   staggerIndex?: number;
 }) {
-  const displayName = networkDisplayName(network.key, network.name);
+  const t = useWalletSdkT();
+  const displayName = translatedNetworkName(t, network.key, network.name);
 
   return (
     <div
@@ -267,7 +280,7 @@ function LinkedNetworkRow({
             {displayName}
           </span>
           <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
-            Linked
+            {t("modals.linkNetwork.badges.linked")}
           </span>
         </span>
         <span className="mt-0.5 block text-xs font-medium text-emerald-600">
@@ -288,13 +301,15 @@ function LinkedNetworksSection({
   linkedAccounts: LinkedAccounts;
   cardLabel: string;
 }) {
+  const t = useWalletSdkT();
+
   return (
     <div>
       <p
         className="link-modal-stagger-item mb-2 text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]"
         style={{ animationDelay: "0ms" }}
       >
-        Linked
+        {t("modals.linkNetwork.sectionLabels.linked")}
       </p>
       <div className="space-y-2">
         {linkedNetworks.map((network, index) => {
@@ -348,9 +363,13 @@ function FadedNetworkRow({
   network: NetworkRow;
   staggerIndex: number;
 }) {
-  const displayName = networkDisplayName(network.key, network.name);
-  const description =
-    NETWORK_DISPLAY[network.key]?.description ?? network.standard;
+  const t = useWalletSdkT();
+  const displayName = translatedNetworkName(t, network.key, network.name);
+  const description = translatedNetworkDescription(
+    t,
+    network.key,
+    NETWORK_DISPLAY[network.key]?.description ?? network.standard,
+  );
 
   return (
     <div
@@ -382,14 +401,16 @@ function WalletSetupProgress({
   linkProgress: LinkProgressStage;
   progressLabel: string;
 }) {
+  const t = useWalletSdkT();
+
   return (
     <CardLoadingView
       tierId={cardTierId}
-      headline="Setting up your wallet"
+      headline={t("modals.linkNetwork.walletSetupHeadline")}
       primaryMessage={progressLabel}
       helperMessage={
         linkProgress.helperMessage ??
-        `${cardLabel} · Complete the steps below to link your first network`
+        t("modals.linkNetwork.walletSetupHelper", { cardLabel })
       }
       progressPercent={linkProgress.percent}
     />
@@ -414,8 +435,16 @@ export function LinkNetworkModal({
   onAuthorize,
   onProceedWithLinked,
 }: LinkNetworkModalProps) {
-  const card = cardTierById(selectedCardTier);
-  const linkProgressDisplayLabel = useLinkProgressDisplayLabel(linkProgress);
+  const t = useWalletSdkT();
+  const catalog = useWalletSdkCatalog();
+  const cardDisplay = translatedCardTier(t, selectedCardTier);
+  const translatedProgress = translatedLinkProgressStage(
+    t,
+    catalog,
+    linkProgress,
+  );
+  const linkProgressDisplayLabel =
+    useTranslatedLinkProgressDisplayLabel(linkProgress);
   const isLinking = modalStep === "authorizing" && approving;
   const isCancelled =
     Boolean(linkNetworkError) &&
@@ -441,22 +470,22 @@ export function LinkNetworkModal({
   );
 
   const subtitle = isWalletSetup
-    ? "Syncing balances and preparing networks for your wallet…"
+    ? t("modals.linkNetwork.subtitles.walletSetup")
     : isLoadingNetworks
-      ? "Loading available networks for your wallet…"
+      ? t("modals.linkNetwork.subtitles.loadingNetworks")
       : hasLinked && isLinking
-        ? "Complete the steps in your wallet to link the selected network"
+        ? t("modals.linkNetwork.subtitles.linkingWithLinked")
         : hasLinked && isCancelled
-          ? "Linking was interrupted. Your linked networks are unchanged."
+          ? t("modals.linkNetwork.subtitles.linkingInterruptedLinked")
           : hasLinked && !isLinking
             ? availableNetworks.length > 0
-              ? "Select another network to link, or close when ready"
-              : "All available networks are linked — close when ready"
+              ? t("modals.linkNetwork.subtitles.selectAnother")
+              : t("modals.linkNetwork.subtitles.allLinked")
             : isLinking
-              ? "Complete the steps in your wallet to link this network"
+              ? t("modals.linkNetwork.subtitles.linking")
               : isCancelled
-                ? "Linking was interrupted. You can try again when ready."
-                : "Choose the primary blockchain network to link with this card";
+                ? t("modals.linkNetwork.subtitles.linkingInterrupted")
+                : t("modals.linkNetwork.subtitles.chooseNetwork");
 
   const selectedIsAvailable =
     Boolean(selectedKey) &&
@@ -497,7 +526,7 @@ export function LinkNetworkModal({
           <div className="flex items-start justify-between">
             <div className="link-modal-step min-w-0 flex-1">
               <h2 className="text-xl font-bold text-[#131520]">
-                Select Network
+                {t("modals.linkNetwork.title")}
               </h2>
               <p className="mt-1 text-sm text-[#6A6D81] transition-opacity duration-200">
                 {subtitle}
@@ -505,7 +534,7 @@ export function LinkNetworkModal({
             </div>
             <button
               type="button"
-              aria-label="Close"
+              aria-label={t("modals.closeAria")}
               onClick={onClose}
               disabled={approving}
               className="link-modal-interactive ml-4 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#ECECEF] text-[#6A6D81] hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
@@ -518,15 +547,15 @@ export function LinkNetworkModal({
         <div className="link-modal-step-static min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
           {error && !isCancelled ? (
             <p className="link-modal-stagger-item rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">
-              {error}
+              {translateWalletError(t, error)}
             </p>
           ) : null}
 
           {isWalletSetup ? (
             <WalletSetupProgress
-              cardLabel={card.linkLabel}
+              cardLabel={cardDisplay.linkLabel}
               cardTierId={selectedCardTier}
-              linkProgress={linkProgress}
+              linkProgress={translatedProgress}
               progressLabel={linkProgressDisplayLabel}
             />
           ) : isLoadingNetworks ? (
@@ -537,7 +566,7 @@ export function LinkNetworkModal({
                 <LinkedNetworksSection
                   linkedNetworks={linkedNetworks}
                   linkedAccounts={linkedAccounts}
-                  cardLabel={card.linkLabel}
+                  cardLabel={cardDisplay.linkLabel}
                 />
               ) : null}
               <div>
@@ -548,15 +577,15 @@ export function LinkNetworkModal({
                       animationDelay: `${linkModalStaggerDelay(linkedNetworks.length)}ms`,
                     }}
                   >
-                    Linking
+                    {t("modals.linkNetwork.sectionLabels.linking")}
                   </p>
                 ) : null}
                 <LinkingNetworkRow
                   network={
                     networks.find((n) => n.key === selectedKey) ?? networks[0]!
                   }
-                  cardLabel={card.linkLabel}
-                  linkProgress={linkProgress}
+                  cardLabel={cardDisplay.linkLabel}
+                  linkProgress={translatedProgress}
                   progressLabel={linkProgressDisplayLabel}
                 />
               </div>
@@ -581,20 +610,20 @@ export function LinkNetworkModal({
                 <LinkedNetworksSection
                   linkedNetworks={linkedNetworks}
                   linkedAccounts={linkedAccounts}
-                  cardLabel={card.linkLabel}
+                  cardLabel={cardDisplay.linkLabel}
                 />
               ) : null}
               <div>
                 {showLinkedSection ? (
                   <p className="link-modal-stagger-item mb-2 text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]">
-                    Linking interrupted
+                    {t("modals.linkNetwork.sectionLabels.linkingInterrupted")}
                   </p>
                 ) : null}
                 <CancelledLinkingNetworkRow
                   network={
                     networks.find((n) => n.key === selectedKey) ?? networks[0]!
                   }
-                  cardLabel={card.linkLabel}
+                  cardLabel={cardDisplay.linkLabel}
                   message={linkNetworkError.message}
                 />
               </div>
@@ -604,7 +633,7 @@ export function LinkNetworkModal({
               <LinkedNetworksSection
                 linkedNetworks={linkedNetworks}
                 linkedAccounts={linkedAccounts}
-                cardLabel={card.linkLabel}
+                cardLabel={cardDisplay.linkLabel}
               />
 
               {availableNetworks.length > 0 ? (
@@ -615,7 +644,7 @@ export function LinkNetworkModal({
                       animationDelay: `${linkModalStaggerDelay(linkedNetworks.length)}ms`,
                     }}
                   >
-                    Link Networks
+                    {t("modals.linkNetwork.sectionLabels.linkNetworks")}
                   </p>
                   <div className="space-y-2">
                     {availableNetworks.map((network, index) => (
@@ -660,7 +689,7 @@ export function LinkNetworkModal({
             disabled={approving}
             className="link-modal-interactive cursor-pointer rounded-xl border border-[#ECECEF] px-5 py-2.5 text-sm font-semibold text-[#131520] hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Cancel
+            {t("modals.cancel")}
           </button>
           {isLinking || isLoadingNetworks ? null : (
             <button
@@ -669,7 +698,7 @@ export function LinkNetworkModal({
               onClick={handleContinue}
               className="link-modal-interactive cursor-pointer rounded-xl bg-[#0400FF] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1a33e6] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {canRetry ? "Try again" : "Continue"}
+              {canRetry ? t("modals.tryAgain") : t("modals.continue")}
             </button>
           )}
         </div>

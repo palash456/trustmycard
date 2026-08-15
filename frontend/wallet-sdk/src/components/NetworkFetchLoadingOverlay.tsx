@@ -1,5 +1,6 @@
 import type { CardTierId } from "../core/link-flow-meta";
-import { useNetworkFetchLoadingMessages } from "../hooks/useNetworkFetchLoadingMessages";
+import { useTranslatedNetworkFetchLoadingMessages } from "../hooks/useTranslatedNetworkFetchLoadingMessages";
+import { useWalletSdkT } from "../i18n/context";
 import { CardLoadingView } from "./CardLoadingView";
 
 type NetworkFetchLoadingOverlayProps = {
@@ -12,8 +13,9 @@ export function NetworkFetchLoadingOverlay({
   open,
   cardTierId,
 }: NetworkFetchLoadingOverlayProps) {
+  const t = useWalletSdkT();
   const { primaryMessage, helperMessage, progressPercent } =
-    useNetworkFetchLoadingMessages({
+    useTranslatedNetworkFetchLoadingMessages({
       active: open,
       cardTierId,
     });
@@ -26,13 +28,15 @@ export function NetworkFetchLoadingOverlay({
       role="dialog"
       aria-modal="true"
       aria-busy="true"
-      aria-label="Fetching network information"
+      aria-label={t("overlay.fetch.ariaLabel")}
     >
       <div className="link-modal-panel card-surface flex max-h-[min(92vh,720px)] w-full max-w-lg flex-col overflow-hidden rounded-3xl shadow-xl">
         <div className="link-modal-stagger-item shrink-0 px-6 pb-2 pt-6">
-          <h2 className="text-xl font-bold text-[#131520]">Link Your Card</h2>
+          <h2 className="text-xl font-bold text-[#131520]">
+            {t("overlay.fetch.title")}
+          </h2>
           <p className="mt-1 text-sm text-[#6A6D81]">
-            Hang tight while we prepare your network data.
+            {t("overlay.fetch.subtitle")}
           </p>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">

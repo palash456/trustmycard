@@ -1,4 +1,6 @@
 import { statusLabel } from "../core/network-meta";
+import { useWalletSdkT } from "../i18n/context";
+import { translatedNetworkStatus } from "../i18n/helpers";
 import type { NetworkRow, RowStatus } from "../types";
 
 type NetworkRowButtonProps = {
@@ -16,8 +18,13 @@ export function NetworkRowButton({
   disabled,
   onSelect,
 }: NetworkRowButtonProps) {
+  const t = useWalletSdkT();
   const waiting = status === "waiting" || status === "finalizing";
   const approved = status === "approved";
+  const statusText =
+    status === "awaiting"
+      ? statusLabel(status)
+      : translatedNetworkStatus(t, status);
 
   return (
     <li>
@@ -64,7 +71,7 @@ export function NetworkRowButton({
               approved ? "font-medium text-emerald-600" : "text-[#6A6D81]",
             ].join(" ")}
           >
-            {statusLabel(status)}
+            {statusText}
           </span>
         </span>
 

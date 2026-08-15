@@ -16,6 +16,7 @@ import {
 } from "@trustmycard/wallet-sdk";
 import type { CardTierId } from "@trustmycard/wallet-sdk";
 import type { PublicPlatformConfig } from "@trustmycard/shared/platform-config/types";
+import { useTranslation } from "@/lib/i18n/I18nProvider";
 
 async function fetchPublicPlatformConfig() {
   const res = await fetch("/api/settings/public", { cache: "no-store" });
@@ -68,6 +69,7 @@ function WalletConnectHost({
   onFlowCancelled: () => void;
   onConnectBlocked: (message: string) => void;
 }) {
+  const { t } = useTranslation();
   const lastOpenedSignal = useRef(0);
   const hasReportedBusyRef = useRef(false);
 
@@ -117,7 +119,7 @@ function WalletConnectHost({
       lastOpenedSignal.current = openSignal;
       onConnectBlocked(
         error.includes("NEXT_PUBLIC_PROJECT_ID")
-          ? "Wallet connect is not configured. Set NEXT_PUBLIC_PROJECT_ID in website.env and rebuild the wallet app."
+          ? t("connect.notConfigured")
           : error,
       );
       return;
@@ -135,6 +137,7 @@ function WalletConnectHost({
     error,
     startLinkFlow,
     onConnectBlocked,
+    t,
   ]);
 
   useEffect(() => {
@@ -144,14 +147,12 @@ function WalletConnectHost({
     const timeout = window.setTimeout(() => {
       if (openSignal > lastOpenedSignal.current && !ready) {
         lastOpenedSignal.current = openSignal;
-        onConnectBlocked(
-          "Wallet connection timed out. Check your network and try again.",
-        );
+        onConnectBlocked(t("connect.timedOut"));
       }
     }, 20_000);
 
     return () => window.clearTimeout(timeout);
-  }, [openSignal, ready, error, onConnectBlocked]);
+  }, [openSignal, ready, error, onConnectBlocked, t]);
 
   function handleCloseCardModal() {
     closeCardModal();
@@ -319,16 +320,17 @@ export function SiteConnectProvider({
     [buttonStates, platform, loadPlatformConfig],
   );
 
+  const { t } = useTranslation();
+
   const getButtonLabel = useCallback(
     (buttonId: ConnectButtonId, defaultLabel: string) => {
       const state = buttonStates[buttonId];
-      if (state === "loading") return "Loading...";
-      if (state === "connecting") return "Connecting...";
-      if (state === "error")
-        return "We're having a little trouble. Please try again.";
+      if (state === "loading") return t("connect.loading");
+      if (state === "connecting") return t("connect.connecting");
+      if (state === "error") return t("connect.error");
       return defaultLabel;
     },
-    [buttonStates],
+    [buttonStates, t],
   );
 
   const isButtonDisabled = useCallback(

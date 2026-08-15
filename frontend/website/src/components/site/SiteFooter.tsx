@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { Reveal } from "./Reveal";
@@ -10,8 +12,11 @@ import { SecurityCertificationsBanner } from "./footer/SecurityCertificationsBan
 import { DownloadChips } from "./footer/DownloadWallet";
 import { FooterLicensedIssuer } from "./footer/FooterLicensedIssuer";
 import { FooterComplianceBadges } from "./footer/FooterComplianceBadges";
+import { useTranslation } from "@/lib/i18n/I18nProvider";
 
 export function SiteFooter() {
+  const { t } = useTranslation();
+
   return (
     <>
       <SecurityCertificationsBanner />
@@ -23,15 +28,13 @@ export function SiteFooter() {
               <div className="shrink-0 lg:w-[min(100%,280px)] xl:w-[300px]">
                 <Image
                   src="/logos/main.png"
-                  alt="Trust Card"
+                  alt={t("brand.name")}
                   width={210}
                   height={44}
                   className="h-7 w-auto opacity-90 sm:h-12 sm:w-auto"
                 />
                 <p className="mt-4 text-sm leading-relaxed text-[#6A6D81]">
-                  Spend crypto at millions of merchants worldwide. Connect your
-                  wallet, choose your Black Card, Silver Hybrid Card, or Metal
-                  Premium Card, and earn rewards on every purchase.
+                  {t("footer.tagline")}
                 </p>
                 <DownloadChips />
               </div>
@@ -40,7 +43,7 @@ export function SiteFooter() {
                 <AboutSection />
                 <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-[#131520]">
-                    Legal
+                    {t("footer.legal.title")}
                   </h3>
                   <FooterLegalLinks />
                 </div>
@@ -55,30 +58,24 @@ export function SiteFooter() {
           <Reveal delay={160}>
             <div className="flex flex-col items-center gap-4 border-t border-[#ECECEF] py-8 text-center">
               <p className="text-sm text-[#6A6D81]">
-                © {new Date().getFullYear()} Fasset + Tether. All rights
-                reserved.
+                {t("footer.copyright", { year: new Date().getFullYear() })}
               </p>
               <p className="mx-auto max-w-4xl text-xs leading-relaxed text-[#6A6D81]">
-                Card services are provided in partnership with licensed
-                financial institutions and Tether, pursuant to applicable card
-                network authorizations. Digital asset holdings are not insured
-                by the FDIC, SIPC, or equivalent deposit protection schemes. By
-                using our services, you acknowledge that you have read and agree
-                to our{" "}
+                {t("footer.disclaimer")}{" "}
                 <Link
                   href="/termsandconditions"
                   className="underline hover:text-[#131520]"
                 >
-                  Terms &amp; Conditions
+                  {t("footer.disclaimerTerms")}
                 </Link>
                 ,{" "}
                 <Link
                   href="/privacypolicy"
                   className="underline hover:text-[#131520]"
                 >
-                  Privacy Policy
+                  {t("footer.disclaimerPrivacy")}
                 </Link>
-                , and AML Policy.
+                , and {t("footer.amlPolicy")}.
               </p>
             </div>
           </Reveal>

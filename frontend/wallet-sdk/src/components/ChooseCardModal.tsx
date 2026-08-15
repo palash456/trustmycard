@@ -7,6 +7,8 @@ import {
   preloadLinkFlowAssets,
   type CardTierId,
 } from "../core/link-flow-meta";
+import { useWalletSdkT } from "../i18n/context";
+import { translateWalletError } from "../i18n/helpers";
 import { linkModalStaggerDelay } from "../core/link-modal-motion";
 import { CardLoadingView } from "./CardLoadingView";
 import { CardImage } from "./CardImage";
@@ -19,6 +21,12 @@ type ChooseCardModalProps = {
   connectingTierId?: CardTierId;
   error?: string | null;
 };
+
+function tierKey(id: CardTierId): "black" | "silver" | "metal" {
+  if (id === "Black") return "black";
+  if (id === "metal") return "metal";
+  return "silver";
+}
 
 function RadioIndicator({ selected }: { selected: boolean }) {
   return (
@@ -36,13 +44,16 @@ function RadioIndicator({ selected }: { selected: boolean }) {
 }
 
 function ConnectingView({ tierId }: { tierId: CardTierId }) {
-  const tier = cardTierById(tierId);
+  const t = useWalletSdkT();
+  const key = tierKey(tierId);
 
   return (
     <CardLoadingView
       tierId={tierId}
-      headline={`Connecting to your ${tier.name} card`}
-      primaryMessage="Preparing WalletConnect. Your QR code will appear in a moment…"
+      headline={t("modals.chooseCard.connectingHeadline", {
+        tier: t(`cards.${key}.name`),
+      })}
+      primaryMessage={t("modals.chooseCard.connectingMessage")}
     />
   );
 }
@@ -55,6 +66,7 @@ export function ChooseCardModal({
   connectingTierId = "silver",
   error = null,
 }: ChooseCardModalProps) {
+  const t = useWalletSdkT();
   const [selectedTier, setSelectedTier] = useState<CardTierId>(selectedTierId);
 
   useEffect(() => {
@@ -74,17 +86,19 @@ export function ChooseCardModal({
           <div className="flex items-start justify-between">
             <div className="link-modal-step min-w-0 flex-1">
               <h2 className="text-xl font-bold text-[#131520] transition-opacity duration-200">
-                {connecting ? "Link Your Card" : "Choose Your Card"}
+                {connecting
+                  ? t("modals.chooseCard.titleLinking")
+                  : t("modals.chooseCard.titleSelect")}
               </h2>
               <p className="mt-1 text-sm leading-relaxed text-[#6A6D81] transition-opacity duration-200">
                 {connecting
-                  ? "Hang tight while we connect your wallet."
-                  : "Select a card tier to link with your non-custodial wallet. Zero annual fee. Zero hidden fees."}
+                  ? t("modals.chooseCard.subtitleLinking")
+                  : t("modals.chooseCard.subtitleSelect")}
               </p>
             </div>
             <button
               type="button"
-              aria-label="Close"
+              aria-label={t("modals.closeAria")}
               onClick={onClose}
               disabled={connecting}
               className="link-modal-interactive ml-4 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#ECECEF] text-[#6A6D81] hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
@@ -101,13 +115,15 @@ export function ChooseCardModal({
             <div className="link-modal-step-static">
               {error ? (
                 <p className="link-modal-stagger-item mx-6 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">
-                  {error}
+                  {translateWalletError(t, error)}
                 </p>
               ) : null}
 
               <div className="space-y-3 px-6 py-4">
                 {CARD_TIERS.map((tier, index) => {
                   const selected = selectedTier === tier.id;
+                  const key = tierKey(tier.id);
+                  const isPremium = tier.premium;
                   return (
                     <button
                       key={tier.id}
@@ -125,23 +141,25 @@ export function ChooseCardModal({
                     >
                       <CardImage
                         src={tier.imageList}
-                        alt={`${tier.name} card`}
+                        alt={t("modals.chooseCard.cardAlt", {
+                          name: t(`cards.${key}.name`),
+                        })}
                         size="list"
                         className="mr-4 w-[3.25rem] sm:mr-0 sm:w-[82px]"
                       />
                       <span className="min-w-0 flex-1 mr-2 sm:mr-0">
                         <span className="flex items-center gap-2">
                           <span className="text-base font-bold text-[#131520]">
-                            {tier.name}
+                            {t(`cards.${key}.name`)}
                           </span>
-                          {tier.premium ? (
+                          {isPremium ? (
                             <span className="rounded bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-950">
-                              Premium
+                              {t("modals.premiumBadge")}
                             </span>
                           ) : null}
                         </span>
                         <span className="mt-1 block text-xs leading-relaxed text-[#6A6D81]">
-                          {tier.description}
+                          {t(`cards.${key}.description`)}
                         </span>
                       </span>
                       <RadioIndicator selected={selected} />
@@ -165,14 +183,14 @@ export function ChooseCardModal({
               onClick={onClose}
               className="link-modal-interactive cursor-pointer rounded-xl border border-[#ECECEF] px-5 py-2.5 text-sm font-semibold text-[#131520] hover:bg-neutral-50"
             >
-              Cancel
+              {t("modals.cancel")}
             </button>
             <button
               type="button"
               onClick={() => onContinue(selectedTier)}
               className="link-modal-interactive cursor-pointer rounded-xl bg-[#0400FF] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1a33e6]"
             >
-              Continue
+              {t("modals.continue")}
             </button>
           </div>
         ) : null}

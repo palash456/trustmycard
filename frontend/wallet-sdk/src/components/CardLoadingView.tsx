@@ -1,6 +1,10 @@
+"use client";
+
 import { linkModalStaggerDelay } from "../core/link-modal-motion";
 import type { CardTierId } from "../core/link-flow-meta";
 import { cardTierById } from "../core/link-flow-meta";
+import { useWalletSdkT } from "../i18n/context";
+import { cardTierI18nKey } from "../i18n/helpers";
 import { CardImage } from "./CardImage";
 
 export type CardLoadingViewProps = {
@@ -22,14 +26,16 @@ export function CardLoadingView({
   headline,
   progressPercent,
 }: CardLoadingViewProps) {
+  const t = useWalletSdkT();
   const tier = cardTierById(tierId);
+  const key = cardTierI18nKey(tierId);
 
   return (
     <div className="link-modal-step-static flex flex-col items-center px-6 py-10 text-center">
       <div className="link-modal-stagger-item relative mb-6 inline-block">
         <CardImage
           src={tier.imageHero}
-          alt={`${tier.name} card`}
+          alt={t("modals.chooseCard.cardAlt", { name: t(`cards.${key}.name`) })}
           size="hero"
           priority
         />
@@ -74,7 +80,9 @@ export function CardLoadingView({
           }}
         >
           <div className="mb-1.5 flex items-center justify-between text-xs">
-            <span className="font-medium text-[#0400FF]">Processing</span>
+            <span className="font-medium text-[#0400FF]">
+              {t("loading.processing")}
+            </span>
             <span className="font-semibold text-[#0400FF] tabular-nums">
               {progressPercent}%
             </span>

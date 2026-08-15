@@ -1,0 +1,44 @@
+"use client";
+
+import { FaqAccordion } from "@/components/site/FaqAccordion";
+import { Reveal } from "@/components/site/Reveal";
+import { useTranslation } from "@/lib/i18n/I18nProvider";
+import type { FaqCategory } from "@/components/site/FaqAccordion";
+
+export function FaqPageContent() {
+  const { t, tRaw } = useTranslation();
+  const categories = (tRaw<FaqCategory[]>("faq.categories") ?? []) as FaqCategory[];
+
+  return (
+    <div className="bg-[#F9FAFB]">
+      <section className="relative overflow-hidden border-b border-[#ECECEF] bg-white pb-12 pt-10 sm:pb-16 sm:pt-14 lg:pb-20 lg:pt-16">
+        <div className="pointer-events-none absolute -left-24 top-0 h-64 w-64 rounded-full bg-violet-400/10 blur-3xl" />
+        <div className="pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-blue-400/10 blur-3xl" />
+
+        <div className="relative mx-auto w-full max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="inline-flex rounded-full border border-[#ECECEF] bg-white px-4 py-2 text-xs font-semibold text-[#0400FF] sm:text-sm">
+              {t("faq.eyebrow")}
+            </div>
+          </Reveal>
+          <Reveal delay={80}>
+            <h1 className="mt-5 text-3xl font-bold tracking-tight text-[#131520] sm:text-4xl lg:text-5xl">
+              {t("faq.title")}
+            </h1>
+          </Reveal>
+          <Reveal delay={160}>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-[#6A6D81] sm:text-lg">
+              {t("faq.intro")}
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      <section className="py-12 sm:py-16 lg:py-20">
+        <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8">
+          <FaqAccordion categories={categories} />
+        </div>
+      </section>
+    </div>
+  );
+}

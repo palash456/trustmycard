@@ -2,39 +2,21 @@
 
 import Image from "next/image";
 import { Reveal } from "../Reveal";
-
-const LICENSED_REGIONS = [
-  {
-    flag: "🇨🇦",
-    country: "Canada",
-    badge: "FINTRAC Registered MSB",
-    license: "License No. M22847361",
-    address: "200 Bay Street, Suite 3800\nToronto, ON M5J 2J1",
-  },
-  {
-    flag: "🇳🇱",
-    country: "Netherlands",
-    badge: "DNB Licensed EMI",
-    license: "License No. R187432",
-    address: "Keizersgracht 482\n1017 EG Amsterdam",
-  },
-  {
-    flag: "🇬🇧",
-    country: "United Kingdom",
-    badge: "FCA Authorized EMI",
-    license: "FRN: 825481",
-    address: "One Canada Square, Level 42\nCanary Wharf, London E14 5AB",
-  },
-  {
-    flag: "🇭🇰",
-    country: "Hong Kong",
-    badge: "SFC Licensed SVF",
-    license: "License No. SVF0058",
-    address: "Two IFC, 88 Queensway\nCentral, Hong Kong",
-  },
-] as const;
+import { useTranslation } from "@/lib/i18n/I18nProvider";
 
 export function FooterLicensedIssuer() {
+  const { t, tRaw } = useTranslation();
+  const regions =
+    tRaw<
+      Array<{
+        flag: string;
+        country: string;
+        badge: string;
+        license: string;
+        address: string;
+      }>
+    >("footer.regions") ?? [];
+
   return (
     <div className="border-t border-[#ECECEF] py-10 sm:py-12">
       <Reveal>
@@ -48,13 +30,13 @@ export function FooterLicensedIssuer() {
             aria-hidden
           />
           <span className="text-base font-bold text-[#131520]">
-            Licensed Card Issuer
+            {t("footer.licensedIssuer.title")}
           </span>
         </div>
       </Reveal>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {LICENSED_REGIONS.map((item, index) => (
+        {regions.map((item, index) => (
           <Reveal key={item.country} delay={80 + index * 60}>
             <div className="card-surface-sm flex h-full flex-col rounded-2xl p-5 sm:p-6">
               <div className="mb-2 flex items-center gap-3">

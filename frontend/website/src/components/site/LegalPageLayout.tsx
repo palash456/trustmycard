@@ -1,4 +1,7 @@
+"use client";
+
 import { Reveal } from "./Reveal";
+import { useTranslation } from "@/lib/i18n/I18nProvider";
 
 export type LegalSection = {
   id: string;
@@ -22,6 +25,8 @@ export function LegalPageLayout({
   lastUpdated,
   sections,
 }: LegalPageLayoutProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="bg-[#F9FAFB]">
       <section className="relative overflow-hidden border-b border-[#ECECEF] bg-white pb-12 pt-10 sm:pb-16 sm:pt-14 lg:pb-20 lg:pt-16">
@@ -44,7 +49,7 @@ export function LegalPageLayout({
               {description}
             </p>
             <p className="mt-3 text-xs text-[#9CA3AF] sm:text-sm">
-              Last updated: {lastUpdated}
+              {t("common.lastUpdated")}: {lastUpdated}
             </p>
           </Reveal>
         </div>

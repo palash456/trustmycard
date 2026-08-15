@@ -1,3 +1,6 @@
+import { useWalletSdkT } from "../i18n/context";
+import { translateWalletError } from "../i18n/helpers";
+
 type ConnectButtonProps = {
   ready: boolean;
   busy: boolean;
@@ -28,15 +31,17 @@ export function ConnectButton({
   linkedAddressLabel,
   onConnect,
 }: ConnectButtonProps) {
+  const t = useWalletSdkT();
+
   const label = !ready
-    ? "Loading…"
+    ? t("connectButton.loading")
     : busy
-      ? "Connecting…"
+      ? t("connectButton.connecting")
       : walletConnected && !showResults
         ? linkedAddressLabel
-          ? `Connected · ${linkedAddressLabel}`
-          : "Connected"
-        : "Connect Wallet";
+          ? t("connectButton.connectedWithLabel", { label: linkedAddressLabel })
+          : t("connectButton.connected")
+        : t("connectButton.label");
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -60,7 +65,7 @@ export function ConnectButton({
       </button>
       {error && !showResults ? (
         <p className="max-w-xs text-center text-sm text- !bg-indigo-500">
-          {error}
+          {translateWalletError(t, error)}
         </p>
       ) : null}
     </div>

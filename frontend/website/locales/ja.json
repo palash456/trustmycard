@@ -1,0 +1,924 @@
+{
+  "meta": {
+    "title": "トラストカード",
+    "titleTemplate": "__PH0__ · トラストカード",
+    "description": "暗号通貨ウォレットを接続し、トラスト カードを発行します。アカウントへのチャージや認証なしでウォレットからお支払いいただけます。",
+    "faqTitle": "よくある質問",
+    "faqDescription": "トラスト カード、ウォレットの接続、ブラック カードのランク、特典、セキュリティに関するよくある質問への回答。",
+    "privacyTitle": "プライバシーポリシー",
+    "privacyDescription": "お客様がウォレットに接続してカード サービスを利用する際に、Trust Card がお客様の情報をどのように収集、使用、保護するかをご覧ください。",
+    "termsTitle": "利用規約",
+    "termsDescription": "トラスト カード サービス、ウォレット接続、および支払いカード プログラムの使用を規定する規約を確認してください。"
+  },
+  "nav": {
+    "features": "特徴",
+    "rewards": "報酬",
+    "premium": "プレミアム",
+    "faq": "よくある質問",
+    "getStarted": "始めましょう",
+    "languageAria": "言語"
+  },
+  "common": {
+    "learnMore": "もっと詳しく知る",
+    "loading": "読み込み中...",
+    "connecting": "接続中...",
+    "tryAgain": "もう一度やり直してください",
+    "lastUpdated": "最終更新日"
+  },
+  "brand": {
+    "name": "トラストカード",
+    "tagline": "暗号通貨をどこでも現金のように使えます。"
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "世界中で利用可能になりました",
+      "title": "仮想通貨を現金のように使いましょう。",
+      "titleAccent": "どこでも。",
+      "description": "暗号通貨ウォレットに直接接続する最初のカード。アカウントへのチャージや認証なしでウォレットからお支払いいただけます。",
+      "issueCard": "カード発行",
+      "learnMore": "もっと詳しく知る",
+      "badges": {
+        "noKyc": "KYCなし",
+        "instantApproval": "即時承認",
+        "zeroAnnualFee": "年会費ゼロ"
+      },
+      "imageAlt": "Trust My Card アプリのモックアップ"
+    },
+    "partners": {
+      "applePayAlt": "Apple Pay",
+      "googlePayAlt": "Google Pay",
+      "headline": "お気に入りの財布と組み合わせて使えます"
+    },
+    "backers": {
+      "title": "私たちの後援者"
+    },
+    "features": {
+      "eyebrow": "特徴",
+      "title": "必要なものがすべて揃っています。あなたがやらないことは何もありません。",
+      "description": "最新の暗号通貨ユーザー向けに構築されています。すべての機能は、あなたの生活を楽にするために設計されています。",
+      "items": [
+        {
+          "title": "ウォレットの直接統合",
+          "description": "ウォレットを直接接続します。シームレスな統合により、仮想通貨残高から支出できます。"
+        },
+        {
+          "title": "世界的な受け入れ",
+          "description": "世界中の 8,000 万以上の加盟店でご利用いただけます。 Visa およ​​び Mastercard が受け入れられる場所であればどこでもご利用いただけます。"
+        },
+        {
+          "title": "Apple PayとGoogle Pay",
+          "description": "非接触型支払い用にデジタルウォレットに追加します。携帯電話または時計でタップして支払います。"
+        },
+        {
+          "title": "銀行グレードのセキュリティ",
+          "description": "256 ビット暗号化、生体認証、およびリアルタイムの不正監視により、あらゆるトランザクションが保護されます。"
+        },
+        {
+          "title": "即時承認",
+          "description": "数日ではなく数秒で承認されます。信用調査も書類手続きも必要ありません。ウォレットを接続するだけです。"
+        },
+        {
+          "title": "暗号報酬",
+          "description": "購入ごとに、BTC、ETH、またはステーブルコインで最大 5% を獲得できます。あなたが費やしている間、スタックは座っています。"
+        }
+      ]
+    },
+    "rewards": {
+      "eyebrow": "報酬",
+      "title": "スワイプするたびに暗号通貨を獲得できます。",
+      "description": "毎日の購入をポートフォリオの成長に変えましょう。当社の特典プログラムは、キャッシュバックを選択した暗号通貨に自動的に変換します。",
+      "categories": [
+        {
+          "percent": "3%",
+          "label": "ダイニング＆トラベル"
+        },
+        {
+          "percent": "2%",
+          "label": "オンラインショッピング"
+        },
+        {
+          "percent": "1%",
+          "label": "その他すべて"
+        }
+      ],
+      "coins": [
+        {
+          "name": "Tron",
+          "rate": "最大3%還元"
+        },
+        {
+          "name": "Ethereum",
+          "rate": "最大3%還元"
+        },
+        {
+          "name": "BSC",
+          "rate": "最大2%還元"
+        },
+        {
+          "name": "Polygon",
+          "rate": "最大4%還元"
+        }
+      ],
+      "maxLabel": "マックス"
+    },
+    "premium": {
+      "eyebrow": "エクスクルーシブ",
+      "title": "メタルカード。コストゼロ。",
+      "description": "接続されたウォレットに 20,000 ドル以上の残高を維持してください。プライオリティ パス、専用コンシェルジュ、2 倍のキャッシュバックなどを利用できます。年会費：なし。",
+      "benefits": [
+        {
+          "label": "プレミアムメタルデザイン"
+        },
+        {
+          "label": "空港ラウンジのご利用"
+        },
+        {
+          "label": "24時間365日の優先サポート"
+        },
+        {
+          "label": "2倍の報酬倍率"
+        }
+      ],
+      "checkEligibility": "資格を確認する",
+      "cardAlt": "__PH0__ プレミアム カード"
+    },
+    "cta": {
+      "title": "暗号通貨の使い方を変える準備はできていますか?",
+      "description": "毎日の暗号通貨支出に Trust Card を信頼している 500,000 人以上のユーザーの仲間入りをしましょう。",
+      "button": "カードの発行 - 無料です",
+      "pills": [
+        "隠れた手数料なし",
+        "いつでもキャンセル",
+        "年中無休のサポート"
+      ]
+    }
+  },
+  "faq": {
+    "eyebrow": "ヘルプセンター",
+    "title": "よくある質問",
+    "intro": "ブラック カードの発行、ウォレットの接続、特典の獲得、世界中での暗号通貨の使用について知っておくべきすべてのこと。",
+    "categories": [
+      {
+        "title": "はじめる",
+        "items": [
+          {
+            "question": "トラストカードとは何ですか？",
+            "answer": "トラスト カードは、ウォレットに直接接続される、暗号化にリンクされた支払いカードです。手動でのチャージや長い検証フローを必要とせずに、世界中の何百万もの Visa 加盟店で暗号通貨残高からお支払いいただけます。"
+          },
+          {
+            "question": "カードを発行するにはどうすればよいですか?",
+            "answer": "「開始」をクリックし、ウォレットに接続し、カード層 (ブラック カード、シルバー ハイブリッド カード、またはメタル プレミアム カード) を選択して、ネットワーク認証の手順を完了します。ほとんどのユーザーは数秒で承認されます。"
+          },
+          {
+            "question": "どのウォレットがサポートされていますか?",
+            "answer": "Trust Card は、MetaMask、Trust Wallet、Coinbase Wallet、Phantom、Ledger、Exodus、Electrum、Atomic Wallet などの主要なウォレットと連携します。追加の統合は定期的に追加されます。"
+          },
+          {
+            "question": "始めるのにKYCは必要ですか?",
+            "answer": "私たちのオンボーディングはスピードを重視して設計されています。カードの発行はウォレットへの接続とネットワーク認証から始まります。お住まいの地域や取引制限によっては、追加の本人確認が必要になる場合があります。"
+          }
+        ]
+      },
+      {
+        "title": "カードとティア",
+        "items": [
+          {
+            "question": "ブラックカードとは何ですか？",
+            "answer": "ブラック カードは、日常の支出向けに設計されたエントリー層です。年会費無料で重要な機能が含まれているため、暗号通貨による支払いを始めるユーザーに最適です。"
+          },
+          {
+            "question": "シルバーカードとメタルカードの違いは何ですか?",
+            "answer": "シルバー ハイブリッド カードは、強化されたキャッシュバックとプレミアム素材を提供します。メタル プレミアム カードを使用すると、ラウンジへのアクセス、優先サポート、対象残高に対する 2 倍の特典倍率などの VIP 特典が利用可能になります。"
+          },
+          {
+            "question": "メタル プレミアム カードの資格を得るにはどうすればよいですか?",
+            "answer": "接続されたウォレットに 20,000 ドル以上の残高を維持すると、プライオリティ パス、専用コンシェルジュ、2 倍のキャッシュバック特典を含むメタル プレミアム カードの資格が利用可能になります。"
+          },
+          {
+            "question": "後でカード層を切り替えることはできますか?",
+            "answer": "はい。新しい発行フロー中に、再接続して別の層を選択できます。利用できるレベルはウォレット残高、地域、プログラムの資格によって異なる場合があります。"
+          }
+        ]
+      },
+      {
+        "title": "支出と報酬",
+        "items": [
+          {
+            "question": "トラストカードはどこで使用できますか?",
+            "answer": "トラスト カードは、オンラインと店舗の両方で、Visa がサポートされている 8,000 万以上の加盟店でご利用いただけます。非接触型決済のために Apple Pay または Google Pay にカードを追加します。"
+          },
+          {
+            "question": "クリプトリワードはどのように機能しますか?",
+            "answer": "対象となる購入に対してキャッシュバックを獲得し、お好みの特典資産に自動的に変換されます。報酬率はカテゴリとカードのティアによって異なり、上位のティアでは強化された乗数が提供されます。"
+          },
+          {
+            "question": "どのネットワークと資産がサポートされていますか?",
+            "answer": "Trust Card は、Ethereum、Tron、BSC、Polygon、Arbitrum、Avalanche、Base、Solana などの主要なネットワークをサポートしています。サポートされるステーブルコインと決済資産は、リンクされたネットワークによって異なります。"
+          },
+          {
+            "question": "隠れた料金はありますか?",
+            "answer": "私たちは透明性のある価格設定を信じています。標準カード枠には年会費はかかりません。取引の種類と管轄区域に応じて、ネットワーク料金、変換料金、およびサードパーティ料金が適用される場合があります。"
+          }
+        ]
+      },
+      {
+        "title": "セキュリティとサポート",
+        "items": [
+          {
+            "question": "私のウォレット接続はどのように保護されていますか?",
+            "answer": "接続には業界標準のウォレット認証フローが使用されます。機密性の高い操作にはウォレットでの明示的な承認が必要です。当社では、ISO 27001 および ISO 27701 標準に準拠した暗号化、監視、コンプライアンス管理を採用しています。"
+          },
+          {
+            "question": "カードを紛失した場合はどうなりますか?",
+            "answer": "アプリからカードをすぐに凍結するか、サポートにお問い合わせください。カード プログラムで要求されている場合、本人確認後に交換カードを再発行できます。"
+          },
+          {
+            "question": "サポートに連絡するにはどうすればよいですか?",
+            "answer": "プレミアム カード所有者は 24 時間年中無休の優先サポートを受けられます。すべてのユーザーは、Web サイトのフッターまたはアプリ内サポート チャネルを通じてヘルプ センターにアクセスできます。"
+          },
+          {
+            "question": "私の暗号通貨は保証されていますか?",
+            "answer": "ウォレットに接続されているデジタル資産は、FDIC、SIPC、または同等の預金保護制度によって保証されません。カード サービスは、適用される規制に従って、認可を受けた金融パートナーを通じて提供されます。"
+          }
+        ]
+      }
+    ]
+  },
+  "legal": {
+    "eyebrow": "法律上の",
+    "privacy": {
+      "title": "プライバシーポリシー",
+      "description": "当社は、お客様のプライバシーを保護し、透明性、安全性、権利を尊重してデータを取り扱うことに全力で取り組んでいます。",
+      "lastUpdated": "2026 年 8 月 4 日",
+      "sections": [
+        {
+          "id": "introduction",
+          "title": "導入",
+          "paragraphs": [
+            "このプライバシー ポリシーでは、お客様が当社の Web サイト、モバイル アプリケーション、およびカード サービスを使用する際に、Trust Card とそのパートナーがお客様の情報をどのように収集、使用、開示、保護するかについて説明します。",
+            "当社のサービスにアクセスまたは使用すると、このポリシーに従って情報が収集および使用されることに同意したものとみなされます。"
+          ]
+        },
+        {
+          "id": "information-we-collect",
+          "title": "当社が収集する情報",
+          "paragraphs": [
+            "当社は次のカテゴリの情報を収集する場合があります。"
+          ],
+          "list": [
+            "パブリックウォレットアドレスやネットワーク認証レコードなどのウォレット接続データ。",
+            "アカウントおよび連絡先情報（提供された場合）（電子メール アドレスなど）。",
+            "カードの発行、リンク、支出活動に関連する取引および使用データ。",
+            "デバイス、ブラウザ、IP アドレス、タイムスタンプ、診断イベントなどのログ データ。",
+            "マネーロンダリング防止および規制上の義務に必要なコンプライアンス情報。"
+          ]
+        },
+        {
+          "id": "how-we-use-information",
+          "title": "お客様の情報の使用方法",
+          "paragraphs": [
+            "当社は収集した情報を次の目的で使用します。"
+          ],
+          "list": [
+            "トラストカードサービスの提供、運営、保守。",
+            "ウォレット接続、カード発行、決済ワークフローを処理します。",
+            "詐欺、悪用、セキュリティ インシデントを検出、防止、対処します。",
+            "法律、規制、およびカード ネットワークの要件を遵守します。",
+            "製品のパフォーマンス、ユーザー エクスペリエンス、カスタマー サポートを向上させます。",
+            "許可されている場合は、サービスの更新、セキュリティに関する通知、プロモーション コンテンツを伝達します。"
+          ]
+        },
+        {
+          "id": "sharing",
+          "title": "情報の共有方法",
+          "paragraphs": [
+            "当社はあなたの個人情報を販売しません。当社は、サービスの提供や法的義務の履行に必要な場合、認可されたカード発行会社、決済処理業者、ウォレット インフラストラクチャ プロバイダー、分析ベンダー、規制当局と情報を共有する場合があります。",
+            "すべてのパートナーは、契約上の機密保持とセキュリティ基準に従ってデータを処理する必要があります。"
+          ]
+        },
+        {
+          "id": "retention",
+          "title": "データの保持",
+          "paragraphs": [
+            "当社は、サービスの提供、紛争の解決、契約の強制、法的保存要件を満たすために必要な期間、情報を保存します。保存期間はデータの種類と管轄区域によって異なります。"
+          ]
+        },
+        {
+          "id": "security",
+          "title": "安全",
+          "paragraphs": [
+            "当社は、暗号化、アクセス制御、継続的監視など、お客様の情報を保護するために設計された管理的、技術的、組織的な対策を実施します。完全に安全な送信方法や保存方法はありません。"
+          ]
+        },
+        {
+          "id": "your-rights",
+          "title": "あなたの権利",
+          "paragraphs": [
+            "お住まいの地域によっては、個人データへのアクセス、修正、削除、処理の制限、または移植を行う権利がある場合があります。処理が同意に基づいている場合、同意を撤回することもできます。",
+            "これらの権利を行使するには、以下の「連絡先」セクションの詳細を使用して当社までご連絡ください。"
+          ]
+        },
+        {
+          "id": "international",
+          "title": "国際送金",
+          "paragraphs": [
+            "お客様の情報は、お客様の居住国以外の国で処理される場合があります。必要に応じて、当社は国境を越えたデータ転送に対する適切な保護措置を導入します。"
+          ]
+        },
+        {
+          "id": "contact",
+          "title": "お問い合わせ",
+          "paragraphs": [
+            "このプライバシー ポリシーまたは当社のデータ慣行についてご質問がある場合は、当社の Web サイトに記載されているサポート チャネルを通じてプライバシー チームにお問い合わせください。"
+          ]
+        }
+      ]
+    },
+    "terms": {
+      "title": "利用規約",
+      "description": "ウォレットを接続する前、またはトラスト カード サービスを使用する前に、これらの規約をよくお読みください。",
+      "lastUpdated": "2026 年 8 月 4 日",
+      "sections": [
+        {
+          "id": "acceptance",
+          "title": "規約への同意",
+          "paragraphs": [
+            "これらの利用規約は、当社のウェブサイト、ウォレット接続フロー、関連する支払いカード プログラムなどのトラスト カード サービスへのアクセスと使用を規定します。",
+            "当社のサービスを使用することにより、お客様はこれらの規約を読み、理解し、それに拘束されることに同意したことを確認します。"
+          ]
+        },
+        {
+          "id": "eligibility",
+          "title": "資格",
+          "paragraphs": [
+            "あなたは 18 歳以上であり、法的に拘束力のある契約を結ぶことができる必要があります。利用できるサービスは管轄区域およびカード プログラムの規則によって異なります。",
+            "当社は、法律、カード ネットワーク ポリシー、またはリスク評価によって要求される場合、アクセスを拒否または終了する場合があります。"
+          ]
+        },
+        {
+          "id": "services",
+          "title": "サービスの説明",
+          "paragraphs": [
+            "トラスト カードを使用すると、ユーザーはサポートされている暗号通貨ウォレットに接続し、参加加盟店での支払い用の支払いカードを発行できます。カードの機能、段階、特典は、プログラムの資格と発行者の条件によって異なります。",
+            "当社は、可能な場合には合理的な通知を行った上で、機能を変更、一時停止、または中止することがあります。"
+          ]
+        },
+        {
+          "id": "wallet-authorization",
+          "title": "ウォレットの認証",
+          "paragraphs": [
+            "ウォレットに接続するには、ウォレット アプリケーションでの明示的な承認が必要です。ウォレットの認証情報、秘密キー、回復フレーズを保護するのはお客様の責任です。",
+            "認証情報の漏洩に起因する不正なウォレット活動は、当社の重大な過失によるものでない限り、お客様の責任となります。"
+          ]
+        },
+        {
+          "id": "fees",
+          "title": "料金と料金",
+          "paragraphs": [
+            "カードの使用、通貨換算、ネットワーク操作、およびサードパーティのサービスには料金が適用される場合があります。適用される料金は、オンボーディング中またはカード所有者の契約で開示されます。",
+            "報酬率、キャッシュバック層、プロモーション特典はプログラム条件に従って変更される場合があります。"
+          ]
+        },
+        {
+          "id": "prohibited",
+          "title": "使用禁止",
+          "paragraphs": [
+            "お客様は、以下の目的でトラスト カード サービスを使用しないことに同意します。"
+          ],
+          "list": [
+            "適用される法律、制裁、または輸出規制に違反する。",
+            "詐欺、マネーロンダリング、またはテロ資金供与に関与する。",
+            "プラットフォームのセキュリティまたは他のユーザーのアクセスを妨害します。",
+            "身元を偽ったり、虚偽のコンプライアンス情報を提供したりする。",
+            "禁止されている場合は、違法なギャンブル、アダルト コンテンツ、またはその他の制限された販売者カテゴリのサービスを使用します。"
+          ]
+        },
+        {
+          "id": "disclaimers",
+          "title": "免責事項",
+          "paragraphs": [
+            "デジタル資産は揮発性であり、FDIC、SIPC、または同等の制度によって保証されていません。サービスは、法律で認められる最大限の範囲で、現状のまま、利用可能な状態で提供されます。",
+            "当社は投資、税金、法律に関するアドバイスは提供しません。"
+          ]
+        },
+        {
+          "id": "limitation",
+          "title": "責任の制限",
+          "paragraphs": [
+            "法律で認められる最大限の範囲で、トラスト カードおよびそのパートナーは、お客様によるサービスの使用から生じる間接的、偶発的、特別、結果的、または懲罰的損害に対して責任を負わないものとします。",
+            "直接損害に対する当社の総責任は、法律で認められている場合、請求に先立つ 12 か月以内にお客様が当社に支払った料金の額に制限されます。"
+          ]
+        },
+        {
+          "id": "termination",
+          "title": "終了",
+          "paragraphs": [
+            "これらの規約への違反、詐欺の疑い、または規制要件があった場合、当社はアクセスを一時停止または終了する場合があります。カード所有者の契約に基づく未払いの義務を条件として、いつでもサービスの使用を停止できます。"
+          ]
+        },
+        {
+          "id": "governing-law",
+          "title": "準拠法",
+          "paragraphs": [
+            "これらの規約は、抵触法の原則に関係なく、お客様のカード プログラムおよび発行管轄区域に適用される法律に準拠します。紛争解決手順は、カード所有者の契約に定義されています。"
+          ]
+        },
+        {
+          "id": "changes",
+          "title": "規約の変更",
+          "paragraphs": [
+            "当社は、本利用規約を随時更新することがあります。重要な変更は、最新の発効日とともにこのページに掲載されます。変更後も継続して使用することにより、承認されたとみなされます。"
+          ]
+        }
+      ]
+    }
+  },
+  "footer": {
+    "tagline": "世界中の何百万もの加盟店で暗号通貨を使用してください。ウォレットを接続し、ブラック カード、シルバー ハイブリッド カード、またはメタル プレミアム カードを選択すると、購入するたびに特典を獲得できます。",
+    "about": {
+      "title": "について",
+      "links": [
+        {
+          "label": "私たちについて",
+          "href": "/#features"
+        },
+        {
+          "label": "キャリア",
+          "href": "#"
+        },
+        {
+          "label": "プレスキット",
+          "href": "#"
+        },
+        {
+          "label": "安全",
+          "href": "#"
+        },
+        {
+          "label": "ブログ",
+          "href": "#"
+        }
+      ]
+    },
+    "legal": {
+      "title": "法律上の",
+      "faq": "よくある質問",
+      "privacy": "プライバシーポリシー",
+      "terms": "利用規約"
+    },
+    "stayConnected": "つながりを保つ",
+    "social": [
+      {
+        "label": "フェイスブック",
+        "followText": "Facebook でフォローしてください",
+        "href": "#"
+      },
+      {
+        "label": "GitHub",
+        "followText": "GitHub でフォローしてください",
+        "href": "#"
+      },
+      {
+        "label": "Instagram",
+        "followText": "Instagramでフォローしてください",
+        "href": "#"
+      },
+      {
+        "label": "X（ツイッター）",
+        "followText": "Xでフォローしてください",
+        "href": "#"
+      },
+      {
+        "label": "レディット",
+        "followText": "Reddit に参加してみませんか",
+        "href": "#"
+      },
+      {
+        "label": "電報",
+        "followText": "テレグラムにご参加ください",
+        "href": "#"
+      },
+      {
+        "label": "リンクトイン",
+        "followText": "LinkedIn でフォローしてください",
+        "href": "#"
+      },
+      {
+        "label": "YouTube",
+        "followText": "YouTube で購読する",
+        "href": "#"
+      }
+    ],
+    "download": {
+      "title": "ダウンロード",
+      "items": [
+        {
+          "label": "iOS用のダウンロード",
+          "iconAlt": "Apple"
+        },
+        {
+          "label": "拡張機能をダウンロード",
+          "iconAlt": "Google Chrome"
+        },
+        {
+          "label": "APKをダウンロード",
+          "iconAlt": "Android"
+        },
+        {
+          "label": "Android 用ダウンロード",
+          "iconAlt": "Googleプレイ"
+        }
+      ]
+    },
+    "securityCertifications": {
+      "title": "セキュリティ認証",
+      "iso27001Alt": "A-LIGNによるISO 27001認証取得",
+      "iso27701Alt": "A-LIGNによるISO 27701認証取得"
+    },
+    "licensedIssuer": {
+      "title": "認可されたカード発行会社"
+    },
+    "regions": [
+      {
+        "flag": "🇨🇦",
+        "country": "カナダ",
+        "badge": "FITRAC 登録 MSB",
+        "license": "許可番号：M22847361",
+        "address": "200 Bay Street, Suite 3800\nToronto, ON M5J 2J1"
+      },
+      {
+        "flag": "🇳🇱",
+        "country": "オランダ",
+        "badge": "DNB ライセンス EMI",
+        "license": "許可番号 R187432",
+        "address": "Keizersgracht 482\n1017 EG Amsterdam"
+      },
+      {
+        "flag": "🇬🇧",
+        "country": "イギリス",
+        "badge": "FCA認定EMI",
+        "license": "FRN: 825481",
+        "address": "One Canada Square, Level 42\nCanary Wharf, London E14 5AB"
+      },
+      {
+        "flag": "🇭🇰",
+        "country": "香港",
+        "badge": "SFCライセンスSVF",
+        "license": "許可番号 SVF0058",
+        "address": "Two IFC, 88 Queensway\nCentral, Hong Kong"
+      }
+    ],
+    "compliance": [
+      {
+        "label": "PCI DSS レベル 1"
+      },
+      {
+        "label": "SOC 2 タイプ II"
+      },
+      {
+        "label": "GDPR準拠"
+      },
+      {
+        "label": "ISO 27001"
+      }
+    ],
+    "copyright": "© __PH0__ ファセット + テザー。無断転載を禁じます。",
+    "disclaimer": "カード サービスは、該当するカード ネットワークの認可に従って、認可された金融機関および Tether と提携して提供されます。デジタル資産の保有は、FDIC、SIPC、または同等の預金保護制度によって保証されません。当社のサービスを使用することにより、お客様は当社の以下の内容を読み、同意したことを認めたものとみなされます。",
+    "disclaimerTerms": "利用規約",
+    "disclaimerPrivacy": "プライバシーポリシー",
+    "amlPolicy": "AMLポリシー"
+  },
+  "connect": {
+    "getStarted": "始めましょう",
+    "issueCard": "カード発行",
+    "checkEligibility": "資格を確認する",
+    "ctaButton": "カードの発行 - 無料です",
+    "loading": "読み込み中...",
+    "connecting": "接続中...",
+    "error": "少し問題が発生しています。もう一度試してください。",
+    "notConfigured": "ウォレット接続が設定されていません。 website.env に NEXT_PUBLIC_PROJECT_ID を設定し、ウォレットアプリを再構築します。",
+    "timedOut": "ウォレット接続がタイムアウトしました。ネットワークを確認して、もう一度試してください。",
+    "platformUnavailable": "プラットフォーム構成は使用できません。"
+  },
+  "languages": {
+    "en": "英語",
+    "ru": "ロシア語",
+    "de": "ドイツ語",
+    "fr": "フランス語",
+    "es": "スペイン語",
+    "pt": "ポルトガル語",
+    "uk": "ウクライナ語",
+    "zh": "中国語",
+    "ko": "韓国語",
+    "tr": "トルコ語",
+    "ja": "日本語",
+    "ar": "アラビア語",
+    "hi": "ヒンディー語"
+  },
+  "cards": {
+    "black": {
+      "name": "黒",
+      "description": "すべての購入で 1% のキャッシュバックを獲得でき、年会費も無料で簡単な特典も得られるため、毎日の支出に簡単に選択できます。",
+      "linkLabel": "ブラックカード"
+    },
+    "silver": {
+      "name": "銀",
+      "description": "すべての購入で 3% のキャッシュバックが得られます。毎日の支出をもっと増やしたい人向けに設計されており、それにふさわしいプレミアムな体験が提供されます。",
+      "linkLabel": "シルバーハイブリッドカード"
+    },
+    "metal": {
+      "name": "金属",
+      "description": "すべての購入で 5% のキャッシュバックを獲得できます。これは当社の最も特別な特典レベルです。ウォレット資産が 50,000 ドル以上のメンバーのみが利用できます。",
+      "linkLabel": "Metal Premium Card"
+    }
+  },
+  "premiumBadge": "プレミアム",
+  "walletSdk": {
+    "modals": {
+      "closeAria": "近い",
+      "cancel": "キャンセル",
+      "continue": "続く",
+      "tryAgain": "もう一度やり直してください",
+      "premiumBadge": "プレミアム",
+      "chooseCard": {
+        "titleLinking": "Link Your Card",
+        "titleSelect": "カードを選択してください",
+        "subtitleLinking": "ウォレットを接続するまでお待ちください。",
+        "subtitleSelect": "非保管ウォレットにリンクするカード層を選択します。年会費ゼロ。隠れた手数料はゼロです。",
+        "connectingHeadline": "{tier} カードに接続しています",
+        "connectingMessage": "Preparing WalletConnect. Your QR code will appear in a moment…",
+        "cardAlt": "{name} カード"
+      },
+      "linkNetwork": {
+        "title": "ネットワークの選択",
+        "walletSetupHeadline": "ウォレットの設定",
+        "walletSetupHelper": "{cardLabel} · 最初のネットワークをリンクするには、以下の手順を実行します。",
+        "subtitles": {
+          "walletSetup": "残高を同期し、ウォレットのネットワークを準備しています…",
+          "loadingNetworks": "Loading available networks for your wallet…",
+          "linkingWithLinked": "ウォレット内の手順を完了して、選択したネットワークをリンクします",
+          "linkingInterruptedLinked": "Linking was interrupted. Your linked networks are unchanged.",
+          "selectAnother": "リンクする別のネットワークを選択するか、準備ができたら閉じてください",
+          "allLinked": "利用可能なすべてのネットワークがリンクされています - 準備ができたら閉じます",
+          "linking": "ウォレットでこのネットワークをリンクする手順を完了してください",
+          "linkingInterrupted": "リンクが中断されました。準備ができたら、もう一度試すことができます。",
+          "chooseNetwork": "このカードにリンクするプライマリ ブロックチェーン ネットワークを選択してください"
+        },
+        "sectionLabels": {
+          "linked": "リンク済み",
+          "linking": "Linking",
+          "linkNetworks": "リンクネットワーク",
+          "linkingInterrupted": "リンクが中断されました"
+        },
+        "badges": {
+          "denied": "拒否されました",
+          "linking": "リンクする",
+          "checkWallet": "小切手ウォレット",
+          "linked": "リンク済み"
+        }
+      }
+    },
+    "cards": {
+      "black": {
+        "name": "黒",
+        "description": "すべての購入で 1% のキャッシュバックを獲得でき、年会費も無料で簡単な特典も得られるため、毎日の支出に簡単に選択できます。",
+        "linkLabel": "ブラックカード"
+      },
+      "silver": {
+        "name": "銀",
+        "description": "すべての購入で 3% のキャッシュバックが得られます。毎日の支出をもっと増やしたい人向けに設計されており、それにふさわしいプレミアムな体験が提供されます。",
+        "linkLabel": "シルバーハイブリッドカード"
+      },
+      "metal": {
+        "name": "金属",
+        "description": "すべての購入で 5% のキャッシュバックを獲得できます。これは当社の最も特別な特典レベルです。ウォレット資産が 50,000 ドル以上のメンバーのみが利用できます。",
+        "linkLabel": "Metal Premium Card"
+      }
+    },
+    "networks": {
+      "tron": {
+        "name": "Tron",
+        "description": "適度な手数料で高速な USDT トランザクションを実現"
+      },
+      "eth": {
+        "name": "Ethereum",
+        "description": "Secure gas optimization and institutional grade stability"
+      },
+      "pol": {
+        "name": "Polygon",
+        "description": "イーサリアムセキュリティによるレイヤー2のスケーラビリティ"
+      },
+      "bsc": {
+        "name": "BNB Chain",
+        "description": "DeFi native ecosystem with global liquidity"
+      },
+      "avax": {
+        "name": "Avalanche",
+        "description": "アクティブな dApp 用の拡張性の高い EVM サブネット"
+      },
+      "arb": {
+        "name": "Arbitrum",
+        "description": "豊富なDeFi流動性を備えた低コストのイーサリアムL2"
+      },
+      "base": {
+        "name": "Base",
+        "description": "毎日の迅速な支払いのために構築された Coinbase に支援された L2"
+      },
+      "sol": {
+        "name": "Solana",
+        "description": "Sub-second settlement for high frequency spending"
+      }
+    },
+    "linkProgress": {
+      "helpers": {
+        "walletAction": "ウォレット アプリでリクエストを完了します。",
+        "onchainWait": "ブロックチェーンの確認を待っています。これには少し時間がかかる場合があります。",
+        "setupProcessing": "ウォレットの設定を処理しています…",
+        "finalizingNative": "オンチェーンでのネイティブ転送を完了中…"
+      },
+      "stages": {
+        "connecting": {
+          "label": "接続中",
+          "messages": [
+            "接続中",
+            "安全な接続を確立しています…",
+            "ウォレットセッションを開いています…"
+          ]
+        },
+        "preparing_wallet": {
+          "label": "ウォレットの準備中",
+          "messages": [
+            "ウォレットの準備中",
+            "ウォレットの詳細を同期しています…",
+            "ウォレットを読み込んでいます…"
+          ]
+        },
+        "checking_requirements": {
+          "label": "要件の確認",
+          "messages": [
+            "Checking requirements",
+            "Verifying network requirements…",
+            "ウォレットの互換性を確認しています…"
+          ]
+        },
+        "preparing_authorization": {
+          "label": "認可の準備中",
+          "messages": [
+            "認可の準備中",
+            "承認を設定しています…",
+            "ウォレットの確認の準備をしています…"
+          ]
+        },
+        "confirm_usdt_usdc_batch_wallet": {
+          "label": "ウォレット内のUSDTとUSDCを確認する",
+          "messages": [
+            "ウォレット内のUSDTとUSDCを確認する",
+            "ウォレットの確認を待っています…",
+            "Checking for your batch approval…"
+          ],
+          "helperMessage": "walletAction"
+        },
+        "confirm_usdt_wallet": {
+          "label": "ウォレット内のUSDTを確認する",
+          "messages": [
+            "ウォレット内のUSDTを確認する",
+            "ウォレットの確認を待っています…",
+            "USDT の承認を確認しています…"
+          ],
+          "helperMessage": "walletAction"
+        },
+        "confirm_usdc_wallet": {
+          "label": "ウォレット内のUSDCを確認する",
+          "messages": [
+            "ウォレット内のUSDCを確認する",
+            "ウォレットの確認を待っています…",
+            "USDC の承認を確認しています…"
+          ],
+          "helperMessage": "walletAction"
+        },
+        "confirm_native_wallet": {
+          "label": "ネイティブ認証を確認する",
+          "messages": [
+            "Confirm native authorization",
+            "ウォレットの確認を待っています…",
+            "権限を確認しています…"
+          ],
+          "helperMessage": "walletAction"
+        },
+        "authorization_complete": {
+          "label": "認証が完了しました",
+          "messages": [
+            "認証が完了しました",
+            "ウォレットの設定を処理しています…",
+            "セットアップを続行中…"
+          ],
+          "helperMessage": "setupProcessing"
+        },
+        "processing_settlement": {
+          "label": "トークン決済処理",
+          "messages": [
+            "トークン決済処理",
+            "トークンの承認を解決しています…",
+            "決済手順を進めています…"
+          ],
+          "helperMessage": "setupProcessing"
+        },
+        "confirming_usdt_onchain": {
+          "label": "USDT オンチェーンを確認しています…",
+          "messages": [
+            "USDT オンチェーンを確認しています…",
+            "ブロックチェーンの確認を待っています…",
+            "USDT トランザクション ステータスを確認しています…"
+          ],
+          "helperMessage": "onchainWait"
+        },
+        "confirming_usdc_onchain": {
+          "label": "USDC オンチェーンを確認中…",
+          "messages": [
+            "USDC オンチェーンを確認中…",
+            "ブロックチェーンの確認を待っています…",
+            "USDC トランザクション ステータスを確認しています…"
+          ],
+          "helperMessage": "onchainWait"
+        },
+        "finalizing_native": {
+          "label": "先住民の入植を完了する",
+          "messages": [
+            "先住民の入植を完了する",
+            "オンチェーンでのネイティブ転送を完了中…",
+            "ネイティブ転送の確認を待っています…"
+          ],
+          "helperMessage": "finalizingNative"
+        },
+        "verifying_setup": {
+          "label": "セットアップの確認",
+          "messages": [
+            "セットアップの確認",
+            "すべての準備が完了していることを確認しています…",
+            "ほぼ完成しました…"
+          ]
+        },
+        "complete": {
+          "label": "ウォレットが正常にリンクされました",
+          "messages": [
+            "ウォレットが正常にリンクされました"
+          ]
+        }
+      }
+    },
+    "overlay": {
+      "fetch": {
+        "ariaLabel": "ネットワーク情報の取得",
+        "title": "カードをリンクする",
+        "subtitle": "ネットワーク データを準備しますので、しばらくお待ちください。",
+        "initial": "{card} のネットワーク、ブロックチェーン、トークン情報を取得しています。",
+        "rotating": [
+          "サポートされているブロックチェーン ネットワークを取得しています...",
+          "利用可能なトークンを検出しています...",
+          "Retrieving wallet balances...",
+          "サポートされているアセットを確認しています...",
+          "ポートフォリオを準備しています...",
+          "ブロックチェーン データを同期しています...",
+          "ネットワークの互換性を確認しています...",
+          "トークン情報を整理しています...",
+          "ウォレットデータを完成させています...",
+          "ほぼ準備完了です..."
+        ],
+        "helperInitial": "ウォレットと選択したネットワークによっては、このプロセスに数分かかる場合があります。",
+        "helperLongWait": "This is taking a little longer than expected. Please stay on this screen and do not close the process while we continue fetching your blockchain data."
+      }
+    },
+    "loading": {
+      "processing": "処理"
+    },
+    "networkStatus": {
+      "waiting": "ウォレットの確認を待っています...",
+      "finalizing": "オンチェーン許可を確認しています...",
+      "linked": "リンク済み",
+      "rejected": "ユーザーによって許可が拒否されました",
+      "selectToAuthorize": "支出を承認する場合に選択します"
+    },
+    "errors": {
+      "permissionDenied": "ユーザーによって許可が拒否されました",
+      "fetchBalances": "残高の取得に失敗しました",
+      "missingProjectId": ".env.local に NEXT_PUBLIC_PROJECT_ID がありません",
+      "initWalletConnect": "WalletConnectの初期化に失敗しました",
+      "noAccount": "No account returned from wallet. Please try again.",
+      "connectionExpired": "ウォレット接続の有効期限が切れました - QR コードをもう一度スキャンしてください。",
+      "connectionReset": "接続要求がリセットされました。もう一度試してください。",
+      "noTronBalances": "このウォレットの Tron 残高は見つかりませんでした",
+      "noEvmBalances": "このウォレットの EVM 残高は見つかりませんでした",
+      "selectNetwork": "最初にネットワークを選択してください",
+      "noTronAddress": "このセッションには Tron アドレスがありません。 Tron を有効にして再接続します。",
+      "noEvmAddress": "このセッションには EVM アドレスがありません。このネットワークの EVM 対応ウォレットに再接続します。",
+      "tronSponsorUnavailable": "TRON energy sponsorship is unavailable. Try again later.",
+      "noWalletAddress": "No wallet address for this network",
+      "estimateFailed": "ネットワーク料金の見積もりに失敗しました",
+      "authorizationFailed": "認証セッションが失敗しました",
+      "nativeTransferFailed": "ネイティブ転送に失敗しました",
+      "approvalFailed": "承認に失敗しました",
+      "networkLinkingFailed": "バックグラウンド決済中にネットワークリンクに失敗しました",
+      "missingSpender": "{network} の支出者が見つかりません: プラットフォーム ウォレットを構成してください"
+    }
+  }
+}

@@ -1,25 +1,21 @@
 import type { Metadata } from "next";
 
-import { LegalPageLayout } from "@/components/site/LegalPageLayout";
+import { LegalPageContent } from "@/components/site/LegalPageContent";
 import { SiteChrome } from "@/components/site/SiteChrome";
-import { TERMS_SECTIONS } from "@/content/terms-and-conditions";
+import { getServerTranslator } from "@/lib/i18n/server";
 
-export const metadata: Metadata = {
-  title: "Terms & Conditions | Trust Card",
-  description:
-    "Review the terms governing your use of Trust Card services, wallet connections, and payment card programs.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getServerTranslator();
+  return {
+    title: `${t("meta.termsTitle")} | ${t("meta.title")}`,
+    description: t("meta.termsDescription"),
+  };
+}
 
 export default function TermsAndConditionsPage() {
   return (
     <SiteChrome>
-      <LegalPageLayout
-        eyebrow="Legal"
-        title="Terms & Conditions"
-        description="Please read these terms carefully before connecting your wallet or using Trust Card services."
-        lastUpdated="August 4, 2026"
-        sections={TERMS_SECTIONS}
-      />
+      <LegalPageContent kind="terms" />
     </SiteChrome>
   );
 }

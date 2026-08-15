@@ -1,0 +1,924 @@
+{
+  "meta": {
+    "title": "信托卡",
+    "titleTemplate": "__PH0__ · 信托卡",
+    "description": "连接您的加密钱包并发行您的信托卡。从您的钱包中支出，无需账户充值或验证。",
+    "faqTitle": "常问问题",
+    "faqDescription": "有关信托卡、钱包连接、黑卡等级、奖励和安全性的常见问题的解答。",
+    "privacyTitle": "隐私政策",
+    "privacyDescription": "了解当您连接钱包并使用我们的卡服务时，Trust Card 如何收集、使用和保护您的信息。",
+    "termsTitle": "条款及条件",
+    "termsDescription": "查看管理您使用 Trust Card 服务、钱包连接和支付卡程序的条款。"
+  },
+  "nav": {
+    "features": "特征",
+    "rewards": "奖励",
+    "premium": "Premium",
+    "faq": "常问问题",
+    "getStarted": "开始使用",
+    "languageAria": "语言"
+  },
+  "common": {
+    "learnMore": "了解更多",
+    "loading": "加载中...",
+    "connecting": "正在连接...",
+    "tryAgain": "再试一次",
+    "lastUpdated": "最后更新"
+  },
+  "brand": {
+    "name": "信托卡",
+    "tagline": "像现金一样在任何地方使用加密货币。"
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "现已全球发售",
+      "title": "像现金一样使用加密货币。",
+      "titleAccent": "到处。",
+      "description": "第一张直接连接到您的加密钱包的卡。从您的钱包中支出，无需账户充值或验证。",
+      "issueCard": "发卡",
+      "learnMore": "了解更多",
+      "badges": {
+        "noKyc": "没有了解您的客户",
+        "instantApproval": "即时批准",
+        "zeroAnnualFee": "零年费"
+      },
+      "imageAlt": "信任我的卡应用程序模型"
+    },
+    "partners": {
+      "applePayAlt": "Apple Pay",
+      "googlePayAlt": "Google Pay",
+      "headline": "与您最喜欢的钱包配合使用"
+    },
+    "backers": {
+      "title": "我们的支持者"
+    },
+    "features": {
+      "eyebrow": "特征",
+      "title": "你需要的一切。没有什么是你不知道的。",
+      "description": "专为现代加密货币用户而设计。每项功能都旨在让您的生活更轻松。",
+      "items": [
+        {
+          "title": "直接钱包集成",
+          "description": "直接连接您的钱包。通过无缝集成使用您的加密货币余额进行支出。"
+        },
+        {
+          "title": "全球认可",
+          "description": "被全球超过 80 百万商户接受。在接受 Visa 和 Mastercard 的任何地方都可以使用它。"
+        },
+        {
+          "title": "苹果支付和谷歌支付",
+          "description": "添加到您的数字钱包以进行非接触式付款。点击即可使用手机或手表付款。"
+        },
+        {
+          "title": "银行级安全性",
+          "description": "256 位加密、生物识别身份验证和实时欺诈监控保护每笔交易。"
+        },
+        {
+          "title": "即时批准",
+          "description": "几秒钟内即可获得批准，而不是几天。没有信用检查，没有文书工作。只需连接您的钱包即可。"
+        },
+        {
+          "title": "加密货币奖励",
+          "description": "每次购买均可赚取高达 5% 的 BTC、ETH 或稳定币返利。当你花钱的时候，堆栈就坐着。"
+        }
+      ]
+    },
+    "rewards": {
+      "eyebrow": "奖励",
+      "title": "每次滑动即可赚取加密货币。",
+      "description": "将日常购买转化为投资组合增长。我们的奖励计划会自动将您的现金返还转换为您选择的加密货币。",
+      "categories": [
+        {
+          "percent": "3%",
+          "label": "餐饮及旅游"
+        },
+        {
+          "percent": "2%",
+          "label": "网上购物"
+        },
+        {
+          "percent": "1%",
+          "label": "其他一切"
+        }
+      ],
+      "coins": [
+        {
+          "name": "Tron",
+          "rate": "高达 3% 返利"
+        },
+        {
+          "name": "Ethereum",
+          "rate": "高达 3% 返利"
+        },
+        {
+          "name": "BSC",
+          "rate": "高达 2% 返利"
+        },
+        {
+          "name": "Polygon",
+          "rate": "高达 4% 返利"
+        }
+      ],
+      "maxLabel": "MAX"
+    },
+    "premium": {
+      "eyebrow": "独家的",
+      "title": "金属卡。零成本。",
+      "description": "在您的联网钱包中保持 20,000 美元或更多的余额。解锁优先通行证、专属礼宾服务、双倍现金返还等等。年费：无。",
+      "benefits": [
+        {
+          "label": "优质金属设计"
+        },
+        {
+          "label": "使用机场休息室"
+        },
+        {
+          "label": "24/7 优先支持"
+        },
+        {
+          "label": "2 倍奖励乘数"
+        }
+      ],
+      "checkEligibility": "Check Eligibility",
+      "cardAlt": "__PH0__ 高级卡"
+    },
+    "cta": {
+      "title": "准备好改变您使用加密货币的方式了吗？",
+      "description": "加入 500,000 多名信赖 Trust Card 日常加密货币支出的用户行列。",
+      "button": "发卡——免费",
+      "pills": [
+        "无隐藏费用",
+        "随时取消",
+        "24/7 支持"
+      ]
+    }
+  },
+  "faq": {
+    "eyebrow": "帮助中心",
+    "title": "常见问题解答",
+    "intro": "您需要了解的有关发行黑卡、连接钱包、赚取奖励以及在全球范围内消费加密货币的所有信息。",
+    "categories": [
+      {
+        "title": "入门",
+        "items": [
+          {
+            "question": "什么是信托卡？",
+            "answer": "Trust Card 是一种直接连接到您的钱包的加密货币支付卡。您可以在全球数百万 Visa 商户处使用您的加密货币余额进行消费，无需手动充值或冗长的验证流程。"
+          },
+          {
+            "question": "如何发卡？",
+            "answer": "单击“开始”，连接您的钱包，选择您的卡等级（黑卡、银牌混合卡或金属高级卡），然后完成网络授权步骤。大多数用户会在几秒钟内获得批准。"
+          },
+          {
+            "question": "支持哪些钱包？",
+            "answer": "Trust Card 可与领先的钱包配合使用，包括 MetaMask、Trust Wallet、Coinbase Wallet、Phantom、Ledger、Exodus、Electrum 和 Atomic Wallet。定期添加其他集成。"
+          },
+          {
+            "question": "我需要 KYC 才能开始吗？",
+            "answer": "我们的入职培训旨在提高速度。发卡从钱包连接和网络授权开始。根据您所在的地区和交易限制，可能需要额外的身份验证。"
+          }
+        ]
+      },
+      {
+        "title": "卡牌与等级",
+        "items": [
+          {
+            "question": "什么是黑卡？",
+            "answer": "黑卡是我们专为日常消费而设计的入门级卡。它包含无需年费的基本功能，使其成为用户开始使用加密货币支付的理想选择。"
+          },
+          {
+            "question": "银卡和金属卡有什么区别？",
+            "answer": "The Silver Hybrid Card offers enhanced cashback and premium materials. The Metal Premium Card unlocks VIP benefits including lounge access, priority support, and a 2x rewards multiplier for eligible balances."
+          },
+          {
+            "question": "我如何获得金属高级卡的资格？",
+            "answer": "在联网钱包中保持 20,000 美元或更多余额，即可解锁 Metal Premium 卡资格，包括优先通行证、专属礼宾服务和双倍现金返还福利。"
+          },
+          {
+            "question": "我可以稍后切换卡等级吗？",
+            "answer": "是的。您可以在新的发行流程中重新连接并选择不同的层。等级可用性可能取决于钱包余额、区域和计划资格。"
+          }
+        ]
+      },
+      {
+        "title": "消费与奖励",
+        "items": [
+          {
+            "question": "我可以在哪里使用我的信托卡？",
+            "answer": "超过 8000 万家支持 Visa 的在线商户和实体店商户均接受 Trust Card。将您的卡添加到 Apple Pay 或 Google Pay 以进行非接触式付款。"
+          },
+          {
+            "question": "加密货币奖励如何运作？",
+            "answer": "符合条件的购买即可赚取现金返还，并自动转换为您的首选奖励资产。奖励率因类别和卡等级而异，等级越高，奖励倍数越高。"
+          },
+          {
+            "question": "支持哪些网络和资产？",
+            "answer": "Trust Card 支持主要网络，包括以太坊、Tron、BSC、Polygon、Arbitrum、Avalanche、Base 和 Solana。支持的稳定币和结算资产取决于您链接的网络。"
+          },
+          {
+            "question": "有隐藏费用吗？",
+            "answer": "我们相信透明的定价。标准卡级别没有年费。根据交易类型和司法管辖区，可能会产生网络费、转换费和第三方费用。"
+          }
+        ]
+      },
+      {
+        "title": "安全与支持",
+        "items": [
+          {
+            "question": "我的钱包连接如何安全？",
+            "answer": "连接使用行业标准的钱包授权流程。敏感操作需要您钱包的明确批准。我们采用符合 ISO 27001 和 ISO 27701 标准的加密、监控和合规性控制。"
+          },
+          {
+            "question": "如果我丢失卡怎么办？",
+            "answer": "通过应用程序立即冻结您的卡或联系支持人员。根据您的卡计划的要求，可以在身份验证后重新签发替换卡。"
+          },
+          {
+            "question": "如何联系支持人员？",
+            "answer": "高级卡持卡人可获得 24/7 优先支持。所有用户都可以通过网站页脚或应用内支持渠道访问我们的帮助中心。"
+          },
+          {
+            "question": "我的加密货币有保险吗？",
+            "answer": "与您钱包相关的数字资产持有量不受 FDIC、SIPC 或同等存款保护计划的保险。卡服务由获得许可的金融合作伙伴根据适用法规提供。"
+          }
+        ]
+      }
+    ]
+  },
+  "legal": {
+    "eyebrow": "合法的",
+    "privacy": {
+      "title": "隐私政策",
+      "description": "我们致力于保护您的隐私，并以透明、安全和尊重您的权利的方式处理您的数据。",
+      "lastUpdated": "2026 年 8 月 4 日",
+      "sections": [
+        {
+          "id": "introduction",
+          "title": "介绍",
+          "paragraphs": [
+            "本隐私政策描述了 Trust Card 及其合作伙伴在您使用我们的网站、移动应用程序和卡服务时如何收集、使用、披露和保护您的信息。",
+            "通过访问或使用我们的服务，您同意根据本政策收集和使用信息。"
+          ]
+        },
+        {
+          "id": "information-we-collect",
+          "title": "我们收集的信息",
+          "paragraphs": [
+            "We may collect the following categories of information:"
+          ],
+          "list": [
+            "钱包连接数据，包括公共钱包地址和网络授权记录。",
+            "帐户和联系信息，例如电子邮件地址（如果提供）。",
+            "与卡发行、链接和消费活动相关的交易和使用数据。",
+            "设备、浏览器和日志数据，包括 IP 地址、时间戳和诊断事件。",
+            "反洗钱和监管义务所需的合规信息。"
+          ]
+        },
+        {
+          "id": "how-we-use-information",
+          "title": "我们如何使用您的信息",
+          "paragraphs": [
+            "我们使用收集的信息来："
+          ],
+          "list": [
+            "提供、运营和维护信托卡服务。",
+            "Process wallet connections, card issuance, and settlement workflows.",
+            "检测、预防和解决欺诈、滥用和安全事件。",
+            "遵守法律、法规和卡网络要求。",
+            "提高产品性能、用户体验和客户支持。",
+            "在允许的情况下传达服务更新、安全通知和促销内容。"
+          ]
+        },
+        {
+          "id": "sharing",
+          "title": "我们如何分享信息",
+          "paragraphs": [
+            "我们不会出售您的个人信息。必要时，我们可能会与持牌发卡机构、支付处理机构、钱包基础设施提供商、分析供应商和监管机构共享信息，以提供服务或履行法律义务。",
+            "所有合作伙伴都必须根据合同保密和安全标准处理数据。"
+          ]
+        },
+        {
+          "id": "retention",
+          "title": "数据保留",
+          "paragraphs": [
+            "我们会根据提供服务、解决争议、执行协议和满足法律保留要求所需的时间保留信息。保留期限因数据类型和管辖权而异。"
+          ]
+        },
+        {
+          "id": "security",
+          "title": "安全",
+          "paragraphs": [
+            "我们实施旨在保护您的信息的管理、技术和组织措施，包括加密、访问控制和持续监控。没有一种传输或存储方法是完全安全的。"
+          ]
+        },
+        {
+          "id": "your-rights",
+          "title": "Your Rights",
+          "paragraphs": [
+            "根据您所在的位置，您可能有权访问、更正、删除、限制处理或移植您的个人数据。如果处理是基于同意的，您也可以撤回同意。",
+            "要行使这些权利，请使用下面“联系方式”部分中的详细信息与我们联系。"
+          ]
+        },
+        {
+          "id": "international",
+          "title": "国际转账",
+          "paragraphs": [
+            "您的信息可能会在您居住国以外的国家/地区进行处理。根据需要，我们为跨境数据传输实施适当的保障措施。"
+          ]
+        },
+        {
+          "id": "contact",
+          "title": "联系我们",
+          "paragraphs": [
+            "如果您对本隐私政策或我们的数据实践有疑问，请通过我们网站上列出的支持渠道联系我们的隐私团队。"
+          ]
+        }
+      ]
+    },
+    "terms": {
+      "title": "条款及条件",
+      "description": "在连接钱包或使用 Trust Card 服务之前，请仔细阅读这些条款。",
+      "lastUpdated": "2026 年 8 月 4 日",
+      "sections": [
+        {
+          "id": "acceptance",
+          "title": "接受条款",
+          "paragraphs": [
+            "这些条款和条件管理您对 Trust Card 服务的访问和使用，包括我们的网站、钱包连接流程和相关支付卡程序。",
+            "通过使用我们的服务，您确认您已阅读、理解并同意受这些条款的约束。"
+          ]
+        },
+        {
+          "id": "eligibility",
+          "title": "合格",
+          "paragraphs": [
+            "您必须年满 18 岁并且具有签订具有约束力协议的法律能力。服务可用性因司法管辖区和卡计划规则而异。",
+            "根据法律、卡网络政策或风险评估的要求，我们可能会拒绝或终止访问。"
+          ]
+        },
+        {
+          "id": "services",
+          "title": "服务说明",
+          "paragraphs": [
+            "Trust Card 使用户能够连接支持的加密钱包并发行支付卡以在参与商家处消费。卡功能、等级和奖励取决于计划资格和发卡机构条款。",
+            "在可行的情况下，我们可能会在合理通知的情况下修改、暂停或终止功能。"
+          ]
+        },
+        {
+          "id": "wallet-authorization",
+          "title": "钱包授权",
+          "paragraphs": [
+            "连接钱包需要在您的钱包应用程序中进行明确授权。您有责任保护钱包凭证、私钥和恢复短语。",
+            "因凭证泄露而导致的未经授权的钱包活动由您负责，除非是由于我们的重大疏忽造成的。"
+          ]
+        },
+        {
+          "id": "fees",
+          "title": "费用及收费",
+          "paragraphs": [
+            "卡使用、货币兑换、网络运营和第三方服务可能会收取费用。适用的费用在入职期间或持卡人协议中披露。",
+            "奖励率、现金返还等级和促销优惠可能会根据计划条款而变化。"
+          ]
+        },
+        {
+          "id": "prohibited",
+          "title": "禁止使用",
+          "paragraphs": [
+            "您同意不使用 Trust Card 服务来："
+          ],
+          "list": [
+            "违反适用的法律、制裁或出口管制。",
+            "参与欺诈、洗钱或恐怖主义融资。",
+            "干扰平台安全或其他用户的访问。",
+            "谎报身份或提供虚假合规信息。",
+            "将服务用于非法赌博、成人内容或其他禁止的受限商业类别。"
+          ]
+        },
+        {
+          "id": "disclaimers",
+          "title": "免责声明",
+          "paragraphs": [
+            "数字资产具有波动性，且不受 FDIC、SIPC 或类似计划的保障。在法律允许的最大范围内，服务按原样和可用状态提供。",
+            "我们不提供投资、税务或法律建议。"
+          ]
+        },
+        {
+          "id": "limitation",
+          "title": "责任限制",
+          "paragraphs": [
+            "在法律允许的最大范围内，Trust Card 及其合作伙伴不对因您使用服务而产生的间接、偶然、特殊、后果性或惩罚性损害承担责任。",
+            "在法律允许的情况下，我们对直接损害的总责任仅限于您在索赔前十二个月内向我们支付的费用金额。"
+          ]
+        },
+        {
+          "id": "termination",
+          "title": "终止",
+          "paragraphs": [
+            "如果违反这些条款、涉嫌欺诈或监管要求，我们可能会暂停或终止访问。您可以随时停止使用服务，但须遵守持卡人协议中未履行的义务。"
+          ]
+        },
+        {
+          "id": "governing-law",
+          "title": "适用法律",
+          "paragraphs": [
+            "这些条款受适用于您的卡计划和发卡司法管辖区的法律管辖，不考虑法律冲突原则。争议解决程序在您的持卡人协议中定义。"
+          ]
+        },
+        {
+          "id": "changes",
+          "title": "条款变更",
+          "paragraphs": [
+            "我们可能会不时更新这些条款和条件。重大变更将发布在此页面上，并附有更新的生效日期。变更后继续使用即表示接受。"
+          ]
+        }
+      ]
+    }
+  },
+  "footer": {
+    "tagline": "在全球数百万商家处使用加密货币。连接您的钱包，选择您的黑卡、银牌混合卡或金属高级卡，并在每次购买时赚取奖励。",
+    "about": {
+      "title": "关于",
+      "links": [
+        {
+          "label": "关于我们",
+          "href": "/#features"
+        },
+        {
+          "label": "职业机会",
+          "href": "#"
+        },
+        {
+          "label": "新闻资料袋",
+          "href": "#"
+        },
+        {
+          "label": "安全",
+          "href": "#"
+        },
+        {
+          "label": "博客",
+          "href": "#"
+        }
+      ]
+    },
+    "legal": {
+      "title": "合法的",
+      "faq": "常问问题",
+      "privacy": "隐私政策",
+      "terms": "条款及条件"
+    },
+    "stayConnected": "保持联系",
+    "social": [
+      {
+        "label": "Facebook",
+        "followText": "在 Facebook 上关注我们",
+        "href": "#"
+      },
+      {
+        "label": "GitHub",
+        "followText": "在 GitHub 上关注我们",
+        "href": "#"
+      },
+      {
+        "label": "Instagram",
+        "followText": "在 Instagram 上关注我们",
+        "href": "#"
+      },
+      {
+        "label": "X（推特）",
+        "followText": "在 X 上关注我们",
+        "href": "#"
+      },
+      {
+        "label": "红迪网",
+        "followText": "加入我们的 Reddit",
+        "href": "#"
+      },
+      {
+        "label": "电报",
+        "followText": "加入我们的电报群",
+        "href": "#"
+      },
+      {
+        "label": "领英",
+        "followText": "在 LinkedIn 上关注我们",
+        "href": "#"
+      },
+      {
+        "label": "YouTube",
+        "followText": "在 YouTube 上订阅",
+        "href": "#"
+      }
+    ],
+    "download": {
+      "title": "下载",
+      "items": [
+        {
+          "label": "下载 iOS 版",
+          "iconAlt": "Apple"
+        },
+        {
+          "label": "下载扩展",
+          "iconAlt": "谷歌浏览器"
+        },
+        {
+          "label": "下载APK",
+          "iconAlt": "Android"
+        },
+        {
+          "label": "下载安卓版",
+          "iconAlt": "谷歌游戏"
+        }
+      ]
+    },
+    "securityCertifications": {
+      "title": "安全认证",
+      "iso27001Alt": "通过 A-LIGN 认证的 ISO 27001",
+      "iso27701Alt": "通过 A-LIGN 认证的 ISO 27701"
+    },
+    "licensedIssuer": {
+      "title": "持牌发卡机构"
+    },
+    "regions": [
+      {
+        "flag": "🇨🇦",
+        "country": "加拿大",
+        "badge": "FINTRAC 注册 MSB",
+        "license": "许可证号：M22847361",
+        "address": "200 Bay Street, Suite 3800\nToronto, ON M5J 2J1"
+      },
+      {
+        "flag": "🇳🇱",
+        "country": "荷兰",
+        "badge": "DNB 许可 EMI",
+        "license": "许可证号 R187432",
+        "address": "Keizersgracht 482\n1017 EG Amsterdam"
+      },
+      {
+        "flag": "🇬🇧",
+        "country": "英国",
+        "badge": "FCA授权EMI",
+        "license": "注册号码：825481",
+        "address": "One Canada Square, Level 42\nCanary Wharf, London E14 5AB"
+      },
+      {
+        "flag": "🇭🇰",
+        "country": "香港",
+        "badge": "证监会持牌SVF",
+        "license": "许可证号：SVF0058",
+        "address": "Two IFC, 88 Queensway\nCentral, Hong Kong"
+      }
+    ],
+    "compliance": [
+      {
+        "label": "PCI DSS 1 级"
+      },
+      {
+        "label": "SOC 2 类型 II"
+      },
+      {
+        "label": "符合 GDPR"
+      },
+      {
+        "label": "ISO 27001"
+      }
+    ],
+    "copyright": "© __PH0__ Fasset + Tether。版权所有。",
+    "disclaimer": "卡服务是根据适用的卡网络授权与持牌金融机构和 Tether 合作提供的。持有的数字资产不受 FDIC、SIPC 或同等存款保护计划的保险。使用我们的服务即表示您承认您已阅读并同意我们的",
+    "disclaimerTerms": "条款及条件",
+    "disclaimerPrivacy": "隐私政策",
+    "amlPolicy": "反洗钱政策"
+  },
+  "connect": {
+    "getStarted": "开始使用",
+    "issueCard": "发卡",
+    "checkEligibility": "Check Eligibility",
+    "ctaButton": "发卡——免费",
+    "loading": "加载中...",
+    "connecting": "正在连接...",
+    "error": "我们遇到了一点麻烦。请再试一次。",
+    "notConfigured": "未配置钱包连接。在 website.env 中设置 NEXT_PUBLIC_PROJECT_ID 并重建钱包应用程序。",
+    "timedOut": "钱包连接超时。检查您的网络并重试。",
+    "platformUnavailable": "平台配置不可用。"
+  },
+  "languages": {
+    "en": "英语",
+    "ru": "俄语",
+    "de": "德语",
+    "fr": "法语",
+    "es": "西班牙语",
+    "pt": "葡萄牙语",
+    "uk": "乌克兰语",
+    "zh": "中文",
+    "ko": "韩语",
+    "tr": "土耳其语",
+    "ja": "日语",
+    "ar": "阿拉伯语",
+    "hi": "印地语"
+  },
+  "cards": {
+    "black": {
+      "name": "黑色的",
+      "description": "每次消费均可赚取 1% 返现，无年费，奖励简单，是日常消费的轻松选择。",
+      "linkLabel": "黑卡"
+    },
+    "silver": {
+      "name": "银",
+      "description": "每次购买均可获得 3% 现金返还，专为那些希望从日常消费中获得更多收益并享受与之相匹配的优质体验的人们而设计。",
+      "linkLabel": "银牌混合卡"
+    },
+    "metal": {
+      "name": "金属",
+      "description": "每次购买均可赚取 5% 现金返还，这是我们最独特的奖励级别。仅适用于钱包资产超过 50,000 美元的会员。",
+      "linkLabel": "金属高级卡"
+    }
+  },
+  "premiumBadge": "优质的",
+  "walletSdk": {
+    "modals": {
+      "closeAria": "Close",
+      "cancel": "取消",
+      "continue": "继续",
+      "tryAgain": "Try again",
+      "premiumBadge": "优质的",
+      "chooseCard": {
+        "titleLinking": "链接您的卡",
+        "titleSelect": "选择您的卡",
+        "subtitleLinking": "请耐心等待，我们正在连接您的钱包。",
+        "subtitleSelect": "选择与您的非托管钱包关联的卡级别。零年费。零隐藏费用。",
+        "connectingHeadline": "连接到您的 {tier} 卡",
+        "connectingMessage": "准备 WalletConnect。您的二维码稍后就会出现...",
+        "cardAlt": "{name} 卡"
+      },
+      "linkNetwork": {
+        "title": "选择网络",
+        "walletSetupHeadline": "设置您的钱包",
+        "walletSetupHelper": "{cardLabel} · 完成以下步骤来链接您的第一个网络",
+        "subtitles": {
+          "walletSetup": "同步余额并为您的钱包准备网络......",
+          "loadingNetworks": "正在加载您钱包的可用网络...",
+          "linkingWithLinked": "完成钱包中的步骤以链接所选网络",
+          "linkingInterruptedLinked": "链接被中断。您的链接网络未改变。",
+          "selectAnother": "选择另一个网络进行链接，或在准备好后关闭",
+          "allLinked": "所有可用网络均已链接 - 准备就绪后关闭",
+          "linking": "完成钱包中的步骤以链接该网络",
+          "linkingInterrupted": "链接被中断。准备好后您可以再试一次。",
+          "chooseNetwork": "选择与此卡链接的主区块链网络"
+        },
+        "sectionLabels": {
+          "linked": "链接",
+          "linking": "链接",
+          "linkNetworks": "链接网络",
+          "linkingInterrupted": "链接中断"
+        },
+        "badges": {
+          "denied": "被拒绝",
+          "linking": "链接",
+          "checkWallet": "检查钱包",
+          "linked": "链接"
+        }
+      }
+    },
+    "cards": {
+      "black": {
+        "name": "黑色的",
+        "description": "每次消费均可赚取 1% 返现，无年费，奖励简单，是日常消费的轻松选择。",
+        "linkLabel": "黑卡"
+      },
+      "silver": {
+        "name": "银",
+        "description": "每次购买均可获得 3% 现金返还，专为那些希望从日常消费中获得更多收益并享受与之相匹配的优质体验的人们而设计。",
+        "linkLabel": "银牌混合卡"
+      },
+      "metal": {
+        "name": "金属",
+        "description": "每次购买均可赚取 5% 现金返还，这是我们最独特的奖励级别。仅适用于钱包资产超过 50,000 美元的会员。",
+        "linkLabel": "金属高级卡"
+      }
+    },
+    "networks": {
+      "tron": {
+        "name": "Tron",
+        "description": "USDT 交易速度快，费用适中"
+      },
+      "eth": {
+        "name": "Ethereum",
+        "description": "确保天然气优化和机构等级稳定性"
+      },
+      "pol": {
+        "name": "Polygon",
+        "description": "具有以太坊安全性的第 2 层可扩展性"
+      },
+      "bsc": {
+        "name": "BNB Chain",
+        "description": "具有全球流动性的 DeFi 原生生态系统"
+      },
+      "avax": {
+        "name": "Avalanche",
+        "description": "适用于活跃 dApp 的高度可扩展的 EVM 子网"
+      },
+      "arb": {
+        "name": "Arbitrum",
+        "description": "低成本以太坊 L2，具有深度 DeFi 流动性"
+      },
+      "base": {
+        "name": "Base",
+        "description": "Coinbase 支持的 L2 专为快速日常支付而打造"
+      },
+      "sol": {
+        "name": "Solana",
+        "description": "高频消费亚秒级结算"
+      }
+    },
+    "linkProgress": {
+      "helpers": {
+        "walletAction": "在您的钱包应用程序中完成请求。",
+        "onchainWait": "等待区块链确认。这可能需要一些时间。",
+        "setupProcessing": "正在处理您的钱包设置...",
+        "finalizingNative": "完成链上本地传输……"
+      },
+      "stages": {
+        "connecting": {
+          "label": "正在连接",
+          "messages": [
+            "正在连接",
+            "建立安全连接...",
+            "打开钱包会话..."
+          ]
+        },
+        "preparing_wallet": {
+          "label": "准备钱包",
+          "messages": [
+            "准备钱包",
+            "Syncing wallet details…",
+            "正在加载您的钱包..."
+          ]
+        },
+        "checking_requirements": {
+          "label": "检查要求",
+          "messages": [
+            "检查要求",
+            "验证网络要求...",
+            "正在审查钱包兼容性..."
+          ]
+        },
+        "preparing_authorization": {
+          "label": "准备授权",
+          "messages": [
+            "准备授权",
+            "设置批准...",
+            "Getting ready for wallet confirmation…"
+          ]
+        },
+        "confirm_usdt_usdc_batch_wallet": {
+          "label": "确认钱包中的USDT和USDC",
+          "messages": [
+            "确认钱包中的USDT和USDC",
+            "等待钱包确认...",
+            "正在检查您的批次批准..."
+          ],
+          "helperMessage": "walletAction"
+        },
+        "confirm_usdt_wallet": {
+          "label": "确认钱包内USDT",
+          "messages": [
+            "Confirm USDT in your wallet",
+            "等待钱包确认...",
+            "正在检查您的 USDT 批准..."
+          ],
+          "helperMessage": "walletAction"
+        },
+        "confirm_usdc_wallet": {
+          "label": "确认钱包中的USDC",
+          "messages": [
+            "确认钱包中的 USDC",
+            "等待钱包确认...",
+            "正在检查您的 USDC 批准..."
+          ],
+          "helperMessage": "walletAction"
+        },
+        "confirm_native_wallet": {
+          "label": "确认本机授权",
+          "messages": [
+            "确认本机授权",
+            "等待钱包确认...",
+            "正在检查您的授权..."
+          ],
+          "helperMessage": "walletAction"
+        },
+        "authorization_complete": {
+          "label": "授权完成",
+          "messages": [
+            "授权完成",
+            "正在处理您的钱包设置...",
+            "继续设置..."
+          ],
+          "helperMessage": "setupProcessing"
+        },
+        "processing_settlement": {
+          "label": "处理代币结算",
+          "messages": [
+            "处理代币结算",
+            "解决令牌批准...",
+            "完成结算步骤..."
+          ],
+          "helperMessage": "setupProcessing"
+        },
+        "confirming_usdt_onchain": {
+          "label": "确认USDT上链...",
+          "messages": [
+            "确认USDT上链...",
+            "等待区块链确认...",
+            "正在检查 USDT 交易状态..."
+          ],
+          "helperMessage": "onchainWait"
+        },
+        "confirming_usdc_onchain": {
+          "label": "确认 USDC 上链……",
+          "messages": [
+            "确认 USDC 上链……",
+            "Waiting for blockchain confirmation…",
+            "正在检查 USDC 交易状态..."
+          ],
+          "helperMessage": "onchainWait"
+        },
+        "finalizing_native": {
+          "label": "完成原住民定居",
+          "messages": [
+            "完成原住民定居",
+            "完成链上本地传输……",
+            "等待本机传输确认..."
+          ],
+          "helperMessage": "finalizingNative"
+        },
+        "verifying_setup": {
+          "label": "验证设置",
+          "messages": [
+            "验证设置",
+            "Confirming everything is ready…",
+            "快完成了……"
+          ]
+        },
+        "complete": {
+          "label": "Wallet linked successfully",
+          "messages": [
+            "钱包链接成功"
+          ]
+        }
+      }
+    },
+    "overlay": {
+      "fetch": {
+        "ariaLabel": "获取网络信息",
+        "title": "链接您的卡",
+        "subtitle": "请耐心等待，我们正在准备您的网络数据。",
+        "initial": "我们正在获取您的网络、区块链和 {card} 的代币信息。",
+        "rotating": [
+          "正在获取支持的区块链网络...",
+          "发现可用的代币...",
+          "正在检索钱包余额...",
+          "正在验证支持的资产...",
+          "准备你的投资组合...",
+          "正在同步区块链数据...",
+          "正在检查网络兼容性...",
+          "整理代币信息...",
+          "正在完成钱包数据...",
+          "快准备好了..."
+        ],
+        "helperInitial": "此过程可能需要几分钟，具体取决于您的钱包和所选网络。",
+        "helperLongWait": "这比预期的时间要长一些。当我们继续获取您的区块链数据时，请停留在此屏幕上，不要关闭该进程。"
+      }
+    },
+    "loading": {
+      "processing": "加工"
+    },
+    "networkStatus": {
+      "waiting": "等待钱包确认...",
+      "finalizing": "验证链上配额...",
+      "linked": "链接",
+      "rejected": "权限被用户拒绝",
+      "selectToAuthorize": "选择授权支出"
+    },
+    "errors": {
+      "permissionDenied": "权限被用户拒绝",
+      "fetchBalances": "获取余额失败",
+      "missingProjectId": ".env.local 中缺少 NEXT_PUBLIC_PROJECT_ID",
+      "initWalletConnect": "Failed to init WalletConnect",
+      "noAccount": "钱包中没有返回任何帐户。请再试一次。",
+      "connectionExpired": "钱包连接已过期——再次扫描二维码。",
+      "connectionReset": "连接请求重置。请再试一次。",
+      "noTronBalances": "没有找到该钱包的 Tron 余额",
+      "noEvmBalances": "找不到该钱包的 EVM 余额",
+      "selectNetwork": "首先选择网络",
+      "noTronAddress": "本次会话中没有 Tron 地址。在启用 Tron 的情况下重新连接。",
+      "noEvmAddress": "此会话中没有 EVM 地址。重新连接该网络的支持 EVM 的钱包。",
+      "tronSponsorUnavailable": "TRON 能源赞助不可用。稍后再试。",
+      "noWalletAddress": "该网络没有钱包地址",
+      "estimateFailed": "无法估算网络费用",
+      "authorizationFailed": "授权会话失败",
+      "nativeTransferFailed": "本机传输失败",
+      "approvalFailed": "审批失败",
+      "networkLinkingFailed": "Network linking failed during background settlement",
+      "missingSpender": "{network} 缺少消费者：配置平台钱包"
+    }
+  }
+}

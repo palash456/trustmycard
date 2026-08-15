@@ -164,7 +164,7 @@ curl -sI https://mytrustvisa.cards/connect          # → /`}</DocPre>
       content: (
         <>
           <DocP>
-            The Travixa decoy homepage and marketing-session gate at{" "}
+            The decoy homepage and marketing-session gate at{" "}
             <DocCode>/connect</DocCode> were removed from this repo in 2026.
             Private archive (restore reference only):
           </DocP>

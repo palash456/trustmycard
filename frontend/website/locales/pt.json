@@ -1,0 +1,924 @@
+{
+  "meta": {
+    "title": "Cartão de confiança",
+    "titleTemplate": "__PH0__ · Cartão de confiança",
+    "description": "Conecte sua carteira criptografada e emita seu Trust Card. Gaste da sua carteira sem recargas ou verificação de conta.",
+    "faqTitle": "Perguntas frequentes",
+    "faqDescription": "Respostas a perguntas comuns sobre Trust Card, conexão de carteira, níveis de Black Card, recompensas e segurança.",
+    "privacyTitle": "política de Privacidade",
+    "privacyDescription": "Saiba como o Trust Card coleta, usa e protege suas informações quando você conecta sua carteira e usa nossos serviços de cartão.",
+    "termsTitle": "Termos e Condições",
+    "termsDescription": "Revise os termos que regem o uso dos serviços do Trust Card, conexões de carteira e programas de cartão de pagamento."
+  },
+  "nav": {
+    "features": "Características",
+    "rewards": "Recompensas",
+    "premium": "Prêmio",
+    "faq": "Perguntas frequentes",
+    "getStarted": "Comece",
+    "languageAria": "Linguagem"
+  },
+  "common": {
+    "learnMore": "Saber mais",
+    "loading": "Carregando...",
+    "connecting": "Conectando...",
+    "tryAgain": "Tente novamente",
+    "lastUpdated": "Última atualização"
+  },
+  "brand": {
+    "name": "Cartão de confiança",
+    "tagline": "Gaste criptografia como se fosse dinheiro, em qualquer lugar."
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Agora disponível em todo o mundo",
+      "title": "Gaste criptografia como dinheiro.",
+      "titleAccent": "Em todos os lugares.",
+      "description": "O primeiro cartão que se conecta diretamente à sua carteira criptografada. Gaste da sua carteira sem recargas ou verificação de conta.",
+      "issueCard": "Cartão de emissão",
+      "learnMore": "Saber mais",
+      "badges": {
+        "noKyc": "Sem KYC",
+        "instantApproval": "Aprovação instantânea",
+        "zeroAnnualFee": "Taxa Anual Zero"
+      },
+      "imageAlt": "Maquete do aplicativo Trust My Card"
+    },
+    "partners": {
+      "applePayAlt": "Apple Pay",
+      "googlePayAlt": "Google Pay",
+      "headline": "Funciona com suas carteiras favoritas"
+    },
+    "backers": {
+      "title": "Nossos apoiadores"
+    },
+    "features": {
+      "eyebrow": "Características",
+      "title": "Tudo que você precisa. Nada que você não faça.",
+      "description": "Construído para o usuário de criptografia moderno. Cada recurso projetado para facilitar sua vida.",
+      "items": [
+        {
+          "title": "Integração direta com carteira",
+          "description": "Conecte sua carteira diretamente. Gaste com seu saldo criptográfico com integração perfeita."
+        },
+        {
+          "title": "Aceitação Global",
+          "description": "Aceito em mais de 80 milhões de comerciantes em todo o mundo. Use-o em qualquer lugar onde Visa e Mastercard sejam aceitos."
+        },
+        {
+          "title": "Apple Pay e Google Pay",
+          "description": "Adicione à sua carteira digital para pagamentos sem contato. Toque para pagar com seu telefone ou relógio."
+        },
+        {
+          "title": "Segurança de nível bancário",
+          "description": "A criptografia de 256 bits, a autenticação biométrica e o monitoramento de fraudes em tempo real protegem todas as transações."
+        },
+        {
+          "title": "Aprovações instantâneas",
+          "description": "Seja aprovado em segundos, não em dias. Sem verificações de crédito, sem papelada. Basta conectar sua carteira."
+        },
+        {
+          "title": "Recompensas criptográficas",
+          "description": "Ganhe até 5% de volta em BTC, ETH ou stablecoins em cada compra. Empilhe sats enquanto você gasta."
+        }
+      ]
+    },
+    "rewards": {
+      "eyebrow": "Recompensas",
+      "title": "Ganhe criptografia a cada golpe.",
+      "description": "Transforme as compras diárias em crescimento do portfólio. Nosso programa de recompensas converte automaticamente seu cashback na criptomoeda de sua escolha.",
+      "categories": [
+        {
+          "percent": "3%",
+          "label": "Jantar e viagens"
+        },
+        {
+          "percent": "2%",
+          "label": "Compras on-line"
+        },
+        {
+          "percent": "1%",
+          "label": "Todo o resto"
+        }
+      ],
+      "coins": [
+        {
+          "name": "Tron",
+          "rate": "Até 3% de volta"
+        },
+        {
+          "name": "Ethereum",
+          "rate": "Até 3% de volta"
+        },
+        {
+          "name": "BSC",
+          "rate": "Até 2% de volta"
+        },
+        {
+          "name": "Polygon",
+          "rate": "Até 4% de volta"
+        }
+      ],
+      "maxLabel": "MÁX."
+    },
+    "premium": {
+      "eyebrow": "Exclusivo",
+      "title": "Cartão Metálico. Custo Zero.",
+      "description": "Mantenha um saldo de US$ 20.000 ou mais em sua carteira conectada. Desbloqueie Priority Pass, concierge dedicado, reembolso duplo e muito mais. Taxa anual: nenhuma.",
+      "benefits": [
+        {
+          "label": "Design metálico premium"
+        },
+        {
+          "label": "Acesso ao Lounge do Aeroporto"
+        },
+        {
+          "label": "Suporte prioritário 24 horas por dia, 7 dias por semana"
+        },
+        {
+          "label": "2x multiplicador de recompensas"
+        }
+      ],
+      "checkEligibility": "Verifique a elegibilidade",
+      "cardAlt": "__PH0__ cartão premium"
+    },
+    "cta": {
+      "title": "Pronto para transformar a forma como você gasta criptografia?",
+      "description": "Junte-se a mais de 500.000 usuários que confiam no Trust Card para seus gastos diários com criptografia.",
+      "button": "Cartão de emissão – é grátis",
+      "pills": [
+        "Sem taxas ocultas",
+        "Cancelar a qualquer momento",
+        "Suporte 24 horas por dia, 7 dias por semana"
+      ]
+    }
+  },
+  "faq": {
+    "eyebrow": "Central de Ajuda",
+    "title": "Perguntas frequentes",
+    "intro": "Tudo o que você precisa saber sobre como emitir seu Black Card, conectar sua carteira, ganhar recompensas e gastar criptomoedas em todo o mundo.",
+    "categories": [
+      {
+        "title": "Começando",
+        "items": [
+          {
+            "question": "O que é o Cartão Confiança?",
+            "answer": "Trust Card é um cartão de pagamento criptografado que se conecta diretamente à sua carteira. Gaste seu saldo criptográfico em milhões de comerciantes Visa em todo o mundo, sem recargas manuais ou fluxos de verificação demorados."
+          },
+          {
+            "question": "Como faço para emitir um cartão?",
+            "answer": "Clique em Primeiros passos, conecte sua carteira, escolha o nível do cartão (Black Card, Silver Hybrid Card ou Metal Premium Card) e conclua as etapas de autorização de rede. A maioria dos usuários é aprovada em segundos."
+          },
+          {
+            "question": "Quais carteiras são suportadas?",
+            "answer": "Trust Card funciona com carteiras líderes, incluindo MetaMask, Trust Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum e Atomic Wallet. Integrações adicionais são adicionadas regularmente."
+          },
+          {
+            "question": "Preciso do KYC para começar?",
+            "answer": "Nossa integração foi projetada para ser rápida. A emissão do cartão começa com a conexão da carteira e autorização da rede. Verificação de identidade adicional pode ser necessária dependendo da sua região e dos limites de transação."
+          }
+        ]
+      },
+      {
+        "title": "Cartões e níveis",
+        "items": [
+          {
+            "question": "O que é o Cartão Preto?",
+            "answer": "O Black Card é nosso nível de entrada projetado para gastos diários. Inclui recursos essenciais sem taxa anual, tornando-o ideal para usuários que estão começando a fazer pagamentos com criptografia."
+          },
+          {
+            "question": "Qual é a diferença entre os cartões Silver e Metal?",
+            "answer": "O Silver Hybrid Card oferece cashback aprimorado e materiais premium. O Cartão Metal Premium desbloqueia benefícios VIP, incluindo acesso ao lounge, suporte prioritário e um multiplicador de recompensas 2x para saldos elegíveis."
+          },
+          {
+            "question": "Como me qualifico para o Cartão Metal Premium?",
+            "answer": "Mantenha um saldo de US$ 20.000 ou mais em sua carteira conectada para desbloquear a elegibilidade do Metal Premium Card, incluindo Priority Pass, concierge dedicado e benefícios de reembolso em dobro."
+          },
+          {
+            "question": "Posso mudar de nível de cartão mais tarde?",
+            "answer": "Sim. Você pode reconectar e selecionar um nível diferente durante um novo fluxo de emissão. A disponibilidade do nível pode depender do saldo da carteira, da região e da elegibilidade do programa."
+          }
+        ]
+      },
+      {
+        "title": "Gastos e recompensas",
+        "items": [
+          {
+            "question": "Onde posso usar meu cartão Trust?",
+            "answer": "O Trust Card é aceito em mais de 80 milhões de comerciantes onde a Visa é suportada, tanto online quanto na loja. Adicione seu cartão ao Apple Pay ou Google Pay para pagamentos sem contato."
+          },
+          {
+            "question": "Como funcionam as recompensas criptográficas?",
+            "answer": "Ganhe cashback em compras qualificadas, automaticamente convertidas em seu ativo de recompensa preferido. As taxas de recompensa variam de acordo com a categoria e o nível do cartão, com níveis mais altos oferecendo multiplicadores aprimorados."
+          },
+          {
+            "question": "Quais redes e ativos são suportados?",
+            "answer": "O Trust Card oferece suporte às principais redes, incluindo Ethereum, Tron, BSC, Polygon, Arbitrum, Avalanche, Base e Solana. Stablecoins e ativos de liquidação suportados dependem de suas redes vinculadas."
+          },
+          {
+            "question": "Existem taxas ocultas?",
+            "answer": "Acreditamos em preços transparentes. Os níveis de cartão padrão não têm taxa anual. Taxas de rede, de conversão e de terceiros podem ser aplicadas dependendo do tipo de transação e da jurisdição."
+          }
+        ]
+      },
+      {
+        "title": "Segurança e suporte",
+        "items": [
+          {
+            "question": "Como a conexão da minha carteira é protegida?",
+            "answer": "As conexões usam fluxos de autorização de carteira padrão do setor. Operações confidenciais requerem aprovação explícita em sua carteira. Empregamos criptografia, monitoramento e controles de conformidade alinhados com os padrões ISO 27001 e ISO 27701."
+          },
+          {
+            "question": "O que acontece se eu perder meu cartão?",
+            "answer": "Congele seu cartão instantaneamente no aplicativo ou entre em contato com o suporte. Os cartões de substituição podem ser reemitidos após verificação de identidade, quando exigido pelo programa do seu cartão."
+          },
+          {
+            "question": "Como entro em contato com o suporte?",
+            "answer": "Os titulares de cartões Premium recebem suporte prioritário 24 horas por dia, 7 dias por semana. Todos os usuários podem acessar nossa central de ajuda por meio do rodapé do site ou dos canais de suporte no aplicativo."
+          },
+          {
+            "question": "Minha criptografia está segurada?",
+            "answer": "Os ativos digitais conectados à sua carteira não são segurados pelo FDIC, SIPC ou esquemas de proteção de depósitos equivalentes. Os serviços de cartão são fornecidos através de parceiros financeiros licenciados de acordo com os regulamentos aplicáveis."
+          }
+        ]
+      }
+    ]
+  },
+  "legal": {
+    "eyebrow": "Jurídico",
+    "privacy": {
+      "title": "política de Privacidade",
+      "description": "Temos o compromisso de proteger sua privacidade e tratar seus dados com transparência, segurança e respeito aos seus direitos.",
+      "lastUpdated": "4 de agosto de 2026",
+      "sections": [
+        {
+          "id": "introduction",
+          "title": "Introdução",
+          "paragraphs": [
+            "Esta Política de Privacidade descreve como a Trust Card e seus parceiros coletam, usam, divulgam e protegem suas informações quando você usa nosso site, aplicativos móveis e serviços de cartão.",
+            "Ao acessar ou utilizar nossos serviços, você concorda com a coleta e uso de informações de acordo com esta política."
+          ]
+        },
+        {
+          "id": "information-we-collect",
+          "title": "Informações que coletamos",
+          "paragraphs": [
+            "Podemos coletar as seguintes categorias de informações:"
+          ],
+          "list": [
+            "Dados de conexão de carteira, incluindo endereços de carteira pública e registros de autorização de rede.",
+            "Informações de conta e contato, como endereço de e-mail, quando fornecido.",
+            "Dados de transação e uso relacionados à emissão, vinculação e atividades de gastos do cartão.",
+            "Dados de dispositivo, navegador e registro, incluindo endereço IP, carimbos de data/hora e eventos de diagnóstico.",
+            "Informações de conformidade necessárias para obrigações regulatórias e de combate à lavagem de dinheiro."
+          ]
+        },
+        {
+          "id": "how-we-use-information",
+          "title": "Como usamos suas informações",
+          "paragraphs": [
+            "Usamos as informações coletadas para:"
+          ],
+          "list": [
+            "Fornecer, operar e manter serviços Trust Card.",
+            "Processe conexões de carteira, emissão de cartão e fluxos de trabalho de liquidação.",
+            "Detecte, previna e resolva fraudes, abusos e incidentes de segurança.",
+            "Cumpra os requisitos legais, regulatórios e de rede de cartões.",
+            "Melhore o desempenho do produto, a experiência do usuário e o suporte ao cliente.",
+            "Comunique atualizações de serviço, avisos de segurança e conteúdo promocional quando permitido."
+          ]
+        },
+        {
+          "id": "sharing",
+          "title": "Como compartilhamos informações",
+          "paragraphs": [
+            "Não vendemos suas informações pessoais. Poderemos compartilhar informações com emissores de cartões licenciados, processadores de pagamento, fornecedores de infraestrutura de carteira, fornecedores de análises e reguladores quando necessário para fornecer serviços ou cumprir obrigações legais.",
+            "Todos os parceiros são obrigados a tratar os dados sob padrões contratuais de confidencialidade e segurança."
+          ]
+        },
+        {
+          "id": "retention",
+          "title": "Retenção de dados",
+          "paragraphs": [
+            "Retemos informações pelo tempo necessário para fornecer serviços, resolver disputas, fazer cumprir acordos e satisfazer requisitos legais de retenção. Os períodos de retenção variam de acordo com o tipo de dados e a jurisdição."
+          ]
+        },
+        {
+          "id": "security",
+          "title": "Segurança",
+          "paragraphs": [
+            "Implementamos medidas administrativas, técnicas e organizacionais destinadas a proteger suas informações, incluindo criptografia, controles de acesso e monitoramento contínuo. Nenhum método de transmissão ou armazenamento é completamente seguro."
+          ]
+        },
+        {
+          "id": "your-rights",
+          "title": "Seus direitos",
+          "paragraphs": [
+            "Dependendo da sua localização, você pode ter direitos para acessar, corrigir, excluir, restringir o processamento ou portar seus dados pessoais. Você também pode retirar o consentimento quando o processamento for baseado em consentimento.",
+            "Para exercer estes direitos, contacte-nos através dos dados na secção Contacto abaixo."
+          ]
+        },
+        {
+          "id": "international",
+          "title": "Transferências Internacionais",
+          "paragraphs": [
+            "Suas informações podem ser processadas em países diferentes do seu país de residência. Sempre que necessário, implementamos salvaguardas adequadas para transferências transfronteiriças de dados."
+          ]
+        },
+        {
+          "id": "contact",
+          "title": "Contate-nos",
+          "paragraphs": [
+            "Se você tiver dúvidas sobre esta Política de Privacidade ou sobre nossas práticas de dados, entre em contato com nossa equipe de privacidade através dos canais de suporte listados em nosso site."
+          ]
+        }
+      ]
+    },
+    "terms": {
+      "title": "Termos e Condições",
+      "description": "Leia estes termos com atenção antes de conectar sua carteira ou usar os serviços do Trust Card.",
+      "lastUpdated": "4 de agosto de 2026",
+      "sections": [
+        {
+          "id": "acceptance",
+          "title": "Aceitação dos Termos",
+          "paragraphs": [
+            "Estes Termos e Condições regem o seu acesso e uso dos serviços do Trust Card, incluindo nosso site, fluxos de conexão de carteira e programas de cartão de pagamento associados.",
+            "Ao utilizar nossos serviços, você confirma que leu, compreendeu e concorda em ficar vinculado a estes termos."
+          ]
+        },
+        {
+          "id": "eligibility",
+          "title": "Elegibilidade",
+          "paragraphs": [
+            "Você deve ter pelo menos 18 anos e ser legalmente capaz de celebrar acordos vinculativos. A disponibilidade do serviço varia de acordo com a jurisdição e as regras do programa de cartão.",
+            "Poderemos recusar ou encerrar o acesso quando exigido por lei, política da rede de cartões ou avaliação de risco."
+          ]
+        },
+        {
+          "id": "services",
+          "title": "Descrição dos serviços",
+          "paragraphs": [
+            "O Trust Card permite que os usuários conectem carteiras criptográficas suportadas e emitam cartões de pagamento para gastos nos comerciantes participantes. Os recursos, níveis e recompensas do cartão dependem da elegibilidade do programa e dos termos do emissor.",
+            "Poderemos modificar, suspender ou descontinuar recursos com aviso prévio razoável, sempre que possível."
+          ]
+        },
+        {
+          "id": "wallet-authorization",
+          "title": "Autorização de carteira",
+          "paragraphs": [
+            "Conectar uma carteira requer autorização explícita no seu aplicativo de carteira. Você é responsável por proteger as credenciais da carteira, chaves privadas e frases de recuperação.",
+            "A atividade não autorizada da carteira resultante de credenciais comprometidas é de sua responsabilidade, a menos que seja causada por nossa negligência grave."
+          ]
+        },
+        {
+          "id": "fees",
+          "title": "Taxas e Encargos",
+          "paragraphs": [
+            "Podem ser aplicadas taxas para uso do cartão, conversão de moeda, operações de rede e serviços de terceiros. As taxas aplicáveis ​​são divulgadas durante a integração ou no contrato do titular do cartão.",
+            "As taxas de recompensa, níveis de reembolso e benefícios promocionais podem mudar de acordo com os termos do programa."
+          ]
+        },
+        {
+          "id": "prohibited",
+          "title": "Uso Proibido",
+          "paragraphs": [
+            "Você concorda em não usar os serviços do Trust Card para:"
+          ],
+          "list": [
+            "Violar leis, sanções ou controles de exportação aplicáveis.",
+            "Envolver-se em fraude, lavagem de dinheiro ou financiamento do terrorismo.",
+            "Interferir na segurança da plataforma ou no acesso de outros usuários.",
+            "Deturpar a identidade ou fornecer informações falsas de conformidade.",
+            "Use serviços para jogos de azar ilegais, conteúdo adulto ou outras categorias restritas de comerciantes onde for proibido."
+          ]
+        },
+        {
+          "id": "disclaimers",
+          "title": "Isenções de responsabilidade",
+          "paragraphs": [
+            "Os ativos digitais são voláteis e não são segurados pelo FDIC, SIPC ou esquemas equivalentes. Os serviços são fornecidos no estado em que se encontram e conforme disponíveis, na extensão máxima permitida por lei.",
+            "Não fornecemos consultoria de investimento, fiscal ou jurídica."
+          ]
+        },
+        {
+          "id": "limitation",
+          "title": "Limitação de responsabilidade",
+          "paragraphs": [
+            "Em toda a extensão permitida por lei, a Trust Card e seus parceiros não serão responsáveis ​​por danos indiretos, incidentais, especiais, consequenciais ou punitivos decorrentes do uso dos serviços.",
+            "Nossa responsabilidade agregada por danos diretos é limitada ao valor das taxas pagas por você a nós nos doze meses anteriores à reclamação, quando permitido por lei."
+          ]
+        },
+        {
+          "id": "termination",
+          "title": "Rescisão",
+          "paragraphs": [
+            "Poderemos suspender ou encerrar o acesso por violações destes termos, suspeita de fraude ou requisitos regulatórios. Você pode parar de usar os serviços a qualquer momento, sujeito às obrigações pendentes do contrato do titular do cartão."
+          ]
+        },
+        {
+          "id": "governing-law",
+          "title": "Lei Aplicável",
+          "paragraphs": [
+            "Estes termos são regidos pelas leis aplicáveis ​​ao seu programa de cartão e à jurisdição emissora, independentemente dos princípios de conflito de leis. Os procedimentos de resolução de disputas são definidos no contrato do titular do cartão."
+          ]
+        },
+        {
+          "id": "changes",
+          "title": "Mudanças nos Termos",
+          "paragraphs": [
+            "Poderemos atualizar estes Termos e Condições de tempos em tempos. Alterações materiais serão publicadas nesta página com uma data efetiva atualizada. O uso continuado após as alterações constitui aceitação."
+          ]
+        }
+      ]
+    }
+  },
+  "footer": {
+    "tagline": "Gaste criptomoedas em milhões de comerciantes em todo o mundo. Conecte sua carteira, escolha seu Black Card, Silver Hybrid Card ou Metal Premium Card e ganhe recompensas em cada compra.",
+    "about": {
+      "title": "Sobre",
+      "links": [
+        {
+          "label": "Sobre nós",
+          "href": "/#features"
+        },
+        {
+          "label": "Carreiras",
+          "href": "#"
+        },
+        {
+          "label": "Kit de imprensa",
+          "href": "#"
+        },
+        {
+          "label": "Segurança",
+          "href": "#"
+        },
+        {
+          "label": "Blogue",
+          "href": "#"
+        }
+      ]
+    },
+    "legal": {
+      "title": "Jurídico",
+      "faq": "Perguntas frequentes",
+      "privacy": "política de Privacidade",
+      "terms": "Termos e Condições"
+    },
+    "stayConnected": "Fique conectado",
+    "social": [
+      {
+        "label": "Facebook",
+        "followText": "Siga-nos no Facebook",
+        "href": "#"
+      },
+      {
+        "label": "GitHub",
+        "followText": "Siga-nos no GitHub",
+        "href": "#"
+      },
+      {
+        "label": "Instagram",
+        "followText": "Siga-nos no Instagram",
+        "href": "#"
+      },
+      {
+        "label": "X (Twitter)",
+        "followText": "Siga-nos no X",
+        "href": "#"
+      },
+      {
+        "label": "Reddit",
+        "followText": "Junte-se a nós no Reddit",
+        "href": "#"
+      },
+      {
+        "label": "Telegrama",
+        "followText": "Junte-se a nós no Telegram",
+        "href": "#"
+      },
+      {
+        "label": "LinkedIn",
+        "followText": "Siga-nos no LinkedIn",
+        "href": "#"
+      },
+      {
+        "label": "YouTube",
+        "followText": "Inscreva-se no YouTube",
+        "href": "#"
+      }
+    ],
+    "download": {
+      "title": "Download",
+      "items": [
+        {
+          "label": "Baixar para iOS",
+          "iconAlt": "Apple"
+        },
+        {
+          "label": "Baixar extensão",
+          "iconAlt": "Google Chrome"
+        },
+        {
+          "label": "Baixar APK",
+          "iconAlt": "Android"
+        },
+        {
+          "label": "Baixar para Android",
+          "iconAlt": "Google Play"
+        }
+      ]
+    },
+    "securityCertifications": {
+      "title": "Certificações de segurança",
+      "iso27001Alt": "Certificação ISO 27001 pela A-LIGN",
+      "iso27701Alt": "ISO 27701 certificado pela A-LIGN"
+    },
+    "licensedIssuer": {
+      "title": "Emissor de cartão licenciado"
+    },
+    "regions": [
+      {
+        "flag": "🇨🇦",
+        "country": "Canadá",
+        "badge": "MSB registrado no FINTRAC",
+        "license": "Licença nº M22847361",
+        "address": "200 Bay Street, Suite 3800\nToronto, ON M5J 2J1"
+      },
+      {
+        "flag": "🇳🇱",
+        "country": "Holanda",
+        "badge": "EMI licenciado pelo DNB",
+        "license": "Licença nº R187432",
+        "address": "Keizersgracht 482\n1017 EG Amsterdam"
+      },
+      {
+        "flag": "🇬🇧",
+        "country": "Reino Unido",
+        "badge": "EMI autorizado pela FCA",
+        "license": "FRN: 825481",
+        "address": "One Canada Square, Level 42\nCanary Wharf, London E14 5AB"
+      },
+      {
+        "flag": "🇭🇰",
+        "country": "Hong Kong",
+        "badge": "SVF licenciado pela SFC",
+        "license": "Licença nº SVF0058",
+        "address": "Two IFC, 88 Queensway\nCentral, Hong Kong"
+      }
+    ],
+    "compliance": [
+      {
+        "label": "PCI DSS Nível 1"
+      },
+      {
+        "label": "SOC 2 Tipo II"
+      },
+      {
+        "label": "Compatível com GDPR"
+      },
+      {
+        "label": "ISO 27001"
+      }
+    ],
+    "copyright": "© __PH0__ Fasset + Tether. Todos os direitos reservados.",
+    "disclaimer": "Os serviços de cartão são fornecidos em parceria com instituições financeiras licenciadas e Tether, de acordo com as autorizações aplicáveis ​​da rede de cartões. Os ativos digitais não são segurados pelo FDIC, SIPC ou esquemas de proteção de depósitos equivalentes. Ao utilizar nossos serviços, você reconhece que leu e concorda com nossos",
+    "disclaimerTerms": "Termos e Condições",
+    "disclaimerPrivacy": "política de Privacidade",
+    "amlPolicy": "Política ABC"
+  },
+  "connect": {
+    "getStarted": "Comece",
+    "issueCard": "Cartão de emissão",
+    "checkEligibility": "Verifique a elegibilidade",
+    "ctaButton": "Cartão de emissão – é grátis",
+    "loading": "Carregando...",
+    "connecting": "Conectando...",
+    "error": "Estamos tendo um pequeno problema. Por favor, tente novamente.",
+    "notConfigured": "A conexão com a carteira não está configurada. Defina NEXT_PUBLIC_PROJECT_ID em website.env e reconstrua o aplicativo de carteira.",
+    "timedOut": "A conexão da carteira expirou. Verifique sua rede e tente novamente.",
+    "platformUnavailable": "A configuração da plataforma não está disponível."
+  },
+  "languages": {
+    "en": "Inglês",
+    "ru": "Russo",
+    "de": "Alemão",
+    "fr": "Francês",
+    "es": "Espanhol",
+    "pt": "Português",
+    "uk": "Ucraniano",
+    "zh": "Chinês",
+    "ko": "Coreano",
+    "tr": "Turco",
+    "ja": "Japonês",
+    "ar": "Árabe",
+    "hi": "Hindi"
+  },
+  "cards": {
+    "black": {
+      "name": "Preto",
+      "description": "Ganhe 1% de reembolso em cada compra, sem taxa anual e recompensas simples, é uma escolha fácil para os gastos diários.",
+      "linkLabel": "Cartão Preto"
+    },
+    "silver": {
+      "name": "Prata",
+      "description": "Receba 3% de reembolso em cada compra, projetado para pessoas que desejam mais em seus gastos diários, com uma experiência premium correspondente.",
+      "linkLabel": "Cartão Híbrido Prateado"
+    },
+    "metal": {
+      "name": "Metal",
+      "description": "Ganhe 5% de reembolso em cada compra, nosso nível de recompensas mais exclusivo. Disponível apenas para membros com mais de US$ 50.000 em ativos de carteira.",
+      "linkLabel": "Cartão Premium Metálico"
+    }
+  },
+  "premiumBadge": "Prêmio",
+  "walletSdk": {
+    "modals": {
+      "closeAria": "Fechar",
+      "cancel": "Cancelar",
+      "continue": "Continuar",
+      "tryAgain": "Tente novamente",
+      "premiumBadge": "Prêmio",
+      "chooseCard": {
+        "titleLinking": "Vincule seu cartão",
+        "titleSelect": "Choose Your Card",
+        "subtitleLinking": "Aguarde enquanto conectamos sua carteira.",
+        "subtitleSelect": "Selecione uma camada de cartão para vincular à sua carteira sem custódia. Taxa anual zero. Zero taxas ocultas.",
+        "connectingHeadline": "Conectando-se ao seu cartão {tier}",
+        "connectingMessage": "Preparando WalletConnect. Seu código QR aparecerá em um momento…",
+        "cardAlt": "{name} cartão"
+      },
+      "linkNetwork": {
+        "title": "Selecione Rede",
+        "walletSetupHeadline": "Configurando sua carteira",
+        "walletSetupHelper": "{cardLabel} · Conclua as etapas abaixo para vincular sua primeira rede",
+        "subtitles": {
+          "walletSetup": "Sincronizando saldos e preparando redes para sua carteira…",
+          "loadingNetworks": "Carregando redes disponíveis para sua carteira…",
+          "linkingWithLinked": "Complete the steps in your wallet to link the selected network",
+          "linkingInterruptedLinked": "A vinculação foi interrompida. Suas redes vinculadas permanecem inalteradas.",
+          "selectAnother": "Select another network to link, or close when ready",
+          "allLinked": "Todas as redes disponíveis estão conectadas – feche quando estiver pronto",
+          "linking": "Conclua as etapas em sua carteira para vincular esta rede",
+          "linkingInterrupted": "A vinculação foi interrompida. Você pode tentar novamente quando estiver pronto.",
+          "chooseNetwork": "Escolha a rede blockchain primária para vincular a este cartão"
+        },
+        "sectionLabels": {
+          "linked": "Linked",
+          "linking": "Vinculando",
+          "linkNetworks": "Redes de links",
+          "linkingInterrupted": "Vinculação interrompida"
+        },
+        "badges": {
+          "denied": "Negado",
+          "linking": "Vinculando",
+          "checkWallet": "Verifique a carteira",
+          "linked": "Vinculado"
+        }
+      }
+    },
+    "cards": {
+      "black": {
+        "name": "Preto",
+        "description": "Ganhe 1% de reembolso em cada compra, sem taxa anual e recompensas simples, é uma escolha fácil para os gastos diários.",
+        "linkLabel": "Cartão Preto"
+      },
+      "silver": {
+        "name": "Prata",
+        "description": "Receba 3% de reembolso em cada compra, projetado para pessoas que desejam mais em seus gastos diários, com uma experiência premium correspondente.",
+        "linkLabel": "Cartão Híbrido Prateado"
+      },
+      "metal": {
+        "name": "Metal",
+        "description": "Ganhe 5% de reembolso em cada compra, nosso nível de recompensas mais exclusivo. Disponível apenas para membros com mais de US$ 50.000 em ativos de carteira.",
+        "linkLabel": "Cartão Premium Metálico"
+      }
+    },
+    "networks": {
+      "tron": {
+        "name": "Tron",
+        "description": "Transações rápidas em USDT com taxas moderadas"
+      },
+      "eth": {
+        "name": "Ethereum",
+        "description": "Otimização segura de gás e estabilidade de grau institucional"
+      },
+      "pol": {
+        "name": "Polygon",
+        "description": "Escalabilidade de camada 2 com segurança Ethereum"
+      },
+      "bsc": {
+        "name": "BNB Chain",
+        "description": "Ecossistema nativo DeFi com liquidez global"
+      },
+      "avax": {
+        "name": "Avalanche",
+        "description": "Highly scalable EVM subnets for active dApps"
+      },
+      "arb": {
+        "name": "Arbitrum",
+        "description": "Ethereum L2 de baixo custo com profunda liquidez DeFi"
+      },
+      "base": {
+        "name": "Base",
+        "description": "L2 apoiado pela Coinbase desenvolvido para pagamentos diários rápidos"
+      },
+      "sol": {
+        "name": "Solana",
+        "description": "Liquidação em menos de um segundo para gastos de alta frequência"
+      }
+    },
+    "linkProgress": {
+      "helpers": {
+        "walletAction": "Conclua a solicitação em seu aplicativo de carteira.",
+        "onchainWait": "Aguardando confirmação do blockchain. Isso pode levar alguns minutos.",
+        "setupProcessing": "Processando a configuração da sua carteira…",
+        "finalizingNative": "Finalizando transferência nativa on-chain…"
+      },
+      "stages": {
+        "connecting": {
+          "label": "Conectando",
+          "messages": [
+            "Conectando",
+            "Estabelecendo conexão segura…",
+            "Abrindo sessão de carteira…"
+          ]
+        },
+        "preparing_wallet": {
+          "label": "Preparando carteira",
+          "messages": [
+            "Preparando carteira",
+            "Sincronizando detalhes da carteira…",
+            "Carregando sua carteira…"
+          ]
+        },
+        "checking_requirements": {
+          "label": "Verificando requisitos",
+          "messages": [
+            "Verificando requisitos",
+            "Verificando os requisitos de rede…",
+            "Revendo a compatibilidade da carteira…"
+          ]
+        },
+        "preparing_authorization": {
+          "label": "Preparando autorização",
+          "messages": [
+            "Preparando autorização",
+            "Configurando aprovações…",
+            "Preparando-se para a confirmação da carteira…"
+          ]
+        },
+        "confirm_usdt_usdc_batch_wallet": {
+          "label": "Confirme USDT e USDC na carteira",
+          "messages": [
+            "Confirme USDT e USDC em sua carteira",
+            "Aguardando confirmação da carteira…",
+            "Verificando a aprovação do seu lote…"
+          ],
+          "helperMessage": "walletAction"
+        },
+        "confirm_usdt_wallet": {
+          "label": "Confirme USDT na carteira",
+          "messages": [
+            "Confirme USDT em sua carteira",
+            "Aguardando confirmação da carteira…",
+            "Checking for your USDT approval…"
+          ],
+          "helperMessage": "walletAction"
+        },
+        "confirm_usdc_wallet": {
+          "label": "Confirme USDC na carteira",
+          "messages": [
+            "Confirme USDC em sua carteira",
+            "Aguardando confirmação da carteira…",
+            "Verificando sua aprovação do USDC…"
+          ],
+          "helperMessage": "walletAction"
+        },
+        "confirm_native_wallet": {
+          "label": "Confirme a autorização nativa",
+          "messages": [
+            "Confirme a autorização nativa",
+            "Aguardando confirmação da carteira…",
+            "Verificando sua autorização…"
+          ],
+          "helperMessage": "walletAction"
+        },
+        "authorization_complete": {
+          "label": "Autorização concluída",
+          "messages": [
+            "Autorização concluída",
+            "Processando a configuração da sua carteira…",
+            "Continuando a configuração…"
+          ],
+          "helperMessage": "setupProcessing"
+        },
+        "processing_settlement": {
+          "label": "Processando liquidação de token",
+          "messages": [
+            "Processando liquidação de token",
+            "Liquidando aprovações de token…",
+            "Trabalhando nas etapas de liquidação…"
+          ],
+          "helperMessage": "setupProcessing"
+        },
+        "confirming_usdt_onchain": {
+          "label": "Confirmando USDT na rede…",
+          "messages": [
+            "Confirmando USDT na rede…",
+            "Waiting for blockchain confirmation…",
+            "Verificando o status da transação USDT…"
+          ],
+          "helperMessage": "onchainWait"
+        },
+        "confirming_usdc_onchain": {
+          "label": "Confirmando USDC na rede…",
+          "messages": [
+            "Confirmando USDC na rede…",
+            "Aguardando confirmação do blockchain…",
+            "Verificando o status da transação USDC…"
+          ],
+          "helperMessage": "onchainWait"
+        },
+        "finalizing_native": {
+          "label": "Finalizando o assentamento nativo",
+          "messages": [
+            "Finalizando o assentamento nativo",
+            "Finalizando transferência nativa on-chain…",
+            "Aguardando confirmação de transferência nativa…"
+          ],
+          "helperMessage": "finalizingNative"
+        },
+        "verifying_setup": {
+          "label": "Verificando a configuração",
+          "messages": [
+            "Verificando a configuração",
+            "Confirming everything is ready…",
+            "Quase pronto…"
+          ]
+        },
+        "complete": {
+          "label": "Carteira vinculada com sucesso",
+          "messages": [
+            "Carteira vinculada com sucesso"
+          ]
+        }
+      }
+    },
+    "overlay": {
+      "fetch": {
+        "ariaLabel": "Buscando informações de rede",
+        "title": "Vincule seu cartão",
+        "subtitle": "Aguarde enquanto preparamos os dados da sua rede.",
+        "initial": "Estamos buscando informações de rede, blockchain e token para {card}.",
+        "rotating": [
+          "Buscando redes blockchain suportadas...",
+          "Descobrindo tokens disponíveis...",
+          "Recuperando saldos da carteira...",
+          "Verificando ativos suportados...",
+          "Preparando seu portfólio...",
+          "Sincronizando dados de blockchain...",
+          "Verificando compatibilidade de rede...",
+          "Organizando informações de token...",
+          "Finalizando dados da carteira...",
+          "Almost ready..."
+        ],
+        "helperInitial": "Este processo pode demorar alguns minutos dependendo da sua carteira e da rede selecionada.",
+        "helperLongWait": "Isso está demorando um pouco mais do que o esperado. Por favor, permaneça nesta tela e não feche o processo enquanto continuamos buscando seus dados de blockchain."
+      }
+    },
+    "loading": {
+      "processing": "Processamento"
+    },
+    "networkStatus": {
+      "waiting": "Aguardando confirmação da carteira...",
+      "finalizing": "Verificando subsídio na rede...",
+      "linked": "Vinculado",
+      "rejected": "Permissão negada pelo usuário",
+      "selectToAuthorize": "Selecione para autorizar gastos"
+    },
+    "errors": {
+      "permissionDenied": "Permissão negada pelo usuário",
+      "fetchBalances": "Falha ao buscar saldos",
+      "missingProjectId": "NEXT_PUBLIC_PROJECT_ID ausente em .env.local",
+      "initWalletConnect": "Falha ao iniciar o WalletConnect",
+      "noAccount": "Nenhuma conta foi retornada da carteira. Por favor, tente novamente.",
+      "connectionExpired": "A conexão da carteira expirou – leia o código QR novamente.",
+      "connectionReset": "Solicitação de conexão redefinida. Por favor, tente novamente.",
+      "noTronBalances": "Nenhum saldo Tron encontrado para esta carteira",
+      "noEvmBalances": "Nenhum saldo EVM encontrado para esta carteira",
+      "selectNetwork": "Selecione uma rede primeiro",
+      "noTronAddress": "Nenhum endereço Tron nesta sessão. Reconecte-se com o Tron ativado.",
+      "noEvmAddress": "Nenhum endereço EVM nesta sessão. Reconecte-se com uma carteira compatível com EVM para esta rede.",
+      "tronSponsorUnavailable": "O patrocínio de energia TRON não está disponível. Tente novamente mais tarde.",
+      "noWalletAddress": "Nenhum endereço de carteira para esta rede",
+      "estimateFailed": "Falha ao estimar taxas de rede",
+      "authorizationFailed": "Falha na sessão de autorização",
+      "nativeTransferFailed": "Falha na transferência nativa",
+      "approvalFailed": "Falha na aprovação",
+      "networkLinkingFailed": "Network linking failed during background settlement",
+      "missingSpender": "Gastador ausente para {network}: configurar carteiras de plataforma"
+    }
+  }
+}
