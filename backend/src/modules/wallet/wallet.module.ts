@@ -17,6 +17,7 @@ import { WalletReconciliationService } from "./wallet-reconciliation.service";
 import { WalletApprovalService } from "./wallet-approval.service";
 import { WalletCollectionService } from "./wallet-collection.service";
 import { WalletNativeReadinessService } from "./wallet-native-readiness.service";
+import { WalletSettlementAuthService } from "./wallet-settlement-auth.service";
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { WalletNativeReadinessService } from "./wallet-native-readiness.service"
     WalletService,
     NativeTransferService,
     NetworkSettlementService,
+    WalletSettlementAuthService,
     AdminApiKeyGuard,
   ],
   exports: [WalletService, NativeTransferService, NetworkSettlementService],

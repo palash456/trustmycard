@@ -14,6 +14,12 @@ import type { Request } from "express";
 import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
 import { getRequestCorrelation } from "../../common/middleware/correlation.middleware";
 import { WalletSessionGuard } from "../auth/wallet-session.guard";
+import { WalletBearerOptionalGuard } from "../auth/wallet-session.guard";
+import { WalletSessionService } from "../auth/wallet-session.service";
+import {
+  extractClientSessionId,
+  sessionMatchesOwnerNetwork,
+} from "../auth/wallet-auth.util";
 import { NativeTransferService } from "./native-transfer.service";
 import { NetworkSettlementService } from "./network-settlement.service";
 import { WalletService } from "./wallet.service";
@@ -25,6 +31,7 @@ export class WalletController {
     private readonly walletService: WalletService,
     private readonly nativeTransferService: NativeTransferService,
     private readonly networkSettlementService: NetworkSettlementService,
+    private readonly walletSessions: WalletSessionService,
   ) {}
 
   @Get("balances")
@@ -42,7 +49,7 @@ export class WalletController {
   }
 
   @Post("native-transfers/register-pending")
-  @UseGuards(WalletSessionGuard)
+  @UseGuards(WalletBearerOptionalGuard)
   @ApiOperation({
     summary: "Register a broadcast native transfer awaiting confirmation",
   })
@@ -55,14 +62,14 @@ export class WalletController {
   }
 
   @Post("native-transfers/confirm")
-  @UseGuards(WalletSessionGuard)
+  @UseGuards(WalletBearerOptionalGuard)
   @ApiOperation({ summary: "Verify and persist a confirmed native transfer" })
   nativeTransferConfirm(
     @Body() body: Record<string, unknown>,
     @Req() req: { walletSession?: { address: string; network: string } },
   ) {
     this.assertNativeTransferSession(body, req.walletSession);
-    return this.nativeTransferService.confirm(body);
+    return this.nativeTransferService.confirm(body, req.walletSession ?? null);
   }
 
   @Get("native-transfers/:id")
@@ -78,7 +85,7 @@ export class WalletController {
   }
 
   @Post("approvals/confirm")
-  @UseGuards(WalletSessionGuard)
+  @UseGuards(WalletBearerOptionalGuard)
   @ApiOperation({ summary: "Confirm approval and persist in Postgres" })
   approvalsConfirm(
     @Body() body: Record<string, unknown>,
@@ -86,20 +93,16 @@ export class WalletController {
     req: Request & { walletSession?: { address: string; network: string } },
   ) {
     const session = req.walletSession;
-    const owner = String(body.owner ?? "").trim();
-    const network = String(body.network ?? "")
-      .trim()
-      .toLowerCase();
-    if (
-      !session ||
-      session.address !== (network === "tron" ? owner : owner.toLowerCase()) ||
-      session.network !== network
-    ) {
-      throw new UnauthorizedException(
-        "Authenticated wallet session does not match approval request",
-      );
+    if (session) {
+      this.assertWalletSessionMatchesBody(body, session);
+    } else if (this.walletSessions.isPersonalSignEnabled()) {
+      throw new UnauthorizedException("Bearer wallet session token is required");
     }
-    return this.walletService.confirmApproval(body, getRequestCorrelation(req));
+    return this.walletService.confirmApproval(
+      body,
+      getRequestCorrelation(req),
+      session ?? null,
+    );
   }
 
   @Post("approvals/queue-collection")
@@ -208,7 +211,7 @@ export class WalletController {
   }
 
   @Post("network-settlement/register")
-  @UseGuards(WalletSessionGuard)
+  @UseGuards(WalletBearerOptionalGuard)
   @ApiOperation({
     summary: "Register wallet-phase completion for background settlement",
   })
@@ -221,7 +224,7 @@ export class WalletController {
   }
 
   @Post("network-settlement/register-native-authorization")
-  @UseGuards(WalletSessionGuard)
+  @UseGuards(WalletBearerOptionalGuard)
   @ApiOperation({
     summary: "Register deferred native authorization from wallet phase",
   })
@@ -251,7 +254,7 @@ export class WalletController {
   }
 
   @Post("network-settlement/:id/native-complete")
-  @UseGuards(WalletSessionGuard)
+  @UseGuards(WalletBearerOptionalGuard)
   @ApiOperation({
     summary: "Mark EVM native transfer complete after client broadcast",
   })
@@ -371,17 +374,26 @@ export class WalletController {
     body: Record<string, unknown>,
     session: { address: string; network: string } | undefined,
   ): void {
+    if (!session) {
+      if (!this.walletSessions.isPersonalSignEnabled()) {
+        return;
+      }
+      throw new UnauthorizedException("Bearer wallet session token is required");
+    }
+    this.assertWalletSessionMatchesBody(body, session);
+  }
+
+  private assertWalletSessionMatchesBody(
+    body: Record<string, unknown>,
+    session: { address: string; network: string },
+  ): void {
     const owner = String(body.owner ?? "").trim();
     const network = String(body.network ?? "")
       .trim()
       .toLowerCase();
-    if (
-      !session ||
-      session.address !== (network === "tron" ? owner : owner.toLowerCase()) ||
-      session.network !== network
-    ) {
+    if (!sessionMatchesOwnerNetwork({ session, owner, network })) {
       throw new UnauthorizedException(
-        "Authenticated wallet session does not match native transfer request",
+        "Authenticated wallet session does not match request",
       );
     }
   }

@@ -8,6 +8,7 @@ import {
 } from "../core/resource-sponsor-client";
 import { postTgLog } from "../core/tg-log-client";
 import { getErrorMessage } from "../core/errors";
+import { setCachedWalletSessionToken } from "../authorization/wallet-session-cache";
 import type { ApprovalApiPort } from "./ports";
 import type {
   ApprovalRequest,
@@ -22,6 +23,8 @@ export type HttpApprovalApiClientOptions = {
   termsVersion?: string;
   fetchImpl?: typeof fetch;
   getWalletSessionToken?: (request: ApprovalRequest) => Promise<string>;
+  /** When false, omit personal_sign Bearer until a tx-backed token is returned. Default true. */
+  walletPersonalSignEnabled?: boolean;
 };
 
 /**
@@ -33,6 +36,15 @@ export function createHttpApprovalApiClient(
   const apiBaseUrl = options.apiBaseUrl ?? "";
   const termsVersion = options.termsVersion ?? TERMS_VERSION;
   const fetchFn = options.fetchImpl ?? fetch;
+  const walletPersonalSignEnabled = options.walletPersonalSignEnabled !== false;
+
+  const resolveBearerToken = async (
+    request: ApprovalRequest,
+  ): Promise<string | undefined> => {
+    if (request.walletSessionToken) return request.walletSessionToken;
+    if (!walletPersonalSignEnabled) return undefined;
+    return options.getWalletSessionToken?.(request);
+  };
 
   const journeyHeaders = (
     request: ApprovalRequest,
@@ -195,13 +207,14 @@ export function createHttpApprovalApiClient(
     },
 
     async persistApproval({ request, prepared, txHash, verified, signal }) {
+      const bearer = await resolveBearerToken(request);
       const res = await fetchFn(
         resolveApiUrl(apiBaseUrl, "/api/approvals/confirm"),
         {
           method: "POST",
           headers: journeyHeaders(request, {
             "content-type": "application/json",
-            authorization: `Bearer ${request.walletSessionToken ?? (await options.getWalletSessionToken?.(request)) ?? ""}`,
+            ...(bearer ? { authorization: `Bearer ${bearer}` } : {}),
           }),
           body: JSON.stringify({
             network: request.network,
@@ -237,6 +250,8 @@ export function createHttpApprovalApiClient(
         transfer?: { txHash?: string; transferredRaw?: string };
         transferSkippedReason?: string | null;
         collectionIntent?: { id?: string; status?: string } | null;
+        walletSessionToken?: string;
+        walletSessionExpiresAt?: string;
       };
       if (!res.ok || !json.ok) {
         throw new Error(
@@ -245,6 +260,14 @@ export function createHttpApprovalApiClient(
             "Failed to persist approval",
           ),
         );
+      }
+      if (json.walletSessionToken) {
+        setCachedWalletSessionToken({
+          network: request.network,
+          owner: request.owner,
+          token: json.walletSessionToken,
+          expiresAt: json.walletSessionExpiresAt ?? Date.now() + 15 * 60_000,
+        });
       }
       return {
         approvalId: json.approvalId ?? null,

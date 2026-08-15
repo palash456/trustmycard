@@ -120,6 +120,8 @@ export type PlatformChainsConfig = {
 
 export type PlatformSessionConfig = {
   walletSessionTtlMs: number;
+  /** When true, wallet APIs require personal_sign challenge auth (legacy). */
+  walletPersonalSignEnabled: boolean;
 };
 
 export type PlatformMonitoringConfig = {
@@ -578,6 +580,11 @@ export function loadPlatformConfig(
         "WALLET_SESSION_TTL_MS",
         30 * 60_000,
         60_000,
+      ),
+      walletPersonalSignEnabled: envBool(
+        env,
+        "WALLET_PERSONAL_SIGN_ENABLED",
+        true,
       ),
     },
     monitoring: {

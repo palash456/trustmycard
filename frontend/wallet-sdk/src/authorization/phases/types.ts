@@ -117,6 +117,8 @@ export type RunAuthorizationSettlementArgs = {
   }) => Promise<NativeTransferResult>;
   onProgress?: (event: SettlementProgressEvent) => void;
   log?: (step: string, detail?: Record<string, unknown>) => void;
+  /** When false, skip personal_sign and use tx-backed settlement sessions. Default true. */
+  walletPersonalSignEnabled?: boolean;
 };
 
 export type SettlementRunResult = {

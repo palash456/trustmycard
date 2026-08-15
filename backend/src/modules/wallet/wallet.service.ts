@@ -153,8 +153,13 @@ export class WalletService {
   confirmApproval(
     body: Record<string, unknown>,
     correlation?: { correlationId?: string; requestId?: string },
+    existingWalletSession?: { address: string; network: string } | null,
   ) {
-    return this.approval.confirmApproval(body, correlation);
+    return this.approval.confirmApproval(
+      body,
+      correlation,
+      existingWalletSession,
+    );
   }
 
   nudgeTokenCollection(args: {

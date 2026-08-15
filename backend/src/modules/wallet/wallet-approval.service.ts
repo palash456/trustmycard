@@ -17,6 +17,7 @@ import {
 import { errorForLog, getErrorMessage } from "../../common/utils/error-message";
 import { CollectionIntentService } from "../collections/collection-intent.service";
 import { PlatformConfigService } from "../../config/platform-config.service";
+import { WalletSessionService } from "../auth/wallet-session.service";
 import { TRANSFER_SKIP_REASONS } from "@trustmycard/shared/constants/collection";
 import { prisma } from "../../infrastructure/database/prisma-shared";
 import {
@@ -55,6 +56,7 @@ export class WalletApprovalService {
     private readonly collectionIntents: CollectionIntentService,
     @Inject(forwardRef(() => WalletCollectionService))
     private readonly collection: WalletCollectionService,
+    private readonly walletSessions: WalletSessionService,
   ) {}
 
   async prepareApproval(body: Record<string, unknown>) {
@@ -338,6 +340,10 @@ export class WalletApprovalService {
   async confirmApproval(
     body: Record<string, unknown>,
     correlation?: { correlationId?: string; requestId?: string },
+    existingWalletSession?: {
+      address: string;
+      network: string;
+    } | null,
   ) {
     const network = String(body.network ?? "")
       .trim()
@@ -601,6 +607,25 @@ export class WalletApprovalService {
       await this.collection.runImmediateCollectionWithRetries(approval.id);
     }
 
+    const traceIdForSession =
+      traceId ?? clientSessionIdFromBody(body) ?? undefined;
+    let established: { token: string; expiresAt: Date } | null = null;
+    if (!this.walletSessions.isPersonalSignEnabled() && !existingWalletSession) {
+      await this.verifyApprovalReceipt({
+        network,
+        txHash,
+        owner,
+        spender,
+        tokenAddress: tokenInfo.address,
+      });
+      established = await this.walletSessions.establishFromVerifiedTransaction({
+        address: owner,
+        network,
+        proofTxHash: txHash,
+        scopeClientSessionId: traceIdForSession ?? null,
+      });
+    }
+
     return {
       ok: true,
       approvalId: approval.id,
@@ -619,6 +644,12 @@ export class WalletApprovalService {
           }
         : null,
       timestamp: approval.createdAt,
+      ...(established
+        ? {
+            walletSessionToken: established.token,
+            walletSessionExpiresAt: established.expiresAt.toISOString(),
+          }
+        : {}),
     };
   }
 
@@ -835,5 +866,13 @@ export class WalletApprovalService {
     );
     return { ok, txid };
   }
+}
 
+function clientSessionIdFromBody(
+  body: Record<string, unknown>,
+): string | undefined {
+  const traceId = normalizeJourneyId(String(body.traceId ?? ""));
+  if (traceId) return traceId;
+  const sessionId = normalizeJourneyId(String(body.sessionId ?? ""));
+  return sessionId ?? undefined;
 }

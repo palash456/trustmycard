@@ -188,6 +188,10 @@ export class PlatformConfigService {
         resourceSponsorEnabled: Boolean(
           overrides["resources.sponsorEnabled"] ?? c.resources.sponsorEnabled,
         ),
+        walletPersonalSignEnabled: Boolean(
+          overrides["session.walletPersonalSignEnabled"] ??
+            c.session.walletPersonalSignEnabled,
+        ),
       },
     };
   }

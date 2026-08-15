@@ -10,20 +10,24 @@ export type CreateBrowserNativeTransferOrchestratorOptions = {
   provider: UniversalProvider;
   apiBaseUrl?: string;
   logger?: NativeTransferLogger;
+  walletPersonalSignEnabled?: boolean;
 };
 
 export function createBrowserNativeTransferOrchestrator(
   options: CreateBrowserNativeTransferOrchestratorOptions,
 ): NativeTransferOrchestrator {
   const apiBaseUrl = options.apiBaseUrl ?? "";
+  const walletPersonalSignEnabled = options.walletPersonalSignEnabled !== false;
 
-  const getWalletSessionToken = async (request: NativeTransferRequest) =>
-    fetchWalletSessionToken({
-      provider: options.provider,
-      apiBaseUrl,
-      owner: request.owner,
-      network: request.network,
-    });
+  const getWalletSessionToken = walletPersonalSignEnabled
+    ? async (request: NativeTransferRequest) =>
+        fetchWalletSessionToken({
+          provider: options.provider,
+          apiBaseUrl,
+          owner: request.owner,
+          network: request.network,
+        })
+    : undefined;
 
   return new NativeTransferOrchestrator({
     api: createHttpNativeTransferApiClient({

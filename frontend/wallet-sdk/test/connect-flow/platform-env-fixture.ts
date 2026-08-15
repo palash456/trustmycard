@@ -92,6 +92,7 @@ export function toPublicPlatformConfig(
       collectorMaxRuns: config.collector.maxRuns,
       nativeReconcileEnabled: config.native.reconcileEnabled,
       resourceSponsorEnabled: config.resources.sponsorEnabled,
+      walletPersonalSignEnabled: config.session.walletPersonalSignEnabled,
     },
   };
 }

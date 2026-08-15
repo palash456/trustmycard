@@ -15,6 +15,7 @@ import { getErrorMessage } from "../../common/utils/error-message";
 import { ObservabilityService } from "../observability/observability.service";
 import { SettlementObservability } from "./settlement-observability";
 import { WalletService } from "./wallet.service";
+import { WalletSettlementAuthService } from "./wallet-settlement-auth.service";
 
 type RegisterBody = {
   sessionId?: string;
@@ -54,6 +55,7 @@ export class NetworkSettlementService {
 
   constructor(
     private readonly walletService: WalletService,
+    private readonly settlementAuth: WalletSettlementAuthService,
     observability: ObservabilityService,
   ) {
     this.settlementObs = new SettlementObservability(observability);
@@ -134,10 +136,23 @@ export class NetworkSettlementService {
       context: { tokenPlan },
     });
 
+    const walletSession = await this.settlementAuth.establishOnRegister({
+      clientSessionId,
+      network,
+      owner,
+      tokens,
+    });
+
     return {
       ok: true,
       settlementSessionId: session.id,
       status: session.status,
+      ...(walletSession
+        ? {
+            walletSessionToken: walletSession.token,
+            walletSessionExpiresAt: walletSession.expiresAt.toISOString(),
+          }
+        : {}),
     };
   }
 

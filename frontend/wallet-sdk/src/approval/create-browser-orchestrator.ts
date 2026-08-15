@@ -14,6 +14,7 @@ export type CreateBrowserApprovalOrchestratorOptions = {
   logger?: ApprovalLogger;
   /** Persist checkpoints in localStorage for resume after refresh. Default true in browser. */
   persistLifecycle?: boolean;
+  walletPersonalSignEnabled?: boolean;
 };
 
 /**
@@ -39,6 +40,7 @@ export function createBrowserApprovalOrchestrator(
     api: createHttpApprovalApiClient({
       apiBaseUrl: options.apiBaseUrl,
       getWalletSessionToken,
+      walletPersonalSignEnabled: options.walletPersonalSignEnabled,
     }),
     chains: [
       createTronApprovalChainPort({

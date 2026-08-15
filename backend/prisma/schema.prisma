@@ -201,19 +201,23 @@ model MerchantWebhookDelivery {
 }
 
 model WalletSession {
-  id           String    @id @default(cuid())
-  address      String
-  network      String
-  challenge    String    @unique
-  nonce        String    @unique
-  signature    String?
-  sessionToken String?   @unique
-  verifiedAt   DateTime?
-  expiresAt    DateTime
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  address              String
+  network              String
+  challenge            String    @unique
+  nonce                String    @unique
+  signature            String?
+  sessionToken         String?   @unique
+  authMethod           String    @default("personal_sign")
+  scopeClientSessionId String?
+  proofTxHash          String?
+  verifiedAt           DateTime?
+  expiresAt            DateTime
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   @@index([address, network, expiresAt])
+  @@index([scopeClientSessionId])
 }
 
 model CollectorLease {

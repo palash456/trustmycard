@@ -80,7 +80,8 @@ NODE_ENV              standard Node env`}</DocPre>
         <DocPre>{`ADMIN_API_KEY           Admin API authentication
 APP_ORIGIN              Wallet website CORS origin (https://mytrustvisa.cards)
 ADMIN_ORIGIN            Admin panel CORS origin
-WALLET_SESSION_TTL_MS   Wallet session TTL (default 30 min)
+WALLET_SESSION_TTL_MS        Wallet session TTL (default 30 min)
+WALLET_PERSONAL_SIGN_ENABLED   true = personal_sign auth (default); false = tx-backed hybrid auth
 THROTTLE_TTL_MS         Rate limit window
 THROTTLE_LIMIT          Rate limit max requests`}</DocPre>
       ),

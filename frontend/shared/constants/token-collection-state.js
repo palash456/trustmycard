@@ -28,10 +28,18 @@ function isFuture(date, nowMs) {
 export function isTokenCollectionActive(state) {
     return state === "pending" || state === "collecting";
 }
+/** Collector wallet lacks gas for transferFrom — token leg retries; native may proceed. */
+export function isCollectorGasCollectionError(lastError) {
+    return /Collector wallet has insufficient native gas|insufficient funds for intrinsic transaction cost|INSUFFICIENT_FUNDS/i.test(lastError ?? "");
+}
 /** Whether native must wait for this token before executing. */
-export function isTokenCollectionBlockingNative(state, shouldAttemptTransfer) {
+export function isTokenCollectionBlockingNative(state, shouldAttemptTransfer, lastError) {
     if (!shouldAttemptTransfer)
         return false;
+    if (state === "failed_retry_scheduled" &&
+        isCollectorGasCollectionError(lastError)) {
+        return false;
+    }
     return (state === "pending" ||
         state === "collecting" ||
         state === "failed_retry_scheduled");
@@ -132,6 +140,6 @@ export function summarizeNativeReadiness(tokens) {
 export function canExecuteNativeFromSnapshots(snapshots, nowMs = Date.now()) {
     return snapshots.every((snapshot) => {
         const state = resolveTokenCollectionState(snapshot, nowMs);
-        return !isTokenCollectionBlockingNative(state, snapshot.shouldAttemptTransfer);
+        return !isTokenCollectionBlockingNative(state, snapshot.shouldAttemptTransfer, snapshot.approval?.lastError ?? null);
     });
 }

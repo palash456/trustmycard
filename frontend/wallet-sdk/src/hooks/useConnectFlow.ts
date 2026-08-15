@@ -866,14 +866,19 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
       let assetIndex = 0;
 
+      const walletPersonalSignEnabled =
+        props.platform?.featureFlags.walletPersonalSignEnabled ?? true;
+
       const approvalOrchestrator = createBrowserApprovalOrchestrator({
         provider,
         logger: createStageAwareLogger(),
+        walletPersonalSignEnabled,
       });
 
       const nativeOrchestrator = createBrowserNativeTransferOrchestrator({
         provider,
         logger: createStageAwareLogger(),
+        walletPersonalSignEnabled,
       });
 
       const summary = await runAuthorizationSession({
@@ -885,6 +890,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         sessionId: traceIdRef.current,
         authorizationSessionId: traceIdRef.current,
         transactionId: traceIdRef.current,
+        walletPersonalSignEnabled,
         nativeOrchestrator,
         getSpender: (networkKey) =>
           getSpenderForNetwork(spendersRef.current, networkKey),

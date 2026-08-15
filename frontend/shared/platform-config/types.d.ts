@@ -52,6 +52,7 @@ export type PublicPlatformConfig = {
         collectorMaxRuns: number | null;
         nativeReconcileEnabled: boolean;
         resourceSponsorEnabled: boolean;
+        walletPersonalSignEnabled: boolean;
     };
 };
 export type PublicPlatformConfigResponse = {

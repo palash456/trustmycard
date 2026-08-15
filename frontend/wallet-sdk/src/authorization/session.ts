@@ -153,6 +153,8 @@ export type RunAuthorizationSessionArgs = {
   apiBaseUrl?: string;
   /** Pre-authenticated wallet session token (prefetched before wallet phase when possible). */
   walletSessionToken?: string;
+  /** When false, skip personal_sign prefetch and use tx-backed sessions. Default true. */
+  walletPersonalSignEnabled?: boolean;
 };
 
 function hasTokenAuthorizationDependencyFailure(
@@ -424,7 +426,9 @@ export async function runAuthorizationSession(
   const authOwner =
     authNetwork === "tron" ? args.accounts.tron : args.accounts.evm;
   const apiBase = args.apiBaseUrl ?? "";
+  const walletPersonalSignEnabled = args.walletPersonalSignEnabled !== false;
   const canPrefetchAuth =
+    walletPersonalSignEnabled &&
     !walletSessionToken &&
     authProvider &&
     authOwner &&
@@ -776,6 +780,7 @@ export async function runAuthorizationSession(
         apiBaseUrl: args.apiBaseUrl,
         provider: args.settlementProvider ?? args.evmBatchProvider,
         walletSessionToken,
+        walletPersonalSignEnabled: args.walletPersonalSignEnabled,
         getSpender: args.getSpender,
         runApprovalSettlement: (settlementArgs) =>
           args.runApprovalSettlement!({
@@ -925,6 +930,26 @@ async function runTokenWalletPhase(ctx: {
           return;
         }
         if (preflight.alreadyAuthorized && shouldAttemptTransfer) {
+          if (args.walletPersonalSignEnabled === false) {
+            const result = alreadyAuthorizedResult({
+              item: { ...item, asset: token },
+            });
+            results.push(result);
+            args.onAssetEnd?.(result);
+            if (owner) {
+              appendTokenCapture(captureByNetwork, {
+                sessionId,
+                network: item.network,
+                owner,
+                capture: buildPreflightSkippedTokenCapture({
+                  item: { ...item, asset: token },
+                  shouldAttemptTransfer: true,
+                  transferAmountRaw,
+                }),
+              });
+            }
+            return;
+          }
           const result = await collectForExistingAllowance({
             item: { ...item, asset: token },
             request: preflightRequest,

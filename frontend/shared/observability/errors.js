@@ -118,11 +118,76 @@ function truncateValue(value, maxLen) {
         return String(value).slice(0, maxLen);
     }
 }
+const GENERIC_CLIENT_ERROR_MESSAGES = new Set([
+    "Load failed",
+    "Failed to fetch",
+    "NetworkError when attempting to fetch resource.",
+    "Network request failed",
+]);
+/** Prefer underlying cause when wallets/browsers surface generic fetch errors. */
+export function enrichErrorMessage(err, fallback = "Something went wrong") {
+    let message = getErrorMessage(err, fallback);
+    if (!GENERIC_CLIENT_ERROR_MESSAGES.has(message)) {
+        return message;
+    }
+    if (err && typeof err === "object") {
+        const record = err;
+        const cause = record.cause ??
+            (err instanceof Error
+                ? err.cause
+                : undefined);
+        if (cause != null) {
+            const causeMessage = getErrorMessage(cause, "");
+            if (causeMessage && !GENERIC_CLIENT_ERROR_MESSAGES.has(causeMessage)) {
+                return causeMessage;
+            }
+        }
+        const info = record.info ?? record.data;
+        if (info != null) {
+            const infoMessage = getErrorMessage(info, "");
+            if (infoMessage && !GENERIC_CLIENT_ERROR_MESSAGES.has(infoMessage)) {
+                return infoMessage;
+            }
+        }
+    }
+    return message;
+}
+function contextErrorMessage(context) {
+    if (!context || typeof context !== "object")
+        return undefined;
+    const record = context;
+    if (typeof record.error === "string" && record.error.trim()) {
+        return record.error.trim();
+    }
+    return undefined;
+}
+/** Resolve the best error string for DB persistence from a log event shape. */
+export function resolvePersistedErrorMessage(event) {
+    if (typeof event.errorMessage === "string" && event.errorMessage.trim()) {
+        return event.errorMessage.trim();
+    }
+    const fromError = event.error ? errorForLog(event.error) : null;
+    if (fromError)
+        return fromError;
+    const fromContext = contextErrorMessage(event.context);
+    if (fromContext)
+        return fromContext;
+    if (event.status === "failure" ||
+        event.status === "user_rejection" ||
+        event.status === "rpc_failure" ||
+        event.status === "network_failure") {
+        const msg = typeof event.message === "string" ? event.message.trim() : "";
+        if (msg && !/^(APPROVAL_ORCHESTRATION_|STAGE_|SETTLEMENT COMPLETE|WALLET PHASE COMPLETE)/i.test(msg)) {
+            return msg;
+        }
+    }
+    return undefined;
+}
 /** Nullable string for persisted log columns. */
 export function errorForLog(value) {
     if (value == null || value === "")
         return null;
-    const message = getErrorMessage(value, "");
+    const message = enrichErrorMessage(value, "");
     return message || null;
 }
 /** Extract error code from unknown error shapes. */

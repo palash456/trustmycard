@@ -37,6 +37,7 @@ import { safeCreateAuditLog } from "../../common/audit/safe-audit";
 import { AdminEventsService } from "../../infrastructure/admin-events/admin-events.service";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 import { WalletService } from "./wallet.service";
+import { WalletSessionService } from "../auth/wallet-session.service";
 import {
   applyGasLimitBuffer,
   computeEvmActualFee,
@@ -80,6 +81,7 @@ export class NativeTransferService {
     private readonly logger: StructuredLoggerService,
     private readonly adminEvents: AdminEventsService,
     private readonly walletService: WalletService,
+    private readonly walletSessions: WalletSessionService,
   ) {}
 
   private rpcTimeoutMs(): number {
@@ -1310,7 +1312,10 @@ export class NativeTransferService {
     return record;
   }
 
-  async confirm(body: Record<string, unknown>) {
+  async confirm(
+    body: Record<string, unknown>,
+    existingWalletSession?: { address: string; network: string } | null,
+  ) {
     const network = String(body.network ?? "")
       .trim()
       .toLowerCase();
@@ -1449,6 +1454,16 @@ export class NativeTransferService {
       context: { transferId: record.id },
     });
 
+    let established: { token: string; expiresAt: Date } | null = null;
+    if (!this.walletSessions.isPersonalSignEnabled() && !existingWalletSession) {
+      established = await this.walletSessions.establishFromVerifiedTransaction({
+        address: owner,
+        network,
+        proofTxHash: txHash,
+        scopeClientSessionId: traceId ?? null,
+      });
+    }
+
     return {
       id: record.id,
       status: record.status,
@@ -1459,6 +1474,12 @@ export class NativeTransferService {
       feeHuman: record.feeHuman,
       assetSymbol: record.assetSymbol,
       idempotent: Boolean(existing),
+      ...(established
+        ? {
+            walletSessionToken: established.token,
+            walletSessionExpiresAt: established.expiresAt.toISOString(),
+          }
+        : {}),
     };
   }
 
