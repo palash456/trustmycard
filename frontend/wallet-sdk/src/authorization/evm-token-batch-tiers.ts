@@ -14,8 +14,10 @@ import type { WalletCapabilities } from "../core/evm-wallet-batch";
 import {
   getWalletCapabilities,
   pollCallsStatus,
+  resolveAtomicStatus,
   sendWalletCalls,
-  supportsSendCalls,
+  sessionSupportsEip5792Batch,
+  shouldAttemptWalletSendCalls,
 } from "../core/evm-wallet-batch";
 import { ensureEvmChain } from "../native-transfer/ensure-evm-chain";
 import type { NativeTransferEstimate } from "../native-transfer/types";
@@ -46,8 +48,9 @@ type NativeWalletCall = { to: string; data: string; value: string };
 export function shouldAttemptEip5792(
   capabilities: WalletCapabilities | null,
   chainId: number,
+  provider?: UniversalProvider,
 ): boolean {
-  return supportsSendCalls(capabilities, chainId);
+  return shouldAttemptWalletSendCalls(capabilities, chainId, provider);
 }
 
 function walletPhaseTokenCapture(
@@ -159,6 +162,9 @@ export async function executeEip5792Batch(args: {
     tokens: jobs.map((j) => j.item.asset),
     includesNative: Boolean(nativeCall),
     capabilities: args.capabilities,
+    atomicStatus: resolveAtomicStatus(args.capabilities, chainId),
+    sessionHasSendCalls: sessionSupportsEip5792Batch(runArgs.provider),
+    atomicRequired: false,
   });
 
   let submittedBatchId: string | null = null;

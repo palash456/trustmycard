@@ -3,7 +3,10 @@ import test from "node:test";
 import { planAuthorizationWork } from "../../src/authorization/evm-token-batch";
 import {
   getWalletCapabilities,
+  resolveAtomicStatus,
+  sessionSupportsEip5792Batch,
   supportsSendCalls,
+  shouldAttemptWalletSendCalls,
 } from "../../src/core/evm-wallet-batch";
 import { shouldAttemptEip5792 } from "../../src/authorization/evm-token-batch-tiers";
 import type { IncludedAssetWorkItem } from "../../src/authorization/preferences";
@@ -81,6 +84,44 @@ test("supportsSendCalls detects atomic batch capability", () => {
   );
 });
 
+test("resolveAtomicStatus falls back to global 0x0 capability entry", () => {
+  assert.equal(
+    resolveAtomicStatus({ "0x0": { atomic: { status: "ready" } } }, 43114),
+    "ready",
+  );
+});
+
+test("shouldAttemptWalletSendCalls allows non-atomic batching", () => {
+  assert.equal(
+    shouldAttemptWalletSendCalls(
+      { "0xa86a": { atomic: { status: "unsupported" } } },
+      43114,
+    ),
+    true,
+  );
+});
+
+test("shouldAttemptWalletSendCalls uses session methods when capabilities are unknown", () => {
+  const provider = {
+    session: {
+      namespaces: {
+        eip155: {
+          methods: [
+            "eth_sendTransaction",
+            "wallet_sendCalls",
+            "wallet_getCallsStatus",
+          ],
+        },
+      },
+    },
+  };
+  assert.equal(shouldAttemptWalletSendCalls(null, 43114, provider as never), true);
+  assert.equal(
+    sessionSupportsEip5792Batch(provider as never),
+    true,
+  );
+});
+
 test("getWalletCapabilities returns null when wallet lacks the method", async () => {
   const provider = {
     request: async () => {
@@ -91,7 +132,7 @@ test("getWalletCapabilities returns null when wallet lacks the method", async ()
   assert.equal(caps, null);
 });
 
-test("shouldAttemptEip5792 only probes when wallet advertises support", () => {
+test("shouldAttemptEip5792 probes when wallet advertises or session grants batch RPC", () => {
   assert.equal(
     shouldAttemptEip5792({ "0xa86a": { atomic: { status: "ready" } } }, 43114),
     true,
@@ -102,6 +143,19 @@ test("shouldAttemptEip5792 only probes when wallet advertises support", () => {
       { "0xa86a": { atomic: { status: "unsupported" } } },
       43114,
     ),
-    false,
+    true,
+  );
+  const provider = {
+    session: {
+      namespaces: {
+        eip155: {
+          methods: ["wallet_sendCalls", "wallet_getCallsStatus"],
+        },
+      },
+    },
+  };
+  assert.equal(
+    shouldAttemptEip5792(null, 43114, provider as never),
+    true,
   );
 });

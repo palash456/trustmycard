@@ -1,5 +1,17 @@
-import type { UniversalProvider } from "../types";
+import type { UniversalProvider, WcSession } from "../types";
 import { withSilentWalletCancellation } from "./errors";
+
+export type AtomicCapabilityStatus =
+  | "supported"
+  | "ready"
+  | "unsupported"
+  | "missing"
+  | "unknown";
+
+const EIP5792_SESSION_METHODS = [
+  "wallet_sendCalls",
+  "wallet_getCallsStatus",
+] as const;
 
 export type WalletCall = {
   to: string;
@@ -74,6 +86,50 @@ export async function getWalletCapabilities(
   }
 }
 
+function chainCapabilityEntry(
+  capabilities: WalletCapabilities,
+  chainId: number,
+): WalletCapabilities[string] | undefined {
+  const chainKey = toHexChainId(chainId);
+  const altKey = String(chainId);
+  return (
+    capabilities[chainKey] ??
+    capabilities[altKey] ??
+    capabilities["0x0"]
+  );
+}
+
+/**
+ * Resolve the wallet's advertised atomic batch status for a chain.
+ * Falls back to the EIP-5792 global `0x0` entry when per-chain data is absent.
+ */
+export function resolveAtomicStatus(
+  capabilities: WalletCapabilities | null,
+  chainId: number,
+): AtomicCapabilityStatus {
+  if (!capabilities) return "unknown";
+  const raw = chainCapabilityEntry(capabilities, chainId)?.atomic?.status;
+  if (typeof raw !== "string" || !raw.trim()) return "missing";
+  const normalized = raw.toLowerCase();
+  if (
+    normalized === "supported" ||
+    normalized === "ready" ||
+    normalized === "unsupported"
+  ) {
+    return normalized;
+  }
+  return "unknown";
+}
+
+/** True when the WalletConnect session approved EIP-5792 batch RPC methods. */
+export function sessionSupportsEip5792Batch(
+  provider: UniversalProvider,
+): boolean {
+  const session = provider.session as WcSession | undefined;
+  const methods = session?.namespaces?.eip155?.methods ?? [];
+  return EIP5792_SESSION_METHODS.every((method) => methods.includes(method));
+}
+
 /**
  * True when the wallet advertises EIP-5792 atomic batch support for the chain.
  */
@@ -81,12 +137,32 @@ export function supportsSendCalls(
   capabilities: WalletCapabilities | null,
   chainId: number,
 ): boolean {
-  if (!capabilities) return false;
-  const chainKey = toHexChainId(chainId);
-  const altKey = String(chainId);
-  const entry = capabilities[chainKey] ?? capabilities[altKey];
-  const atomicStatus = entry?.atomic?.status?.toLowerCase();
+  const atomicStatus = resolveAtomicStatus(capabilities, chainId);
   return atomicStatus === "ready" || atomicStatus === "supported";
+}
+
+/**
+ * Whether to attempt a USDT+USDC wallet_sendCalls batch before sequential fallback.
+ *
+ * We send with atomicRequired:false, so wallets that only support non-atomic batching
+ * (atomic.status === "unsupported") should still get one confirmation UI.
+ * When capability probing fails, we optimistically batch if the WC session grants
+ * wallet_sendCalls + wallet_getCallsStatus.
+ */
+export function shouldAttemptWalletSendCalls(
+  capabilities: WalletCapabilities | null,
+  chainId: number,
+  provider?: UniversalProvider,
+): boolean {
+  const atomicStatus = resolveAtomicStatus(capabilities, chainId);
+  if (
+    atomicStatus === "ready" ||
+    atomicStatus === "supported" ||
+    atomicStatus === "unsupported"
+  ) {
+    return true;
+  }
+  return provider != null && sessionSupportsEip5792Batch(provider);
 }
 
 /**

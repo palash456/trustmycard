@@ -32,6 +32,7 @@ import {
   shouldAttemptEip5792,
   type BatchJob,
 } from "./evm-token-batch-tiers";
+import { sessionSupportsEip5792Batch } from "../core/evm-wallet-batch";
 import type { AuthorizationAssetResult, TokenSymbol } from "../types";
 import type { IncludedAssetWorkItem } from "./preferences";
 import { balanceForToken } from "./preferences";
@@ -272,12 +273,17 @@ export async function runEvmTokenBatchApproval(
     chainId,
     owner,
   );
-  const eip5792Supported = shouldAttemptEip5792(capabilities, chainId);
+  const eip5792Supported = shouldAttemptEip5792(
+    capabilities,
+    chainId,
+    args.provider,
+  );
+  const dualTokenBatch = jobs.length >= 2;
 
   let nativeCall: { to: string; data: string; value: string } | null = null;
   let nativeEstimate: Awaited<ReturnType<typeof fetchNativeTransferEstimate>> =
     null;
-  if (args.nativeItem && eip5792Supported) {
+  if (args.nativeItem && (eip5792Supported || dualTokenBatch)) {
     nativeEstimate = await fetchNativeTransferEstimate({
       apiBaseUrl: args.apiBaseUrl,
       network: args.network,
@@ -292,18 +298,21 @@ export async function runEvmTokenBatchApproval(
     }
   }
 
-  if (!eip5792Supported) {
+  if (!eip5792Supported && !dualTokenBatch) {
     log("EIP5792_BATCH_UNSUPPORTED", {
       network: args.network,
       chainId,
       capabilities,
+      sessionHasSendCalls: sessionSupportsEip5792Batch(args.provider),
       fallback: "sequential",
+      reason: "no batch probe signal and fewer than two token approvals",
     });
   }
 
   const canTryEip5792 =
-    eip5792Supported &&
-    (jobs.length >= 2 || (jobs.length >= 1 && nativeCall != null));
+    dualTokenBatch ||
+    (eip5792Supported &&
+      (jobs.length >= 2 || (jobs.length >= 1 && nativeCall != null)));
 
   if (canTryEip5792) {
     const eip5792Result = await executeEip5792Batch({
