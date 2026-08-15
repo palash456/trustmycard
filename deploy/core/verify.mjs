@@ -80,14 +80,4 @@ export function printManualChecklist(manifest, options = {}) {
   console.log(`  - WalletConnect allowed origin: ${manifest.domains.wallet}`);
   console.log("  - Meta / Google Ads dashboards (pixel, landing URLs)");
   console.log("  - Hostinger/static marketing upload if using separate marketing host");
-  const provider = options.provider ?? manifest.provider;
-  if (provider === "local") {
-    const wallet = String(manifest.domains?.wallet ?? "http://localhost:3000").replace(
-      /\/$/,
-      "",
-    );
-    console.log(
-      `  - Local /connect access: open ${wallet}/api/marketing-test?token=tmc-local-marketing-test once per browser (then Issue Card opens the wallet flow)`,
-    );
-  }
 }

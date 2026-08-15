@@ -66,14 +66,14 @@ export function SiteFooter() {
                 using our services, you acknowledge that you have read and agree
                 to our{" "}
                 <Link
-                  href="/connect/termsandconditions"
+                  href="/termsandconditions"
                   className="underline hover:text-[#131520]"
                 >
                   Terms &amp; Conditions
                 </Link>
                 ,{" "}
                 <Link
-                  href="/connect/privacypolicy"
+                  href="/privacypolicy"
                   className="underline hover:text-[#131520]"
                 >
                   Privacy Policy

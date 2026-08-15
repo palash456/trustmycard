@@ -12,7 +12,7 @@ export function SiteHeader({ getStartedButton }: SiteHeaderProps) {
     <header className="sticky top-0 z-50 border-b border-[#ECECEF] bg-white/90 backdrop-blur-xl">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center justify-between sm:h-16 lg:h-20">
-          <Link href="/connect" className="flex shrink-0 items-center">
+          <Link href="/" className="flex shrink-0 items-center">
             <Image
               src="/logos/main.png"
               alt="Trust Wallet"
@@ -25,25 +25,25 @@ export function SiteHeader({ getStartedButton }: SiteHeaderProps) {
 
           <nav className="hidden items-center gap-14 lg:flex">
             <Link
-              href="/connect#features"
+              href="/#features"
               className="text-[17px] font-medium text-zinc-500 transition hover:text-black"
             >
               Features
             </Link>
             <Link
-              href="/connect#rewards"
+              href="/#rewards"
               className="text-[17px] font-medium text-zinc-500 transition hover:text-black"
             >
               Rewards
             </Link>
             <Link
-              href="/connect#premium"
+              href="/#premium"
               className="text-[17px] font-medium text-zinc-500 transition hover:text-black"
             >
               Premium
             </Link>
             <Link
-              href="/connect/frequentlyaskedquestions"
+              href="/frequentlyaskedquestions"
               className="text-[17px] font-medium text-zinc-500 transition hover:text-black"
             >
               FAQ

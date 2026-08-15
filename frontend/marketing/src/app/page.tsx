@@ -560,7 +560,7 @@ function HomeContent() {
 
                   <div className="mt-8 sm:mt-10">
                     <AppCtaLink
-                      path="/connect?tier=metal"
+                      path="/?tier=metal"
                       className={ctaPrimary}
                     >
                       Check Eligibility

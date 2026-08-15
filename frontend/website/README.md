@@ -1,37 +1,35 @@
 # @trustmycard/website
 
-Wallet application (Render). Hosts:
+Wallet + marketing homepage (single public site).
 
-| Path       | Content                               |
-| ---------- | ------------------------------------- |
-| `/`        | Travixa decoy cover site              |
-| `/connect` | Trust Card product UI + WalletConnect |
-| `/api/*`   | BFF proxies to Nest API               |
+| Path | Content |
+|------|---------|
+| `/` | Trust Card homepage + WalletConnect |
+| `/frequentlyaskedquestions` | FAQ |
+| `/privacypolicy` | Privacy policy |
+| `/termsandconditions` | Terms |
+| `/api/*` | BFF proxies to Nest API |
 
-Static marketing-only pages live in `@trustmycard/marketing` (optional Hostinger `www` deploy).
+Legacy `/connect` URLs redirect to `/` (see `next.config.ts`).
 
 ```bash
 cd frontend
-npm run dev:website   # :3000 — decoy at /, product at /connect
+npm run dev:website   # :3000
 ```
 
 ## Required env
 
-| Variable                    | Purpose                                                                          |
-| --------------------------- | -------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_PROJECT_ID`    | WalletConnect Cloud project                                                      |
-| `BACKEND_API_URL`           | Nest API (server-side BFF proxy)                                                 |
-| `NEXT_PUBLIC_APP_URL`       | Public site URL (WalletConnect allowed origins) — e.g. `https://trustvisa.cards` |
-| `NEXT_PUBLIC_MARKETING_URL` | Legal/FAQ static host — e.g. `https://www.trustvisa.cards`                       |
-| `MARKETING_SESSION_SECRET`  | HMAC secret for the 24h signed cookie that gates `/connect`                      |
-| `MARKETING_TEST_SECRET`     | Developer-only secret for `/api/marketing-test` (Render env only, never commit)  |
-| `GOOGLE_ADS_*`              | Google Ads API credentials for server-side `gclid` verification (see docs)         |
+| Variable | Purpose |
+|----------|---------|
+| `NEXT_PUBLIC_PROJECT_ID` | WalletConnect Cloud project |
+| `BACKEND_API_URL` | Nest API (server-side BFF proxy) |
+| `NEXT_PUBLIC_APP_URL` | Public site URL (WalletConnect allowed origins) |
+| `NEXT_PUBLIC_MARKETING_URL` | Optional separate static marketing host |
 
-`/connect`, `/api/marketing/*`, and `/api/marketing-test` are excluded from search indexing via `robots.txt`, HTML `robots` metadata, and `X-Robots-Tag` headers. See [marketing-access.md](../../docs/infrastructure/marketing-access.md).
+## Archived: decoy + marketing session gate
 
-Every wallet flow endpoint must have a matching file under `src/app/api/**/route.ts`
-that re-exports from `@trustmycard/wallet-sdk/server/routes/...`.
+Removed from this repo. Private archive (restore reference only):
 
-## trustvisa.cards single-domain
+https://github.com/palash456/trustmycard-marketing-gate-archive
 
-Point **apex DNS to Render** (not Hostinger). See [docs/infrastructure/trustvisa-single-domain.md](../../docs/infrastructure/trustvisa-single-domain.md).
+Every wallet flow endpoint must have a matching file under `src/app/api/**/route.ts` that re-exports from `@trustmycard/wallet-sdk/server/routes/...`.

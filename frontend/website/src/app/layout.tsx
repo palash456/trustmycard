@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 
 import { ProductionConsoleGuard } from "@/components/ProductionConsoleGuard";
-import { ConnectMetaPixel } from "@/components/ConnectMetaPixel";
+import { MetaPixel } from "@/components/MetaPixel";
 import "./globals.css";
 
 const geist = Geist({
@@ -13,10 +13,11 @@ const geist = Geist({
 
 export const metadata: Metadata = {
   title: {
-    default: "Travixa",
-    template: "%s · Travixa",
+    default: "Trust Card",
+    template: "%s · Trust Card",
   },
-  description: "International travel and immigration documentation guidance.",
+  description:
+    "Connect your crypto wallet and issue your Trust Card. Spend from your wallet without account top-ups or verification.",
 };
 
 export default function RootLayout({
@@ -29,7 +30,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <ConnectMetaPixel />
+        <MetaPixel />
       </head>
       <body className="antialiased" suppressHydrationWarning>
         <ProductionConsoleGuard />

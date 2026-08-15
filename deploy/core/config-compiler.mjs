@@ -231,9 +231,6 @@ export function compileEnvBundles(ctx) {
   };
 
   if (options?.provider === "local" && manifest.data?.mode === "bundled") {
-    if (!walletEnv.MARKETING_TEST_SECRET?.trim()) {
-      walletEnv.MARKETING_TEST_SECRET = "tmc-local-marketing-test";
-    }
     for (const bundle of Object.values(bundles)) {
       if (bundle.COLLECTOR_ENABLED === "true" && !bundle.ADMIN_EVM_PRIVATE_KEY) {
         bundle.COLLECTOR_ENABLED = "false";
