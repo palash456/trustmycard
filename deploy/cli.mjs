@@ -6,6 +6,7 @@ function parseArgs(argv) {
     environment: "production",
     fresh: false,
     skipBuild: false,
+    skipImages: false,
     skipMigrate: false,
     provider: undefined,
     topology: undefined,
@@ -19,6 +20,7 @@ function parseArgs(argv) {
   for (const arg of argv) {
     if (arg === "--fresh") options.fresh = true;
     else if (arg === "--skip-build") options.skipBuild = true;
+    else if (arg === "--skip-images") options.skipImages = true;
     else if (arg === "--skip-migrate") options.skipMigrate = true;
     else if (arg === "--confirm-external-data") options.confirmExternalData = true;
     else if (arg === "--confirm-recreate-data") options.confirmRecreateData = true;
@@ -41,6 +43,7 @@ Options:
   --provider=local|docker-vps  Target provider adapter
   --topology=micro|budget|full       Override manifest topology
   --skip-build                 Reuse existing local Docker images
+  --skip-images                Skip docker save/load to VPS (config-only redeploy)
   --skip-migrate               Skip prisma migrate deploy
   --confirm-external-data      Allow --fresh against external DATABASE_URL hosts
   --confirm-recreate-data      Allow removing the named bundled Postgres volume

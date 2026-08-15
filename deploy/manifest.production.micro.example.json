@@ -5,7 +5,7 @@
   "domains": {
     "wallet": "https://mytrustvisa.cards",
     "api": "https://api.mytrustvisa.cards",
-    "admin": "https://admin.mytrustvisa.cards",
+    "admin": "http://localhost:3002",
     "marketing": "https://www.mytrustvisa.cards"
   },
   "data": {

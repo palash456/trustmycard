@@ -167,9 +167,13 @@ export const dockerVpsAdapter = {
       .filter(Boolean);
 
     console.log(
-      `[adapter:docker-vps] transfer images + release on ${creds.VPS_HOST} (no remote build)`,
+      `[adapter:docker-vps] ${ctx.options?.skipImages ? "release" : "transfer images + release"} on ${creds.VPS_HOST} (no remote build)`,
     );
-    transferImagesToHost(creds, imageTags);
+    if (!ctx.options?.skipImages) {
+      await transferImagesToHost(creds, imageTags);
+    } else {
+      console.log("[adapter:docker-vps] --skip-images: reusing images already on VPS");
+    }
     rsyncBundle(creds, creds.VPS_DEPLOY_PATH || "/opt/tmc", ctx.environment);
     sshExec(
       creds,

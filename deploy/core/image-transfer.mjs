@@ -1,6 +1,6 @@
 import { homedir } from "os";
 import { join } from "path";
-import { spawnSync } from "child_process";
+import { spawn } from "child_process";
 
 function expandHome(path) {
   if (!path) return path;
@@ -9,9 +9,42 @@ function expandHome(path) {
   return path;
 }
 
+function runTransfer(saveArgs, loadArgs) {
+  return new Promise((resolve, reject) => {
+    const save = spawn("docker", saveArgs, { stdio: ["ignore", "pipe", "inherit"] });
+    const load = spawn(loadArgs[0], loadArgs.slice(1), {
+      stdio: ["pipe", "inherit", "inherit"],
+    });
+
+    save.stdout.pipe(load.stdin);
+
+    let saveCode = null;
+    let loadCode = null;
+
+    const maybeDone = () => {
+      if (saveCode === null || loadCode === null) return;
+      if (saveCode !== 0) reject(new Error("docker save failed"));
+      else if (loadCode !== 0) reject(new Error("Image transfer to VPS failed"));
+      else resolve();
+    };
+
+    save.on("error", reject);
+    load.on("error", reject);
+    save.on("close", (code) => {
+      saveCode = code;
+      if (load.stdin.writable) load.stdin.end();
+      maybeDone();
+    });
+    load.on("close", (code) => {
+      loadCode = code;
+      maybeDone();
+    });
+  });
+}
+
 export function transferImagesToHost(creds, imageTags) {
   const tags = [...new Set(imageTags.filter(Boolean))];
-  if (tags.length === 0) return;
+  if (tags.length === 0) return Promise.resolve();
 
   const user = creds.VPS_USER || "deploy";
   const host = creds.VPS_HOST;
@@ -26,21 +59,9 @@ export function transferImagesToHost(creds, imageTags) {
   console.log(
     `[image-transfer] streaming ${tags.length} image(s) to ${host}: ${tagList}`,
   );
+  console.log(
+    "[image-transfer] packaging + uploading (no progress bar — large images can take several minutes)…",
+  );
 
-  const save = spawnSync("docker", ["save", ...tags], {
-    encoding: "buffer",
-    maxBuffer: 1024 * 1024 * 1024,
-  });
-  if (save.status !== 0) {
-    throw new Error("docker save failed");
-  }
-
-  const load = spawnSync(sshParts[0], sshParts.slice(1), {
-    input: save.stdout,
-    stdio: ["pipe", "inherit", "inherit"],
-    maxBuffer: 1024 * 1024 * 1024,
-  });
-  if (load.status !== 0) {
-    throw new Error("Image transfer to VPS failed");
-  }
+  return runTransfer(["save", ...tags], sshParts);
 }
