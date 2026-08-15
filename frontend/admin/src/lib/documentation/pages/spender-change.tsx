@@ -100,16 +100,12 @@ ADMIN_EVM_PRIVATE_KEY=0x...   # must derive to SPENDER_EVM
 SPENDER_TRON=TNewSpenderAddress...
 ADMIN_TRON_PRIVATE_KEY=...    # must derive to SPENDER_TRON
 
-# Production preview / live
+# Production
 ALLOW_SELF_SPENDER=false`}</DocPre>
           <DocTable
             headers={["Profile", "Path"]}
             rows={[
               ["development", "env/profiles/development/platform.env"],
-              [
-                "production-preview",
-                "env/profiles/production-preview/platform.env",
-              ],
               ["production", "env/profiles/production/platform.env"],
             ]}
           />

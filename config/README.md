@@ -2,9 +2,8 @@
 
 | Location                           | Purpose                                    |
 | ---------------------------------- | ------------------------------------------ |
-| `env/profiles/development/`        | Local development templates                |
-| `env/profiles/production-preview/` | Pre-deploy local verification              |
-| `env/profiles/production/`         | VPS production templates                   |
+| `env/profiles/development/` | Local development templates |
+| `env/profiles/production/`    | VPS production templates    |
 | `config/load-env.mjs`              | Shared loader (reads profile by `TMC_ENV`) |
 
 Live secrets: copy each profile's `*.example` → live name (e.g. `platform.env`) inside that profile folder. Never commit live files.

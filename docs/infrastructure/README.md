@@ -21,7 +21,7 @@ Deployment guides and environment reference for Trust My Card production.
 
 | Guide                                | Description                                                     |
 | ------------------------------------ | --------------------------------------------------------------- |
-| [environments.md](./environments.md) | `TMC_ENV` profiles: development, production-preview, production |
+| [environments.md](./environments.md) | `TMC_ENV` profiles: development, production |
 
 | [secrets.md](./secrets.md) | Env var matrix per service |
 | [cloudflare-edge.md](./cloudflare-edge.md) | WAF and admin SSO (optional) |

@@ -238,7 +238,7 @@ export function buildSpenderChangeTest(
         id: "g1",
         step: "G1",
         action:
-          "Verify env/profiles/{development,production-preview,production}/platform.env",
+          "Verify env/profiles/{development,production}/platform.env",
         expected:
           "SPENDER_EVM, SPENDER_TRON, ADMIN_EVM_PRIVATE_KEY, ADMIN_TRON_PRIVATE_KEY updated",
         kind: "dashboard",

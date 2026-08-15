@@ -19,7 +19,7 @@ function redisUrl(): string {
   if (value) return value;
 
   const tmcEnv = (process.env.TMC_ENV ?? "development").trim();
-  if (tmcEnv === "production" || tmcEnv === "production-preview") {
+  if (tmcEnv === "production") {
     throw new Error(
       "REDIS_URL is required in production (set Upstash rediss://... on Render tmc-backend)",
     );

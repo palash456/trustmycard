@@ -5,7 +5,6 @@
 ```
 env/profiles/
   development/
-  production-preview/
   production/
     platform.env.example
     backend.env.example         # local / VPS monolith
@@ -32,7 +31,7 @@ See [docs/infrastructure/secrets.md](../../docs/infrastructure/secrets.md).
 ## Setup
 
 ```bash
-PROFILE=production   # or development, production-preview
+PROFILE=production   # or development
 
 cp env/profiles/$PROFILE/platform.env.example env/profiles/$PROFILE/platform.env
 cp env/profiles/$PROFILE/backend.env.example   env/profiles/$PROFILE/backend.env
@@ -50,8 +49,7 @@ cp env/profiles/$PROFILE/backend-budget.env.example env/profiles/$PROFILE/backen
 
 | Goal               | Commands                                                                                   |
 | ------------------ | ------------------------------------------------------------------------------------------ |
-| Development        | `npm run start:dev`, `npm run dev:website`, `npm run dev:marketing`, `npm run dev:admin`   |
-| Production preview | `npm run preview`, `npm run preview:website`, `npm run preview:admin`                      |
+| Development        | `npm run start:dev`, `npm run dev:website`, `npm run dev:marketing`, `npm run dev:admin` |
 | Production (VPS)   | [deploy/README.md](../../deploy/README.md) — micro topology + Caddy                      |
 | Production (Render)| [render-budget-production.md](../../docs/infrastructure/render-budget-production.md)     |
 

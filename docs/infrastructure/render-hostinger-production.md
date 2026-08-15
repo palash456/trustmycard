@@ -204,23 +204,9 @@ TMC_ENV=production npm run build:marketing
 # upload frontend/marketing/out/ to Hostinger
 ```
 
-## 13. Local split-role preview
+## 13. Local split-role testing
 
-Test API/worker split before deploy:
-
-```bash
-# Terminal A — API
-cd backend
-SERVICE_ROLE=api COLLECTION_SIGNING_ENABLED=false TMC_ENV=production-preview npm run preview
-
-# Terminal B — workers
-cd backend
-TMC_ENV=production-preview npm run preview:workers
-
-# Terminal C — wallet app
-cd frontend
-TMC_ENV=production-preview npm run preview:website
-```
+Use Docker local stacks (`tmc-production-local`, `tmc-production-micro-local`) or deploy to a staging VPS before changing production Render services. See [deploy/README.md](../../deploy/README.md).
 
 ## Troubleshooting
 

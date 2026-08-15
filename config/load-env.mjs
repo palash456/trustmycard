@@ -29,7 +29,7 @@ function requireDotenv() {
 
 const { config, parse } = requireDotenv();
 
-const VALID_ENVS = ["development", "production-preview", "production"];
+const VALID_ENVS = ["development", "production"];
 
 /** @type {Record<string, { cwd: string; files: string[] }>} */
 const LEGACY_APP_PATHS = {

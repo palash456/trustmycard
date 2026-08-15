@@ -7,7 +7,7 @@ Platform-wide settings are loaded by [`config/load-env.mjs`](../../config/load-e
 - Legacy: `config/platform.env`
 - Per environment: `env/profiles/$TMC_ENV/platform.env` (overrides legacy when present)
 
-See [environments.md](../infrastructure/environments.md) for `development`, `production-preview`, and `production`.
+See [environments.md](../infrastructure/environments.md) for `development` and `production`.
 
 ## Load flow
 

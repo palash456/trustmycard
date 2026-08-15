@@ -17,7 +17,7 @@ trustmycard/
 │   └── shared/           # Shared types, constants, observability
 ├── deploy/               # Provider-independent Docker deploy (micro VPS + Caddy)
 ├── config/               # load-env.mjs + legacy platform.env
-├── env/profiles/         # TMC_ENV profiles (development, production-preview, production)
+├── env/profiles/         # TMC_ENV profiles (development, production)
 ├── docs/                 # This folder
 └── render.yaml           # Render blueprint (alternative to VPS)
 ```

@@ -12,8 +12,6 @@
     "start:dev": "TMC_ENV=development node ../scripts/run-with-tmc-env.mjs backend npx nest start --watch",
     "prestart:prod": "npm run build --prefix ../frontend/shared",
     "start:prod": "node dist/main.js",
-    "preview": "npm run build && TMC_ENV=production-preview node ../scripts/run-with-tmc-env.mjs backend node dist/main.js",
-    "preview:workers": "TMC_ENV=production-preview node ../scripts/run-with-tmc-env.mjs backend node dist/worker.js",
     "start:workers": "COLLECTION_WORKERS_ENABLED=true node dist/worker.js",
     "start:workers:dev": "TMC_ENV=development node ../scripts/run-with-tmc-env.mjs backend npx nest start --watch --entryFile worker",
     "lint": "echo \"No linter configured yet\"",

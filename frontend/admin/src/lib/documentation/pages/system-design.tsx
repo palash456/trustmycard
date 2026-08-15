@@ -402,7 +402,7 @@ export const systemDesignPage: DocPage = {
                 ["Upstash / Render Redis", "Managed Redis for BullMQ"],
                 [
                   "TMC_ENV profiles",
-                  "env/profiles/{development,production-preview,production}",
+                  "env/profiles/{development,production}",
                 ],
                 [
                   "dotenv + load-env.mjs",

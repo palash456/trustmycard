@@ -156,8 +156,8 @@ Value: <your ADMIN_API_KEY from platform.env>`}</DocPre>
                 controls — it exposes endpoint shapes.
               </DocLi>
               <DocLi>
-                Safe pattern: enable only in development or staging (
-                <DocCode>TMC_ENV=production-preview</DocCode>).
+                Safe pattern: enable only in development (
+                <DocCode>TMC_ENV=development</DocCode>).
               </DocLi>
               <DocLi>
                 Alternative: use admin panel or curl with{" "}

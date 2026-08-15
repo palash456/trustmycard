@@ -10,7 +10,7 @@ const tmcEnv = loadTmcEnv("backend");
 console.log(`[trustmycard] TMC_ENV=${tmcEnv}`);
 
 function assertProductionInfraEnv(): void {
-  if (tmcEnv !== "production" && tmcEnv !== "production-preview") return;
+  if (tmcEnv !== "production") return;
 
   const missing: string[] = [];
   if (!(process.env.DATABASE_URL ?? "").trim()) missing.push("DATABASE_URL");

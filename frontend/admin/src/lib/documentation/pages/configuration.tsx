@@ -38,11 +38,6 @@ export const configurationPage: DocPage = {
           headers={["Profile", "Path", "Use"]}
           rows={[
             ["development", "env/profiles/development/", "Local dev"],
-            [
-              "production-preview",
-              "env/profiles/production-preview/",
-              "Staging / preview",
-            ],
             ["production", "env/profiles/production/", "Live production"],
           ]}
         />
@@ -72,7 +67,7 @@ export const configurationPage: DocPage = {
       content: (
         <DocPre>{`DATABASE_URL          PostgreSQL connection
 REDIS_URL             BullMQ / Redis
-TMC_ENV               development | production-preview | production
+TMC_ENV               development | production
 PORT                  HTTP port (default 4000)
 SERVICE_ROLE          api | worker | all
 NODE_ENV              standard Node env`}</DocPre>

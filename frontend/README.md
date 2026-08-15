@@ -19,8 +19,6 @@ Run from **`frontend/`**:
 npm install
 npm run dev:website   # TMC_ENV=development, :3000
 npm run dev:admin     # TMC_ENV=development, :3002
-npm run preview:website   # TMC_ENV=production-preview (build + start)
-npm run preview:admin     # TMC_ENV=production-preview (build + start)
 npm run dev:sdk       # wallet-sdk watch
 npm run dev:stop      # kill stale dev servers
 ```

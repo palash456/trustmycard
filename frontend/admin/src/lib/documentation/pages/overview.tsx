@@ -143,7 +143,7 @@ export const overviewPage: DocPage = {
 │   ├── wallet-sdk/       # WalletConnect + approvals + settlement
 │   └── shared/           # Types, constants, IDs, observability schemas
 ├── config/               # load-env.mjs + legacy platform.env
-├── env/profiles/         # TMC_ENV profiles (development, production-preview, production)
+├── env/profiles/         # TMC_ENV profiles (development, production)
 ├── docs/                 # Markdown docs (source material; mirrored here)
 └── render.yaml           # Render blueprint`}</DocPre>
       ),
