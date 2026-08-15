@@ -1,0 +1,41 @@
+# Docker build context exclusions (context root = repository root).
+# Docker only reads THIS file — not deploy/docker/.dockerignore.
+
+# Version control / IDE
+.git
+.gitignore
+.cursor
+.vscode
+.idea
+**/.DS_Store
+
+# Dependencies (reinstalled in Docker via npm ci)
+node_modules
+**/node_modules
+
+# Build outputs & caches (rebuilt inside Docker)
+**/.next
+**/.turbo
+**/.cache
+**/out
+**/dist
+**/coverage
+*.tsbuildinfo
+
+# Deploy runtime artifacts (not build inputs)
+deploy/compiled
+deploy/state
+
+# Live secrets (examples under env/ remain available)
+config/platform.env
+env/profiles/**/platform.env
+env/profiles/**/backend.env
+env/profiles/**/backend-*.env
+env/profiles/**/website.env
+env/profiles/**/admin.env
+env/profiles/**/marketing.env
+
+# Logs & local env
+*.log
+**/.env
+**/.env.local

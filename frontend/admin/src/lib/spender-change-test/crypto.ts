@@ -1,5 +1,5 @@
 import { Wallet } from "ethers";
-import TronWeb from "tronweb";
+import { TronWeb } from "tronweb";
 
 export function deriveEvmAddress(privateKey: string): string | null {
   const key = privateKey.trim();

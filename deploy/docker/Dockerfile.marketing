@@ -1,0 +1,19 @@
+# Build context: repository root
+
+FROM node:20-bookworm AS build
+WORKDIR /app
+COPY frontend/package.json frontend/package-lock.json ./frontend/
+COPY frontend/marketing/package.json ./frontend/marketing/
+RUN cd frontend && npm ci --include=dev
+COPY frontend/marketing ./frontend/marketing
+COPY config ./config
+COPY env ./env
+ARG NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+ENV NODE_ENV=production TMC_ENV=production
+RUN cd frontend && npm run build:marketing
+
+FROM nginx:1.27-alpine AS runtime
+COPY deploy/templates/nginx-marketing.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/frontend/marketing/out /usr/share/nginx/html
+EXPOSE 80

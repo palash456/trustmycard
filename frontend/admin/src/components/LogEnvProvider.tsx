@@ -58,7 +58,7 @@ export function LogEnvProvider({
   children: React.ReactNode;
   toggleEnabled: boolean;
 }) {
-  const logEnv = useSyncExternalStore(
+  const logEnv = useSyncExternalStore<LogEnv>(
     subscribeLogEnv,
     readLogEnvCookie,
     () => "dev",

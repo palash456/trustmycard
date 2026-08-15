@@ -1,0 +1,59 @@
+# Shared data services (bundled mode). Provider-independent.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${TMC_POSTGRES_USER:-trustmycard}
+      POSTGRES_PASSWORD: ${TMC_POSTGRES_PASSWORD:-trustmycard_local_deploy}
+      POSTGRES_DB: ${TMC_POSTGRES_DB:-trustmycard}
+    volumes:
+      - tmc_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${TMC_POSTGRES_USER:-trustmycard} -d ${TMC_POSTGRES_DB:-trustmycard}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks:
+      - tmc
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    networks:
+      - tmc
+
+  migrate:
+    image: ${TMC_IMAGE_BACKEND:-tmc/backend:production}
+    env_file:
+      - ${TMC_COMPILED_ENV_BACKEND:-../compiled/production/backend.env}
+    environment:
+      TMC_ENV: production
+      SERVICE_ROLE: api
+    command: ["npx", "prisma", "migrate", "deploy"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tmc
+    profiles:
+      - migrate
+
+volumes:
+  tmc_postgres_data:
+    name: ${TMC_COMPOSE_PROJECT_NAME:-tmc-production}_postgres_data
+
+networks:
+  tmc:
+    name: ${TMC_COMPOSE_PROJECT_NAME:-tmc-production}_net

@@ -1,0 +1,32 @@
+# One-step Docker deploy
+
+Provider-independent deployment using OCI images and adapters.
+
+## Quick start (local fresh-host test)
+
+```bash
+cp deploy/manifest.production.example.json deploy/manifest.production.json
+cp env/profiles/production/platform.env.example env/profiles/production/platform.env
+# fill platform.env (or use existing local production profile)
+
+chmod +x deploy.sh
+./deploy.sh production --fresh --provider local
+```
+
+## Safety
+
+- `--fresh` never drops Postgres volumes by default.
+- If bundled volume `${compose.project_name}_postgres_data` already exists, deploy aborts unless you pass:
+  `--confirm-recreate-data --i-accept-data-loss`
+- External `DATABASE_URL` hosts matching `safety.protected_db_hosts` require `--confirm-external-data`.
+
+## Providers
+
+| Provider | Status |
+|----------|--------|
+| `local` | Docker Compose on this machine |
+| `docker-vps` | SSH + Docker Compose on a VPS |
+| `render` | Stub (not implemented) |
+| `hostinger-static` | Stub (marketing FTP upload) |
+
+See [fresh-host-recovery-test.md](./fresh-host-recovery-test.md).

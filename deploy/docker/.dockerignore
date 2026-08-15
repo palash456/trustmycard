@@ -1,0 +1,2 @@
+# Unused — Docker reads only the repository root .dockerignore
+# (build context is repo root; see deploy/core/build.mjs).

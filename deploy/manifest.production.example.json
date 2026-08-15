@@ -1,0 +1,29 @@
+{
+  "environment": "production",
+  "topology": "budget",
+  "provider": "local",
+  "domains": {
+    "wallet": "http://localhost:3000",
+    "api": "http://localhost:4000",
+    "admin": "http://localhost:3002",
+    "marketing": "http://localhost:3001"
+  },
+  "data": {
+    "mode": "bundled",
+    "bundled": {
+      "postgres_user": "trustmycard",
+      "postgres_password": "trustmycard_local_deploy",
+      "postgres_db": "trustmycard"
+    }
+  },
+  "safety": {
+    "protected_db_hosts": ["neon.tech", "render.com", "digitalocean.com"]
+  },
+  "images": {
+    "tag": "production",
+    "registry_prefix": "tmc"
+  },
+  "compose": {
+    "project_name": "tmc-production-local"
+  }
+}

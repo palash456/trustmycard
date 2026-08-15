@@ -1,0 +1,34 @@
+# Build context: repository root
+
+FROM node:20-bookworm AS build
+WORKDIR /app
+ARG NEXT_PUBLIC_APP_URL
+ARG NEXT_PUBLIC_MARKETING_URL
+ARG NEXT_PUBLIC_PROJECT_ID
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_MARKETING_URL=$NEXT_PUBLIC_MARKETING_URL
+ENV NEXT_PUBLIC_PROJECT_ID=$NEXT_PUBLIC_PROJECT_ID
+COPY frontend/package.json frontend/package-lock.json ./frontend/
+COPY frontend/website/package.json ./frontend/website/
+COPY frontend/wallet-sdk/package.json ./frontend/wallet-sdk/
+COPY frontend/shared/package.json ./frontend/shared/
+RUN cd frontend && npm ci --include=dev
+COPY frontend ./frontend
+COPY config ./config
+COPY env ./env
+ENV NODE_ENV=production TMC_ENV=production
+RUN cd frontend \
+  && npm run build:shared \
+  && npm run build -w @trustmycard/website
+
+FROM node:20-bookworm-slim AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+ENV TMC_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+COPY --from=build /app/frontend/website/.next/standalone ./
+COPY --from=build /app/frontend/website/.next/static ./website/.next/static
+COPY --from=build /app/frontend/website/public ./website/public
+EXPOSE 3000
+CMD ["node", "website/server.js"]

@@ -1,0 +1,33 @@
+# Build context: repository root (docker build -f deploy/docker/Dockerfile.backend .)
+
+FROM node:20-bookworm AS build
+WORKDIR /app
+COPY backend/package.json backend/package-lock.json ./backend/
+COPY frontend/shared/package.json ./frontend/shared/
+RUN cd backend && npm ci --include=dev \
+  && npm install --prefix ../frontend/shared --include=dev
+COPY backend ./backend
+COPY frontend/shared ./frontend/shared
+COPY config ./config
+COPY env ./env
+RUN cd backend \
+  && npm run build --prefix ../frontend/shared \
+  && npx prisma generate \
+  && npm run build
+
+FROM node:20-bookworm-slim AS runtime
+RUN apt-get update -y \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+WORKDIR /app/backend
+ENV NODE_ENV=production
+COPY --from=build /app/backend/dist ./dist
+COPY --from=build /app/backend/node_modules ./node_modules
+COPY --from=build /app/backend/prisma ./prisma
+COPY --from=build /app/backend/package.json ./package.json
+COPY --from=build /app/frontend/shared/dist ../frontend/shared/dist
+COPY --from=build /app/frontend/shared/package.json ../frontend/shared/package.json
+COPY config /app/config
+COPY env /app/env
+EXPOSE 4000
+CMD ["node", "dist/main.js"]

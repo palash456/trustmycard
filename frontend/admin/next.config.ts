@@ -15,6 +15,7 @@ loadTmcEnv("admin");
 const frontendRoot = path.join(configDir, "..");
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   outputFileTracingRoot: frontendRoot,
   turbopack: {
     root: frontendRoot,

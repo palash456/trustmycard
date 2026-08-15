@@ -1,0 +1,7 @@
+# Overlay when data.mode=external — do not start bundled postgres/redis.
+
+services:
+  postgres:
+    profiles: ["never"]
+  redis:
+    profiles: ["never"]

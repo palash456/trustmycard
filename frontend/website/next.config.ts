@@ -42,6 +42,7 @@ function detectLanDevOrigins(): string[] {
 const lanDevOrigins = !isProductionBuild ? detectLanDevOrigins() : [];
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   transpilePackages: ["@trustmycard/wallet-sdk", "@trustmycard/shared"],
   outputFileTracingRoot: frontendRoot,
   // Monorepo has lockfiles at repo root and frontend/ — pin Turbopack to the workspace.

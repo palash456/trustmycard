@@ -25,8 +25,16 @@ export type SpenderChangeTestRunSummary = {
 };
 
 type SystemStatusSecrets = {
-  evm?: { spenderAddress?: string | null; spenderMatch?: boolean };
-  tron?: { spenderAddress?: string | null; spenderMatch?: boolean };
+  evm?: {
+    configured?: boolean;
+    spenderAddress?: string | null;
+    spenderMatch?: boolean;
+  };
+  tron?: {
+    configured?: boolean;
+    spenderAddress?: string | null;
+    spenderMatch?: boolean;
+  };
 };
 
 type SystemStatusResponse = {

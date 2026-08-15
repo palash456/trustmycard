@@ -1,0 +1,72 @@
+# Budget topology: combined backend (API + poll collector) + wallet + admin + marketing
+
+services:
+  backend:
+    image: ${TMC_IMAGE_BACKEND:-tmc/backend:production}
+    restart: unless-stopped
+    env_file:
+      - ${TMC_COMPILED_ENV_BACKEND:-../compiled/production/backend.env}
+    environment:
+      TMC_ENV: production
+      PORT: "4000"
+    ports:
+      - "${TMC_HOST_API_PORT:-4000}:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/v1/api/settings/public').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    networks:
+      - tmc
+
+  wallet:
+    image: ${TMC_IMAGE_WALLET:-tmc/wallet:production}
+    restart: unless-stopped
+    env_file:
+      - ${TMC_COMPILED_ENV_WALLET:-../compiled/production/wallet.env}
+    environment:
+      TMC_ENV: production
+      PORT: "3000"
+    ports:
+      - "${TMC_HOST_WALLET_PORT:-3000}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - tmc
+
+  admin:
+    image: ${TMC_IMAGE_ADMIN:-tmc/admin:production}
+    restart: unless-stopped
+    env_file:
+      - ${TMC_COMPILED_ENV_ADMIN:-../compiled/production/admin.env}
+    environment:
+      TMC_ENV: production
+      PORT: "3002"
+    ports:
+      - "${TMC_HOST_ADMIN_PORT:-3002}:3002"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - tmc
+
+  marketing:
+    image: ${TMC_IMAGE_MARKETING:-tmc/marketing:production}
+    restart: unless-stopped
+    ports:
+      - "${TMC_HOST_MARKETING_PORT:-3001}:80"
+    networks:
+      - tmc

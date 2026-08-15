@@ -69,11 +69,15 @@ export async function verifyMarketingSessionToken(
 
 export function marketingSessionCookieOptions(token: string) {
   const ttlMs = getMarketingSessionTtlMs();
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const secure =
+    appUrl?.startsWith("https://") ??
+    process.env.NODE_ENV === "production";
   return {
     name: MARKETING_SESSION_COOKIE,
     value: token,
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure,
     sameSite: "lax" as const,
     path: "/",
     maxAge: ttlMs / 1000,

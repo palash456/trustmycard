@@ -769,7 +769,10 @@ export function DeveloperTestPanel({
               <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
                 Part of platform
               </label>
-              <Select value={packageFilter} onValueChange={setPackageFilter}>
+              <Select
+                value={packageFilter}
+                onValueChange={(v) => setPackageFilter(v ?? "all")}
+              >
                 <SelectTrigger size="sm" className="w-full">
                   <SelectValue placeholder="All packages" />
                 </SelectTrigger>
@@ -787,7 +790,10 @@ export function DeveloperTestPanel({
               <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
                 Topic
               </label>
-              <Select value={areaFilter} onValueChange={setAreaFilter}>
+              <Select
+                value={areaFilter}
+                onValueChange={(v) => setAreaFilter(v ?? "all")}
+              >
                 <SelectTrigger size="sm" className="w-full">
                   <SelectValue placeholder="All areas" />
                 </SelectTrigger>

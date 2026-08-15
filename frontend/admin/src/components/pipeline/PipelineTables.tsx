@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDate } from "@/lib/format";
+import { formatDate, shortAddress } from "@/lib/format";
 
 export type ApprovalRow = {
   id: string;
