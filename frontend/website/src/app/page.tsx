@@ -625,7 +625,7 @@ function MarketingHomeContent() {
   );
 }
 
-export default function ConnectPage() {
+export default function HomePage() {
   return (
     <SiteChrome>
       <MarketingHomeContent />

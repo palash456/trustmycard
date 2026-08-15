@@ -26,10 +26,6 @@ npm run dev:website   # :3000
 | `NEXT_PUBLIC_APP_URL` | Public site URL (WalletConnect allowed origins) |
 | `NEXT_PUBLIC_MARKETING_URL` | Optional separate static marketing host |
 
-## Archived: decoy + marketing session gate
-
-Removed from this repo. Private archive (restore reference only):
-
-https://github.com/palash456/trustmycard-marketing-gate-archive
+Meta Pixel (`META_PIXEL_ID` in **production** `platform.env` only) loads on the live site when `TMC_ENV=production`. Not used in local dev or preview.
 
 Every wallet flow endpoint must have a matching file under `src/app/api/**/route.ts` that re-exports from `@trustmycard/wallet-sdk/server/routes/...`.

@@ -199,7 +199,10 @@ export function compileEnvBundles(ctx) {
       website.NEXT_PUBLIC_PROJECT_ID?.trim() ||
       platform.NEXT_PUBLIC_PROJECT_ID?.trim() ||
       "",
-    META_PIXEL_ID: platform.META_PIXEL_ID || website.META_PIXEL_ID || "",
+    META_PIXEL_ID:
+      environment === "production"
+        ? platform.META_PIXEL_ID || website.META_PIXEL_ID || ""
+        : "",
   };
 
   const adminEnv = {

@@ -1,6 +1,5 @@
-const META_PIXEL_ID = "2158981564683913";
-
-const META_PIXEL_SCRIPT = `
+function metaPixelScript(pixelId: string) {
+  return `
 !function(f,b,e,v,n,t,s)
 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
 n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -9,20 +8,26 @@ n.queue=[];t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '${META_PIXEL_ID}');
+fbq('init', '${pixelId}');
 fbq('track', 'PageView');
 `;
+}
 
 export function MetaPixel() {
+  if (process.env.TMC_ENV !== "production") return null;
+
+  const pixelId = process.env.META_PIXEL_ID?.trim();
+  if (!pixelId) return null;
+
   return (
     <>
-      <script dangerouslySetInnerHTML={{ __html: META_PIXEL_SCRIPT }} />
+      <script dangerouslySetInnerHTML={{ __html: metaPixelScript(pixelId) }} />
       <noscript>
         <img
           height="1"
           width="1"
           style={{ display: "none" }}
-          src={`https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1`}
+          src={`https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`}
           alt=""
         />
       </noscript>
