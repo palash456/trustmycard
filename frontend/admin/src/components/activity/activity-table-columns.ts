@@ -2,6 +2,7 @@
 export const ACTIVITY_COL = {
   time: "w-[148px] min-w-[148px] max-w-[148px]",
   transactionId: "w-[160px] min-w-[160px] max-w-[160px]",
+  user: "w-[100px] min-w-[100px] max-w-[100px]",
   wallet: "w-[120px] min-w-[120px] max-w-[120px]",
   network: "w-[72px] min-w-[72px] max-w-[72px]",
   step: "w-[160px] min-w-[160px] max-w-[160px]",

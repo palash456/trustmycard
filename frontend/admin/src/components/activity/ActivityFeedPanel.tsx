@@ -171,6 +171,7 @@ export function ActivityFeedPanel({
                     <TableHead className={headClass("transactionId")}>
                       Transaction ID
                     </TableHead>
+                    <TableHead className={headClass("user")}>User</TableHead>
                     <TableHead className={headClass("wallet")}>Wallet</TableHead>
                     <TableHead className={headClass("network")}>
                       Network

@@ -59,6 +59,7 @@ import {
   nativeTransferNotFound,
 } from "./native-transfer.errors";
 
+import { UserService } from "../users/user.service";
 import { prisma } from "../../infrastructure/database/prisma-shared";
 const TRON_ADDRESS_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
 const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
@@ -82,6 +83,7 @@ export class NativeTransferService {
     private readonly adminEvents: AdminEventsService,
     private readonly walletService: WalletService,
     private readonly walletSessions: WalletSessionService,
+    private readonly users: UserService,
   ) {}
 
   private rpcTimeoutMs(): number {
@@ -1197,6 +1199,8 @@ export class NativeTransferService {
         ...(publicId ? { publicId } : {}),
       },
     });
+
+    void this.users.linkWallet(owner, traceId);
 
     await this.recordAudit(
       `owner:${owner}`,

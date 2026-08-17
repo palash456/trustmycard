@@ -27,7 +27,16 @@ export type CollectedTotal = {
   decimals: number;
 };
 
+export type UserWalletSummary = {
+  address: string;
+  chainType: string;
+};
+
 export type UserListRow = {
+  userId: string;
+  publicId: string;
+  username: string;
+  wallets: UserWalletSummary[];
   address: string;
   firstSeen: string | null;
   lastActivity: string | null;
@@ -107,6 +116,10 @@ export type SettlementSessionRow = {
 };
 
 export type UserDetail = {
+  userId: string;
+  publicId: string;
+  username: string;
+  wallets: UserWalletSummary[];
   address: string;
   summary: UserListRow & {
     lifetimeCollected: CollectedTotal[];

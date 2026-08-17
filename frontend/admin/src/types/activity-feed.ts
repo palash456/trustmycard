@@ -8,6 +8,9 @@ export type UnifiedActivityItem = {
   label: string;
   status: string;
   address: string;
+  userId: string | null;
+  username: string | null;
+  userPublicId: string | null;
   network: string | null;
   error: string | null;
   sessionId: string | null;

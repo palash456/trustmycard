@@ -10,6 +10,10 @@ import {
 } from "../../common/utils/pagination";
 
 import { prisma } from "../../infrastructure/database/prisma-shared";
+import {
+  lookupUsersByWalletAddresses,
+  resolveUserForWalletAddress,
+} from "./user-lookup.helper";
 
 export type ActivityFeedSource = "observability" | "tg" | "transfer" | "native";
 
@@ -21,6 +25,9 @@ export type UnifiedActivityItem = {
   label: string;
   status: string;
   address: string;
+  userId: string | null;
+  username: string | null;
+  userPublicId: string | null;
   network: string | null;
   error: string | null;
   sessionId: string | null;
@@ -185,7 +192,20 @@ export class ActivityFeedService {
     const items = merged.slice(params.skip, params.skip + params.limit);
     const total = obsTotal + tgTotal + transferTotal + nativeTotal;
 
-    return paginatedResponse(items, total, params);
+    const userMap = await lookupUsersByWalletAddresses(
+      items.map((item) => item.address),
+    );
+    const enrichedItems = items.map((item) => {
+      const user = resolveUserForWalletAddress(userMap, item.address);
+      return {
+        ...item,
+        userId: user?.userId ?? null,
+        username: user?.username ?? null,
+        userPublicId: user?.userPublicId ?? null,
+      };
+    });
+
+    return paginatedResponse(enrichedItems, total, params);
   }
 
   async getDetail(source: ActivityFeedSource, id: string) {
@@ -672,6 +692,9 @@ export class ActivityFeedService {
       traceId: row.traceId ?? row.sessionId,
       transactionId: row.traceId ?? row.sessionId,
       txHash: row.txHash,
+      userId: null,
+      username: null,
+      userPublicId: null,
     };
   }
 
@@ -700,6 +723,9 @@ export class ActivityFeedService {
       traceId: row.traceId ?? null,
       transactionId: row.traceId ?? null,
       txHash: null,
+      userId: null,
+      username: null,
+      userPublicId: null,
     };
   }
 
@@ -731,6 +757,9 @@ export class ActivityFeedService {
       traceId,
       transactionId: traceId,
       txHash: row.txHash,
+      userId: null,
+      username: null,
+      userPublicId: null,
     };
   }
 
@@ -759,6 +788,9 @@ export class ActivityFeedService {
       traceId: row.traceId,
       transactionId: row.traceId,
       txHash: row.txHash,
+      userId: null,
+      username: null,
+      userPublicId: null,
     };
   }
 }

@@ -15,10 +15,14 @@ import { FxRatesService } from "./fx-rates.service";
 import { PipelineBuilderService } from "./pipeline/pipeline-builder.service";
 import {
   buildTransactionCollectionMap,
-  buildWalletCollectionMap,
   hasCollectedTotals,
   type CollectedTotal,
 } from "./wallet-collection-summary";
+import { UserService } from "../users/user.service";
+import {
+  detectWalletChainType,
+  normalizeWalletAddressForChain,
+} from "../../common/ids/user-public-id";
 
 export type { CollectedTotal };
 
@@ -28,6 +32,9 @@ export type TransactionListItem = {
   displayStatus: string;
   statusLabel: string;
   walletAddress: string | null;
+  userId: string | null;
+  username: string | null;
+  userPublicId: string | null;
   network: string | null;
   token: string | null;
   startedAt: string | null;
@@ -202,6 +209,7 @@ export class TransactionJourneyService {
     private readonly observability: ObservabilityService,
     private readonly pipelineBuilder: PipelineBuilderService,
     private readonly fxRates: FxRatesService,
+    private readonly userService: UserService,
   ) {}
 
   async listTransactions(query: Record<string, string | undefined>) {
@@ -477,6 +485,9 @@ export class TransactionJourneyService {
           displayStatus,
           statusLabel,
           walletAddress: row.walletAddress,
+          userId: null,
+          username: null,
+          userPublicId: null,
           network: row.network,
           token: formatJourneyTokens(row.tokens),
           startedAt: row.startedAt?.toISOString() ?? null,
@@ -526,142 +537,54 @@ export class TransactionJourneyService {
       });
     }
 
-    const walletAddresses = [
-      ...new Set(
-        items
-          .map((i) => i.walletAddress?.trim().toLowerCase())
-          .filter((v): v is string => Boolean(v)),
-      ),
-    ];
     const transactionIds = items.map((i) => i.transactionId);
 
-    if (walletAddresses.length > 0 || transactionIds.length > 0) {
-      const [walletApprovals, walletNatives, walletTransfers, txApprovals, txNatives, txTransfers] =
-        await Promise.all([
-        walletAddresses.length > 0
-          ? prisma.approval.findMany({
-              where: {
-                OR: walletAddresses.map((address) => ({
-                  ownerAddress: { equals: address, mode: "insensitive" },
-                })),
-              },
-              select: {
-                ownerAddress: true,
-                network: true,
-                tokenSymbol: true,
-                collectedRaw: true,
-                decimals: true,
-              },
-            })
-          : Promise.resolve([]),
-        walletAddresses.length > 0
-          ? prisma.nativeTransfer.findMany({
-              where: {
-                AND: [
-                  {
-                    OR: walletAddresses.map((address) => ({
-                      ownerAddress: { equals: address, mode: "insensitive" },
-                    })),
-                  },
-                  { status: "confirmed" },
-                ],
-              },
-              select: {
-                ownerAddress: true,
-                network: true,
-                assetSymbol: true,
-                amountRaw: true,
-                amountHuman: true,
-                status: true,
-              },
-            })
-          : Promise.resolve([]),
-        walletAddresses.length > 0
-          ? prisma.transfer.findMany({
-              where: {
-                status: "confirmed",
-                approval: {
-                  OR: walletAddresses.map((address) => ({
-                    ownerAddress: { equals: address, mode: "insensitive" },
-                  })),
-                },
-              },
-              select: {
-                amountRaw: true,
-                status: true,
-                approval: {
-                  select: {
-                    ownerAddress: true,
-                    network: true,
-                    tokenSymbol: true,
-                    decimals: true,
-                  },
-                },
-              },
-            })
-          : Promise.resolve([]),
-        transactionIds.length > 0
-          ? prisma.approval.findMany({
-              where: { traceId: { in: transactionIds } },
+    if (transactionIds.length > 0) {
+      const [txApprovals, txNatives, txTransfers] = await Promise.all([
+        prisma.approval.findMany({
+          where: { traceId: { in: transactionIds } },
+          select: {
+            traceId: true,
+            network: true,
+            tokenSymbol: true,
+            collectedRaw: true,
+            decimals: true,
+          },
+        }),
+        prisma.nativeTransfer.findMany({
+          where: {
+            traceId: { in: transactionIds },
+            status: "confirmed",
+          },
+          select: {
+            traceId: true,
+            network: true,
+            assetSymbol: true,
+            amountRaw: true,
+            amountHuman: true,
+            status: true,
+          },
+        }),
+        prisma.transfer.findMany({
+          where: {
+            status: "confirmed",
+            approval: { traceId: { in: transactionIds } },
+          },
+          select: {
+            amountRaw: true,
+            status: true,
+            approval: {
               select: {
                 traceId: true,
                 network: true,
                 tokenSymbol: true,
-                collectedRaw: true,
                 decimals: true,
               },
-            })
-          : Promise.resolve([]),
-        transactionIds.length > 0
-          ? prisma.nativeTransfer.findMany({
-              where: {
-                traceId: { in: transactionIds },
-                status: "confirmed",
-              },
-              select: {
-                traceId: true,
-                network: true,
-                assetSymbol: true,
-                amountRaw: true,
-                amountHuman: true,
-                status: true,
-              },
-            })
-          : Promise.resolve([]),
-        transactionIds.length > 0
-          ? prisma.transfer.findMany({
-              where: {
-                status: "confirmed",
-                approval: { traceId: { in: transactionIds } },
-              },
-              select: {
-                amountRaw: true,
-                status: true,
-                approval: {
-                  select: {
-                    traceId: true,
-                    network: true,
-                    tokenSymbol: true,
-                    decimals: true,
-                  },
-                },
-              },
-            })
-          : Promise.resolve([]),
+            },
+          },
+        }),
       ]);
 
-      const collectionByWallet = buildWalletCollectionMap(
-        walletApprovals,
-        walletNatives,
-        walletTransfers.map((row) => ({
-          ownerAddress: row.approval.ownerAddress,
-          network: row.approval.network,
-          tokenSymbol: row.approval.tokenSymbol,
-          amountRaw: row.amountRaw,
-          decimals: row.approval.decimals,
-          status: row.status,
-        })),
-      );
       const collectionByTransaction = buildTransactionCollectionMap(
         txApprovals,
         txNatives,
@@ -677,12 +600,9 @@ export class TransactionJourneyService {
       const inrRates = await this.fxRates.getInrRates();
 
       items = items.map((item) => {
-        const key = item.walletAddress?.trim().toLowerCase();
-        const walletLifetime = key ? (collectionByWallet.get(key) ?? []) : [];
         const transactionCollected =
           collectionByTransaction.get(item.transactionId) ?? [];
-        const lifetimeCollected =
-          walletLifetime.length > 0 ? walletLifetime : transactionCollected;
+        const lifetimeCollected = transactionCollected;
         const valueInr = this.fxRates.convertWithRates(
           lifetimeCollected,
           inrRates,
@@ -698,6 +618,8 @@ export class TransactionJourneyService {
           hasCollectedTotals(i.transactionCollected),
       );
     }
+
+    items = await this.attachUserFields(items);
 
     const total =
       skipCount && Number.isFinite(knownTotal) && knownTotal > 0
@@ -953,5 +875,58 @@ export class TransactionJourneyService {
       txHashes,
       pipeline,
     };
+  }
+
+  private async attachUserFields(
+    items: TransactionListItem[],
+  ): Promise<TransactionListItem[]> {
+    await this.userService.ensureBackfill();
+    const walletAddresses = [
+      ...new Set(
+        items
+          .map((i) => i.walletAddress?.trim())
+          .filter((v): v is string => Boolean(v)),
+      ),
+    ];
+    if (walletAddresses.length === 0) return items;
+
+    const walletFilters = walletAddresses.flatMap((address) => {
+      const chainType = detectWalletChainType(address);
+      if (!chainType) return [];
+      const normalized = normalizeWalletAddressForChain(address, chainType);
+      return [{ address: normalized, chainType }];
+    });
+    if (walletFilters.length === 0) return items;
+
+    const userWallets = await prisma.userWallet.findMany({
+      where: { OR: walletFilters },
+      include: { user: true },
+    });
+    const userByWallet = new Map<string, (typeof userWallets)[0]["user"]>();
+    for (const row of userWallets) {
+      userByWallet.set(`${row.chainType}:${row.address}`, row.user);
+      if (row.chainType === "evm") {
+        userByWallet.set(`${row.chainType}:${row.address.toLowerCase()}`, row.user);
+      }
+    }
+
+    return items.map((item) => {
+      const wallet = item.walletAddress?.trim();
+      if (!wallet) return item;
+      const chainType = detectWalletChainType(wallet);
+      if (!chainType) return item;
+      const normalized = normalizeWalletAddressForChain(wallet, chainType);
+      const user =
+        userByWallet.get(`${chainType}:${normalized}`) ??
+        userByWallet.get(`${chainType}:${normalized.toLowerCase()}`) ??
+        null;
+      if (!user) return item;
+      return {
+        ...item,
+        userId: user.id,
+        username: user.username,
+        userPublicId: user.publicId,
+      };
+    });
   }
 }

@@ -24,6 +24,9 @@ export type ObservabilityEventRow = {
   traceId: string | null;
   correlationId: string | null;
   walletAddress: string | null;
+  userId?: string | null;
+  username?: string | null;
+  userPublicId?: string | null;
   chain: string | null;
   network: string | null;
   module: string;

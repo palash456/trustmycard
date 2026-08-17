@@ -56,6 +56,18 @@ export function ActivityFeedRow({
           <TransactionIdMissing />
         )}
       </TableCell>
+      <TableCell className={cellClass("user")}>
+        {row.username ? (
+          <Link
+            href={`/users/${encodeURIComponent(row.userPublicId ?? row.userId ?? "")}`}
+            className="text-xs font-medium hover:text-primary hover:underline"
+          >
+            {row.username}
+          </Link>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
+      </TableCell>
       <TableCell className={cellClass("wallet")}>
         {row.address ? (
           <WalletAddressLink address={row.address} showCopy={false} />

@@ -3,6 +3,7 @@ import { ObservabilityModule } from "../observability/observability.module";
 import { ResourcesModule } from "../resources/resources.module";
 import { CollectionsModule } from "../collections/collections.module";
 import { AuthModule } from "../auth/auth.module";
+import { UsersModule } from "../users/users.module";
 import { CustodyModule } from "../custody/custody.module";
 import { AdminApiKeyGuard } from "../../common/guards/admin-api-key.guard";
 import { NetworkSettlementService } from "./network-settlement.service";
@@ -24,6 +25,7 @@ import { WalletSettlementAuthService } from "./wallet-settlement-auth.service";
     ResourcesModule,
     CollectionsModule,
     AuthModule,
+    UsersModule,
     CustodyModule,
     ObservabilityModule,
   ],

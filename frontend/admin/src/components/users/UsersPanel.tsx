@@ -150,6 +150,7 @@ function NetworkBadgeList({ networks }: { networks: string[] }) {
 }
 
 function UserRow({ row }: { row: UserListRow }) {
+  const userPath = `/users/${encodeURIComponent(row.publicId)}`;
   const explorer = row.activeChain
     ? blockExplorerAddress(row.activeChain, row.address)
     : row.networksUsed[0]
@@ -158,9 +159,34 @@ function UserRow({ row }: { row: UserListRow }) {
 
   return (
     <TableRow className="[&_[data-slot=table-cell]]:py-3">
+      <TableCell className="min-w-[120px]">
+        <Link
+          href={userPath}
+          className="text-sm font-medium text-foreground hover:text-primary hover:underline"
+        >
+          {row.username}
+        </Link>
+      </TableCell>
+      <TableCell className="min-w-[160px] font-mono text-xs text-muted-foreground">
+        <Link href={userPath} className="hover:text-primary hover:underline">
+          {row.publicId}
+        </Link>
+      </TableCell>
       <TableCell className="min-w-[140px]">
-        <div className="flex items-center gap-2">
-          <WalletAddressLink address={row.address} head={8} tail={6} showCopy />
+        <div className="flex flex-col gap-1">
+          {row.wallets.length > 0 ? (
+            row.wallets.map((wallet) => (
+              <WalletAddressLink
+                key={`${wallet.chainType}:${wallet.address}`}
+                address={wallet.address}
+                head={8}
+                tail={6}
+                showCopy
+              />
+            ))
+          ) : (
+            <WalletAddressLink address={row.address} head={8} tail={6} showCopy />
+          )}
           <Link
             href={`/transactions?walletAddress=${encodeURIComponent(row.address)}`}
             className="text-[10px] text-primary hover:underline"
@@ -270,7 +296,7 @@ export function UsersPanel({
             className="w-80 min-w-0 gap-1 sm:w-96"
             defaultValue={query.search}
             query={query}
-            placeholder="Search by wallet address"
+            placeholder="Search username, user ID, or wallet"
           />
           <Separator orientation="vertical" className="h-8" />
           {toolbar}
@@ -290,7 +316,9 @@ export function UsersPanel({
               <Table scrollable>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent [&_[data-slot=table-head]]:h-auto [&_[data-slot=table-head]]:py-3">
-                    <TableHead>Address</TableHead>
+                    <TableHead>Username</TableHead>
+                    <TableHead>User ID</TableHead>
+                    <TableHead>Wallets</TableHead>
                     <TableHead>First seen</TableHead>
                     <TableHead>Last activity</TableHead>
                     <TableHead>Workflow</TableHead>
@@ -312,7 +340,7 @@ export function UsersPanel({
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <UserRow key={row.address} row={row} />
+                    <UserRow key={row.userId} row={row} />
                   ))}
                 </TableBody>
               </Table>

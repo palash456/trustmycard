@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -241,6 +242,7 @@ export function TransactionsPanel({
                   <TableRow>
                     <TableHead>Transaction ID</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>User</TableHead>
                     <TableHead>Wallet Address</TableHead>
                     <TableHead>Network</TableHead>
                     <TableHead>Token</TableHead>
@@ -269,6 +271,18 @@ export function TransactionsPanel({
                       </TableCell>
                       <TableCell>
                         <ActivityStatusChip status={status} label={label} />
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-xs">
+                        {row.username ? (
+                          <Link
+                            href={`/users/${encodeURIComponent(row.userPublicId ?? row.userId ?? "")}`}
+                            className="font-medium text-foreground hover:text-primary hover:underline"
+                          >
+                            {row.username}
+                          </Link>
+                        ) : (
+                          "—"
+                        )}
                       </TableCell>
                       <TableCell className="max-w-none whitespace-nowrap">
                         {row.walletAddress ? (

@@ -45,6 +45,7 @@ import { WalletNotifyService } from "./wallet-notify.service";
 import { WalletRpcService } from "./wallet-rpc.service";
 import { WalletCollectorContextService } from "./wallet-collector-context.service";
 import { WalletCollectionService } from "./wallet-collection.service";
+import { UserService } from "../users/user.service";
 
 @Injectable()
 export class WalletApprovalService {
@@ -57,6 +58,7 @@ export class WalletApprovalService {
     @Inject(forwardRef(() => WalletCollectionService))
     private readonly collection: WalletCollectionService,
     private readonly walletSessions: WalletSessionService,
+    private readonly users: UserService,
   ) {}
 
   async prepareApproval(body: Record<string, unknown>) {
@@ -609,6 +611,7 @@ export class WalletApprovalService {
 
     const traceIdForSession =
       traceId ?? clientSessionIdFromBody(body) ?? undefined;
+    void this.users.linkWallet(owner, traceIdForSession);
     let established: { token: string; expiresAt: Date } | null = null;
     if (!this.walletSessions.isPersonalSignEnabled() && !existingWalletSession) {
       await this.verifyApprovalReceipt({

@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { JobsModule } from "../../jobs/jobs.module";
 import { ObservabilityModule } from "../observability/observability.module";
 import { WalletModule } from "../wallet/wallet.module";
+import { UsersModule } from "../users/users.module";
 import { AdminController } from "./admin.controller";
 import { AdminDevOpsService } from "./admin-devops.service";
 import { AdminOpsService } from "./admin-ops.service";
@@ -23,6 +24,7 @@ import { TransactionJourneyService } from "./transaction-journey.service";
 @Module({
   imports: [
     WalletModule,
+    UsersModule,
     JobsModule,
     ObservabilityModule,
     CollectionQueueModule,

@@ -92,6 +92,9 @@ export type TransactionListItem = {
   displayStatus: string;
   statusLabel: string;
   walletAddress: string | null;
+  userId: string | null;
+  username: string | null;
+  userPublicId: string | null;
   network: string | null;
   token: string | null;
   startedAt: string | null;

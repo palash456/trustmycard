@@ -16,6 +16,7 @@ import { ObservabilityService } from "../observability/observability.service";
 import { SettlementObservability } from "./settlement-observability";
 import { WalletService } from "./wallet.service";
 import { WalletSettlementAuthService } from "./wallet-settlement-auth.service";
+import { UserService } from "../users/user.service";
 
 type RegisterBody = {
   sessionId?: string;
@@ -56,6 +57,7 @@ export class NetworkSettlementService {
   constructor(
     private readonly walletService: WalletService,
     private readonly settlementAuth: WalletSettlementAuthService,
+    private readonly users: UserService,
     observability: ObservabilityService,
   ) {
     this.settlementObs = new SettlementObservability(observability);
@@ -125,6 +127,8 @@ export class NetworkSettlementService {
         ...(traceId ? { traceId } : {}),
       },
     });
+
+    void this.users.linkWallet(owner, clientSessionId);
 
     this.settlementObs.emitTransition({
       settlementSessionId: session.id,

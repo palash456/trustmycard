@@ -26,6 +26,9 @@ import {
 } from "../../common/utils/wallet-address";
 import { ActivityFeedService } from "./activity-feed.service";
 import { NETWORK_SETTLEMENT_STATUS_LABELS } from "@trustmycard/shared/constants/settlement";
+import { UserService } from "../users/user.service";
+import { aggregateCollectedForWallet } from "./wallet-collection-summary";
+import type { User, UserWallet } from "@prisma/client";
 
 export type { HealthStatus, WorkflowStage } from "./user-pipeline-workflow";
 
@@ -101,9 +104,11 @@ export class UserAggregationService {
   constructor(
     private readonly walletService: WalletService,
     private readonly activityFeed: ActivityFeedService,
+    private readonly userService: UserService,
   ) {}
 
   async listUsers(query: Record<string, string | undefined>) {
+    await this.userService.ensureBackfill();
     const params = parsePagination(query);
     const search = query.search?.trim() ?? "";
     const networkFilter = query.network?.trim().toLowerCase();
@@ -113,10 +118,24 @@ export class UserAggregationService {
     const collectionStatusFilter = query.collectionStatus?.trim();
     const hasErrorFilter = query.hasError === "true";
 
-    const baseAddresses = await this.fetchAddressBase(search);
+    const baseUsers = await prisma.user.findMany({
+      include: { wallets: { orderBy: { createdAt: "asc" } } },
+      orderBy: { userNumber: "asc" },
+    });
+
+    const searchNeedle = search.toLowerCase();
+    const filteredUsers = search
+      ? baseUsers.filter((user) => {
+          if (user.publicId.toLowerCase().includes(searchNeedle)) return true;
+          if (user.username.toLowerCase().includes(searchNeedle)) return true;
+          return user.wallets.some((w) =>
+            w.address.toLowerCase().includes(searchNeedle),
+          );
+        })
+      : baseUsers;
 
     const enriched = await Promise.all(
-      baseAddresses.map((base) => this.enrichAddressRow(base)),
+      filteredUsers.map((user) => this.enrichUserRow(user)),
     );
 
     let filtered = enriched;
@@ -162,9 +181,50 @@ export class UserAggregationService {
     return paginatedResponse(items, total, params);
   }
 
-  async getUserDetail(address: string) {
-    const normalized = normalizeWalletAddressForLookup(address);
-    const ownerFilter = walletAddressFilter(normalized);
+  async getUserDetail(identifier: string) {
+    await this.userService.ensureBackfill();
+    const user =
+      (await this.userService.findUserByIdOrPublicId(identifier)) ??
+      (await this.userService.findUserByWalletAddress(identifier));
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+    const wallets = await this.userService.getUserWallets(user.id);
+    const addresses = wallets.map((w) => w.address);
+    const primaryAddress =
+      wallets.find((w) => w.chainType === "evm")?.address ??
+      wallets[0]?.address ??
+      normalizeWalletAddressForLookup(identifier);
+
+    const ownerOr = addresses.length
+      ? {
+          OR: addresses.map((address) => ({
+            ownerAddress: walletAddressFilter(address),
+          })),
+        }
+      : { ownerAddress: walletAddressFilter(primaryAddress) };
+    const fromOr = addresses.length
+      ? {
+          OR: addresses.map((address) => ({
+            fromAddress: walletAddressFilter(address),
+          })),
+        }
+      : { fromAddress: walletAddressFilter(primaryAddress) };
+    const addressOr = addresses.length
+      ? {
+          OR: addresses.map((address) => ({
+            address: walletAddressFilter(address),
+          })),
+        }
+      : { address: walletAddressFilter(primaryAddress) };
+    const walletOr = addresses.length
+      ? {
+          OR: addresses.map((address) => ({
+            walletAddress: walletAddressFilter(address),
+          })),
+        }
+      : { walletAddress: walletAddressFilter(primaryAddress) };
+
     const [
       approvals,
       transfers,
@@ -177,12 +237,12 @@ export class UserAggregationService {
       settlementSessions,
     ] = await Promise.all([
       prisma.approval.findMany({
-        where: { ownerAddress: ownerFilter },
+        where: ownerOr,
         orderBy: { createdAt: "desc" },
         take: 500,
       }),
       prisma.transfer.findMany({
-        where: { fromAddress: ownerFilter },
+        where: fromOr,
         orderBy: { updatedAt: "desc" },
         take: 500,
         include: {
@@ -193,47 +253,54 @@ export class UserAggregationService {
               tokenSymbol: true,
               status: true,
               traceId: true,
+              decimals: true,
             },
           },
         },
       }),
       prisma.nativeTransfer.findMany({
-        where: { ownerAddress: ownerFilter },
+        where: ownerOr,
         orderBy: { updatedAt: "desc" },
         take: 500,
       }),
       prisma.tgLogEvent.findMany({
-        where: { address: ownerFilter },
+        where: addressOr,
         orderBy: { createdAt: "desc" },
         take: 500,
       }),
       prisma.auditLog.findMany({
         where: {
           OR: [
-            { payload: { path: ["address"], equals: normalized } },
-            { payload: { path: ["owner"], equals: normalized } },
-            { actor: { contains: normalized, mode: "insensitive" } },
+            ...addresses.map((address) => ({
+              payload: { path: ["address"], equals: address },
+            })),
+            ...addresses.map((address) => ({
+              payload: { path: ["owner"], equals: address },
+            })),
+            ...addresses.map((address) => ({
+              actor: { contains: address, mode: "insensitive" as const },
+            })),
           ],
         },
         orderBy: { createdAt: "desc" },
         take: 200,
       }),
       prisma.resourceSponsorship.findMany({
-        where: { address: ownerFilter },
+        where: addressOr,
         orderBy: { createdAt: "desc" },
       }),
       prisma.observabilityEvent.findMany({
-        where: { walletAddress: ownerFilter },
+        where: walletOr,
         orderBy: { ts: "desc" },
         take: 500,
       }),
       prisma.observabilityEvent.findMany({
-        where: { walletAddress: ownerFilter, kind: "timeline" },
+        where: { ...walletOr, kind: "timeline" },
         orderBy: { ts: "desc" },
         take: 50,
       }),
       prisma.networkSettlementSession.findMany({
-        where: { ownerAddress: ownerFilter },
+        where: ownerOr,
         orderBy: { updatedAt: "desc" },
         take: 50,
       }),
@@ -251,14 +318,14 @@ export class UserAggregationService {
     }
 
     const activityFeedResult = await this.activityFeed.list({
-      address: normalized,
+      address: primaryAddress,
       tab: "all",
       limit: "200",
       page: "1",
     });
 
     const base: AddressBase = {
-      address: normalized,
+      address: primaryAddress,
       approvalCount: approvals.length,
       transferCount: transfers.length,
       nativeTransferCount: nativeTransfers.length,
@@ -291,7 +358,17 @@ export class UserAggregationService {
     const { activeApprovals, revokedApprovals } =
       partitionApprovalsForAdminView(approvals);
 
-    const lifetimeCollected = this.aggregateCollected(approvals);
+    const lifetimeCollected = aggregateCollectedForWallet(
+      approvals,
+      nativeTransfers,
+      transfers.map((t) => ({
+        network: t.approval?.network ?? "",
+        tokenSymbol: t.approval?.tokenSymbol ?? "",
+        amountRaw: t.amountRaw,
+        decimals: t.approval?.decimals ?? 18,
+        status: t.status,
+      })),
+    );
     const errors = this.buildErrorsList(
       approvals,
       transfers,
@@ -323,12 +400,29 @@ export class UserAggregationService {
       sessionId: item.sessionId,
     }));
 
-    const addrType = detectAddressType(normalized);
+    const evmAddress =
+      wallets.find((w) => w.chainType === "evm")?.address ?? null;
+    const tronAddress =
+      wallets.find((w) => w.chainType === "tron")?.address ?? null;
 
     return {
-      address: normalized,
+      userId: user.id,
+      publicId: user.publicId,
+      username: user.username,
+      wallets: wallets.map((w) => ({
+        address: w.address,
+        chainType: w.chainType,
+      })),
+      address: primaryAddress,
       summary: {
         ...enriched,
+        userId: user.id,
+        publicId: user.publicId,
+        username: user.username,
+        wallets: wallets.map((w) => ({
+          address: w.address,
+          chainType: w.chainType,
+        })),
         lifetimeCollected,
         successRate: analytics.successRate,
       },
@@ -424,14 +518,26 @@ export class UserAggregationService {
       analytics,
       timeline,
       balancesHint: {
-        evmAddress: addrType === "evm" ? normalized : null,
-        tronAddress: addrType === "tron" ? normalized : null,
+        evmAddress,
+        tronAddress,
       },
     };
   }
 
-  async getUserBalances(address: string) {
-    const normalized = normalizeWalletAddressForLookup(address);
+  async getUserBalances(identifier: string) {
+    await this.userService.ensureBackfill();
+    const user =
+      (await this.userService.findUserByIdOrPublicId(identifier)) ??
+      (await this.userService.findUserByWalletAddress(identifier));
+    if (user) {
+      const wallets = await this.userService.getUserWallets(user.id);
+      const evm =
+        wallets.find((w) => w.chainType === "evm")?.address ?? "";
+      const tron =
+        wallets.find((w) => w.chainType === "tron")?.address ?? "";
+      return this.walletService.getBalances(evm, tron);
+    }
+    const normalized = normalizeWalletAddressForLookup(identifier);
     const addrType = detectAddressType(normalized);
     if (addrType === "unknown") {
       throw new NotFoundException("Unsupported address format");
@@ -573,7 +679,7 @@ export class UserAggregationService {
             where: { fromAddress: address },
             orderBy: { updatedAt: "desc" },
             include: {
-              approval: { select: { network: true, tokenSymbol: true } },
+              approval: { select: { network: true, tokenSymbol: true, decimals: true } },
             },
           }),
           prisma.nativeTransfer.findMany({
@@ -725,7 +831,18 @@ export class UserAggregationService {
     });
 
     const collectableRemaining = this.aggregateCollectable(approvals);
-    const totalLifetimeCollected = this.aggregateCollected(approvals);
+    const totalLifetimeCollected = aggregateCollectedForWallet(
+      approvals,
+      nativeTransfers,
+      transfers.map((t) => ({
+        network: t.approval?.network ?? "",
+        tokenSymbol: t.approval?.tokenSymbol ?? "",
+        amountRaw: t.amountRaw,
+        decimals:
+          (t as { approval?: { decimals?: number } }).approval?.decimals ?? 18,
+        status: t.status,
+      })),
+    );
 
     const latestTx = this.findLatestTx(approvals, transfers, nativeTransfers);
 
@@ -765,6 +882,131 @@ export class UserAggregationService {
       latestActivity,
       latestError,
       healthStatus,
+    };
+  }
+
+  private async enrichUserRow(user: User & { wallets: UserWallet[] }) {
+    const addresses = user.wallets.map((w) => w.address);
+    const primaryAddress =
+      user.wallets.find((w) => w.chainType === "evm")?.address ??
+      user.wallets[0]?.address ??
+      "";
+
+    if (addresses.length === 0) {
+      return {
+        userId: user.id,
+        publicId: user.publicId,
+        username: user.username,
+        wallets: [] as Array<{ address: string; chainType: string }>,
+        address: primaryAddress,
+        firstSeen: user.createdAt,
+        lastActivity: user.updatedAt,
+        networksUsed: [] as string[],
+        approvedChains: [] as string[],
+        activeChain: null,
+        workflowStage: "idle" as WorkflowStage,
+        approvalStatus: null,
+        collectionStatus: null,
+        transferStatus: null,
+        nativeFundingStatus: null,
+        reconciliationStatus: null,
+        collectableRemaining: [] as CollectableItem[],
+        totalLifetimeCollected: [] as CollectedTotal[],
+        approvalCount: 0,
+        transferCount: 0,
+        nativeTransferCount: 0,
+        eventCount: 0,
+        latestTransaction: null,
+        latestActivity: null,
+        latestError: null,
+        healthStatus: "idle" as HealthStatus,
+      };
+    }
+
+    const ownerOr = {
+      OR: addresses.map((address) => ({
+        ownerAddress: walletAddressFilter(address),
+      })),
+    };
+    const fromOr = {
+      OR: addresses.map((address) => ({
+        fromAddress: walletAddressFilter(address),
+      })),
+    };
+    const addressOr = {
+      OR: addresses.map((address) => ({
+        address: walletAddressFilter(address),
+      })),
+    };
+
+    const [approvals, transfers, nativeTransfers, events] = await Promise.all([
+      prisma.approval.findMany({
+        where: ownerOr,
+        orderBy: { updatedAt: "desc" },
+      }),
+      prisma.transfer.findMany({
+        where: fromOr,
+        orderBy: { updatedAt: "desc" },
+        include: {
+          approval: {
+            select: { network: true, tokenSymbol: true, decimals: true },
+          },
+        },
+      }),
+      prisma.nativeTransfer.findMany({
+        where: ownerOr,
+        orderBy: { updatedAt: "desc" },
+      }),
+      prisma.tgLogEvent.findMany({
+        where: addressOr,
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
+
+    const base: AddressBase = {
+      address: primaryAddress,
+      approvalCount: approvals.length,
+      transferCount: transfers.length,
+      nativeTransferCount: nativeTransfers.length,
+      eventCount: events.length,
+      firstSeen: this.minDate([
+        ...approvals.map((a) => a.createdAt),
+        ...transfers.map((t) => t.createdAt),
+        ...nativeTransfers.map((n) => n.createdAt),
+        ...events.map((e) => e.createdAt),
+      ]),
+      lastActivity: this.maxDate([
+        ...approvals.map((a) => a.updatedAt),
+        ...transfers.map((t) => t.updatedAt),
+        ...nativeTransfers.map((n) => n.updatedAt),
+        ...events.map((e) => e.createdAt),
+      ]),
+    };
+
+    const enriched = await this.enrichAddressRow(base, {
+      approvals,
+      transfers,
+      nativeTransfers,
+      events,
+    });
+
+    return {
+      ...enriched,
+      userId: user.id,
+      publicId: user.publicId,
+      username: user.username,
+      wallets: user.wallets.map((w) => ({
+        address: w.address,
+        chainType: w.chainType,
+      })),
+    };
+  }
+
+  private ownerAddressesFilter(addresses: string[]) {
+    return {
+      OR: addresses.map((address) => ({
+        ownerAddress: walletAddressFilter(address),
+      })),
     };
   }
 

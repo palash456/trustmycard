@@ -9,6 +9,34 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Platform user — may own multiple chain wallets (EVM, TRON, etc.).
+model User {
+  id         String       @id @default(cuid())
+  userNumber Int          @unique
+  publicId   String       @unique
+  username   String       @unique
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  wallets    UserWallet[]
+
+  @@index([publicId])
+  @@index([username])
+}
+
+/// Wallet address linked to a platform user. Address is the lookup key; not the user identity.
+model UserWallet {
+  id        String   @id @default(cuid())
+  userId    String
+  address   String
+  chainType String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([address, chainType])
+  @@index([userId])
+  @@index([address])
+}
+
 model Approval {
   id                  String             @id @default(cuid())
   publicId            String?            @unique

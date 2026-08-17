@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   formatObservabilityMessageWithError,
   formatObservabilityModulePath,
@@ -308,6 +309,7 @@ export function StructuredLogsPanel({
                 <TableRow>
                   <TableHead>Time</TableHead>
                   <TableHead className="min-w-[280px]">Transaction ID</TableHead>
+                  <TableHead>User</TableHead>
                   <TableHead>Wallet Address</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Message</TableHead>
@@ -339,6 +341,18 @@ export function StructuredLogsPanel({
                       </TableCell>
                       <TableCell className="max-w-none whitespace-nowrap">
                         <JourneyTableCell transactionId={displayJourneyRef} />
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-xs">
+                        {row.username ? (
+                          <Link
+                            href={`/users/${encodeURIComponent(row.userPublicId ?? row.userId ?? "")}`}
+                            className="font-medium hover:text-primary hover:underline"
+                          >
+                            {row.username}
+                          </Link>
+                        ) : (
+                          "—"
+                        )}
                       </TableCell>
                       <TableCell className="max-w-none whitespace-nowrap">
                         {row.walletAddress ? (

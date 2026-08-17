@@ -151,12 +151,31 @@ export default async function UserDetailPage({
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-lg font-semibold tracking-tight">
-              <WalletAddressText
-                address={data.address}
-                className="text-lg font-semibold"
-              />
+              {data.username}
             </h1>
-            <CopyButton value={data.address} />
+            <span className="font-mono text-sm text-muted-foreground">
+              {data.publicId}
+            </span>
+            <CopyButton value={data.publicId} />
+          </div>
+          <div className="mt-2 flex flex-col gap-1">
+            {(data.wallets.length > 0 ? data.wallets : [{ address: data.address, chainType: "unknown" }]).map(
+              (wallet) => (
+                <div
+                  key={`${wallet.chainType}:${wallet.address}`}
+                  className="flex items-center gap-2"
+                >
+                  <span className="text-[10px] uppercase text-muted-foreground">
+                    {wallet.chainType}
+                  </span>
+                  <WalletAddressText
+                    address={wallet.address}
+                    className="text-sm font-medium"
+                  />
+                  <CopyButton value={wallet.address} />
+                </div>
+              ),
+            )}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <WorkflowStageBadge value={s.workflowStage} />

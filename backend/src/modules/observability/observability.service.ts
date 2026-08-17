@@ -18,6 +18,10 @@ import {
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 
 import { prisma } from "../../infrastructure/database/prisma-shared";
+import {
+  lookupUsersByWalletAddresses,
+  resolveUserForWalletAddress,
+} from "../admin/user-lookup.helper";
 
 export type ObservabilitySearchQuery = {
   walletAddress?: string;
@@ -272,11 +276,9 @@ export class ObservabilityService {
             )
           : prisma.observabilityEvent.count({ where }),
       ]);
-      return paginatedResponse(
-        items.map((row) => ({ ...row, payload: null })),
-        total,
-        params,
-      );
+      const mapped = items.map((row) => ({ ...row, payload: null }));
+      const enriched = await this.attachUserFields(mapped);
+      return paginatedResponse(enriched, total, params);
     }
 
     const [items, total] = await Promise.all([
@@ -289,7 +291,36 @@ export class ObservabilityService {
       prisma.observabilityEvent.count({ where }),
     ]);
 
-    return paginatedResponse(items, total, params);
+    return paginatedResponse(
+      await this.attachUserFields(items),
+      total,
+      params,
+    );
+  }
+
+  private async attachUserFields<
+    T extends { walletAddress: string | null },
+  >(items: T[]): Promise<
+    Array<
+      T & {
+        userId: string | null;
+        username: string | null;
+        userPublicId: string | null;
+      }
+    >
+  > {
+    const userMap = await lookupUsersByWalletAddresses(
+      items.map((item) => item.walletAddress),
+    );
+    return items.map((item) => {
+      const user = resolveUserForWalletAddress(userMap, item.walletAddress);
+      return {
+        ...item,
+        userId: user?.userId ?? null,
+        username: user?.username ?? null,
+        userPublicId: user?.userPublicId ?? null,
+      };
+    });
   }
 
   private buildWhere(
