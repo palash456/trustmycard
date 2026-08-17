@@ -366,15 +366,62 @@ export function buildDemoTransactionList(
     const token =
       demoTokens[i % demoTokens.length] ??
       (network === "tron" ? "TRX" : network === "bsc" ? "BNB" : "ETH");
+    const displayStatus =
+      terminalStatus === "SUCCESS"
+        ? "completed"
+        : terminalStatus === "CANCELLED"
+          ? "cancelled"
+          : terminalStatus === "FAILED" || terminalStatus === "EXPIRED"
+            ? "failed"
+            : "in_progress";
+    const statusLabel =
+      terminalStatus === "SUCCESS"
+        ? "Journey complete"
+        : terminalStatus === "CANCELLED"
+          ? "Cancelled by user"
+          : terminalStatus === "FAILED"
+            ? "Failed"
+            : terminalStatus === "EXPIRED"
+              ? "Expired"
+              : "In progress";
+    const lifetimeCollected =
+      terminalStatus === "SUCCESS"
+        ? [
+            {
+              network: network ?? "pol",
+              tokenSymbol: "USDT",
+              collectedRaw: String(1_500_000 + i * 100_000),
+              collectedHuman: String((1.5 + i * 0.1).toFixed(2)),
+              decimals: 6,
+            },
+            ...(i % 2 === 0
+              ? [
+                  {
+                    network: network ?? "pol",
+                    tokenSymbol: network === "tron" ? "TRX" : "ETH",
+                    collectedRaw: String(500_000_000_000_000_000n),
+                    collectedHuman: "0.5",
+                    decimals: 18,
+                  },
+                ]
+              : []),
+          ]
+        : [];
+    const valueInr =
+      lifetimeCollected.length > 0 ? 125_000 + i * 8_500 : null;
     return {
       transactionId,
       terminalStatus,
+      displayStatus,
+      statusLabel,
       walletAddress: owners[i % owners.length] ?? null,
       network,
       token,
       startedAt: daysAgo(3 + (i % 4), 8 + i),
       lastActivityAt: daysAgo(i % 3, 10 + i),
       eventCount: 12 + i * 3,
+      lifetimeCollected,
+      valueInr,
     };
   });
 }

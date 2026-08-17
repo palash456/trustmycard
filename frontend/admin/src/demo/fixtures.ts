@@ -1424,9 +1424,14 @@ export function getDemoFixture<T>(path: string): T {
     )?.trim();
     const network = params.get("network")?.trim().toLowerCase();
     const status = params.get("status")?.trim().toUpperCase();
+    const completedOnly = params.get("completedOnly") === "1";
+    const from = params.get("from");
+    const to = params.get("to");
     if (search) {
-      items = items.filter((row) =>
-        row.transactionId.toLowerCase().includes(search.toLowerCase()),
+      items = items.filter(
+        (row) =>
+          row.transactionId.toLowerCase().includes(search.toLowerCase()) ||
+          row.walletAddress?.toLowerCase().includes(search.toLowerCase()),
       );
     }
     if (wallet) {
@@ -1439,6 +1444,25 @@ export function getDemoFixture<T>(path: string): T {
     }
     if (status) {
       items = items.filter((row) => row.terminalStatus === status);
+    }
+    if (completedOnly) {
+      items = items.filter(
+        (row) =>
+          row.terminalStatus === "SUCCESS" &&
+          (row.lifetimeCollected?.length ?? 0) > 0,
+      );
+    }
+    if (from || to) {
+      const fromMs = from ? Date.parse(from) : null;
+      const toMs = to ? Date.parse(to) : null;
+      items = items.filter((row) => {
+        if (!row.lastActivityAt) return false;
+        const at = Date.parse(row.lastActivityAt);
+        if (Number.isNaN(at)) return false;
+        if (fromMs != null && !Number.isNaN(fromMs) && at < fromMs) return false;
+        if (toMs != null && !Number.isNaN(toMs) && at > toMs) return false;
+        return true;
+      });
     }
     return {
       items: items.slice(skip, skip + limit),

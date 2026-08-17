@@ -1,39 +1,12 @@
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { PageFilters } from "@/components/FilterForm";
-import {
-  ApprovalsListChart,
-  TransfersListChart,
-} from "@/components/charts/ListPageCharts";
 import { ListPageLayout } from "@/components/ListPageLayout";
-import { ListTableCard } from "@/components/ListTableCard";
 import { PageHeader } from "@/components/PageHeader";
 import { PageRefreshButton } from "@/components/PageRefreshButton";
 import { PageToolbar } from "@/components/PageToolbar";
-import { Pagination } from "@/components/Pagination";
-import {
-  PipelineTabsNav,
-  type PipelineTab,
-} from "@/components/pipeline/PipelineControls";
-import { PipelineOverviewSection } from "@/components/pipeline/PipelineOverviewSection";
-import { PipelineWorkflowStrip } from "@/components/pipeline/PipelineWorkflowStrip";
-import {
-  ApprovalsTable,
-  NativeTransfersTable,
-  TransfersTable,
-  type ApprovalRow,
-  type NativeRow,
-  type TransferRow,
-} from "@/components/pipeline/PipelineTables";
+import { PipelineTabContent } from "@/components/pipeline/PipelineTabContent";
+import type { PipelineTab } from "@/components/pipeline/PipelineControls";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
 import type { UserListResponse } from "@/types/users";
-
-type Paginated<T> = {
-  items: T[];
-  total: number;
-  page: number;
-  limit?: number;
-  totalPages: number;
-};
 
 type DashboardSummary = {
   collector: {
@@ -44,46 +17,6 @@ type DashboardSummary = {
   };
   nativeTransfers: Record<string, number>;
 };
-
-const APPROVAL_FILTER_FIELDS = [
-  { name: "network", label: "Network", placeholder: "e.g. eth" },
-  {
-    name: "status",
-    label: "Status",
-    options: [
-      "SUBMITTED",
-      "ACTIVE",
-      "PARTIALLY_USED",
-      "COMPLETED",
-      "REVOKED",
-      "EXPIRED",
-      "FAILED",
-    ],
-  },
-  {
-    name: "collectionEnabled",
-    label: "Collection",
-    options: ["true", "false"],
-  },
-] as const;
-
-const TRANSFER_FILTER_FIELDS = [
-  { name: "network", label: "Network", placeholder: "e.g. eth" },
-  {
-    name: "status",
-    label: "Status",
-    options: ["prepared", "broadcast", "pending", "confirmed", "failed"],
-  },
-] as const;
-
-const NATIVE_FILTER_FIELDS = [
-  { name: "network", label: "Network", placeholder: "e.g. tron" },
-  {
-    name: "status",
-    label: "Status",
-    options: ["pending", "confirmed", "failed"],
-  },
-] as const;
 
 function parseTab(value: string | undefined): PipelineTab {
   if (value === "transfers" || value === "native") return value;
@@ -98,19 +31,10 @@ export default async function PipelinePage({
   const sp = await searchParams;
   const tab = parseTab(sp.tab);
   const owner = sp.owner?.trim() || undefined;
-
-  const baseQuery = {
-    page: sp.page ?? "1",
-    limit: sp.limit ?? "25",
-    owner,
-    network: sp.network,
-    status: sp.status,
-    collectionEnabled: sp.collectionEnabled,
-  };
+  const pipelineQuery = { ...sp, tab };
 
   let dashboard: DashboardSummary | null = null;
   let userContext: UserListResponse["items"][0] | null = null;
-  let listData: Paginated<ApprovalRow | TransferRow | NativeRow> | null = null;
   let error: string | null = null;
 
   try {
@@ -121,54 +45,14 @@ export default async function PipelinePage({
         ).catch(() => null)
       : Promise.resolve(null);
 
-    let listPromise: Promise<Paginated<ApprovalRow | TransferRow | NativeRow>>;
-    if (tab === "transfers") {
-      listPromise = adminGetData<Paginated<TransferRow>>(
-        `/admin/transfers${buildQuery({
-          page: baseQuery.page,
-          limit: baseQuery.limit,
-          network: baseQuery.network,
-          owner: baseQuery.owner,
-          status: baseQuery.status,
-        })}`,
-      );
-    } else if (tab === "native") {
-      listPromise = adminGetData<Paginated<NativeRow>>(
-        `/admin/native-transfers${buildQuery({
-          page: baseQuery.page,
-          limit: baseQuery.limit,
-          network: baseQuery.network,
-          owner: baseQuery.owner,
-          status: baseQuery.status,
-        })}`,
-      );
-    } else {
-      listPromise = adminGetData<Paginated<ApprovalRow>>(
-        `/admin/approvals${buildQuery({
-          page: baseQuery.page,
-          limit: baseQuery.limit,
-          network: baseQuery.network,
-          owner: baseQuery.owner,
-          status: baseQuery.status,
-          collectionEnabled: baseQuery.collectionEnabled,
-        })}`,
-      );
-    }
-
-    const [summary, users, list] = await Promise.all([
-      summaryPromise,
-      userPromise,
-      listPromise,
-    ]);
-
+    const [summary, users] = await Promise.all([summaryPromise, userPromise]);
     dashboard = summary;
     userContext = users?.items[0] ?? null;
-    listData = list;
   } catch (err) {
     error = err instanceof Error ? err.message : "Failed to load pipeline";
   }
 
-  if (error) {
+  if (error || !dashboard) {
     return (
       <ListPageLayout>
         <PageHeader
@@ -176,20 +60,10 @@ export default async function PipelinePage({
           description="Operational lists by transaction journey — approvals, collections, and native funding"
           tip="Each row links to a flow-* transaction ID. Use Transactions for journey search."
         />
-        <ErrorAlert message={error} />
+        <ErrorAlert message={error ?? "Failed to load pipeline"} />
       </ListPageLayout>
     );
   }
-
-  const c = dashboard!.collector;
-  const filterFields =
-    tab === "transfers"
-      ? TRANSFER_FILTER_FIELDS
-      : tab === "native"
-        ? NATIVE_FILTER_FIELDS
-        : APPROVAL_FILTER_FIELDS;
-
-  const pipelineQuery = { ...sp, tab };
 
   return (
     <ListPageLayout className="space-y-4">
@@ -200,27 +74,14 @@ export default async function PipelinePage({
       >
         <PageToolbar>
           <PageRefreshButton />
-          <PageFilters
-            action="/pipeline"
-            values={pipelineQuery}
-            fields={[...filterFields]}
-          />
         </PageToolbar>
       </PageHeader>
 
-      <PipelineOverviewSection
-        collector={c}
-        nativeTransfers={dashboard!.nativeTransfers}
+      <PipelineTabContent
         tab={tab}
-        listTotal={listData?.total ?? 0}
-        owner={owner}
-        pipelineQuery={pipelineQuery}
-        filtersActive={Boolean(
-          owner || sp.network || sp.status || sp.collectionEnabled,
-        )}
-      />
-
-      <PipelineWorkflowStrip
+        query={pipelineQuery}
+        collector={dashboard.collector}
+        nativeTransfers={dashboard.nativeTransfers}
         owner={owner}
         userContext={
           userContext
@@ -235,41 +96,6 @@ export default async function PipelinePage({
             : null
         }
       />
-
-      <PipelineTabsNav activeTab={tab} query={pipelineQuery} />
-
-      {tab === "approvals" && listData ? (
-        <>
-          <ApprovalsListChart items={listData.items as ApprovalRow[]} />
-          <ListTableCard>
-            <ApprovalsTable items={listData.items as ApprovalRow[]} />
-          </ListTableCard>
-        </>
-      ) : null}
-
-      {tab === "transfers" && listData ? (
-        <>
-          <TransfersListChart items={listData.items as TransferRow[]} />
-          <ListTableCard>
-            <TransfersTable items={listData.items as TransferRow[]} />
-          </ListTableCard>
-        </>
-      ) : null}
-
-      {tab === "native" && listData ? (
-        <ListTableCard>
-          <NativeTransfersTable items={listData.items as NativeRow[]} />
-        </ListTableCard>
-      ) : null}
-
-      {listData ? (
-        <Pagination
-          page={listData.page}
-          totalPages={listData.totalPages}
-          basePath="/pipeline"
-          query={pipelineQuery}
-        />
-      ) : null}
     </ListPageLayout>
   );
 }

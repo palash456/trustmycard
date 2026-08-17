@@ -1,6 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import {
+  formatObservabilityMessageWithError,
+  formatObservabilityModulePath,
+} from "@trustmycard/shared/observability";
 import {
   useCallback,
   useEffect,
@@ -14,7 +17,8 @@ import { WalletAddressLink } from "@/components/WalletAddressLink";
 import { LogSearchBar } from "@/components/audit/LogSearchBar";
 import { StructuredLogsLoadingStatus } from "@/components/audit/StructuredLogsLoadingStatus";
 import { ListEmptyState } from "@/components/ListEmptyState";
-import { StatusBadge } from "@/components/StatusBadge";
+import { ObservabilityStatusBadge } from "@/components/audit/ObservabilityStatusBadge";
+import { TruncatedLogMessage } from "@/components/audit/TruncatedLogMessage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,7 +41,6 @@ import {
   type StructuredLogRangeId,
 } from "@/lib/structured-logs-range";
 import { recordStructuredLogsFetchSample } from "@/lib/structured-logs-eta";
-import { timelineDetailLink } from "@/lib/log-links";
 import type {
   ObservabilityEventRow,
   PaginatedResponse,
@@ -112,6 +115,15 @@ async function fetchStructuredPage(
     opts?.rangeId ?? "15m",
   );
   return data;
+}
+
+function extractLogContext(payload: unknown): Record<string, unknown> | undefined {
+  if (!payload || typeof payload !== "object") return undefined;
+  const record = payload as Record<string, unknown>;
+  if (record.context && typeof record.context === "object") {
+    return record.context as Record<string, unknown>;
+  }
+  return record;
 }
 
 function downloadJsonFile(filename: string, data: unknown) {
@@ -296,11 +308,11 @@ export function StructuredLogsPanel({
                 <TableRow>
                   <TableHead>Time</TableHead>
                   <TableHead className="min-w-[280px]">Transaction ID</TableHead>
-                  <TableHead>Level</TableHead>
-                  <TableHead>Module</TableHead>
+                  <TableHead>Wallet Address</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Message</TableHead>
-                  <TableHead>Wallet</TableHead>
+                  <TableHead>Module</TableHead>
+                  <TableHead>Level</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -311,6 +323,15 @@ export function StructuredLogsPanel({
                   });
                   const displayJourneyRef =
                     journeyId ?? row.traceId ?? row.sessionId;
+                  const context = extractLogContext(row.payload);
+                  const { message, errorLine } = formatObservabilityMessageWithError({
+                    module: row.module,
+                    operation: row.operation,
+                    stage: row.stage,
+                    message: row.message,
+                    errorMessage: row.errorMessage,
+                    context,
+                  });
                   return (
                     <TableRow key={row.id}>
                       <TableCell className="text-xs whitespace-nowrap">
@@ -319,41 +340,40 @@ export function StructuredLogsPanel({
                       <TableCell className="max-w-none whitespace-nowrap">
                         <JourneyTableCell transactionId={displayJourneyRef} />
                       </TableCell>
+                      <TableCell className="max-w-none whitespace-nowrap">
+                        {row.walletAddress ? (
+                          <WalletAddressLink
+                            address={row.walletAddress}
+                            truncate={false}
+                          />
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <ObservabilityStatusBadge
+                          status={row.status}
+                          stage={row.stage}
+                          operation={row.operation}
+                          module={row.module}
+                          level={row.level}
+                          context={context}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <TruncatedLogMessage
+                          message={message}
+                          errorLine={errorLine}
+                        />
+                      </TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {formatObservabilityModulePath(row.module, row.operation)}
+                      </TableCell>
                       <TableCell>
                         {row.level ? (
                           <Badge variant="outline" className="text-[10px]">
                             {row.level}
                           </Badge>
-                        ) : null}
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        {row.module}/{row.operation}
-                        {row.stage ? ` · ${row.stage}` : ""}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge value={row.status} />
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate text-xs">
-                        {row.message}
-                        {row.errorMessage ? (
-                          <span className="block text-destructive">
-                            {row.errorMessage}
-                          </span>
-                        ) : null}
-                      </TableCell>
-                      <TableCell>
-                        {row.walletAddress ? (
-                          <WalletAddressLink address={row.walletAddress} />
-                        ) : (
-                          "—"
-                        )}
-                        {journeyId ? (
-                          <Link
-                            href={timelineDetailLink(journeyId)}
-                            className="ml-1 block text-primary hover:underline"
-                          >
-                            timeline
-                          </Link>
                         ) : null}
                       </TableCell>
                     </TableRow>

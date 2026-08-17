@@ -42,8 +42,10 @@ function normalizeTimeInput(value: string): string {
 
 export function StructuredLogTimeRangeSelect({
   query,
+  action = "/audit",
 }: {
   query: Record<string, string | undefined>;
+  action?: string;
 }) {
   const router = useRouter();
   const activeRangeId = resolveStructuredLogRangeId(query);
@@ -73,7 +75,7 @@ export function StructuredLogTimeRangeSelect({
 
   function navigate(params: URLSearchParams) {
     const qs = params.toString();
-    router.push(qs ? `/audit?${qs}` : "/audit");
+    router.push(qs ? `${action}?${qs}` : action);
     router.refresh();
   }
 

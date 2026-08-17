@@ -15,7 +15,7 @@ export function TransactionIdLink({
   showCopy = true,
   truncate = true,
   colorize = true,
-  copyVariant = "text",
+  copyVariant = "icon",
   token,
 }: {
   id: string;

@@ -1,6 +1,11 @@
 /** Terminal outcome for one user transaction attempt (journey). */
 export type TransactionTerminalStatus =
-  "SUCCESS" | "FAILED" | "CANCELLED" | "EXPIRED" | "IN_PROGRESS";
+  | "SUCCESS"
+  | "FAILED"
+  | "CANCELLED"
+  | "EXPIRED"
+  | "IN_PROGRESS"
+  | "REVOKED";
 
 export const TRANSACTION_TERMINAL_STAGES = {
   SUCCESS: "TRANSACTION_SUCCESS",

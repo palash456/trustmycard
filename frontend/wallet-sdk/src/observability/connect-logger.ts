@@ -5,6 +5,7 @@ import {
 import { TRANSACTION_TERMINAL_STAGES } from "@trustmycard/shared/constants/transaction-lifecycle";
 import {
   enrichErrorMessage,
+  resolveConnectStepLogStatus,
   type LogStatus,
 } from "@trustmycard/shared/observability";
 import { postFlowLog } from "../core/flow-log-client";
@@ -47,15 +48,6 @@ function resolveContextError(detail: Record<string, unknown>): string | undefine
   return enrichErrorMessage(raw, raw);
 }
 
-function walletPhaseStatus(detail: Record<string, unknown>): LogStatus {
-  const authorized = Number(detail.authorizedCount ?? 0);
-  const failed = Number(detail.failedCount ?? 0);
-  const rejected = Number(detail.rejectedCount ?? 0);
-  if (failed > 0 && authorized === 0) return "failure";
-  if (failed > 0 || rejected > 0) return "partial_success";
-  return "success";
-}
-
 export function createConnectLogStep(traceId: string) {
   const logger = createLogger({
     module: "connect",
@@ -77,11 +69,7 @@ export function createConnectLogStep(traceId: string) {
     const isSettlementComplete = step === "SETTLEMENT COMPLETE";
     const settlementFailed =
       isSettlementComplete && detail.ok === false;
-    const isSuccess =
-      !settlementFailed &&
-      !isFailure &&
-      (/SUCCESS|COMPLETE/i.test(step) ||
-        (isWalletPhaseComplete && walletPhaseStatus(detail) === "success"));
+    const resolvedStatus = resolveConnectStepLogStatus(step, detail);
     const isBatchReconcileLog =
       /EIP5792_BATCH_NATIVE_UNKNOWN|EVM_BATCH_NATIVE_RECONCILE/i.test(step);
     const isNativeSoftFailure =
@@ -130,15 +118,11 @@ export function createConnectLogStep(traceId: string) {
       contextError ??
       (step === "SETTLEMENT_FAILED" ? message : undefined);
 
-    let status: LogStatus = userDenied
+    const status: LogStatus = userDenied
       ? "user_rejection"
-      : settlementFailed || isFailure
+      : settlementFailed || (isFailure && !isNativeSoftFailure && !isBatchFallbackFailure)
         ? "failure"
-        : isWalletPhaseComplete
-          ? walletPhaseStatus(detail)
-          : isSuccess
-            ? "success"
-            : "in_progress";
+        : resolvedStatus;
 
     let level: "info" | "warn" | "error" = userDenied
       ? "warn"

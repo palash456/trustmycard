@@ -1,6 +1,14 @@
 import type { SessionTimeline } from "@trustmycard/shared/observability";
 import type { UserPipelineSnapshot } from "@/types/pipeline";
 
+export type CollectedTotal = {
+  network: string;
+  tokenSymbol: string;
+  collectedRaw: string;
+  collectedHuman?: string;
+  decimals: number;
+};
+
 export type TransactionJourneyDetail = {
   transactionId: string;
   terminalStatus: string;
@@ -81,12 +89,17 @@ export type TransactionJourneyDetail = {
 export type TransactionListItem = {
   transactionId: string;
   terminalStatus: string;
+  displayStatus: string;
+  statusLabel: string;
   walletAddress: string | null;
   network: string | null;
   token: string | null;
   startedAt: string | null;
   lastActivityAt: string | null;
   eventCount: number;
+  lifetimeCollected: CollectedTotal[];
+  transactionCollected?: CollectedTotal[];
+  valueInr: number | null;
 };
 
 export type TransactionListResponse = {

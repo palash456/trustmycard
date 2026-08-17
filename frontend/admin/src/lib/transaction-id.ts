@@ -86,6 +86,15 @@ export function looksLikeFlowTransactionId(value: string): boolean {
   return /^flow-/i.test(value.trim());
 }
 
+/** True when search text looks like an EVM or Tron wallet address. */
+export function looksLikeWalletAddress(value: string): boolean {
+  const trimmed = value.trim();
+  return (
+    /^0x[a-fA-F0-9]{6,}$/i.test(trimmed) ||
+    /^T[a-zA-HJ-NP-Z0-9]{10,}$/.test(trimmed)
+  );
+}
+
 /** Resolve transaction ID from dedicated params or flow-* search text. */
 export function resolveStructuredLogTransactionId(
   filters: Record<string, string | undefined>,

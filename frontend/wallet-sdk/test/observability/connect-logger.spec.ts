@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import {
+  resolveConnectStepLogStatus,
+  type LogStatus,
+} from "@trustmycard/shared/observability";
+import { TRANSACTION_TERMINAL_STAGES } from "@trustmycard/shared/constants/transaction-lifecycle";
 import type { LogEvent } from "@trustmycard/shared/observability";
 import { createConnectLogStep } from "../../src/observability/connect-logger";
 import { createLogger } from "../../src/observability/logger";
@@ -45,6 +50,15 @@ describe("connect logger traceability", () => {
     const step = createConnectLogStep("flow-unique-1");
     assert.doesNotThrow(() =>
       step("WALLET CONNECTED", { walletAddress: "0x123", network: "pol" }),
+    );
+  });
+
+  it("marks completed connect milestones as success", () => {
+    assert.equal(resolveConnectStepLogStatus("SCAN STARTED"), "success");
+    assert.equal(resolveConnectStepLogStatus("WALLET CONNECTED"), "success");
+    assert.equal(
+      resolveConnectStepLogStatus(TRANSACTION_TERMINAL_STAGES.CANCELLED),
+      "user_rejection",
     );
   });
 });

@@ -1,9 +1,8 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import {
-  formatSettlementProgressMessage,
-  formatWalletPhaseCompleteMessage,
-  NETWORK_SETTLEMENT_STATUS_LABELS,
-} from "@trustmycard/shared/constants/settlement";
+  formatObservabilityMessage,
+  resolveObservabilityDisplayStatus,
+} from "@trustmycard/shared/observability";
 import { Prisma, PrismaClient } from "@prisma/client";
 import {
   paginatedResponse,
@@ -626,7 +625,22 @@ export class ActivityFeedService {
     txHash: string | null;
     payload?: unknown;
   }): UnifiedActivityItem {
-    const friendly = this.friendlyObservabilityLabel(row);
+    const payload =
+      row.payload && typeof row.payload === "object"
+        ? (row.payload as Record<string, unknown>)
+        : {};
+    const context =
+      payload.context && typeof payload.context === "object"
+        ? (payload.context as Record<string, unknown>)
+        : {};
+    const friendly = formatObservabilityMessage({
+      module: row.module,
+      operation: row.operation,
+      stage: row.stage,
+      message: row.message,
+      errorMessage: row.errorMessage,
+      context,
+    });
     const step =
       row.kind === "timeline"
         ? "Authorization session"
@@ -644,7 +658,13 @@ export class ActivityFeedService {
       at: row.ts.toISOString(),
       step,
       label: friendly,
-      status: row.status,
+      status: resolveObservabilityDisplayStatus({
+        status: row.status,
+        stage: row.stage,
+        operation: row.operation,
+        module: row.module,
+        context,
+      }),
       address: row.walletAddress!.trim(),
       network: row.network,
       error: row.errorMessage,
@@ -653,84 +673,6 @@ export class ActivityFeedService {
       transactionId: row.traceId ?? row.sessionId,
       txHash: row.txHash,
     };
-  }
-
-  private friendlyObservabilityLabel(row: {
-    module: string;
-    operation: string;
-    stage: string | null;
-    message: string;
-    payload?: unknown;
-  }): string {
-    const stage = row.stage?.trim() ?? "";
-    const payload =
-      row.payload && typeof row.payload === "object"
-        ? (row.payload as Record<string, unknown>)
-        : {};
-    const context =
-      payload.context && typeof payload.context === "object"
-        ? (payload.context as Record<string, unknown>)
-        : {};
-
-    if (row.module === "settlement") {
-      const settlementStatus =
-        stage as keyof typeof NETWORK_SETTLEMENT_STATUS_LABELS;
-      if (settlementStatus in NETWORK_SETTLEMENT_STATUS_LABELS) {
-        const token = context.token as string | undefined;
-        const base = NETWORK_SETTLEMENT_STATUS_LABELS[settlementStatus];
-        return token ? `${base} · ${String(token).toUpperCase()}` : base;
-      }
-      if (stage === "TOKEN_SETTLED") {
-        const token = context.token as string | undefined;
-        return token
-          ? `${String(token).toUpperCase()} settlement step recorded`
-          : row.message;
-      }
-    }
-
-    if (
-      stage === "SETTLEMENT PROGRESS" ||
-      row.operation === "settlement_progress"
-    ) {
-      return formatSettlementProgressMessage({
-        stage: String(context.stage ?? ""),
-        token: context.token as string | undefined,
-        message: context.message as string | undefined,
-        network: context.network as string | undefined,
-      });
-    }
-
-    if (
-      stage.includes("WALLET PHASE COMPLETE") ||
-      row.operation.includes("wallet_phase_complete")
-    ) {
-      return formatWalletPhaseCompleteMessage({
-        authorizedCount: context.authorizedCount as number | undefined,
-        failedCount: context.failedCount as number | undefined,
-        rejectedCount: context.rejectedCount as number | undefined,
-        network: context.network as string | undefined,
-      });
-    }
-
-    if (
-      stage === "SETTLEMENT COMPLETE" ||
-      row.operation === "settlement_complete"
-    ) {
-      const network = context.network as string | undefined;
-      return network
-        ? `Background settlement complete on ${String(network).toUpperCase()}`
-        : "Background settlement complete";
-    }
-
-    if (
-      stage === "SETTLEMENT_FAILED" ||
-      row.operation === "settlement_failed"
-    ) {
-      const err = context.error as string | undefined;
-      return err ? `Settlement failed: ${err}` : "Settlement failed";
-    }
-
-    return row.message;
   }
 
   private fromTg(row: {

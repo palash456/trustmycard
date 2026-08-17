@@ -1,3 +1,4 @@
+import { resolveApprovalEventLogStatus } from "@trustmycard/shared/observability";
 import { postFlowLog } from "../../core/flow-log-client";
 import { createLogger } from "../../observability/logger";
 import type { ApprovalContext } from "../types";
@@ -65,11 +66,7 @@ export function createStructuredApprovalLogger(
         level: logLevel,
         operation: event.toLowerCase().replace(/\s+/g, "_"),
         stage: event,
-        status: userDenied
-          ? "user_rejection"
-          : isFailure
-            ? "failure"
-            : "in_progress",
+        status: resolveApprovalEventLogStatus(event, effectiveLevel, merged),
         message: userDenied
           ? "Permission denied by user"
           : typeof merged.error === "string" && isFailure

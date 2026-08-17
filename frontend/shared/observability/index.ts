@@ -9,3 +9,16 @@ export * from "./timeline";
 export * from "./fail-open";
 
 export { compactLogDetail } from "./util";
+export {
+  formatObservabilityModulePath,
+  resolveApprovalEventLogStatus,
+  resolveConnectStepLogStatus,
+  resolveObservabilityDisplayStatus,
+  resolveTransactionDisplayStatus,
+  type ObservabilityDisplayStatus,
+} from "./event-status";
+export {
+  formatObservabilityMessage,
+  formatObservabilityMessageWithError,
+  type ObservabilityMessageInput,
+} from "./messages";

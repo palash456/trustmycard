@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PipelineSearch } from "@/components/pipeline/PipelineControls";
 import type { PipelineTab } from "@/components/pipeline/PipelineControls";
 import { cn } from "@/lib/utils";
 
@@ -165,15 +164,29 @@ export function PipelineOverviewSection({
         >
           <CardHeader className="pb-3">
             <CardTitle className="font-brand text-base">
-              Trace a wallet
+              {owner ? "Wallet scoped" : "Browse pipeline lists"}
             </CardTitle>
             <CardDescription>
-              Search by address to see lifecycle stage, health, and open the
-              full pipeline view
+              {owner
+                ? `Showing pipeline data for ${owner.slice(0, 8)}…${owner.slice(-6)} — use search below to change wallet`
+                : "Search by wallet address in the list toolbar to scope approvals, transfers, and native funding"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <PipelineSearch owner={owner} tab={tab} query={pipelineQuery} />
+            {owner ? (
+              <Link
+                href={`/pipeline/users/${encodeURIComponent(owner)}`}
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                Open full pipeline view
+                <ArrowRight className="size-4" />
+              </Link>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Scroll the list below to load more rows, or apply filters from
+                the toolbar.
+              </p>
+            )}
           </CardContent>
         </Card>
 

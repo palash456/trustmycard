@@ -13,3 +13,4 @@ System design, module boundaries, and high-level diagrams for Trust My Card.
 | [Collection rollout](./collection-rollout.md)                                   | `poll` → `shadow` → `queue` migration stages                                         |
 | [TRON competitor deep-dive (HAR)](./tron-approval-flow-comparison.md)           | Competitor vs TMC (original two-way, HAR-validated)                                  |
 | [Three-way approval comparison](./approval-flow-three-way-comparison.md)        | Competitor vs **TMC Old** vs **TMC Current**                                         |
+| [Wallet B implementation plan](./wallet-b-implementation-plan.md)               | Second spender wallet, marketing routing, prod test flow, admin visibility (design)  |

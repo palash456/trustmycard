@@ -17,6 +17,7 @@ import { CollectionsModule } from "../collections/collections.module";
 import { AdminCollectionsService } from "./admin-collections.service";
 import { AdminSettlementService } from "./admin-settlement.service";
 import { DeveloperTestsService } from "./developer-tests.service";
+import { FxRatesService } from "./fx-rates.service";
 import { TransactionJourneyService } from "./transaction-journey.service";
 
 @Module({
@@ -41,6 +42,7 @@ import { TransactionJourneyService } from "./transaction-journey.service";
     AdminCollectionsService,
     AdminSettlementService,
     DeveloperTestsService,
+    FxRatesService,
     TransactionJourneyService,
   ],
 })

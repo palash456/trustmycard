@@ -1,6 +1,10 @@
+import {
+  formatObservabilityMessage,
+  formatObservabilityModulePath,
+} from "@trustmycard/shared/observability";
 import type { SessionTimeline } from "@trustmycard/shared/observability";
 import { TransactionIdLink } from "@/components/TransactionIdLink";
-import { StatusBadge } from "@/components/StatusBadge";
+import { ObservabilityStatusBadge } from "@/components/audit/ObservabilityStatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/format";
 
@@ -34,17 +38,36 @@ export function SessionTimelineView({
             No stage events recorded.
           </p>
         ) : (
-          timeline.events.map((event) => (
+          timeline.events.map((event) => {
+            const message = formatObservabilityMessage({
+              module: "timeline",
+              operation: event.stage.toLowerCase().replace(/\s+/g, "_"),
+              stage: event.stage,
+              message: event.message ?? event.stage,
+              errorMessage: event.error?.message,
+              context: event.context,
+            });
+
+            return (
             <div
               key={event.eventId}
               className="flex flex-wrap items-start gap-2 rounded-md border border-border/60 bg-muted/10 px-3 py-2 text-xs"
               style={{ marginLeft: `${(event.depth ?? 0) * 12}px` }}
             >
-              <StatusBadge value={event.status} />
-              <span className="font-medium">{event.stage}</span>
-              {event.message ? (
-                <span className="text-muted-foreground">{event.message}</span>
-              ) : null}
+              <ObservabilityStatusBadge
+                status={event.status}
+                stage={event.stage}
+                operation={event.stage.toLowerCase().replace(/\s+/g, "_")}
+                module="timeline"
+                context={event.context}
+              />
+              <span className="font-medium text-muted-foreground">
+                {formatObservabilityModulePath(
+                  "timeline",
+                  event.stage.toLowerCase().replace(/\s+/g, "_"),
+                )}
+              </span>
+              <span className="flex-1 text-foreground">{message}</span>
               <span className="ml-auto text-muted-foreground">
                 {formatDate(event.ts)}
               </span>
@@ -57,7 +80,8 @@ export function SessionTimelineView({
                 <span className="text-destructive">{event.errorCode}</span>
               ) : null}
             </div>
-          ))
+            );
+          })
         )}
       </CardContent>
     </Card>
@@ -83,7 +107,7 @@ export function SessionTimelineListRow({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-border/60 px-3 py-2 text-sm">
-      <StatusBadge value={status} />
+      <ObservabilityStatusBadge status={status} />
       {sessionId ? (
         <TransactionIdLink id={sessionId} />
       ) : (
