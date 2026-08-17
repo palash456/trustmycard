@@ -60,8 +60,8 @@ export function SiteHeader({ getStartedButton }: SiteHeaderProps) {
             {getStartedButton}
           </div>
 
-          <div className="flex items-center gap-2 lg:hidden">
-            <LanguageSelector className="shrink-0" />
+          <div className="flex items-stretch gap-2 lg:hidden">
+            <LanguageSelector className="h-full shrink-0" />
             {getStartedButton}
           </div>
         </div>

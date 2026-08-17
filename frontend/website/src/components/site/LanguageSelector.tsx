@@ -62,16 +62,16 @@ export function LanguageSelector({ className }: { className?: string }) {
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-[#E3E3E8] bg-white py-2.5 ps-4 pe-3 text-sm font-semibold text-zinc-700 outline-none transition-colors hover:bg-neutral-50"
+        className="inline-flex h-full cursor-pointer items-center gap-1 rounded-full border border-[#E3E3E8] bg-white py-2 ps-2 pe-1.5 text-xs font-semibold text-zinc-700 outline-none transition-colors hover:bg-neutral-50 lg:h-auto lg:gap-2 lg:py-2.5 lg:ps-4 lg:pe-3 lg:text-sm"
       >
-        <span className="text-base leading-none" aria-hidden>
+        <span className="text-sm leading-none lg:text-base" aria-hidden>
           {currentDef.flag}
         </span>
-        <span className="max-w-[7rem] truncate sm:max-w-none">
+        <span className="hidden lg:inline">
           {languageLabel(t, locale)}
         </span>
         <svg
-          className={`h-3.5 w-3.5 shrink-0 text-zinc-500 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`h-3 w-3 shrink-0 text-zinc-500 transition-transform lg:h-3.5 lg:w-3.5 ${open ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
