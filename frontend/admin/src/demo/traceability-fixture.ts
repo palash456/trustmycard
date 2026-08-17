@@ -408,8 +408,7 @@ export function buildDemoTransactionList(
               : []),
           ]
         : [];
-    const valueInr =
-      lifetimeCollected.length > 0 ? 125_000 + i * 8_500 : null;
+    const valueInr = null;
     const day = i % 30;
     return {
       transactionId,

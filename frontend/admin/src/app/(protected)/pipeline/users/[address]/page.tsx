@@ -108,6 +108,14 @@ export default async function UserPipelinePage({
         description={
           <>
             <div className="flex flex-wrap items-center gap-2">
+              {pipeline.username ? (
+                <span className="text-sm font-semibold">{pipeline.username}</span>
+              ) : null}
+              {pipeline.publicId ? (
+                <span className="font-mono text-xs text-muted-foreground">
+                  {pipeline.publicId}
+                </span>
+              ) : null}
               <WalletAddressText
                 address={pipeline.address}
                 className="text-sm font-medium"

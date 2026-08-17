@@ -51,6 +51,7 @@ export type UserListRow = {
   reconciliationStatus: string | null;
   collectableRemaining: CollectableItem[];
   totalLifetimeCollected: CollectedTotal[];
+  valueInr: number | null;
   approvalCount: number;
   transferCount: number;
   nativeTransferCount: number;

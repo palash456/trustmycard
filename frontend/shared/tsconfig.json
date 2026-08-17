@@ -20,7 +20,8 @@
     "schemas/**/*",
     "observability/**/*",
     "platform-config/**/*",
-    "ids/**/*"
+    "ids/**/*",
+    "fx/**/*"
   ],
   "exclude": ["node_modules", "dist", "**/*.spec.ts"]
 }

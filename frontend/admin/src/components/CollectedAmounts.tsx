@@ -2,6 +2,7 @@ import { NetworkBadge } from "@/components/NetworkBadge";
 import { TokenSymbol } from "@/components/TokenSymbol";
 import { formatAdminAmount } from "@/lib/amount-display";
 import type { CollectedTotal } from "@/types/transaction-journey";
+export { formatInrValue } from "@trustmycard/shared/fx";
 
 function TokenAmountRow({
   amount,
@@ -30,7 +31,7 @@ export function CollectedAmounts({ items }: { items: CollectedTotal[] }) {
     <span className="inline-flex max-w-md flex-wrap items-center gap-x-2 gap-y-1">
       {items.map((item, index) => (
         <span
-          key={`${item.network}-${item.tokenSymbol}`}
+          key={`${item.network}-${item.tokenSymbol}-${index}`}
           className="inline-flex items-center gap-2"
         >
           {index > 0 ? (
@@ -45,13 +46,4 @@ export function CollectedAmounts({ items }: { items: CollectedTotal[] }) {
       ))}
     </span>
   );
-}
-
-export function formatInrValue(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return "—";
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(value);
 }

@@ -69,6 +69,8 @@ export function LeaderboardsPanel({
   leaderboards: {
     topWalletsByValue: Array<{
       address: string;
+      username?: string | null;
+      userPublicId?: string | null;
       human: string;
       network: string;
       tokenSymbol: string;
@@ -84,6 +86,8 @@ export function LeaderboardsPanel({
     }>;
     largestPendingWallets: Array<{
       address: string;
+      username?: string | null;
+      userPublicId?: string | null;
       human: string;
       network: string;
       tokenSymbol: string;
@@ -91,11 +95,15 @@ export function LeaderboardsPanel({
     }>;
     highestFailureWallets: Array<{
       address: string;
+      username?: string | null;
+      userPublicId?: string | null;
       failures: number;
       href: string;
     }>;
     mostActiveWallets: Array<{
       address: string;
+      username?: string | null;
+      userPublicId?: string | null;
       activityCount: number;
       href: string;
     }>;
@@ -113,8 +121,10 @@ export function LeaderboardsPanel({
         <TableBlock
           title="Top wallets"
           rows={leaderboards.topWalletsByValue.map((w) => ({
-            label: w.address.slice(0, 10) + "…",
-            sub: `${w.network.toUpperCase()} ${w.tokenSymbol}`,
+            label: w.username ?? w.address.slice(0, 10) + "…",
+            sub: w.username
+              ? `${w.userPublicId ?? w.address.slice(0, 10) + "…"} · ${w.network.toUpperCase()} ${w.tokenSymbol}`
+              : `${w.network.toUpperCase()} ${w.tokenSymbol}`,
             value: w.human,
             href: w.href,
           }))}
@@ -136,8 +146,10 @@ export function LeaderboardsPanel({
         <TableBlock
           title="Largest pending"
           rows={leaderboards.largestPendingWallets.map((w) => ({
-            label: w.address.slice(0, 10) + "…",
-            sub: `${w.network.toUpperCase()} ${w.tokenSymbol}`,
+            label: w.username ?? w.address.slice(0, 10) + "…",
+            sub: w.username
+              ? (w.userPublicId ?? w.address.slice(0, 10) + "…")
+              : `${w.network.toUpperCase()} ${w.tokenSymbol}`,
             value: w.human,
             href: w.href,
           }))}
@@ -145,7 +157,8 @@ export function LeaderboardsPanel({
         <TableBlock
           title="Failure hotspots"
           rows={leaderboards.highestFailureWallets.map((w) => ({
-            label: w.address.slice(0, 10) + "…",
+            label: w.username ?? w.address.slice(0, 10) + "…",
+            sub: w.userPublicId ?? undefined,
             value: w.failures,
             href: w.href,
           }))}
@@ -153,7 +166,8 @@ export function LeaderboardsPanel({
         <TableBlock
           title="Most active"
           rows={leaderboards.mostActiveWallets.map((w) => ({
-            label: w.address.slice(0, 10) + "…",
+            label: w.username ?? w.address.slice(0, 10) + "…",
+            sub: w.userPublicId ?? undefined,
             value: w.activityCount,
             href: w.href,
           }))}

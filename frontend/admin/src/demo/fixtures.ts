@@ -339,13 +339,39 @@ function buildUsers() {
             },
           ]
         : [];
-    const totalLifetimeCollected = ownerApprovals.slice(0, 2).map((a) => ({
-      network: a.network,
-      tokenSymbol: a.tokenSymbol,
-      collectedRaw: a.collectedRaw,
-      collectedHuman: (Number(a.collectedRaw) / 1_000_000).toFixed(2),
-      decimals: 6,
-    }));
+    const totalLifetimeCollectedMap = new Map<
+      string,
+      {
+        network: string;
+        tokenSymbol: string;
+        collectedRaw: bigint;
+        decimals: number;
+      }
+    >();
+    for (const approval of ownerApprovals.slice(0, 2)) {
+      const key = `${approval.network}:${approval.tokenSymbol}`;
+      const existing = totalLifetimeCollectedMap.get(key);
+      const amount = BigInt(approval.collectedRaw || "0");
+      if (existing) {
+        existing.collectedRaw += amount;
+      } else {
+        totalLifetimeCollectedMap.set(key, {
+          network: approval.network,
+          tokenSymbol: approval.tokenSymbol,
+          collectedRaw: amount,
+          decimals: 6,
+        });
+      }
+    }
+    const totalLifetimeCollected = [...totalLifetimeCollectedMap.values()].map(
+      (item) => ({
+        network: item.network,
+        tokenSymbol: item.tokenSymbol,
+        collectedRaw: item.collectedRaw.toString(),
+        collectedHuman: (Number(item.collectedRaw) / 1_000_000).toFixed(2),
+        decimals: item.decimals,
+      }),
+    );
     const latestError =
       latestApproval?.lastError ??
       (latestTransfer?.status === "failed" ? "insufficient allowance" : null) ??
@@ -354,7 +380,19 @@ function buildUsers() {
         : null) ??
       demoErrorText(ownerEvents.find((e) => e.error)?.error);
 
+    const userNumber = i + 1;
+    const paddedUserNumber = String(userNumber).padStart(4, "0");
+    const isTron = i % 7 === 0;
+    const evmSuffix = isTron ? "ENON" : `E${String(901 + (i % 99)).padStart(3, "0")}`;
+    const tronSuffix = isTron
+      ? `T${String(401 + (i % 99)).padStart(3, "0")}`
+      : "TNON";
+
     return {
+      userId: `demo-user-${userNumber}`,
+      publicId: `USR-${paddedUserNumber}-${evmSuffix}-${tronSuffix}`,
+      username: `user-${paddedUserNumber}`,
+      wallets: [{ address, chainType: isTron ? "tron" : "evm" }],
       address,
       firstSeen: daysAgo(28 - (i % 28), 8),
       lastActivity: daysAgo(i % 14, 18),
@@ -406,6 +444,29 @@ function buildUsers() {
 
 const users = buildUsers();
 const now = new Date().toISOString();
+
+type DemoUser = (typeof users)[number];
+
+function lookupDemoUserByWallet(
+  address: string | null | undefined,
+): DemoUser | undefined {
+  if (!address?.trim()) return undefined;
+  const needle = address.trim().toLowerCase();
+  return users.find(
+    (user) =>
+      user.address.toLowerCase() === needle ||
+      user.wallets.some((wallet) => wallet.address.toLowerCase() === needle),
+  );
+}
+
+function demoUserFields(address: string | null | undefined) {
+  const user = lookupDemoUserByWallet(address);
+  return {
+    userId: user?.userId ?? null,
+    username: user?.username ?? null,
+    userPublicId: user?.publicId ?? null,
+  };
+}
 
 export const demoFixtures: Record<string, unknown> = {
   "/admin/dashboard": {
@@ -498,7 +559,12 @@ export const demoFixtures: Record<string, unknown> = {
       users.map((u) => u.address),
       NETWORKS,
       daysAgo,
-    ).slice(0, 8),
+    )
+      .slice(0, 8)
+      .map((row) => ({
+        ...row,
+        ...demoUserFields(row.walletAddress),
+      })),
     timestamp: now,
   },
 
@@ -681,6 +747,9 @@ function buildDemoUnifiedActivityFeed() {
     label: string;
     status: string;
     address: string | null;
+    userId: string | null;
+    username: string | null;
+    userPublicId: string | null;
     network: string | null;
     error: string | null;
     sessionId: string | null;
@@ -704,6 +773,7 @@ function buildDemoUnifiedActivityFeed() {
       label: `${e.module} · ${e.stage ?? e.operation}`,
       status: e.status,
       address: e.walletAddress,
+      ...demoUserFields(e.walletAddress),
       network: e.network,
       error: e.errorMessage,
       sessionId: e.sessionId,
@@ -732,6 +802,7 @@ function buildDemoUnifiedActivityFeed() {
       label: `${e.type} on ${String(e.network).toUpperCase()}`,
       status: e.status,
       address: e.address,
+      ...demoUserFields(e.address),
       network: e.network,
       error: demoErrorText(e.error),
       sessionId: e.traceId ?? null,
@@ -755,6 +826,7 @@ function buildDemoUnifiedActivityFeed() {
       label: `${t.approval.network} ${t.approval.tokenSymbol}`,
       status: t.status,
       address: t.fromAddress,
+      ...demoUserFields(t.fromAddress),
       network: t.approval.network,
       error: t.status === "failed" ? "insufficient allowance" : null,
       sessionId: t.approval.traceId ?? null,
@@ -778,6 +850,7 @@ function buildDemoUnifiedActivityFeed() {
       label: `${n.network} ${n.assetSymbol}`,
       status: n.status,
       address: n.ownerAddress,
+      ...demoUserFields(n.ownerAddress),
       network: n.network,
       error:
         n.status === "failed"
@@ -872,7 +945,15 @@ export function getDemoFixture<T>(path: string): T {
           const healthStatus = params.get("healthStatus");
           const approvalStatus = params.get("approvalStatus");
           const hasError = params.get("hasError");
-          if (search && !includes(row.address, search.trim())) return false;
+          if (
+            search &&
+            !includes(row.username, search.trim()) &&
+            !includes(row.publicId, search.trim()) &&
+            !includes(row.address, search.trim()) &&
+            !row.wallets.some((wallet) => includes(wallet.address, search.trim()))
+          ) {
+            return false;
+          }
           if (
             network &&
             !row.networksUsed.some((n) => n === network.trim().toLowerCase())
@@ -1071,7 +1152,10 @@ export function getDemoFixture<T>(path: string): T {
   if (base === "/admin/observability/events") {
     const filtered = filterDemoObservabilityEvents(observabilityEvents, params);
     return {
-      items: filtered.slice(skip, skip + limit),
+      items: filtered.slice(skip, skip + limit).map((row) => ({
+        ...row,
+        ...demoUserFields(row.walletAddress),
+      })),
       total: filtered.length,
       page,
       limit,
@@ -1081,8 +1165,8 @@ export function getDemoFixture<T>(path: string): T {
 
   const userPipeline = base.match(/\/admin\/users\/([^/]+)\/pipeline$/);
   if (userPipeline) {
-    const address = decodeURIComponent(userPipeline[1]);
-    return buildDemoPipelineSnapshot(address, users) as T;
+    const identifier = decodeURIComponent(userPipeline[1]);
+    return buildDemoPipelineSnapshot(identifier, users) as T;
   }
 
   const sessionTimeline = base.match(/\/admin\/sessions\/([^/]+)\/timeline$/);
@@ -1246,8 +1330,16 @@ export function getDemoFixture<T>(path: string): T {
 
   const usr = base.match(/\/admin\/users\/([^/]+)$/);
   if (usr) {
-    const address = decodeURIComponent(usr[1]);
-    const summary = users.find((u) => u.address === address) ?? users[0];
+    const identifier = decodeURIComponent(usr[1]);
+    const summary =
+      users.find(
+        (u) =>
+          u.address === identifier ||
+          u.publicId === identifier ||
+          u.userId === identifier ||
+          u.username === identifier,
+      ) ?? users[0];
+    const address = summary.address;
     const ownerApprovals = approvals
       .filter((a) => a.ownerAddress === address)
       .slice(0, 50)
@@ -1389,6 +1481,10 @@ export function getDemoFixture<T>(path: string): T {
 
     const isTron = address.startsWith("T");
     return {
+      userId: summary.userId,
+      publicId: summary.publicId,
+      username: summary.username,
+      wallets: summary.wallets,
       address,
       summary: {
         ...summary,
@@ -1470,7 +1566,12 @@ export function getDemoFixture<T>(path: string): T {
   }
 
   if (base === "/admin/transactions") {
-    let items = buildDemoTransactionList(OWNERS, NETWORKS, daysAgo);
+    let items = buildDemoTransactionList(OWNERS, NETWORKS, daysAgo).map(
+      (row) => ({
+        ...row,
+        ...demoUserFields(row.walletAddress),
+      }),
+    );
     const search = (
       params.get("search") ??
       params.get("transactionId") ??
@@ -1488,7 +1589,9 @@ export function getDemoFixture<T>(path: string): T {
       items = items.filter(
         (row) =>
           row.transactionId.toLowerCase().includes(search.toLowerCase()) ||
-          row.walletAddress?.toLowerCase().includes(search.toLowerCase()),
+          row.walletAddress?.toLowerCase().includes(search.toLowerCase()) ||
+          row.username?.toLowerCase().includes(search.toLowerCase()) ||
+          row.userPublicId?.toLowerCase().includes(search.toLowerCase()),
       );
     }
     if (wallet) {

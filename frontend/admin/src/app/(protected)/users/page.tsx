@@ -14,12 +14,8 @@ export default async function UsersPage({
   const sp = await searchParams;
 
   return (
-    <ListPageLayout
-      fill
-      className="h-[calc(100dvh-18rem)] max-h-[calc(100dvh-18rem)]"
-    >
+    <ListPageLayout className="space-y-4">
       <PageHeader
-        className="shrink-0"
         title="Users"
         description="Wallet addresses grouped by activity — open a user or browse their transaction journeys"
         tip="Each wallet is a user profile. Use Transactions to search by flow-* journey ID across all wallets."

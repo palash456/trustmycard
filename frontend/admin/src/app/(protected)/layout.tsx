@@ -8,6 +8,7 @@ import { LocalDevModeDefaults } from "@/components/LocalDevModeDefaults";
 import { LogEnvProvider } from "@/components/LogEnvProvider";
 import { PageTransitionShell } from "@/components/PageTransitionShell";
 import { RefreshProvider } from "@/components/RefreshProvider";
+import { InrRatesProvider } from "@/components/InrRatesProvider";
 import {
   isProductionBackendConfigured,
   isProductionLogSourceEnabled,
@@ -29,16 +30,18 @@ export default function ProtectedLayout({
           productionLogSourceEnabled={isProductionLogSourceEnabled()}
         />
         <RefreshProvider>
-          <BackendStatusProvider>
-            <DeveloperModeProvider>
-              <AdminShell>
-                <AdminLiveRefresh />
-                <BackendEnvironmentGate>
-                  <PageTransitionShell>{children}</PageTransitionShell>
-                </BackendEnvironmentGate>
-              </AdminShell>
-            </DeveloperModeProvider>
-          </BackendStatusProvider>
+          <InrRatesProvider>
+            <BackendStatusProvider>
+              <DeveloperModeProvider>
+                <AdminShell>
+                  <AdminLiveRefresh />
+                  <BackendEnvironmentGate>
+                    <PageTransitionShell>{children}</PageTransitionShell>
+                  </BackendEnvironmentGate>
+                </AdminShell>
+              </DeveloperModeProvider>
+            </BackendStatusProvider>
+          </InrRatesProvider>
         </RefreshProvider>
       </LogEnvProvider>
     </DemoProvider>

@@ -12,8 +12,8 @@ import { Loader2 } from "lucide-react";
 import { resolveTransactionDisplayStatus } from "@trustmycard/shared/observability";
 import {
   CollectedAmounts,
-  formatInrValue,
 } from "@/components/CollectedAmounts";
+import { InrValue } from "@/components/InrValue";
 import { ActivityStatusChip } from "@/components/activity/ActivityStatusChip";
 import { LogSearchBar } from "@/components/audit/LogSearchBar";
 import { ListEmptyState } from "@/components/ListEmptyState";
@@ -307,7 +307,10 @@ export function TransactionsPanel({
                         />
                       </TableCell>
                       <TableCell className="text-xs tabular-nums whitespace-nowrap">
-                        {formatInrValue(row.valueInr)}
+                        <InrValue
+                          items={row.lifetimeCollected ?? []}
+                          fallback={row.valueInr}
+                        />
                       </TableCell>
                       <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
                         {formatDate(row.startedAt)}

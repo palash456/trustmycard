@@ -21,6 +21,8 @@ import { resolveTransactionId } from "@/lib/transaction-id";
 import { TransactionIdLink } from "@/components/TransactionIdLink";
 import { adminGetData } from "@/lib/admin-data";
 import { formatAdminAmount } from "@/lib/amount-display";
+import { CollectedAmounts } from "@/components/CollectedAmounts";
+import { InrValue } from "@/components/InrValue";
 import { blockExplorerAddress, formatDate } from "@/lib/format";
 import { pipelineUserPath } from "@/lib/pipeline-paths";
 import type { UserDetail } from "@/types/users";
@@ -529,14 +531,17 @@ export default async function UserDetailPage({
                   {s.networksUsed.length > 0 ? s.networksUsed.join(", ") : "—"}
                 </DetailRow>
                 <DetailRow label="Lifetime collected">
-                  {s.lifetimeCollected.length > 0
-                    ? s.lifetimeCollected
-                        .map(
-                          (i) =>
-                            `${formatAdminAmount(i.collectedHuman ?? i.collectedRaw)} ${i.tokenSymbol} (${i.network})`,
-                        )
-                        .join(", ")
-                    : "—"}
+                  {s.lifetimeCollected.length > 0 ? (
+                    <CollectedAmounts items={s.lifetimeCollected} />
+                  ) : (
+                    "—"
+                  )}
+                </DetailRow>
+                <DetailRow label="Value (INR)">
+                  <InrValue
+                    items={s.lifetimeCollected}
+                    fallback={s.valueInr}
+                  />
                 </DetailRow>
                 <DetailRow label="Collectable remaining">
                   {s.collectableRemaining.length > 0

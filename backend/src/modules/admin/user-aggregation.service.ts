@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { ApprovalStatus, TransferStatus } from "@prisma/client";
+import { ApprovalStatus, Prisma, TransferStatus } from "@prisma/client";
 import {
   formatRawAmount,
   isUnlimitedRaw,
@@ -27,6 +27,7 @@ import {
 import { ActivityFeedService } from "./activity-feed.service";
 import { NETWORK_SETTLEMENT_STATUS_LABELS } from "@trustmycard/shared/constants/settlement";
 import { UserService } from "../users/user.service";
+import { FxRatesService } from "./fx-rates.service";
 import { aggregateCollectedForWallet } from "./wallet-collection-summary";
 import type { User, UserWallet } from "@prisma/client";
 
@@ -105,6 +106,7 @@ export class UserAggregationService {
     private readonly walletService: WalletService,
     private readonly activityFeed: ActivityFeedService,
     private readonly userService: UserService,
+    private readonly fxRates: FxRatesService,
   ) {}
 
   async listUsers(query: Record<string, string | undefined>) {
@@ -117,25 +119,39 @@ export class UserAggregationService {
     const approvalStatusFilter = query.approvalStatus?.trim();
     const collectionStatusFilter = query.collectionStatus?.trim();
     const hasErrorFilter = query.hasError === "true";
+    const sortField = query.sort?.split(":")[0] ?? "lastActivity";
+    const sortDir = query.sort?.split(":")[1] === "asc" ? 1 : -1;
+
+    const hasPostEnrichFilters = Boolean(
+      networkFilter ||
+        workflowFilter ||
+        healthFilter ||
+        approvalStatusFilter ||
+        collectionStatusFilter ||
+        hasErrorFilter,
+    );
 
     const baseUsers = await prisma.user.findMany({
+      where: this.buildUserSearchWhere(search),
       include: { wallets: { orderBy: { createdAt: "asc" } } },
       orderBy: { userNumber: "asc" },
     });
 
-    const searchNeedle = search.toLowerCase();
-    const filteredUsers = search
-      ? baseUsers.filter((user) => {
-          if (user.publicId.toLowerCase().includes(searchNeedle)) return true;
-          if (user.username.toLowerCase().includes(searchNeedle)) return true;
-          return user.wallets.some((w) =>
-            w.address.toLowerCase().includes(searchNeedle),
-          );
-        })
-      : baseUsers;
+    if (!hasPostEnrichFilters && sortField === "lastActivity") {
+      const sortedUsers = await this.rankUsersByLastActivity(baseUsers, sortDir);
+      const total = sortedUsers.length;
+      const pageUsers = sortedUsers.slice(
+        params.skip,
+        params.skip + params.limit,
+      );
+      const items = await this.attachValueInr(
+        await Promise.all(pageUsers.map((user) => this.enrichUserRow(user))),
+      );
+      return paginatedResponse(items, total, params);
+    }
 
     const enriched = await Promise.all(
-      filteredUsers.map((user) => this.enrichUserRow(user)),
+      baseUsers.map((user) => this.enrichUserRow(user)),
     );
 
     let filtered = enriched;
@@ -165,8 +181,6 @@ export class UserAggregationService {
       filtered = filtered.filter((row) => Boolean(row.latestError));
     }
 
-    const sortField = query.sort?.split(":")[0] ?? "lastActivity";
-    const sortDir = query.sort?.split(":")[1] === "asc" ? 1 : -1;
     filtered.sort((a, b) => {
       const av = this.sortValue(a, sortField);
       const bv = this.sortValue(b, sortField);
@@ -176,9 +190,21 @@ export class UserAggregationService {
     });
 
     const total = filtered.length;
-    const items = filtered.slice(params.skip, params.skip + params.limit);
+    const items = await this.attachValueInr(
+      filtered.slice(params.skip, params.skip + params.limit),
+    );
 
     return paginatedResponse(items, total, params);
+  }
+
+  private async attachValueInr<
+    T extends { totalLifetimeCollected: CollectedTotal[] },
+  >(rows: T[]): Promise<Array<T & { valueInr: number | null }>> {
+    const rates = await this.fxRates.getInrRates();
+    return rows.map((row) => ({
+      ...row,
+      valueInr: this.fxRates.convertWithRates(row.totalLifetimeCollected, rates),
+    }));
   }
 
   async getUserDetail(identifier: string) {
@@ -404,6 +430,7 @@ export class UserAggregationService {
       wallets.find((w) => w.chainType === "evm")?.address ?? null;
     const tronAddress =
       wallets.find((w) => w.chainType === "tron")?.address ?? null;
+    const valueInr = await this.fxRates.convertCollectedToInr(lifetimeCollected);
 
     return {
       userId: user.id,
@@ -424,6 +451,7 @@ export class UserAggregationService {
           chainType: w.chainType,
         })),
         lifetimeCollected,
+        valueInr,
         successRate: analytics.successRate,
       },
       activeApprovals,
@@ -558,6 +586,82 @@ export class UserAggregationService {
     }
     if (typeof v === "number") return v;
     return String(v ?? "");
+  }
+
+  private buildUserSearchWhere(search: string): Prisma.UserWhereInput | undefined {
+    if (!search) return undefined;
+    return {
+      OR: [
+        { publicId: { contains: search, mode: "insensitive" } },
+        { username: { contains: search, mode: "insensitive" } },
+        {
+          wallets: {
+            some: { address: { contains: search, mode: "insensitive" } },
+          },
+        },
+      ],
+    };
+  }
+
+  private async rankUsersByLastActivity(
+    users: Array<User & { wallets: UserWallet[] }>,
+    sortDir: number,
+  ): Promise<Array<User & { wallets: UserWallet[] }>> {
+    const addressToUserIds = new Map<string, string[]>();
+    for (const user of users) {
+      for (const wallet of user.wallets) {
+        const key = wallet.address.toLowerCase();
+        const existing = addressToUserIds.get(key) ?? [];
+        existing.push(user.id);
+        addressToUserIds.set(key, existing);
+      }
+    }
+
+    const addresses = [...addressToUserIds.keys()];
+    const lastByUserId = new Map<string, Date>(
+      users.map((user) => [user.id, user.updatedAt]),
+    );
+
+    if (addresses.length > 0) {
+      type Row = { address: string; last_activity: Date };
+      const rows = await prisma.$queryRaw<Row[]>`
+        SELECT address, MAX(last_activity) AS last_activity
+        FROM (
+          SELECT "ownerAddress" AS address, "updatedAt" AS last_activity
+          FROM "Approval"
+          WHERE "ownerAddress" IN (${Prisma.join(addresses)})
+          UNION ALL
+          SELECT "fromAddress", "updatedAt"
+          FROM "Transfer"
+          WHERE "fromAddress" IN (${Prisma.join(addresses)})
+          UNION ALL
+          SELECT "ownerAddress", "updatedAt"
+          FROM "NativeTransfer"
+          WHERE "ownerAddress" IN (${Prisma.join(addresses)})
+          UNION ALL
+          SELECT address, "createdAt" AS last_activity
+          FROM "TgLogEvent"
+          WHERE address IN (${Prisma.join(addresses)})
+        ) combined
+        GROUP BY address
+      `;
+
+      for (const row of rows) {
+        const userIds = addressToUserIds.get(row.address.toLowerCase()) ?? [];
+        for (const userId of userIds) {
+          const current = lastByUserId.get(userId);
+          if (!current || row.last_activity > current) {
+            lastByUserId.set(userId, row.last_activity);
+          }
+        }
+      }
+    }
+
+    return [...users].sort((a, b) => {
+      const av = lastByUserId.get(a.id)?.getTime() ?? 0;
+      const bv = lastByUserId.get(b.id)?.getTime() ?? 0;
+      return sortDir === 1 ? av - bv : bv - av;
+    });
   }
 
   private async fetchAddressBase(search: string): Promise<AddressBase[]> {

@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  FALLBACK_INR_RATES,
+  fetchInrRatesFromCoinGecko,
+} from "@trustmycard/shared/fx";
 import { getDemoFixture } from "@/demo/fixtures";
 import {
   backendUnreachableHint,
@@ -12,6 +16,46 @@ import { isDemoModeFromCookies } from "@/lib/log-env-cookie";
 function demoAdminPath(path: string[], query: string): string {
   const base = `/admin/${path.join("/")}`;
   return query ? `${base}?${query}` : base;
+}
+
+let demoInrRatesCache: {
+  rates: Record<string, number>;
+  fetchedAt: number;
+} | null = null;
+const DEMO_INR_RATES_TTL_MS = 5 * 60 * 1000;
+
+async function getDemoInrRatesPayload() {
+  const now = Date.now();
+  if (
+    demoInrRatesCache &&
+    now - demoInrRatesCache.fetchedAt < DEMO_INR_RATES_TTL_MS
+  ) {
+    return {
+      rates: demoInrRatesCache.rates,
+      fetchedAt: new Date(demoInrRatesCache.fetchedAt).toISOString(),
+      source: "cache" as const,
+    };
+  }
+
+  try {
+    const rates = await fetchInrRatesFromCoinGecko();
+    demoInrRatesCache = { rates, fetchedAt: now };
+    return {
+      rates,
+      fetchedAt: new Date(now).toISOString(),
+      source: "live" as const,
+    };
+  } catch (err) {
+    console.warn(
+      "[admin-proxy/demo] INR rates fetch failed:",
+      err instanceof Error ? err.message : String(err),
+    );
+    return {
+      rates: demoInrRatesCache?.rates ?? { ...FALLBACK_INR_RATES },
+      fetchedAt: new Date(now).toISOString(),
+      source: "fallback" as const,
+    };
+  }
 }
 
 function serveDemoFixture(
@@ -37,6 +81,10 @@ async function proxy(req: NextRequest, method: string, path: string[]) {
 
   if (demoActive) {
     if (method === "GET" && !isStream) {
+      if (path[0] === "fx-rates" && path[1] === "inr") {
+        const payload = await getDemoInrRatesPayload();
+        return NextResponse.json(payload);
+      }
       const query = req.nextUrl.searchParams.toString();
       const demoResponse = serveDemoFixture(path, query);
       if (demoResponse) return demoResponse;

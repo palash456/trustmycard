@@ -41,6 +41,10 @@ type NativeRow = {
 
 type UserRow = {
   address: string;
+  userId?: string;
+  publicId?: string;
+  username?: string;
+  wallets?: Array<{ address: string; chainType: string }>;
   firstSeen: string;
   lastActivity: string;
   workflowStage: string;
@@ -548,11 +552,13 @@ export function buildDemoAnalytics(
     leaderboards: {
       topWalletsByValue: data.users.slice(0, 5).map((u, i) => ({
         address: u.address,
+        username: u.username ?? null,
+        userPublicId: u.publicId ?? null,
         amountRaw: String((i + 1) * 5_000_000),
         human: String((i + 1) * 5),
         network: u.totalLifetimeCollected[0]?.network ?? "pol",
         tokenSymbol: u.totalLifetimeCollected[0]?.tokenSymbol ?? "USDT",
-        href: `/users/${encodeURIComponent(u.address)}`,
+        href: `/users/${encodeURIComponent(u.publicId ?? u.address)}`,
       })),
       topChainsByVolume: chains.slice(0, 5).map((c) => ({
         network: c.network,
@@ -573,21 +579,27 @@ export function buildDemoAnalytics(
       })),
       largestPendingWallets: data.users.slice(0, 5).map((u) => ({
         address: u.address,
+        username: u.username ?? null,
+        userPublicId: u.publicId ?? null,
         amountRaw: "1000000",
         human: "1.00",
         network: "pol",
         tokenSymbol: "USDT",
-        href: `/users/${encodeURIComponent(u.address)}`,
+        href: `/users/${encodeURIComponent(u.publicId ?? u.address)}`,
       })),
       highestFailureWallets: data.users.slice(0, 3).map((u) => ({
         address: u.address,
+        username: u.username ?? null,
+        userPublicId: u.publicId ?? null,
         failures: 3,
-        href: `/users/${encodeURIComponent(u.address)}`,
+        href: `/users/${encodeURIComponent(u.publicId ?? u.address)}`,
       })),
       mostActiveWallets: data.users.slice(0, 5).map((u, i) => ({
         address: u.address,
+        username: u.username ?? null,
+        userPublicId: u.publicId ?? null,
         activityCount: 20 - i * 2,
-        href: `/users/${encodeURIComponent(u.address)}`,
+        href: `/users/${encodeURIComponent(u.publicId ?? u.address)}`,
       })),
     },
     insights: [

@@ -269,6 +269,8 @@ export type AnalyticsResponse = {
   leaderboards: {
     topWalletsByValue: Array<{
       address: string;
+      username?: string | null;
+      userPublicId?: string | null;
       amountRaw: string;
       human: string;
       network: string;
@@ -288,6 +290,8 @@ export type AnalyticsResponse = {
     }>;
     largestPendingWallets: Array<{
       address: string;
+      username?: string | null;
+      userPublicId?: string | null;
       amountRaw: string;
       human: string;
       network: string;
@@ -296,11 +300,15 @@ export type AnalyticsResponse = {
     }>;
     highestFailureWallets: Array<{
       address: string;
+      username?: string | null;
+      userPublicId?: string | null;
       failures: number;
       href: string;
     }>;
     mostActiveWallets: Array<{
       address: string;
+      username?: string | null;
+      userPublicId?: string | null;
       activityCount: number;
       href: string;
     }>;

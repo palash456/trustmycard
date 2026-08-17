@@ -5,6 +5,7 @@ import { ExternalLink } from "lucide-react";
 import { useCallback, type ReactNode } from "react";
 import { LogSearchBar } from "@/components/audit/LogSearchBar";
 import { InfiniteScrollFooter } from "@/components/InfiniteScrollFooter";
+import { InrValue } from "@/components/InrValue";
 import { ListEmptyState } from "@/components/ListEmptyState";
 import { NetworkBadge } from "@/components/NetworkBadge";
 import { TokenSymbol } from "@/components/TokenSymbol";
@@ -92,7 +93,7 @@ function CollectableAmounts({ items }: { items: CollectableItem[] }) {
     >
       {items.map((item, index) => (
         <span
-          key={`${item.network}-${item.tokenSymbol}`}
+          key={`${item.network}-${item.tokenSymbol}-${index}`}
           className="inline-flex items-center gap-2"
         >
           {index > 0 ? (
@@ -119,7 +120,7 @@ function CollectedAmounts({ items }: { items: CollectedTotal[] }) {
     >
       {items.map((item, index) => (
         <span
-          key={`${item.network}-${item.tokenSymbol}`}
+          key={`${item.network}-${item.tokenSymbol}-${index}`}
           className="inline-flex items-center gap-2"
         >
           {index > 0 ? (
@@ -244,6 +245,12 @@ function UserRow({ row }: { row: UserListRow }) {
       <TableCell className={AMOUNT_COLUMN_CLASS}>
         <CollectedAmounts items={row.totalLifetimeCollected} />
       </TableCell>
+      <TableCell className="text-xs tabular-nums whitespace-nowrap">
+        <InrValue
+          items={row.totalLifetimeCollected}
+          fallback={row.valueInr}
+        />
+      </TableCell>
       <TableCell>
         {explorer ? (
           <a
@@ -279,8 +286,8 @@ export function UsersPanel({
     useInfiniteScrollList({ fetchPage });
 
   return (
-    <div className="mt-4 flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
+    <div className="mt-4 space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
           {items.length > 0
             ? `${items.length} of ${total}${
@@ -305,15 +312,15 @@ export function UsersPanel({
 
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
 
-      <Card className="min-h-0 flex-1 border-border/60 shadow-none">
-        <CardContent className="h-full p-0">
+      <Card className="border-border/60 shadow-none">
+        <CardContent className="p-0">
           {items.length === 0 && !loading ? (
             <ListEmptyState message="No users match your filters" />
           ) : items.length === 0 && loading ? (
             <UsersTableSkeleton />
           ) : (
-            <div className="h-full overflow-auto">
-              <Table scrollable>
+            <div className="overflow-x-auto">
+              <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent [&_[data-slot=table-head]]:h-auto [&_[data-slot=table-head]]:py-3">
                     <TableHead>Username</TableHead>
@@ -335,12 +342,21 @@ export function UsersPanel({
                     <TableHead className={AMOUNT_COLUMN_CLASS}>
                       Lifetime collected
                     </TableHead>
+                    <TableHead>Value (INR)</TableHead>
                     <TableHead>Explorer</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {items.map((row) => (
-                    <UserRow key={row.userId} row={row} />
+                  {items.map((row, index) => (
+                    <UserRow
+                      key={
+                        row.userId ??
+                        row.publicId ??
+                        row.address ??
+                        `user-row-${index}`
+                      }
+                      row={row}
+                    />
                   ))}
                 </TableBody>
               </Table>

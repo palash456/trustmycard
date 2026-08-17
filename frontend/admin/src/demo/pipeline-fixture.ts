@@ -5,6 +5,10 @@ import { flowId } from "./traceability-fixture";
 
 type DemoUser = {
   address: string;
+  userId?: string;
+  publicId?: string;
+  username?: string;
+  wallets?: Array<{ address: string; chainType: string }>;
   firstSeen: string;
   lastActivity: string;
   networksUsed: string[];
@@ -230,6 +234,8 @@ function buildRichPipeline(
 
   return {
     address: user.address,
+    username: user.username ?? null,
+    publicId: user.publicId ?? null,
     generatedAt: new Date().toISOString(),
     summary: {
       workflowStage: "collecting",
@@ -373,6 +379,8 @@ function buildSimplePipeline(
 
   return {
     address: user.address,
+    username: user.username ?? null,
+    publicId: user.publicId ?? null,
     generatedAt: new Date().toISOString(),
     summary: {
       workflowStage:
@@ -511,10 +519,17 @@ function buildSimplePipeline(
 }
 
 export function buildDemoPipelineSnapshot(
-  address: string,
+  identifier: string,
   users: DemoUser[],
 ): UserPipelineSnapshot {
-  const user = users.find((u) => u.address === address) ?? users[0];
+  const user =
+    users.find(
+      (u) =>
+        u.address === identifier ||
+        u.publicId === identifier ||
+        u.userId === identifier ||
+        u.username === identifier,
+    ) ?? users[0];
   if (!user) {
     throw new Error("Demo pipeline requires at least one user");
   }

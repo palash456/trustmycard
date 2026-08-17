@@ -29,6 +29,7 @@ import {
 import { AdminCollectionsService } from "./admin-collections.service";
 import { AdminSettlementService } from "./admin-settlement.service";
 import { DeveloperTestsService } from "./developer-tests.service";
+import { FxRatesService } from "./fx-rates.service";
 import { TransactionJourneyService } from "./transaction-journey.service";
 
 @ApiTags("Admin")
@@ -49,7 +50,14 @@ export class AdminController {
     private readonly settlement: AdminSettlementService,
     private readonly developerTests: DeveloperTestsService,
     private readonly transactionJourney: TransactionJourneyService,
+    private readonly fxRates: FxRatesService,
   ) {}
+
+  @Get("fx-rates/inr")
+  @ApiOperation({ summary: "Live token INR exchange rates (CoinGecko)" })
+  getInrRates() {
+    return this.fxRates.getInrRatesPayload();
+  }
 
   @Get("analytics")
   @ApiOperation({ summary: "Platform analytics dashboard aggregates" })

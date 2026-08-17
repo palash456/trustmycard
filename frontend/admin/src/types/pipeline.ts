@@ -118,6 +118,8 @@ export type PipelineSettlementSession = {
 
 export type UserPipelineSnapshot = {
   address: string;
+  username?: string | null;
+  publicId?: string | null;
   generatedAt: string;
   summary: PipelineUserSummary;
   walletLinked: WalletLinkedStage;
