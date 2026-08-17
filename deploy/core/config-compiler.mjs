@@ -27,6 +27,13 @@ export function parseEnvFile(path) {
   return out;
 }
 
+/** Neon pooled hosts use `-pooler`; Prisma interactive transactions need the direct host. */
+function neonDirectDatabaseUrl(databaseUrl) {
+  const trimmed = databaseUrl?.trim();
+  if (!trimmed) return trimmed;
+  return trimmed.replace(/-pooler(?=\.)/, "");
+}
+
 export function loadManifest(environment) {
   const primary = manifestPath(environment);
   const example = manifestExamplePath(environment);
@@ -123,6 +130,13 @@ export function compileEnvBundles(ctx) {
       "";
   }
 
+  const directDatabaseUrl =
+    profile.backendBudget.DIRECT_DATABASE_URL?.trim() ||
+    profile.backendApi.DIRECT_DATABASE_URL?.trim() ||
+    profile.backendWorker.DIRECT_DATABASE_URL?.trim() ||
+    neonDirectDatabaseUrl(databaseUrl) ||
+    databaseUrl;
+
   const adminApiKey = ensureSecret(
     profile.backendBudget,
     "ADMIN_API_KEY",
@@ -140,6 +154,7 @@ export function compileEnvBundles(ctx) {
     NODE_ENV: "production",
     TMC_ENV: environment,
     DATABASE_URL: databaseUrl,
+    DIRECT_DATABASE_URL: directDatabaseUrl,
     REDIS_URL: redisUrl,
     PORT: "4000",
     LOG_LEVEL: profile.backendBudget.LOG_LEVEL || "info",

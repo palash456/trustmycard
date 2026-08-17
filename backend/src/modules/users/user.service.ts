@@ -242,10 +242,10 @@ export class UserService implements OnModuleInit {
     const groups = await this.buildWalletGroups(walletRows);
     groups.sort((a, b) => a.firstSeen.getTime() - b.firstSeen.getTime());
 
-    await prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT setval('"User_userNumber_seq"', 1, false)`;
+    await prisma.$executeRaw`SELECT setval('"User_userNumber_seq"', 1, false)`;
 
-      for (const group of groups) {
+    for (const group of groups) {
+      await prisma.$transaction(async (tx) => {
         const userNumber = await this.nextUserNumber(tx);
         const evm = group.wallets.find((w) => w.chainType === "evm")?.address;
         const tron = group.wallets.find((w) => w.chainType === "tron")?.address;
@@ -265,8 +265,8 @@ export class UserService implements OnModuleInit {
             },
           });
         }
-      }
-    });
+      });
+    }
   }
 
   private async collectHistoricalWallets(): Promise<WalletRow[]> {
