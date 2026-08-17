@@ -4,10 +4,14 @@ import { BackendEnvironmentGate } from "@/components/BackendEnvironmentGate";
 import { BackendStatusProvider } from "@/components/BackendStatusProvider";
 import { DemoProvider } from "@/components/DemoProvider";
 import { DeveloperModeProvider } from "@/components/DeveloperModeProvider";
+import { LocalDevModeDefaults } from "@/components/LocalDevModeDefaults";
 import { LogEnvProvider } from "@/components/LogEnvProvider";
 import { PageTransitionShell } from "@/components/PageTransitionShell";
 import { RefreshProvider } from "@/components/RefreshProvider";
-import { isProductionBackendConfigured } from "@/lib/admin-backend";
+import {
+  isProductionBackendConfigured,
+  isProductionLogSourceEnabled,
+} from "@/lib/admin-backend";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +25,9 @@ export default function ProtectedLayout({
   return (
     <DemoProvider>
       <LogEnvProvider toggleEnabled={logEnvToggleEnabled}>
+        <LocalDevModeDefaults
+          productionLogSourceEnabled={isProductionLogSourceEnabled()}
+        />
         <RefreshProvider>
           <BackendStatusProvider>
             <DeveloperModeProvider>

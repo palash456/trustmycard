@@ -1,0 +1,9 @@
+# Host port bindings for npm run dev on the machine (not inside compose network).
+
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+  redis:
+    ports:
+      - "6379:6379"

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getDemoFixture } from "@/demo/fixtures";
 import {
   backendUnreachableHint,
   describeAdminBackend,
@@ -6,8 +7,49 @@ import {
 } from "@/lib/admin-backend";
 import { getErrorMessage } from "@/lib/observability";
 import { resolveAdminActor } from "@/lib/admin-identity";
+import { isDemoModeFromCookies } from "@/lib/log-env-cookie";
+
+function demoAdminPath(path: string[], query: string): string {
+  const base = `/admin/${path.join("/")}`;
+  return query ? `${base}?${query}` : base;
+}
+
+function serveDemoFixture(
+  path: string[],
+  query: string,
+): NextResponse | null {
+  try {
+    const data = getDemoFixture(demoAdminPath(path, query));
+    return NextResponse.json(data);
+  } catch (err) {
+    const message = getErrorMessage(err, "Demo fixture not found");
+    if (/not found/i.test(message)) {
+      return NextResponse.json({ error: message }, { status: 404 });
+    }
+    console.error("[admin-proxy/demo]", message, { path: path.join("/") });
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
 
 async function proxy(req: NextRequest, method: string, path: string[]) {
+  const isStream = path.length === 1 && path[0] === "stream";
+  const demoActive = isDemoModeFromCookies(req.cookies);
+
+  if (demoActive) {
+    if (method === "GET" && !isStream) {
+      const query = req.nextUrl.searchParams.toString();
+      const demoResponse = serveDemoFixture(path, query);
+      if (demoResponse) return demoResponse;
+    }
+    if (method !== "GET" && method !== "HEAD") {
+      return NextResponse.json({
+        ok: true,
+        demo: true,
+        message: "Demo mode — changes are not persisted",
+      });
+    }
+  }
+
   const backend = resolveProxyBackend(req.cookies, path);
   const apiKey = backend.apiKey.trim();
   const backendLabel = describeAdminBackend(backend);
@@ -22,7 +64,6 @@ async function proxy(req: NextRequest, method: string, path: string[]) {
     );
   }
 
-  const isStream = path.length === 1 && path[0] === "stream";
   const query = req.nextUrl.searchParams.toString();
   const url = `${backend.baseUrl}/v1/api/admin/${path.join("/")}${query ? `?${query}` : ""}`;
   const adminActor = resolveAdminActor(req);

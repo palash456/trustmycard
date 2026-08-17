@@ -1,6 +1,11 @@
 /** Demo fixtures — ~1 month of fictional app usage across all admin pages. */
 
 import { buildDemoActivity, buildDemoAnalytics } from "./analytics-fixture";
+import {
+  buildDemoObservabilityEvents,
+  filterDemoObservabilityEvents,
+  findDemoSessionTimeline,
+} from "./observability-fixture";
 import { buildDemoPipelineSnapshot, demoBalances } from "./pipeline-fixture";
 import {
   buildDemoDeveloperTestsCatalog,
@@ -150,32 +155,54 @@ function buildNative() {
   });
 }
 
+const TG_SITES = [
+  "pay.trustmycard.local",
+  "checkout.demo.app",
+  "merchant.example.com",
+  "localhost:3000",
+] as const;
+
+const TG_LOCATIONS = [
+  "Singapore, SG",
+  "Berlin, DE",
+  "Austin, US",
+  "Lagos, NG",
+  "Tokyo, JP",
+  "Mumbai, IN",
+  "London, UK",
+  "São Paulo, BR",
+] as const;
+
 function buildEvents() {
-  return Array.from({ length: 180 }, (_, i) => ({
-    id: `demo-ev-${i + 1}`,
-    type: EVENT_TYPES[i % EVENT_TYPES.length],
-    network: NETWORKS[i % NETWORKS.length],
-    address: OWNERS[i % OWNERS.length],
-    status: i % 9 === 0 ? "error" : "success",
-    error:
-      i % 9 === 0
-        ? i % 18 === 0
+  return Array.from({ length: 480 }, (_, i) => {
+    const day = i % 30;
+    const type = EVENT_TYPES[i % EVENT_TYPES.length];
+    const isError = i % 11 === 0;
+    return {
+      id: `demo-ev-${i + 1}`,
+      type,
+      network: NETWORKS[i % NETWORKS.length],
+      address: OWNERS[i % OWNERS.length],
+      status: isError ? "error" : "success",
+      error: isError
+        ? i % 22 === 0
           ? { message: "User rejected signature", code: "ACTION_REJECTED" }
-          : i % 27 === 0
+          : i % 33 === 0
             ? { error: { message: "RPC timeout", reason: "ETIMEDOUT" } }
-            : "User rejected signature"
+            : i % 44 === 0
+              ? { message: "Insufficient balance", code: "INSUFFICIENT_FUNDS" }
+              : i % 55 === 0
+                ? "Session expired before signing"
+                : "User rejected signature"
         : null,
-    ip: `203.0.${(i % 200) + 1}.${(i % 250) + 1}`,
-    location: [
-      "Singapore, SG",
-      "Berlin, DE",
-      "Austin, US",
-      "Lagos, NG",
-      "Tokyo, JP",
-    ][i % 5],
-    createdAt: daysAgo(i % 30, 9 + (i % 10)),
-    traceId: flowId((i % 10) + 1, OWNERS[i % OWNERS.length]),
-  }));
+      ip: `203.0.${(i % 200) + 1}.${(i % 250) + 1}`,
+      location: TG_LOCATIONS[i % TG_LOCATIONS.length],
+      site: TG_SITES[i % TG_SITES.length],
+      device: i % 3 === 0 ? "Mobile" : i % 5 === 0 ? "Tablet" : "Desktop",
+      createdAt: daysAgo(day, 8 + (i % 12)),
+      traceId: flowId((i % 10) + 1, OWNERS[i % OWNERS.length]),
+    };
+  });
 }
 
 function buildAudits() {
@@ -186,24 +213,41 @@ function buildAudits() {
     "collector.toggle",
     "approval.update",
     "register_pending",
-  ];
-  return Array.from({ length: 150 }, (_, i) => ({
+    "native_transfer.recorded",
+    "collection.queued",
+    "collection.settled",
+    "collection.failed",
+    "retry.started",
+    "recovery.completed",
+  ] as const;
+  const entityTypes = [
+    "approval",
+    "transfer",
+    "settings",
+    "collector",
+    "native",
+    "native_transfer",
+    "settlement",
+  ] as const;
+  return Array.from({ length: 240 }, (_, i) => ({
     id: `demo-audit-${i + 1}`,
     actor:
-      i % 4 === 0
+      i % 5 === 0
         ? "admin"
-        : `owner:${OWNERS[i % OWNERS.length].slice(0, 12)}…`,
+        : i % 7 === 0
+          ? "system:collector"
+          : `owner:${OWNERS[i % OWNERS.length].slice(0, 12)}…`,
     action: actions[i % actions.length],
-    entityType: ["approval", "transfer", "settings", "collector", "native"][
-      i % 5
-    ],
-    entityId: i % 3 === 0 ? null : `demo-ap-${(i % 40) + 1}`,
+    entityType: entityTypes[i % entityTypes.length],
+    entityId: i % 4 === 0 ? null : `demo-ap-${(i % 120) + 1}`,
     payload: {
       note: "demo month sample",
       day: i % 30,
-      ok: i % 11 !== 0,
+      ok: i % 13 !== 0,
+      network: NETWORKS[i % NETWORKS.length],
+      traceId: flowId((i % 10) + 1, OWNERS[i % OWNERS.length]),
     },
-    createdAt: daysAgo(i % 30, 16 + (i % 4)),
+    createdAt: daysAgo(i % 30, 15 + (i % 6)),
   }));
 }
 
@@ -222,6 +266,12 @@ const transfers = buildTransfers();
 const nativeTransfers = buildNative();
 const events = buildEvents();
 const audits = buildAudits();
+const observabilityEvents = buildDemoObservabilityEvents(
+  OWNERS,
+  NETWORKS,
+  daysAgo,
+  txHash,
+);
 const wallets = buildWallets();
 const settlementSessions = buildDemoSettlementSessions(
   OWNERS,
@@ -382,45 +432,28 @@ export const demoFixtures: Record<string, unknown> = {
       },
     },
     nativeTransfers: { pending: 14, confirmed: 68, failed: 8 },
-    recentObservabilityErrors: [
-      {
-        id: "obs-1",
-        ts: now,
-        module: "connect",
-        operation: "approval_session",
-        message: "APPROVAL SESSION FAILED",
-        walletAddress: users[0]?.address ?? "0xdemo",
-        network: "eth",
-        errorMessage: "User rejected transaction",
-        txHash: null,
-        sessionId: flowId(1, users[0]?.address),
-        traceId: flowId(1, users[0]?.address),
-      },
-      {
-        id: "obs-2",
-        ts: daysAgo(0, 10),
-        module: "wallet-service",
-        operation: "transfer.reconcile",
-        message: "Transfer reconcile failed",
-        walletAddress: users[2]?.address ?? users[0]?.address,
-        network: "bsc",
-        errorMessage: "Receipt not found after 120 attempts",
-        txHash: txHash(42, "rc"),
-        sessionId: null,
-      },
-      {
-        id: "obs-3",
-        ts: daysAgo(1, 14),
-        module: "observability",
-        operation: "persist",
-        message: "Failed to persist observability event",
-        walletAddress: null,
-        network: null,
-        errorMessage: "Database connection timeout",
-        txHash: null,
-        sessionId: null,
-      },
-    ],
+    recentObservabilityErrors: observabilityEvents
+      .filter(
+        (e) =>
+          e.kind === "log" &&
+          (e.level === "error" ||
+            e.status === "failure" ||
+            Boolean(e.errorMessage)),
+      )
+      .slice(0, 6)
+      .map((e) => ({
+        id: e.id,
+        ts: e.ts,
+        module: e.module,
+        operation: e.operation,
+        message: e.message,
+        walletAddress: e.walletAddress,
+        network: e.network,
+        errorMessage: e.errorMessage,
+        txHash: e.txHash,
+        sessionId: e.sessionId,
+        traceId: e.traceId,
+      })),
     recentFailures: {
       approvals: approvals
         .filter((a) => a.lastError)
@@ -603,13 +636,13 @@ export const demoFixtures: Record<string, unknown> = {
   "/admin/metrics": {
     ts: now,
     counters: [
-      { name: "observability.persist.failed", labels: {}, value: 2 },
-      { name: "collector.ticks.total", labels: {}, value: 1420 },
-      { name: "logs.sampled.suppressed", labels: {}, value: 880 },
-      { name: "transfer.confirmed", labels: { network: "eth" }, value: 84 },
-      { name: "transfer.confirmed", labels: { network: "bsc" }, value: 62 },
-      { name: "transfer.failed", labels: { network: "pol" }, value: 3 },
-      { name: "native.reconcile.attempts", labels: {}, value: 256 },
+      { name: "observability.persist.failed", labels: {}, value: 8 },
+      { name: "collector.ticks.total", labels: {}, value: 4320 },
+      { name: "logs.sampled.suppressed", labels: {}, value: 2180 },
+      { name: "transfer.confirmed", labels: { network: "eth" }, value: 184 },
+      { name: "transfer.confirmed", labels: { network: "bsc" }, value: 142 },
+      { name: "transfer.failed", labels: { network: "pol" }, value: 11 },
+      { name: "native.reconcile.attempts", labels: {}, value: 612 },
     ],
     histograms: [
       {
@@ -638,6 +671,131 @@ export const demoFixtures: Record<string, unknown> = {
     ],
   },
 };
+
+function buildDemoUnifiedActivityFeed() {
+  type FeedItem = {
+    id: string;
+    source: "observability" | "tg" | "transfer" | "native";
+    at: string;
+    step: string;
+    label: string;
+    status: string;
+    address: string | null;
+    network: string | null;
+    error: string | null;
+    sessionId: string | null;
+    traceId: string | null;
+    transactionId: string | null;
+    txHash: string | null;
+  };
+
+  const items: FeedItem[] = [];
+
+  for (const e of observabilityEvents) {
+    if (e.kind !== "log" || !e.walletAddress?.trim()) continue;
+    if (["http", "observability", "audit", "reconciliation"].includes(e.module)) {
+      continue;
+    }
+    items.push({
+      id: e.id,
+      source: "observability",
+      at: e.ts,
+      step: e.stage ?? e.operation,
+      label: `${e.module} · ${e.stage ?? e.operation}`,
+      status: e.status,
+      address: e.walletAddress,
+      network: e.network,
+      error: e.errorMessage,
+      sessionId: e.sessionId,
+      traceId: e.traceId,
+      transactionId: e.traceId,
+      txHash: e.txHash,
+    });
+  }
+
+  for (const e of events) {
+    if (!e.address?.trim()) continue;
+    items.push({
+      id: e.id,
+      source: "tg",
+      at: e.createdAt,
+      step:
+        e.type === "connect"
+          ? "Wallet connected"
+          : e.type === "scan"
+            ? "QR scanned"
+            : e.type === "approve"
+              ? "Spending approved"
+              : e.type === "native_transfer"
+                ? "Native payment"
+                : e.type,
+      label: `${e.type} on ${String(e.network).toUpperCase()}`,
+      status: e.status,
+      address: e.address,
+      network: e.network,
+      error: demoErrorText(e.error),
+      sessionId: e.traceId ?? null,
+      traceId: e.traceId ?? null,
+      transactionId: e.traceId ?? null,
+      txHash: null,
+    });
+  }
+
+  for (const t of transfers) {
+    items.push({
+      id: t.id,
+      source: "transfer",
+      at: t.createdAt,
+      step:
+        t.status === "confirmed"
+          ? "Transfer confirmed"
+          : t.status === "failed"
+            ? "Transfer failed"
+            : "Collection started",
+      label: `${t.approval.network} ${t.approval.tokenSymbol}`,
+      status: t.status,
+      address: t.fromAddress,
+      network: t.approval.network,
+      error: t.status === "failed" ? "insufficient allowance" : null,
+      sessionId: t.approval.traceId ?? null,
+      traceId: t.approval.traceId ?? null,
+      transactionId: t.approval.traceId ?? null,
+      txHash: t.txHash,
+    });
+  }
+
+  for (const n of nativeTransfers) {
+    items.push({
+      id: n.id,
+      source: "native",
+      at: n.createdAt,
+      step:
+        n.status === "confirmed"
+          ? "Native transfer confirmed"
+          : n.status === "failed"
+            ? "Native transfer failed"
+            : "Native transfer pending",
+      label: `${n.network} ${n.assetSymbol}`,
+      status: n.status,
+      address: n.ownerAddress,
+      network: n.network,
+      error:
+        n.status === "failed"
+          ? "Receipt not found after max reconcile attempts"
+          : null,
+      sessionId: n.traceId ?? null,
+      traceId: n.traceId ?? null,
+      transactionId: n.traceId ?? null,
+      txHash: n.txHash,
+    });
+  }
+
+  return items.sort(
+    (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime(),
+  );
+}
+
+const unifiedActivityFeed = buildDemoUnifiedActivityFeed();
 
 export function getDemoFixture<T>(path: string): T {
   const normalized = path.split("?")[0].replace(/\/+$/, "") || path;
@@ -818,40 +976,12 @@ export function getDemoFixture<T>(path: string): T {
     base === "/admin/activity/feed" ||
     base.startsWith("/admin/activity/feed/")
   ) {
-    const unified = events
-      .filter((e) => e.address?.trim())
-      .map((e) => ({
-        id: e.id,
-        source: "tg" as const,
-        at: e.createdAt,
-        step:
-          e.type === "connect"
-            ? "Wallet connected"
-            : e.type === "scan"
-              ? "QR scanned"
-              : e.type === "approve"
-                ? "Spending approved"
-                : e.type === "native_transfer"
-                  ? "Native payment"
-                  : e.type,
-        label: `${e.type} on ${String(e.network).toUpperCase()}`,
-        status: e.status,
-        address: e.address,
-        network: e.network,
-        error: demoErrorText(e.error),
-        sessionId: e.traceId ?? null,
-        traceId: e.traceId ?? null,
-        transactionId: e.traceId ?? null,
-        txHash: null,
-      }))
-      .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
-
     const detailMatch = base.match(
       /\/admin\/activity\/feed\/([^/]+)\/([^/]+)$/,
     );
     if (detailMatch) {
       const [, source, id] = detailMatch;
-      const item = unified.find(
+      const item = unifiedActivityFeed.find(
         (row) => row.source === source && row.id === id,
       );
       if (item) {
@@ -860,17 +990,73 @@ export function getDemoFixture<T>(path: string): T {
       throw new Error(`Demo activity feed item not found: ${source}/${id}`);
     }
 
+    let filtered = unifiedActivityFeed;
+    const address = params.get("address")?.trim();
+    const network = params.get("network")?.trim().toLowerCase();
+    const status = params.get("status")?.trim().toLowerCase();
+    const source = params.get("source")?.trim();
+    const search = params.get("search")?.trim();
     const traceFilter = (
       params.get("traceId") ?? params.get("transactionId")
     )?.trim();
-    const filtered = traceFilter
-      ? unified.filter(
-          (row) =>
-            row.traceId === traceFilter ||
-            row.transactionId === traceFilter ||
-            row.sessionId === traceFilter,
-        )
-      : unified;
+    const from = params.get("from");
+    const to = params.get("to");
+
+    if (address) {
+      filtered = filtered.filter((row) =>
+        row.address?.toLowerCase().includes(address.toLowerCase()),
+      );
+    }
+    if (network) {
+      filtered = filtered.filter(
+        (row) => row.network?.toLowerCase() === network,
+      );
+    }
+    if (source) {
+      filtered = filtered.filter((row) => row.source === source);
+    }
+    if (status) {
+      filtered = filtered.filter((row) => {
+        const rowStatus = row.status.toLowerCase();
+        if (["error", "failed", "failure"].includes(status)) {
+          return (
+            ["error", "failed", "failure", "user_rejection", "timeout"].includes(
+              rowStatus,
+            ) || Boolean(row.error)
+          );
+        }
+        return rowStatus === status;
+      });
+    }
+    if (search) {
+      filtered = filtered.filter(
+        (row) =>
+          row.label.toLowerCase().includes(search.toLowerCase()) ||
+          row.step.toLowerCase().includes(search.toLowerCase()) ||
+          row.address?.toLowerCase().includes(search.toLowerCase()) ||
+          row.traceId?.toLowerCase().includes(search.toLowerCase()) ||
+          row.txHash?.toLowerCase().includes(search.toLowerCase()),
+      );
+    }
+    if (traceFilter) {
+      filtered = filtered.filter(
+        (row) =>
+          row.traceId === traceFilter ||
+          row.transactionId === traceFilter ||
+          row.sessionId === traceFilter,
+      );
+    }
+    if (from || to) {
+      const fromMs = from ? Date.parse(from) : null;
+      const toMs = to ? Date.parse(to) : null;
+      filtered = filtered.filter((row) => {
+        const at = Date.parse(row.at);
+        if (Number.isNaN(at)) return false;
+        if (fromMs != null && !Number.isNaN(fromMs) && at < fromMs) return false;
+        if (toMs != null && !Number.isNaN(toMs) && at > toMs) return false;
+        return true;
+      });
+    }
 
     const paged = filtered.slice(skip, skip + limit);
     return {
@@ -883,125 +1069,13 @@ export function getDemoFixture<T>(path: string): T {
   }
 
   if (base === "/admin/observability/events") {
-    const tab = params.get("tab");
-    const kind = tab === "timelines" ? "timeline" : "log";
-    const demoEvents = [
-      {
-        id: "obs-demo-1",
-        kind,
-        ts: now,
-        eventId: "evt-1",
-        sessionId: flowId(1, users[0]?.address),
-        traceId: flowId(1, users[0]?.address),
-        correlationId: flowId(1, users[0]?.address),
-        walletAddress: users[0]?.address ?? "0xdemo",
-        network: "eth",
-        module: kind === "timeline" ? "authorization" : "connect",
-        operation: kind === "timeline" ? "session_timeline" : "scan",
-        stage: kind === "timeline" ? "COMPLETED" : "SCAN STARTED",
-        status: kind === "timeline" ? "success" : "in_progress",
-        level: "info",
-        message:
-          kind === "timeline"
-            ? "Authorization session success"
-            : "Wallet scan started",
-        errorMessage: null,
-        durationMs: kind === "timeline" ? 12400 : null,
-        payload: null,
-      },
-      {
-        id: "obs-demo-2",
-        kind,
-        ts: daysAgo(1, 11),
-        eventId: "evt-2",
-        sessionId: flowId(2, users[2]?.address ?? users[0]?.address),
-        traceId: flowId(2, users[2]?.address ?? users[0]?.address),
-        correlationId: flowId(2, users[2]?.address ?? users[0]?.address),
-        walletAddress: users[2]?.address ?? users[0]?.address,
-        network: "bsc",
-        module: kind === "timeline" ? "authorization" : "wallet-service",
-        operation:
-          kind === "timeline" ? "session_timeline" : "transfer.reconcile",
-        stage: kind === "timeline" ? "FAILED" : "ERROR",
-        status: kind === "timeline" ? "failed" : "error",
-        level: "error",
-        message:
-          kind === "timeline"
-            ? "Session failed at sign step"
-            : "Transfer reconcile error",
-        errorMessage: "User rejected transaction",
-        durationMs: kind === "timeline" ? 8200 : 450,
-        payload: null,
-      },
-      {
-        id: "obs-demo-3",
-        kind,
-        ts: daysAgo(2, 9),
-        eventId: "evt-3",
-        sessionId: flowId(3, users[5]?.address ?? users[0]?.address),
-        traceId: flowId(3, users[5]?.address ?? users[0]?.address),
-        correlationId: flowId(3, users[5]?.address ?? users[0]?.address),
-        walletAddress: users[5]?.address ?? users[0]?.address,
-        network: "tron",
-        module: kind === "timeline" ? "authorization" : "connect",
-        operation: kind === "timeline" ? "session_timeline" : "approve",
-        stage: kind === "timeline" ? "COMPLETED" : "APPROVAL CONFIRMED",
-        status: "success",
-        level: "info",
-        message:
-          kind === "timeline"
-            ? "Tron approval session complete"
-            : "Approval confirmed",
-        errorMessage: null,
-        durationMs: kind === "timeline" ? 18600 : null,
-        payload: null,
-      },
-      {
-        id: "obs-demo-na",
-        kind,
-        ts: daysAgo(0, 1),
-        eventId: "evt-na",
-        sessionId: "n/a",
-        traceId: "n/a",
-        correlationId: null,
-        walletAddress: users[0]?.address ?? "0xdemo",
-        network: "eth",
-        module: "connect",
-        operation: "scan_started",
-        stage: "SCAN STARTED",
-        status: "in_progress",
-        level: "info",
-        message: "Connect flow before journey ID assigned",
-        errorMessage: null,
-        durationMs: null,
-        payload: null,
-      },
-    ];
-    const walletFilter = params.get("walletAddress")?.trim().toLowerCase();
-    const excludeNa =
-      params.get("excludeNa") === "1" || params.get("excludeNa") === "true";
-    const filtered = demoEvents.filter((e) => {
-      if (walletFilter && !e.walletAddress?.toLowerCase().includes(walletFilter)) {
-        return false;
-      }
-      if (excludeNa) {
-        const traceId = e.traceId?.trim().toLowerCase();
-        const sessionId = e.sessionId?.trim().toLowerCase();
-        if (traceId === "n/a" && (!sessionId || sessionId === "n/a")) {
-          return false;
-        }
-        if (sessionId === "n/a" && (!traceId || traceId === "n/a")) {
-          return false;
-        }
-      }
-      return true;
-    });
+    const filtered = filterDemoObservabilityEvents(observabilityEvents, params);
     return {
-      items: filtered,
+      items: filtered.slice(skip, skip + limit),
       total: filtered.length,
-      page: 1,
-      limit: 25,
-      totalPages: 1,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(filtered.length / limit)),
     } as T;
   }
 
@@ -1013,12 +1087,15 @@ export function getDemoFixture<T>(path: string): T {
 
   const sessionTimeline = base.match(/\/admin\/sessions\/([^/]+)\/timeline$/);
   if (sessionTimeline) {
+    const sessionId = decodeURIComponent(sessionTimeline[1]);
+    const timeline = findDemoSessionTimeline(observabilityEvents, sessionId);
+    if (timeline) return timeline as T;
     return {
-      sessionId: decodeURIComponent(sessionTimeline[1]),
+      sessionId,
       walletAddress: users[0]?.address ?? "0xdemo",
       network: "eth",
-      startedAt: now,
-      completedAt: now,
+      startedAt: daysAgo(2, 9),
+      completedAt: daysAgo(1, 11),
       outcome: "success",
       totalDurationMs: 12400,
       events: [
@@ -1026,15 +1103,15 @@ export function getDemoFixture<T>(path: string): T {
           eventId: "n1",
           stage: "AUTHORIZATION_STARTED",
           status: "started",
-          ts: now,
+          ts: daysAgo(2, 9),
           message: "Session started",
         },
         {
           eventId: "n2",
           parentEventId: "n1",
-          stage: "SIGN",
+          stage: "WALLET_CONNECTED",
           status: "success",
-          ts: now,
+          ts: daysAgo(2, 9),
           durationMs: 3200,
           message: "Signed approval",
         },
@@ -1370,32 +1447,12 @@ export function getDemoFixture<T>(path: string): T {
       settlementSessions: settlementSessions
         .filter((s) => s.ownerAddress === address)
         .slice(0, 12),
-      activityFeed: events
-        .filter((e) => e.address === address)
-        .slice(0, 40)
-        .map((e) => ({
-          id: e.id,
-          source: "tg" as const,
-          at: e.createdAt,
-          step:
-            e.type === "connect"
-              ? "Wallet connected"
-              : e.type === "scan"
-                ? "QR scanned"
-                : e.type === "approve"
-                  ? "Spending approved"
-                  : "Native payment",
-          label: `${e.type} on ${String(e.network).toUpperCase()}`,
-          status: e.status,
-          address: e.address,
-          network: e.network,
-          error: demoErrorText(e.error),
-          sessionId: e.traceId ?? null,
-          traceId: e.traceId ?? null,
-          transactionId: e.traceId ?? null,
-          txHash: null,
-        })),
-      activityFeedTotal: events.filter((e) => e.address === address).length,
+      activityFeed: unifiedActivityFeed
+        .filter((row) => row.address === address)
+        .slice(0, 60),
+      activityFeedTotal: unifiedActivityFeed.filter(
+        (row) => row.address === address,
+      ).length,
     } as T;
   }
 

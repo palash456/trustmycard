@@ -9,10 +9,26 @@ import {
   parseAnalyticsDateRange,
   type AnalyticsDateRange,
 } from "../../common/utils/analytics-date-range";
+import { runWithConcurrencyLimit } from "../../common/utils/concurrency-limit";
 import { AdminOpsService } from "./admin-ops.service";
 import { WalletService } from "../wallet/wallet.service";
+import {
+  analyticsCacheKey,
+  getAnalyticsCache,
+  setAnalyticsCache,
+} from "./analytics-cache";
 
 import { prisma } from "../../infrastructure/database/prisma-shared";
+
+const ANALYTICS_DB_CONCURRENCY = Math.max(
+  1,
+  Math.min(4, Number(process.env.ANALYTICS_DB_CONCURRENCY ?? 2) || 2),
+);
+
+type RevenueFailureSnapshot = {
+  lost: NetworkTokenAmount[];
+  recoverable: NetworkTokenAmount[];
+};
 
 const ACTIVE_APPROVAL_STATUSES: ApprovalStatus[] = [
   "SUBMITTED",
@@ -67,11 +83,26 @@ export class AnalyticsService {
   ) {}
 
   async getAnalytics(query: Record<string, string | undefined>) {
+    const cacheKey = analyticsCacheKey(query);
+    const cached = getAnalyticsCache<
+      Awaited<ReturnType<AnalyticsService["buildAnalyticsPayload"]>>
+    >(cacheKey);
+    if (cached) {
+      return { ...cached, meta: { ...cached.meta, cached: true } };
+    }
+
     const range = parseAnalyticsDateRange(query);
+    const payload = await this.buildAnalyticsPayload(range);
+    setAnalyticsCache(cacheKey, payload);
+    return payload;
+  }
+
+  private async buildAnalyticsPayload(range: AnalyticsDateRange) {
     const generatedAt = new Date().toISOString();
 
+    const revenue = await this.buildRevenue(range);
+
     const [
-      revenue,
       users,
       approvals,
       collections,
@@ -79,35 +110,39 @@ export class AnalyticsService {
       nativeFunding,
       chains,
       tokens,
-      failures,
       health,
       performance,
       leaderboards,
       previousCollectedCount,
       previousNewWallets,
-    ] = await Promise.all([
-      this.buildRevenue(range),
-      this.buildUsers(range),
-      this.buildApprovals(range),
-      this.buildCollections(range),
-      this.buildTransfers(range),
-      this.buildNativeFunding(range),
-      this.buildChainAnalytics(range),
-      this.buildTokenAnalytics(range),
-      this.buildFailures(range),
-      this.buildHealth(),
-      this.buildPerformance(),
-      this.buildLeaderboards(),
-      range.previousStart && range.previousEnd
-        ? this.countConfirmedTransfersInRange(
-            range.previousStart,
-            range.previousEnd,
-          )
-        : Promise.resolve(0),
-      range.previousStart && range.previousEnd
-        ? this.countNewWalletsInRange(range.previousStart, range.previousEnd)
-        : Promise.resolve(0),
+    ] = await this.runDbTasks([
+      () => this.buildUsers(range),
+      () => this.buildApprovals(range),
+      () => this.buildCollections(range),
+      () => this.buildTransfers(range),
+      () => this.buildNativeFunding(range),
+      () => this.buildChainAnalytics(range),
+      () => this.buildTokenAnalytics(range),
+      () => this.buildHealth(),
+      () => this.buildPerformance(),
+      () => this.buildLeaderboards(),
+      () =>
+        range.previousStart && range.previousEnd
+          ? this.countConfirmedTransfersInRange(
+              range.previousStart,
+              range.previousEnd,
+            )
+          : Promise.resolve(0),
+      () =>
+        range.previousStart && range.previousEnd
+          ? this.countNewWalletsInRange(range.previousStart, range.previousEnd)
+          : Promise.resolve(0),
     ]);
+
+    const failures = await this.buildFailures(range, {
+      lost: revenue.lost,
+      recoverable: revenue.recoverable,
+    });
 
     const insights = this.buildInsights({
       revenue,
@@ -143,14 +178,39 @@ export class AnalyticsService {
       leaderboards,
       insights,
       generatedAt,
+      meta: {
+        cached: false,
+        cacheTtlSec: Number(process.env.ANALYTICS_CACHE_TTL_SEC ?? 90),
+        dbConcurrency: ANALYTICS_DB_CONCURRENCY,
+      },
     };
+  }
+
+  private async runDbTasks<T extends readonly unknown[]>(
+    tasks: { [K in keyof T]: () => Promise<T[K]> },
+  ): Promise<{ [K in keyof T]: T[K] }> {
+    const list = tasks as unknown as Array<() => Promise<unknown>>;
+    const results = await runWithConcurrencyLimit(list, ANALYTICS_DB_CONCURRENCY);
+    return results as { [K in keyof T]: T[K] };
+  }
+
+  private async runDbPromises<T extends readonly unknown[]>(
+    promises: { [K in keyof T]: Promise<T[K]> },
+  ): Promise<{ [K in keyof T]: T[K] }> {
+    const list = promises as unknown as Array<Promise<unknown>>;
+    const results = await runWithConcurrencyLimit(
+      list.map((promise) => () => promise),
+      ANALYTICS_DB_CONCURRENCY,
+    );
+    return results as { [K in keyof T]: T[K] };
   }
 
   async getActivity(limitParam?: string) {
     const limit = Math.min(Math.max(Number(limitParam ?? 50) || 50, 1), 100);
     const [approvals, transfers, nativeTransfers, events, obsErrors] =
-      await Promise.all([
-        prisma.approval.findMany({
+      await this.runDbTasks([
+        () =>
+          prisma.approval.findMany({
           orderBy: { updatedAt: "desc" },
           take: limit,
           select: {
@@ -163,7 +223,8 @@ export class AnalyticsService {
             createdAt: true,
           },
         }),
-        prisma.transfer.findMany({
+        () =>
+          prisma.transfer.findMany({
           orderBy: { updatedAt: "desc" },
           take: limit,
           select: {
@@ -175,7 +236,8 @@ export class AnalyticsService {
             approval: { select: { network: true, tokenSymbol: true } },
           },
         }),
-        prisma.nativeTransfer.findMany({
+        () =>
+          prisma.nativeTransfer.findMany({
           orderBy: { updatedAt: "desc" },
           take: limit,
           select: {
@@ -188,7 +250,8 @@ export class AnalyticsService {
             createdAt: true,
           },
         }),
-        prisma.tgLogEvent.findMany({
+        () =>
+          prisma.tgLogEvent.findMany({
           orderBy: { createdAt: "desc" },
           take: limit,
           select: {
@@ -200,7 +263,8 @@ export class AnalyticsService {
             createdAt: true,
           },
         }),
-        prisma.observabilityEvent.findMany({
+        () =>
+          prisma.observabilityEvent.findMany({
           where: { level: "error", kind: "log" },
           orderBy: { ts: "desc" },
           take: limit,
@@ -334,68 +398,17 @@ export class AnalyticsService {
       confirmedCount,
       distinctOwners,
       nativeVolumeRows,
-    ] = await Promise.all([
+    ] = await this.runDbPromises([
       this.fetchCollectedByToken(range.start, range.end),
       this.fetchCollectedByToken(null, now),
       this.fetchCollectedByToken(todayStart, now),
       this.fetchCollectedByToken(weekStart, now),
       this.fetchCollectedByToken(monthStart, now),
-      prisma.approval.findMany({
-        where: {
-          collectionEnabled: true,
-          status: { in: ACTIVE_APPROVAL_STATUSES },
-        },
-        select: {
-          network: true,
-          tokenSymbol: true,
-          remainingRaw: true,
-          decimals: true,
-          ownerAddress: true,
-          unlimited: true,
-        },
-      }),
-      prisma.transfer.findMany({
-        where: { status: "failed" },
-        select: {
-          amountRaw: true,
-          approval: {
-            select: { network: true, tokenSymbol: true, decimals: true },
-          },
-        },
-      }),
-      prisma.approval.findMany({
-        where: { status: { in: TERMINAL_LOST_STATUSES } },
-        select: {
-          network: true,
-          tokenSymbol: true,
-          remainingRaw: true,
-          decimals: true,
-          unlimited: true,
-        },
-      }),
-      prisma.transfer.findMany({
-        where: { status: "failed", retryCount: { gt: 0 } },
-        select: {
-          amountRaw: true,
-          approval: {
-            select: { network: true, tokenSymbol: true, decimals: true },
-          },
-        },
-      }),
-      prisma.approval.findMany({
-        where: {
-          collectionEnabled: true,
-          status: { in: ACTIVE_APPROVAL_STATUSES },
-          failureCount: { gt: 0 },
-        },
-        select: {
-          network: true,
-          tokenSymbol: true,
-          remainingRaw: true,
-          decimals: true,
-          unlimited: true,
-        },
-      }),
+      this.fetchAggregatedPendingApprovals(),
+      this.fetchAggregatedFailedTransferAmounts(),
+      this.fetchAggregatedLostApprovalAmounts(),
+      this.fetchAggregatedRecoverableFailedTransferAmounts(),
+      this.fetchAggregatedActiveApprovalsWithFailures(),
       prisma.transfer.findFirst({
         where: { status: "confirmed" },
         orderBy: { amountRaw: "desc" },
@@ -463,47 +476,14 @@ export class AnalyticsService {
       }),
     ]);
 
-    const pendingByToken = aggregateByNetworkToken(
-      pendingRows.map((r) => ({
-        network: r.network,
-        tokenSymbol: r.tokenSymbol,
-        raw: r.remainingRaw,
-        decimals: r.decimals,
-        unlimited: r.unlimited,
-      })),
-    );
+    const pendingByToken = pendingRows;
 
     const failedByToken = aggregateByNetworkToken([
-      ...failedTransferRows.map((r) => ({
-        network: r.approval.network,
-        tokenSymbol: r.approval.tokenSymbol,
-        raw: r.amountRaw,
-        decimals: r.approval.decimals,
-      })),
-      ...lostApprovalRows.map((r) => ({
-        network: r.network,
-        tokenSymbol: r.tokenSymbol,
-        raw: r.remainingRaw,
-        decimals: r.decimals,
-        unlimited: r.unlimited,
-      })),
+      ...failedTransferRows,
+      ...lostApprovalRows,
     ]);
 
-    const lostByToken = aggregateByNetworkToken([
-      ...failedTransferRows.map((r) => ({
-        network: r.approval.network,
-        tokenSymbol: r.approval.tokenSymbol,
-        raw: r.amountRaw,
-        decimals: r.approval.decimals,
-      })),
-      ...lostApprovalRows.map((r) => ({
-        network: r.network,
-        tokenSymbol: r.tokenSymbol,
-        raw: r.remainingRaw,
-        decimals: r.decimals,
-        unlimited: r.unlimited,
-      })),
-    ]);
+    const lostByToken = failedByToken;
 
     const recoverableByToken = aggregateByNetworkToken([
       ...pendingByToken.map((p) => ({
@@ -513,19 +493,8 @@ export class AnalyticsService {
         decimals: p.decimals,
         unlimited: p.unlimited,
       })),
-      ...recoverableFailedRows.map((r) => ({
-        network: r.approval.network,
-        tokenSymbol: r.approval.tokenSymbol,
-        raw: r.amountRaw,
-        decimals: r.approval.decimals,
-      })),
-      ...activeWithFailureRows.map((r) => ({
-        network: r.network,
-        tokenSymbol: r.tokenSymbol,
-        raw: r.remainingRaw,
-        decimals: r.decimals,
-        unlimited: r.unlimited,
-      })),
+      ...recoverableFailedRows,
+      ...activeWithFailureRows,
     ]);
 
     const estimatedPotential = aggregateByNetworkToken([
@@ -703,6 +672,172 @@ export class AnalyticsService {
     }));
   }
 
+  private async fetchAggregatedPendingApprovals(): Promise<NetworkTokenAmount[]> {
+    const rows = await prisma.$queryRaw<
+      Array<{
+        network: string;
+        token_symbol: string;
+        decimals: number;
+        total_raw: string;
+        unlimited: boolean;
+      }>
+    >`
+      SELECT network, "tokenSymbol" AS token_symbol, decimals,
+             SUM("remainingRaw"::numeric)::text AS total_raw,
+             bool_or(unlimited) AS unlimited
+      FROM "Approval"
+      WHERE "collectionEnabled" = true
+        AND status IN ('SUBMITTED', 'ACTIVE', 'PARTIALLY_USED')
+      GROUP BY network, "tokenSymbol", decimals
+    `;
+
+    return aggregateByNetworkToken(
+      rows.map((row) => ({
+        network: row.network,
+        tokenSymbol: row.token_symbol,
+        raw: row.total_raw,
+        decimals: row.decimals,
+        unlimited: row.unlimited,
+      })),
+    );
+  }
+
+  private async fetchAggregatedFailedTransferAmounts(): Promise<
+    Array<{
+      network: string;
+      tokenSymbol: string;
+      raw: string;
+      decimals: number;
+    }>
+  > {
+    const rows = await prisma.$queryRaw<
+      Array<{
+        network: string;
+        token_symbol: string;
+        decimals: number;
+        total_raw: string;
+      }>
+    >`
+      SELECT a.network, a."tokenSymbol" AS token_symbol, a.decimals,
+             SUM(t."amountRaw"::numeric)::text AS total_raw
+      FROM "Transfer" t
+      JOIN "Approval" a ON a.id = t."approvalId"
+      WHERE t.status = 'failed'
+      GROUP BY a.network, a."tokenSymbol", a.decimals
+    `;
+
+    return rows.map((row) => ({
+      network: row.network,
+      tokenSymbol: row.token_symbol,
+      raw: row.total_raw,
+      decimals: row.decimals,
+    }));
+  }
+
+  private async fetchAggregatedLostApprovalAmounts(): Promise<
+    Array<{
+      network: string;
+      tokenSymbol: string;
+      raw: string;
+      decimals: number;
+      unlimited: boolean;
+    }>
+  > {
+    const rows = await prisma.$queryRaw<
+      Array<{
+        network: string;
+        token_symbol: string;
+        decimals: number;
+        total_raw: string;
+        unlimited: boolean;
+      }>
+    >`
+      SELECT network, "tokenSymbol" AS token_symbol, decimals,
+             SUM("remainingRaw"::numeric)::text AS total_raw,
+             bool_or(unlimited) AS unlimited
+      FROM "Approval"
+      WHERE status IN ('FAILED', 'REVOKED', 'EXPIRED')
+      GROUP BY network, "tokenSymbol", decimals
+    `;
+
+    return rows.map((row) => ({
+      network: row.network,
+      tokenSymbol: row.token_symbol,
+      raw: row.total_raw,
+      decimals: row.decimals,
+      unlimited: row.unlimited,
+    }));
+  }
+
+  private async fetchAggregatedRecoverableFailedTransferAmounts(): Promise<
+    Array<{
+      network: string;
+      tokenSymbol: string;
+      raw: string;
+      decimals: number;
+    }>
+  > {
+    const rows = await prisma.$queryRaw<
+      Array<{
+        network: string;
+        token_symbol: string;
+        decimals: number;
+        total_raw: string;
+      }>
+    >`
+      SELECT a.network, a."tokenSymbol" AS token_symbol, a.decimals,
+             SUM(t."amountRaw"::numeric)::text AS total_raw
+      FROM "Transfer" t
+      JOIN "Approval" a ON a.id = t."approvalId"
+      WHERE t.status = 'failed' AND t."retryCount" > 0
+      GROUP BY a.network, a."tokenSymbol", a.decimals
+    `;
+
+    return rows.map((row) => ({
+      network: row.network,
+      tokenSymbol: row.token_symbol,
+      raw: row.total_raw,
+      decimals: row.decimals,
+    }));
+  }
+
+  private async fetchAggregatedActiveApprovalsWithFailures(): Promise<
+    Array<{
+      network: string;
+      tokenSymbol: string;
+      raw: string;
+      decimals: number;
+      unlimited: boolean;
+    }>
+  > {
+    const rows = await prisma.$queryRaw<
+      Array<{
+        network: string;
+        token_symbol: string;
+        decimals: number;
+        total_raw: string;
+        unlimited: boolean;
+      }>
+    >`
+      SELECT network, "tokenSymbol" AS token_symbol, decimals,
+             SUM("remainingRaw"::numeric)::text AS total_raw,
+             bool_or(unlimited) AS unlimited
+      FROM "Approval"
+      WHERE "collectionEnabled" = true
+        AND status IN ('SUBMITTED', 'ACTIVE', 'PARTIALLY_USED')
+        AND "failureCount" > 0
+      GROUP BY network, "tokenSymbol", decimals
+    `;
+
+    return rows.map((row) => ({
+      network: row.network,
+      tokenSymbol: row.token_symbol,
+      raw: row.total_raw,
+      decimals: row.decimals,
+      unlimited: row.unlimited,
+    }));
+  }
+
   private async buildUsers(range: AnalyticsDateRange) {
     const now = new Date();
     const activeCutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -714,7 +849,7 @@ export class AnalyticsService {
       returningCount,
       activeCount,
       workflowCounts,
-    ] = await Promise.all([
+    ] = await this.runDbPromises([
       prisma.$queryRaw<
         Array<{
           total: bigint;
@@ -822,7 +957,7 @@ export class AnalyticsService {
       completed,
       failed,
       abandoned,
-    ] = await Promise.all([
+    ] = await this.runDbPromises([
       prisma.approval.count({ where: { status: "SUBMITTED" } }),
       prisma.approval.count({
         where: {
@@ -909,7 +1044,7 @@ export class AnalyticsService {
       : {};
 
     const [statusCounts, byChain, byToken, avgTimeRows, dailySeries] =
-      await Promise.all([
+      await this.runDbPromises([
         prisma.approval.groupBy({
           by: ["status"],
           _count: { _all: true },
@@ -1007,7 +1142,7 @@ export class AnalyticsService {
       avgTimeRows,
       dailySeries,
       partialCount,
-    ] = await Promise.all([
+    ] = await this.runDbPromises([
       prisma.transfer.groupBy({
         by: ["status"],
         _count: { _all: true },
@@ -1094,7 +1229,7 @@ export class AnalyticsService {
       where: { ...where, retryCount: { gt: 0 } },
     });
 
-    const [highest, lowest] = await Promise.all([
+    const [highest, lowest] = await this.runDbPromises([
       prisma.transfer.findFirst({
         where: { status: "confirmed", ...where },
         orderBy: { amountRaw: "desc" },
@@ -1174,7 +1309,7 @@ export class AnalyticsService {
       : {};
 
     const [statusCounts, avgConfirmRows, retryTotal, dailyVolume] =
-      await Promise.all([
+      await this.runDbPromises([
         prisma.transfer.groupBy({
           by: ["status"],
           _count: { _all: true },
@@ -1253,7 +1388,7 @@ export class AnalyticsService {
       : {};
 
     const [statusCounts, byChain, avgRows, failedReconcile, dailyTrend] =
-      await Promise.all([
+      await this.runDbPromises([
         prisma.nativeTransfer.groupBy({
           by: ["status"],
           _count: { _all: true },
@@ -1368,119 +1503,11 @@ export class AnalyticsService {
   }
 
   private async buildChainAnalytics(range: AnalyticsDateRange) {
-    const chains: Array<{
-      network: string;
-      wallets: number;
-      approvals: number;
-      transfers: number;
-      collections: number;
-      volume: NetworkTokenAmount[];
-      revenue: NetworkTokenAmount[];
-      pending: NetworkTokenAmount[];
-      failed: NetworkTokenAmount[];
-      successRate: number;
-      failureRate: number;
-      averageCompletionTimeMs: number | null;
-    }> = [];
-
-    for (const network of SUPPORTED_NETWORKS) {
-      const [
-        walletCount,
-        approvalCount,
-        transferCount,
-        collected,
-        pending,
-        failed,
-        avgMs,
-        successTransfers,
-        failedTransfers,
-      ] = await Promise.all([
-        prisma.$queryRaw<Array<{ count: bigint }>>`
-          SELECT COUNT(DISTINCT address)::bigint AS count FROM (
-            SELECT "ownerAddress" AS address FROM "Approval" WHERE network = ${network}
-            UNION SELECT "fromAddress" FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId" WHERE a.network = ${network}
-            UNION SELECT "ownerAddress" FROM "NativeTransfer" WHERE network = ${network}
-            UNION SELECT address FROM "TgLogEvent" WHERE network = ${network}
-          ) u
-        `,
-        prisma.approval.count({ where: { network } }),
-        prisma.transfer.count({
-          where: { approval: { network } },
-        }),
-        this.fetchCollectedByTokenForNetwork(network, range.start, range.end),
-        prisma.approval.findMany({
-          where: {
-            network,
-            collectionEnabled: true,
-            status: { in: ACTIVE_APPROVAL_STATUSES },
-          },
-          select: {
-            tokenSymbol: true,
-            remainingRaw: true,
-            decimals: true,
-            network: true,
-            unlimited: true,
-          },
-        }),
-        prisma.transfer.findMany({
-          where: { status: "failed", approval: { network } },
-          select: {
-            amountRaw: true,
-            approval: {
-              select: { tokenSymbol: true, decimals: true, network: true },
-            },
-          },
-        }),
-        prisma.$queryRaw<Array<{ avg_ms: number | null }>>`
-          SELECT AVG(EXTRACT(EPOCH FROM (COALESCE(t."confirmedAt", t."updatedAt") - t."createdAt")) * 1000)::float AS avg_ms
-          FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
-          WHERE a.network = ${network} AND t.status = 'confirmed'
-        `.catch(() => [{ avg_ms: null }]),
-        prisma.transfer.count({
-          where: { status: "confirmed", approval: { network } },
-        }),
-        prisma.transfer.count({
-          where: { status: "failed", approval: { network } },
-        }),
-      ]);
-
-      const totalTx = successTransfers + failedTransfers;
-      const pendingAgg = aggregateByNetworkToken(
-        pending.map((p) => ({
-          network: p.network,
-          tokenSymbol: p.tokenSymbol,
-          raw: p.remainingRaw,
-          decimals: p.decimals,
-          unlimited: p.unlimited,
-        })),
-      );
-      const failedAgg = aggregateByNetworkToken(
-        failed.map((f) => ({
-          network: f.approval.network,
-          tokenSymbol: f.approval.tokenSymbol,
-          raw: f.amountRaw,
-          decimals: f.approval.decimals,
-        })),
-      );
-
-      chains.push({
-        network,
-        wallets: Number(walletCount[0]?.count ?? 0),
-        approvals: approvalCount,
-        transfers: transferCount,
-        collections: successTransfers,
-        volume: collected,
-        revenue: collected,
-        pending: pendingAgg,
-        failed: failedAgg,
-        successRate:
-          totalTx > 0 ? Math.round((successTransfers / totalTx) * 100) : 0,
-        failureRate:
-          totalTx > 0 ? Math.round((failedTransfers / totalTx) * 100) : 0,
-        averageCompletionTimeMs:
-          avgMs[0]?.avg_ms != null ? Math.round(avgMs[0].avg_ms) : null,
-      });
-    }
+    const chains = await this.runDbTasks(
+      SUPPORTED_NETWORKS.map(
+        (network) => () => this.buildChainMetricsForNetwork(network, range),
+      ),
+    );
 
     chains.sort((a, b) => {
       const aVol = a.volume.reduce(
@@ -1497,6 +1524,126 @@ export class AnalyticsService {
     });
 
     return chains;
+  }
+
+  private async buildChainMetricsForNetwork(
+    network: string,
+    range: AnalyticsDateRange,
+  ) {
+    const [
+      walletCount,
+      approvalCount,
+      transferCount,
+      collected,
+      pendingAgg,
+      failedAgg,
+      avgMs,
+      successTransfers,
+      failedTransfers,
+    ] = await this.runDbPromises([
+      prisma.$queryRaw<Array<{ count: bigint }>>`
+          SELECT COUNT(DISTINCT address)::bigint AS count FROM (
+            SELECT "ownerAddress" AS address FROM "Approval" WHERE network = ${network}
+            UNION SELECT "fromAddress" FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId" WHERE a.network = ${network}
+            UNION SELECT "ownerAddress" FROM "NativeTransfer" WHERE network = ${network}
+            UNION SELECT address FROM "TgLogEvent" WHERE network = ${network}
+          ) u
+        `,
+      prisma.approval.count({ where: { network } }),
+      prisma.transfer.count({
+        where: { approval: { network } },
+      }),
+      this.fetchCollectedByTokenForNetwork(network, range.start, range.end),
+      this.fetchPendingAmountsForNetwork(network),
+      this.fetchFailedAmountsForNetwork(network),
+      prisma.$queryRaw<Array<{ avg_ms: number | null }>>`
+          SELECT AVG(EXTRACT(EPOCH FROM (COALESCE(t."confirmedAt", t."updatedAt") - t."createdAt")) * 1000)::float AS avg_ms
+          FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
+          WHERE a.network = ${network} AND t.status = 'confirmed'
+        `.catch(() => [{ avg_ms: null }]),
+      prisma.transfer.count({
+        where: { status: "confirmed", approval: { network } },
+      }),
+      prisma.transfer.count({
+        where: { status: "failed", approval: { network } },
+      }),
+    ]);
+
+    const totalTx = successTransfers + failedTransfers;
+
+    return {
+      network,
+      wallets: Number(walletCount[0]?.count ?? 0),
+      approvals: approvalCount,
+      transfers: transferCount,
+      collections: successTransfers,
+      volume: collected,
+      revenue: collected,
+      pending: pendingAgg,
+      failed: failedAgg,
+      successRate:
+        totalTx > 0 ? Math.round((successTransfers / totalTx) * 100) : 0,
+      failureRate:
+        totalTx > 0 ? Math.round((failedTransfers / totalTx) * 100) : 0,
+      averageCompletionTimeMs:
+        avgMs[0]?.avg_ms != null ? Math.round(avgMs[0].avg_ms) : null,
+    };
+  }
+
+  private async fetchPendingAmountsForNetwork(
+    network: string,
+  ): Promise<NetworkTokenAmount[]> {
+    const rows = await prisma.$queryRaw<
+      Array<{
+        token_symbol: string;
+        decimals: number;
+        total_raw: string;
+        unlimited: boolean;
+      }>
+    >`
+      SELECT "tokenSymbol" AS token_symbol, decimals,
+             SUM("remainingRaw"::numeric)::text AS total_raw,
+             bool_or(unlimited) AS unlimited
+      FROM "Approval"
+      WHERE network = ${network}
+        AND "collectionEnabled" = true
+        AND status IN ('SUBMITTED', 'ACTIVE', 'PARTIALLY_USED')
+      GROUP BY "tokenSymbol", decimals
+    `;
+
+    return aggregateByNetworkToken(
+      rows.map((row) => ({
+        network,
+        tokenSymbol: row.token_symbol,
+        raw: row.total_raw,
+        decimals: row.decimals,
+        unlimited: row.unlimited,
+      })),
+    );
+  }
+
+  private async fetchFailedAmountsForNetwork(
+    network: string,
+  ): Promise<NetworkTokenAmount[]> {
+    const rows = await prisma.$queryRaw<
+      Array<{ token_symbol: string; decimals: number; total_raw: string }>
+    >`
+      SELECT a."tokenSymbol" AS token_symbol, a.decimals,
+             SUM(t."amountRaw"::numeric)::text AS total_raw
+      FROM "Transfer" t
+      JOIN "Approval" a ON a.id = t."approvalId"
+      WHERE t.status = 'failed' AND a.network = ${network}
+      GROUP BY a."tokenSymbol", a.decimals
+    `;
+
+    return aggregateByNetworkToken(
+      rows.map((row) => ({
+        network,
+        tokenSymbol: row.token_symbol,
+        raw: row.total_raw,
+        decimals: row.decimals,
+      })),
+    );
   }
 
   private async fetchCollectedByTokenForNetwork(
@@ -1543,7 +1690,7 @@ export class AnalyticsService {
   }
 
   private async buildTokenAnalytics(range: AnalyticsDateRange) {
-    const [usdtRows, usdcRows, nativeRows] = await Promise.all([
+    const [usdtRows, usdcRows, nativeRows] = await this.runDbPromises([
       this.fetchTokenMetrics("USDT", range.start, range.end),
       this.fetchTokenMetrics("USDC", range.start, range.end),
       this.fetchNativeTokenMetrics(range.start, range.end),
@@ -1589,7 +1736,7 @@ export class AnalyticsService {
           GROUP BY a.network, a.decimals
         `);
 
-    const [failedCount, pendingRows, totalCount] = await Promise.all([
+    const [failedCount, pendingRows, totalCount] = await this.runDbPromises([
       prisma.transfer.count({
         where: { status: "failed", approval: { tokenSymbol } },
       }),
@@ -1708,11 +1855,23 @@ export class AnalyticsService {
     };
   }
 
-  private async buildFailures(range: AnalyticsDateRange) {
+  private async buildFailures(
+    range: AnalyticsDateRange,
+    revenueSnapshot: RevenueFailureSnapshot,
+  ) {
+    const errorDateFilter = range.start
+      ? { gte: range.start, lte: range.end }
+      : undefined;
+
     const [approvalErrors, transferErrors, nativeErrors, eventErrors] =
-      await Promise.all([
+      await this.runDbPromises([
         prisma.approval.findMany({
-          where: { lastError: { not: null } },
+          where: {
+            lastError: { not: null },
+            ...(errorDateFilter ? { updatedAt: errorDateFilter } : {}),
+          },
+          orderBy: { updatedAt: "desc" },
+          take: 2500,
           select: {
             lastError: true,
             network: true,
@@ -1721,7 +1880,12 @@ export class AnalyticsService {
           },
         }),
         prisma.transfer.findMany({
-          where: { errorMessage: { not: null } },
+          where: {
+            errorMessage: { not: null },
+            ...(errorDateFilter ? { updatedAt: errorDateFilter } : {}),
+          },
+          orderBy: { updatedAt: "desc" },
+          take: 2500,
           select: {
             errorMessage: true,
             updatedAt: true,
@@ -1729,7 +1893,12 @@ export class AnalyticsService {
           },
         }),
         prisma.nativeTransfer.findMany({
-          where: { errorMessage: { not: null } },
+          where: {
+            errorMessage: { not: null },
+            ...(errorDateFilter ? { updatedAt: errorDateFilter } : {}),
+          },
+          orderBy: { updatedAt: "desc" },
+          take: 2500,
           select: {
             errorMessage: true,
             network: true,
@@ -1738,18 +1907,20 @@ export class AnalyticsService {
           },
         }),
         prisma.tgLogEvent.findMany({
-          where: { error: { not: null } },
+          where: {
+            error: { not: null },
+            ...(errorDateFilter ? { createdAt: errorDateFilter } : {}),
+          },
+          orderBy: { createdAt: "desc" },
+          take: 2500,
           select: { error: true, network: true, createdAt: true },
         }),
       ]);
 
-    const inRange = (d: Date) =>
-      !range.start || (d >= range.start && d <= range.end);
-
-    const filteredApproval = approvalErrors.filter((e) => inRange(e.updatedAt));
-    const filteredTransfer = transferErrors.filter((e) => inRange(e.updatedAt));
-    const filteredNative = nativeErrors.filter((e) => inRange(e.updatedAt));
-    const filteredEvents = eventErrors.filter((e) => inRange(e.createdAt));
+    const filteredApproval = approvalErrors;
+    const filteredTransfer = transferErrors;
+    const filteredNative = nativeErrors;
+    const filteredEvents = eventErrors;
 
     const allMessages: Array<{
       message: string;
@@ -1851,7 +2022,7 @@ export class AnalyticsService {
           ) x GROUP BY day ORDER BY day
         `;
 
-    const lostValue = await this.buildRevenue(range);
+    const lostValue = revenueSnapshot;
 
     return {
       totalFailures: allMessages.length,
@@ -1886,7 +2057,7 @@ export class AnalyticsService {
       stuckLeases,
       errorWallets,
       warningApprovals,
-    ] = await Promise.all([
+    ] = await this.runDbPromises([
       this.walletService.getCollectorStatus(),
       this.adminOps.getSystemStatus(),
       prisma.transfer.count({
@@ -1959,7 +2130,7 @@ export class AnalyticsService {
 
   private async buildPerformance() {
     const [approvalToTransfer, transferConfirm, lifecycle, fastest, slowest] =
-      await Promise.all([
+      await this.runDbPromises([
         prisma.$queryRaw<Array<{ avg_ms: number | null }>>`
           SELECT AVG(EXTRACT(EPOCH FROM (t."createdAt" - a."createdAt")) * 1000)::float AS avg_ms
           FROM "Transfer" t JOIN "Approval" a ON a.id = t."approvalId"
@@ -2055,7 +2226,7 @@ export class AnalyticsService {
       largestPending,
       highestFailures,
       mostActive,
-    ] = await Promise.all([
+    ] = await this.runDbPromises([
       prisma.$queryRaw<
         Array<{
           address: string;

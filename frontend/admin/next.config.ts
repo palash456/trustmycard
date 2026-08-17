@@ -16,7 +16,9 @@ const frontendRoot = path.join(configDir, "..");
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  transpilePackages: ["@trustmycard/shared"],
   outputFileTracingRoot: frontendRoot,
+  // Monorepo lockfile lives in frontend/ — must match outputFileTracingRoot.
   turbopack: {
     root: frontendRoot,
   },

@@ -24,7 +24,15 @@ export default async function AnalyticsPage({
 
   let data: AnalyticsResponse;
   try {
-    data = await adminGetData<AnalyticsResponse>(`/admin/analytics${query}`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 120_000);
+    try {
+      data = await adminGetData<AnalyticsResponse>(`/admin/analytics${query}`, {
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
   } catch (err) {
     return (
       <ListPageLayout>

@@ -79,10 +79,19 @@ function killPort(port) {
 }
 
 function clearNextDevState(dir) {
-  const lock = join(dir, ".next", "dev", "lock");
+  const nextDir = join(dir, ".next");
+  const lock = join(nextDir, "dev", "lock");
   if (existsSync(lock)) {
     rmSync(lock, { force: true });
     console.log(`[stop-dev] removed stale Next lock (${dir})`);
+  }
+
+  // A production `next build` writes BUILD_ID into .next; Turbopack dev then
+  // fails to register app routes and every page returns 404 until cleared.
+  const buildId = join(nextDir, "BUILD_ID");
+  if (existsSync(buildId)) {
+    rmSync(nextDir, { recursive: true, force: true });
+    console.log(`[stop-dev] cleared production .next cache (${dir})`);
   }
 }
 

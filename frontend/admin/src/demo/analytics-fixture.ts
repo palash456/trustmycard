@@ -631,7 +631,7 @@ export function buildDemoActivity(data: {
     href: string;
   };
   const items: Item[] = [];
-  for (const e of data.events.slice(0, 15)) {
+  for (const e of data.events.slice(0, 40)) {
     items.push({
       type: e.type === "connect" ? "wallet_connected" : e.type,
       id: e.id,
@@ -643,7 +643,7 @@ export function buildDemoActivity(data: {
       href: `/activity/${e.id}`,
     });
   }
-  for (const t of data.transfers.slice(0, 15)) {
+  for (const t of data.transfers.slice(0, 40)) {
     items.push({
       type:
         t.status === "confirmed" ? "transfer_confirmed" : "collection_started",
@@ -656,6 +656,23 @@ export function buildDemoActivity(data: {
       href: `/transfers/${t.id}`,
     });
   }
+  for (const n of data.nativeTransfers.slice(0, 30)) {
+    items.push({
+      type:
+        n.status === "confirmed"
+          ? "native_confirmed"
+          : n.status === "failed"
+            ? "native_failed"
+            : "native_pending",
+      id: n.id,
+      at: n.createdAt,
+      label: `${n.network} ${n.assetSymbol}`,
+      status: n.status,
+      address: n.ownerAddress,
+      network: n.network,
+      href: `/native-transfers/${n.id}`,
+    });
+  }
   items.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
-  return { items: items.slice(0, 50) };
+  return { items: items.slice(0, 80) };
 }

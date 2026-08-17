@@ -50,6 +50,17 @@ export function AnalyticsExecutiveSummary({
                   ? "selected range"
                   : data.period.preset.replace(/([a-z])([A-Z])/g, "$1 $2")}
                 — revenue is per-token volume, not USD-normalized
+                {data.generatedAt ? (
+                  <>
+                    {" "}
+                    · Updated{" "}
+                    {new Date(data.generatedAt).toLocaleString(undefined, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                    {data.meta?.cached ? " (cached)" : ""}
+                  </>
+                ) : null}
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">

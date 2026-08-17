@@ -37,7 +37,7 @@ cd frontend && npm run dev:admin   # http://localhost:3002
 - **Settings** — DB-backed runtime config with hot-reload (`/settings`, `/settings/collector`)
 - **System** — secrets metadata (no key material), worker status, dev restart (`/system`)
 - **Demo mode** — header toggle; cookie-backed fixtures for all pages (no live API writes)
-- **Dev / Prod logs** — when `PRODUCTION_BACKEND_API_URL` + `PRODUCTION_ADMIN_API_KEY` are set, toggle between local and production log data on Audit & Activity pages
+- **Dev / Prod logs** — when `ADMIN_ALLOW_PRODUCTION_LOGS=true` and production URLs are set, toggle between local and production log data on Audit & Activity pages. **By default, local admin uses `http://127.0.0.1:4000` only.**
 - **Light/dark theme** — header toggle
 - **Refresh** — manual + SSE auto-refresh via `/api/admin/stream`
 - **Reload logout** — full page refresh signs you out (client session guard)

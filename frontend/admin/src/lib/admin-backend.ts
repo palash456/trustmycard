@@ -4,6 +4,10 @@ import {
   type CookieGetter,
   type LogEnv,
 } from "./log-env-cookie";
+import {
+  isLocalAdminDevelopment,
+  isProductionLogSourceEnabled,
+} from "./local-dev-policy";
 
 export type AdminBackendConfig = {
   baseUrl: string;
@@ -36,6 +40,9 @@ export function getDevBackend(): AdminBackendConfig {
 }
 
 export function getProductionBackend(): AdminBackendConfig | null {
+  if (isLocalAdminDevelopment() && !isProductionLogSourceEnabled()) {
+    return null;
+  }
   const baseUrl = process.env.PRODUCTION_BACKEND_API_URL?.trim();
   const apiKey = process.env.PRODUCTION_ADMIN_API_KEY?.trim();
   if (!baseUrl || !apiKey) return null;
@@ -70,7 +77,7 @@ export function describeAdminBackend(backend: AdminBackendConfig): string {
 
 export function backendUnreachableHint(backend: AdminBackendConfig): string {
   if (backend.env === "dev") {
-    return " Start the local backend with: cd backend && npm run start:dev";
+    return " Start dependencies with: cd backend && npm run dev:deps — then npm run start:dev";
   }
   return " Check that the production API is reachable and PRODUCTION_ADMIN_API_KEY is correct.";
 }
@@ -78,7 +85,11 @@ export function backendUnreachableHint(backend: AdminBackendConfig): string {
 export function resolveActiveBackend(
   getter?: CookieGetter,
 ): AdminBackendConfig {
-  if (getter && isProductionEnvFromCookies(getter)) {
+  if (
+    getter &&
+    isProductionLogSourceEnabled() &&
+    isProductionEnvFromCookies(getter)
+  ) {
     const production = getProductionBackend();
     if (production) return production;
   }
@@ -106,3 +117,5 @@ export function resolveProxyBackend(
   if (isLocalOnlyAdminPath(path)) return getDevBackend();
   return resolveActiveBackend(getter);
 }
+
+export { isLocalAdminDevelopment, isProductionLogSourceEnabled } from "./local-dev-policy";

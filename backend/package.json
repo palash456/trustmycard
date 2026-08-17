@@ -9,6 +9,8 @@
     "build": "nest build",
     "start": "nest start",
     "prestart:dev": "npm run build --prefix ../frontend/shared",
+    "dev:deps": "docker compose -f ../deploy/compose/docker-compose.base.yml -f ../deploy/compose/docker-compose.local-dev.yml up -d postgres redis",
+    "dev:deps:down": "docker compose -f ../deploy/compose/docker-compose.base.yml -f ../deploy/compose/docker-compose.local-dev.yml down",
     "start:dev": "TMC_ENV=development node ../scripts/run-with-tmc-env.mjs backend npx nest start --watch",
     "prestart:prod": "npm run build --prefix ../frontend/shared",
     "start:prod": "node dist/main.js",

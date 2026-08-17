@@ -307,6 +307,11 @@ export type AnalyticsResponse = {
   };
   insights: AnalyticsInsight[];
   generatedAt: string;
+  meta?: {
+    cached?: boolean;
+    cacheTtlSec?: number;
+    dbConcurrency?: number;
+  };
 };
 
 export type AnalyticsActivityResponse = {

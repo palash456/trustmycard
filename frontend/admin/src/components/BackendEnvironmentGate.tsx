@@ -6,6 +6,7 @@ import { useLogEnv } from "@/components/LogEnvProvider";
 import { useBackendStatus } from "@/components/BackendStatusProvider";
 import { BackendUnavailablePanel } from "@/components/BackendUnavailablePanel";
 import { PageSkeleton } from "@/components/skeletons/PageSkeletons";
+import { isMonitoringAdminPath } from "@/lib/local-dev-policy";
 import { skeletonVariantForPath } from "@/lib/skeleton-variant";
 
 export function BackendEnvironmentGate({
@@ -19,16 +20,17 @@ export function BackendEnvironmentGate({
   const { isChecking, isSwitching, health } = useBackendStatus();
   const variant = skeletonVariantForPath(pathname);
   const productionConfigured = Boolean(health?.production.url);
+  const inlineMonitoring = isMonitoringAdminPath(pathname);
 
   if (demo) {
     return children;
   }
 
-  if (isChecking || isSwitching) {
+  if ((isChecking || isSwitching) && !inlineMonitoring) {
     return <PageSkeleton variant={variant} />;
   }
 
-  if (health && !health.active.ok) {
+  if (health && !health.active.ok && !inlineMonitoring) {
     return (
       <div className="flex min-h-[50vh] items-start justify-center pt-8">
         <BackendUnavailablePanel

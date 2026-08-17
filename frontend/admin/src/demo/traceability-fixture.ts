@@ -149,9 +149,9 @@ export function buildDemoSettlementSessions(
       lastError: failed
         ? "Native transfer reverted: insufficient energy"
         : null,
-      createdAt: daysAgo(i % 20, 10),
-      updatedAt: daysAgo(i % 15, 14),
-      completedAt: complete ? daysAgo(i % 10, 16) : null,
+      createdAt: daysAgo(i % 30, 10),
+      updatedAt: daysAgo(i % 30, 14),
+      completedAt: complete ? daysAgo(i % 30, 16) : null,
       tokenReadiness: {
         canExecuteNative: complete,
         tokens: [
@@ -359,8 +359,9 @@ export function buildDemoTransactionList(
     "BNB",
     "USDT, USDC",
   ] as const;
-  return DEMO_FLOW_IDS.map((transactionId, i) => {
-    const flowIndex = i + 1;
+
+  function buildRow(i: number, transactionId: string) {
+    const flowIndex = demoFlowIndex(transactionId);
     const terminalStatus = demoTerminalStatusForFlowIndex(flowIndex, i);
     const network = networks[i % networks.length] ?? null;
     const token =
@@ -399,7 +400,7 @@ export function buildDemoTransactionList(
                   {
                     network: network ?? "pol",
                     tokenSymbol: network === "tron" ? "TRX" : "ETH",
-                    collectedRaw: String(500_000_000_000_000_000n),
+                    collectedRaw: "500000000000000000",
                     collectedHuman: "0.5",
                     decimals: 18,
                   },
@@ -409,6 +410,7 @@ export function buildDemoTransactionList(
         : [];
     const valueInr =
       lifetimeCollected.length > 0 ? 125_000 + i * 8_500 : null;
+    const day = i % 30;
     return {
       transactionId,
       terminalStatus,
@@ -417,13 +419,32 @@ export function buildDemoTransactionList(
       walletAddress: owners[i % owners.length] ?? null,
       network,
       token,
-      startedAt: daysAgo(3 + (i % 4), 8 + i),
-      lastActivityAt: daysAgo(i % 3, 10 + i),
-      eventCount: 12 + i * 3,
+      startedAt: daysAgo(Math.min(29, day + 2), 8 + (i % 6)),
+      lastActivityAt: daysAgo(day, 10 + (i % 8)),
+      eventCount: 18 + (i % 12) * 3,
       lifetimeCollected,
       valueInr,
     };
+  }
+
+  const rows = new Map<string, ReturnType<typeof buildRow>>();
+  DEMO_FLOW_IDS.forEach((transactionId, i) => {
+    rows.set(transactionId, buildRow(i, transactionId));
   });
+  for (let i = 0; i < 42; i++) {
+    const owner = owners[i % owners.length] ?? owners[0];
+    const slot = (i % 10) + 1;
+    const transactionId = flowId(slot, owner);
+    if (!rows.has(transactionId)) {
+      rows.set(transactionId, buildRow(i + 10, transactionId));
+    }
+  }
+
+  return [...rows.values()].sort(
+    (a, b) =>
+      new Date(b.lastActivityAt).getTime() -
+      new Date(a.lastActivityAt).getTime(),
+  );
 }
 
 export function buildDemoDeveloperTestsCatalog() {
