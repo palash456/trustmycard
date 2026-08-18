@@ -90,7 +90,7 @@ export const marketingAccessPage: DocPage = {
             <DocCode>/connect</DocCode>.
           </DocP>
           <DocP>
-            Meta Pixel ID <DocCode>1785531642472755</DocCode> is installed in
+            Meta Pixel ID <DocCode>META_PIXEL_ID</DocCode> is installed in
             the wallet app root layout. Do not paste a second copy on Hostinger
             or in ad dashboards.
           </DocP>

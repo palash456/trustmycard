@@ -107,7 +107,7 @@ https://mytrustvisa.cards/?utm_source=instagram&utm_medium=paid&utm_campaign=YOU
 ### Meta Pixel
 
 - Installed in code via `MetaPixel` in the root layout — loads on all public pages.
-- **Pixel ID:** `1785531642472755`
+- **Pixel ID:** `See META_PIXEL_ID in the file platform.env in config`
 - Do not paste a second copy on Hostinger static marketing or in ad dashboards.
 - Verify in Meta Events Manager → Test Events after a real ad click.
 

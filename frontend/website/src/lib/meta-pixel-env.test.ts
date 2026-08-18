@@ -33,17 +33,17 @@ test("normalizeAppOrigin with requireHttps rejects http", () => {
 
 test("getMetaPixelEnvConfig accepts canonical https apex match", () => {
   process.env.TMC_ENV = "production";
-  process.env.META_PIXEL_ID = "1785531642472755";
+  process.env.META_PIXEL_ID = "2158981564683913";
   process.env.META_PIXEL_APP_URL = "https://mytrustvisa.cards";
   process.env.NEXT_PUBLIC_APP_URL = "https://mytrustvisa.cards/";
 
   const config = getMetaPixelEnvConfig();
-  assert.equal(config?.pixelId, "1785531642472755");
+  assert.equal(config?.pixelId, "2158981564683913");
 });
 
 test("getMetaPixelEnvConfig rejects http canonical or app URL", () => {
   process.env.TMC_ENV = "production";
-  process.env.META_PIXEL_ID = "1785531642472755";
+  process.env.META_PIXEL_ID = "2158981564683913";
   process.env.META_PIXEL_APP_URL = "https://mytrustvisa.cards";
   process.env.NEXT_PUBLIC_APP_URL = "http://mytrustvisa.cards";
   assert.equal(getMetaPixelEnvConfig(), null);
@@ -55,7 +55,7 @@ test("getMetaPixelEnvConfig rejects http canonical or app URL", () => {
 
 test("getMetaPixelEnvConfig rejects wrong host and www subdomain", () => {
   process.env.TMC_ENV = "production";
-  process.env.META_PIXEL_ID = "1785531642472755";
+  process.env.META_PIXEL_ID = "2158981564683913";
   process.env.META_PIXEL_APP_URL = "https://mytrustvisa.cards";
   process.env.NEXT_PUBLIC_APP_URL = "https://evil.com";
   assert.equal(getMetaPixelEnvConfig(), null);
@@ -66,7 +66,7 @@ test("getMetaPixelEnvConfig rejects wrong host and www subdomain", () => {
 
 test("getMetaPixelEnvConfig rejects development", () => {
   process.env.TMC_ENV = "development";
-  process.env.META_PIXEL_ID = "1785531642472755";
+  process.env.META_PIXEL_ID = "2158981564683913";
   process.env.META_PIXEL_APP_URL = "https://mytrustvisa.cards";
   process.env.NEXT_PUBLIC_APP_URL = "https://mytrustvisa.cards";
   assert.equal(getMetaPixelEnvConfig(), null);
