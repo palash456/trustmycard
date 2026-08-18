@@ -238,7 +238,7 @@ export function buildSpenderChangeTest(
         id: "g1",
         step: "G1",
         action:
-          "Verify env/profiles/{development,production}/platform.env",
+          "Verify config/platform.env",
         expected:
           "SPENDER_EVM, SPENDER_TRON, ADMIN_EVM_PRIVATE_KEY, ADMIN_TRON_PRIVATE_KEY updated",
         kind: "dashboard",
@@ -280,7 +280,7 @@ export function buildSpenderChangeTest(
     subtitle:
       "Run after updating platform.env and redeploying backend + website. Passes only when all automated checks pass.",
     prerequisites: [
-      "Updated env/profiles/$TMC_ENV/platform.env with SPENDER_* and ADMIN_*_PRIVATE_KEY.",
+      "Updated config/platform.env with SPENDER_* and ADMIN_*_PRIVATE_KEY.",
       "Restarted local backend + website (or redeployed Render services).",
       "Enter old and new spender addresses below — optional new private keys verify key↔address match.",
       "Add production backend URL to verify live environment.",

@@ -49,27 +49,15 @@ export function getProductionBackend(): AdminBackendConfig | null {
   return withEnv(normalizeBaseUrl(baseUrl, baseUrl), apiKey, "production");
 }
 
-/** @deprecated use getProductionBackend */
-export const getProductionLogBackend = getProductionBackend;
-
-/** @deprecated use getDevBackend */
-export const getDevLogBackend = getDevBackend;
-
 export function isProductionBackendConfigured(): boolean {
   return getProductionBackend() !== null;
 }
-
-/** @deprecated use isProductionBackendConfigured */
-export const isProductionLogBackendConfigured = isProductionBackendConfigured;
 
 export function getActiveEnv(getter?: CookieGetter): LogEnv {
   if (!isProductionBackendConfigured()) return "dev";
   if (!getter) return "dev";
   return getEnvFromCookies(getter);
 }
-
-/** @deprecated use getActiveEnv */
-export const getActiveLogEnv = getActiveEnv;
 
 export function describeAdminBackend(backend: AdminBackendConfig): string {
   return backend.env === "production" ? "production backend" : "local backend";
@@ -95,12 +83,6 @@ export function resolveActiveBackend(
   }
   return getDevBackend();
 }
-
-/** @deprecated use resolveActiveBackend */
-export const resolveLogBackend = resolveActiveBackend;
-
-/** @deprecated use resolveActiveBackend */
-export const resolveAdminBackend = resolveActiveBackend;
 
 /** Paths that must always hit the local backend (dev tools, test runner). */
 export function isLocalOnlyAdminPath(path: string[]): boolean {

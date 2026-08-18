@@ -170,8 +170,8 @@ export const overviewPage: DocPage = {
           <DocP>
             Backend requires PostgreSQL (<DocCode>DATABASE_URL</DocCode>) and
             Redis (<DocCode>REDIS_URL</DocCode>) for queue mode. Copy{" "}
-            <DocCode>env/profiles/development/platform.env.example</DocCode> to{" "}
-            <DocCode>env/profiles/development/platform.env</DocCode> and run{" "}
+            <DocCode>config/platform.env.example</DocCode> to{" "}
+            <DocCode>config/platform.env</DocCode> and run{" "}
             <DocCode>npx prisma db push</DocCode>.
           </DocP>
         </>

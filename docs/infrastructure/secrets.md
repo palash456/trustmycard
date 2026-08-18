@@ -6,11 +6,12 @@ Templates live in `env/profiles/production/`. Copy examples to live files locall
 
 | File                 | Used by                                |
 | -------------------- | -------------------------------------- |
-| `platform.env`       | API + worker (shared platform flags)   |
+| `config/platform.env`| Wallets, collector, chains, Meta Pixel |
+| `backend.env`        | Backend infra (local dev + production micro/budget) |
 | `backend-api.env`    | Render `tmc-api` overlay               |
 | `backend-worker.env` | Render `tmc-workers` overlay           |
-| `website.env`        | Wallet app (+ local marketing preview via same file) |
-| `admin.env`          | Render `tmc-admin`                                   |
+| `website.env`        | Wallet app (+ local marketing preview) |
+| `admin.env`          | Admin panel                            |
 
 Loader: [`config/load-env.mjs`](../../config/load-env.mjs) — `SERVICE_ROLE` selects `backend-api.env` vs `backend-worker.env`.
 

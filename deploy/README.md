@@ -16,8 +16,8 @@ Runs **backend + wallet only** with **external** Neon Postgres + Upstash Redis. 
 
 ```bash
 cp deploy/manifest.production.micro.example.json deploy/manifest.production.json
-cp env/profiles/production/backend-budget.env.example env/profiles/production/backend-budget.env
-# fill backend-budget.env (DATABASE_URL, REDIS_URL, keys) + website.env (NEXT_PUBLIC_*)
+cp env/profiles/production/backend.env.example env/profiles/production/backend.env
+# fill backend.env (DATABASE_URL, REDIS_URL, keys) + website.env (NEXT_PUBLIC_*)
 
 cp deploy/provider.credentials.example.env deploy/provider.credentials.env
 # fill VPS_HOST, VPS_USER, VPS_SSH_KEY

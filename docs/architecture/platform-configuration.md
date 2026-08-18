@@ -4,8 +4,7 @@
 
 Platform-wide settings are loaded by [`config/load-env.mjs`](../../config/load-env.mjs) from:
 
-- Legacy: `config/platform.env`
-- Per environment: `env/profiles/$TMC_ENV/platform.env` (overrides legacy when present)
+- Platform config: `config/platform.env`
 
 See [environments.md](../infrastructure/environments.md) for `development` and `production`.
 
@@ -30,12 +29,11 @@ Admin APIs / schedulers / services
 
 | Location                                                             | Contents                                                                                                                                    |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `env/profiles/$TMC_ENV/platform.env`                                 | Per-environment platform overrides (wallets, flags, …)                                                                                      |
-| `config/platform.env`                                                | Legacy platform config (still supported)                                                                                                    |
-| `env/profiles/$TMC_ENV/backend.env` or `backend/.env.local`          | **Infrastructure**: `DATABASE_URL`, `PORT`, `ADMIN_API_KEY`, `REDIS_URL`, `LOG_LEVEL`                                                       |
-| `env/profiles/$TMC_ENV/website.env` or `frontend/website/.env.local` | **App infra**: `NEXT_PUBLIC_PROJECT_ID`, `BACKEND_API_URL`, Telegram                                                                        |
-| `env/profiles/$TMC_ENV/admin.env` or `frontend/admin/.env.local`     | **Admin infra**: session/login secrets, `BACKEND_API_URL`, `ADMIN_API_KEY`                                                                  |
-| `AppSettings` (Postgres)                                             | **Runtime admin overrides** of tunable platform keys (collector interval, allow-self-spender, …). Defaults always come from `platform.env`. |
+| `config/platform.env`                                                | Platform-wide config (wallets, flags, collector, Meta Pixel)                                                                                |
+| `env/profiles/$TMC_ENV/backend.env`                                  | **Infrastructure**: `DATABASE_URL`, `PORT`, `ADMIN_API_KEY`, `REDIS_URL`, `LOG_LEVEL`                                                       |
+| `env/profiles/$TMC_ENV/website.env`                                  | **App infra**: `NEXT_PUBLIC_PROJECT_ID`, `BACKEND_API_URL`, Telegram                                                                        |
+| `env/profiles/$TMC_ENV/admin.env`                                    | **Admin infra**: session/login secrets, `BACKEND_API_URL`, `ADMIN_API_KEY`                                                                  |
+| `AppSettings` (Postgres)                                             | **Runtime admin overrides** of tunable platform keys (collector interval, allow-self-spender, …). Defaults always come from `config/platform.env`. |
 
 ## Spender addresses
 

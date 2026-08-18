@@ -1,5 +1,6 @@
 import { existsSync } from "fs";
-import { COMPONENTS, DATA_MODES, PROVIDERS, TOPOLOGIES } from "./types.mjs";
+import { join } from "path";
+import { COMPONENTS, DATA_MODES, PROVIDERS, TOPOLOGIES, repoRoot } from "./types.mjs";
 import { loadProfileEnv } from "./config-compiler.mjs";
 
 export function validateDeployContext(ctx) {
@@ -24,9 +25,10 @@ export function validateDeployContext(ctx) {
   }
 
   const profile = loadProfileEnv(environment);
-  if (!existsSync(profile.platform._path)) {
+  const configPlatformPath = join(repoRoot, "config/platform.env");
+  if (!existsSync(configPlatformPath)) {
     errors.push(
-      `Missing ${profile.platform._path} — copy from platform.env.example`,
+      `Missing ${configPlatformPath} — copy from config/platform.env.example`,
     );
   }
 
@@ -37,42 +39,42 @@ export function validateDeployContext(ctx) {
         'topology "micro" on a VPS requires data.mode=external (Neon Postgres + Upstash Redis) — bundled DB does not fit a 512 MB VPS',
       );
     }
-    if (!existsSync(profile.backendBudget._path) && provider !== "local") {
+    if (!existsSync(profile.backend._path) && provider !== "local") {
       errors.push(
-        `Missing ${profile.backendBudget._path} — copy from backend-budget.env.example`,
+        `Missing ${profile.backend._path} — copy from backend.env.example`,
       );
     }
     if (dataMode === "external") {
-      const databaseUrl = profile.backendBudget.DATABASE_URL?.trim();
-      const redisUrl = profile.backendBudget.REDIS_URL?.trim();
+      const databaseUrl = profile.backend.DATABASE_URL?.trim();
+      const redisUrl = profile.backend.REDIS_URL?.trim();
       if (!databaseUrl) {
         errors.push(
-          "backend-budget.env: DATABASE_URL is required for micro + external data",
+          "backend.env: DATABASE_URL is required for micro + external data",
         );
       } else if (
         databaseUrl.includes("USER:PASSWORD") ||
         databaseUrl.includes("@HOST")
       ) {
         errors.push(
-          "backend-budget.env: DATABASE_URL is still a placeholder — paste your Neon connection string",
+          "backend.env: DATABASE_URL is still a placeholder — paste your Neon connection string",
         );
       }
       if (!redisUrl) {
         errors.push(
-          "backend-budget.env: REDIS_URL is required for micro + external data",
+          "backend.env: REDIS_URL is required for micro + external data",
         );
       } else if (redisUrl.includes("PASSWORD@HOST")) {
         errors.push(
-          "backend-budget.env: REDIS_URL is still a placeholder — paste your Upstash rediss:// URL",
+          "backend.env: REDIS_URL is still a placeholder — paste your Upstash rediss:// URL",
         );
       }
     }
   }
 
-  if (manifest.topology === "budget" && !existsSync(profile.backendBudget._path)) {
+  if (manifest.topology === "budget" && !existsSync(profile.backend._path)) {
     if (provider !== "local") {
       errors.push(
-        `Missing ${profile.backendBudget._path} — copy from backend-budget.env.example`,
+        `Missing ${profile.backend._path} — copy from backend.env.example`,
       );
     }
   }

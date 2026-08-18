@@ -6,14 +6,14 @@
 env/profiles/
   development/
   production/
-    platform.env.example
-    backend.env.example         # local / VPS monolith
-    backend-budget.env.example  # Neon + Upstash (budget / micro VPS)
+    backend.env.example         # local dev / production infra (Postgres, Redis, origins)
     backend-api.env.example     # Render API (no collection keys)
     backend-worker.env.example  # Render workers (signing)
-    website.env.example         # public site (wallet app; marketing preview shares this file)
+    website.env.example         # public site (wallet app)
     admin.env.example
 ```
+
+**Platform config** (wallets, collector, chains, Meta Pixel): `config/platform.env` only — not duplicated per profile.
 
 **Wallet SDK** has no separate env file — it runs inside the wallet app.
 
@@ -23,7 +23,7 @@ env/profiles/
 | -------------- | -------------------- | -------------------- |
 | `api`          | `backend-api.env`    | not allowed          |
 | `worker`       | `backend-worker.env` | required             |
-| `all`          | `backend.env` / `backend-budget.env` | optional (local dev / micro VPS) |
+| `all`          | `backend.env`        | optional (local dev / micro VPS) |
 
 See [docs/infrastructure/secrets.md](../../docs/infrastructure/secrets.md).
 
@@ -32,15 +32,13 @@ See [docs/infrastructure/secrets.md](../../docs/infrastructure/secrets.md).
 ```bash
 PROFILE=production   # or development
 
-cp env/profiles/$PROFILE/platform.env.example env/profiles/$PROFILE/platform.env  # optional if using config/platform.env
+cp config/platform.env.example config/platform.env
 cp env/profiles/$PROFILE/backend.env.example   env/profiles/$PROFILE/backend.env
 cp env/profiles/$PROFILE/website.env.example   env/profiles/$PROFILE/website.env
 cp env/profiles/$PROFILE/admin.env.example     env/profiles/$PROFILE/admin.env
 # Production split deploy also:
 cp env/profiles/$PROFILE/backend-api.env.example env/profiles/$PROFILE/backend-api.env
 cp env/profiles/$PROFILE/backend-worker.env.example env/profiles/$PROFILE/backend-worker.env
-# Micro VPS / budget with external DB:
-cp env/profiles/$PROFILE/backend-budget.env.example env/profiles/$PROFILE/backend-budget.env
 ```
 
 ## Switch environments

@@ -89,7 +89,7 @@ export const spenderChangePage: DocPage = {
       content: (
         <>
           <DocP>
-            Edit <DocCode>env/profiles/$TMC_ENV/platform.env</DocCode> for each
+            Edit <DocCode>config/platform.env</DocCode> for each
             environment you rotate:
           </DocP>
           <DocPre>{`# EVM collector
@@ -105,8 +105,8 @@ ALLOW_SELF_SPENDER=false`}</DocPre>
           <DocTable
             headers={["Profile", "Path"]}
             rows={[
-              ["development", "env/profiles/development/platform.env"],
-              ["production", "env/profiles/production/platform.env"],
+              ["development", "config/platform.env"],
+              ["production", "config/platform.env"],
             ]}
           />
           <DocCallout variant="tip">

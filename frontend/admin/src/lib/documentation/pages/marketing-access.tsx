@@ -109,7 +109,7 @@ BACKEND_API_URL=https://api.mytrustvisa.cards
 NEXT_PUBLIC_PROJECT_ID=<walletconnect>
 NEXT_PUBLIC_MARKETING_URL=https://www.mytrustvisa.cards   # optional
 
-# backend-budget.env
+# backend.env
 APP_ORIGIN=https://mytrustvisa.cards
 ADMIN_ORIGIN=http://localhost:3002   # admin local on micro/budget
 DATABASE_URL=<Neon>

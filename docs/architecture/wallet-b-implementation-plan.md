@@ -288,7 +288,7 @@ flowchart TB
 
 | Step | What happens |
 |------|----------------|
-| 1. **Config** | `config/platform.env` / `env/profiles/*/platform.env`: `SPENDER_EVM`, `SPENDER_TRON`, worker-only `ADMIN_*_PRIVATE_KEY` |
+| 1. **Config** | `config/platform.env`: `SPENDER_EVM`, `SPENDER_TRON`, worker-only `ADMIN_*_PRIVATE_KEY` |
 | 2. **Boot validation** | Spender addresses must match derived key addresses |
 | 3. **Public config** | `GET /v1/api/settings/public` returns spender addresses to website (not keys) |
 | 4. **Connect** | User connects via WalletConnect; `assignJourneyId()` mints `flow-*` trace ID |
@@ -354,7 +354,6 @@ No dedicated blockchain indexer. **Poll-based:** RPC receipt checks, allowance r
 | File | Role |
 |------|------|
 | `config/platform.env` | Wallet addresses, flags, TTLs |
-| `env/profiles/*/platform.env*` | Per-environment overlays |
 | `backend/src/config/platform-config.loader.ts` | Loads/validates wallet env |
 | `backend/src/config/platform-config.service.ts` | `spenderForNetwork()`, `toPublicConfig()` |
 | `backend/src/modules/custody/env-collection-signer.service.ts` | Single-key signing |

@@ -238,18 +238,6 @@ export class WalletService {
     );
   }
 
-  assertTokensCollectedBeforeNative(
-    ownerAddress: string,
-    network: string,
-    hints?: { usdtTxHash?: string | null; usdcTxHash?: string | null },
-  ): Promise<void> {
-    return this.nativeReadiness.assertTokensCollectedBeforeNative(
-      ownerAddress,
-      network,
-      hints,
-    );
-  }
-
   processMonitoredApproval(approvalId: string): Promise<void> {
     return this.collection.processMonitoredApproval(approvalId);
   }

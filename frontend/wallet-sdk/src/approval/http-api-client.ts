@@ -285,23 +285,6 @@ export function createHttpApprovalApiClient(
       } satisfies PersistApprovalResult;
     },
 
-    /** @deprecated Use verifyAllowance + persistApproval */
-    async confirmApproval({ request, prepared, txHash, signal }) {
-      const verified = await this.verifyAllowance!({
-        request,
-        prepared,
-        signal,
-      });
-      const persisted = await this.persistApproval!({
-        request,
-        prepared,
-        txHash,
-        verified,
-        signal,
-      });
-      return { ...persisted, ...verified };
-    },
-
     async postApprovalLog({ request, ok, error }): Promise<PostApprovalResult> {
       await postTgLog({
         type: "approve",

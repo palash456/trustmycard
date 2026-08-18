@@ -6,8 +6,8 @@ Provider-independent deployment using OCI images and adapters.
 
 ```bash
 cp deploy/manifest.production.example.json deploy/manifest.production.json
-cp env/profiles/production/platform.env.example env/profiles/production/platform.env
-# fill platform.env (or use existing local production profile)
+cp config/platform.env.example config/platform.env
+# fill platform.env + profile app env files
 
 chmod +x deploy.sh
 ./deploy.sh production --fresh --provider local

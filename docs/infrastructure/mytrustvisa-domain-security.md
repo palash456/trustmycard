@@ -127,7 +127,7 @@ NEXT_PUBLIC_PROJECT_ID=<walletconnect project id>
 
 **Removed (legacy gate):** `MARKETING_SESSION_*`, `MARKETING_TEST_SECRET`, `GOOGLE_ADS_*`
 
-### Backend (`backend-budget.env` / platform)
+### Backend (`backend.env` + `config/platform.env`)
 
 ```env
 APP_ORIGIN=https://mytrustvisa.cards

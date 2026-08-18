@@ -238,7 +238,7 @@ NEXT_PUBLIC_APP_URL=https://new-domain.example
 NEXT_PUBLIC_MARKETING_URL=https://www.new-domain.example
 BACKEND_API_URL=https://api.new-domain.example
 
-# env/profiles/production/backend-budget.env (or platform)
+# env/profiles/production/backend.env
 APP_ORIGIN=https://new-domain.example`}</DocPre>
       ),
     },

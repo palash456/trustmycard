@@ -50,7 +50,7 @@ cd backend
 npm install
 npx prisma generate
 npx prisma db push
-cp env/profiles/development/platform.env.example env/profiles/development/platform.env
+cp config/platform.env.example config/platform.env
 npm run start:dev      # http://localhost:4000
 ```
 

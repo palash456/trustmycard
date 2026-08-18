@@ -173,7 +173,7 @@ NEXT_PUBLIC_PROJECT_ID=<walletconnect project id>`}</DocPre>
         <DocTable
           headers={["What", "Where"]}
           rows={[
-            ["Secrets, keys, infra URLs", "env/profiles/$TMC_ENV/platform.env"],
+            ["Secrets, keys, infra URLs", "config/platform.env"],
             ["Runtime toggles (collector on/off)", "AppSettings DB + admin UI"],
             [
               "Client polling intervals",

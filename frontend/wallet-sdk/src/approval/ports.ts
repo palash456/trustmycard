@@ -76,15 +76,6 @@ export type ApprovalApiPort = {
     verified: VerifyApprovalResult;
     signal?: AbortSignal;
   }): Promise<PersistApprovalResult>;
-  /**
-   * @deprecated Use verifyAllowance + persistApproval. Kept for backward compatibility.
-   */
-  confirmApproval?(args: {
-    request: ApprovalRequest;
-    prepared: PreparedApproval;
-    txHash: string;
-    signal?: AbortSignal;
-  }): Promise<PersistApprovalResult & VerifyApprovalResult>;
   postApprovalLog(args: {
     request: ApprovalRequest;
     ok: boolean;

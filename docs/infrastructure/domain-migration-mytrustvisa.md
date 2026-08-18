@@ -37,7 +37,7 @@ BACKEND_API_URL=https://api.mytrustvisa.cards
 NEXT_PUBLIC_PROJECT_ID=<walletconnect>
 ```
 
-**backend-budget.env:**
+**backend.env:**
 
 ```env
 APP_ORIGIN=https://mytrustvisa.cards

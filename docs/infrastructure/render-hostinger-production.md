@@ -35,7 +35,7 @@ Marketing and core use **different providers** on purpose — a marketing takedo
 PROFILE=production
 cd /path/to/trustmycard
 
-cp env/profiles/$PROFILE/platform.env.example env/profiles/$PROFILE/platform.env
+cp config/platform.env.example config/platform.env
 cp env/profiles/$PROFILE/backend-api.env.example env/profiles/$PROFILE/backend-api.env
 cp env/profiles/$PROFILE/backend-worker.env.example env/profiles/$PROFILE/backend-worker.env
 cp env/profiles/$PROFILE/website.env.example env/profiles/$PROFILE/website.env

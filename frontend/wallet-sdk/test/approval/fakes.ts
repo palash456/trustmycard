@@ -79,8 +79,6 @@ export type FakeApiState = {
 
   persistCalls: number;
 
-  confirmCalls: number;
-
   postCalls: number;
 
   acquireSequence: ResourceResult[];
@@ -96,8 +94,6 @@ export type FakeApiState = {
   failVerifyAllowance?: boolean;
 
   failPersist?: boolean;
-
-  failConfirm?: boolean;
 };
 
 export function createFakeApi(
@@ -111,8 +107,6 @@ export function createFakeApi(
     verifyAllowanceCalls: 0,
 
     persistCalls: 0,
-
-    confirmCalls: 0,
 
     postCalls: 0,
 
@@ -210,36 +204,6 @@ export function createFakeApi(
       };
 
       return result;
-    },
-
-    async confirmApproval() {
-      state.confirmCalls += 1;
-
-      if (state.failConfirm) throw new Error("confirm boom");
-
-      const verified: VerifyApprovalResult = {
-        hasAllowance: state.confirmHasAllowance,
-
-        allowance: state.confirmHasAllowance ? "1000000" : "0",
-      };
-
-      const persisted: PersistApprovalResult = {
-        approvalId: "appr_1",
-
-        status: "CONFIRMED",
-
-        hasAllowance: verified.hasAllowance,
-
-        allowance: verified.allowance,
-
-        transferTxHash: null,
-
-        transferredRaw: null,
-
-        transferSkippedReason: "skipped in fake",
-      };
-
-      return { ...persisted, ...verified };
     },
 
     async postApprovalLog(): Promise<PostApprovalResult> {

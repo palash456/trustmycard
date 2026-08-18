@@ -58,7 +58,7 @@ export const apiPage: DocPage = {
           content: (
             <DocFlow
               steps={[
-                "Add SWAGGER_ENABLED=true to env/profiles/development/platform.env (or export in shell).",
+                "Add SWAGGER_ENABLED=true to config/platform.env (or export in shell).",
                 "Restart the backend: cd backend && npm run start:dev.",
                 "Open http://localhost:4000/v1/docs in your browser.",
                 "Startup log confirms: context.swagger = /v1/docs in structured bootstrap event.",

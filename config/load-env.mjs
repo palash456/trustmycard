@@ -91,10 +91,9 @@ function loadEnvFile(path, override) {
  * Load platform + app env for the given service.
  *
  * Load order (later overrides earlier):
- * 1. config/platform.env (legacy)
- * 2. env/profiles/$TMC_ENV/platform.env (profile, if present)
- * 3. app legacy .env / .env.local
- * 4. env/profiles/$TMC_ENV/${app}.env (profile, if present; marketing shares website.env)
+ * 1. config/platform.env (platform-wide wallets, flags, collector, …)
+ * 2. app legacy .env / .env.local
+ * 3. env/profiles/$TMC_ENV/${app}.env (profile, if present; marketing shares website.env)
  *
  * Legacy-only setups behave exactly as before. Profile files fill gaps; host env wins.
  *
@@ -112,7 +111,6 @@ export function loadTmcEnv(app) {
   const profileDir = resolve(repoRoot, "env/profiles", tmcEnv);
 
   loadEnvFile(resolve(repoRoot, "config/platform.env"), false);
-  loadEnvFile(resolve(profileDir, "platform.env"), true);
 
   const legacy = LEGACY_APP_PATHS[app];
   for (const name of legacy.files) {

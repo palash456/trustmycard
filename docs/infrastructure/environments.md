@@ -11,10 +11,9 @@ Trust My Card uses one codebase and two configuration profiles. The active profi
 
 [`config/load-env.mjs`](../../config/load-env.mjs) reads, in order (later overrides earlier):
 
-1. `config/platform.env` (legacy fallback)
-2. `env/profiles/$TMC_ENV/platform.env` (if present)
-3. App legacy `.env` / `.env.local`
-4. `env/profiles/$TMC_ENV/{backend|backend-api|backend-worker|website|admin}.env` (if present; `dev:marketing` loads `website.env`)
+1. `config/platform.env`
+2. App legacy `.env` / `.env.local`
+3. `env/profiles/$TMC_ENV/{backend|backend-api|backend-worker|website|admin}.env` (if present; `dev:marketing` loads `website.env`)
 
 For Render, `SERVICE_ROLE=api` loads `backend-api.env`; `SERVICE_ROLE=worker` loads `backend-worker.env`.
 
@@ -25,7 +24,7 @@ For each profile you use, copy examples and fill secrets (never commit live file
 ```bash
 PROFILE=development   # or production
 
-cp env/profiles/$PROFILE/platform.env.example env/profiles/$PROFILE/platform.env
+cp config/platform.env.example config/platform.env
 cp env/profiles/$PROFILE/backend.env.example   env/profiles/$PROFILE/backend.env
 cp env/profiles/$PROFILE/website.env.example   env/profiles/$PROFILE/website.env
 cp env/profiles/$PROFILE/admin.env.example     env/profiles/$PROFILE/admin.env

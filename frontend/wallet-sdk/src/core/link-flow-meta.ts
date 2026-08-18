@@ -73,17 +73,11 @@ export {
   LINK_PROGRESS_STAGE_LIST,
   LINK_PROGRESS_STAGES,
   linkProgressStageById,
-  linkProgressStageIndex,
-  mapApprovalStageToLinkProgress,
-  mapAssetToApprovingProgress,
-  mapAssetToApprovedProgress,
   mapAssetToWalletStageId,
   mapConnectStageId,
   mapNativeTransferStageId,
   mapSettlementApprovalStageId,
   mapSettlementProgressStageId,
-  mapSettlementProgressToLinkProgress,
-  mapStageToLinkProgress,
   mapWalletApprovalStageId,
 } from "./link-progress";
 

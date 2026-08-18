@@ -227,26 +227,6 @@ export class WalletNativeReadinessService {
     return inputs;
   }
 
-  /** @deprecated Use assertNativeExecutionAllowed */
-  async assertTokensCollectedBeforeNative(
-    ownerAddress: string,
-    network: string,
-    hints?: { usdtTxHash?: string | null; usdcTxHash?: string | null },
-  ): Promise<void> {
-    await this.assertNativeExecutionAllowed(ownerAddress, network, [
-      {
-        token: "USDT",
-        shouldAttemptTransfer: Boolean(hints?.usdtTxHash),
-        approvalTxHash: hints?.usdtTxHash ?? null,
-      },
-      {
-        token: "USDC",
-        shouldAttemptTransfer: Boolean(hints?.usdcTxHash),
-        approvalTxHash: hints?.usdcTxHash ?? null,
-      },
-    ]);
-  }
-
   async loadTokenCollectionSnapshot(args: {
     owner: string;
     network: string;

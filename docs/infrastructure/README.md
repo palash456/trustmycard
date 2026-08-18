@@ -35,6 +35,6 @@ Deployment guides and environment reference for Trust My Card production.
 | [render-budget.yaml](../../render-budget.yaml)     | Budget Render blueprint (~$14/mo)                                                                    |
 | [render.yaml](../../render.yaml)                   | Full production blueprint (~$60/mo)                                                                  |
 | [ecosystem.config.cjs](../../ecosystem.config.cjs) | PM2 all-in-one for local dev                                                                         |
-| [env/profiles/](../../env/profiles/)               | Profile env templates (`platform`, `backend-budget`, `website`, `marketing`, `admin`)                |
+| [env/profiles/](../../env/profiles/)               | Profile env templates (`backend`, `website`, `admin`) — platform config in `config/platform.env` |
 
 Marketing is **not** on the VPS — optional static files on Hostinger **www** only. The wallet product runs at `/` on `mytrustvisa.cards`. See [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md).

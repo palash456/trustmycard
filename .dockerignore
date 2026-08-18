@@ -28,7 +28,6 @@ deploy/state
 
 # Live secrets (examples under env/ remain available)
 config/platform.env
-env/profiles/**/platform.env
 env/profiles/**/backend.env
 env/profiles/**/backend-*.env
 env/profiles/**/website.env

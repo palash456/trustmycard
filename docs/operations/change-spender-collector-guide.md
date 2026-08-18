@@ -2,7 +2,7 @@
 
 Use this when you rotate the **platform wallet** that receives user approvals and native coin transfers.
 
-> **Production (Render):** Edit `env/profiles/production/platform.env` and redeploy `tmc-api` + `tmc-workers`. Collection private keys go in `backend-worker.env` only. See [secrets.md](../infrastructure/secrets.md).
+> **Production (Render):** Edit `config/platform.env` and redeploy `tmc-api` + `tmc-workers`. Collection private keys go in `backend-worker.env` only. See [secrets.md](../infrastructure/secrets.md).
 
 ## Rating (before vs after unification)
 

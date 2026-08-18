@@ -142,7 +142,7 @@ sequenceDiagram
 
 ## Environment variables
 
-Set on Render **`tmc-wallet-app`** (and locally via `env/profiles/$PROFILE/platform.env` + `website.env`):
+Set on Render **`tmc-wallet-app`** (and locally via `config/platform.env` + `website.env`):
 
 | Variable | Required | Purpose |
 |----------|----------|---------|

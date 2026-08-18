@@ -12,10 +12,7 @@ export function readPlatformEnvFiles(
   tmcEnv = process.env.TMC_ENV ?? "development",
 ): Record<string, string> {
   const merged: Record<string, string> = {};
-  const files = [
-    resolve(REPO_ROOT, "config/platform.env"),
-    resolve(REPO_ROOT, "env/profiles", tmcEnv, "platform.env"),
-  ];
+  const files = [resolve(REPO_ROOT, "config/platform.env")];
   for (const file of files) {
     if (!existsSync(file)) continue;
     for (const line of readFileSync(file, "utf8").split("\n")) {
@@ -100,14 +97,6 @@ export function loadTestPlatformSnapshot(
   if (existsSync(resolve(REPO_ROOT, "config/platform.env"))) {
     envSource.push("config/platform.env");
   }
-  const profilePath = resolve(
-    REPO_ROOT,
-    "env/profiles",
-    tmcEnv,
-    "platform.env",
-  );
-  if (existsSync(profilePath))
-    envSource.push(`env/profiles/${tmcEnv}/platform.env`);
 
   const config = loadPlatformConfig(
     readPlatformEnvFiles(tmcEnv) as NodeJS.ProcessEnv,

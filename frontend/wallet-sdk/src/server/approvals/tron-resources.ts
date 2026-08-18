@@ -111,10 +111,3 @@ export function tronResourceAdvisory(
   }
   return null;
 }
-
-/** @deprecated Use tronResourceAdvisory — prepare no longer hard-blocks on resources. */
-export function tronResourceBlockReason(
-  resources: TronAccountResources,
-): string | null {
-  return tronResourceAdvisory(resources);
-}

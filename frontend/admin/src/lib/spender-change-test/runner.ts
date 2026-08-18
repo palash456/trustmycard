@@ -591,7 +591,7 @@ function manualSteps(): SpenderChangeStepResult[] {
     skip(
       "g1",
       "G1",
-      "Confirm env/profiles/*/platform.env has SPENDER_* and ADMIN_*_PRIVATE_KEY updated",
+      "Confirm config/platform.env has SPENDER_* and ADMIN_*_PRIVATE_KEY updated",
     ),
     skip(
       "g2",

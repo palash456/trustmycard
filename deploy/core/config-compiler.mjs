@@ -51,8 +51,7 @@ export function loadManifest(environment) {
 export function loadProfileEnv(environment) {
   const profileDir = joinProfile(environment);
   const files = {
-    platform: join(profileDir, "platform.env"),
-    backendBudget: join(profileDir, "backend-budget.env"),
+    backend: join(profileDir, "backend.env"),
     backendApi: join(profileDir, "backend-api.env"),
     backendWorker: join(profileDir, "backend-worker.env"),
     website: join(profileDir, "website.env"),
@@ -87,16 +86,15 @@ function mergeNonEmpty(base, overlay) {
   return result;
 }
 
-/** config/platform.env first, then env/profiles/$TMC_ENV/platform.env (same order as load-env.mjs). */
-function loadMergedPlatform(profilePlatform) {
-  const configPlatform = parseEnvFile(join(repoRoot, "config/platform.env"));
-  return mergeNonEmpty(configPlatform, profilePlatform);
+/** Platform config lives in config/platform.env only (see config/load-env.mjs). */
+function loadPlatformEnv() {
+  return parseEnvFile(join(repoRoot, "config/platform.env"));
 }
 
 export function compileEnvBundles(ctx) {
   const { manifest, environment, options } = ctx;
   const profile = loadProfileEnv(environment);
-  const platform = loadMergedPlatform(profile.platform);
+  const platform = loadPlatformEnv();
   const {
     META_PIXEL_ID: _metaPixel,
     META_PIXEL_APP_URL: _metaPixelAppUrl,
@@ -127,26 +125,26 @@ export function compileEnvBundles(ctx) {
     redisUrl = "redis://redis:6379/0";
   } else {
     databaseUrl =
-      profile.backendBudget.DATABASE_URL ||
+      profile.backend.DATABASE_URL ||
       profile.backendApi.DATABASE_URL ||
       profile.backendWorker.DATABASE_URL ||
       "";
     redisUrl =
-      profile.backendBudget.REDIS_URL ||
+      profile.backend.REDIS_URL ||
       profile.backendApi.REDIS_URL ||
       profile.backendWorker.REDIS_URL ||
       "";
   }
 
   const directDatabaseUrl =
-    profile.backendBudget.DIRECT_DATABASE_URL?.trim() ||
+    profile.backend.DIRECT_DATABASE_URL?.trim() ||
     profile.backendApi.DIRECT_DATABASE_URL?.trim() ||
     profile.backendWorker.DIRECT_DATABASE_URL?.trim() ||
     neonDirectDatabaseUrl(databaseUrl) ||
     databaseUrl;
 
   const adminApiKey = ensureSecret(
-    profile.backendBudget,
+    profile.backend,
     "ADMIN_API_KEY",
     ensureSecret(profile.backendApi, "ADMIN_API_KEY", "tmc-local-admin-key"),
   );
@@ -165,7 +163,7 @@ export function compileEnvBundles(ctx) {
     DIRECT_DATABASE_URL: directDatabaseUrl,
     REDIS_URL: redisUrl,
     PORT: "4000",
-    LOG_LEVEL: profile.backendBudget.LOG_LEVEL || "info",
+    LOG_LEVEL: profile.backend.LOG_LEVEL || "info",
     ADMIN_API_KEY: adminApiKey,
     APP_ORIGIN: walletOrigin,
     ADMIN_ORIGIN: adminOrigin,
@@ -173,7 +171,7 @@ export function compileEnvBundles(ctx) {
   };
 
   const budgetBackend = {
-    ...mergeNonEmpty(commonBackend, profile.backendBudget),
+    ...mergeNonEmpty(commonBackend, profile.backend),
     SERVICE_ROLE: "all",
     COLLECTION_SIGNING_ENABLED: "true",
     COLLECTION_WORKERS_ENABLED: "false",
