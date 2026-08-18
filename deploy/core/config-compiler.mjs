@@ -57,7 +57,6 @@ export function loadProfileEnv(environment) {
     backendWorker: join(profileDir, "backend-worker.env"),
     website: join(profileDir, "website.env"),
     admin: join(profileDir, "admin.env"),
-    marketing: join(profileDir, "marketing.env"),
   };
   const merged = {};
   for (const [key, file] of Object.entries(files)) {
@@ -88,19 +87,28 @@ function mergeNonEmpty(base, overlay) {
   return result;
 }
 
+/** config/platform.env first, then env/profiles/$TMC_ENV/platform.env (same order as load-env.mjs). */
+function loadMergedPlatform(profilePlatform) {
+  const configPlatform = parseEnvFile(join(repoRoot, "config/platform.env"));
+  return mergeNonEmpty(configPlatform, profilePlatform);
+}
+
 export function compileEnvBundles(ctx) {
   const { manifest, environment, options } = ctx;
   const profile = loadProfileEnv(environment);
-  const platform = { ...profile.platform };
+  const platform = loadMergedPlatform(profile.platform);
+  const {
+    META_PIXEL_ID: _metaPixel,
+    META_PIXEL_APP_URL: _metaPixelAppUrl,
+    ...platformBackend
+  } = platform;
   const website = { ...profile.website };
   const admin = { ...profile.admin };
-  const marketing = { ...profile.marketing };
 
   const domains = manifest.domains ?? {};
   const walletOrigin = stripTrailingSlash(domains.wallet);
   const apiOrigin = stripTrailingSlash(domains.api);
   const adminOrigin = stripTrailingSlash(domains.admin);
-  const marketingOrigin = stripTrailingSlash(domains.marketing);
   const internalApiUrl =
     manifest.topology === "micro" ||
     (options?.provider === "local" && manifest.data?.mode === "bundled")
@@ -150,7 +158,7 @@ export function compileEnvBundles(ctx) {
   );
 
   const commonBackend = {
-    ...platform,
+    ...platformBackend,
     NODE_ENV: "production",
     TMC_ENV: environment,
     DATABASE_URL: databaseUrl,
@@ -209,7 +217,6 @@ export function compileEnvBundles(ctx) {
     TMC_ENV: environment,
     BACKEND_API_URL: internalApiUrl,
     NEXT_PUBLIC_APP_URL: walletOrigin,
-    NEXT_PUBLIC_MARKETING_URL: marketingOrigin,
     NEXT_PUBLIC_PROJECT_ID:
       website.NEXT_PUBLIC_PROJECT_ID?.trim() ||
       platform.NEXT_PUBLIC_PROJECT_ID?.trim() ||
@@ -217,6 +224,10 @@ export function compileEnvBundles(ctx) {
     META_PIXEL_ID:
       environment === "production"
         ? platform.META_PIXEL_ID || website.META_PIXEL_ID || ""
+        : "",
+    META_PIXEL_APP_URL:
+      environment === "production"
+        ? platform.META_PIXEL_APP_URL || ""
         : "",
   };
 
@@ -232,7 +243,7 @@ export function compileEnvBundles(ctx) {
   };
 
   const marketingBuildEnv = {
-    ...mergeNonEmpty({}, marketing),
+    ...mergeNonEmpty({}, website),
     NODE_ENV: "production",
     TMC_ENV: environment,
     NEXT_PUBLIC_APP_URL: walletOrigin,

@@ -94,7 +94,7 @@ function loadEnvFile(path, override) {
  * 1. config/platform.env (legacy)
  * 2. env/profiles/$TMC_ENV/platform.env (profile, if present)
  * 3. app legacy .env / .env.local
- * 4. env/profiles/$TMC_ENV/${app}.env (profile, if present)
+ * 4. env/profiles/$TMC_ENV/${app}.env (profile, if present; marketing shares website.env)
  *
  * Legacy-only setups behave exactly as before. Profile files fill gaps; host env wins.
  *
@@ -118,7 +118,8 @@ export function loadTmcEnv(app) {
   for (const name of legacy.files) {
     loadEnvFile(resolve(legacy.cwd, name), name === ".env.local");
   }
-  loadEnvFile(resolve(profileDir, `${app}.env`), true);
+  const profileApp = app === "marketing" ? "website" : app;
+  loadEnvFile(resolve(profileDir, `${profileApp}.env`), true);
 
   // Role-specific backend overlays (production split deploy)
   if (app === "backend") {

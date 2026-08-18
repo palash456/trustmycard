@@ -40,7 +40,6 @@ cp env/profiles/$PROFILE/backend-api.env.example env/profiles/$PROFILE/backend-a
 cp env/profiles/$PROFILE/backend-worker.env.example env/profiles/$PROFILE/backend-worker.env
 cp env/profiles/$PROFILE/website.env.example env/profiles/$PROFILE/website.env
 cp env/profiles/$PROFILE/admin.env.example env/profiles/$PROFILE/admin.env
-cp env/profiles/$PROFILE/marketing.env.example env/profiles/$PROFILE/marketing.env
 ```
 
 Fill in values. **Never commit live files.**

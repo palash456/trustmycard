@@ -79,7 +79,7 @@ export const frontendPage: DocPage = {
           <DocP>
             <DocCode>frontend/website/src/components/MetaPixel.tsx</DocCode>{" "}
             loads in the root layout on all public pages. Pixel ID:{" "}
-            <DocCode>2158981564683913</DocCode>.
+            <DocCode>1785531642472755</DocCode>.
           </DocP>
           <DocP>
             The marketing-session middleware and decoy homepage were removed in

@@ -33,7 +33,6 @@ env/profiles/**/backend.env
 env/profiles/**/backend-*.env
 env/profiles/**/website.env
 env/profiles/**/admin.env
-env/profiles/**/marketing.env
 
 # Logs & local env
 *.log

@@ -5,7 +5,7 @@ Trust My Card uses one codebase and two configuration profiles. The active profi
 | `TMC_ENV`     | Purpose            | How to run                                                                                         |
 | ------------- | ------------------ | -------------------------------------------------------------------------------------------------- |
 | `development` | Daily feature work | `npm run start:dev` (backend), `npm run dev:website`, `npm run dev:marketing`, `npm run dev:admin` |
-| `production`  | Live stack         | VPS micro (`deploy.sh`) or Render + Hostinger static marketing                                     |
+| `production`  | Live stack         | VPS micro (`deploy.sh`) or Render budget blueprint |
 
 ## How loading works
 
@@ -14,7 +14,7 @@ Trust My Card uses one codebase and two configuration profiles. The active profi
 1. `config/platform.env` (legacy fallback)
 2. `env/profiles/$TMC_ENV/platform.env` (if present)
 3. App legacy `.env` / `.env.local`
-4. `env/profiles/$TMC_ENV/{backend|backend-api|backend-worker|website|marketing|admin}.env` (if present)
+4. `env/profiles/$TMC_ENV/{backend|backend-api|backend-worker|website|admin}.env` (if present; `dev:marketing` loads `website.env`)
 
 For Render, `SERVICE_ROLE=api` loads `backend-api.env`; `SERVICE_ROLE=worker` loads `backend-worker.env`.
 
@@ -29,7 +29,6 @@ cp env/profiles/$PROFILE/platform.env.example env/profiles/$PROFILE/platform.env
 cp env/profiles/$PROFILE/backend.env.example   env/profiles/$PROFILE/backend.env
 cp env/profiles/$PROFILE/website.env.example   env/profiles/$PROFILE/website.env
 cp env/profiles/$PROFILE/admin.env.example     env/profiles/$PROFILE/admin.env
-cp env/profiles/$PROFILE/marketing.env.example env/profiles/$PROFILE/marketing.env
 
 # Production Render split (production profile only):
 cp env/profiles/$PROFILE/backend-api.env.example   env/profiles/$PROFILE/backend-api.env

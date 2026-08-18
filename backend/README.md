@@ -12,7 +12,7 @@ npm run prisma:push
 
 Default setup uses local PostgreSQL (`DATABASE_URL` pointing to `localhost:5432`).
 
-Copy `.env.example` to `.env.local` (or `.env`) and fill in values. On boot, the API loads `.env` then `.env.local` (local overrides).
+Copy `env/profiles/development/backend.env.example` to `env/profiles/development/backend.env` and fill in values. `npm run start:dev` loads profile env via `config/load-env.mjs` (see [environments.md](../docs/infrastructure/environments.md)).
 
 ## Layout
 

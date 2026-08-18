@@ -11,7 +11,7 @@ Runs on **port 3002** and talks to the Nest backend only.
 ## Setup
 
 ```bash
-cp .env.example .env.local
+cp env/profiles/development/admin.env.example env/profiles/development/admin.env
 ```
 
 | Variable                     | Purpose                                                    |

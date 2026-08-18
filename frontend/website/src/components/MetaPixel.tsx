@@ -1,3 +1,5 @@
+import { getMetaPixelEnvConfig } from "@/lib/meta-pixel-env";
+
 function metaPixelScript(pixelId: string) {
   return `
 !function(f,b,e,v,n,t,s)
@@ -14,10 +16,10 @@ fbq('track', 'PageView');
 }
 
 export function MetaPixel() {
-  if (process.env.TMC_ENV !== "production") return null;
+  const config = getMetaPixelEnvConfig();
+  if (!config) return null;
 
-  const pixelId = process.env.META_PIXEL_ID?.trim();
-  if (!pixelId) return null;
+  const { pixelId } = config;
 
   return (
     <>

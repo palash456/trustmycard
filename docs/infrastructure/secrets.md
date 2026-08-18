@@ -9,9 +9,8 @@ Templates live in `env/profiles/production/`. Copy examples to live files locall
 | `platform.env`       | API + worker (shared platform flags)   |
 | `backend-api.env`    | Render `tmc-api` overlay               |
 | `backend-worker.env` | Render `tmc-workers` overlay           |
-| `website.env`        | Render `tmc-wallet-app`                |
-| `admin.env`          | Render `tmc-admin`                     |
-| `marketing.env`      | Hostinger static build (local CI only) |
+| `website.env`        | Wallet app (+ local marketing preview via same file) |
+| `admin.env`          | Render `tmc-admin`                                   |
 
 Loader: [`config/load-env.mjs`](../../config/load-env.mjs) — `SERVICE_ROLE` selects `backend-api.env` vs `backend-worker.env`.
 
@@ -28,9 +27,7 @@ Loader: [`config/load-env.mjs`](../../config/load-env.mjs) — `SERVICE_ROLE` se
 | `SPENDER_EVM` / `SPENDER_TRON`      | yes      | yes     | —          | —     | —         |
 | `NEXT_PUBLIC_PROJECT_ID`            | —        | —       | yes        | —     | —         |
 | `BACKEND_API_URL`                   | —        | —       | yes        | yes   | —         |
-| `NEXT_PUBLIC_APP_URL`               | —        | —       | yes        | —     | —         |
-| `NEXT_PUBLIC_MARKETING_URL`         | —        | —       | yes        | —     | —         |
-| `NEXT_PUBLIC_APP_URL` (CTA target)  | —        | —       | —          | —     | yes       |
+| `NEXT_PUBLIC_APP_URL`               | —        | —       | yes        | —     | yes (via website.env) |
 | `ADMIN_SESSION_SECRET`              | —        | —       | —          | yes   | —         |
 | `ADMIN_PANEL_PASSWORD`              | —        | —       | —          | yes   | —         |
 | `APP_ORIGIN` / `ADMIN_ORIGIN`       | yes      | —       | —          | —     | —         |

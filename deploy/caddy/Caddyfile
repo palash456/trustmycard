@@ -4,6 +4,11 @@ api.mytrustvisa.cards {
 	reverse_proxy backend:4000
 }
 
+# Permanent apex canonical URL — www must redirect here before the wallet app (308 preserves method).
+www.mytrustvisa.cards {
+	redir https://mytrustvisa.cards{uri} 308
+}
+
 mytrustvisa.cards {
 	reverse_proxy wallet:3000
 }

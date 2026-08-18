@@ -11,8 +11,7 @@ env/profiles/
     backend-budget.env.example  # Neon + Upstash (budget / micro VPS)
     backend-api.env.example     # Render API (no collection keys)
     backend-worker.env.example  # Render workers (signing)
-    website.env.example         # wallet app
-    marketing.env.example       # static marketing build (Hostinger)
+    website.env.example         # public site (wallet app; marketing preview shares this file)
     admin.env.example
 ```
 
@@ -33,14 +32,13 @@ See [docs/infrastructure/secrets.md](../../docs/infrastructure/secrets.md).
 ```bash
 PROFILE=production   # or development
 
-cp env/profiles/$PROFILE/platform.env.example env/profiles/$PROFILE/platform.env
+cp env/profiles/$PROFILE/platform.env.example env/profiles/$PROFILE/platform.env  # optional if using config/platform.env
 cp env/profiles/$PROFILE/backend.env.example   env/profiles/$PROFILE/backend.env
 cp env/profiles/$PROFILE/website.env.example   env/profiles/$PROFILE/website.env
 cp env/profiles/$PROFILE/admin.env.example     env/profiles/$PROFILE/admin.env
 # Production split deploy also:
 cp env/profiles/$PROFILE/backend-api.env.example env/profiles/$PROFILE/backend-api.env
 cp env/profiles/$PROFILE/backend-worker.env.example env/profiles/$PROFILE/backend-worker.env
-cp env/profiles/$PROFILE/marketing.env.example env/profiles/$PROFILE/marketing.env
 # Micro VPS / budget with external DB:
 cp env/profiles/$PROFILE/backend-budget.env.example env/profiles/$PROFILE/backend-budget.env
 ```

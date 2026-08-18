@@ -70,7 +70,7 @@ Notes:
 
 The Meta Pixel is built into the wallet app and loads on public pages.
 
-**Pixel ID in use:** `2158981564683913`
+**Pixel ID in use:** `1785531642472755`
 
 ### In Meta Events Manager
 
@@ -90,7 +90,7 @@ The Meta Pixel is built into the wallet app and loads on public pages.
 
 - [ ] Ad destination is `https://mytrustvisa.cards/` (with optional UTMs)
 - [ ] Test ad preview opens the Trust Card product (not an error page)
-- [ ] Meta Pixel ID `2158981564683913` is selected in Events Manager
+- [ ] Meta Pixel ID `1785531642472755` is selected in Events Manager
 - [ ] Test Events shows PageView after clicking a test ad
 - [ ] WalletConnect "Connect Wallet" works on the homepage (developer check)
 

@@ -26,7 +26,7 @@ Related guides:
 | `https://mytrustvisa.cards/termsandconditions` | Terms | Public |
 | `https://mytrustvisa.cards/connect` | Removed | **404** — use `/` in ads |
 | `https://api.mytrustvisa.cards` | Nest API | `tmc-backend` |
-| `https://www.mytrustvisa.cards` | Optional static marketing host | Hostinger static export |
+| `https://www.mytrustvisa.cards` | Redirect to apex | Caddy **308** → `https://mytrustvisa.cards` (not served on www) |
 
 **Current production host (micro VPS):**
 
@@ -37,6 +37,20 @@ Related guides:
 
 Caddy terminates TLS (Let's Encrypt) on ports 80/443 and reverse-proxies to the Docker containers.
 
+### Canonical apex URL (www → apex at the edge)
+
+The wallet app canonical origin is `https://mytrustvisa.cards`. **www must redirect to apex before the application** (308 permanent at Caddy on the VPS, or an equivalent rule at Cloudflare if the zone is proxied):
+
+```
+www.mytrustvisa.cards  →  308  →  https://mytrustvisa.cards{path}
+                              →  wallet app
+                              →  Meta Pixel origin check (META_PIXEL_APP_URL)
+```
+
+Do **not** rely on the app to reject `www` — configure the redirect at the reverse proxy / CDN. `deploy/caddy/Caddyfile` includes the `www.mytrustvisa.cards` → apex redirect when `www` DNS points to the VPS.
+
+If Cloudflare proxies the zone, add a matching **Redirect Rule** (308) there as well so the redirect happens before origin.
+
 ---
 
 ## DNS checklist (Hostinger)
@@ -45,7 +59,7 @@ Caddy terminates TLS (Let's Encrypt) on ports 80/443 and reverse-proxies to the 
 |------|------|-------|--------|
 | A | `@` | VPS IP (`159.89.170.92`) | Apex → wallet (via Caddy) |
 | A | `api` | VPS IP | API subdomain → backend (via Caddy) |
-| A or CNAME | `www` | Static marketing host (optional) | Hostinger static site only |
+| A | `www` | VPS IP (same as apex) | Caddy 308 → `https://mytrustvisa.cards` — not wallet app on www |
 
 After DNS propagates:
 
@@ -53,6 +67,7 @@ After DNS propagates:
 curl -s https://api.mytrustvisa.cards/v1/api/settings/public | head
 curl -s https://mytrustvisa.cards/api/settings/public | head
 curl -sI http://mytrustvisa.cards/ | grep -i location   # HTTP → HTTPS redirect
+curl -sI https://www.mytrustvisa.cards/ | head -5        # 308 → https://mytrustvisa.cards/
 ```
 
 Both HTTPS endpoints must return JSON — not `Could not resolve host` or `502 fetch failed`.
@@ -92,7 +107,7 @@ https://mytrustvisa.cards/?utm_source=instagram&utm_medium=paid&utm_campaign=YOU
 ### Meta Pixel
 
 - Installed in code via `MetaPixel` in the root layout — loads on all public pages.
-- **Pixel ID:** `2158981564683913`
+- **Pixel ID:** `1785531642472755`
 - Do not paste a second copy on Hostinger static marketing or in ad dashboards.
 - Verify in Meta Events Manager → Test Events after a real ad click.
 
@@ -106,7 +121,6 @@ https://mytrustvisa.cards/?utm_source=instagram&utm_medium=paid&utm_campaign=YOU
 NEXT_PUBLIC_APP_URL=https://mytrustvisa.cards
 BACKEND_API_URL=https://api.mytrustvisa.cards
 NEXT_PUBLIC_PROJECT_ID=<walletconnect project id>
-NEXT_PUBLIC_MARKETING_URL=https://www.mytrustvisa.cards   # optional static host
 ```
 
 `NEXT_PUBLIC_*` are baked at **build time** — redeploy after changes.

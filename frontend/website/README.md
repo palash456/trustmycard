@@ -22,8 +22,7 @@ npm run dev:website   # :3000
 | `NEXT_PUBLIC_PROJECT_ID` | WalletConnect Cloud project |
 | `BACKEND_API_URL` | Nest API (server-side BFF proxy) |
 | `NEXT_PUBLIC_APP_URL` | Public site URL (WalletConnect allowed origins) |
-| `NEXT_PUBLIC_MARKETING_URL` | Optional separate static marketing host |
 
-Meta Pixel (`META_PIXEL_ID` in **production** `platform.env` only) loads on the live site when `TMC_ENV=production`. Not used in local dev or preview.
+Meta Pixel (`META_PIXEL_ID` + `META_PIXEL_APP_URL` in `config/platform.env`) loads when `TMC_ENV=production`, the ID is set, and `NEXT_PUBLIC_APP_URL` matches the canonical origin.
 
 Every wallet flow endpoint must have a matching file under `src/app/api/**/route.ts` that re-exports from `@trustmycard/wallet-sdk/server/routes/...`.

@@ -34,9 +34,10 @@ function buildArgsFor(component, ctx) {
     component === "wallet"
       ? [
           "NEXT_PUBLIC_APP_URL",
-          "NEXT_PUBLIC_MARKETING_URL",
           "NEXT_PUBLIC_PROJECT_ID",
-          ...(ctx.environment === "production" ? ["META_PIXEL_ID"] : []),
+          ...(ctx.environment === "production"
+            ? ["META_PIXEL_ID", "META_PIXEL_APP_URL"]
+            : []),
         ]
       : component === "marketing"
         ? ["NEXT_PUBLIC_APP_URL"]

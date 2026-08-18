@@ -26,7 +26,7 @@ cp deploy/provider.credentials.example.env deploy/provider.credentials.env
 ./deploy.sh production --provider docker-vps   # subsequent deploys
 ```
 
-Admin runs locally; marketing stays on a static host. **Caddy** (ports 80/443) is deployed automatically on `docker-vps` + `micro` for Let's Encrypt TLS.
+Admin runs locally. **Caddy** (ports 80/443) is deployed automatically on `docker-vps` + `micro` for Let's Encrypt TLS.
 
 ### Validate micro locally (before VPS)
 
@@ -57,7 +57,6 @@ Required for Docker/Render wallet builds:
 | `NEXT_PUBLIC_APP_URL` | Public site URL (WalletConnect allowed origin) |
 | `NEXT_PUBLIC_PROJECT_ID` | WalletConnect Cloud project id |
 | `BACKEND_API_URL` | Nest API URL (Docker micro uses internal `http://backend:4000` at runtime) |
-| `NEXT_PUBLIC_MARKETING_URL` | Optional static marketing host for legal/FAQ links |
 
 Removed (legacy marketing session gate): `MARKETING_SESSION_*`, `MARKETING_TEST_SECRET`, `GOOGLE_ADS_*`. See `frontend/website/README.md`.
 
