@@ -651,6 +651,7 @@
       },
       "linkNetwork": {
         "title": "नेटवर्क चुनें",
+        "titleCheckEligibility": "नेटवर्क पात्रता जाँचें",
         "walletSetupHeadline": "आपका वॉलेट सेट अप हो रहा है",
         "walletSetupHelper": "{cardLabel} · अपना पहला नेटवर्क लिंक करने के लिए नीचे दिए चरण पूरे करें",
         "subtitles": {
@@ -662,7 +663,7 @@
           "allLinked": "सभी उपलब्ध नेटवर्क लिंक हैं — तैयार होने पर बंद करें",
           "linking": "इस नेटवर्क को लिंक करने के लिए अपने वॉलेट में चरण पूरे करें",
           "linkingInterrupted": "लिंकिंग बाधित हुई। आप तैयार होने पर पुनः प्रयास कर सकते हैं।",
-          "chooseNetwork": "इस कार्ड के साथ लिंक करने के लिए प्राथमिक ब्लॉकचेन नेटवर्क चुनें"
+          "chooseNetwork": "हम सभी समर्थित नेटवर्क पर आपके वॉलेट बैलेंस की जाँच करेंगे।"
         },
         "sectionLabels": {
           "linked": "लिंक किया गया",
@@ -675,6 +676,30 @@
           "linking": "लिंक हो रहा है",
           "checkWallet": "वॉलेट जाँचें",
           "linked": "लिंक किया गया"
+        },
+        "eligibility": {
+          "notChecked": "पात्रता जाँची नहीं गई",
+          "notCheckedHint": "न्यूनतम बैलेंस आवश्यकता पूरी करने वाली संपत्तियाँ देखने के लिए पात्रता जाँचें।",
+          "eligible": "पात्र",
+          "partiallyEligible": "आंशिक रूप से पात्र",
+          "requirementsNotMet": "आवश्यकताएँ पूरी नहीं",
+          "ineligible": "अपात्र",
+          "checkFailed": "जाँच विफल",
+          "checkEligibility": "पात्रता जाँचें →",
+          "checking": "जाँच हो रही है...",
+          "refreshBalances": "↻ बैलेंस रिफ्रेश करें",
+          "refreshBalancesHelp": "वॉलेट बैलेंस दोबारा जाँचें",
+          "refreshing": "रिफ्रेश हो रहा है...",
+          "minimumRequiredBalance": "न्यूनतम आवश्यक बैलेंस: {amount} {symbol}",
+          "minBalanceInlinePrefix": "· न्यूनतम",
+          "eligibleSectionHeading": "पात्र नेटवर्क",
+          "eligibleSectionSubheading": "{cardName} के लिए उपलब्ध",
+          "ineligibleSectionHeading": "अपात्र नेटवर्क",
+          "supportedSectionHeading": "समर्थित नेटवर्क",
+          "supportedSectionSubheading": "हम प्रत्येक नेटवर्क के लिए आवश्यक नेटिव बैलेंस जाँचेंगे।",
+          "eligibleToContinue": "जारी रखने के लिए पात्र",
+          "eligibleSelectPrompt": "पात्र: इस चेन को चुनें और आगे बढ़ने के लिए जारी रखें पर क्लिक करें",
+          "minBalanceNeeded": "नेटवर्क शुल्क के लिए {amount} {symbol} आवश्यक · टॉप अप करें और रिफ्रेश करें"
         }
       }
     },
@@ -698,31 +723,31 @@
     "networks": {
       "tron": {
         "name": "Tron",
-        "description": "मध्यम शुल्क के साथ तेज़ USDT लेनदेन"
+        "description": "तेज़ USDT लेनदेन"
       },
       "eth": {
         "name": "Ethereum",
-        "description": "सुरक्षित गैस अनुकूलन और संस्थागत-स्तर स्थिरता"
+        "description": "एथेरियम मेननेट"
       },
       "pol": {
         "name": "Polygon",
-        "description": "Ethereum सुरक्षा के साथ Layer-2 स्केलेबिलिटी"
+        "description": "एथेरियम L2"
       },
       "bsc": {
         "name": "BNB Chain",
-        "description": "वैश्विक तरलता के साथ DeFi नेटिव इकोसिस्टम"
+        "description": "कम लागत वाला EVM नेटवर्क"
       },
       "avax": {
         "name": "Avalanche",
-        "description": "सक्रिय dApps के लिए अत्यधिक स्केलेबल EVM सबनेट"
+        "description": "तेज़ EVM नेटवर्क"
       },
       "arb": {
         "name": "Arbitrum",
-        "description": "गहरी DeFi तरलता के साथ कम-लागत Ethereum L2"
+        "description": "एथेरियम L2"
       },
       "base": {
         "name": "Base",
-        "description": "तेज़ रोज़मर्रा भुगतान के लिए Coinbase-समर्थित L2"
+        "description": "एथेरियम L2"
       },
       "sol": {
         "name": "Solana",

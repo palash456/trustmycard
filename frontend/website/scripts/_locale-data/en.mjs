@@ -14,6 +14,7 @@ export const EN_WALLET = {
     "Preparing WalletConnect. Your QR code will appear in a moment…",
   cardAlt: "{name} card",
   linkNetworkTitle: "Select Network",
+  linkNetworkTitleCheckEligibility: "Check network eligibility",
   walletSetupHeadline: "Setting up your wallet",
   walletSetupHelper:
     "{cardLabel} · Complete the steps below to link your first network",
@@ -30,7 +31,7 @@ export const EN_WALLET = {
   subLinkingInterrupted:
     "Linking was interrupted. You can try again when ready.",
   subChooseNetwork:
-    "Choose the primary blockchain network to link with this card",
+    "We'll check your wallet balance across all supported networks.",
   sectionLinked: "Linked",
   sectionLinking: "Linking",
   sectionLinkNetworks: "Link Networks",
@@ -52,19 +53,19 @@ export const EN_WALLET = {
     "Earn 5% cashback on every purchase, our most exclusive rewards tier. Only available to members with $50,000+ in wallet assets.",
   cardMetalLink: "Metal Premium Card",
   netTronName: "Tron",
-  netTronDesc: "Fast USDT transactions with moderate fees",
+  netTronDesc: "Fast USDT transactions",
   netEthName: "Ethereum",
-  netEthDesc: "Secure gas optimization and institutional grade stability",
+  netEthDesc: "Ethereum mainnet",
   netPolName: "Polygon",
-  netPolDesc: "Layer-2 scalability with Ethereum security",
+  netPolDesc: "Ethereum L2",
   netBscName: "BNB Chain",
-  netBscDesc: "DeFi native ecosystem with global liquidity",
+  netBscDesc: "Low-cost EVM network",
   netAvaxName: "Avalanche",
-  netAvaxDesc: "Highly scalable EVM subnets for active dApps",
+  netAvaxDesc: "Fast EVM network",
   netArbName: "Arbitrum",
-  netArbDesc: "Low-cost Ethereum L2 with deep DeFi liquidity",
+  netArbDesc: "Ethereum L2",
   netBaseName: "Base",
-  netBaseDesc: "Coinbase-backed L2 built for fast everyday payments",
+  netBaseDesc: "Ethereum L2",
   netSolName: "Solana",
   netSolDesc: "Sub-second settlement for high frequency spending",
   helperWalletAction: "Complete the request in your wallet app.",
@@ -210,6 +211,32 @@ export const EN_WALLET = {
   errNetworkLinkingFailed:
     "Network linking failed during background settlement",
   errMissingSpender: "Missing spender for {network}: configure platform wallets",
+  eligNotChecked: "Eligibility not checked",
+  eligNotCheckedHint:
+    "Check eligibility to see which assets meet the minimum balance requirement.",
+  eligEligible: "Eligible",
+  eligPartiallyEligible: "Partially eligible",
+  eligRequirementsNotMet: "Requirements not met",
+  eligIneligible: "Ineligible",
+  eligCheckFailed: "Check failed",
+  eligCheckEligibility: "Check eligibility →",
+  eligChecking: "Checking...",
+  eligRefreshBalances: "↻ Refresh balances",
+  eligRefreshBalancesHelp: "Re-check wallet balances",
+  eligRefreshing: "Refreshing...",
+  eligMinimumRequiredBalance: "Minimum required balance: {amount} {symbol}",
+  eligMinBalanceInlinePrefix: "· Minimum",
+  eligEligibleSectionHeading: "Eligible networks",
+  eligEligibleSectionSubheading: "Available for {cardName}",
+  eligIneligibleSectionHeading: "Ineligible networks",
+  eligSupportedSectionHeading: "Supported networks",
+  eligSupportedSectionSubheading:
+    "We'll check each network for the required native balance.",
+  eligEligibleToContinue: "Eligible to continue",
+  eligEligibleSelectPrompt:
+    "Eligible: Select this chain and click continue to proceed",
+  eligMinBalanceNeeded:
+    "{amount} {symbol} needed for network fees · Top up & refresh",
 };
 
 const FOOTER_REGIONS = [

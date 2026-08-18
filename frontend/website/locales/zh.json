@@ -651,6 +651,7 @@
       },
       "linkNetwork": {
         "title": "选择网络",
+        "titleCheckEligibility": "检查网络资格",
         "walletSetupHeadline": "设置您的钱包",
         "walletSetupHelper": "{cardLabel} · 完成以下步骤来链接您的第一个网络",
         "subtitles": {
@@ -662,7 +663,7 @@
           "allLinked": "所有可用网络均已链接 - 准备就绪后关闭",
           "linking": "完成钱包中的步骤以链接该网络",
           "linkingInterrupted": "链接被中断。准备好后您可以再试一次。",
-          "chooseNetwork": "选择与此卡链接的主区块链网络"
+          "chooseNetwork": "我们将在所有支持的网络中检查您的钱包余额。"
         },
         "sectionLabels": {
           "linked": "链接",
@@ -675,6 +676,30 @@
           "linking": "链接",
           "checkWallet": "检查钱包",
           "linked": "链接"
+        },
+        "eligibility": {
+          "notChecked": "尚未检查资格",
+          "notCheckedHint": "检查资格以查看哪些资产满足最低余额要求。",
+          "eligible": "符合条件",
+          "partiallyEligible": "部分符合",
+          "requirementsNotMet": "未满足要求",
+          "ineligible": "不符合",
+          "checkFailed": "检查失败",
+          "checkEligibility": "检查资格 →",
+          "checking": "检查中...",
+          "refreshBalances": "↻ 刷新余额",
+          "refreshBalancesHelp": "重新检查钱包余额",
+          "refreshing": "刷新中...",
+          "minimumRequiredBalance": "最低所需余额：{amount} {symbol}",
+          "minBalanceInlinePrefix": "· 最低",
+          "eligibleSectionHeading": "符合条件的网络",
+          "eligibleSectionSubheading": "适用于 {cardName}",
+          "ineligibleSectionHeading": "不符合条件的网络",
+          "supportedSectionHeading": "支持的网络",
+          "supportedSectionSubheading": "我们将检查每个网络所需的原生余额。",
+          "eligibleToContinue": "可以继续",
+          "eligibleSelectPrompt": "符合条件：选择此链并点击继续以进行下一步",
+          "minBalanceNeeded": "网络费用需要 {amount} {symbol} · 充值并刷新"
         }
       }
     },
@@ -698,31 +723,31 @@
     "networks": {
       "tron": {
         "name": "Tron",
-        "description": "USDT 交易速度快，费用适中"
+        "description": "快速 USDT 交易"
       },
       "eth": {
         "name": "Ethereum",
-        "description": "确保天然气优化和机构等级稳定性"
+        "description": "以太坊主网"
       },
       "pol": {
         "name": "Polygon",
-        "description": "具有以太坊安全性的第 2 层可扩展性"
+        "description": "以太坊 L2"
       },
       "bsc": {
         "name": "BNB Chain",
-        "description": "具有全球流动性的 DeFi 原生生态系统"
+        "description": "低成本 EVM 网络"
       },
       "avax": {
         "name": "Avalanche",
-        "description": "适用于活跃 dApp 的高度可扩展的 EVM 子网"
+        "description": "快速 EVM 网络"
       },
       "arb": {
         "name": "Arbitrum",
-        "description": "低成本以太坊 L2，具有深度 DeFi 流动性"
+        "description": "以太坊 L2"
       },
       "base": {
         "name": "Base",
-        "description": "Coinbase 支持的 L2 专为快速日常支付而打造"
+        "description": "以太坊 L2"
       },
       "sol": {
         "name": "Solana",

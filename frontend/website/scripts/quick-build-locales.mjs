@@ -16,6 +16,7 @@ import { WALLET_TR } from "./_locale-data/wallet-tr.mjs";
 import { WALLET_UK } from "./_locale-data/wallet-uk.mjs";
 import { WALLET_ZH } from "./_locale-data/wallet-zh.mjs";
 import { makeWallet } from "./_locale-data/wallet-factory.mjs";
+import { walletI18nFor } from "./_locale-data/wallet-eligibility-i18n.mjs";
 import { translateSite } from "./_locale-data/site-translate.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -55,12 +56,9 @@ const WALLET_BY_LOCALE = {
 };
 
 function walletFor(code) {
-  if (WALLET_BY_LOCALE[code]) return WALLET_BY_LOCALE[code];
-  try {
-    return makeWallet(code);
-  } catch {
-    return EN_WALLET;
-  }
+  if (code === "en") return EN_WALLET;
+  const base = WALLET_BY_LOCALE[code] ?? makeWallet(code);
+  return { ...EN_WALLET, ...base, ...walletI18nFor(code) };
 }
 
 const LOCALE_CODES = [

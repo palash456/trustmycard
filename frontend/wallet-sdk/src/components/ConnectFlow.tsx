@@ -43,6 +43,11 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
     onAuthorize,
     proceedWithLinkedNetworks,
     closeResultsModal,
+    eligibilityMap,
+    eligibilityChecking,
+    balancesRefreshing,
+    checkEligibility,
+    refreshBalances,
   } = useConnectFlow(props);
 
   useEffect(() => {
@@ -100,6 +105,15 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
           onSelectNetwork={onSelectNetwork}
           onAuthorize={onAuthorize}
           onProceedWithLinked={proceedWithLinkedNetworks}
+          eligibilityMap={eligibilityMap}
+          eligibilityChecking={eligibilityChecking}
+          balancesRefreshing={balancesRefreshing}
+          onCheckEligibility={() => {
+            void checkEligibility();
+          }}
+          onRefreshBalances={() => {
+            void refreshBalances();
+          }}
         />
       ) : null}
 

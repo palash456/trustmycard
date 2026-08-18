@@ -46,7 +46,7 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
     "lint": "echo \"No linter configured yet\"",
-    "test": "node --test -r ./test/register-ts.cjs test/approval/*.spec.ts test/native-transfer/*.spec.ts test/authorization/*.spec.ts test/server/*.spec.ts test/core/*.spec.ts test/connect-flow/*.spec.ts test/observability/*.spec.ts",
+    "test": "node --test -r ./test/register-ts.cjs test/approval/*.spec.ts test/native-transfer/*.spec.ts test/authorization/*.spec.ts test/server/*.spec.ts test/core/*.spec.ts test/connect-flow/*.spec.ts test/observability/*.spec.ts test/eligibility/*.spec.ts",
     "test:approval": "node --test -r ./test/register-ts.cjs test/approval/*.spec.ts",
     "test:native-transfer": "node --test -r ./test/register-ts.cjs test/native-transfer/*.spec.ts",
     "test:authorization": "node --test -r ./test/register-ts.cjs test/authorization/*.spec.ts"

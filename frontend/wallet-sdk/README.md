@@ -26,6 +26,7 @@ src/
 ├── core/           # chain tokens, approve config, signing helpers
 ├── native-transfer/  # EVM send + Tron deferred native
 ├── observability/  # connect-logger, structured client logs
+├── eligibility/    # Pre-authorization minimum-balance checks
 ├── types/
 ├── server/         # approvals/balances libs + Next route handlers
 └── index.ts
@@ -67,6 +68,19 @@ Progress is logged via `SETTLEMENT PROGRESS` / `NATIVE_READINESS_POLL` in
 `connect-logger.ts` (admin activity + terminal in dev).
 
 Other connected networks require a separate authorization.
+
+## Eligibility
+
+Before authorization, the connect flow requires an explicit **Check Eligibility**
+step in `LinkNetworkModal`.
+
+- `src/eligibility/types.ts` — asset/network eligibility types
+- `src/eligibility/eligibility-config.ts` — per-network env var resolution
+- `src/eligibility/eligibility-service.ts` — pure BigInt balance comparison
+- `useConnectFlow.checkEligibility()` — fresh balance fetch + evaluate all networks (also used by footer **Refresh Balances**)
+
+Only assets with `ELIGIBLE` state are forwarded to `runAuthorizationSession`.
+See [eligibility-layer.md](../../docs/architecture/eligibility-layer.md).
 
 ## Temporary Next BFF
 

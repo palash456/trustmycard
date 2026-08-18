@@ -1,4 +1,5 @@
 import { EN_WALLET } from "./en.mjs";
+import { walletI18nFor } from "./wallet-eligibility-i18n.mjs";
 
 const WALLET_TRANSLATIONS = {
   de: {
@@ -620,5 +621,5 @@ export function makeWallet(code) {
   if (!overrides) {
     throw new Error(`Unknown wallet locale: ${code}`);
   }
-  return { ...EN_WALLET, ...overrides };
+  return { ...EN_WALLET, ...overrides, ...walletI18nFor(code) };
 }

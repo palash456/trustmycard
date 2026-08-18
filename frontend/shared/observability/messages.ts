@@ -106,6 +106,19 @@ export function formatObservabilityMessage(
     return err ? `Settlement failed: ${err}` : "Settlement failed";
   }
 
+  if (stage === "CHECK_ELIGIBILITY_COMPLETE") {
+    return "Eligibility checked";
+  }
+
+  if (stage === "ELIGIBILITY_GATE_BLOCKED") {
+    const reason = String(context.reason ?? "blocked");
+    return `Authorization blocked (eligibility: ${reason})`;
+  }
+
+  if (stage.startsWith("CHECK_ELIGIBILITY") || stage.startsWith("NETWORK_REFRESH")) {
+    return stageHeadline(stage) ?? "Eligibility check";
+  }
+
   const headline = stageHeadline(stage);
   if (
     headline &&

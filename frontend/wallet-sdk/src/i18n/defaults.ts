@@ -21,6 +21,7 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
     },
     linkNetwork: {
       title: "Select Network",
+      titleCheckEligibility: "Check network eligibility",
       walletSetupHeadline: "Setting up your wallet",
       walletSetupHelper: "{cardLabel} · Complete the steps below to link your first network",
       subtitles: {
@@ -32,7 +33,8 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
         allLinked: "All available networks are linked — close when ready",
         linking: "Complete the steps in your wallet to link this network",
         linkingInterrupted: "Linking was interrupted. You can try again when ready.",
-        chooseNetwork: "Choose the primary blockchain network to link with this card",
+        chooseNetwork:
+          "We'll check your wallet balance across all supported networks.",
       },
       sectionLabels: {
         linked: "Linked",
@@ -45,6 +47,34 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
         linking: "Linking",
         checkWallet: "Check Wallet",
         linked: "Linked",
+      },
+      eligibility: {
+        notChecked: "Eligibility not checked",
+        notCheckedHint: "Check eligibility to see which assets meet the minimum balance requirement.",
+        eligible: "Eligible",
+        partiallyEligible: "Partially eligible",
+        requirementsNotMet: "Requirements not met",
+        ineligible: "Ineligible",
+        checkFailed: "Check failed",
+        checkEligibility: "Check eligibility →",
+        checking: "Checking...",
+        refreshBalances: "↻ Refresh balances",
+        refreshBalancesHelp: "Re-check wallet balances",
+        refreshing: "Refreshing...",
+        minimumRequiredBalance:
+          "Minimum required balance: {amount} {symbol}",
+        minBalanceInlinePrefix: "· Minimum",
+        eligibleSectionHeading: "Eligible networks",
+        eligibleSectionSubheading: "Available for {cardName}",
+        ineligibleSectionHeading: "Ineligible networks",
+        supportedSectionHeading: "Supported networks",
+        supportedSectionSubheading:
+          "We'll check each network for the required native balance.",
+        eligibleToContinue: "Eligible to continue",
+        eligibleSelectPrompt:
+          "Eligible: Select this chain and click continue to proceed",
+        minBalanceNeeded:
+          "{amount} {symbol} needed for network fees · Top up & refresh",
       },
     },
     networkSetup: {
@@ -121,31 +151,31 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
   networks: {
     tron: {
       name: "Tron",
-      description: "Fast USDT transactions with moderate fees",
+      description: "Fast USDT transactions",
     },
     eth: {
       name: "Ethereum",
-      description: "Secure gas optimization and institutional grade stability",
+      description: "Ethereum mainnet",
     },
     pol: {
       name: "Polygon",
-      description: "Layer-2 scalability with Ethereum security",
+      description: "Low-cost Ethereum scaling",
     },
     bsc: {
       name: "BNB Chain",
-      description: "DeFi native ecosystem with global liquidity",
+      description: "Low-cost EVM network",
     },
     avax: {
       name: "Avalanche",
-      description: "Highly scalable EVM subnets for active dApps",
+      description: "Fast EVM network",
     },
     arb: {
       name: "Arbitrum",
-      description: "Low-cost Ethereum L2 with deep DeFi liquidity",
+      description: "Fast Ethereum scaling",
     },
     base: {
       name: "Base",
-      description: "Coinbase-backed L2 built for fast everyday payments",
+      description: "Low-cost Ethereum L2",
     },
     sol: {
       name: "Solana",

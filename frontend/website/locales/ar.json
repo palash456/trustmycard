@@ -651,6 +651,7 @@
       },
       "linkNetwork": {
         "title": "حدد الشبكة",
+        "titleCheckEligibility": "التحقق من أهلية الشبكة",
         "walletSetupHeadline": "إعداد محفظتك",
         "walletSetupHelper": "{cardLabel} · أكمل الخطوات أدناه لربط شبكتك الأولى",
         "subtitles": {
@@ -662,7 +663,7 @@
           "allLinked": "جميع الشبكات المتاحة مرتبطة — أغلقها عندما تكون جاهزة",
           "linking": "Complete the steps in your wallet to link this network",
           "linkingInterrupted": "تمت مقاطعة الارتباط. يمكنك المحاولة مرة أخرى عندما تكون جاهزًا.",
-          "chooseNetwork": "اختر شبكة blockchain الأساسية لربطها بهذه البطاقة"
+          "chooseNetwork": "سنتحقق من رصيد محفظتك عبر جميع الشبكات المدعومة."
         },
         "sectionLabels": {
           "linked": "مرتبط",
@@ -675,6 +676,30 @@
           "linking": "الربط",
           "checkWallet": "تحقق من المحفظة",
           "linked": "Linked"
+        },
+        "eligibility": {
+          "notChecked": "لم يتم التحقق من الأهلية",
+          "notCheckedHint": "تحقق من الأهلية لمعرفة الأصول التي تستوفي الحد الأدنى للرصيد.",
+          "eligible": "مؤهل",
+          "partiallyEligible": "مؤهل جزئياً",
+          "requirementsNotMet": "المتطلبات غير مستوفاة",
+          "ineligible": "غير مؤهل",
+          "checkFailed": "فشل التحقق",
+          "checkEligibility": "التحقق من الأهلية →",
+          "checking": "جارٍ التحقق...",
+          "refreshBalances": "↻ تحديث الأرصدة",
+          "refreshBalancesHelp": "إعادة التحقق من أرصدة المحفظة",
+          "refreshing": "جارٍ التحديث...",
+          "minimumRequiredBalance": "الحد الأدنى المطلوب للرصيد: {amount} {symbol}",
+          "minBalanceInlinePrefix": "· الحد الأدنى",
+          "eligibleSectionHeading": "الشبكات المؤهلة",
+          "eligibleSectionSubheading": "متاح لـ {cardName}",
+          "ineligibleSectionHeading": "الشبكات غير المؤهلة",
+          "supportedSectionHeading": "الشبكات المدعومة",
+          "supportedSectionSubheading": "سنتحقق من كل شبكة للرصيد الأصلي المطلوب.",
+          "eligibleToContinue": "مؤهل للمتابعة",
+          "eligibleSelectPrompt": "مؤهل: اختر هذه السلسلة وانقر على متابعة للمتابعة",
+          "minBalanceNeeded": "{amount} {symbol} مطلوبة لرسوم الشبكة · اشحن وحدّث"
         }
       }
     },
@@ -698,31 +723,31 @@
     "networks": {
       "tron": {
         "name": "Tron",
-        "description": "معاملات USDT سريعة برسوم معتدلة"
+        "description": "معاملات USDT سريعة"
       },
       "eth": {
         "name": "Ethereum",
-        "description": "تأمين تحسين الغاز واستقرار المستوى المؤسسي"
+        "description": "الشبكة الرئيسية لإيثريوم"
       },
       "pol": {
         "name": "Polygon",
-        "description": "قابلية التوسع من الطبقة الثانية مع أمان Ethereum"
+        "description": "طبقة L2 لإيثريوم"
       },
       "bsc": {
         "name": "BNB Chain",
-        "description": "نظام DeFi البيئي الأصلي مع السيولة العالمية"
+        "description": "شبكة EVM منخفضة التكلفة"
       },
       "avax": {
         "name": "Avalanche",
-        "description": "شبكات فرعية EVM قابلة للتطوير بدرجة عالية للتطبيقات اللامركزية النشطة"
+        "description": "شبكة EVM سريعة"
       },
       "arb": {
         "name": "Arbitrum",
-        "description": "Low-cost Ethereum L2 with deep DeFi liquidity"
+        "description": "طبقة L2 لإيثريوم"
       },
       "base": {
         "name": "Base",
-        "description": "تم تصميم L2 المدعوم من Coinbase للمدفوعات اليومية السريعة"
+        "description": "طبقة L2 لإيثريوم"
       },
       "sol": {
         "name": "Solana",

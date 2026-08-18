@@ -395,6 +395,8 @@ export class ActivityFeedService {
           { operation: { contains: "connect", mode: "insensitive" } },
           { stage: { contains: "CONNECT", mode: "insensitive" } },
           { stage: { contains: "SCAN", mode: "insensitive" } },
+          { stage: { contains: "ELIGIBILITY", mode: "insensitive" } },
+          { stage: { contains: "NETWORK_REFRESH", mode: "insensitive" } },
         ],
       });
     } else if (tab === "user") {

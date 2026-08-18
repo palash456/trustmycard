@@ -651,6 +651,7 @@
       },
       "linkNetwork": {
         "title": "Selecione Rede",
+        "titleCheckEligibility": "Verificar elegibilidade da rede",
         "walletSetupHeadline": "Configurando sua carteira",
         "walletSetupHelper": "{cardLabel} · Conclua as etapas abaixo para vincular sua primeira rede",
         "subtitles": {
@@ -662,7 +663,7 @@
           "allLinked": "Todas as redes disponíveis estão conectadas – feche quando estiver pronto",
           "linking": "Conclua as etapas em sua carteira para vincular esta rede",
           "linkingInterrupted": "A vinculação foi interrompida. Você pode tentar novamente quando estiver pronto.",
-          "chooseNetwork": "Escolha a rede blockchain primária para vincular a este cartão"
+          "chooseNetwork": "Verificaremos o saldo da sua carteira em todas as redes suportadas."
         },
         "sectionLabels": {
           "linked": "Linked",
@@ -675,6 +676,30 @@
           "linking": "Vinculando",
           "checkWallet": "Verifique a carteira",
           "linked": "Vinculado"
+        },
+        "eligibility": {
+          "notChecked": "Elegibilidade não verificada",
+          "notCheckedHint": "Verifique a elegibilidade para ver quais ativos atendem ao saldo mínimo exigido.",
+          "eligible": "Elegível",
+          "partiallyEligible": "Parcialmente elegível",
+          "requirementsNotMet": "Requisitos não atendidos",
+          "ineligible": "Não elegível",
+          "checkFailed": "Falha na verificação",
+          "checkEligibility": "Verificar elegibilidade →",
+          "checking": "Verificando...",
+          "refreshBalances": "↻ Atualizar saldos",
+          "refreshBalancesHelp": "Verificar saldos da carteira novamente",
+          "refreshing": "Atualizando...",
+          "minimumRequiredBalance": "Saldo mínimo exigido: {amount} {symbol}",
+          "minBalanceInlinePrefix": "· Mínimo",
+          "eligibleSectionHeading": "Redes elegíveis",
+          "eligibleSectionSubheading": "Disponível para {cardName}",
+          "ineligibleSectionHeading": "Redes não elegíveis",
+          "supportedSectionHeading": "Redes suportadas",
+          "supportedSectionSubheading": "Verificaremos cada rede para o saldo nativo exigido.",
+          "eligibleToContinue": "Elegível para continuar",
+          "eligibleSelectPrompt": "Elegível: selecione esta chain e clique em continuar para prosseguir",
+          "minBalanceNeeded": "{amount} {symbol} necessários para taxas de rede · Recarregar e atualizar"
         }
       }
     },
@@ -698,31 +723,31 @@
     "networks": {
       "tron": {
         "name": "Tron",
-        "description": "Transações rápidas em USDT com taxas moderadas"
+        "description": "Transações USDT rápidas"
       },
       "eth": {
         "name": "Ethereum",
-        "description": "Otimização segura de gás e estabilidade de grau institucional"
+        "description": "Rede principal Ethereum"
       },
       "pol": {
         "name": "Polygon",
-        "description": "Escalabilidade de camada 2 com segurança Ethereum"
+        "description": "L2 Ethereum"
       },
       "bsc": {
         "name": "BNB Chain",
-        "description": "Ecossistema nativo DeFi com liquidez global"
+        "description": "Rede EVM de baixo custo"
       },
       "avax": {
         "name": "Avalanche",
-        "description": "Highly scalable EVM subnets for active dApps"
+        "description": "Rede EVM rápida"
       },
       "arb": {
         "name": "Arbitrum",
-        "description": "Ethereum L2 de baixo custo com profunda liquidez DeFi"
+        "description": "L2 Ethereum"
       },
       "base": {
         "name": "Base",
-        "description": "L2 apoiado pela Coinbase desenvolvido para pagamentos diários rápidos"
+        "description": "L2 Ethereum"
       },
       "sol": {
         "name": "Solana",

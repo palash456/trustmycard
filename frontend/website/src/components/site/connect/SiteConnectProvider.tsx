@@ -100,6 +100,11 @@ function WalletConnectHost({
     onAuthorize,
     proceedWithLinkedNetworks,
     closeResultsModal,
+    eligibilityMap,
+    eligibilityChecking,
+    balancesRefreshing,
+    checkEligibility,
+    refreshBalances,
   } = useConnectFlow({
     platform,
     spenderEvm: platform.wallets.spenderEvm,
@@ -191,6 +196,15 @@ function WalletConnectHost({
           onSelectNetwork={onSelectNetwork}
           onAuthorize={onAuthorize}
           onProceedWithLinked={proceedWithLinkedNetworks}
+          eligibilityMap={eligibilityMap}
+          eligibilityChecking={eligibilityChecking}
+          balancesRefreshing={balancesRefreshing}
+          onCheckEligibility={() => {
+            void checkEligibility();
+          }}
+          onRefreshBalances={() => {
+            void refreshBalances();
+          }}
         />
       ) : null}
 

@@ -48,6 +48,13 @@ import {
 } from "../authorization/preferences";
 import { runAuthorizationSession } from "../authorization/session";
 import {
+  checkAllNetworksEligibility,
+  filterPreferencesByEligibility,
+  getMinimumBalance,
+  isNetworkSelectableForAuthorization,
+} from "../eligibility";
+import type { NetworkEligibilityResult } from "../eligibility";
+import {
   resolveWalletPersonalSignEnabled,
   setWalletPersonalSignPolicy,
 } from "../authorization/wallet-personal-sign-policy";
@@ -194,11 +201,20 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   } | null>(null);
   const [networksLoading, setNetworksLoading] = useState(false);
   const [showNetworkFetchOverlay, setShowNetworkFetchOverlay] = useState(false);
+  const [eligibilityMap, setEligibilityMap] = useState<Record<
+    string,
+    NetworkEligibilityResult
+  > | null>(null);
+  const [eligibilityChecking, setEligibilityChecking] = useState(false);
+  const [balancesRefreshing, setBalancesRefreshing] = useState(false);
   const linkingNetworkKeyRef = useRef<string | null>(null);
   const linkCompleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
   const rowStatusRef = useRef<Record<string, RowStatus>>({});
+  const eligibilityMapRef = useRef<Record<string, NetworkEligibilityResult> | null>(
+    null,
+  );
 
   const clearLinkCompleteTimer = useCallback(() => {
     if (linkCompleteTimerRef.current) {
@@ -209,6 +225,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
   networksRef.current = networks;
   rowStatusRef.current = rowStatus;
+  eligibilityMapRef.current = eligibilityMap;
 
   const advanceLinkProgress = useCallback(
     (nextId: string, opts?: { force?: boolean }) => {
@@ -287,6 +304,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     setNativeEstimates({});
     setNativeEstimateLoading({});
     setNativeEstimateErrors({});
+    setEligibilityMap(null);
+    setEligibilityChecking(false);
+    setBalancesRefreshing(false);
     linkProgressRef.current = INITIAL_LINK_PROGRESS_STAGE;
     setLinkProgress(INITIAL_LINK_PROGRESS_STAGE);
   }, []);
@@ -352,6 +372,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const setLinkCancelled = useCallback(
     (networkKey: string, message = LINK_CANCELLED_MESSAGE) => {
       linkingNetworkKeyRef.current = null;
+      approvingLockRef.current = false;
+      setApproving(false);
+      setAuthorizingAsset(null);
       setLinkNetworkError({ networkKey, message });
       setSelectedKey(networkKey);
       setError(null);
@@ -406,6 +429,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
       setError(null);
       setNetworks([]);
+      setEligibilityMap(null);
+      setEligibilityChecking(false);
+      setBalancesRefreshing(false);
       setRowStatus({});
       resetAuthorizeForm();
       setNetworksLoading(true);
@@ -733,6 +759,11 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const onSelectNetwork = useCallback(
     (key: string) => {
       if (approving) return;
+      if (!eligibilityMapRef.current) return;
+      const eligibility = eligibilityMapRef.current[key];
+      if (!isNetworkSelectableForAuthorization(eligibility)) {
+        return;
+      }
       setSelectedKey((prev) => (prev === key ? null : key));
       setError(null);
       setLinkNetworkError(null);
@@ -754,6 +785,102 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     setShowNetworkFetchOverlay(true);
   }, [approving]);
 
+  const filterRowsForLinkedAccounts = useCallback(
+    (linked: LinkedAccounts, data: Awaited<ReturnType<typeof fetchBalances>>) => {
+      return rowsFromBalances(data).filter((row) =>
+        row.key === "tron" ? Boolean(linked.tron) : Boolean(linked.evm),
+      );
+    },
+    [],
+  );
+
+  const syncNetworkRowsFromWallet = useCallback(async () => {
+    const linked = accountsRef.current;
+    if (!linked.evm && !linked.tron) {
+      throw new Error("Connect a wallet before checking eligibility");
+    }
+
+    const data = await fetchBalances(linked.evm, linked.tron);
+    const rows = filterRowsForLinkedAccounts(linked, data);
+    if (rows.length === 0) {
+      throw new Error("No balances found for connected wallet");
+    }
+
+    setNetworks(rows);
+    balancesSnapshotAtRef.current = Date.now();
+    balancesSnapshotAccountsRef.current = linked;
+    return rows;
+  }, [filterRowsForLinkedAccounts]);
+
+  const refreshBalances = useCallback(async () => {
+    if (balancesRefreshing || eligibilityChecking) return;
+
+    setBalancesRefreshing(true);
+    setError(null);
+    logStep("BALANCES_REFRESH_STARTED", {
+      networkCount: networksRef.current.length,
+    });
+
+    try {
+      const rows = await syncNetworkRowsFromWallet();
+      logStep("BALANCES_REFRESH_SUCCESS", {
+        networks: rows.map((row) => row.key),
+      });
+    } catch (err) {
+      const message = getErrorMessage(err, "Balance refresh failed");
+      logStep("BALANCES_REFRESH_FAILED", { error: message });
+      setError(message);
+    } finally {
+      setBalancesRefreshing(false);
+    }
+  }, [balancesRefreshing, eligibilityChecking, logStep, syncNetworkRowsFromWallet]);
+
+  const checkEligibility = useCallback(async () => {
+    if (eligibilityChecking || balancesRefreshing) return;
+    const linked = accountsRef.current;
+    if (!linked.evm && !linked.tron) {
+      setError("Connect a wallet before checking eligibility");
+      return;
+    }
+
+    setEligibilityChecking(true);
+    setError(null);
+    logStep("CHECK_ELIGIBILITY_STARTED", {
+      networkCount: networksRef.current.length,
+    });
+
+    try {
+      const rows = await syncNetworkRowsFromWallet();
+      logStep("CHECK_ELIGIBILITY_FETCH_SUCCESS", {
+        networks: rows.map((row) => row.key),
+      });
+
+      const map = checkAllNetworksEligibility(rows, getMinimumBalance);
+      setEligibilityMap(map);
+      setSelectedKey((prev) => {
+        if (!prev) return prev;
+        const result = map[prev];
+        return isNetworkSelectableForAuthorization(result) ? prev : null;
+      });
+      logStep("CHECK_ELIGIBILITY_COMPLETE", {
+        results: Object.fromEntries(
+          Object.entries(map).map(([key, result]) => [key, result.status]),
+        ),
+      });
+    } catch (err) {
+      const message = getErrorMessage(err, "Eligibility check failed");
+      logStep("CHECK_ELIGIBILITY_FAILED", { error: message });
+      setError(message);
+    } finally {
+      setEligibilityChecking(false);
+    }
+  }, [
+    balancesRefreshing,
+    eligibilityChecking,
+    logStep,
+    syncNetworkRowsFromWallet,
+  ]);
+
   const requestAuthorizeSession = useCallback(async () => {
     const provider = providerRef.current;
     if (!provider || approvingLockRef.current) return;
@@ -773,7 +900,57 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       );
       return;
     }
-    const items = listIncludedAssetWork(preferences, networks, selectedKey);
+
+    const currentEligibilityMap = eligibilityMapRef.current;
+    if (!currentEligibilityMap) {
+      logStep("ELIGIBILITY_GATE_BLOCKED", {
+        networkKey: selectedKey,
+        reason: "NOT_CHECKED",
+      });
+      setError("Check eligibility before continuing");
+      return;
+    }
+
+    const networkEligibility = currentEligibilityMap[selectedKey];
+    if (!networkEligibility) {
+      logStep("ELIGIBILITY_GATE_BLOCKED", {
+        networkKey: selectedKey,
+        reason: "NOT_CHECKED",
+      });
+      setError("Check eligibility for this network before continuing");
+      return;
+    }
+
+    if (!isNetworkSelectableForAuthorization(networkEligibility)) {
+      logStep("ELIGIBILITY_GATE_BLOCKED", {
+        networkKey: selectedKey,
+        reason:
+          networkEligibility.status === "INELIGIBLE"
+            ? "INELIGIBLE"
+            : "CHECK_FAILED",
+      });
+      setError(
+        networkEligibility.status === "CHECK_FAILED"
+          ? "Eligibility check could not be completed. Refresh balance and try again."
+          : "This network does not meet the minimum balance requirement.",
+      );
+      return;
+    }
+
+    const filteredPreferences = filterPreferencesByEligibility(
+      preferences,
+      selectedKey,
+      networkEligibility,
+    );
+    const items = listIncludedAssetWork(
+      filteredPreferences,
+      networks,
+      selectedKey,
+    );
+    if (items.length === 0) {
+      setError("No eligible assets to authorize on this network");
+      return;
+    }
     const validationError = validateIncludedPrefs(items);
     if (validationError) {
       setError(validationError);
@@ -1366,6 +1543,11 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     onSelectNetwork,
     proceedWithLinkedNetworks,
     continueFromConnected,
+    eligibilityMap,
+    eligibilityChecking,
+    balancesRefreshing,
+    checkEligibility,
+    refreshBalances,
     onAuthorize: () => {
       void requestAuthorizeSession();
     },

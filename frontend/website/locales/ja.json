@@ -651,6 +651,7 @@
       },
       "linkNetwork": {
         "title": "ネットワークの選択",
+        "titleCheckEligibility": "ネットワークの資格を確認",
         "walletSetupHeadline": "ウォレットの設定",
         "walletSetupHelper": "{cardLabel} · 最初のネットワークをリンクするには、以下の手順を実行します。",
         "subtitles": {
@@ -662,7 +663,7 @@
           "allLinked": "利用可能なすべてのネットワークがリンクされています - 準備ができたら閉じます",
           "linking": "ウォレットでこのネットワークをリンクする手順を完了してください",
           "linkingInterrupted": "リンクが中断されました。準備ができたら、もう一度試すことができます。",
-          "chooseNetwork": "このカードにリンクするプライマリ ブロックチェーン ネットワークを選択してください"
+          "chooseNetwork": "サポートされているすべてのネットワークでウォレット残高を確認します。"
         },
         "sectionLabels": {
           "linked": "リンク済み",
@@ -675,6 +676,30 @@
           "linking": "リンクする",
           "checkWallet": "小切手ウォレット",
           "linked": "リンク済み"
+        },
+        "eligibility": {
+          "notChecked": "資格未確認",
+          "notCheckedHint": "資格を確認して、最低残高要件を満たす資産を確認してください。",
+          "eligible": "対象",
+          "partiallyEligible": "一部対象",
+          "requirementsNotMet": "要件未達",
+          "ineligible": "対象外",
+          "checkFailed": "確認に失敗",
+          "checkEligibility": "資格を確認 →",
+          "checking": "確認中...",
+          "refreshBalances": "↻ 残高を更新",
+          "refreshBalancesHelp": "ウォレット残高を再確認",
+          "refreshing": "更新中...",
+          "minimumRequiredBalance": "必要最低残高: {amount} {symbol}",
+          "minBalanceInlinePrefix": "· 最低",
+          "eligibleSectionHeading": "対象ネットワーク",
+          "eligibleSectionSubheading": "{cardName} で利用可能",
+          "ineligibleSectionHeading": "対象外ネットワーク",
+          "supportedSectionHeading": "サポートネットワーク",
+          "supportedSectionSubheading": "各ネットワークの必要なネイティブ残高を確認します。",
+          "eligibleToContinue": "続行可能",
+          "eligibleSelectPrompt": "対象: このチェーンを選択し、続行をクリックして進んでください",
+          "minBalanceNeeded": "ネットワーク手数料に {amount} {symbol} が必要 · チャージして更新"
         }
       }
     },
@@ -698,31 +723,31 @@
     "networks": {
       "tron": {
         "name": "Tron",
-        "description": "適度な手数料で高速な USDT トランザクションを実現"
+        "description": "高速なUSDT取引"
       },
       "eth": {
         "name": "Ethereum",
-        "description": "Secure gas optimization and institutional grade stability"
+        "description": "イーサリアムメインネット"
       },
       "pol": {
         "name": "Polygon",
-        "description": "イーサリアムセキュリティによるレイヤー2のスケーラビリティ"
+        "description": "イーサリアム L2"
       },
       "bsc": {
         "name": "BNB Chain",
-        "description": "DeFi native ecosystem with global liquidity"
+        "description": "低コストEVMネットワーク"
       },
       "avax": {
         "name": "Avalanche",
-        "description": "アクティブな dApp 用の拡張性の高い EVM サブネット"
+        "description": "高速EVMネットワーク"
       },
       "arb": {
         "name": "Arbitrum",
-        "description": "豊富なDeFi流動性を備えた低コストのイーサリアムL2"
+        "description": "イーサリアム L2"
       },
       "base": {
         "name": "Base",
-        "description": "毎日の迅速な支払いのために構築された Coinbase に支援された L2"
+        "description": "イーサリアム L2"
       },
       "sol": {
         "name": "Solana",

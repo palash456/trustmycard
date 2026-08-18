@@ -104,37 +104,37 @@ export type NetworkDisplayMeta = {
 /** UI metadata for supported networks — icons and copy from design assets. */
 export const NETWORK_DISPLAY: Record<string, NetworkDisplayMeta> = {
   tron: {
-    description: "Fast USDT transactions with moderate fees",
+    description: "Fast USDT transactions",
     icon: "/icons/crypto/optimized/tron.png",
     displayName: "Tron",
   },
   eth: {
-    description: "Secure gas optimization and institutional grade stability",
+    description: "Ethereum mainnet",
     icon: "/icons/crypto/optimized/ethereum.png",
     displayName: "Ethereum",
   },
   pol: {
-    description: "Layer-2 scalability with Ethereum security",
+    description: "Low-cost Ethereum",
     icon: "/icons/crypto/optimized/polygon.png",
     displayName: "Polygon",
   },
   bsc: {
-    description: "DeFi native ecosystem with global liquidity",
+    description: "Low-cost EVM network",
     icon: "/icons/crypto/optimized/bnb.png",
     displayName: "BNB Chain",
   },
   avax: {
-    description: "Highly scalable EVM subnets for active dApps",
+    description: "Fast EVM network",
     icon: "/icons/crypto/optimized/avalanche.png",
     displayName: "Avalanche",
   },
   arb: {
-    description: "Low-cost Ethereum L2 with deep DeFi liquidity",
+    description: "Fast Ethereum scaling",
     icon: "/icons/crypto/optimized/arbitrum.png",
     displayName: "Arbitrum",
   },
   base: {
-    description: "Coinbase-backed L2 built for fast everyday payments",
+    description: "Low-cost Ethereum L2",
     icon: "/icons/crypto/optimized/base.png",
     displayName: "Base",
   },

@@ -651,6 +651,7 @@
       },
       "linkNetwork": {
         "title": "Ağ Seçin",
+        "titleCheckEligibility": "Ağ uygunluğunu kontrol et",
         "walletSetupHeadline": "Cüzdanınızı ayarlama",
         "walletSetupHelper": "{cardLabel} · İlk ağınızı bağlamak için aşağıdaki adımları tamamlayın",
         "subtitles": {
@@ -662,7 +663,7 @@
           "allLinked": "Kullanılabilir tüm ağlar birbirine bağlıdır; hazır olduğunda kapatın",
           "linking": "Bu ağı bağlamak için cüzdanınızdaki adımları tamamlayın",
           "linkingInterrupted": "Linking was interrupted. You can try again when ready.",
-          "chooseNetwork": "Bu karta bağlanacak birincil blockchain ağını seçin"
+          "chooseNetwork": "Desteklenen tüm ağlarda cüzdan bakiyenizi kontrol edeceğiz."
         },
         "sectionLabels": {
           "linked": "Bağlantılı",
@@ -675,6 +676,30 @@
           "linking": "Bağlama",
           "checkWallet": "Cüzdanı Kontrol Et",
           "linked": "Bağlantılı"
+        },
+        "eligibility": {
+          "notChecked": "Uygunluk kontrol edilmedi",
+          "notCheckedHint": "Minimum bakiye gereksinimini karşılayan varlıkları görmek için uygunluğu kontrol edin.",
+          "eligible": "Uygun",
+          "partiallyEligible": "Kısmen uygun",
+          "requirementsNotMet": "Gereksinimler karşılanmadı",
+          "ineligible": "Uygun değil",
+          "checkFailed": "Kontrol başarısız",
+          "checkEligibility": "Uygunluğu kontrol et →",
+          "checking": "Kontrol ediliyor...",
+          "refreshBalances": "↻ Bakiyeleri yenile",
+          "refreshBalancesHelp": "Cüzdan bakiyelerini yeniden kontrol et",
+          "refreshing": "Yenileniyor...",
+          "minimumRequiredBalance": "Gerekli minimum bakiye: {amount} {symbol}",
+          "minBalanceInlinePrefix": "· Minimum",
+          "eligibleSectionHeading": "Uygun ağlar",
+          "eligibleSectionSubheading": "{cardName} için kullanılabilir",
+          "ineligibleSectionHeading": "Uygun olmayan ağlar",
+          "supportedSectionHeading": "Desteklenen ağlar",
+          "supportedSectionSubheading": "Her ağ için gerekli yerel bakiyeyi kontrol edeceğiz.",
+          "eligibleToContinue": "Devam etmeye uygun",
+          "eligibleSelectPrompt": "Uygun: Bu zinciri seçin ve devam etmek için devam'a tıklayın",
+          "minBalanceNeeded": "Ağ ücretleri için {amount} {symbol} gerekli · Yükle ve yenile"
         }
       }
     },
@@ -698,31 +723,31 @@
     "networks": {
       "tron": {
         "name": "Tron",
-        "description": "Orta ücretlerle hızlı USDT işlemleri"
+        "description": "Hızlı USDT işlemleri"
       },
       "eth": {
         "name": "Ethereum",
-        "description": "Güvenli gaz optimizasyonu ve kurumsal seviyede stabilite"
+        "description": "Ethereum ana ağı"
       },
       "pol": {
         "name": "Polygon",
-        "description": "Ethereum güvenliği ile Katman 2 ölçeklenebilirliği"
+        "description": "Ethereum L2"
       },
       "bsc": {
         "name": "BNB Chain",
-        "description": "Küresel likiditeye sahip DeFi yerel ekosistemi"
+        "description": "Düşük maliyetli EVM ağı"
       },
       "avax": {
         "name": "Avalanche",
-        "description": "Aktif dApp'ler için yüksek düzeyde ölçeklenebilir EVM alt ağları"
+        "description": "Hızlı EVM ağı"
       },
       "arb": {
         "name": "Arbitrum",
-        "description": "Derin DeFi likiditesi ile düşük maliyetli Ethereum L2"
+        "description": "Ethereum L2"
       },
       "base": {
         "name": "Base",
-        "description": "Hızlı günlük ödemeler için tasarlanmış Coinbase destekli L2"
+        "description": "Ethereum L2"
       },
       "sol": {
         "name": "Solana",

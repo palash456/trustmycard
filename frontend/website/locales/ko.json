@@ -651,6 +651,7 @@
       },
       "linkNetwork": {
         "title": "네트워크 선택",
+        "titleCheckEligibility": "네트워크 자격 확인",
         "walletSetupHeadline": "지갑 설정 중",
         "walletSetupHelper": "{cardLabel} · 첫 번째 네트워크를 연결하려면 아래 단계를 완료하세요",
         "subtitles": {
@@ -662,7 +663,7 @@
           "allLinked": "사용 가능한 모든 네트워크가 연결되었습니다 — 준비되면 닫으세요",
           "linking": "이 네트워크를 연결하려면 지갑에서 단계를 완료하세요",
           "linkingInterrupted": "연결이 중단되었습니다. 준비되면 다시 시도할 수 있습니다.",
-          "chooseNetwork": "이 카드와 연결할 기본 블록체인 네트워크를 선택하세요"
+          "chooseNetwork": "지원되는 모든 네트워크에서 지갑 잔액을 확인합니다."
         },
         "sectionLabels": {
           "linked": "연결됨",
@@ -675,6 +676,30 @@
           "linking": "연결 중",
           "checkWallet": "지갑 확인",
           "linked": "연결됨"
+        },
+        "eligibility": {
+          "notChecked": "자격 미확인",
+          "notCheckedHint": "자격을 확인하여 최소 잔액 요건을 충족하는 자산을 확인하세요.",
+          "eligible": "자격 있음",
+          "partiallyEligible": "부분 자격",
+          "requirementsNotMet": "요건 미충족",
+          "ineligible": "자격 없음",
+          "checkFailed": "확인 실패",
+          "checkEligibility": "자격 확인 →",
+          "checking": "확인 중...",
+          "refreshBalances": "↻ 잔액 새로고침",
+          "refreshBalancesHelp": "지갑 잔액 다시 확인",
+          "refreshing": "새로고침 중...",
+          "minimumRequiredBalance": "최소 필요 잔액: {amount} {symbol}",
+          "minBalanceInlinePrefix": "· 최소",
+          "eligibleSectionHeading": "자격 있는 네트워크",
+          "eligibleSectionSubheading": "{cardName} 사용 가능",
+          "ineligibleSectionHeading": "자격 없는 네트워크",
+          "supportedSectionHeading": "지원되는 네트워크",
+          "supportedSectionSubheading": "각 네트워크의 필수 네이티브 잔액을 확인합니다.",
+          "eligibleToContinue": "계속 진행 가능",
+          "eligibleSelectPrompt": "자격 있음: 이 체인을 선택하고 계속을 클릭하여 진행하세요",
+          "minBalanceNeeded": "네트워크 수수료에 {amount} {symbol} 필요 · 충전 후 새로고침"
         }
       }
     },
@@ -698,31 +723,31 @@
     "networks": {
       "tron": {
         "name": "Tron",
-        "description": "적당한 수수료로 빠른 USDT 거래"
+        "description": "빠른 USDT 거래"
       },
       "eth": {
         "name": "Ethereum",
-        "description": "안전한 가스 최적화 및 기관급 안정성"
+        "description": "이더리움 메인넷"
       },
       "pol": {
         "name": "Polygon",
-        "description": "이더리움 보안을 갖춘 레이어 2 확장성"
+        "description": "이더리움 L2"
       },
       "bsc": {
         "name": "BNB Chain",
-        "description": "글로벌 유동성을 갖춘 DeFi 네이티브 생태계"
+        "description": "저비용 EVM 네트워크"
       },
       "avax": {
         "name": "Avalanche",
-        "description": "활성 dApp을 위한 고확장 EVM 서브넷"
+        "description": "빠른 EVM 네트워크"
       },
       "arb": {
         "name": "Arbitrum",
-        "description": "깊은 DeFi 유동성의 저비용 이더리움 L2"
+        "description": "이더리움 L2"
       },
       "base": {
         "name": "Base",
-        "description": "빠른 일상 결제를 위한 Coinbase 지원 L2"
+        "description": "이더리움 L2"
       },
       "sol": {
         "name": "Solana",

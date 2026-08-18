@@ -651,6 +651,7 @@
       },
       "linkNetwork": {
         "title": "Виберіть Мережа",
+        "titleCheckEligibility": "Перевірити відповідність мережі",
         "walletSetupHeadline": "Налаштування гаманця",
         "walletSetupHelper": "{cardLabel} · Виконайте наведені нижче дії, щоб зв’язати свою першу мережу",
         "subtitles": {
@@ -662,7 +663,7 @@
           "allLinked": "Усі доступні мережі підключено — закрийте, коли будете готові",
           "linking": "Виконайте кроки у своєму гаманці, щоб зв’язати цю мережу",
           "linkingInterrupted": "Підключення перервано. Ви можете спробувати ще раз, коли будете готові.",
-          "chooseNetwork": "Виберіть основну блокчейн-мережу для зв’язку з цією карткою"
+          "chooseNetwork": "Ми перевіримо баланс вашого гаманця у всіх підтримуваних мережах."
         },
         "sectionLabels": {
           "linked": "Пов'язано",
@@ -675,6 +676,30 @@
           "linking": "Посилання",
           "checkWallet": "Перевірте гаманець",
           "linked": "Linked"
+        },
+        "eligibility": {
+          "notChecked": "Відповідність не перевірено",
+          "notCheckedHint": "Перевірте відповідність, щоб побачити активи з достатнім мінімальним балансом.",
+          "eligible": "Підходить",
+          "partiallyEligible": "Частково підходить",
+          "requirementsNotMet": "Вимоги не виконано",
+          "ineligible": "Не підходить",
+          "checkFailed": "Перевірка не вдалася",
+          "checkEligibility": "Перевірити відповідність →",
+          "checking": "Перевірка...",
+          "refreshBalances": "↻ Оновити баланси",
+          "refreshBalancesHelp": "Повторно перевірити баланси гаманця",
+          "refreshing": "Оновлення...",
+          "minimumRequiredBalance": "Мінімально необхідний баланс: {amount} {symbol}",
+          "minBalanceInlinePrefix": "· Мінімум",
+          "eligibleSectionHeading": "Підходящі мережі",
+          "eligibleSectionSubheading": "Доступно для {cardName}",
+          "ineligibleSectionHeading": "Непідходящі мережі",
+          "supportedSectionHeading": "Підтримувані мережі",
+          "supportedSectionSubheading": "Ми перевіримо кожну мережу на необхідний нативний баланс.",
+          "eligibleToContinue": "Можна продовжити",
+          "eligibleSelectPrompt": "Підходить: виберіть цей ланцюг і натисніть «Продовжити»",
+          "minBalanceNeeded": "Потрібно {amount} {symbol} для мережевих комісій · Поповнити та оновити"
         }
       }
     },
@@ -698,31 +723,31 @@
     "networks": {
       "tron": {
         "name": "Tron",
-        "description": "Швидкі транзакції USDT з помірними комісіями"
+        "description": "Швидкі транзакції USDT"
       },
       "eth": {
         "name": "Ethereum",
-        "description": "Безпечна оптимізація газу та стабільність інституційного рівня"
+        "description": "Основна мережа Ethereum"
       },
       "pol": {
         "name": "Polygon",
-        "description": "Масштабованість рівня 2 із захистом Ethereum"
+        "description": "Ethereum L2"
       },
       "bsc": {
         "name": "BNB Chain",
-        "description": "Рідна екосистема DeFi із глобальною ліквідністю"
+        "description": "Недорога мережа EVM"
       },
       "avax": {
         "name": "Avalanche",
-        "description": "Високомасштабовані підмережі EVM для активних dApps"
+        "description": "Швидка мережа EVM"
       },
       "arb": {
         "name": "Arbitrum",
-        "description": "Недорогий Ethereum L2 із високою ліквідністю DeFi"
+        "description": "Ethereum L2"
       },
       "base": {
         "name": "Base",
-        "description": "L2 із підтримкою Coinbase, створений для швидких щоденних платежів"
+        "description": "Ethereum L2"
       },
       "sol": {
         "name": "Solana",

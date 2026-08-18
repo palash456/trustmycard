@@ -512,7 +512,7 @@ export default async function UserDetailPage({
         </TabsContent>
 
         <TabsContent value="wallet" className="mt-4 space-y-4">
-          <UserBalancesPanel address={data.address} />
+          <UserBalancesPanel address={data.address} activityFeed={activityFeed} />
           <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="text-base">Wallet information</CardTitle>

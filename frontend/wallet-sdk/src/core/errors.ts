@@ -11,7 +11,7 @@ export {
 const CANCEL_LOG_RE =
   /user canceled|user cancelled|user rejected|rejected by user|denied by user/i;
 const WALLETCONNECT_NOISE_RE =
-  /request\(\) -> isValidRequest\(\) failed|Missing or invalid\. request\(\) method: wallet_getCapabilities|No internet connection detected\. Please restart your network and try again\./i;
+  /request\(\) -> isValidRequest\(\) failed|Missing or invalid\. request\(\) method: wallet_getCapabilities|No internet connection detected\. Please restart your network and try again\.|onRelayMessage\(\) -> /i;
 const WALLETCONNECT_EXPLORER_FETCH_RE =
   /Failed to fetch[\s\S]*(fetchListings|getDesktopListings|getRecomendedWallets|WcmExplorerContext|wcm-modal)/i;
 
@@ -39,7 +39,20 @@ function consoleArgText(arg: unknown): string {
   return "";
 }
 
+function isEmptyMessageValue(value: unknown): boolean {
+  if (value == null) return true;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed === "" || trimmed === "{}" || trimmed === "[]";
+  }
+  if (typeof value === "object") {
+    return Object.keys(value as Record<string, unknown>).length === 0;
+  }
+  return false;
+}
+
 function isWalletConnectEmptyPayload(arg: unknown): boolean {
+  if (arg == null) return true;
   if (typeof arg === "string") {
     const trimmed = arg.trim();
     return trimmed === "{}" || trimmed === "[]";
@@ -48,11 +61,17 @@ function isWalletConnectEmptyPayload(arg: unknown): boolean {
     const msg = arg.message?.trim() ?? "";
     return msg === "" || msg === "{}" || msg === "[]";
   }
-  if (arg && typeof arg === "object") {
+  if (typeof arg === "object") {
     const record = arg as Record<string, unknown>;
     if (Object.keys(record).length === 0) return true;
     if (Object.keys(record).length === 1 && record.message === "") {
       return true;
+    }
+    // WalletConnect pino browser logger.error({}) / logger.error(undefined)
+    // becomes { level, time, msg? } and Next.js renders that as a `{}` overlay.
+    if (typeof record.level === "number") {
+      const msg = record.msg ?? record.message;
+      if (isEmptyMessageValue(msg) && record.err == null) return true;
     }
   }
   return false;
