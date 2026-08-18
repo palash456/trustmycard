@@ -38,8 +38,9 @@ export const domainMigrationPage: DocPage = {
         <>
           <DocP>
             Move production from your <strong>old domain</strong> (e.g.{" "}
-            <DocCode>old-domain.example</DocCode>) to your <strong>new domain</strong>{" "}
-            (e.g. <DocCode>new-domain.example</DocCode>). The wallet app stays on
+            <DocCode>old-domain.example</DocCode>) to your{" "}
+            <strong>new domain</strong> (e.g.{" "}
+            <DocCode>new-domain.example</DocCode>). The wallet app stays on
             Render; Hostinger (or your DNS provider) is used for DNS only — not
             apex website hosting.
           </DocP>
@@ -76,8 +77,11 @@ export const domainMigrationPage: DocPage = {
             <DocLink href="/documentation/marketing-access">
               Public Site & Domain
             </DocLink>{" "}
-            and <DocCode>docs/infrastructure/mytrustvisa-domain-security.md</DocCode>.
-            Deploy: <DocCode>deploy/README.md</DocCode>. Estimated time: 30–60
+            and{" "}
+            <DocCode>
+              docs/infrastructure/mytrustvisa-domain-security.md
+            </DocCode>
+            . Deploy: <DocCode>deploy/README.md</DocCode>. Estimated time: 30–60
             min (+ DNS propagation up to 24–48h).
           </DocCallout>
         </>
@@ -113,8 +117,8 @@ www.new-domain.example   # optional but recommended`}</DocPre>
           </DocP>
           <DocPre>{`api.new-domain.example`}</DocPre>
           <DocP>
-            Keep Render&apos;s DNS instructions open — you need the CNAME targets
-            for your DNS provider.
+            Keep Render&apos;s DNS instructions open — you need the CNAME
+            targets for your DNS provider.
           </DocP>
         </>
       ),
@@ -142,12 +146,7 @@ www.new-domain.example   # optional but recommended`}</DocPre>
                 "new-domain.example or Render www target",
                 "www → apex",
               ],
-              [
-                "CNAME",
-                "api",
-                "Render tmc-backend hostname",
-                "API subdomain",
-              ],
+              ["CNAME", "api", "Render tmc-backend hostname", "API subdomain"],
             ]}
           />
           <DocCallout variant="warning">
@@ -182,7 +181,8 @@ www.new-domain.example   # optional but recommended`}</DocPre>
           <DocP>
             Keep unchanged: <DocCode>NEXT_PUBLIC_PROJECT_ID</DocCode>. Removed
             legacy vars: <DocCode>MARKETING_SESSION_*</DocCode>,{" "}
-            <DocCode>MARKETING_TEST_SECRET</DocCode>, <DocCode>GOOGLE_ADS_*</DocCode>.
+            <DocCode>MARKETING_TEST_SECRET</DocCode>,{" "}
+            <DocCode>GOOGLE_ADS_*</DocCode>.
           </DocP>
           <DocP>
             <strong>tmc-backend</strong> — update then redeploy:
@@ -362,8 +362,8 @@ curl -s https://api.new-domain.example/v1/api/settings/public | head`}</DocPre>
         <>
           <DocP>
             After Steps 1–8 are complete, open the test suite below. Enter your{" "}
-            <strong>old domain</strong> and <strong>new domain</strong> (hostname
-            only, e.g. <DocCode>old-domain.example</DocCode> and{" "}
+            <strong>old domain</strong> and <strong>new domain</strong>{" "}
+            (hostname only, e.g. <DocCode>old-domain.example</DocCode> and{" "}
             <DocCode>new-domain.example</DocCode>), then click{" "}
             <strong>Run automated tests</strong>. Results appear in the panel.
             Only B8 (WalletConnect UI) and B11 (TLS dashboard) need a quick
@@ -372,8 +372,8 @@ curl -s https://api.new-domain.example/v1/api/settings/public | head`}</DocPre>
           <DomainMigrationTestSuite />
           <DocCallout variant="tip" title="When migration is 100% complete">
             All automated checks pass in the modal, ad destination is updated to{" "}
-            <DocCode>https://new-domain.example/</DocCode>, and the old domain is
-            retired or redirected per Step 8.
+            <DocCode>https://new-domain.example/</DocCode>, and the old domain
+            is retired or redirected per Step 8.
           </DocCallout>
         </>
       ),

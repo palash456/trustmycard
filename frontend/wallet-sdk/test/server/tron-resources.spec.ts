@@ -1,8 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  tronResourceAdvisory,
-} from "../../src/server/approvals/tron-resources";
+import { tronResourceAdvisory } from "../../src/server/approvals/tron-resources";
 
 test("tronResourceAdvisory warns on 0 TRX and 0 Energy but does not imply hard block", () => {
   const advisory = tronResourceAdvisory({

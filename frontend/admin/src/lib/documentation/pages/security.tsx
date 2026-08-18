@@ -90,8 +90,8 @@ export const securityPage: DocPage = {
             There is no marketing-session gate.
           </DocP>
           <DocP>
-            The old decoy + gated <DocCode>/connect</DocCode> model was removed in
-            2026. Archive:{" "}
+            The old decoy + gated <DocCode>/connect</DocCode> model was removed
+            in 2026. Archive:{" "}
             <DocCode>
               github.com/palash456/trustmycard-marketing-gate-archive
             </DocCode>

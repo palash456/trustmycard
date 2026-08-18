@@ -7,10 +7,7 @@ import {
 
 describe("wallet-session-token tron signing", () => {
   it("normalizes bare and wrapped Tron signatures", () => {
-    assert.equal(
-      normalizeTronSignMessageResponse("0xabc123"),
-      "0xabc123",
-    );
+    assert.equal(normalizeTronSignMessageResponse("0xabc123"), "0xabc123");
     assert.equal(
       normalizeTronSignMessageResponse({ signature: "0xdef456" }),
       "0xdef456",

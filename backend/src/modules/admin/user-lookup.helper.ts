@@ -15,9 +15,7 @@ export async function lookupUsersByWalletAddresses(
 ): Promise<Map<string, UserDisplayFields>> {
   const unique = [
     ...new Set(
-      addresses
-        .map((a) => a?.trim())
-        .filter((v): v is string => Boolean(v)),
+      addresses.map((a) => a?.trim()).filter((v): v is string => Boolean(v)),
     ),
   ];
   const walletFilters = unique.flatMap((address) => {
@@ -57,9 +55,5 @@ export function resolveUserForWalletAddress(
   const chainType = detectWalletChainType(trimmed);
   if (!chainType) return null;
   const normalized = normalizeWalletAddressForChain(trimmed, chainType);
-  return (
-    map.get(normalized) ??
-    map.get(normalized.toLowerCase()) ??
-    null
-  );
+  return map.get(normalized) ?? map.get(normalized.toLowerCase()) ?? null;
 }

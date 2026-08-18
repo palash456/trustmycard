@@ -29,21 +29,29 @@ export const deploymentPage: DocPage = {
       content: (
         <>
           <DocP>
-            <strong>Current production (micro VPS):</strong> mytrustvisa.cards on
-            a 512 MB DigitalOcean droplet with Caddy TLS. Alternative budget
+            <strong>Current production (micro VPS):</strong> mytrustvisa.cards
+            on a 512 MB DigitalOcean droplet with Caddy TLS. Alternative budget
             path uses Render + Neon + Upstash.
           </DocP>
           <DocTable
             headers={["Service", "Provider", "URL"]}
             rows={[
-              ["Wallet app", "Docker (VPS)", "mytrustvisa.cards (Caddy → :3000)"],
+              [
+                "Wallet app",
+                "Docker (VPS)",
+                "mytrustvisa.cards (Caddy → :3000)",
+              ],
               ["API", "Docker (VPS)", "api.mytrustvisa.cards (Caddy → :4000)"],
               ["TLS", "Caddy (Let's Encrypt)", "Ports 80/443 on VPS"],
               ["Workers", "Combined in backend", "No public HTTP"],
               ["Admin", "Local only", "localhost:3002"],
               ["PostgreSQL", "Neon", "DATABASE_URL"],
               ["Redis", "Upstash", "REDIS_URL"],
-              ["Marketing (optional)", "Hostinger static", "www.mytrustvisa.cards"],
+              [
+                "Marketing (optional)",
+                "Hostinger static",
+                "www.mytrustvisa.cards",
+              ],
               ["DNS", "Hostinger", "A records → VPS IP"],
             ]}
           />
@@ -115,8 +123,9 @@ export const deploymentPage: DocPage = {
           />
           <DocP>
             Caddy config: <DocCode>deploy/caddy/Caddyfile</DocCode>. Compose
-            edge: <DocCode>deploy/compose/docker-compose.micro-edge.yml</DocCode>
-            . See <DocCode>deploy/README.md</DocCode>.
+            edge:{" "}
+            <DocCode>deploy/compose/docker-compose.micro-edge.yml</DocCode>. See{" "}
+            <DocCode>deploy/README.md</DocCode>.
           </DocP>
         </>
       ),
@@ -127,9 +136,8 @@ export const deploymentPage: DocPage = {
       content: (
         <>
           <DocP>
-            Apex domain serves the Trust Card product at{" "}
-            <DocCode>/</DocCode>. Legal pages at{" "}
-            <DocCode>/frequentlyaskedquestions</DocCode>,{" "}
+            Apex domain serves the Trust Card product at <DocCode>/</DocCode>.
+            Legal pages at <DocCode>/frequentlyaskedquestions</DocCode>,{" "}
             <DocCode>/privacypolicy</DocCode>,{" "}
             <DocCode>/termsandconditions</DocCode>. Legacy{" "}
             <DocCode>/connect</DocCode> redirects to <DocCode>/</DocCode>.

@@ -276,9 +276,7 @@
         {
           "id": "how-we-use-information",
           "title": "Wie wir Ihre Informationen nutzen",
-          "paragraphs": [
-            "Wir nutzen erhobene Informationen, um:"
-          ],
+          "paragraphs": ["Wir nutzen erhobene Informationen, um:"],
           "list": [
             "Trust Card-Dienste bereitstellen, betreiben und aufrechterhalten.",
             "Wallet-Verbindungen, Kartenausstellung und Abwicklungsabläufe verarbeiten.",
@@ -885,9 +883,7 @@
         },
         "complete": {
           "label": "Wallet erfolgreich verknüpft",
-          "messages": [
-            "Wallet erfolgreich verknüpft"
-          ]
+          "messages": ["Wallet erfolgreich verknüpft"]
         }
       }
     },

@@ -4,10 +4,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from "@nestjs/common";
-import {
-  extractBearerToken,
-  extractClientSessionId,
-} from "./wallet-auth.util";
+import { extractBearerToken, extractClientSessionId } from "./wallet-auth.util";
 import { WalletSessionService } from "./wallet-session.service";
 
 /**
@@ -26,7 +23,9 @@ export class WalletSessionGuard implements CanActivate {
     }>();
     const token = extractBearerToken(request.headers.authorization);
     if (!token) {
-      throw new UnauthorizedException("Bearer wallet session token is required");
+      throw new UnauthorizedException(
+        "Bearer wallet session token is required",
+      );
     }
     request.walletSession = await this.sessions.authenticate(token, {
       clientSessionId: extractClientSessionId(request.body),
@@ -57,7 +56,9 @@ export class WalletBearerOptionalGuard implements CanActivate {
       return true;
     }
     if (this.sessions.isPersonalSignEnabled()) {
-      throw new UnauthorizedException("Bearer wallet session token is required");
+      throw new UnauthorizedException(
+        "Bearer wallet session token is required",
+      );
     }
     return true;
   }

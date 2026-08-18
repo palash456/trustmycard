@@ -10,9 +10,7 @@ import { PrismaService } from "../../infrastructure/database/prisma.service";
 import { PlatformConfigService } from "../../config/platform-config.service";
 
 export type WalletAuthMethod =
-  | "personal_sign"
-  | "tx_verified"
-  | "settlement_scoped";
+  "personal_sign" | "tx_verified" | "settlement_scoped";
 
 export type VerifiedWalletSession = {
   id: string;

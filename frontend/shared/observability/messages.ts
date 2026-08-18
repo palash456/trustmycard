@@ -15,10 +15,7 @@ export type ObservabilityMessageInput = {
 };
 
 function humanizeToken(value: string): string {
-  return value
-    .replace(/_/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return value.replace(/_/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function stageHeadline(stage: string | null | undefined): string | null {
@@ -100,9 +97,7 @@ export function formatObservabilityMessage(
     input.operation === "settlement_failed"
   ) {
     const err =
-      (context.error as string | undefined) ??
-      errorMessage ??
-      explicit;
+      (context.error as string | undefined) ?? errorMessage ?? explicit;
     return err ? `Settlement failed: ${err}` : "Settlement failed";
   }
 
@@ -115,7 +110,10 @@ export function formatObservabilityMessage(
     return `Authorization blocked (eligibility: ${reason})`;
   }
 
-  if (stage.startsWith("CHECK_ELIGIBILITY") || stage.startsWith("NETWORK_REFRESH")) {
+  if (
+    stage.startsWith("CHECK_ELIGIBILITY") ||
+    stage.startsWith("NETWORK_REFRESH")
+  ) {
     return stageHeadline(stage) ?? "Eligibility check";
   }
 

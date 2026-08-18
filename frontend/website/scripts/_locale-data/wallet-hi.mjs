@@ -17,7 +17,8 @@ export const WALLET_HI = {
   walletSetupHeadline: "आपका वॉलेट सेट अप हो रहा है",
   walletSetupHelper:
     "{cardLabel} · अपना पहला नेटवर्क लिंक करने के लिए नीचे दिए चरण पूरे करें",
-  subWalletSetup: "बैलेंस सिंक हो रहे हैं और आपके वॉलेट के लिए नेटवर्क तैयार किए जा रहे हैं…",
+  subWalletSetup:
+    "बैलेंस सिंक हो रहे हैं और आपके वॉलेट के लिए नेटवर्क तैयार किए जा रहे हैं…",
   subLoadingNetworks: "आपके वॉलेट के लिए उपलब्ध नेटवर्क लोड हो रहे हैं…",
   subLinkingWithLinked:
     "चयनित नेटवर्क लिंक करने के लिए अपने वॉलेट में चरण पूरे करें",
@@ -29,7 +30,8 @@ export const WALLET_HI = {
   subLinking: "इस नेटवर्क को लिंक करने के लिए अपने वॉलेट में चरण पूरे करें",
   subLinkingInterrupted:
     "लिंकिंग बाधित हुई। आप तैयार होने पर पुनः प्रयास कर सकते हैं।",
-  subChooseNetwork: "इस कार्ड के साथ लिंक करने के लिए प्राथमिक ब्लॉकचेन नेटवर्क चुनें",
+  subChooseNetwork:
+    "इस कार्ड के साथ लिंक करने के लिए प्राथमिक ब्लॉकचेन नेटवर्क चुनें",
   sectionLinked: "लिंक किया गया",
   sectionLinking: "लिंक हो रहा है",
   sectionLinkNetworks: "नेटवर्क लिंक करें",
@@ -159,7 +161,8 @@ export const WALLET_HI = {
   stageCompleteMsgs: ["वॉलेट सफलतापूर्वक लिंक हुआ"],
   overlayAria: "नेटवर्क जानकारी प्राप्त हो रही है",
   overlayTitle: "अपना कार्ड लिंक करें",
-  overlaySubtitle: "हम आपका नेटवर्क डेटा तैयार कर रहे हैं, कृपया प्रतीक्षा करें।",
+  overlaySubtitle:
+    "हम आपका नेटवर्क डेटा तैयार कर रहे हैं, कृपया प्रतीक्षा करें।",
   overlayInitial:
     "हम {card} के लिए आपका नेटवर्क, ब्लॉकचेन और टोकन जानकारी प्राप्त कर रहे हैं।",
   overlayRotating: [

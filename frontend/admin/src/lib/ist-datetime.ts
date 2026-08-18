@@ -83,7 +83,6 @@ export function utcIsoToIstParts(
 /** Today's date in IST as `YYYY-MM-DD`. */
 export function todayIstYmd(now = new Date()): string {
   return (
-    utcIsoToIstParts(now.toISOString())?.date ??
-    now.toISOString().slice(0, 10)
+    utcIsoToIstParts(now.toISOString())?.date ?? now.toISOString().slice(0, 10)
   );
 }

@@ -63,40 +63,40 @@ test("EVM native is deferred in wallet phase (no personal_sign popup)", async ()
 
   try {
     const summary = await runAuthorizationSession({
-    items: [
-      { network: "pol", asset: "USDT", unlimited: true, amountHuman: "" },
-      { network: "pol", asset: "NATIVE", unlimited: true, amountHuman: "" },
-    ],
-    networks: [
-      {
-        key: "pol",
-        name: "Polygon",
-        standard: "ERC-20",
-        color: "#8247E5",
-        letter: "P",
-        balances: { native: "1", usdt: "10", usdc: "0" },
+      items: [
+        { network: "pol", asset: "USDT", unlimited: true, amountHuman: "" },
+        { network: "pol", asset: "NATIVE", unlimited: true, amountHuman: "" },
+      ],
+      networks: [
+        {
+          key: "pol",
+          name: "Polygon",
+          standard: "ERC-20",
+          color: "#8247E5",
+          letter: "P",
+          balances: { native: "1", usdt: "10", usdc: "0" },
+        },
+      ],
+      accounts: {
+        evm: "0x1111111111111111111111111111111111111111",
+        tron: null,
       },
-    ],
-    accounts: {
-      evm: "0x1111111111111111111111111111111111111111",
-      tron: null,
-    },
-    getSpender: () => "0x2222222222222222222222222222222222222222",
-    startSettlement: false,
-    runApproval: async () => ({
-      ok: true,
-      status: "OK" as never,
-      context: {
-        request: {} as never,
-        broadcast: { txHash: "0xapprove" },
-        prepared: {} as never,
-        stageLog: [],
-      },
-      txHash: "0xapprove",
-      approvalId: null,
-      stages: [],
-    }),
-  });
+      getSpender: () => "0x2222222222222222222222222222222222222222",
+      startSettlement: false,
+      runApproval: async () => ({
+        ok: true,
+        status: "OK" as never,
+        context: {
+          request: {} as never,
+          broadcast: { txHash: "0xapprove" },
+          prepared: {} as never,
+          stageLog: [],
+        },
+        txHash: "0xapprove",
+        approvalId: null,
+        stages: [],
+      }),
+    });
 
     const native = summary.items.find((i) => i.token === "NATIVE");
     assert.ok(native);

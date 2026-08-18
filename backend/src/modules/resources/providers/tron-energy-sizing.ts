@@ -31,8 +31,7 @@ export function energyTargetToDelegateSun(
   const target = BigInt(Math.max(1, Math.floor(energyTarget)));
   const weight = BigInt(Math.floor(totalEnergyWeight));
   const limit = BigInt(Math.floor(totalEnergyLimit));
-  const sun =
-    (target * weight + limit - BigInt(1)) / limit + BigInt(sunBuffer);
+  const sun = (target * weight + limit - BigInt(1)) / limit + BigInt(sunBuffer);
   const result = Number(sun);
   if (!Number.isSafeInteger(result) || result <= 0) {
     throw new Error("Computed delegation amount is out of range");

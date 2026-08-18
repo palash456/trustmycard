@@ -46,7 +46,9 @@ export const marketingAccessPage: DocPage = {
           </DocP>
           <DocCallout variant="tip">
             Master repo guide:{" "}
-            <DocCode>docs/infrastructure/mytrustvisa-domain-security.md</DocCode>
+            <DocCode>
+              docs/infrastructure/mytrustvisa-domain-security.md
+            </DocCode>
             . Media buyers:{" "}
             <DocCode>docs/marketing/meta-ads-setup-guide.md</DocCode>.
           </DocCallout>
@@ -60,17 +62,14 @@ export const marketingAccessPage: DocPage = {
         <DocTable
           headers={["URL", "What"]}
           rows={[
-            ["https://mytrustvisa.cards/", "Trust Card homepage + WalletConnect"],
             [
-              "https://mytrustvisa.cards/frequentlyaskedquestions",
-              "FAQ",
+              "https://mytrustvisa.cards/",
+              "Trust Card homepage + WalletConnect",
             ],
+            ["https://mytrustvisa.cards/frequentlyaskedquestions", "FAQ"],
             ["https://mytrustvisa.cards/privacypolicy", "Privacy policy"],
             ["https://mytrustvisa.cards/termsandconditions", "Terms"],
-            [
-              "https://mytrustvisa.cards/connect",
-              "Removed — returns 404",
-            ],
+            ["https://mytrustvisa.cards/connect", "Removed — returns 404"],
             ["https://api.mytrustvisa.cards", "Nest API"],
             [
               "https://www.mytrustvisa.cards",
@@ -141,9 +140,10 @@ REDIS_URL=<Upstash>`}</DocPre>
             ]}
           />
           <DocP>
-            Deploy: <DocCode>./deploy.sh production --provider=docker-vps</DocCode>
-            . See <DocLink href="/documentation/deployment">Deployment</DocLink>{" "}
-            and <DocCode>deploy/README.md</DocCode>.
+            Deploy:{" "}
+            <DocCode>./deploy.sh production --provider=docker-vps</DocCode>. See{" "}
+            <DocLink href="/documentation/deployment">Deployment</DocLink> and{" "}
+            <DocCode>deploy/README.md</DocCode>.
           </DocP>
         </>
       ),

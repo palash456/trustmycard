@@ -235,12 +235,16 @@ function CollapsibleTestSection({
                 {infoTip}
               </div>
               {description ? (
-                <CardDescription className="mt-1">{description}</CardDescription>
+                <CardDescription className="mt-1">
+                  {description}
+                </CardDescription>
               ) : null}
             </div>
           </button>
           {expanded && headerTrailing ? (
-            <div className="flex shrink-0 flex-wrap gap-2">{headerTrailing}</div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              {headerTrailing}
+            </div>
           ) : null}
         </div>
         {expanded && headerBelow ? headerBelow : null}
@@ -874,11 +878,7 @@ export function DeveloperTestPanel({
           <ScoreTile label="Passed" value={scoreboard.passed} tone="pass" />
           <ScoreTile label="Failed" value={scoreboard.failed} tone="fail" />
           <ScoreTile label="Run" value={scoreboard.totalRun} tone="neutral" />
-          <ScoreTile
-            label="Not run"
-            value={scoreboard.notRun}
-            tone="neutral"
-          />
+          <ScoreTile label="Not run" value={scoreboard.notRun} tone="neutral" />
           <ScoreTile
             label="Pass rate"
             value={

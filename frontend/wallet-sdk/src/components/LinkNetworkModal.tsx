@@ -758,8 +758,7 @@ export function LinkNetworkModal({
     isNetworkLinkedStatus(rowStatus[n.key]),
   );
   /** Keep previously linked networks visible while linking another or after cancel. */
-  const showLinkedSection =
-    hasLinked && !isLoadingNetworks && !isWalletSetup;
+  const showLinkedSection = hasLinked && !isLoadingNetworks && !isWalletSetup;
 
   const linkedNetworks = networks.filter((n) =>
     isNetworkLinkedStatus(rowStatus[n.key]),
@@ -837,7 +836,7 @@ export function LinkNetworkModal({
   const networkListDisabled = approving || eligibilityBusy;
   const linkingNetworkKey = isLinking ? selectedKey : null;
   const bannerError =
-    error ?? (isCancelled ? linkNetworkError?.message ?? null : null);
+    error ?? (isCancelled ? (linkNetworkError?.message ?? null) : null);
 
   function handleContinue() {
     if (canRetry || canContinueToLink) {
@@ -996,7 +995,8 @@ export function LinkNetworkModal({
             animationDelay: `${linkModalStaggerDelay(networks.length + 1)}ms`,
           }}
         >
-          {isLinking || isLoadingNetworks ? null : showCheckEligibilityAction ? (
+          {isLinking ||
+          isLoadingNetworks ? null : showCheckEligibilityAction ? (
             <button
               type="button"
               disabled={eligibilityBusy || networks.length === 0}

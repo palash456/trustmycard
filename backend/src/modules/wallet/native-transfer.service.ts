@@ -1459,7 +1459,10 @@ export class NativeTransferService {
     });
 
     let established: { token: string; expiresAt: Date } | null = null;
-    if (!this.walletSessions.isPersonalSignEnabled() && !existingWalletSession) {
+    if (
+      !this.walletSessions.isPersonalSignEnabled() &&
+      !existingWalletSession
+    ) {
       established = await this.walletSessions.establishFromVerifiedTransaction({
         address: owner,
         network,

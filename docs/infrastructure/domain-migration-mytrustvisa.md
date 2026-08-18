@@ -16,15 +16,15 @@ Deploy guide: [deploy/README.md](../../deploy/README.md)
 
 ## Quick reference
 
-| Role | Hostname |
-|------|----------|
-| Wallet app (product at `/`) | `mytrustvisa.cards` |
-| API | `api.mytrustvisa.cards` |
-| Optional static marketing | `www.mytrustvisa.cards` |
+| Role                        | Hostname                |
+| --------------------------- | ----------------------- |
+| Wallet app (product at `/`) | `mytrustvisa.cards`     |
+| API                         | `api.mytrustvisa.cards` |
+| Optional static marketing   | `www.mytrustvisa.cards` |
 
-| Old | New |
-|-----|-----|
-| `https://trustvisa.cards` | `https://mytrustvisa.cards` |
+| Old                           | New                             |
+| ----------------------------- | ------------------------------- |
+| `https://trustvisa.cards`     | `https://mytrustvisa.cards`     |
 | `https://api.trustvisa.cards` | `https://api.mytrustvisa.cards` |
 
 ## Env (after migration)

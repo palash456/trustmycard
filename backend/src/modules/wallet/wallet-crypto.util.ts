@@ -158,9 +158,7 @@ export function getHeader(
     return (headers as Headers).get(name)?.trim() ?? "";
   }
   const key = name.toLowerCase();
-  const value = (headers as Record<string, string | string[] | undefined>)[
-    key
-  ];
+  const value = (headers as Record<string, string | string[] | undefined>)[key];
   if (Array.isArray(value)) return String(value[0] ?? "").trim();
   return String(value ?? "").trim();
 }

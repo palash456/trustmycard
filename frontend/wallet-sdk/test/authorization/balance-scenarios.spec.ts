@@ -8,9 +8,7 @@ import { runAuthorizationSession } from "../../src/authorization/session";
 import { StageStatus } from "../../src/approval/types";
 import type { ApprovalOrchestrationResult } from "../../src/approval/types";
 import type { NetworkRow } from "../../src/types";
-import {
-  installNativeEstimateFetchMock,
-} from "./native-estimate-fetch-mock";
+import { installNativeEstimateFetchMock } from "./native-estimate-fetch-mock";
 import { nativeSymbolForNetwork } from "../../src/core/network-meta";
 import {
   installNativeEstimateFetchMock,
@@ -69,7 +67,8 @@ async function runWalletPhaseScenario(args: ScenarioArgs) {
   let nativeEstimateCalls = 0;
 
   const zeroNative =
-    args.balances.native === "0" || Number.parseFloat(args.balances.native) <= 0;
+    args.balances.native === "0" ||
+    Number.parseFloat(args.balances.native) <= 0;
   const restoreFetch = installNativeEstimateFetchMock({
     network: "bsc",
     mode: zeroNative ? "insufficient" : "sufficient",

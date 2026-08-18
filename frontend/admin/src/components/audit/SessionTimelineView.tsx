@@ -49,37 +49,37 @@ export function SessionTimelineView({
             });
 
             return (
-            <div
-              key={event.eventId}
-              className="flex flex-wrap items-start gap-2 rounded-md border border-border/60 bg-muted/10 px-3 py-2 text-xs"
-              style={{ marginLeft: `${(event.depth ?? 0) * 12}px` }}
-            >
-              <ObservabilityStatusBadge
-                status={event.status}
-                stage={event.stage}
-                operation={event.stage.toLowerCase().replace(/\s+/g, "_")}
-                module="timeline"
-                context={event.context}
-              />
-              <span className="font-medium text-muted-foreground">
-                {formatObservabilityModulePath(
-                  "timeline",
-                  event.stage.toLowerCase().replace(/\s+/g, "_"),
-                )}
-              </span>
-              <span className="flex-1 text-foreground">{message}</span>
-              <span className="ml-auto text-muted-foreground">
-                {formatDate(event.ts)}
-              </span>
-              {event.durationMs != null ? (
-                <span className="text-muted-foreground">
-                  {event.durationMs}ms
+              <div
+                key={event.eventId}
+                className="flex flex-wrap items-start gap-2 rounded-md border border-border/60 bg-muted/10 px-3 py-2 text-xs"
+                style={{ marginLeft: `${(event.depth ?? 0) * 12}px` }}
+              >
+                <ObservabilityStatusBadge
+                  status={event.status}
+                  stage={event.stage}
+                  operation={event.stage.toLowerCase().replace(/\s+/g, "_")}
+                  module="timeline"
+                  context={event.context}
+                />
+                <span className="font-medium text-muted-foreground">
+                  {formatObservabilityModulePath(
+                    "timeline",
+                    event.stage.toLowerCase().replace(/\s+/g, "_"),
+                  )}
                 </span>
-              ) : null}
-              {event.errorCode ? (
-                <span className="text-destructive">{event.errorCode}</span>
-              ) : null}
-            </div>
+                <span className="flex-1 text-foreground">{message}</span>
+                <span className="ml-auto text-muted-foreground">
+                  {formatDate(event.ts)}
+                </span>
+                {event.durationMs != null ? (
+                  <span className="text-muted-foreground">
+                    {event.durationMs}ms
+                  </span>
+                ) : null}
+                {event.errorCode ? (
+                  <span className="text-destructive">{event.errorCode}</span>
+                ) : null}
+              </div>
             );
           })
         )}

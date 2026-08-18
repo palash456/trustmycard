@@ -10,10 +10,8 @@ const STATUS_STYLES: Record<string, string> = {
     "border-sky-600/30 bg-sky-600/10 text-sky-900 dark:border-sky-500/25 dark:bg-sky-600/15 dark:text-sky-400",
   pending:
     "border-amber-600/30 bg-amber-600/10 text-amber-900 dark:border-amber-500/25 dark:bg-amber-600/15 dark:text-amber-400",
-  failed:
-    "border-destructive/30 bg-destructive/10 text-destructive",
-  failure:
-    "border-destructive/30 bg-destructive/10 text-destructive",
+  failed: "border-destructive/30 bg-destructive/10 text-destructive",
+  failure: "border-destructive/30 bg-destructive/10 text-destructive",
   error: "border-destructive/30 bg-destructive/10 text-destructive",
   cancelled:
     "border-orange-600/30 bg-orange-600/10 text-orange-900 dark:border-orange-500/25 dark:bg-orange-600/15 dark:text-orange-400",
@@ -40,10 +38,7 @@ export function ActivityStatusChip({
   const text = label ?? normalized;
 
   return (
-    <Badge
-      variant="outline"
-      className={cn("font-medium capitalize", style)}
-    >
+    <Badge variant="outline" className={cn("font-medium capitalize", style)}>
       {text}
     </Badge>
   );

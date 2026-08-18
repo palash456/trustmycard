@@ -88,7 +88,11 @@ function rsyncFileToRemote(creds, src, remoteDestPath) {
 function rsyncBundle(creds, remotePath, environment) {
   sshExec(creds, `mkdir -p ${remotePath}/deploy/compiled/${environment}`);
 
-  rsyncToRemote(creds, join(deployRoot, "compose"), `${remotePath}/deploy/compose/`);
+  rsyncToRemote(
+    creds,
+    join(deployRoot, "compose"),
+    `${remotePath}/deploy/compose/`,
+  );
   const caddyDir = join(deployRoot, "caddy");
   if (existsSync(caddyDir)) {
     rsyncToRemote(creds, caddyDir, `${remotePath}/deploy/caddy/`);
@@ -172,7 +176,9 @@ export const dockerVpsAdapter = {
     if (!ctx.options?.skipImages) {
       await transferImagesToHost(creds, imageTags);
     } else {
-      console.log("[adapter:docker-vps] --skip-images: reusing images already on VPS");
+      console.log(
+        "[adapter:docker-vps] --skip-images: reusing images already on VPS",
+      );
     }
     rsyncBundle(creds, creds.VPS_DEPLOY_PATH || "/opt/tmc", ctx.environment);
     sshExec(

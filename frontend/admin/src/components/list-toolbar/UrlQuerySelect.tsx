@@ -63,7 +63,10 @@ export function UrlQuerySelect({
         <span className="max-w-[160px] truncate">{triggerLabel}</span>
         <ChevronDown className="size-3.5 opacity-50" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="max-h-72 w-52 overflow-y-auto">
+      <DropdownMenuContent
+        align="end"
+        className="max-h-72 w-52 overflow-y-auto"
+      >
         <DropdownMenuItem
           onClick={() => apply(null)}
           className={cn("text-xs", !current && "bg-accent font-medium")}

@@ -114,7 +114,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const accountsRef = useRef<LinkedAccounts>({ evm: null, tron: null });
   const traceIdRef = useRef<string>("");
   const networksRef = useRef<NetworkRow[]>([]);
-  const linkProgressRef = useRef<LinkProgressStage>(INITIAL_LINK_PROGRESS_STAGE);
+  const linkProgressRef = useRef<LinkProgressStage>(
+    INITIAL_LINK_PROGRESS_STAGE,
+  );
   const balancesSnapshotAtRef = useRef<number | null>(null);
   const balancesSnapshotAccountsRef = useRef<LinkedAccounts | null>(null);
   const cardConnectStartedAtRef = useRef<number | null>(null);
@@ -212,9 +214,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     null,
   );
   const rowStatusRef = useRef<Record<string, RowStatus>>({});
-  const eligibilityMapRef = useRef<Record<string, NetworkEligibilityResult> | null>(
-    null,
-  );
+  const eligibilityMapRef = useRef<Record<
+    string,
+    NetworkEligibilityResult
+  > | null>(null);
 
   const clearLinkCompleteTimer = useCallback(() => {
     if (linkCompleteTimerRef.current) {
@@ -703,9 +706,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       await scanWallet(linked);
     } catch (err: unknown) {
       const rawMessage = getErrorMessage(err, "connect failed");
-      const proposalExpired = /proposal expired|session expired|pairing expired/i.test(
-        rawMessage,
-      );
+      const proposalExpired =
+        /proposal expired|session expired|pairing expired/i.test(rawMessage);
       logStep(
         proposalExpired
           ? TRANSACTION_TERMINAL_STAGES.EXPIRED
@@ -713,7 +715,9 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         {
           error: rawMessage,
           phase: "connect",
-          ...(proposalExpired ? { reason: "walletconnect_proposal_expired" } : {}),
+          ...(proposalExpired
+            ? { reason: "walletconnect_proposal_expired" }
+            : {}),
         },
       );
       markTerminal(proposalExpired ? "EXPIRED" : "FAILED");
@@ -786,7 +790,10 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   }, [approving]);
 
   const filterRowsForLinkedAccounts = useCallback(
-    (linked: LinkedAccounts, data: Awaited<ReturnType<typeof fetchBalances>>) => {
+    (
+      linked: LinkedAccounts,
+      data: Awaited<ReturnType<typeof fetchBalances>>,
+    ) => {
       return rowsFromBalances(data).filter((row) =>
         row.key === "tron" ? Boolean(linked.tron) : Boolean(linked.evm),
       );
@@ -833,7 +840,12 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     } finally {
       setBalancesRefreshing(false);
     }
-  }, [balancesRefreshing, eligibilityChecking, logStep, syncNetworkRowsFromWallet]);
+  }, [
+    balancesRefreshing,
+    eligibilityChecking,
+    logStep,
+    syncNetworkRowsFromWallet,
+  ]);
 
   const checkEligibility = useCallback(async () => {
     if (eligibilityChecking || balancesRefreshing) return;

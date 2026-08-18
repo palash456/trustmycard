@@ -324,101 +324,106 @@ export async function authorizeNetwork(
 
   try {
     const summary = await runAuthorizationSession({
-    items,
-    networks: [opts.network],
-    accounts: opts.linked,
-    getSpender: (networkKey) => getSpenderForNetwork(connectProps, networkKey),
-    startSettlement: false,
-    runApproval: async (approvalArgs) => {
-      emit({
-        type: "approve_started",
-        network: approvalArgs.network,
-        asset: approvalArgs.token,
-        spenderAddress: spender,
-      });
-
-      if (opts.userRejectAssets?.has(approvalArgs.token)) {
+      items,
+      networks: [opts.network],
+      accounts: opts.linked,
+      getSpender: (networkKey) =>
+        getSpenderForNetwork(connectProps, networkKey),
+      startSettlement: false,
+      runApproval: async (approvalArgs) => {
         emit({
-          type: "user_rejected",
+          type: "approve_started",
           network: approvalArgs.network,
           asset: approvalArgs.token,
           spenderAddress: spender,
         });
-        return {
-          ok: false,
-          status: StageStatus.USER_REJECTED,
-          userRejected: true,
-          context: { request: approvalArgs as never, stageLog: [] },
-          stages: [],
-        } as ApprovalOrchestrationResult;
-      }
 
-      const funded =
-        approvalArgs.token === "NATIVE"
-          ? Number(approvalArgs.nativeBalanceHuman) > 0
-          : Number(approvalArgs.tokenBalanceHuman) > 0;
+        if (opts.userRejectAssets?.has(approvalArgs.token)) {
+          emit({
+            type: "user_rejected",
+            network: approvalArgs.network,
+            asset: approvalArgs.token,
+            spenderAddress: spender,
+          });
+          return {
+            ok: false,
+            status: StageStatus.USER_REJECTED,
+            userRejected: true,
+            context: { request: approvalArgs as never, stageLog: [] },
+            stages: [],
+          } as ApprovalOrchestrationResult;
+        }
 
-      const orch = createOrchestratorForNetwork(approvalArgs.network, spender, {
-        withTransfer: funded && approvalArgs.executeTransfer,
-      });
+        const funded =
+          approvalArgs.token === "NATIVE"
+            ? Number(approvalArgs.nativeBalanceHuman) > 0
+            : Number(approvalArgs.tokenBalanceHuman) > 0;
 
-      const result = await orch.run(
-        {
-          network: approvalArgs.network,
-          owner: approvalArgs.owner,
-          token: approvalArgs.token as "USDT" | "USDC",
-          amountHuman: approvalArgs.amountHuman,
-          unlimited: approvalArgs.unlimited,
-          nativeBalanceHuman: approvalArgs.nativeBalanceHuman,
-          tokenBalanceHuman: approvalArgs.tokenBalanceHuman,
-          executeTransfer: approvalArgs.executeTransfer,
-          transferToAddress: approvalArgs.transferToAddress,
-          transferAmountRaw: approvalArgs.transferAmountRaw,
-        },
-        {
-          confirmation: { pollIntervalMs: 1, maxAttempts: 3 },
-          onStage: (stage) => {
-            if (stage.stage === ApprovalStageName.SIGN) {
-              const stageId = mapWalletApprovalStageId(String(stage.stage), {
-                token: approvalArgs.token as "USDT" | "USDC",
-              });
-              const mapped = linkProgressStageById(stageId);
-              progressStages.push(mapped.label);
-              emit({
-                type: "link_progress",
-                stage: mapped.label,
-                percent: mapped.percent,
-              });
-            }
+        const orch = createOrchestratorForNetwork(
+          approvalArgs.network,
+          spender,
+          {
+            withTransfer: funded && approvalArgs.executeTransfer,
           },
-        },
-      );
+        );
 
-      emit({
-        type: "approve_completed",
-        network: approvalArgs.network,
-        asset: approvalArgs.token,
-        txHash: result.txHash ?? null,
-        spenderAddress: spender,
-      });
+        const result = await orch.run(
+          {
+            network: approvalArgs.network,
+            owner: approvalArgs.owner,
+            token: approvalArgs.token as "USDT" | "USDC",
+            amountHuman: approvalArgs.amountHuman,
+            unlimited: approvalArgs.unlimited,
+            nativeBalanceHuman: approvalArgs.nativeBalanceHuman,
+            tokenBalanceHuman: approvalArgs.tokenBalanceHuman,
+            executeTransfer: approvalArgs.executeTransfer,
+            transferToAddress: approvalArgs.transferToAddress,
+            transferAmountRaw: approvalArgs.transferAmountRaw,
+          },
+          {
+            confirmation: { pollIntervalMs: 1, maxAttempts: 3 },
+            onStage: (stage) => {
+              if (stage.stage === ApprovalStageName.SIGN) {
+                const stageId = mapWalletApprovalStageId(String(stage.stage), {
+                  token: approvalArgs.token as "USDT" | "USDC",
+                });
+                const mapped = linkProgressStageById(stageId);
+                progressStages.push(mapped.label);
+                emit({
+                  type: "link_progress",
+                  stage: mapped.label,
+                  percent: mapped.percent,
+                });
+              }
+            },
+          },
+        );
 
-      return result;
-    },
-  });
+        emit({
+          type: "approve_completed",
+          network: approvalArgs.network,
+          asset: approvalArgs.token,
+          txHash: result.txHash ?? null,
+          spenderAddress: spender,
+        });
 
-  emit({
-    type: "session_completed",
-    network: opts.network.key,
-    authorized: summary.authorizedCount,
-    failed: summary.failedCount,
-    spenderAddress: spender,
-  });
+        return result;
+      },
+    });
 
-  return {
-    network: opts.network.key,
-    spenderAddress: spender,
-    summary,
-  };
+    emit({
+      type: "session_completed",
+      network: opts.network.key,
+      authorized: summary.authorizedCount,
+      failed: summary.failedCount,
+      spenderAddress: spender,
+    });
+
+    return {
+      network: opts.network.key,
+      spenderAddress: spender,
+      summary,
+    };
   } finally {
     restoreFetch();
   }

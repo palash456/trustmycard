@@ -224,9 +224,7 @@ export function compileEnvBundles(ctx) {
         ? platform.META_PIXEL_ID || website.META_PIXEL_ID || ""
         : "",
     META_PIXEL_APP_URL:
-      environment === "production"
-        ? platform.META_PIXEL_APP_URL || ""
-        : "",
+      environment === "production" ? platform.META_PIXEL_APP_URL || "" : "",
   };
 
   const adminEnv = {
@@ -236,8 +234,7 @@ export function compileEnvBundles(ctx) {
     BACKEND_API_URL: internalApiUrl,
     ADMIN_API_KEY: adminApiKey,
     ADMIN_SESSION_SECRET: adminSessionSecret,
-    ADMIN_PANEL_PASSWORD:
-      admin.ADMIN_PANEL_PASSWORD || "change-me-local-admin",
+    ADMIN_PANEL_PASSWORD: admin.ADMIN_PANEL_PASSWORD || "change-me-local-admin",
   };
 
   const marketingBuildEnv = {
@@ -258,7 +255,10 @@ export function compileEnvBundles(ctx) {
 
   if (options?.provider === "local" && manifest.data?.mode === "bundled") {
     for (const bundle of Object.values(bundles)) {
-      if (bundle.COLLECTOR_ENABLED === "true" && !bundle.ADMIN_EVM_PRIVATE_KEY) {
+      if (
+        bundle.COLLECTOR_ENABLED === "true" &&
+        !bundle.ADMIN_EVM_PRIVATE_KEY
+      ) {
         bundle.COLLECTOR_ENABLED = "false";
       }
       if (

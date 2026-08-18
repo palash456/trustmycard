@@ -27,13 +27,13 @@ Admin APIs / schedulers / services
 
 ## What belongs where
 
-| Location                                                             | Contents                                                                                                                                    |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `config/platform.env`                                                | Platform-wide config (wallets, flags, collector, Meta Pixel)                                                                                |
-| `env/profiles/$TMC_ENV/backend.env`                                  | **Infrastructure**: `DATABASE_URL`, `PORT`, `ADMIN_API_KEY`, `REDIS_URL`, `LOG_LEVEL`                                                       |
-| `env/profiles/$TMC_ENV/website.env`                                  | **App infra**: `NEXT_PUBLIC_PROJECT_ID`, `BACKEND_API_URL`, Telegram                                                                        |
-| `env/profiles/$TMC_ENV/admin.env`                                    | **Admin infra**: session/login secrets, `BACKEND_API_URL`, `ADMIN_API_KEY`                                                                  |
-| `AppSettings` (Postgres)                                             | **Runtime admin overrides** of tunable platform keys (collector interval, allow-self-spender, …). Defaults always come from `config/platform.env`. |
+| Location                            | Contents                                                                                                                                           |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `config/platform.env`               | Platform-wide config (wallets, flags, collector, Meta Pixel)                                                                                       |
+| `env/profiles/$TMC_ENV/backend.env` | **Infrastructure**: `DATABASE_URL`, `PORT`, `ADMIN_API_KEY`, `REDIS_URL`, `LOG_LEVEL`                                                              |
+| `env/profiles/$TMC_ENV/website.env` | **App infra**: `NEXT_PUBLIC_PROJECT_ID`, `BACKEND_API_URL`, Telegram                                                                               |
+| `env/profiles/$TMC_ENV/admin.env`   | **Admin infra**: session/login secrets, `BACKEND_API_URL`, `ADMIN_API_KEY`                                                                         |
+| `AppSettings` (Postgres)            | **Runtime admin overrides** of tunable platform keys (collector interval, allow-self-spender, …). Defaults always come from `config/platform.env`. |
 
 ## Spender addresses
 

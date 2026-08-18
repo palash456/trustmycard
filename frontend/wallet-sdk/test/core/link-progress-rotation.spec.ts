@@ -35,40 +35,22 @@ test("confirm_usdc_wallet rotates through waiting messages without returning to 
   const messages = linkProgressMessagesForStage(stage);
 
   assert.equal(linkProgressDisplayLabelAtElapsed(stage, 0), messages[0]);
-  assert.equal(
-    linkProgressDisplayLabelAtElapsed(stage, 3_000),
-    messages[1],
-  );
-  assert.equal(
-    linkProgressDisplayLabelAtElapsed(stage, 6_000),
-    messages[2],
-  );
-  assert.equal(
-    linkProgressDisplayLabelAtElapsed(stage, 9_000),
-    messages[1],
-  );
-  assert.equal(
-    linkProgressDisplayLabelAtElapsed(stage, 12_000),
-    messages[2],
-  );
+  assert.equal(linkProgressDisplayLabelAtElapsed(stage, 3_000), messages[1]);
+  assert.equal(linkProgressDisplayLabelAtElapsed(stage, 6_000), messages[2]);
+  assert.equal(linkProgressDisplayLabelAtElapsed(stage, 9_000), messages[1]);
+  assert.equal(linkProgressDisplayLabelAtElapsed(stage, 12_000), messages[2]);
 });
 
 test("preparing_authorization at 50% rotates after 3 seconds", () => {
   const stage = LINK_PROGRESS_STAGES.preparing_authorization;
   const messages = linkProgressMessagesForStage(stage);
   assert.equal(linkProgressDisplayLabelAtElapsed(stage, 0), messages[0]);
-  assert.equal(
-    linkProgressDisplayLabelAtElapsed(stage, 3_000),
-    messages[1],
-  );
+  assert.equal(linkProgressDisplayLabelAtElapsed(stage, 3_000), messages[1]);
 });
 
 test("single-message stages never rotate", () => {
   const stage = LINK_PROGRESS_STAGES.complete;
-  assert.equal(
-    linkProgressDisplayLabelAtElapsed(stage, 60_000),
-    stage.label,
-  );
+  assert.equal(linkProgressDisplayLabelAtElapsed(stage, 60_000), stage.label);
 });
 
 test("two-message stages hold alternate after first window", () => {

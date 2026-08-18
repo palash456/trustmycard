@@ -118,10 +118,7 @@ export function createLogger(
           input.status === "failure" ||
           input.status === "user_rejection" ||
           input.level === "error"
-            ? enrichErrorMessage(
-                input.message,
-                contextError ?? input.message,
-              )
+            ? enrichErrorMessage(input.message, contextError ?? input.message)
             : input.message;
         const event: LogEvent = {
           ts: new Date().toISOString(),
@@ -154,8 +151,7 @@ export function createLogger(
           rpcEndpoint: input.rpcEndpoint,
           apiEndpoint: input.apiEndpoint,
           error:
-            error ??
-            (contextError ? serializeError(contextError) : undefined),
+            error ?? (contextError ? serializeError(contextError) : undefined),
           errorCode:
             input.errorCode ??
             (error ? (getErrorCode(error) ?? undefined) : undefined),

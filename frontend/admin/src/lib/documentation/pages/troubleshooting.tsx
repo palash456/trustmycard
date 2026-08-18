@@ -12,7 +12,17 @@ export const troubleshootingPage: DocPage = {
   slug: "troubleshooting",
   title: "Troubleshooting & Debugging",
   description: "Common issues, debug workflows, and known limitations.",
-  keywords: ["debug", "troubleshoot", "stuck", "failed", "dlq", "reconcile", "marketing", "connect", "fbclid"],
+  keywords: [
+    "debug",
+    "troubleshoot",
+    "stuck",
+    "failed",
+    "dlq",
+    "reconcile",
+    "marketing",
+    "connect",
+    "fbclid",
+  ],
   sections: [
     {
       id: "debug-workflow",

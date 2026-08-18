@@ -115,7 +115,12 @@
     },
     {
       "label": "Start All",
-      "dependsOn": ["Dev: Backend", "Dev: Marketing", "Dev: Website", "Dev: Admin"],
+      "dependsOn": [
+        "Dev: Backend",
+        "Dev: Marketing",
+        "Dev: Website",
+        "Dev: Admin"
+      ],
       "dependsOrder": "parallel",
       "problemMatcher": []
     },

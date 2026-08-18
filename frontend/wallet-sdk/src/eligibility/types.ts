@@ -3,10 +3,7 @@ export type EligibilityAssetType = "native" | "usdt" | "usdc";
 export type AssetEligibilityState = "ELIGIBLE" | "INELIGIBLE" | "UNKNOWN";
 
 export type AssetEligibilityReason =
-  | "MEETS_MINIMUM"
-  | "BELOW_MINIMUM"
-  | "BALANCE_UNAVAILABLE"
-  | "INVALID_BALANCE";
+  "MEETS_MINIMUM" | "BELOW_MINIMUM" | "BALANCE_UNAVAILABLE" | "INVALID_BALANCE";
 
 export type AssetEligibility = {
   networkKey: string;
@@ -23,10 +20,7 @@ export type AssetEligibility = {
 };
 
 export type NetworkEligibilityStatus =
-  | "ELIGIBLE"
-  | "PARTIALLY_ELIGIBLE"
-  | "INELIGIBLE"
-  | "CHECK_FAILED";
+  "ELIGIBLE" | "PARTIALLY_ELIGIBLE" | "INELIGIBLE" | "CHECK_FAILED";
 
 export type NetworkEligibilityResult = {
   networkKey: string;

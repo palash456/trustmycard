@@ -82,7 +82,10 @@ describe("checkNetworkEligibility", () => {
       result.headline,
       /Native balance is below the required minimum/,
     );
-    assert.match(result.detail, /Top up with at least 0\.002 BNB for network fees/);
+    assert.match(
+      result.detail,
+      /Top up with at least 0\.002 BNB for network fees/,
+    );
   });
 
   it("marks network ineligible when native fails even if tokens qualify", () => {
@@ -93,7 +96,10 @@ describe("checkNetworkEligibility", () => {
 
     assert.equal(result.status, "INELIGIBLE");
     assert.equal(isNetworkSelectableForAuthorization(result), false);
-    assert.match(result.detail, /Top up with at least 100 BNB for network fees/);
+    assert.match(
+      result.detail,
+      /Top up with at least 100 BNB for network fees/,
+    );
   });
 
   it("marks network eligible when native passes even if some tokens fail", () => {
@@ -139,7 +145,10 @@ describe("checkNetworkEligibility", () => {
     );
 
     assert.equal(result.status, "ELIGIBLE");
-    assert.equal(result.assets.every((asset) => asset.eligible), true);
+    assert.equal(
+      result.assets.every((asset) => asset.eligible),
+      true,
+    );
   });
 
   it("retains configured minimums in asset results", () => {

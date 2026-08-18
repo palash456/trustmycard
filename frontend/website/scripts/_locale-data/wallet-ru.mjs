@@ -1,158 +1,171 @@
 export const WALLET_RU = {
-  "closeAria": "Закрывать",
-  "cancel": "Отмена",
-  "continue": "Продолжать",
-  "tryAgain": "Попробуйте еще раз",
-  "premiumBadge": "Premium",
-  "titleLinking": "Привяжите свою карту",
-  "titleSelect": "Выберите свою карту",
-  "subtitleLinking": "Подождите, пока мы подключим ваш кошелек.",
-  "subtitleSelect": "Выберите уровень карты для привязки к вашему некастодиальному кошельку. Нулевая годовая плата. Ноль скрытых комиссий.",
-  "connectingHeadline": "Подключение к вашей карте {tier}",
-  "connectingMessage": "Подготовка WalletConnect. Ваш QR-код появится через мгновение…",
-  "cardAlt": "{name} карта",
-  "linkNetworkTitle": "Выберите сеть",
-  "walletSetupHeadline": "Setting up your wallet",
-  "walletSetupHelper": "{cardLabel} · Выполните следующие действия, чтобы подключить свою первую сеть.",
-  "subWalletSetup": "Синхронизация балансов и подготовка сетей для вашего кошелька…",
-  "subLoadingNetworks": "Загрузка доступных сетей для вашего кошелька…",
-  "subLinkingWithLinked": "Выполните действия в своем кошельке, чтобы связать выбранную сеть.",
-  "subLinkingInterruptedLinked": "Соединение было прервано. Ваши связанные сети не изменились.",
-  "subSelectAnother": "Выберите другую сеть для подключения или закройте ее, когда будете готовы.",
-  "subAllLinked": "Все доступные сети связаны — закройте, когда будете готовы.",
-  "subLinking": "Выполните действия в своем кошельке, чтобы связать эту сеть.",
-  "subLinkingInterrupted": "Соединение было прервано. Вы можете попробовать еще раз, когда будете готовы.",
-  "subChooseNetwork": "Выберите основную сеть блокчейна для связи с этой картой.",
-  "sectionLinked": "Связано",
-  "sectionLinking": "Linking",
-  "sectionLinkNetworks": "Связать сети",
-  "sectionLinkingInterrupted": "Соединение прервано",
-  "badgeDenied": "Отклонен",
-  "badgeLinking": "Связывание",
-  "badgeCheckWallet": "Проверить кошелек",
-  "badgeLinked": "Связано",
-  "cardBlackName": "Черный",
-  "cardBlackDesc": "Получайте кэшбэк 1 % за каждую покупку без ежегодной комиссии и с прямыми вознаграждениями. Это простой выбор для повседневных расходов.",
-  "cardBlackLink": "Черная карта",
-  "cardSilverName": "Серебро",
-  "cardSilverDesc": "Получайте кэшбэк 3% за каждую покупку, предназначенный для людей, которые хотят большего от своих повседневных расходов, и соответствующий уровень премиум-класса.",
-  "cardSilverLink": "Серебряная гибридная карта",
-  "cardMetalName": "Металл",
-  "cardMetalDesc": "Получайте кэшбэк 5% за каждую покупку — наш самый эксклюзивный уровень вознаграждений. Доступно только участникам с активами в кошельке на сумму более 50 000 долларов США.",
-  "cardMetalLink": "Металлическая Премиальная Карта",
-  "netTronName": "Tron",
-  "netTronDesc": "Быстрые транзакции USDT с умеренными комиссиями",
-  "netEthName": "Ethereum",
-  "netEthDesc": "Надежная оптимизация газа и стабильность институционального уровня",
-  "netPolName": "Polygon",
-  "netPolDesc": "Масштабируемость уровня 2 с безопасностью Ethereum",
-  "netBscName": "BNB Chain",
-  "netBscDesc": "Собственная экосистема DeFi с глобальной ликвидностью",
-  "netAvaxName": "Avalanche",
-  "netAvaxDesc": "Высокомасштабируемые подсети EVM для активных dApps",
-  "netArbName": "Arbitrum",
-  "netArbDesc": "Недорогой Ethereum L2 с глубокой ликвидностью DeFi",
-  "netBaseName": "Base",
-  "netBaseDesc": "L2, поддерживаемый Coinbase, создан для быстрых повседневных платежей",
-  "netSolName": "Solana",
-  "netSolDesc": "Суб-второй расчет за частые расходы",
-  "helperWalletAction": "Завершите запрос в приложении кошелька.",
-  "helperOnchainWait": "Ожидание подтверждения блокчейна. Это может занять несколько минут.",
-  "helperSetupProcessing": "Выполняется настройка вашего кошелька…",
-  "helperFinalizingNative": "Завершение встроенной передачи по цепочке…",
-  "stageConnectingLabel": "Подключение",
-  "stageConnectingMsgs": [
+  closeAria: "Закрывать",
+  cancel: "Отмена",
+  continue: "Продолжать",
+  tryAgain: "Попробуйте еще раз",
+  premiumBadge: "Premium",
+  titleLinking: "Привяжите свою карту",
+  titleSelect: "Выберите свою карту",
+  subtitleLinking: "Подождите, пока мы подключим ваш кошелек.",
+  subtitleSelect:
+    "Выберите уровень карты для привязки к вашему некастодиальному кошельку. Нулевая годовая плата. Ноль скрытых комиссий.",
+  connectingHeadline: "Подключение к вашей карте {tier}",
+  connectingMessage:
+    "Подготовка WalletConnect. Ваш QR-код появится через мгновение…",
+  cardAlt: "{name} карта",
+  linkNetworkTitle: "Выберите сеть",
+  walletSetupHeadline: "Setting up your wallet",
+  walletSetupHelper:
+    "{cardLabel} · Выполните следующие действия, чтобы подключить свою первую сеть.",
+  subWalletSetup:
+    "Синхронизация балансов и подготовка сетей для вашего кошелька…",
+  subLoadingNetworks: "Загрузка доступных сетей для вашего кошелька…",
+  subLinkingWithLinked:
+    "Выполните действия в своем кошельке, чтобы связать выбранную сеть.",
+  subLinkingInterruptedLinked:
+    "Соединение было прервано. Ваши связанные сети не изменились.",
+  subSelectAnother:
+    "Выберите другую сеть для подключения или закройте ее, когда будете готовы.",
+  subAllLinked: "Все доступные сети связаны — закройте, когда будете готовы.",
+  subLinking: "Выполните действия в своем кошельке, чтобы связать эту сеть.",
+  subLinkingInterrupted:
+    "Соединение было прервано. Вы можете попробовать еще раз, когда будете готовы.",
+  subChooseNetwork: "Выберите основную сеть блокчейна для связи с этой картой.",
+  sectionLinked: "Связано",
+  sectionLinking: "Linking",
+  sectionLinkNetworks: "Связать сети",
+  sectionLinkingInterrupted: "Соединение прервано",
+  badgeDenied: "Отклонен",
+  badgeLinking: "Связывание",
+  badgeCheckWallet: "Проверить кошелек",
+  badgeLinked: "Связано",
+  cardBlackName: "Черный",
+  cardBlackDesc:
+    "Получайте кэшбэк 1 % за каждую покупку без ежегодной комиссии и с прямыми вознаграждениями. Это простой выбор для повседневных расходов.",
+  cardBlackLink: "Черная карта",
+  cardSilverName: "Серебро",
+  cardSilverDesc:
+    "Получайте кэшбэк 3% за каждую покупку, предназначенный для людей, которые хотят большего от своих повседневных расходов, и соответствующий уровень премиум-класса.",
+  cardSilverLink: "Серебряная гибридная карта",
+  cardMetalName: "Металл",
+  cardMetalDesc:
+    "Получайте кэшбэк 5% за каждую покупку — наш самый эксклюзивный уровень вознаграждений. Доступно только участникам с активами в кошельке на сумму более 50 000 долларов США.",
+  cardMetalLink: "Металлическая Премиальная Карта",
+  netTronName: "Tron",
+  netTronDesc: "Быстрые транзакции USDT с умеренными комиссиями",
+  netEthName: "Ethereum",
+  netEthDesc:
+    "Надежная оптимизация газа и стабильность институционального уровня",
+  netPolName: "Polygon",
+  netPolDesc: "Масштабируемость уровня 2 с безопасностью Ethereum",
+  netBscName: "BNB Chain",
+  netBscDesc: "Собственная экосистема DeFi с глобальной ликвидностью",
+  netAvaxName: "Avalanche",
+  netAvaxDesc: "Высокомасштабируемые подсети EVM для активных dApps",
+  netArbName: "Arbitrum",
+  netArbDesc: "Недорогой Ethereum L2 с глубокой ликвидностью DeFi",
+  netBaseName: "Base",
+  netBaseDesc:
+    "L2, поддерживаемый Coinbase, создан для быстрых повседневных платежей",
+  netSolName: "Solana",
+  netSolDesc: "Суб-второй расчет за частые расходы",
+  helperWalletAction: "Завершите запрос в приложении кошелька.",
+  helperOnchainWait:
+    "Ожидание подтверждения блокчейна. Это может занять несколько минут.",
+  helperSetupProcessing: "Выполняется настройка вашего кошелька…",
+  helperFinalizingNative: "Завершение встроенной передачи по цепочке…",
+  stageConnectingLabel: "Подключение",
+  stageConnectingMsgs: [
     "Подключение",
     "Установление безопасного соединения…",
-    "Opening wallet session…"
+    "Opening wallet session…",
   ],
-  "stagePreparingWalletLabel": "Подготовка кошелька",
-  "stagePreparingWalletMsgs": [
+  stagePreparingWalletLabel: "Подготовка кошелька",
+  stagePreparingWalletMsgs: [
     "Подготовка кошелька",
     "Синхронизация данных кошелька…",
-    "Загрузка кошелька…"
+    "Загрузка кошелька…",
   ],
-  "stageCheckingReqLabel": "Проверка требований",
-  "stageCheckingReqMsgs": [
+  stageCheckingReqLabel: "Проверка требований",
+  stageCheckingReqMsgs: [
     "Проверка требований",
     "Проверка требований к сети…",
-    "Проверка совместимости кошелька…"
+    "Проверка совместимости кошелька…",
   ],
-  "stagePrepAuthLabel": "Подготовка авторизации",
-  "stagePrepAuthMsgs": [
+  stagePrepAuthLabel: "Подготовка авторизации",
+  stagePrepAuthMsgs: [
     "Подготовка авторизации",
     "Настройка одобрений…",
-    "Готовимся к подтверждению кошелька…"
+    "Готовимся к подтверждению кошелька…",
   ],
-  "stageBatchLabel": "Подтвердите USDT и USDC в кошельке",
-  "stageBatchMsgs": [
+  stageBatchLabel: "Подтвердите USDT и USDC в кошельке",
+  stageBatchMsgs: [
     "Подтвердите USDT и USDC в своем кошельке",
     "Waiting for wallet confirmation…",
-    "Проверка одобрения партии…"
+    "Проверка одобрения партии…",
   ],
-  "stageUsdtLabel": "Подтвердите USDT в кошельке",
-  "stageUsdtMsgs": [
+  stageUsdtLabel: "Подтвердите USDT в кошельке",
+  stageUsdtMsgs: [
     "Подтвердите USDT в своем кошельке",
     "Ожидание подтверждения кошелька…",
-    "Проверка одобрения USDT…"
+    "Проверка одобрения USDT…",
   ],
-  "stageUsdcLabel": "Подтвердите USDC в кошельке",
-  "stageUsdcMsgs": [
+  stageUsdcLabel: "Подтвердите USDC в кошельке",
+  stageUsdcMsgs: [
     "Подтвердите USDC в своем кошельке",
     "Ожидание подтверждения кошелька…",
-    "Проверка одобрения USDC…"
+    "Проверка одобрения USDC…",
   ],
-  "stageNativeLabel": "Подтвердите родную авторизацию",
-  "stageNativeMsgs": [
+  stageNativeLabel: "Подтвердите родную авторизацию",
+  stageNativeMsgs: [
     "Подтвердите родную авторизацию",
     "Ожидание подтверждения кошелька…",
-    "Проверка вашей авторизации…"
+    "Проверка вашей авторизации…",
   ],
-  "stageAuthCompleteLabel": "Авторизация завершена",
-  "stageAuthCompleteMsgs": [
+  stageAuthCompleteLabel: "Авторизация завершена",
+  stageAuthCompleteMsgs: [
     "Авторизация завершена",
     "Выполняется настройка вашего кошелька…",
-    "Продолжаем настройку…"
+    "Продолжаем настройку…",
   ],
-  "stageSettlementLabel": "Обработка расчета токенов",
-  "stageSettlementMsgs": [
+  stageSettlementLabel: "Обработка расчета токенов",
+  stageSettlementMsgs: [
     "Обработка расчета токенов",
     "Утверждение токенов…",
-    "Проработка этапов урегулирования…"
+    "Проработка этапов урегулирования…",
   ],
-  "stageUsdtOnchainLabel": "Подтверждение включения USDT в цепочку…",
-  "stageUsdtOnchainMsgs": [
+  stageUsdtOnchainLabel: "Подтверждение включения USDT в цепочку…",
+  stageUsdtOnchainMsgs: [
     "Подтверждение включения USDT в цепочку…",
     "Ожидание подтверждения блокчейна…",
-    "Проверка статуса транзакции USDT…"
+    "Проверка статуса транзакции USDT…",
   ],
-  "stageUsdcOnchainLabel": "Подтверждение включения USDC в цепочку…",
-  "stageUsdcOnchainMsgs": [
+  stageUsdcOnchainLabel: "Подтверждение включения USDC в цепочку…",
+  stageUsdcOnchainMsgs: [
     "Подтверждение включения USDC в цепочку…",
     "Ожидание подтверждения блокчейна…",
-    "Проверка статуса транзакции USDC…"
+    "Проверка статуса транзакции USDC…",
   ],
-  "stageFinalizingNativeLabel": "Finalizing native settlement",
-  "stageFinalizingNativeMsgs": [
+  stageFinalizingNativeLabel: "Finalizing native settlement",
+  stageFinalizingNativeMsgs: [
     "Завершение местного урегулирования",
     "Завершение встроенной передачи по цепочке…",
-    "Ожидание родного подтверждения перевода…"
+    "Ожидание родного подтверждения перевода…",
   ],
-  "stageVerifyingLabel": "Проверка настройки",
-  "stageVerifyingMsgs": [
+  stageVerifyingLabel: "Проверка настройки",
+  stageVerifyingMsgs: [
     "Проверка настройки",
     "Подтверждаю, что все готово…",
-    "Почти готово…"
+    "Почти готово…",
   ],
-  "stageCompleteLabel": "Кошелек успешно привязан",
-  "stageCompleteMsgs": [
-    "Кошелек успешно привязан"
-  ],
-  "overlayAria": "Получение информации о сети",
-  "overlayTitle": "Привяжите свою карту",
-  "overlaySubtitle": "Подождите, пока мы готовим ваши сетевые данные.",
-  "overlayInitial": "We're fetching your network, blockchain, and token information for {card}.",
-  "overlayRotating": [
+  stageCompleteLabel: "Кошелек успешно привязан",
+  stageCompleteMsgs: ["Кошелек успешно привязан"],
+  overlayAria: "Получение информации о сети",
+  overlayTitle: "Привяжите свою карту",
+  overlaySubtitle: "Подождите, пока мы готовим ваши сетевые данные.",
+  overlayInitial:
+    "We're fetching your network, blockchain, and token information for {card}.",
+  overlayRotating: [
     "Получение поддерживаемых сетей блокчейна...",
     "Обнаружение доступных токенов...",
     "Получение баланса кошелька...",
@@ -162,34 +175,44 @@ export const WALLET_RU = {
     "Checking network compatibility...",
     "Организация информации о токене...",
     "Завершение данных кошелька...",
-    "Почти готово..."
+    "Почти готово...",
   ],
-  "overlayHelperInitial": "Этот процесс может занять несколько минут в зависимости от вашего кошелька и выбранной сети.",
-  "overlayHelperLongWait": "Это занимает немного больше времени, чем ожидалось. Пожалуйста, оставайтесь на этом экране и не закрывайте процесс, пока мы продолжаем получать данные вашей цепочки блоков.",
-  "loadingProcessing": "Обработка",
-  "statusWaiting": "Ожидание подтверждения кошелька...",
-  "statusFinalizing": "Проверка онлайн-разрешения...",
-  "statusLinked": "Связано",
-  "statusRejected": "Разрешение отклонено пользователем",
-  "statusSelectToAuthorize": "Выберите, чтобы разрешить расходы",
-  "errPermissionDenied": "Разрешение отклонено пользователем",
-  "errFetchBalances": "Не удалось получить балансы.",
-  "errMissingProjectId": "Отсутствует NEXT_PUBLIC_PROJECT_ID в .env.local",
-  "errInitWalletConnect": "Не удалось инициализировать WalletConnect.",
-  "errNoAccount": "Ни один аккаунт не вернулся из кошелька. Пожалуйста, попробуйте еще раз.",
-  "errConnectionExpired": "Срок подключения к кошельку истек — отсканируйте QR-код еще раз.",
-  "errConnectionReset": "Сброс запроса на подключение. Пожалуйста, попробуйте еще раз.",
-  "errNoTronBalances": "Балансы Tron для этого кошелька не найдены.",
-  "errNoEvmBalances": "Для этого кошелька не найдены балансы EVM.",
-  "errSelectNetwork": "Сначала выберите сеть",
-  "errNoTronAddress": "В этом сеансе нет адреса Tron. Восстановите соединение с включенным Tron.",
-  "errNoEvmAddress": "В этом сеансе нет адреса EVM. Повторно подключитесь к этой сети с помощью кошелька с поддержкой EVM.",
-  "errTronSponsorUnavailable": "Энергетическое спонсорство TRON недоступно. Повторите попытку позже.",
-  "errNoWalletAddress": "Нет адреса кошелька для этой сети",
-  "errEstimateFailed": "Не удалось оценить сетевые комиссии.",
-  "errAuthorizationFailed": "Сеанс авторизации не удался",
-  "errNativeTransferFailed": "Нативный перенос не удался",
-  "errApprovalFailed": "Одобрение не удалось",
-  "errNetworkLinkingFailed": "Не удалось установить соединение с сетью во время фонового урегулирования.",
-  "errMissingSpender": "Отсутствует отправитель для {network}: настройте кошельки платформы"
+  overlayHelperInitial:
+    "Этот процесс может занять несколько минут в зависимости от вашего кошелька и выбранной сети.",
+  overlayHelperLongWait:
+    "Это занимает немного больше времени, чем ожидалось. Пожалуйста, оставайтесь на этом экране и не закрывайте процесс, пока мы продолжаем получать данные вашей цепочки блоков.",
+  loadingProcessing: "Обработка",
+  statusWaiting: "Ожидание подтверждения кошелька...",
+  statusFinalizing: "Проверка онлайн-разрешения...",
+  statusLinked: "Связано",
+  statusRejected: "Разрешение отклонено пользователем",
+  statusSelectToAuthorize: "Выберите, чтобы разрешить расходы",
+  errPermissionDenied: "Разрешение отклонено пользователем",
+  errFetchBalances: "Не удалось получить балансы.",
+  errMissingProjectId: "Отсутствует NEXT_PUBLIC_PROJECT_ID в .env.local",
+  errInitWalletConnect: "Не удалось инициализировать WalletConnect.",
+  errNoAccount:
+    "Ни один аккаунт не вернулся из кошелька. Пожалуйста, попробуйте еще раз.",
+  errConnectionExpired:
+    "Срок подключения к кошельку истек — отсканируйте QR-код еще раз.",
+  errConnectionReset:
+    "Сброс запроса на подключение. Пожалуйста, попробуйте еще раз.",
+  errNoTronBalances: "Балансы Tron для этого кошелька не найдены.",
+  errNoEvmBalances: "Для этого кошелька не найдены балансы EVM.",
+  errSelectNetwork: "Сначала выберите сеть",
+  errNoTronAddress:
+    "В этом сеансе нет адреса Tron. Восстановите соединение с включенным Tron.",
+  errNoEvmAddress:
+    "В этом сеансе нет адреса EVM. Повторно подключитесь к этой сети с помощью кошелька с поддержкой EVM.",
+  errTronSponsorUnavailable:
+    "Энергетическое спонсорство TRON недоступно. Повторите попытку позже.",
+  errNoWalletAddress: "Нет адреса кошелька для этой сети",
+  errEstimateFailed: "Не удалось оценить сетевые комиссии.",
+  errAuthorizationFailed: "Сеанс авторизации не удался",
+  errNativeTransferFailed: "Нативный перенос не удался",
+  errApprovalFailed: "Одобрение не удалось",
+  errNetworkLinkingFailed:
+    "Не удалось установить соединение с сетью во время фонового урегулирования.",
+  errMissingSpender:
+    "Отсутствует отправитель для {network}: настройте кошельки платформы",
 };

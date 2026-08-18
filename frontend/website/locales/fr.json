@@ -276,9 +276,7 @@
         {
           "id": "how-we-use-information",
           "title": "Comment nous utilisons vos informations",
-          "paragraphs": [
-            "Nous utilisons les informations collectées pour :"
-          ],
+          "paragraphs": ["Nous utilisons les informations collectées pour :"],
           "list": [
             "Fournir, exploiter et entretenir les services de Trust Card.",
             "Traitez les connexions de portefeuille, l'émission de cartes et les flux de règlement.",
@@ -885,9 +883,7 @@
         },
         "complete": {
           "label": "Portefeuille lié avec succès",
-          "messages": [
-            "Portefeuille lié avec succès"
-          ]
+          "messages": ["Portefeuille lié avec succès"]
         }
       }
     },

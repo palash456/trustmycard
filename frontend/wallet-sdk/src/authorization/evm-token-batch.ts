@@ -384,10 +384,7 @@ export async function runEvmTokenBatchApproval(
   const fallbackResults = await runSequentialFallback(args, owner);
   return {
     results: [...results, ...fallbackResults.results],
-    tokenCaptures: [
-      ...skippedTokenCaptures,
-      ...fallbackResults.tokenCaptures,
-    ],
+    tokenCaptures: [...skippedTokenCaptures, ...fallbackResults.tokenCaptures],
     batchMode: "sequential",
   };
 }
@@ -750,8 +747,7 @@ export function planAuthorizationWork(
         }
       }
 
-      let nativeItem:
-        (IncludedAssetWorkItem & { asset: "NATIVE" }) | undefined;
+      let nativeItem: (IncludedAssetWorkItem & { asset: "NATIVE" }) | undefined;
       if (
         next < items.length &&
         items[next]?.asset === "NATIVE" &&

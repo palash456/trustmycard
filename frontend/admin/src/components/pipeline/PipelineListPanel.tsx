@@ -70,10 +70,7 @@ async function fetchPipelinePage<T>(
   const res = await fetch(`${listEndpoint(tab)}${qs}`, { cache: "no-store" });
   if (!res.ok) {
     throw new Error(
-      await readAdminProxyError(
-        res,
-        `Failed to load ${tab} (${res.status})`,
-      ),
+      await readAdminProxyError(res, `Failed to load ${tab} (${res.status})`),
     );
   }
   return (await res.json()) as Paginated<T>;

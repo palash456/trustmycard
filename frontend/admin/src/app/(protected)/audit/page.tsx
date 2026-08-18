@@ -5,9 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { PageRefreshButton } from "@/components/PageRefreshButton";
 import { PageToolbar } from "@/components/PageToolbar";
 
-function redirectLegacyAuditTab(
-  sp: Record<string, string | undefined>,
-): void {
+function redirectLegacyAuditTab(sp: Record<string, string | undefined>): void {
   const tab = sp.tab;
   if (!tab || tab === "structured") return;
 
@@ -26,7 +24,9 @@ function redirectLegacyAuditTab(
   }
 
   if (tab === "timelines") {
-    redirect(params.size > 0 ? `/transactions?${params.toString()}` : "/transactions");
+    redirect(
+      params.size > 0 ? `/transactions?${params.toString()}` : "/transactions",
+    );
   }
 }
 

@@ -2,11 +2,7 @@ import type { UniversalProvider, WcSession } from "../types";
 import { withSilentWalletCancellation } from "./errors";
 
 export type AtomicCapabilityStatus =
-  | "supported"
-  | "ready"
-  | "unsupported"
-  | "missing"
-  | "unknown";
+  "supported" | "ready" | "unsupported" | "missing" | "unknown";
 
 const EIP5792_SESSION_METHODS = [
   "wallet_sendCalls",
@@ -92,11 +88,7 @@ function chainCapabilityEntry(
 ): WalletCapabilities[string] | undefined {
   const chainKey = toHexChainId(chainId);
   const altKey = String(chainId);
-  return (
-    capabilities[chainKey] ??
-    capabilities[altKey] ??
-    capabilities["0x0"]
-  );
+  return capabilities[chainKey] ?? capabilities[altKey] ?? capabilities["0x0"];
 }
 
 /**

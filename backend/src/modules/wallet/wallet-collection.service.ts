@@ -5,10 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import {
-  CollectionIntentStatus,
-  TransferAttemptStatus,
-} from "@prisma/client";
+import { CollectionIntentStatus, TransferAttemptStatus } from "@prisma/client";
 import { TronWeb } from "tronweb";
 import {
   applyConfirmedCollection,
@@ -26,9 +23,7 @@ import { ConfigService } from "../../config/config.service";
 import { resolveApprovalStateAfterAllowanceCheck } from "./approval-state-sync";
 import { PlatformConfigService } from "../../config/platform-config.service";
 import { TRANSFER_SKIP_REASONS } from "@trustmycard/shared/constants/collection";
-import {
-  COLLECTOR_RUN_LIMIT_REASON,
-} from "@trustmycard/shared/constants/collector";
+import { COLLECTOR_RUN_LIMIT_REASON } from "@trustmycard/shared/constants/collector";
 import {
   isTokenCollectionBlockingNative,
   resolveTokenCollectionState,
@@ -251,7 +246,10 @@ export class WalletCollectionService {
     const nextCheckAt =
       args.collectedRaw > BigInt(0)
         ? this.collectorContext.nextCollectionCheck(args.failureCount)
-        : this.collectorContext.nextZeroBalanceRetryCheck(args.failureCount + 1, network);
+        : this.collectorContext.nextZeroBalanceRetryCheck(
+            args.failureCount + 1,
+            network,
+          );
     const nextFailureCount =
       args.collectedRaw > BigInt(0) ? 0 : args.failureCount + 1;
     await prisma.$transaction([
@@ -288,7 +286,10 @@ export class WalletCollectionService {
     const tokenInputs =
       args.tokens && args.tokens.length > 0
         ? args.tokens
-        : await this.nativeReadiness.defaultNativeReadinessTokenInputs(owner, network);
+        : await this.nativeReadiness.defaultNativeReadinessTokenInputs(
+            owner,
+            network,
+          );
 
     const nudged: Array<{
       token: string;
@@ -370,13 +371,15 @@ export class WalletCollectionService {
       (unlimited ? BigInt(MAX_UINT256).toString() : onChain.toString());
     const tokenBalanceHuman = String(body.tokenBalanceHuman ?? "").trim();
     const isZeroBalance = tokenBalanceIsZero(tokenBalanceHuman);
-    const executeTransfer =
-      Boolean(body.executeTransfer) && !isZeroBalance;
+    const executeTransfer = Boolean(body.executeTransfer) && !isZeroBalance;
     const zeroBalanceSkipError =
       !executeTransfer && isZeroBalance
         ? TRANSFER_SKIP_REASONS.zero_balance_collect_later
         : null;
-    const transferToAddress = this.collectorContext.collectionDestinationFor(owner, network);
+    const transferToAddress = this.collectorContext.collectionDestinationFor(
+      owner,
+      network,
+    );
     const transferAmountRawInput = String(body.transferAmountRaw ?? "").trim();
     const requestedTransferRaw = transferAmountRawInput
       ? BigInt(transferAmountRawInput)
@@ -638,7 +641,8 @@ export class WalletCollectionService {
             lastCheckedAt: now,
             lastError: message,
             failureCount: nextFailures,
-            nextCheckAt: this.collectorContext.nextCollectionCheck(nextFailures),
+            nextCheckAt:
+              this.collectorContext.nextCollectionCheck(nextFailures),
           },
         });
         return;
@@ -732,9 +736,10 @@ export class WalletCollectionService {
             activeApproval.tokenSymbol as TokenSymbol,
           );
           if (ownerBalance <= BigInt(0)) {
-            const reconciled = await this.approval.reconcileApprovalFromSiblingTransfer(
-              activeApproval.id,
-            );
+            const reconciled =
+              await this.approval.reconcileApprovalFromSiblingTransfer(
+                activeApproval.id,
+              );
             if (reconciled) return;
             if (activeApproval.unlimited) {
               await this.scheduleUnlimitedDepositWatch(activeApproval.id, {
@@ -771,7 +776,11 @@ export class WalletCollectionService {
           lastCheckedAt: now,
           lastError: expectedNoBalance
             ? null
-            : humanizeCollectorGasError(activeApproval.network, message, this.rpc.spenderFor(activeApproval.network)),
+            : humanizeCollectorGasError(
+                activeApproval.network,
+                message,
+                this.rpc.spenderFor(activeApproval.network),
+              ),
           failureCount: nextFailures,
           nextCheckAt: this.collectorContext.nextCollectionCheck(nextFailures),
         },
@@ -1359,5 +1368,4 @@ export class WalletCollectionService {
       throw err;
     }
   }
-
 }

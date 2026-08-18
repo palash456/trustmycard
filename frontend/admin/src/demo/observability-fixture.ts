@@ -5,10 +5,7 @@ import {
   type TransactionTerminalStatus,
 } from "@trustmycard/shared/constants/transaction-lifecycle";
 import type { LogLevel, LogStatus } from "@trustmycard/shared/observability";
-import {
-  demoTerminalStatusForFlowIndex,
-  flowId,
-} from "./traceability-fixture";
+import { demoTerminalStatusForFlowIndex, flowId } from "./traceability-fixture";
 
 export type DemoObservabilityEvent = {
   id: string;
@@ -129,7 +126,11 @@ function journeyHour(day: number, slot: number): number {
 }
 
 function levelForStatus(status: LogStatus | string): LogLevel {
-  if (status === "failure" || status === "rpc_failure" || status === "api_failure") {
+  if (
+    status === "failure" ||
+    status === "rpc_failure" ||
+    status === "api_failure"
+  ) {
     return "error";
   }
   if (
@@ -144,9 +145,7 @@ function levelForStatus(status: LogStatus | string): LogLevel {
   return "info";
 }
 
-function terminalStageForStatus(
-  terminal: TransactionTerminalStatus,
-): string {
+function terminalStageForStatus(terminal: TransactionTerminalStatus): string {
   if (terminal === "SUCCESS") return TRANSACTION_TERMINAL_STAGES.SUCCESS;
   if (terminal === "FAILED") return TRANSACTION_TERMINAL_STAGES.FAILED;
   if (terminal === "CANCELLED") return TRANSACTION_TERMINAL_STAGES.CANCELLED;
@@ -176,8 +175,7 @@ function buildJourneyLogs(
   const trace = flowId(spec.flowSlot, owner);
   const hour = journeyHour(spec.day, spec.slot);
   const token = spec.slot % 2 === 0 ? "USDT" : "USDC";
-  const asset =
-    network === "tron" ? "TRX" : network === "bsc" ? "BNB" : "ETH";
+  const asset = network === "tron" ? "TRX" : network === "bsc" ? "BNB" : "ETH";
   const terminal = spec.terminal;
   const events: DemoObservabilityEvent[] = [];
 
@@ -541,7 +539,10 @@ function buildTimelineEvent(
       walletAddress: owner,
       network,
       startedAt: daysAgo(spec.day, journeyHour(spec.day, spec.slot)),
-      completedAt: daysAgo(spec.day, Math.min(23, journeyHour(spec.day, spec.slot) + 1)),
+      completedAt: daysAgo(
+        spec.day,
+        Math.min(23, journeyHour(spec.day, spec.slot) + 1),
+      ),
       outcome,
       totalDurationMs: 8000 + (spec.slot % 12000),
       events: [
@@ -566,7 +567,10 @@ function buildTimelineEvent(
           parentEventId: "n1",
           stage: terminalStageForStatus(terminal),
           status: outcome,
-          ts: daysAgo(spec.day, Math.min(23, journeyHour(spec.day, spec.slot) + 1)),
+          ts: daysAgo(
+            spec.day,
+            Math.min(23, journeyHour(spec.day, spec.slot) + 1),
+          ),
           durationMs: 4200,
           message: `Journey ${terminal.toLowerCase()}`,
         },
@@ -808,7 +812,9 @@ export function buildDemoObservabilityEvents(
         flowSlot,
         terminal,
       };
-      events.push(...buildJourneyLogs(spec, owners, networks, daysAgo, txHash, seq));
+      events.push(
+        ...buildJourneyLogs(spec, owners, networks, daysAgo, txHash, seq),
+      );
       if (j === 0) {
         events.push(buildTimelineEvent(spec, owners, networks, daysAgo, seq));
       }
@@ -826,7 +832,10 @@ export function buildDemoObservabilityEvents(
   );
 }
 
-function includesInsensitive(hay: string | null | undefined, needle: string): boolean {
+function includesInsensitive(
+  hay: string | null | undefined,
+  needle: string,
+): boolean {
   if (!hay || !needle) return false;
   return hay.toLowerCase().includes(needle.toLowerCase());
 }
@@ -930,7 +939,10 @@ export function findDemoSessionTimeline(
   const timeline = events.find(
     (e) => e.kind === "timeline" && e.sessionId === sessionId,
   );
-  if (timeline?.payload && Array.isArray((timeline.payload as { events?: unknown }).events)) {
+  if (
+    timeline?.payload &&
+    Array.isArray((timeline.payload as { events?: unknown }).events)
+  ) {
     const payload = timeline.payload as {
       sessionId?: string;
       walletAddress?: string;

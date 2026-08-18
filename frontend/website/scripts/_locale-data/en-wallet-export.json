@@ -145,9 +145,7 @@
     "Almost done…"
   ],
   "stageCompleteLabel": "Wallet linked successfully",
-  "stageCompleteMsgs": [
-    "Wallet linked successfully"
-  ],
+  "stageCompleteMsgs": ["Wallet linked successfully"],
   "overlayAria": "Fetching network information",
   "overlayTitle": "Link Your Card",
   "overlaySubtitle": "Hang tight while we prepare your network data.",

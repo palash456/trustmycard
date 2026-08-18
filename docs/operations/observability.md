@@ -129,17 +129,17 @@ See [settlement-and-native-execution.md](../architecture/settlement-and-native-e
 
 Emitted by `useConnectFlow` via `createConnectLogStep` (`module: "connect"`):
 
-| Stage | When |
-| ----- | ---- |
-| `CHECK_ELIGIBILITY_STARTED` | User clicks Check Eligibility |
-| `CHECK_ELIGIBILITY_FETCH_SUCCESS` | Fresh `/api/balances` fetch succeeded |
-| `CHECK_ELIGIBILITY_FETCH_FAILED` | Fresh balance fetch failed |
-| `CHECK_ELIGIBILITY_COMPLETE` | All networks evaluated (status map only) |
-| `CHECK_ELIGIBILITY_FAILED` | Config/evaluation error |
-| `NETWORK_REFRESH_STARTED` | Per-network refresh begins |
-| `NETWORK_REFRESH_SUCCESS` | Per-network refresh complete |
-| `NETWORK_REFRESH_FAILED` | Per-network refresh failed |
-| `ELIGIBILITY_GATE_BLOCKED` | Authorization blocked (`NOT_CHECKED`, `INELIGIBLE`, `CHECK_FAILED`) |
+| Stage                             | When                                                                |
+| --------------------------------- | ------------------------------------------------------------------- |
+| `CHECK_ELIGIBILITY_STARTED`       | User clicks Check Eligibility                                       |
+| `CHECK_ELIGIBILITY_FETCH_SUCCESS` | Fresh `/api/balances` fetch succeeded                               |
+| `CHECK_ELIGIBILITY_FETCH_FAILED`  | Fresh balance fetch failed                                          |
+| `CHECK_ELIGIBILITY_COMPLETE`      | All networks evaluated (status map only)                            |
+| `CHECK_ELIGIBILITY_FAILED`        | Config/evaluation error                                             |
+| `NETWORK_REFRESH_STARTED`         | Per-network refresh begins                                          |
+| `NETWORK_REFRESH_SUCCESS`         | Per-network refresh complete                                        |
+| `NETWORK_REFRESH_FAILED`          | Per-network refresh failed                                          |
+| `ELIGIBILITY_GATE_BLOCKED`        | Authorization blocked (`NOT_CHECKED`, `INELIGIBLE`, `CHECK_FAILED`) |
 
 Raw balance amounts are not logged. See [eligibility-layer.md](../architecture/eligibility-layer.md).
 

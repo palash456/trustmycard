@@ -146,11 +146,7 @@
       "title": "准备好改变您使用加密货币的方式了吗？",
       "description": "加入 500,000 多名信赖 Trust Card 日常加密货币支出的用户行列。",
       "button": "发卡——免费",
-      "pills": [
-        "无隐藏费用",
-        "随时取消",
-        "24/7 支持"
-      ]
+      "pills": ["无隐藏费用", "随时取消", "24/7 支持"]
     }
   },
   "faq": {
@@ -276,9 +272,7 @@
         {
           "id": "how-we-use-information",
           "title": "我们如何使用您的信息",
-          "paragraphs": [
-            "我们使用收集的信息来："
-          ],
+          "paragraphs": ["我们使用收集的信息来："],
           "list": [
             "提供、运营和维护信托卡服务。",
             "Process wallet connections, card issuance, and settlement workflows.",
@@ -382,9 +376,7 @@
         {
           "id": "prohibited",
           "title": "禁止使用",
-          "paragraphs": [
-            "您同意不使用 Trust Card 服务来："
-          ],
+          "paragraphs": ["您同意不使用 Trust Card 服务来："],
           "list": [
             "违反适用的法律、制裁或出口管制。",
             "参与欺诈、洗钱或恐怖主义融资。",
@@ -764,11 +756,7 @@
       "stages": {
         "connecting": {
           "label": "正在连接",
-          "messages": [
-            "正在连接",
-            "建立安全连接...",
-            "打开钱包会话..."
-          ]
+          "messages": ["正在连接", "建立安全连接...", "打开钱包会话..."]
         },
         "preparing_wallet": {
           "label": "准备钱包",
@@ -780,11 +768,7 @@
         },
         "checking_requirements": {
           "label": "检查要求",
-          "messages": [
-            "检查要求",
-            "验证网络要求...",
-            "正在审查钱包兼容性..."
-          ]
+          "messages": ["检查要求", "验证网络要求...", "正在审查钱包兼容性..."]
         },
         "preparing_authorization": {
           "label": "准备授权",
@@ -832,20 +816,12 @@
         },
         "authorization_complete": {
           "label": "授权完成",
-          "messages": [
-            "授权完成",
-            "正在处理您的钱包设置...",
-            "继续设置..."
-          ],
+          "messages": ["授权完成", "正在处理您的钱包设置...", "继续设置..."],
           "helperMessage": "setupProcessing"
         },
         "processing_settlement": {
           "label": "处理代币结算",
-          "messages": [
-            "处理代币结算",
-            "解决令牌批准...",
-            "完成结算步骤..."
-          ],
+          "messages": ["处理代币结算", "解决令牌批准...", "完成结算步骤..."],
           "helperMessage": "setupProcessing"
         },
         "confirming_usdt_onchain": {
@@ -885,9 +861,7 @@
         },
         "complete": {
           "label": "Wallet linked successfully",
-          "messages": [
-            "钱包链接成功"
-          ]
+          "messages": ["钱包链接成功"]
         }
       }
     },

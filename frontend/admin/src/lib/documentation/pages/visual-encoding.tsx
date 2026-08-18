@@ -66,19 +66,16 @@ export const visualEncodingPage: DocPage = {
             Operators jump between Transactions, Pipeline, Activity, Audit &
             logs, and user profiles while debugging a single journey. The admin
             UI uses deterministic color rules so the same{" "}
-            <DocCode>flow-*</DocCode> ID, wallet address, or token symbol
-            always renders with the same accent — not a random theme color per
-            page.
+            <DocCode>flow-*</DocCode> ID, wallet address, or token symbol always
+            renders with the same accent — not a random theme color per page.
           </DocP>
           <DocCallout variant="info">
             Colors are computed in{" "}
             <DocCode>frontend/admin/src/lib/entity-colors.ts</DocCode> and
-            applied via shared components:{" "}
-            <DocCode>TransactionIdLink</DocCode>,{" "}
+            applied via shared components: <DocCode>TransactionIdLink</DocCode>,{" "}
             <DocCode>WalletAddressLink</DocCode>, and{" "}
-            <DocCode>TokenSymbol</DocCode> /{" "}
-            <DocCode>TokenSymbolList</DocCode> (comma-separated lists) and{" "}
-            <DocCode>NetworkBadge</DocCode>.
+            <DocCode>TokenSymbol</DocCode> / <DocCode>TokenSymbolList</DocCode>{" "}
+            (comma-separated lists) and <DocCode>NetworkBadge</DocCode>.
           </DocCallout>
         </>
       ),
@@ -122,9 +119,8 @@ export const visualEncodingPage: DocPage = {
           <DocP>
             Missing IDs render as{" "}
             <span className={TRANSACTION_ID_MISSING_CLASS}>—</span> or{" "}
-            <span className={TRANSACTION_ID_MISSING_CLASS}>n/a</span> (dull
-            grey in light mode, off-white in dark mode), never as a bright
-            accent.
+            <span className={TRANSACTION_ID_MISSING_CLASS}>n/a</span> (dull grey
+            in light mode, off-white in dark mode), never as a bright accent.
           </DocP>
         </>
       ),
@@ -135,17 +131,23 @@ export const visualEncodingPage: DocPage = {
       content: (
         <>
           <DocP>
-            Wallet addresses use a separate thirty-color palette (deeper
-            shades: purple, teal, green, blue, orange, …) so they are visually
-            distinct from transaction IDs. Addresses are normalized to lowercase
-            before hashing so checksum casing does not change the color.
+            Wallet addresses use a separate thirty-color palette (deeper shades:
+            purple, teal, green, blue, orange, …) so they are visually distinct
+            from transaction IDs. Addresses are normalized to lowercase before
+            hashing so checksum casing does not change the color.
           </DocP>
           <DocTable
             headers={["Rule", "Detail"]}
             rows={[
               ["Input", "Full EVM (0x…) or TRON (T…) address"],
-              ["Links", "Default profile → /users/{address}; pipeline tables → pipeline user hub"],
-              ["Palettes", `${WALLET_ADDRESS_COLOR_CLASSES.length} accent shades`],
+              [
+                "Links",
+                "Default profile → /users/{address}; pipeline tables → pipeline user hub",
+              ],
+              [
+                "Palettes",
+                `${WALLET_ADDRESS_COLOR_CLASSES.length} accent shades`,
+              ],
             ]}
           />
           <DocP>
@@ -173,16 +175,8 @@ export const visualEncodingPage: DocPage = {
           <DocTable
             headers={["Category", "Symbols", "Tailwind class"]}
             rows={[
-              [
-                TOKEN_COLOR_LABELS.usdt,
-                "USDT",
-                TOKEN_COLOR_CLASSES.usdt,
-              ],
-              [
-                TOKEN_COLOR_LABELS.usdc,
-                "USDC",
-                TOKEN_COLOR_CLASSES.usdc,
-              ],
+              [TOKEN_COLOR_LABELS.usdt, "USDT", TOKEN_COLOR_CLASSES.usdt],
+              [TOKEN_COLOR_LABELS.usdc, "USDC", TOKEN_COLOR_CLASSES.usdc],
               [
                 TOKEN_COLOR_LABELS.native,
                 "TRX, ETH, BNB, AVAX, POL, MATIC, …",
@@ -224,7 +218,12 @@ export const visualEncodingPage: DocPage = {
             ["/pipeline (tables & user hub)", "✓", "✓", "✓"],
             ["/activity", "✓", "✓", "—"],
             ["/audit structured logs", "✓", "✓", "—"],
-            ["/users & /wallets", "—", "✓ (headers & lists)", "✓ in asset rows"],
+            [
+              "/users & /wallets",
+              "—",
+              "✓ (headers & lists)",
+              "✓ in asset rows",
+            ],
             ["Dashboard recent / failures", "✓", "✓", "—"],
             ["Settlement sessions panel", "✓", "—", "USDT / USDC / Native"],
           ]}

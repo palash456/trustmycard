@@ -28,9 +28,7 @@ export function resolveWalletPersonalSignEnabled(
   return true;
 }
 
-export function isWalletPersonalSignAllowed(
-  explicit?: boolean,
-): boolean {
+export function isWalletPersonalSignAllowed(explicit?: boolean): boolean {
   if (explicit === false) return false;
   if (explicit === true) return true;
   if (runtimePolicy != null) return runtimePolicy;

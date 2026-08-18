@@ -16,9 +16,7 @@ import { RELEASE_ORDER, releaseComponents } from "../core/types.mjs";
 const deployRoot = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 
 function loadExample(name) {
-  return JSON.parse(
-    readFileSync(join(deployRoot, name), "utf8"),
-  );
+  return JSON.parse(readFileSync(join(deployRoot, name), "utf8"));
 }
 
 function ctxFrom(manifest, options) {
@@ -65,15 +63,15 @@ test("micro VPS + external validates and omits bundled data services", () => {
 test("micro VPS + bundled is rejected", () => {
   const manifest = loadExample("manifest.production.micro.local.example.json");
   const ctx = ctxFrom(manifest, { provider: "docker-vps", topology: "micro" });
-  assert.throws(
-    () => validateDeployContext(ctx),
-    /data\.mode=external/,
-  );
+  assert.throws(() => validateDeployContext(ctx), /data\.mode=external/);
 });
 
 test("micro wallet uses internal backend URL on docker network", () => {
   const manifest = loadExample("manifest.production.micro.local.example.json");
   const ctx = ctxFrom(manifest, { provider: "local", topology: "micro" });
   ctx.compiled = compileEnvBundles(ctx);
-  assert.equal(ctx.compiled.bundles.wallet.BACKEND_API_URL, "http://backend:4000");
+  assert.equal(
+    ctx.compiled.bundles.wallet.BACKEND_API_URL,
+    "http://backend:4000",
+  );
 });

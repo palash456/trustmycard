@@ -27,7 +27,12 @@ function parseEnvFile(path) {
 }
 
 function buildArgsFor(component, ctx) {
-  const envPath = join(deployRoot, "compiled", ctx.environment, `${component}.env`);
+  const envPath = join(
+    deployRoot,
+    "compiled",
+    ctx.environment,
+    `${component}.env`,
+  );
   const env = parseEnvFile(envPath);
   const args = [];
   const keys =

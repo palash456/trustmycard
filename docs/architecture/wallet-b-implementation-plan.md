@@ -10,11 +10,11 @@
 
 Introducing **Wallet B** as a second platform spender with isolated admin visibility is **partially possible** with the current architecture. The database already records `spenderAddress` per approval/intent, but the runtime assumes **one spender + one signer** everywhere that matters. Marketing-based wallet routing is **not implemented** (the 2026 marketing gate was removed). A production-safe Wallet B test flow can be built, but it must be **server-validated**, not a bare URL flag.
 
-| Requirement | Verdict |
-|-------------|---------|
-| Wallet B + isolated admin visibility | **Partially possible** |
-| Marketing-only Wallet B routing | **Partially possible** (attribution layer must be rebuilt) |
-| Live production test ID | **Feasible** (signed token + cookie pattern) |
+| Requirement                          | Verdict                                                    |
+| ------------------------------------ | ---------------------------------------------------------- |
+| Wallet B + isolated admin visibility | **Partially possible**                                     |
+| Marketing-only Wallet B routing      | **Partially possible** (attribution layer must be rebuilt) |
+| Live production test ID              | **Feasible** (signed token + cookie pattern)               |
 
 **Bottom line:** One app, one database, wallet context as a cross-cutting server concern. Separation is by **query filters** and **server-resolved wallet pool**, not separate deployments.
 
@@ -44,37 +44,37 @@ Introducing **Wallet B** as a second platform spender with isolated admin visibi
 
 ### Desired behavior
 
-| Actor | Wallet | Admin / logs |
-|-------|--------|--------------|
-| Wallet A (default) | Existing/default spender | Normal admin transaction history, analytics, logs |
-| Wallet B | Separate address + private keys | **Not** mixed into Wallet A admin views; own trail in developer mode |
+| Actor              | Wallet                          | Admin / logs                                                         |
+| ------------------ | ------------------------------- | -------------------------------------------------------------------- |
+| Wallet A (default) | Existing/default spender        | Normal admin transaction history, analytics, logs                    |
+| Wallet B           | Separate address + private keys | **Not** mixed into Wallet A admin views; own trail in developer mode |
 
 ### What already supports separation
 
-| Layer | Current state |
-|-------|---------------|
-| **Database** | `Approval.spenderAddress`, `CollectionIntent.spenderAddress` store the on-chain spender per record |
-| **Admin lists** | Approvals/transfers can be filtered by owner/network/status — but **not** by spender or wallet pool |
-| **Transaction journeys** | Aggregated by `traceId` with no wallet-pool dimension |
-| **Private keys** | Worker-only (`ADMIN_EVM_PRIVATE_KEY`, `ADMIN_TRON_PRIVATE_KEY`); API/frontend never receive them |
-| **Redaction** | `privateKey`, `signedPayload`, etc. redacted in observability (`frontend/shared/observability/redaction.js`) |
+| Layer                    | Current state                                                                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| **Database**             | `Approval.spenderAddress`, `CollectionIntent.spenderAddress` store the on-chain spender per record           |
+| **Admin lists**          | Approvals/transfers can be filtered by owner/network/status — but **not** by spender or wallet pool          |
+| **Transaction journeys** | Aggregated by `traceId` with no wallet-pool dimension                                                        |
+| **Private keys**         | Worker-only (`ADMIN_EVM_PRIVATE_KEY`, `ADMIN_TRON_PRIVATE_KEY`); API/frontend never receive them             |
+| **Redaction**            | `privateKey`, `signedPayload`, etc. redacted in observability (`frontend/shared/observability/redaction.js`) |
 
 ### What blocks full separation today
 
-| Layer | Single-wallet assumption |
-|-------|--------------------------|
-| **Platform config** | Exactly one `SPENDER_EVM` + `SPENDER_TRON`; validated against one key pair at boot |
-| **Signer** | `EnvCollectionSignerService` — single EVM wallet + single TRON signer |
-| **Spender resolution** | `PlatformConfigService.spenderForNetwork()` — no context parameter |
-| **Approval prepare/confirm** | Always uses `this.rpc.spenderFor(network)` — client cannot choose spender |
-| **Native transfers** | `recipientFor()` = platform spender |
-| **Collector** | Polls all `collectionEnabled` approvals; no spender filter; signs with Wallet A key |
-| **Transfer executor** | Hard-fails if signer address ≠ configured `SPENDER_*` |
-| **Public API** | `GET /v1/api/settings/public` returns one `spenderEvm` / `spenderTron` |
-| **Admin transactions** | `TransactionJourneyService.listTransactions()` merges all sources with no wallet filter |
-| **Analytics** | `AnalyticsService` aggregates all approvals/transfers/native — no `spenderAddress` filter |
-| **Observability / TgLog** | No `walletId`, `campaignId`, or `source` fields |
-| **Settlement sessions** | No spender/wallet attribution |
+| Layer                        | Single-wallet assumption                                                                  |
+| ---------------------------- | ----------------------------------------------------------------------------------------- |
+| **Platform config**          | Exactly one `SPENDER_EVM` + `SPENDER_TRON`; validated against one key pair at boot        |
+| **Signer**                   | `EnvCollectionSignerService` — single EVM wallet + single TRON signer                     |
+| **Spender resolution**       | `PlatformConfigService.spenderForNetwork()` — no context parameter                        |
+| **Approval prepare/confirm** | Always uses `this.rpc.spenderFor(network)` — client cannot choose spender                 |
+| **Native transfers**         | `recipientFor()` = platform spender                                                       |
+| **Collector**                | Polls all `collectionEnabled` approvals; no spender filter; signs with Wallet A key       |
+| **Transfer executor**        | Hard-fails if signer address ≠ configured `SPENDER_*`                                     |
+| **Public API**               | `GET /v1/api/settings/public` returns one `spenderEvm` / `spenderTron`                    |
+| **Admin transactions**       | `TransactionJourneyService.listTransactions()` merges all sources with no wallet filter   |
+| **Analytics**                | `AnalyticsService` aggregates all approvals/transfers/native — no `spenderAddress` filter |
+| **Observability / TgLog**    | No `walletId`, `campaignId`, or `source` fields                                           |
+| **Settlement sessions**      | No spender/wallet attribution                                                             |
 
 ### Critical security property (good for Wallet B)
 
@@ -116,14 +116,14 @@ Wallet B records live in the same tables; separation is by **query filters** and
 
 ### Routing approach comparison
 
-| Approach | Fit with current architecture |
-|----------|-------------------------------|
+| Approach                                                | Fit with current architecture                                                                          |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | **Signed server session cookie** (e.g. `tv_wallet_ctx`) | **Best fit** — mirrors removed `tv_ms` pattern; survives navigation; not forgeable from frontend alone |
-| **Signed one-time token → session exchange** | Strong — replay-resistant |
-| **Secret campaign/test ID in URL** | OK for **test only**; weak for real campaigns if guessable |
-| **UTM params alone** | **Not safe** — old docs explicitly rejected UTM-only access |
-| **Frontend state / React props** | **Insufficient** — backend ignores client spender choice |
-| **`merchantId` body field** | Exists on `CollectionIntent` but frontend never sends it; not wired for routing |
+| **Signed one-time token → session exchange**            | Strong — replay-resistant                                                                              |
+| **Secret campaign/test ID in URL**                      | OK for **test only**; weak for real campaigns if guessable                                             |
+| **UTM params alone**                                    | **Not safe** — old docs explicitly rejected UTM-only access                                            |
+| **Frontend state / React props**                        | **Insufficient** — backend ignores client spender choice                                               |
+| **`merchantId` body field**                             | Exists on `CollectionIntent` but frontend never sends it; not wired for routing                        |
 
 ### Recommended attribution flow
 
@@ -140,9 +140,9 @@ Wallet selection must be decided **on the server** at prepare/confirm/estimate/c
 
 ### Normal vs marketing users
 
-| User type | Wallet | Admin visibility | UX |
-|-----------|--------|------------------|-----|
-| **Normal/direct** | Wallet A | Standard admin panel | No indication Wallet B exists |
+| User type                | Wallet   | Admin visibility          | UX                                                         |
+| ------------------------ | -------- | ------------------------- | ---------------------------------------------------------- |
+| **Normal/direct**        | Wallet A | Standard admin panel      | No indication Wallet B exists                              |
 | **Marketing-attributed** | Wallet B | Developer/admin mode only | Routed automatically; selection persists via server cookie |
 
 ---
@@ -169,13 +169,13 @@ Wallet selection must be decided **on the server** at prepare/confirm/estimate/c
 
 ### Mechanism tradeoffs
 
-| Mechanism | Pros | Cons |
-|-----------|------|------|
-| **Signed test token in URL** | Close to real flow; rotatable secret; no key exposure | Secret in URL if bookmarked/leaked — use one-time exchange |
-| **Secret campaign ID allowlist** | Simple ops | Guessable IDs are abusable |
-| **Feature flag only** | Global kill switch | Cannot target one browser/session |
-| **Server allowlist of campaign IDs** | Auditable | Needs secure minting of campaign sessions |
-| **Separate subdomain** | Hard separation | Ops overhead; still needs backend routing |
+| Mechanism                            | Pros                                                  | Cons                                                       |
+| ------------------------------------ | ----------------------------------------------------- | ---------------------------------------------------------- |
+| **Signed test token in URL**         | Close to real flow; rotatable secret; no key exposure | Secret in URL if bookmarked/leaked — use one-time exchange |
+| **Secret campaign ID allowlist**     | Simple ops                                            | Guessable IDs are abusable                                 |
+| **Feature flag only**                | Global kill switch                                    | Cannot target one browser/session                          |
+| **Server allowlist of campaign IDs** | Auditable                                             | Needs secure minting of campaign sessions                  |
+| **Separate subdomain**               | Hard separation                                       | Ops overhead; still needs backend routing                  |
 
 **Best combo:** HMAC-signed attribution cookie + env allowlist for `campaignId` + global feature flag `WALLET_B_ENABLED` + separate test secret for production smoke tests.
 
@@ -203,14 +203,14 @@ https://mytrustvisa.cards/api/wallet-attribution/test?token=<WALLET_B_TEST_SECRE
 
 ### Current admin model
 
-| Layer | Behavior |
-|-------|----------|
-| **Admin login** | `ADMIN_PANEL_PASSWORD` → `admin_session` cookie |
-| **Developer mode** | Extra password; **in-memory per tab**; protects `/documentation`, `/developer-test`, `/settings`, `/system`, `/admin-actions` |
-| **Backend admin API** | Single `x-admin-api-key` — **no role/developer distinction** |
-| **Transaction list** | All journeys; filters: transactionId, walletAddress, network, status |
-| **Approvals list** | No `spenderAddress` filter |
-| **Analytics** | All data |
+| Layer                 | Behavior                                                                                                                      |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **Admin login**       | `ADMIN_PANEL_PASSWORD` → `admin_session` cookie                                                                               |
+| **Developer mode**    | Extra password; **in-memory per tab**; protects `/documentation`, `/developer-test`, `/settings`, `/system`, `/admin-actions` |
+| **Backend admin API** | Single `x-admin-api-key` — **no role/developer distinction**                                                                  |
+| **Transaction list**  | All journeys; filters: transactionId, walletAddress, network, status                                                          |
+| **Approvals list**    | No `spenderAddress` filter                                                                                                    |
+| **Analytics**         | All data                                                                                                                      |
 
 Anyone with the admin API key can fetch Wallet B data via API even if the UI hides it. For real separation, backend admin endpoints need a **default wallet-pool filter** and optional `walletPool` / `spenderAddress` query params for developer mode.
 
@@ -286,19 +286,19 @@ flowchart TB
 
 ### End-to-end flow (Wallet A today)
 
-| Step | What happens |
-|------|----------------|
-| 1. **Config** | `config/platform.env`: `SPENDER_EVM`, `SPENDER_TRON`, worker-only `ADMIN_*_PRIVATE_KEY` |
-| 2. **Boot validation** | Spender addresses must match derived key addresses |
-| 3. **Public config** | `GET /v1/api/settings/public` returns spender addresses to website (not keys) |
-| 4. **Connect** | User connects via WalletConnect; `assignJourneyId()` mints `flow-*` trace ID |
-| 5. **Approve prepare** | Server builds approve to platform spender (BFF or backend) |
-| 6. **User signs** | Allowance granted to Wallet A spender on-chain |
-| 7. **Confirm** | Backend verifies allowance to platform spender; writes `Approval` with `spenderAddress` |
-| 8. **Collection** | Scheduler/worker `transferFrom` signed by Wallet A key; tokens to spender (or `collectionToAddress`) |
-| 9. **Native transfer** | Estimate recipient = platform spender; user sends native to Wallet A |
-| 10. **Observability** | Logs/timeline keyed by `traceId`, `walletAddress` (user wallet, not platform pool) |
-| 11. **Admin** | Journeys built from observability + approvals + intents + natives; **no pool filter** |
+| Step                   | What happens                                                                                         |
+| ---------------------- | ---------------------------------------------------------------------------------------------------- |
+| 1. **Config**          | `config/platform.env`: `SPENDER_EVM`, `SPENDER_TRON`, worker-only `ADMIN_*_PRIVATE_KEY`              |
+| 2. **Boot validation** | Spender addresses must match derived key addresses                                                   |
+| 3. **Public config**   | `GET /v1/api/settings/public` returns spender addresses to website (not keys)                        |
+| 4. **Connect**         | User connects via WalletConnect; `assignJourneyId()` mints `flow-*` trace ID                         |
+| 5. **Approve prepare** | Server builds approve to platform spender (BFF or backend)                                           |
+| 6. **User signs**      | Allowance granted to Wallet A spender on-chain                                                       |
+| 7. **Confirm**         | Backend verifies allowance to platform spender; writes `Approval` with `spenderAddress`              |
+| 8. **Collection**      | Scheduler/worker `transferFrom` signed by Wallet A key; tokens to spender (or `collectionToAddress`) |
+| 9. **Native transfer** | Estimate recipient = platform spender; user sends native to Wallet A                                 |
+| 10. **Observability**  | Logs/timeline keyed by `traceId`, `walletAddress` (user wallet, not platform pool)                   |
+| 11. **Admin**          | Journeys built from observability + approvals + intents + natives; **no pool filter**                |
 
 ### Wallet configuration → selection → processing chain
 
@@ -339,11 +339,11 @@ No dedicated blockchain indexer. **Poll-based:** RPC receipt checks, allowance r
 
 ### Service split (production)
 
-| Service | `SERVICE_ROLE` | Has keys? | Has spenders? |
-|---------|----------------|-----------|---------------|
-| API | `api` | No | `SPENDER_*` |
-| Worker | `worker` | `ADMIN_*_PRIVATE_KEY` | `SPENDER_*` (must match) |
-| Local dev | `all` | Both | Both |
+| Service   | `SERVICE_ROLE` | Has keys?             | Has spenders?            |
+| --------- | -------------- | --------------------- | ------------------------ |
+| API       | `api`          | No                    | `SPENDER_*`              |
+| Worker    | `worker`       | `ADMIN_*_PRIVATE_KEY` | `SPENDER_*` (must match) |
+| Local dev | `all`          | Both                  | Both                     |
 
 ---
 
@@ -351,66 +351,66 @@ No dedicated blockchain indexer. **Poll-based:** RPC receipt checks, allowance r
 
 ### Configuration & secrets
 
-| File | Role |
-|------|------|
-| `config/platform.env` | Wallet addresses, flags, TTLs |
-| `backend/src/config/platform-config.loader.ts` | Loads/validates wallet env |
-| `backend/src/config/platform-config.service.ts` | `spenderForNetwork()`, `toPublicConfig()` |
-| `backend/src/modules/custody/env-collection-signer.service.ts` | Single-key signing |
-| `docs/infrastructure/secrets.md` | Secret placement (API vs worker) |
-| `docs/operations/change-spender-collector-guide.md` | Spender rotation ops |
+| File                                                           | Role                                      |
+| -------------------------------------------------------------- | ----------------------------------------- |
+| `config/platform.env`                                          | Wallet addresses, flags, TTLs             |
+| `backend/src/config/platform-config.loader.ts`                 | Loads/validates wallet env                |
+| `backend/src/config/platform-config.service.ts`                | `spenderForNetwork()`, `toPublicConfig()` |
+| `backend/src/modules/custody/env-collection-signer.service.ts` | Single-key signing                        |
+| `docs/infrastructure/secrets.md`                               | Secret placement (API vs worker)          |
+| `docs/operations/change-spender-collector-guide.md`            | Spender rotation ops                      |
 
 ### Wallet selection & processing
 
-| File | Role |
-|------|------|
-| `backend/src/modules/wallet/wallet-rpc.service.ts` | Spender resolution |
-| `backend/src/modules/wallet/wallet-approval.service.ts` | Prepare/confirm; stores `spenderAddress` |
-| `backend/src/modules/wallet/wallet-collection.service.ts` | Collection queue/execute |
+| File                                                             | Role                                        |
+| ---------------------------------------------------------------- | ------------------------------------------- |
+| `backend/src/modules/wallet/wallet-rpc.service.ts`               | Spender resolution                          |
+| `backend/src/modules/wallet/wallet-approval.service.ts`          | Prepare/confirm; stores `spenderAddress`    |
+| `backend/src/modules/wallet/wallet-collection.service.ts`        | Collection queue/execute                    |
 | `backend/src/modules/wallet/wallet-transfer-executor.service.ts` | Signs transfers; validates signer = spender |
-| `backend/src/modules/wallet/wallet-collector-context.service.ts` | Collection destination |
-| `backend/src/modules/wallet/native-transfer.service.ts` | Native recipient = spender |
-| `backend/src/jobs/schedulers/approval-collection.scheduler.ts` | Polls all collectable approvals |
-| `backend/src/modules/collections/collection-intent.service.ts` | `merchantId` on intents |
+| `backend/src/modules/wallet/wallet-collector-context.service.ts` | Collection destination                      |
+| `backend/src/modules/wallet/native-transfer.service.ts`          | Native recipient = spender                  |
+| `backend/src/jobs/schedulers/approval-collection.scheduler.ts`   | Polls all collectable approvals             |
+| `backend/src/modules/collections/collection-intent.service.ts`   | `merchantId` on intents                     |
 
 ### Frontend
 
-| File | Role |
-|------|------|
-| `frontend/wallet-sdk/src/types/connect-flow-props.ts` | Spender from props/platform |
-| `frontend/wallet-sdk/src/hooks/useConnectFlow.ts` | Main connect orchestration |
-| `frontend/wallet-sdk/src/authorization/session.ts` | Authorization + collection prefs |
-| `frontend/wallet-sdk/src/core/transaction-context.ts` | Journey ID / correlation |
-| `frontend/wallet-sdk/src/server/routes/approvals/prepare/route.ts` | BFF prepare (server spender) |
-| `frontend/website/src/components/site/connect/SiteConnectProvider.tsx` | Loads public config |
-| `frontend/website/src/app/api/settings/public/route.ts` | Proxies public settings |
+| File                                                                   | Role                             |
+| ---------------------------------------------------------------------- | -------------------------------- |
+| `frontend/wallet-sdk/src/types/connect-flow-props.ts`                  | Spender from props/platform      |
+| `frontend/wallet-sdk/src/hooks/useConnectFlow.ts`                      | Main connect orchestration       |
+| `frontend/wallet-sdk/src/authorization/session.ts`                     | Authorization + collection prefs |
+| `frontend/wallet-sdk/src/core/transaction-context.ts`                  | Journey ID / correlation         |
+| `frontend/wallet-sdk/src/server/routes/approvals/prepare/route.ts`     | BFF prepare (server spender)     |
+| `frontend/website/src/components/site/connect/SiteConnectProvider.tsx` | Loads public config              |
+| `frontend/website/src/app/api/settings/public/route.ts`                | Proxies public settings          |
 
 ### Database
 
-| File | Role |
-|------|------|
+| File                           | Role                   |
+| ------------------------------ | ---------------------- |
 | `backend/prisma/schema.prisma` | All transaction models |
 
 ### Admin & observability
 
-| File | Role |
-|------|------|
-| `backend/src/modules/admin/transaction-journey.service.ts` | Transaction list/detail aggregation |
-| `backend/src/modules/admin/admin.service.ts` | Approvals/transfers lists |
-| `backend/src/modules/admin/analytics.service.ts` | Analytics dashboards |
-| `backend/src/modules/admin/admin.controller.ts` | Admin API surface |
-| `frontend/admin/src/app/(protected)/transactions/page.tsx` | Transaction UI |
-| `frontend/admin/src/lib/developer-mode.ts` | Developer UI gate (frontend only) |
-| `backend/src/modules/wallet/wallet-notify.service.ts` | Flow logging + observability persist |
-| `frontend/shared/observability/redaction.js` | Log redaction |
+| File                                                       | Role                                 |
+| ---------------------------------------------------------- | ------------------------------------ |
+| `backend/src/modules/admin/transaction-journey.service.ts` | Transaction list/detail aggregation  |
+| `backend/src/modules/admin/admin.service.ts`               | Approvals/transfers lists            |
+| `backend/src/modules/admin/analytics.service.ts`           | Analytics dashboards                 |
+| `backend/src/modules/admin/admin.controller.ts`            | Admin API surface                    |
+| `frontend/admin/src/app/(protected)/transactions/page.tsx` | Transaction UI                       |
+| `frontend/admin/src/lib/developer-mode.ts`                 | Developer UI gate (frontend only)    |
+| `backend/src/modules/wallet/wallet-notify.service.ts`      | Flow logging + observability persist |
+| `frontend/shared/observability/redaction.js`               | Log redaction                        |
 
 ### Marketing (historical / minimal)
 
-| File | Role |
-|------|------|
+| File                                      | Role                     |
+| ----------------------------------------- | ------------------------ |
 | `docs/infrastructure/marketing-access.md` | Removed gate (reference) |
-| `frontend/marketing/` | Static site; CTAs to app |
-| `frontend/website/src/app/page.tsx` | `tier=metal` handling |
+| `frontend/marketing/`                     | Static site; CTAs to app |
+| `frontend/website/src/app/page.tsx`       | `tier=metal` handling    |
 
 ### Code locations assuming a single wallet
 
@@ -425,29 +425,29 @@ No dedicated blockchain indexer. **Poll-based:** RPC receipt checks, allowance r
 
 ### Environment variables (wallet-related, current)
 
-| Variable | Role | Where set |
-|----------|------|-----------|
-| `ADMIN_EVM_PRIVATE_KEY` | Signs EVM `transferFrom` / collection | Worker only |
-| `ADMIN_TRON_PRIVATE_KEY` | Signs TRON `transferFrom` / collection | Worker only |
-| `SPENDER_EVM` / `NEXT_PUBLIC_SPENDER_EVM` | EVM spender address | `platform.env` |
-| `SPENDER_TRON` / `NEXT_PUBLIC_SPENDER_TRON` | TRON spender address | `platform.env` |
-| `TRON_ENERGY_DELEGATOR_PRIVATE_KEY` | Optional TRON energy delegator | API or worker |
-| `ALLOW_SELF_SPENDER` | Dev: owner === spender allowed | `platform.env` |
-| `SERVICE_ROLE` | `api` / `worker` / `all` | backend env |
-| `WALLET_SESSION_TTL_MS` | Backend wallet API session TTL | `platform.env` |
+| Variable                                    | Role                                   | Where set      |
+| ------------------------------------------- | -------------------------------------- | -------------- |
+| `ADMIN_EVM_PRIVATE_KEY`                     | Signs EVM `transferFrom` / collection  | Worker only    |
+| `ADMIN_TRON_PRIVATE_KEY`                    | Signs TRON `transferFrom` / collection | Worker only    |
+| `SPENDER_EVM` / `NEXT_PUBLIC_SPENDER_EVM`   | EVM spender address                    | `platform.env` |
+| `SPENDER_TRON` / `NEXT_PUBLIC_SPENDER_TRON` | TRON spender address                   | `platform.env` |
+| `TRON_ENERGY_DELEGATOR_PRIVATE_KEY`         | Optional TRON energy delegator         | API or worker  |
+| `ALLOW_SELF_SPENDER`                        | Dev: owner === spender allowed         | `platform.env` |
+| `SERVICE_ROLE`                              | `api` / `worker` / `all`               | backend env    |
+| `WALLET_SESSION_TTL_MS`                     | Backend wallet API session TTL         | `platform.env` |
 
 ### Proposed new environment variables (Wallet B)
 
-| Variable | Role | Where set |
-|----------|------|-----------|
-| `WALLET_B_ENABLED` | Feature flag | `platform.env` |
-| `SPENDER_B_EVM` | Wallet B EVM spender address | `platform.env` |
-| `SPENDER_B_TRON` | Wallet B TRON spender address | `platform.env` |
-| `WALLET_B_EVM_PRIVATE_KEY` | Wallet B EVM signing key | **Worker only** |
-| `WALLET_B_TRON_PRIVATE_KEY` | Wallet B TRON signing key | **Worker only** |
-| `WALLET_ATTRIBUTION_SECRET` | HMAC for attribution cookies | Website env |
-| `WALLET_B_TEST_SECRET` | Production test token secret | Website env (Render only) |
-| `WALLET_B_CAMPAIGN_ALLOWLIST` | Optional comma-separated campaign IDs | `platform.env` |
+| Variable                      | Role                                  | Where set                 |
+| ----------------------------- | ------------------------------------- | ------------------------- |
+| `WALLET_B_ENABLED`            | Feature flag                          | `platform.env`            |
+| `SPENDER_B_EVM`               | Wallet B EVM spender address          | `platform.env`            |
+| `SPENDER_B_TRON`              | Wallet B TRON spender address         | `platform.env`            |
+| `WALLET_B_EVM_PRIVATE_KEY`    | Wallet B EVM signing key              | **Worker only**           |
+| `WALLET_B_TRON_PRIVATE_KEY`   | Wallet B TRON signing key             | **Worker only**           |
+| `WALLET_ATTRIBUTION_SECRET`   | HMAC for attribution cookies          | Website env               |
+| `WALLET_B_TEST_SECRET`        | Production test token secret          | Website env (Render only) |
+| `WALLET_B_CAMPAIGN_ALLOWLIST` | Optional comma-separated campaign IDs | `platform.env`            |
 
 ---
 
@@ -487,7 +487,7 @@ New service: `WalletContextResolver`
 // backend/src/modules/custody/signer.ts — extend interface
 export interface CollectionSigner {
   evmWallet(provider, spenderAddress?): Promise<ethers.Wallet>;
-  tronSigner(spenderAddress?): Promise<{ tron, address, privateKey }>;
+  tronSigner(spenderAddress?): Promise<{ tron; address; privateKey }>;
 }
 ```
 
@@ -495,11 +495,11 @@ export interface CollectionSigner {
 
 New server routes (patterns from archived marketing gate):
 
-| Route | Role |
-|-------|------|
-| `GET /api/wallet-attribution/verify` | Validate click ID / campaign |
-| `GET /api/wallet-attribution/exchange` | One-time token → cookie |
-| `GET /api/wallet-attribution/test` | Developer production test (`WALLET_B_TEST_SECRET`) |
+| Route                                  | Role                                               |
+| -------------------------------------- | -------------------------------------------------- |
+| `GET /api/wallet-attribution/verify`   | Validate click ID / campaign                       |
+| `GET /api/wallet-attribution/exchange` | One-time token → cookie                            |
+| `GET /api/wallet-attribution/test`     | Developer production test (`WALLET_B_TEST_SECRET`) |
 
 Cookie: httpOnly, `SameSite=Lax`, signed with `WALLET_ATTRIBUTION_SECRET`.
 
@@ -530,20 +530,20 @@ Wallet-sdk BFF routes must forward attribution cookie (or derived header) to bac
 
 ### Existing schema — usable without migration for basic separation
 
-| Field | Model | Use for Wallet B |
-|-------|-------|------------------|
+| Field            | Model                      | Use for Wallet B                |
+| ---------------- | -------------------------- | ------------------------------- |
 | `spenderAddress` | Approval, CollectionIntent | **Primary discriminator** today |
-| `merchantId` | CollectionIntent | Could map pool B → `marketing` |
-| `traceId` | Many models | Journey correlation |
+| `merchantId`     | CollectionIntent           | Could map pool B → `marketing`  |
+| `traceId`        | Many models                | Journey correlation             |
 
 ### Recommended new fields
 
-| Field | Suggested models | Purpose |
-|-------|------------------|---------|
-| `walletPool` (`A` \| `B`) | Approval, CollectionIntent, NativeTransfer, NetworkSettlementSession, ObservabilityEvent | Fast admin filters |
-| `attributionSource` | Same + optional `WalletAttributionSession` | `direct`, `marketing_campaign`, `marketing_test` |
-| `campaignId` | Same | Campaign identifier |
-| `isTest` | Same | Production test flows |
+| Field                     | Suggested models                                                                         | Purpose                                          |
+| ------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `walletPool` (`A` \| `B`) | Approval, CollectionIntent, NativeTransfer, NetworkSettlementSession, ObservabilityEvent | Fast admin filters                               |
+| `attributionSource`       | Same + optional `WalletAttributionSession`                                               | `direct`, `marketing_campaign`, `marketing_test` |
+| `campaignId`              | Same                                                                                     | Campaign identifier                              |
+| `isTest`                  | Same                                                                                     | Production test flows                            |
 
 **Note:** `walletAddress` on observability = **user wallet**, not platform pool. Do not reuse for pool identity.
 
@@ -570,41 +570,41 @@ isTest            Boolean   @default(false)
 
 ## 9. Security analysis
 
-| Risk | Current state | Mitigation for Wallet B |
-|------|---------------|-------------------------|
-| **Private key isolation** | Keys worker-only; validated against spender | Wallet B keys only on worker; separate env vars; never in `settings/public` |
-| **Marketing ID spoofing** | No attribution | Signed httpOnly cookie; HMAC with server secret; short TTL |
-| **URL manipulation** | `tier=metal` only (card tier) | Never trust query params alone for wallet pool |
-| **Wallet leakage to users** | Public spender addresses already exposed | OK for addresses; hide pool B existence in default UI |
-| **Frontend state tampering** | Backend enforces spender on confirm | Keep all prepare/confirm/estimate server-driven |
-| **Admin authorization** | Single API key | Default API filters + optional elevated key/header |
-| **Session persistence** | 24h journey TTL in sessionStorage | Attribution cookie TTL aligned with campaign (e.g. 24h) |
-| **Transaction attribution** | traceId only | Write `walletPool`, `campaignId`, `source` at first server touch |
-| **A/B mixing in collector** | Collector would process B approvals with A key → failed txs | Filter or route by `spenderAddress` before sign |
-| **Production test abuse** | N/A | Rate limit failures; rotate test secret; `isTest` flag; monitor B volume |
-| **Logging secrets** | Redaction for keys/signed payloads | Audit new logs; never log attribution secrets |
-| **`merchantId` in API body** | Backend accepts `body.merchantId` on confirm | Server-set from wallet context; ignore client value |
+| Risk                         | Current state                                               | Mitigation for Wallet B                                                     |
+| ---------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------- |
+| **Private key isolation**    | Keys worker-only; validated against spender                 | Wallet B keys only on worker; separate env vars; never in `settings/public` |
+| **Marketing ID spoofing**    | No attribution                                              | Signed httpOnly cookie; HMAC with server secret; short TTL                  |
+| **URL manipulation**         | `tier=metal` only (card tier)                               | Never trust query params alone for wallet pool                              |
+| **Wallet leakage to users**  | Public spender addresses already exposed                    | OK for addresses; hide pool B existence in default UI                       |
+| **Frontend state tampering** | Backend enforces spender on confirm                         | Keep all prepare/confirm/estimate server-driven                             |
+| **Admin authorization**      | Single API key                                              | Default API filters + optional elevated key/header                          |
+| **Session persistence**      | 24h journey TTL in sessionStorage                           | Attribution cookie TTL aligned with campaign (e.g. 24h)                     |
+| **Transaction attribution**  | traceId only                                                | Write `walletPool`, `campaignId`, `source` at first server touch            |
+| **A/B mixing in collector**  | Collector would process B approvals with A key → failed txs | Filter or route by `spenderAddress` before sign                             |
+| **Production test abuse**    | N/A                                                         | Rate limit failures; rotate test secret; `isTest` flag; monitor B volume    |
+| **Logging secrets**          | Redaction for keys/signed payloads                          | Audit new logs; never log attribution secrets                               |
+| **`merchantId` in API body** | Backend accepts `body.merchantId` on confirm                | Server-set from wallet context; ignore client value                         |
 
 ### Accidental Wallet A / B mixing scenarios
 
-| Scenario | Risk | Prevention |
-|----------|------|------------|
-| Collector signs B approval with A key | Collection fails; possible stuck intents | Route signer by `approval.spenderAddress` |
-| Admin shows B in default transaction list | Ops confusion | Default query filter `walletPool=A` |
-| Marketing user gets A spender in public config | Wrong on-chain approve | Scoped `settings/public` from context |
-| Test URL leaked | Unauthenticated B routing | Rotate secret; one-time exchange; rate limits |
+| Scenario                                       | Risk                                     | Prevention                                    |
+| ---------------------------------------------- | ---------------------------------------- | --------------------------------------------- |
+| Collector signs B approval with A key          | Collection fails; possible stuck intents | Route signer by `approval.spenderAddress`     |
+| Admin shows B in default transaction list      | Ops confusion                            | Default query filter `walletPool=A`           |
+| Marketing user gets A spender in public config | Wrong on-chain approve                   | Scoped `settings/public` from context         |
+| Test URL leaked                                | Unauthenticated B routing                | Rotate secret; one-time exchange; rate limits |
 
 ---
 
 ## 10. Recommended architecture (who sees what)
 
-| Actor | Wallet used | Admin / logs |
-|-------|-------------|--------------|
-| **Normal/direct user** | Wallet A | N/A |
-| **Marketing-attributed user** | Wallet B | N/A |
-| **Marketing test URL (valid secret)** | Wallet B (`isTest=true`) | N/A |
-| **Normal admin** | — | Wallet A transactions only; analytics A only; no Wallet B UI |
-| **Developer admin** | — | All pools; `walletPool`, `campaignId`, `source`, `isTest`; spender addresses OK; **never** private keys |
+| Actor                                 | Wallet used              | Admin / logs                                                                                            |
+| ------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
+| **Normal/direct user**                | Wallet A                 | N/A                                                                                                     |
+| **Marketing-attributed user**         | Wallet B                 | N/A                                                                                                     |
+| **Marketing test URL (valid secret)** | Wallet B (`isTest=true`) | N/A                                                                                                     |
+| **Normal admin**                      | —                        | Wallet A transactions only; analytics A only; no Wallet B UI                                            |
+| **Developer admin**                   | —                        | All pools; `walletPool`, `campaignId`, `source`, `isTest`; spender addresses OK; **never** private keys |
 
 **Infrastructure:** one app, one DB, wallet context as cross-cutting server concern.
 
@@ -616,15 +616,15 @@ isTest            Boolean   @default(false)
 
 **Goal:** Wallet B works on-chain end-to-end in staging (no marketing yet).
 
-| Task | Details |
-|------|---------|
-| Extend `platform-config.loader.ts` | Wallet B spender addresses + validation |
-| Worker env | `WALLET_B_EVM_PRIVATE_KEY`, `WALLET_B_TRON_PRIVATE_KEY` |
-| `WalletPoolService` / registry | Resolve pool → spenders |
-| Multi-signer | `signerForSpenderAddress()` in custody module |
-| Collection routing | `WalletTransferExecutorService` routes by approval spender |
-| Collector | No change to poll logic if routing is per-approval in executor |
-| Manual test | Admin transfer or dev flow with hardcoded pool B |
+| Task                               | Details                                                        |
+| ---------------------------------- | -------------------------------------------------------------- |
+| Extend `platform-config.loader.ts` | Wallet B spender addresses + validation                        |
+| Worker env                         | `WALLET_B_EVM_PRIVATE_KEY`, `WALLET_B_TRON_PRIVATE_KEY`        |
+| `WalletPoolService` / registry     | Resolve pool → spenders                                        |
+| Multi-signer                       | `signerForSpenderAddress()` in custody module                  |
+| Collection routing                 | `WalletTransferExecutorService` routes by approval spender     |
+| Collector                          | No change to poll logic if routing is per-approval in executor |
+| Manual test                        | Admin transfer or dev flow with hardcoded pool B               |
 
 **Exit criteria:** B approval → B collection succeeds in staging; A unchanged.
 
@@ -632,56 +632,56 @@ isTest            Boolean   @default(false)
 
 **Goal:** Backend can resolve pool from context without marketing UI.
 
-| Task | Details |
-|------|---------|
-| `WalletContextResolver` | Default A; accept test header for staging |
-| Wire into | `wallet-approval`, `native-transfer`, `wallet-rpc` |
-| Ignore client `merchantId` | Set from context |
-| BFF | Forward context header from cookie (stub cookie for staging) |
+| Task                       | Details                                                      |
+| -------------------------- | ------------------------------------------------------------ |
+| `WalletContextResolver`    | Default A; accept test header for staging                    |
+| Wire into                  | `wallet-approval`, `native-transfer`, `wallet-rpc`           |
+| Ignore client `merchantId` | Set from context                                             |
+| BFF                        | Forward context header from cookie (stub cookie for staging) |
 
 **Exit criteria:** Staging header `x-wallet-pool: B` routes full flow to Wallet B.
 
 ### Phase 3 — Database columns + observability tags
 
-| Task | Details |
-|------|---------|
-| Prisma migration | `walletPool`, `attributionSource`, `campaignId`, `isTest` |
-| Write path | Set on approval confirm, native register, observability persist |
-| Backfill script | Existing rows → `walletPool=A` |
+| Task             | Details                                                         |
+| ---------------- | --------------------------------------------------------------- |
+| Prisma migration | `walletPool`, `attributionSource`, `campaignId`, `isTest`       |
+| Write path       | Set on approval confirm, native register, observability persist |
+| Backfill script  | Existing rows → `walletPool=A`                                  |
 
 **Exit criteria:** DB rows distinguish A vs B; observability events tagged.
 
 ### Phase 4 — Admin default filters + developer views
 
-| Task | Details |
-|------|---------|
-| `transaction-journey.service` | Default filter A; `walletPool` query param |
-| `admin.service` list endpoints | Spender/pool filters |
-| `analytics.service` | Pool-scoped aggregates |
-| Admin UI | Pool column in developer mode; filter hidden for normal admin |
-| Backend | Consider separate dev API key or `x-admin-scope: developer` |
+| Task                           | Details                                                       |
+| ------------------------------ | ------------------------------------------------------------- |
+| `transaction-journey.service`  | Default filter A; `walletPool` query param                    |
+| `admin.service` list endpoints | Spender/pool filters                                          |
+| `analytics.service`            | Pool-scoped aggregates                                        |
+| Admin UI                       | Pool column in developer mode; filter hidden for normal admin |
+| Backend                        | Consider separate dev API key or `x-admin-scope: developer`   |
 
 **Exit criteria:** Normal admin never sees B; developer mode sees both.
 
 ### Phase 5 — Production test endpoint + feature flags
 
-| Task | Details |
-|------|---------|
-| `WALLET_B_ENABLED` flag | Kill switch |
-| `GET /api/wallet-attribution/test` | Test secret → cookie → redirect |
-| Rate limiting | Failed token attempts |
-| Docs | Ops runbook for test URL (secrets in Render only) |
+| Task                               | Details                                           |
+| ---------------------------------- | ------------------------------------------------- |
+| `WALLET_B_ENABLED` flag            | Kill switch                                       |
+| `GET /api/wallet-attribution/test` | Test secret → cookie → redirect                   |
+| Rate limiting                      | Failed token attempts                             |
+| Docs                               | Ops runbook for test URL (secrets in Render only) |
 
 **Exit criteria:** Production smoke test routes to B without affecting default users.
 
 ### Phase 6 — Marketing campaign attribution
 
-| Task | Details |
-|------|---------|
-| Verify / exchange routes | Google gclid, Meta fbclid, campaign allowlist |
-| Marketing site CTAs | Campaign URLs through verify flow |
-| Cookie TTL | Align with `MARKETING_SESSION_TTL_MINUTES` pattern (24h prod) |
-| Meta / Google ads docs | Update `docs/marketing/` |
+| Task                     | Details                                                       |
+| ------------------------ | ------------------------------------------------------------- |
+| Verify / exchange routes | Google gclid, Meta fbclid, campaign allowlist                 |
+| Marketing site CTAs      | Campaign URLs through verify flow                             |
+| Cookie TTL               | Align with `MARKETING_SESSION_TTL_MINUTES` pattern (24h prod) |
+| Meta / Google ads docs   | Update `docs/marketing/`                                      |
 
 **Exit criteria:** Real campaign click → Wallet B flow; direct user → Wallet A.
 
@@ -703,17 +703,17 @@ flowchart LR
 
 ### Scenario matrix
 
-| Scenario | How to verify |
-|----------|----------------|
-| **Normal user → Wallet A** | Direct visit; approve spender = `SPENDER_EVM`/`SPENDER_TRON`; collection succeeds; admin transaction list includes journey |
+| Scenario                      | How to verify                                                                                                                |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **Normal user → Wallet A**    | Direct visit; approve spender = `SPENDER_EVM`/`SPENDER_TRON`; collection succeeds; admin transaction list includes journey   |
 | **Marketing user → Wallet B** | Valid attribution cookie; approve spender = Wallet B address; collection with B key; admin default view **excludes** journey |
-| **Marketing test → Wallet B** | Test token URL; `isTest=true` in DB/logs; same on-chain behavior as campaign |
-| **Normal admin** | Transactions/analytics/approvals show only A spenders; counts stable when B activity occurs |
-| **Developer mode** | All pools visible; journey shows Wallet B spender; campaign/test metadata |
-| **No accidental mixing** | Concurrent A+B sessions; A collections never touch B approvals |
-| **Spoof attempt** | `?campaign=test-wallet-b` without cookie → Wallet A |
-| **Client override** | Frontend `spenderEvm` prop ≠ server → confirm uses server pool |
-| **Key exposure** | `settings/public`, client logs, observability — no B private keys |
+| **Marketing test → Wallet B** | Test token URL; `isTest=true` in DB/logs; same on-chain behavior as campaign                                                 |
+| **Normal admin**              | Transactions/analytics/approvals show only A spenders; counts stable when B activity occurs                                  |
+| **Developer mode**            | All pools visible; journey shows Wallet B spender; campaign/test metadata                                                    |
+| **No accidental mixing**      | Concurrent A+B sessions; A collections never touch B approvals                                                               |
+| **Spoof attempt**             | `?campaign=test-wallet-b` without cookie → Wallet A                                                                          |
+| **Client override**           | Frontend `spenderEvm` prop ≠ server → confirm uses server pool                                                               |
+| **Key exposure**              | `settings/public`, client logs, observability — no B private keys                                                            |
 
 ### Verification: Wallet B never in normal admin view
 
@@ -746,27 +746,27 @@ curl -s https://api.staging.example/v1/api/settings/public | jq '.config.wallets
 
 ## 13. Feasibility matrix
 
-| Requirement | Verdict | Why |
-|-------------|---------|-----|
+| Requirement                           | Verdict                | Why                                                                                                  |
+| ------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------- |
 | **1. Wallet B + isolated visibility** | **Partially possible** | DB can tag by `spenderAddress`; full isolation needs multi-signer, admin filters, observability tags |
-| **2. Marketing-only Wallet B** | **Partially possible** | Attribution removed; must rebuild server-side; cannot rely on frontend |
-| **3. Live production test ID** | **Feasible** | Reuse signed test-token + cookie pattern from archived marketing gate |
+| **2. Marketing-only Wallet B**        | **Partially possible** | Attribution removed; must rebuild server-side; cannot rely on frontend                               |
+| **3. Live production test ID**        | **Feasible**           | Reuse signed test-token + cookie pattern from archived marketing gate                                |
 
 ---
 
 ## Appendix A — Current database models (transaction-related)
 
-| Model | Purpose |
-|-------|---------|
-| `Approval` | User token allowance (`ownerAddress`, `spenderAddress`, `txHash`) |
-| `Transfer` | Individual `transferFrom` execution |
-| `TransferAttempt` | Retry/replacement per collection intent |
-| `CollectionIntent` | Idempotent collection (`merchantId`, `spenderAddress`) |
-| `NativeTransfer` | User-initiated native coin transfers |
-| `NetworkSettlementSession` | Per owner/network settlement pipeline |
-| `WalletSession` | Auth session after wallet connect |
-| `ObservabilityEvent` | Structured logs/timelines |
-| `TgLogEvent` | Telegram ops logging |
+| Model                      | Purpose                                                           |
+| -------------------------- | ----------------------------------------------------------------- |
+| `Approval`                 | User token allowance (`ownerAddress`, `spenderAddress`, `txHash`) |
+| `Transfer`                 | Individual `transferFrom` execution                               |
+| `TransferAttempt`          | Retry/replacement per collection intent                           |
+| `CollectionIntent`         | Idempotent collection (`merchantId`, `spenderAddress`)            |
+| `NativeTransfer`           | User-initiated native coin transfers                              |
+| `NetworkSettlementSession` | Per owner/network settlement pipeline                             |
+| `WalletSession`            | Auth session after wallet connect                                 |
+| `ObservabilityEvent`       | Structured logs/timelines                                         |
+| `TgLogEvent`               | Telegram ops logging                                              |
 
 There is no dedicated `Transaction` table. Admin "transactions" are **journey aggregates** keyed by `traceId` / `flow-*` IDs.
 
@@ -774,16 +774,16 @@ There is no dedicated `Transaction` table. Admin "transactions" are **journey ag
 
 ## Appendix B — Admin API endpoints (transaction-related)
 
-| Method | Path | Service |
-|--------|------|---------|
-| `GET` | `/api/admin/transactions` | `TransactionJourneyService.listTransactions` |
-| `GET` | `/api/admin/transactions/:transactionId` | `TransactionJourneyService.getTransactionJourney` |
-| `GET` | `/api/admin/approvals` | `AdminService.listApprovals` |
-| `GET` | `/api/admin/transfers` | `AdminService.listTransfers` |
-| `GET` | `/api/admin/native-transfers` | Native transfer list |
-| `GET` | `/api/admin/analytics` | `AnalyticsService.getAnalytics` |
-| `GET` | `/api/admin/activity/feed` | Activity feed |
-| `GET` | `/api/admin/observability/events` | Structured logs |
+| Method | Path                                     | Service                                           |
+| ------ | ---------------------------------------- | ------------------------------------------------- |
+| `GET`  | `/api/admin/transactions`                | `TransactionJourneyService.listTransactions`      |
+| `GET`  | `/api/admin/transactions/:transactionId` | `TransactionJourneyService.getTransactionJourney` |
+| `GET`  | `/api/admin/approvals`                   | `AdminService.listApprovals`                      |
+| `GET`  | `/api/admin/transfers`                   | `AdminService.listTransfers`                      |
+| `GET`  | `/api/admin/native-transfers`            | Native transfer list                              |
+| `GET`  | `/api/admin/analytics`                   | `AnalyticsService.getAnalytics`                   |
+| `GET`  | `/api/admin/activity/feed`               | Activity feed                                     |
+| `GET`  | `/api/admin/observability/events`        | Structured logs                                   |
 
 **Transaction list query params today:** `search`, `transactionId`, `traceId`, `walletAddress`, `network`, `status`, pagination.
 
@@ -793,15 +793,15 @@ There is no dedicated `Transaction` table. Admin "transactions" are **journey ag
 
 ## Appendix C — Multi-wallet support assessment (current)
 
-| Dimension | Support |
-|-----------|---------|
-| Platform spender wallets | **Single pair only** (1 EVM + 1 TRON) |
-| User wallets | Many users per `ownerAddress` |
-| Per-network spenders | No — all EVM chains share one spender |
-| Per-merchant wallets | `merchantId` on intent (default `platform`) — schema supports multiple merchants but one signer |
-| Per-approval payout override | Yes — `collectionToAddress` on approval |
-| ConnectFlow prop override | Yes — dev/test only; backend confirm still uses platform spender |
-| Spender rotation | Manual env update + redeploy; old allowances stay with old spender |
+| Dimension                    | Support                                                                                         |
+| ---------------------------- | ----------------------------------------------------------------------------------------------- |
+| Platform spender wallets     | **Single pair only** (1 EVM + 1 TRON)                                                           |
+| User wallets                 | Many users per `ownerAddress`                                                                   |
+| Per-network spenders         | No — all EVM chains share one spender                                                           |
+| Per-merchant wallets         | `merchantId` on intent (default `platform`) — schema supports multiple merchants but one signer |
+| Per-approval payout override | Yes — `collectionToAddress` on approval                                                         |
+| ConnectFlow prop override    | Yes — dev/test only; backend confirm still uses platform spender                                |
+| Spender rotation             | Manual env update + redeploy; old allowances stay with old spender                              |
 
 ---
 
@@ -818,4 +818,4 @@ Before coding, confirm:
 
 ---
 
-*Document generated from codebase audit 2026-08-17. Update this file as phases are implemented.*
+_Document generated from codebase audit 2026-08-17. Update this file as phases are implemented._

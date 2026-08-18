@@ -58,7 +58,10 @@ export function TransactionsSection({
 
   useEffect(() => {
     if (rangeId) return;
-    const params = buildStructuredLogRangeParams(query, DEFAULT_TRANSACTION_RANGE);
+    const params = buildStructuredLogRangeParams(
+      query,
+      DEFAULT_TRANSACTION_RANGE,
+    );
     router.replace(`/transactions?${params.toString()}`);
     // Redirect once when no time window is selected.
     // eslint-disable-next-line react-hooks/exhaustive-deps

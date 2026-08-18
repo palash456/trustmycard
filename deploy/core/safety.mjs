@@ -13,7 +13,8 @@ export function assertFreshSafety(ctx) {
   const { manifest, options, compiled } = ctx;
   const dataMode = manifest.data?.mode ?? "bundled";
   const projectName =
-    manifest.compose?.project_name ?? `tmc-${manifest.environment ?? "production"}`;
+    manifest.compose?.project_name ??
+    `tmc-${manifest.environment ?? "production"}`;
   const volumeName = `${projectName}_postgres_data`;
 
   if (options.fresh && dataMode === "external") {

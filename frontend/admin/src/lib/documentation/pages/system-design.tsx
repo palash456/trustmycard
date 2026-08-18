@@ -400,10 +400,7 @@ export const systemDesignPage: DocPage = {
                 ["Hostinger", "Static marketing site"],
                 ["Neon / Render Postgres", "Managed PostgreSQL"],
                 ["Upstash / Render Redis", "Managed Redis for BullMQ"],
-                [
-                  "TMC_ENV profiles",
-                  "env/profiles/{development,production}",
-                ],
+                ["TMC_ENV profiles", "env/profiles/{development,production}"],
                 [
                   "dotenv + load-env.mjs",
                   "Layered env loading per service role",

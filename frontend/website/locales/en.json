@@ -146,11 +146,7 @@
       "title": "Ready to transform how you spend crypto?",
       "description": "Join 500,000+ users who trust Trust Card for their everyday crypto spending.",
       "button": "Issue Card — It's Free",
-      "pills": [
-        "No Hidden Fees",
-        "Cancel Anytime",
-        "24/7 Support"
-      ]
+      "pills": ["No Hidden Fees", "Cancel Anytime", "24/7 Support"]
     }
   },
   "faq": {
@@ -276,9 +272,7 @@
         {
           "id": "how-we-use-information",
           "title": "How We Use Your Information",
-          "paragraphs": [
-            "We use collected information to:"
-          ],
+          "paragraphs": ["We use collected information to:"],
           "list": [
             "Provide, operate, and maintain Trust Card services.",
             "Process wallet connections, card issuance, and settlement workflows.",
@@ -382,9 +376,7 @@
         {
           "id": "prohibited",
           "title": "Prohibited Use",
-          "paragraphs": [
-            "You agree not to use Trust Card services to:"
-          ],
+          "paragraphs": ["You agree not to use Trust Card services to:"],
           "list": [
             "Violate applicable laws, sanctions, or export controls.",
             "Engage in fraud, money laundering, or terrorist financing.",
@@ -885,9 +877,7 @@
         },
         "complete": {
           "label": "Wallet linked successfully",
-          "messages": [
-            "Wallet linked successfully"
-          ]
+          "messages": ["Wallet linked successfully"]
         }
       }
     },

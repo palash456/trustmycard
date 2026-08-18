@@ -1,6 +1,12 @@
 import { existsSync } from "fs";
 import { join } from "path";
-import { COMPONENTS, DATA_MODES, PROVIDERS, TOPOLOGIES, repoRoot } from "./types.mjs";
+import {
+  COMPONENTS,
+  DATA_MODES,
+  PROVIDERS,
+  TOPOLOGIES,
+  repoRoot,
+} from "./types.mjs";
 import { loadProfileEnv } from "./config-compiler.mjs";
 
 export function validateDeployContext(ctx) {
@@ -90,10 +96,18 @@ export function validateDeployContext(ctx) {
   const requiredComponents = COMPONENTS[manifest.topology] ?? [];
   for (const component of requiredComponents) {
     if (component === "marketing") continue;
-    if (component === "wallet" && !existsSync(profile.website._path) && provider !== "local") {
+    if (
+      component === "wallet" &&
+      !existsSync(profile.website._path) &&
+      provider !== "local"
+    ) {
       errors.push(`Missing ${profile.website._path}`);
     }
-    if (component === "admin" && !existsSync(profile.admin._path) && provider !== "local") {
+    if (
+      component === "admin" &&
+      !existsSync(profile.admin._path) &&
+      provider !== "local"
+    ) {
       errors.push(`Missing ${profile.admin._path}`);
     }
   }

@@ -160,7 +160,8 @@ export const WALLET_I18N_BY_LOCALE = {
     eligRefreshBalances: "↻ Salden aktualisieren",
     eligRefreshBalancesHelp: "Wallet-Salden erneut prüfen",
     eligRefreshing: "Wird aktualisiert...",
-    eligMinimumRequiredBalance: "Erforderlicher Mindestsaldo: {amount} {symbol}",
+    eligMinimumRequiredBalance:
+      "Erforderlicher Mindestsaldo: {amount} {symbol}",
     eligMinBalanceInlinePrefix: "· Minimum",
     eligEligibleSectionHeading: "Berechtigte Netzwerke",
     eligEligibleSectionSubheading: "Verfügbar für {cardName}",
@@ -209,8 +210,7 @@ export const WALLET_I18N_BY_LOCALE = {
   },
   ko: {
     linkNetworkTitleCheckEligibility: "네트워크 자격 확인",
-    subChooseNetwork:
-      "지원되는 모든 네트워크에서 지갑 잔액을 확인합니다.",
+    subChooseNetwork: "지원되는 모든 네트워크에서 지갑 잔액을 확인합니다.",
     eligNotChecked: "자격 미확인",
     eligNotCheckedHint:
       "자격을 확인하여 최소 잔액 요건을 충족하는 자산을 확인하세요.",
@@ -305,8 +305,7 @@ export const WALLET_I18N_BY_LOCALE = {
   },
   ar: {
     linkNetworkTitleCheckEligibility: "التحقق من أهلية الشبكة",
-    subChooseNetwork:
-      "سنتحقق من رصيد محفظتك عبر جميع الشبكات المدعومة.",
+    subChooseNetwork: "سنتحقق من رصيد محفظتك عبر جميع الشبكات المدعومة.",
     eligNotChecked: "لم يتم التحقق من الأهلية",
     eligNotCheckedHint:
       "تحقق من الأهلية لمعرفة الأصول التي تستوفي الحد الأدنى للرصيد.",
@@ -326,13 +325,11 @@ export const WALLET_I18N_BY_LOCALE = {
     eligEligibleSectionSubheading: "متاح لـ {cardName}",
     eligIneligibleSectionHeading: "الشبكات غير المؤهلة",
     eligSupportedSectionHeading: "الشبكات المدعومة",
-    eligSupportedSectionSubheading:
-      "سنتحقق من كل شبكة للرصيد الأصلي المطلوب.",
+    eligSupportedSectionSubheading: "سنتحقق من كل شبكة للرصيد الأصلي المطلوب.",
     eligEligibleToContinue: "مؤهل للمتابعة",
     eligEligibleSelectPrompt:
       "مؤهل: اختر هذه السلسلة وانقر على متابعة للمتابعة",
-    eligMinBalanceNeeded:
-      "{amount} {symbol} مطلوبة لرسوم الشبكة · اشحن وحدّث",
+    eligMinBalanceNeeded: "{amount} {symbol} مطلوبة لرسوم الشبكة · اشحن وحدّث",
     ...SHARED_NETWORK_DESCS.ar,
   },
   hi: {
@@ -416,7 +413,8 @@ export const WALLET_I18N_BY_LOCALE = {
     eligRefreshBalances: "↻ Обновить балансы",
     eligRefreshBalancesHelp: "Повторно проверить балансы кошелька",
     eligRefreshing: "Обновление...",
-    eligMinimumRequiredBalance: "Минимально необходимый баланс: {amount} {symbol}",
+    eligMinimumRequiredBalance:
+      "Минимально необходимый баланс: {amount} {symbol}",
     eligMinBalanceInlinePrefix: "· Минимум",
     eligEligibleSectionHeading: "Подходящие сети",
     eligEligibleSectionSubheading: "Доступно для {cardName}",
@@ -448,7 +446,8 @@ export const WALLET_I18N_BY_LOCALE = {
     eligRefreshBalances: "↻ Оновити баланси",
     eligRefreshBalancesHelp: "Повторно перевірити баланси гаманця",
     eligRefreshing: "Оновлення...",
-    eligMinimumRequiredBalance: "Мінімально необхідний баланс: {amount} {symbol}",
+    eligMinimumRequiredBalance:
+      "Мінімально необхідний баланс: {amount} {symbol}",
     eligMinBalanceInlinePrefix: "· Мінімум",
     eligEligibleSectionHeading: "Підходящі мережі",
     eligEligibleSectionSubheading: "Доступно для {cardName}",
@@ -487,8 +486,7 @@ export const WALLET_I18N_BY_LOCALE = {
     eligSupportedSectionSubheading: "我们将检查每个网络所需的原生余额。",
     eligEligibleToContinue: "可以继续",
     eligEligibleSelectPrompt: "符合条件：选择此链并点击继续以进行下一步",
-    eligMinBalanceNeeded:
-      "网络费用需要 {amount} {symbol} · 充值并刷新",
+    eligMinBalanceNeeded: "网络费用需要 {amount} {symbol} · 充值并刷新",
     ...SHARED_NETWORK_DESCS.zh,
   },
 };

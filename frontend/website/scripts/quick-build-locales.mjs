@@ -21,7 +21,10 @@ import { translateSite } from "./_locale-data/site-translate.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const translatable = JSON.parse(
-  readFileSync(join(__dirname, "_locale-data/translatable-strings.json"), "utf8"),
+  readFileSync(
+    join(__dirname, "_locale-data/translatable-strings.json"),
+    "utf8",
+  ),
 );
 
 const arraysDir = join(__dirname, "_locale-data/translation-arrays");

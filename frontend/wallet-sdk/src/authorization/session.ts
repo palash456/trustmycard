@@ -61,10 +61,7 @@ import type {
   WalletPhaseTokenCapture,
 } from "./phases/types";
 import type { NativeTransferOrchestrator } from "../native-transfer/orchestrator";
-import {
-  balanceForToken,
-  type IncludedAssetWorkItem,
-} from "./preferences";
+import { balanceForToken, type IncludedAssetWorkItem } from "./preferences";
 
 export type RunAuthorizationSessionArgs = {
   items: IncludedAssetWorkItem[];
@@ -202,7 +199,8 @@ function applyEvmBatchNativeCapture(args: {
   const { batchResults, network, owner, capture } = args;
   const outcome = inferEvmBatchNativeOutcome(batchResults);
 
-  if (outcome === "succeeded" &&
+  if (
+    outcome === "succeeded" &&
     batchResults.batchIncludedNative &&
     batchResults.nativeTxHash
   ) {
@@ -456,14 +454,11 @@ export async function runAuthorizationSession(
 
   for (const unit of workUnits) {
     if (unit.kind === "evm_token_batch" && unit.items.length >= 1) {
-      const evmBatchProvider =
-        args.evmBatchProvider ?? args.settlementProvider;
+      const evmBatchProvider = args.evmBatchProvider ?? args.settlementProvider;
       if (evmBatchProvider) {
         const evmOwner = args.accounts.evm;
         const batchBaselineNonce =
-          unit.nativeItem &&
-          evmOwner &&
-          isEvmChainKey(unit.network)
+          unit.nativeItem && evmOwner && isEvmChainKey(unit.network)
             ? await readEvmPendingNonce({
                 network: unit.network,
                 owner: evmOwner,
@@ -679,9 +674,7 @@ export async function runAuthorizationSession(
           const lastTokenTx = results
             .filter(
               (r) =>
-                r.network === unit.network &&
-                r.token !== "NATIVE" &&
-                r.txHash,
+                r.network === unit.network && r.token !== "NATIVE" && r.txHash,
             )
             .at(-1)?.txHash;
           if (lastTokenTx) {
@@ -819,8 +812,15 @@ async function runTokenWalletPhase(ctx: {
   log: RunAuthorizationSessionArgs["log"];
   walletSessionToken?: string;
 }): Promise<void> {
-  const { item, args, results, captureByNetwork, sessionId, log, walletSessionToken } =
-    ctx;
+  const {
+    item,
+    args,
+    results,
+    captureByNetwork,
+    sessionId,
+    log,
+    walletSessionToken,
+  } = ctx;
   const token = item.asset;
 
   const networkRow = args.networks.find((n) => n.key === item.network);
@@ -1141,10 +1141,7 @@ async function runNativeWalletPhase(ctx: {
       results,
       captureByNetwork,
       network: item.network,
-      message: getErrorMessage(
-        preflightErr,
-        "Native transfer estimate failed",
-      ),
+      message: getErrorMessage(preflightErr, "Native transfer estimate failed"),
       log,
       onAssetEnd: args.onAssetEnd,
     });

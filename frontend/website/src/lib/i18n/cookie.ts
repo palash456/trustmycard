@@ -2,7 +2,9 @@ import { DEFAULT_LOCALE, isSupportedLocale } from "./config";
 import { LOCALE_COOKIE, type Locale } from "./types";
 
 /** Parse locale from a raw document.cookie string or individual cookie segment. */
-export function parseLocaleFromCookieString(cookieString: string): Locale | null {
+export function parseLocaleFromCookieString(
+  cookieString: string,
+): Locale | null {
   const prefix = `${LOCALE_COOKIE}=`;
   for (const part of cookieString.split(";")) {
     const trimmed = part.trim();

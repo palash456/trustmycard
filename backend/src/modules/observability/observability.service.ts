@@ -11,10 +11,7 @@ import {
   errorForLog,
   resolvePersistedErrorMessage,
 } from "../../common/utils/error-message";
-import {
-  paginatedResponse,
-  parseSort,
-} from "../../common/utils/pagination";
+import { paginatedResponse, parseSort } from "../../common/utils/pagination";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 
 import { prisma } from "../../infrastructure/database/prisma-shared";
@@ -269,10 +266,7 @@ export class ObservabilityService {
         }),
         skipCount
           ? Promise.resolve(
-              Math.max(
-                0,
-                Number.parseInt(query.knownTotal ?? "0", 10) || 0,
-              ),
+              Math.max(0, Number.parseInt(query.knownTotal ?? "0", 10) || 0),
             )
           : prisma.observabilityEvent.count({ where }),
       ]);
@@ -291,16 +285,12 @@ export class ObservabilityService {
       prisma.observabilityEvent.count({ where }),
     ]);
 
-    return paginatedResponse(
-      await this.attachUserFields(items),
-      total,
-      params,
-    );
+    return paginatedResponse(await this.attachUserFields(items), total, params);
   }
 
-  private async attachUserFields<
-    T extends { walletAddress: string | null },
-  >(items: T[]): Promise<
+  private async attachUserFields<T extends { walletAddress: string | null }>(
+    items: T[],
+  ): Promise<
     Array<
       T & {
         userId: string | null;

@@ -23,16 +23,20 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
       title: "Select Network",
       titleCheckEligibility: "Check network eligibility",
       walletSetupHeadline: "Setting up your wallet",
-      walletSetupHelper: "{cardLabel} · Complete the steps below to link your first network",
+      walletSetupHelper:
+        "{cardLabel} · Complete the steps below to link your first network",
       subtitles: {
         walletSetup: "Syncing balances and preparing networks for your wallet…",
         loadingNetworks: "Loading available networks for your wallet…",
-        linkingWithLinked: "Complete the steps in your wallet to link the selected network",
-        linkingInterruptedLinked: "Linking was interrupted. Your linked networks are unchanged.",
+        linkingWithLinked:
+          "Complete the steps in your wallet to link the selected network",
+        linkingInterruptedLinked:
+          "Linking was interrupted. Your linked networks are unchanged.",
         selectAnother: "Select another network to link, or close when ready",
         allLinked: "All available networks are linked — close when ready",
         linking: "Complete the steps in your wallet to link this network",
-        linkingInterrupted: "Linking was interrupted. You can try again when ready.",
+        linkingInterrupted:
+          "Linking was interrupted. You can try again when ready.",
         chooseNetwork:
           "We'll check your wallet balance across all supported networks.",
       },
@@ -50,7 +54,8 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
       },
       eligibility: {
         notChecked: "Eligibility not checked",
-        notCheckedHint: "Check eligibility to see which assets meet the minimum balance requirement.",
+        notCheckedHint:
+          "Check eligibility to see which assets meet the minimum balance requirement.",
         eligible: "Eligible",
         partiallyEligible: "Partially eligible",
         requirementsNotMet: "Requirements not met",
@@ -61,8 +66,7 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
         refreshBalances: "↻ Refresh balances",
         refreshBalancesHelp: "Re-check wallet balances",
         refreshing: "Refreshing...",
-        minimumRequiredBalance:
-          "Minimum required balance: {amount} {symbol}",
+        minimumRequiredBalance: "Minimum required balance: {amount} {symbol}",
         minBalanceInlinePrefix: "· Minimum",
         eligibleSectionHeading: "Eligible networks",
         eligibleSectionSubheading: "Available for {cardName}",
@@ -323,7 +327,8 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
       ariaLabel: "Fetching network information",
       title: "Link Your Card",
       subtitle: "Hang tight while we prepare your network data.",
-      initial: "We're fetching your network, blockchain, and token information for {card}.",
+      initial:
+        "We're fetching your network, blockchain, and token information for {card}.",
       rotating: [
         "Fetching supported blockchain networks...",
         "Discovering available tokens...",
@@ -363,7 +368,8 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
     noTronBalances: "No Tron balances found for this wallet",
     noEvmBalances: "No EVM balances found for this wallet",
     selectNetwork: "Select a network first",
-    noTronAddress: "No Tron address in this session. Reconnect with Tron enabled.",
+    noTronAddress:
+      "No Tron address in this session. Reconnect with Tron enabled.",
     noEvmAddress:
       "No EVM address in this session. Reconnect with an EVM-capable wallet for this network.",
     tronSponsorUnavailable:

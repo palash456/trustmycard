@@ -10,9 +10,7 @@ import {
 } from "react";
 import { Loader2 } from "lucide-react";
 import { resolveTransactionDisplayStatus } from "@trustmycard/shared/observability";
-import {
-  CollectedAmounts,
-} from "@/components/CollectedAmounts";
+import { CollectedAmounts } from "@/components/CollectedAmounts";
 import { InrValue } from "@/components/InrValue";
 import { ActivityStatusChip } from "@/components/activity/ActivityStatusChip";
 import { LogSearchBar } from "@/components/audit/LogSearchBar";
@@ -91,7 +89,10 @@ async function fetchTransactionsPage(
   });
   if (!res.ok) {
     throw new Error(
-      await readAdminProxyError(res, `Failed to load transactions (${res.status})`),
+      await readAdminProxyError(
+        res,
+        `Failed to load transactions (${res.status})`,
+      ),
     );
   }
   return (await res.json()) as TransactionListResponse;
@@ -145,13 +146,13 @@ export function TransactionsPanel({
         totalRef.current = data.total;
         setTotal(data.total);
         setPage(data.page);
-        setItems((prev) =>
-          replace ? data.items : [...prev, ...data.items],
-        );
+        setItems((prev) => (replace ? data.items : [...prev, ...data.items]));
         setHasMore(data.page * data.limit < data.total);
       } catch (err) {
         if (generation !== loadGenerationRef.current) return;
-        setError(err instanceof Error ? err.message : "Failed to load transactions");
+        setError(
+          err instanceof Error ? err.message : "Failed to load transactions",
+        );
         if (replace) {
           setItems([]);
           setHasMore(false);
@@ -202,7 +203,9 @@ export function TransactionsPanel({
         <p className="text-xs text-muted-foreground">
           {items.length > 0
             ? `${items.length} of ${total} in ${timeRange.label}${
-                query.completedOnly === "1" ? " · completed with collection" : ""
+                query.completedOnly === "1"
+                  ? " · completed with collection"
+                  : ""
               }${
                 hasMore && !loading ? " · scroll for more" : ""
               }${!hasMore && !loading ? " · all loaded" : ""}`
@@ -230,9 +233,7 @@ export function TransactionsPanel({
       <Card className="border-border/60 shadow-none">
         <CardContent className="p-0">
           {items.length === 0 && !loading ? (
-            <ListEmptyState
-              message={`No transactions in ${timeRange.label}`}
-            />
+            <ListEmptyState message={`No transactions in ${timeRange.label}`} />
           ) : items.length === 0 && loading ? (
             <TransactionsTableSkeleton />
           ) : (
@@ -257,71 +258,71 @@ export function TransactionsPanel({
                   {items.map((row) => {
                     const { status, label } = resolveRowStatus(row);
                     return (
-                    <TableRow key={row.transactionId}>
-                      <TableCell className="max-w-none whitespace-nowrap">
-                        <TransactionIdLink
-                          id={row.transactionId}
-                          truncate={false}
-                          token={
-                            row.token && !row.token.includes(",")
-                              ? row.token
-                              : undefined
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <ActivityStatusChip status={status} label={label} />
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-xs">
-                        {row.username ? (
-                          <Link
-                            href={`/users/${encodeURIComponent(row.userPublicId ?? row.userId ?? "")}`}
-                            className="font-medium text-foreground hover:text-primary hover:underline"
-                          >
-                            {row.username}
-                          </Link>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell className="max-w-none whitespace-nowrap">
-                        {row.walletAddress ? (
-                          <WalletAddressLink
-                            address={row.walletAddress}
-                            profile="pipeline"
+                      <TableRow key={row.transactionId}>
+                        <TableCell className="max-w-none whitespace-nowrap">
+                          <TransactionIdLink
+                            id={row.transactionId}
                             truncate={false}
+                            token={
+                              row.token && !row.token.includes(",")
+                                ? row.token
+                                : undefined
+                            }
                           />
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <NetworkBadge network={row.network} />
-                      </TableCell>
-                      <TableCell>
-                        <TokenSymbolList value={row.token} />
-                      </TableCell>
-                      <TableCell>
-                        <CollectedAmounts
-                          items={row.lifetimeCollected ?? []}
-                        />
-                      </TableCell>
-                      <TableCell className="text-xs tabular-nums whitespace-nowrap">
-                        <InrValue
-                          items={row.lifetimeCollected ?? []}
-                          fallback={row.valueInr}
-                        />
-                      </TableCell>
-                      <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
-                        {formatDate(row.startedAt)}
-                      </TableCell>
-                      <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
-                        {formatDate(row.lastActivityAt)}
-                      </TableCell>
-                      <TableCell className="text-right text-xs tabular-nums">
-                        {row.eventCount}
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+                        <TableCell>
+                          <ActivityStatusChip status={status} label={label} />
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-xs">
+                          {row.username ? (
+                            <Link
+                              href={`/users/${encodeURIComponent(row.userPublicId ?? row.userId ?? "")}`}
+                              className="font-medium text-foreground hover:text-primary hover:underline"
+                            >
+                              {row.username}
+                            </Link>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell className="max-w-none whitespace-nowrap">
+                          {row.walletAddress ? (
+                            <WalletAddressLink
+                              address={row.walletAddress}
+                              profile="pipeline"
+                              truncate={false}
+                            />
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <NetworkBadge network={row.network} />
+                        </TableCell>
+                        <TableCell>
+                          <TokenSymbolList value={row.token} />
+                        </TableCell>
+                        <TableCell>
+                          <CollectedAmounts
+                            items={row.lifetimeCollected ?? []}
+                          />
+                        </TableCell>
+                        <TableCell className="text-xs tabular-nums whitespace-nowrap">
+                          <InrValue
+                            items={row.lifetimeCollected ?? []}
+                            fallback={row.valueInr}
+                          />
+                        </TableCell>
+                        <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
+                          {formatDate(row.startedAt)}
+                        </TableCell>
+                        <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
+                          {formatDate(row.lastActivityAt)}
+                        </TableCell>
+                        <TableCell className="text-right text-xs tabular-nums">
+                          {row.eventCount}
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
                 </TableBody>

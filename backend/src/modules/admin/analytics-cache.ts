@@ -11,7 +11,9 @@ function ttlMs(): number {
   return Math.min(sec, 600) * 1000;
 }
 
-export function analyticsCacheKey(query: Record<string, string | undefined>): string {
+export function analyticsCacheKey(
+  query: Record<string, string | undefined>,
+): string {
   const period = query.period ?? "last30d";
   const from = query.from ?? "";
   const to = query.to ?? "";

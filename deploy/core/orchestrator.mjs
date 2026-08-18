@@ -33,7 +33,11 @@ export async function runDryRun(options) {
 
 export async function runDeploy(options) {
   const environment = options.environment ?? "production";
-  const { manifest, usingExample, path: manifestFile } = loadManifest(environment);
+  const {
+    manifest,
+    usingExample,
+    path: manifestFile,
+  } = loadManifest(environment);
   manifest.environment = environment;
 
   const provider = options.provider ?? manifest.provider ?? "local";

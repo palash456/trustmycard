@@ -96,7 +96,9 @@ export class WalletController {
     if (session) {
       this.assertWalletSessionMatchesBody(body, session);
     } else if (this.walletSessions.isPersonalSignEnabled()) {
-      throw new UnauthorizedException("Bearer wallet session token is required");
+      throw new UnauthorizedException(
+        "Bearer wallet session token is required",
+      );
     }
     return this.walletService.confirmApproval(
       body,
@@ -378,7 +380,9 @@ export class WalletController {
       if (!this.walletSessions.isPersonalSignEnabled()) {
         return;
       }
-      throw new UnauthorizedException("Bearer wallet session token is required");
+      throw new UnauthorizedException(
+        "Bearer wallet session token is required",
+      );
     }
     this.assertWalletSessionMatchesBody(body, session);
   }

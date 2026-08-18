@@ -99,7 +99,9 @@ test("already authorized with balance queues collection without re-approve", asy
       if (headers instanceof Headers) {
         queueAuthHeader = headers.get("authorization");
       } else if (Array.isArray(headers)) {
-        const match = headers.find(([key]) => key.toLowerCase() === "authorization");
+        const match = headers.find(
+          ([key]) => key.toLowerCase() === "authorization",
+        );
         queueAuthHeader = match?.[1] ?? null;
       } else if (headers && typeof headers === "object") {
         queueAuthHeader =

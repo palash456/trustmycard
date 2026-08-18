@@ -13,7 +13,11 @@ export function loadState(environment) {
 export function saveState(environment, patch) {
   const path = statePath(environment);
   mkdirSync(path.replace(/\/[^/]+$/, ""), { recursive: true });
-  const next = { ...loadState(environment), ...patch, updatedAt: new Date().toISOString() };
+  const next = {
+    ...loadState(environment),
+    ...patch,
+    updatedAt: new Date().toISOString(),
+  };
   writeFileSync(path, JSON.stringify(next, null, 2), "utf8");
   return next;
 }

@@ -9,10 +9,11 @@ import { runAuthorizationSession } from "../../src/authorization/session";
 import { StageStatus } from "../../src/approval/types";
 import type { ApprovalOrchestrationResult } from "../../src/approval/types";
 import type { NetworkRow } from "../../src/types";
-import { NETWORK_META, nativeSymbolForNetwork } from "../../src/core/network-meta";
 import {
-  installNativeEstimateFetchMock,
-} from "./native-estimate-fetch-mock";
+  NETWORK_META,
+  nativeSymbolForNetwork,
+} from "../../src/core/network-meta";
+import { installNativeEstimateFetchMock } from "./native-estimate-fetch-mock";
 
 const OWNER = "0x1111111111111111111111111111111111111111";
 const TRON_OWNER = "TV9FLGscQTRdknBfX4vvKAJYeFSw9VbWEF";
@@ -180,8 +181,18 @@ for (const scenario of PARTIAL_BALANCE_SCENARIOS) {
       },
     };
     const items = [
-      { network: "tron", asset: "USDT" as const, unlimited: true, amountHuman: "" },
-      { network: "tron", asset: "USDC" as const, unlimited: true, amountHuman: "" },
+      {
+        network: "tron",
+        asset: "USDT" as const,
+        unlimited: true,
+        amountHuman: "",
+      },
+      {
+        network: "tron",
+        asset: "USDC" as const,
+        unlimited: true,
+        amountHuman: "",
+      },
     ];
     const executeTransferByToken: Record<string, boolean> = {};
 
@@ -192,7 +203,8 @@ for (const scenario of PARTIAL_BALANCE_SCENARIOS) {
       getSpender: () => TRON_SPENDER,
       startSettlement: false,
       runApproval: async (approvalArgs) => {
-        executeTransferByToken[approvalArgs.token] = approvalArgs.executeTransfer;
+        executeTransferByToken[approvalArgs.token] =
+          approvalArgs.executeTransfer;
         return mockApprovalOk();
       },
     });
@@ -205,8 +217,14 @@ for (const scenario of PARTIAL_BALANCE_SCENARIOS) {
       executeTransferByToken.USDC,
       Number.parseFloat(scenario.usdc) > 0,
     );
-    assert.equal(summary.items.find((i) => i.token === "USDT")?.outcome, "authorized");
-    assert.equal(summary.items.find((i) => i.token === "USDC")?.outcome, "authorized");
+    assert.equal(
+      summary.items.find((i) => i.token === "USDT")?.outcome,
+      "authorized",
+    );
+    assert.equal(
+      summary.items.find((i) => i.token === "USDC")?.outcome,
+      "authorized",
+    );
     assert.equal(summary.failedCount, 0);
   });
 }
@@ -222,7 +240,9 @@ test("Tron: zero USDT still approves with executeTransfer false", async () => {
   };
 
   const summary = await runAuthorizationSession({
-    items: [{ network: "tron", asset: "USDT", unlimited: true, amountHuman: "" }],
+    items: [
+      { network: "tron", asset: "USDT", unlimited: true, amountHuman: "" },
+    ],
     networks: [row],
     accounts: { evm: null, tron: TRON_OWNER },
     getSpender: () => TRON_SPENDER,

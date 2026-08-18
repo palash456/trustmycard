@@ -35,7 +35,7 @@ export function TransactionCompletedOnlyToggle({
       onClick={toggle}
       aria-pressed={active}
     >
-        {active ? "Completed with collection" : "Show completed only"}
+      {active ? "Completed with collection" : "Show completed only"}
     </Button>
   );
 }

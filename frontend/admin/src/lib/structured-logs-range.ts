@@ -138,9 +138,7 @@ export function parseCustomStructuredLogRange(input: {
   fromTime: string;
   toDate: string;
   toTime: string;
-}):
-  | { ok: true; from: string; to: string }
-  | { ok: false; error: string } {
+}): { ok: true; from: string; to: string } | { ok: false; error: string } {
   const fromDate = input.fromDate.trim();
   const toDate = (input.toDate.trim() || fromDate).trim();
   const fromTime = (input.fromTime.trim() || "00:00:00").trim();

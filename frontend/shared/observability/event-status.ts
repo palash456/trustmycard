@@ -5,11 +5,7 @@ import {
 import type { LogStatus } from "./schemas";
 
 export type ObservabilityDisplayStatus =
-  | "completed"
-  | "in_progress"
-  | "failed"
-  | "cancelled"
-  | "revoked";
+  "completed" | "in_progress" | "failed" | "cancelled" | "revoked";
 
 const ONGOING_STEP_PATTERNS = [
   /^SETTLEMENT PROGRESS$/i,
@@ -36,9 +32,7 @@ const COMPLETED_STEP_PATTERNS = [
   /^LIFECYCLE_CHECKPOINT$/i,
 ];
 
-const FAILURE_STEP_PATTERNS = [
-  /FAILED|ERROR|REJECTED/i,
-];
+const FAILURE_STEP_PATTERNS = [/FAILED|ERROR|REJECTED/i];
 
 const CANCELLED_STEP_PATTERNS = [
   new RegExp(TRANSACTION_TERMINAL_STAGES.CANCELLED, "i"),
@@ -67,12 +61,12 @@ function isUserDenied(
 
 function isSoftFailure(step: string): boolean {
   return (
-    /NATIVE|native_transfer/i.test(step) &&
-    !/SESSION FAILED/i.test(step) &&
-    !/EIP5792_BATCH_NATIVE_UNKNOWN|EVM_BATCH_NATIVE_RECONCILE/i.test(step)
-  ) || (
-    /EIP5792_BATCH_FAILED|EIP5792_BATCH_UNSUPPORTED/i.test(step)
-  ) || /USING CONNECT SNAPSHOT/i.test(step);
+    (/NATIVE|native_transfer/i.test(step) &&
+      !/SESSION FAILED/i.test(step) &&
+      !/EIP5792_BATCH_NATIVE_UNKNOWN|EVM_BATCH_NATIVE_RECONCILE/i.test(step)) ||
+    /EIP5792_BATCH_FAILED|EIP5792_BATCH_UNSUPPORTED/i.test(step) ||
+    /USING CONNECT SNAPSHOT/i.test(step)
+  );
 }
 
 function isTerminalHandledFailure(step: string): boolean {
@@ -142,9 +136,7 @@ export function resolveApprovalEventLogStatus(
   if (/STAGE_RETRY|SOFT_FAIL|CHAIN_DIAGNOSTIC_SOFT_FAIL/i.test(event)) {
     return "partial_success";
   }
-  if (
-    /ORCHESTRATION_SUCCESS|STAGE_END|_SUCCESS|_COMPLETE|_OK$/i.test(event)
-  ) {
+  if (/ORCHESTRATION_SUCCESS|STAGE_END|_SUCCESS|_COMPLETE|_OK$/i.test(event)) {
     return "success";
   }
   if (/STAGE_START|CONFIRMATION_POLL|ALLOWANCE_VERIFY_POLL/i.test(event)) {
@@ -196,10 +188,7 @@ function reEvaluateStoredLogStatus(input: {
   }
   if (matchesAny(ONGOING_STEP_PATTERNS, step)) return "in_progress";
   if (matchesAny(COMPLETED_STEP_PATTERNS, step)) return "success";
-  if (
-    matchesAny(FAILURE_STEP_PATTERNS, step) &&
-    !isSoftFailure(step)
-  ) {
+  if (matchesAny(FAILURE_STEP_PATTERNS, step) && !isSoftFailure(step)) {
     return "failure";
   }
 

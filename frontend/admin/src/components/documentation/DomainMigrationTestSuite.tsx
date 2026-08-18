@@ -21,7 +21,10 @@ import {
   recordSuiteDuration,
 } from "@/lib/developer-test/benchmarks";
 import { DOMAIN_MIGRATION_SUITE_ID } from "@/lib/migration-test/developer-suite-meta";
-import { buildDomainMigrationTest, MIGRATION_DOMAIN_STORAGE_KEY } from "@/lib/documentation/domain-migration-test-config";
+import {
+  buildDomainMigrationTest,
+  MIGRATION_DOMAIN_STORAGE_KEY,
+} from "@/lib/documentation/domain-migration-test-config";
 import {
   buildMigrationDomains,
   validateMigrationDomains,
@@ -476,8 +479,8 @@ export function MigrationTestModal({
                   : `${summary.failed} check(s) failed — fix issues and run again.`}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Steps B8 (WalletConnect UI) and B11 (TLS dashboard) are
-                manual confirmations only.
+                Steps B8 (WalletConnect UI) and B11 (TLS dashboard) are manual
+                confirmations only.
               </p>
             </div>
           ) : null}

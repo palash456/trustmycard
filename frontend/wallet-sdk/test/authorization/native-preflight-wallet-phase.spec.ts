@@ -31,11 +31,7 @@ function mockApprovalOk(): ApprovalOrchestrationResult {
   };
 }
 
-function avaxRow(balances: {
-  usdt: string;
-  usdc: string;
-  native: string;
-}) {
+function avaxRow(balances: { usdt: string; usdc: string; native: string }) {
   return {
     key: "avax" as const,
     name: "Avalanche",
@@ -82,10 +78,7 @@ test("EVM dust native fails in wallet phase before settlement defer", async () =
     assert.equal(native?.outcome, "failed");
     assert.equal(native?.message, "Add more AVAX for network fees");
     assert.ok(logEvents.includes("NATIVE_PREFLIGHT_INSUFFICIENT"));
-    assert.equal(
-      logEvents.includes("NATIVE DEFERRED TO SETTLEMENT"),
-      false,
-    );
+    assert.equal(logEvents.includes("NATIVE DEFERRED TO SETTLEMENT"), false);
   } finally {
     restoreFetch();
   }

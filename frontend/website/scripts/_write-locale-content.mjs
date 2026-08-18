@@ -18,4 +18,6 @@ const out = `export const LOCALE_CONTENT = ${JSON.stringify(LOCALE_CONTENT, null
 writeFileSync(join(__dirname, "locale-content.mjs"), out, "utf8");
 
 const lines = out.split("\n").length;
-console.log(`Wrote locale-content.mjs (${lines} lines, ${Object.keys(LOCALE_CONTENT).length} locales)`);
+console.log(
+  `Wrote locale-content.mjs (${lines} lines, ${Object.keys(LOCALE_CONTENT).length} locales)`,
+);

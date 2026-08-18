@@ -109,7 +109,9 @@ export default async function UserPipelinePage({
           <>
             <div className="flex flex-wrap items-center gap-2">
               {pipeline.username ? (
-                <span className="text-sm font-semibold">{pipeline.username}</span>
+                <span className="text-sm font-semibold">
+                  {pipeline.username}
+                </span>
               ) : null}
               {pipeline.publicId ? (
                 <span className="font-mono text-xs text-muted-foreground">

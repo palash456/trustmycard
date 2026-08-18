@@ -12,7 +12,17 @@ export const frontendPage: DocPage = {
   title: "Frontend Structure",
   description:
     "Monorepo frontend packages, shared code, and admin app architecture.",
-  keywords: ["frontend", "nextjs", "wallet-sdk", "shared", "website", "admin", "marketing", "connect", "middleware"],
+  keywords: [
+    "frontend",
+    "nextjs",
+    "wallet-sdk",
+    "shared",
+    "website",
+    "admin",
+    "marketing",
+    "connect",
+    "middleware",
+  ],
   sections: [
     {
       id: "packages",
@@ -21,11 +31,7 @@ export const frontendPage: DocPage = {
         <DocTable
           headers={["Package", "Port (dev)", "Role"]}
           rows={[
-            [
-              "frontend/website",
-              "3000",
-              "Wallet app + BFF (product at /)",
-            ],
+            ["frontend/website", "3000", "Wallet app + BFF (product at /)"],
             ["frontend/marketing", "3001", "Static marketing site preview"],
             ["frontend/admin", "3002", "Operations console (this app)"],
             ["frontend/wallet-sdk", "—", "WalletConnect + approvals library"],

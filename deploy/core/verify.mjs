@@ -38,7 +38,9 @@ export async function verifyDeployment(ctx) {
     const result = await fetchCheckWithRetries(check);
     results.push(result);
     const icon = result.ok ? "OK" : "FAIL";
-    console.log(`[verify] ${icon} ${check.name} (${result.status}) ${check.url}`);
+    console.log(
+      `[verify] ${icon} ${check.name} (${result.status}) ${check.url}`,
+    );
   }
 
   const failed = results.filter((r) => !r.ok);
@@ -83,5 +85,7 @@ export function printManualChecklist(manifest, options = {}) {
   console.log("  - Attach custom domains + TLS on the provider");
   console.log(`  - WalletConnect allowed origin: ${manifest.domains.wallet}`);
   console.log("  - Meta / Google Ads dashboards (pixel, landing URLs)");
-  console.log("  - Hostinger/static marketing upload if using separate marketing host");
+  console.log(
+    "  - Hostinger/static marketing upload if using separate marketing host",
+  );
 }

@@ -52,21 +52,21 @@ Smoke: `http://localhost:4004/v1/api/settings/public` and `http://localhost:3004
 
 Required for Docker/Render wallet builds:
 
-| Variable | Purpose |
-|----------|---------|
-| `NEXT_PUBLIC_APP_URL` | Public site URL (WalletConnect allowed origin) |
-| `NEXT_PUBLIC_PROJECT_ID` | WalletConnect Cloud project id |
-| `BACKEND_API_URL` | Nest API URL (Docker micro uses internal `http://backend:4000` at runtime) |
+| Variable                 | Purpose                                                                    |
+| ------------------------ | -------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_APP_URL`    | Public site URL (WalletConnect allowed origin)                             |
+| `NEXT_PUBLIC_PROJECT_ID` | WalletConnect Cloud project id                                             |
+| `BACKEND_API_URL`        | Nest API URL (Docker micro uses internal `http://backend:4000` at runtime) |
 
 Removed (legacy marketing session gate): `MARKETING_SESSION_*`, `MARKETING_TEST_SECRET`, `GOOGLE_ADS_*`. See `frontend/website/README.md`.
 
 ## Topologies
 
-| Topology | Containers | Use case |
-|----------|------------|----------|
-| `micro` | backend + wallet | 512 MB VPS, external DB |
-| `budget` | + admin + marketing + optional bundled DB | local / larger VPS |
-| `full` | split API + worker | production split signing |
+| Topology | Containers                                | Use case                 |
+| -------- | ----------------------------------------- | ------------------------ |
+| `micro`  | backend + wallet                          | 512 MB VPS, external DB  |
+| `budget` | + admin + marketing + optional bundled DB | local / larger VPS       |
+| `full`   | split API + worker                        | production split signing |
 
 ## Layout
 
@@ -84,10 +84,10 @@ deploy/
 
 ## Safety flags
 
-| Flag | Meaning |
-|------|---------|
-| `--fresh` | Provision bundled Postgres/Redis if needed (never drops data by default) |
-| `--confirm-recreate-data --i-accept-data-loss` | Remove **only** the named compose Postgres volume |
-| `--confirm-external-data` | Allow `--fresh` against external `DATABASE_URL` hosts |
+| Flag                                           | Meaning                                                                  |
+| ---------------------------------------------- | ------------------------------------------------------------------------ |
+| `--fresh`                                      | Provision bundled Postgres/Redis if needed (never drops data by default) |
+| `--confirm-recreate-data --i-accept-data-loss` | Remove **only** the named compose Postgres volume                        |
+| `--confirm-external-data`                      | Allow `--fresh` against external `DATABASE_URL` hosts                    |
 
 See [docs/infrastructure/one-step-deploy.md](../docs/infrastructure/one-step-deploy.md).

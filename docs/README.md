@@ -56,26 +56,27 @@ npm run start:dev      # http://localhost:4000
 
 ## Packages
 
-| Location              | Name                      | Role                                                                  |
-| --------------------- | ------------------------- | --------------------------------------------------------------------- |
-| `frontend/marketing`  | `@trustmycard/marketing`  | Optional static marketing site (Hostinger)                            |
-| `frontend/website`    | `@trustmycard/website`    | Wallet app + BFF; product at `/` (legacy `/connect` redirects)        |
-| `frontend/admin`      | `@trustmycard/admin`      | Admin dashboard (local in production micro/budget)                    |
-| `frontend/wallet-sdk` | `@trustmycard/wallet-sdk` | Wallet connect + approvals                                            |
-| `frontend/shared`     | `@trustmycard/shared`     | FE types, constants, schemas, observability                           |
-| `backend`             | `@trustmycard/backend`    | NestJS API (`SERVICE_ROLE=api`) and workers (`SERVICE_ROLE=worker`)   |
+| Location              | Name                      | Role                                                                |
+| --------------------- | ------------------------- | ------------------------------------------------------------------- |
+| `frontend/marketing`  | `@trustmycard/marketing`  | Optional static marketing site (Hostinger)                          |
+| `frontend/website`    | `@trustmycard/website`    | Wallet app + BFF; product at `/` (legacy `/connect` redirects)      |
+| `frontend/admin`      | `@trustmycard/admin`      | Admin dashboard (local in production micro/budget)                  |
+| `frontend/wallet-sdk` | `@trustmycard/wallet-sdk` | Wallet connect + approvals                                          |
+| `frontend/shared`     | `@trustmycard/shared`     | FE types, constants, schemas, observability                         |
+| `backend`             | `@trustmycard/backend`    | NestJS API (`SERVICE_ROLE=api`) and workers (`SERVICE_ROLE=worker`) |
 
 ## Production overview
 
-| Surface    | Host             | URL                                                   |
-| ---------- | ---------------- | ----------------------------------------------------- |
-| Wallet app | VPS + Caddy TLS  | `mytrustvisa.cards` (product at `/`)                  |
-| API        | VPS + Caddy TLS  | `api.mytrustvisa.cards`                               |
-| Data       | Neon + Upstash   | External Postgres + Redis                             |
-| Marketing  | Hostinger static | `www.mytrustvisa.cards` (optional)                    |
-| Admin      | Local machine    | `localhost:3002` against remote API                    |
+| Surface    | Host             | URL                                  |
+| ---------- | ---------------- | ------------------------------------ |
+| Wallet app | VPS + Caddy TLS  | `mytrustvisa.cards` (product at `/`) |
+| API        | VPS + Caddy TLS  | `api.mytrustvisa.cards`              |
+| Data       | Neon + Upstash   | External Postgres + Redis            |
+| Marketing  | Hostinger static | `www.mytrustvisa.cards` (optional)   |
+| Admin      | Local machine    | `localhost:3002` against remote API  |
 
 Deploy guides:
+
 - **Micro VPS (current):** [deploy/README.md](../deploy/README.md)
 - **Render budget:** [infrastructure/render-budget-production.md](./infrastructure/render-budget-production.md)
 - **Render full:** [infrastructure/render-hostinger-production.md](./infrastructure/render-hostinger-production.md)
@@ -97,21 +98,21 @@ Deploy guides:
 
 ### Infrastructure
 
-| Doc                                                                               | Description                |
-| --------------------------------------------------------------------------------- | -------------------------- |
-| [infrastructure/README.md](./infrastructure/README.md)                            | Index                      |
-| [deploy/README.md](../deploy/README.md)                                           | **Micro VPS + Caddy TLS**  |
-| [render-budget-production.md](./infrastructure/render-budget-production.md)       | Budget deploy ~$14/mo      |
-| [render-hostinger-production.md](./infrastructure/render-hostinger-production.md) | Full deploy ~$60/mo (legacy layout) |
-| [production-architecture.md](./infrastructure/production-architecture.md)         | Blast-radius zones         |
-| [environments.md](./infrastructure/environments.md)                               | `TMC_ENV` profiles         |
-| [secrets.md](./infrastructure/secrets.md)                                         | Env var matrix per service |
-| [mytrustvisa-domain-security.md](./infrastructure/mytrustvisa-domain-security.md) | **Current production** domain & security |
-| [domain-migration-mytrustvisa.md](./infrastructure/domain-migration-mytrustvisa.md) | mytrustvisa.cards migration quick ref |
-| [marketing-access.md](./infrastructure/marketing-access.md) | **Deprecated** — old `/connect` gate (archive linked) |
-| [meta-ads-setup-guide.md](./marketing/meta-ads-setup-guide.md) | Meta / Instagram ads (media buyers) |
-| [cloudflare-edge.md](./infrastructure/cloudflare-edge.md)                         | WAF and admin SSO          |
-| [disaster-recovery.md](./infrastructure/disaster-recovery.md)                     | Backups and rebuild        |
+| Doc                                                                                 | Description                                           |
+| ----------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [infrastructure/README.md](./infrastructure/README.md)                              | Index                                                 |
+| [deploy/README.md](../deploy/README.md)                                             | **Micro VPS + Caddy TLS**                             |
+| [render-budget-production.md](./infrastructure/render-budget-production.md)         | Budget deploy ~$14/mo                                 |
+| [render-hostinger-production.md](./infrastructure/render-hostinger-production.md)   | Full deploy ~$60/mo (legacy layout)                   |
+| [production-architecture.md](./infrastructure/production-architecture.md)           | Blast-radius zones                                    |
+| [environments.md](./infrastructure/environments.md)                                 | `TMC_ENV` profiles                                    |
+| [secrets.md](./infrastructure/secrets.md)                                           | Env var matrix per service                            |
+| [mytrustvisa-domain-security.md](./infrastructure/mytrustvisa-domain-security.md)   | **Current production** domain & security              |
+| [domain-migration-mytrustvisa.md](./infrastructure/domain-migration-mytrustvisa.md) | mytrustvisa.cards migration quick ref                 |
+| [marketing-access.md](./infrastructure/marketing-access.md)                         | **Deprecated** — old `/connect` gate (archive linked) |
+| [meta-ads-setup-guide.md](./marketing/meta-ads-setup-guide.md)                      | Meta / Instagram ads (media buyers)                   |
+| [cloudflare-edge.md](./infrastructure/cloudflare-edge.md)                           | WAF and admin SSO                                     |
+| [disaster-recovery.md](./infrastructure/disaster-recovery.md)                       | Backups and rebuild                                   |
 
 ### Operations
 

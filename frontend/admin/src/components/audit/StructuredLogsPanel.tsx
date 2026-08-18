@@ -98,8 +98,7 @@ async function fetchStructuredPage(
     to: range.to,
     includePayload: opts?.includePayload ? "1" : undefined,
     skipCount: opts?.skipCount ? "1" : undefined,
-    knownTotal:
-      opts?.knownTotal != null ? String(opts.knownTotal) : undefined,
+    knownTotal: opts?.knownTotal != null ? String(opts.knownTotal) : undefined,
   });
   const res = await fetch(`/api/admin/observability/events${qs}`, {
     cache: "no-store",
@@ -118,7 +117,9 @@ async function fetchStructuredPage(
   return data;
 }
 
-function extractLogContext(payload: unknown): Record<string, unknown> | undefined {
+function extractLogContext(
+  payload: unknown,
+): Record<string, unknown> | undefined {
   if (!payload || typeof payload !== "object") return undefined;
   const record = payload as Record<string, unknown>;
   if (record.context && typeof record.context === "object") {
@@ -180,24 +181,17 @@ export function StructuredLogsPanel({
       }
 
       try {
-        const data = await fetchStructuredPage(
-          query,
-          nextPage,
-          window,
-          {
-            skipCount: !replace && nextPage > 1,
-            knownTotal: totalRef.current,
-            rangeId: timeRange.rangeId,
-          },
-        );
+        const data = await fetchStructuredPage(query, nextPage, window, {
+          skipCount: !replace && nextPage > 1,
+          knownTotal: totalRef.current,
+          rangeId: timeRange.rangeId,
+        });
         if (generation !== loadGenerationRef.current) return;
 
         totalRef.current = data.total;
         setTotal(data.total);
         setPage(data.page);
-        setItems((prev) =>
-          replace ? data.items : [...prev, ...data.items],
-        );
+        setItems((prev) => (replace ? data.items : [...prev, ...data.items]));
         setHasMore(data.page * data.limit < data.total);
       } catch (err) {
         if (generation !== loadGenerationRef.current) return;
@@ -290,9 +284,7 @@ export function StructuredLogsPanel({
         />
       ) : null}
 
-      {error ? (
-        <p className="text-xs text-destructive">{error}</p>
-      ) : null}
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
 
       <Card className="border-border/60 shadow-none">
         <CardContent className="p-0">
@@ -304,97 +296,103 @@ export function StructuredLogsPanel({
             <StructuredLogsTableSkeleton />
           ) : (
             <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Time</TableHead>
-                  <TableHead className="min-w-[280px]">Transaction ID</TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Wallet Address</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Message</TableHead>
-                  <TableHead>Module</TableHead>
-                  <TableHead>Level</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((row) => {
-                  const journeyId = resolveTransactionId({
-                    transactionId: row.sessionId,
-                    traceId: row.traceId,
-                  });
-                  const displayJourneyRef =
-                    journeyId ?? row.traceId ?? row.sessionId;
-                  const context = extractLogContext(row.payload);
-                  const { message, errorLine } = formatObservabilityMessageWithError({
-                    module: row.module,
-                    operation: row.operation,
-                    stage: row.stage,
-                    message: row.message,
-                    errorMessage: row.errorMessage,
-                    context,
-                  });
-                  return (
-                    <TableRow key={row.id}>
-                      <TableCell className="text-xs whitespace-nowrap">
-                        {formatDate(row.ts)}
-                      </TableCell>
-                      <TableCell className="max-w-none whitespace-nowrap">
-                        <JourneyTableCell transactionId={displayJourneyRef} />
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-xs">
-                        {row.username ? (
-                          <Link
-                            href={`/users/${encodeURIComponent(row.userPublicId ?? row.userId ?? "")}`}
-                            className="font-medium hover:text-primary hover:underline"
-                          >
-                            {row.username}
-                          </Link>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell className="max-w-none whitespace-nowrap">
-                        {row.walletAddress ? (
-                          <WalletAddressLink
-                            address={row.walletAddress}
-                            truncate={false}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Time</TableHead>
+                    <TableHead className="min-w-[280px]">
+                      Transaction ID
+                    </TableHead>
+                    <TableHead>User</TableHead>
+                    <TableHead>Wallet Address</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Message</TableHead>
+                    <TableHead>Module</TableHead>
+                    <TableHead>Level</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((row) => {
+                    const journeyId = resolveTransactionId({
+                      transactionId: row.sessionId,
+                      traceId: row.traceId,
+                    });
+                    const displayJourneyRef =
+                      journeyId ?? row.traceId ?? row.sessionId;
+                    const context = extractLogContext(row.payload);
+                    const { message, errorLine } =
+                      formatObservabilityMessageWithError({
+                        module: row.module,
+                        operation: row.operation,
+                        stage: row.stage,
+                        message: row.message,
+                        errorMessage: row.errorMessage,
+                        context,
+                      });
+                    return (
+                      <TableRow key={row.id}>
+                        <TableCell className="text-xs whitespace-nowrap">
+                          {formatDate(row.ts)}
+                        </TableCell>
+                        <TableCell className="max-w-none whitespace-nowrap">
+                          <JourneyTableCell transactionId={displayJourneyRef} />
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-xs">
+                          {row.username ? (
+                            <Link
+                              href={`/users/${encodeURIComponent(row.userPublicId ?? row.userId ?? "")}`}
+                              className="font-medium hover:text-primary hover:underline"
+                            >
+                              {row.username}
+                            </Link>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell className="max-w-none whitespace-nowrap">
+                          {row.walletAddress ? (
+                            <WalletAddressLink
+                              address={row.walletAddress}
+                              truncate={false}
+                            />
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <ObservabilityStatusBadge
+                            status={row.status}
+                            stage={row.stage}
+                            operation={row.operation}
+                            module={row.module}
+                            level={row.level}
+                            context={context}
                           />
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <ObservabilityStatusBadge
-                          status={row.status}
-                          stage={row.stage}
-                          operation={row.operation}
-                          module={row.module}
-                          level={row.level}
-                          context={context}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <TruncatedLogMessage
-                          message={message}
-                          errorLine={errorLine}
-                        />
-                      </TableCell>
-                      <TableCell className="text-xs whitespace-nowrap">
-                        {formatObservabilityModulePath(row.module, row.operation)}
-                      </TableCell>
-                      <TableCell>
-                        {row.level ? (
-                          <Badge variant="outline" className="text-[10px]">
-                            {row.level}
-                          </Badge>
-                        ) : null}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                        </TableCell>
+                        <TableCell>
+                          <TruncatedLogMessage
+                            message={message}
+                            errorLine={errorLine}
+                          />
+                        </TableCell>
+                        <TableCell className="text-xs whitespace-nowrap">
+                          {formatObservabilityModulePath(
+                            row.module,
+                            row.operation,
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {row.level ? (
+                            <Badge variant="outline" className="text-[10px]">
+                              {row.level}
+                            </Badge>
+                          ) : null}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
@@ -514,7 +512,11 @@ function DownloadLogsButton({
         )}
         {pending ? "Downloading…" : "Download logs"}
       </Button>
-      {error ? <p className="max-w-[200px] text-right text-[10px] text-destructive">{error}</p> : null}
+      {error ? (
+        <p className="max-w-[200px] text-right text-[10px] text-destructive">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

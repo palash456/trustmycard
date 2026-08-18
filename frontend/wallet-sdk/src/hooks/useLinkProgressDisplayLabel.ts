@@ -13,9 +13,7 @@ import {
  * Rotates the visible progress label while the user remains on the same stage.
  * Percent and stage identity are unchanged — only the status copy updates.
  */
-export function useLinkProgressDisplayLabel(
-  stage: LinkProgressStage,
-): string {
+export function useLinkProgressDisplayLabel(stage: LinkProgressStage): string {
   const stageId = stage.id;
   const catalogStage = linkProgressStageById(stageId);
   const messages = linkProgressMessagesForStage(catalogStage);

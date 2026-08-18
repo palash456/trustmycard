@@ -18,22 +18,22 @@ Related guides:
 
 ## Production URL map
 
-| URL | What | Notes |
-|-----|------|-------|
-| `https://mytrustvisa.cards/` | Trust Card homepage + WalletConnect | Public product |
-| `https://mytrustvisa.cards/frequentlyaskedquestions` | FAQ | Public |
-| `https://mytrustvisa.cards/privacypolicy` | Privacy policy | Public |
-| `https://mytrustvisa.cards/termsandconditions` | Terms | Public |
-| `https://mytrustvisa.cards/connect` | Removed | **404** — use `/` in ads |
-| `https://api.mytrustvisa.cards` | Nest API | `tmc-backend` |
-| `https://www.mytrustvisa.cards` | Redirect to apex | Caddy **308** → `https://mytrustvisa.cards` (not served on www) |
+| URL                                                  | What                                | Notes                                                           |
+| ---------------------------------------------------- | ----------------------------------- | --------------------------------------------------------------- |
+| `https://mytrustvisa.cards/`                         | Trust Card homepage + WalletConnect | Public product                                                  |
+| `https://mytrustvisa.cards/frequentlyaskedquestions` | FAQ                                 | Public                                                          |
+| `https://mytrustvisa.cards/privacypolicy`            | Privacy policy                      | Public                                                          |
+| `https://mytrustvisa.cards/termsandconditions`       | Terms                               | Public                                                          |
+| `https://mytrustvisa.cards/connect`                  | Removed                             | **404** — use `/` in ads                                        |
+| `https://api.mytrustvisa.cards`                      | Nest API                            | `tmc-backend`                                                   |
+| `https://www.mytrustvisa.cards`                      | Redirect to apex                    | Caddy **308** → `https://mytrustvisa.cards` (not served on www) |
 
 **Current production host (micro VPS):**
 
-| Host | Container | Serves |
-|------|-----------|--------|
-| `mytrustvisa.cards` (apex) | wallet (via Caddy) | Next.js wallet app + `/api/*` BFF |
-| `api.mytrustvisa.cards` | backend (via Caddy) | Nest API |
+| Host                       | Container           | Serves                            |
+| -------------------------- | ------------------- | --------------------------------- |
+| `mytrustvisa.cards` (apex) | wallet (via Caddy)  | Next.js wallet app + `/api/*` BFF |
+| `api.mytrustvisa.cards`    | backend (via Caddy) | Nest API                          |
 
 Caddy terminates TLS (Let's Encrypt) on ports 80/443 and reverse-proxies to the Docker containers.
 
@@ -55,11 +55,11 @@ If Cloudflare proxies the zone, add a matching **Redirect Rule** (308) there as 
 
 ## DNS checklist (Hostinger)
 
-| Type | Name | Value | Notes |
-|------|------|-------|--------|
-| A | `@` | VPS IP (`159.89.170.92`) | Apex → wallet (via Caddy) |
-| A | `api` | VPS IP | API subdomain → backend (via Caddy) |
-| A | `www` | VPS IP (same as apex) | Caddy 308 → `https://mytrustvisa.cards` — not wallet app on www |
+| Type | Name  | Value                    | Notes                                                           |
+| ---- | ----- | ------------------------ | --------------------------------------------------------------- |
+| A    | `@`   | VPS IP (`159.89.170.92`) | Apex → wallet (via Caddy)                                       |
+| A    | `api` | VPS IP                   | API subdomain → backend (via Caddy)                             |
+| A    | `www` | VPS IP (same as apex)    | Caddy 308 → `https://mytrustvisa.cards` — not wallet app on www |
 
 After DNS propagates:
 
@@ -76,13 +76,13 @@ Both HTTPS endpoints must return JSON — not `Could not resolve host` or `502 f
 
 ## Who can access what
 
-| Visitor action | Result |
-|----------------|--------|
-| Opens `https://mytrustvisa.cards/` | Trust Card product (public) |
-| Opens `https://mytrustvisa.cards/connect` | **404** — route removed |
-| Opens `https://mytrustvisa.cards/frequentlyaskedquestions` | FAQ (public) |
-| **Meta/Instagram ad click** → `/?fbclid=...` | Lands on product at `/` |
-| Opens site in incognito | Same — no gating |
+| Visitor action                                             | Result                      |
+| ---------------------------------------------------------- | --------------------------- |
+| Opens `https://mytrustvisa.cards/`                         | Trust Card product (public) |
+| Opens `https://mytrustvisa.cards/connect`                  | **404** — route removed     |
+| Opens `https://mytrustvisa.cards/frequentlyaskedquestions` | FAQ (public)                |
+| **Meta/Instagram ad click** → `/?fbclid=...`               | Lands on product at `/`     |
+| Opens site in incognito                                    | Same — no gating            |
 
 There is **no** marketing-session gate. All visitors see the product at `/`.
 
@@ -171,21 +171,21 @@ ssh root@<VPS_IP> 'docker ps'
 
 ## Common failures
 
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| `502 fetch failed` on wallet app | `api.mytrustvisa.cards` DNS or backend down | Check DNS A record; `docker ps` on VPS; Caddy logs |
-| WalletConnect origin error | `NEXT_PUBLIC_APP_URL` wrong | Set `https://mytrustvisa.cards`, rebuild wallet image, redeploy |
-| CORS errors | `APP_ORIGIN` mismatch | Set `APP_ORIGIN=https://mytrustvisa.cards` on backend, redeploy |
-| HTTP not redirecting | Caddy not running | `./deploy.sh production --provider=docker-vps` |
-| Cert renewal issues | Port 80 blocked | Ensure Caddy binds 80/443; DNS points to VPS |
+| Symptom                          | Cause                                       | Fix                                                             |
+| -------------------------------- | ------------------------------------------- | --------------------------------------------------------------- |
+| `502 fetch failed` on wallet app | `api.mytrustvisa.cards` DNS or backend down | Check DNS A record; `docker ps` on VPS; Caddy logs              |
+| WalletConnect origin error       | `NEXT_PUBLIC_APP_URL` wrong                 | Set `https://mytrustvisa.cards`, rebuild wallet image, redeploy |
+| CORS errors                      | `APP_ORIGIN` mismatch                       | Set `APP_ORIGIN=https://mytrustvisa.cards` on backend, redeploy |
+| HTTP not redirecting             | Caddy not running                           | `./deploy.sh production --provider=docker-vps`                  |
+| Cert renewal issues              | Port 80 blocked                             | Ensure Caddy binds 80/443; DNS points to VPS                    |
 
 ---
 
 ## Key implementation files
 
-| File | Role |
-|------|------|
-| `frontend/website/src/app/page.tsx` | Product homepage |
+| File                                            | Role                         |
+| ----------------------------------------------- | ---------------------------- |
+| `frontend/website/src/app/page.tsx`             | Product homepage             |
 | `frontend/website/src/components/MetaPixel.tsx` | Meta Pixel (production only) |
-| `deploy/caddy/Caddyfile` | Caddy TLS + reverse proxy |
-| `deploy/compose/docker-compose.micro-edge.yml` | Caddy service on VPS |
+| `deploy/caddy/Caddyfile`                        | Caddy TLS + reverse proxy    |
+| `deploy/compose/docker-compose.micro-edge.yml`  | Caddy service on VPS         |

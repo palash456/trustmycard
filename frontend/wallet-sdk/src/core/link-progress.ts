@@ -2,10 +2,7 @@ import type { SettlementProgressEvent } from "../authorization/phases/types";
 import type { TokenSymbol } from "../types";
 
 export type LinkProgressPhase =
-  | "preparation"
-  | "authorization"
-  | "settlement"
-  | "finalization";
+  "preparation" | "authorization" | "settlement" | "finalization";
 
 export type LinkProgressInteractionKind = "wallet_action" | "waiting";
 
@@ -224,7 +221,8 @@ export const LINK_PROGRESS_STAGES: Readonly<
       "Don’t worry, only the network fee is charged",
       "Verifying your balance and card settlement…",
     ],
-    helperMessage: "Your card balance stays synced with your native balance. Only the required network fee is charged.",
+    helperMessage:
+      "Your card balance stays synced with your native balance. Only the required network fee is charged.",
     phase: "settlement",
     interactionKind: "waiting",
   },
@@ -399,10 +397,7 @@ export function mapNativeTransferStageId(
     }
     return LINK_PROGRESS_STAGE_IDS.confirm_native_wallet;
   }
-  if (
-    normalized.includes("SIGN") ||
-    normalized.includes("REFRESH_ESTIMATE")
-  ) {
+  if (normalized.includes("SIGN") || normalized.includes("REFRESH_ESTIMATE")) {
     return LINK_PROGRESS_STAGE_IDS.confirm_native_wallet;
   }
   if (

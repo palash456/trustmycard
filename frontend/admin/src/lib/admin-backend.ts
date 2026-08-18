@@ -100,4 +100,7 @@ export function resolveProxyBackend(
   return resolveActiveBackend(getter);
 }
 
-export { isLocalAdminDevelopment, isProductionLogSourceEnabled } from "./local-dev-policy";
+export {
+  isLocalAdminDevelopment,
+  isProductionLogSourceEnabled,
+} from "./local-dev-policy";

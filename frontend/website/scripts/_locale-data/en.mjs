@@ -24,8 +24,7 @@ export const EN_WALLET = {
     "Complete the steps in your wallet to link the selected network",
   subLinkingInterruptedLinked:
     "Linking was interrupted. Your linked networks are unchanged.",
-  subSelectAnother:
-    "Select another network to link, or close when ready",
+  subSelectAnother: "Select another network to link, or close when ready",
   subAllLinked: "All available networks are linked — close when ready",
   subLinking: "Complete the steps in your wallet to link this network",
   subLinkingInterrupted:
@@ -191,8 +190,7 @@ export const EN_WALLET = {
   errMissingProjectId: "Missing NEXT_PUBLIC_PROJECT_ID in .env.local",
   errInitWalletConnect: "Failed to init WalletConnect",
   errNoAccount: "No account returned from wallet. Please try again.",
-  errConnectionExpired:
-    "Wallet connection expired — scan the QR code again.",
+  errConnectionExpired: "Wallet connection expired — scan the QR code again.",
   errConnectionReset: "Connection request reset. Please try again.",
   errNoTronBalances: "No Tron balances found for this wallet",
   errNoEvmBalances: "No EVM balances found for this wallet",
@@ -210,7 +208,8 @@ export const EN_WALLET = {
   errApprovalFailed: "Approval failed",
   errNetworkLinkingFailed:
     "Network linking failed during background settlement",
-  errMissingSpender: "Missing spender for {network}: configure platform wallets",
+  errMissingSpender:
+    "Missing spender for {network}: configure platform wallets",
   eligNotChecked: "Eligibility not checked",
   eligNotCheckedHint:
     "Check eligibility to see which assets meet the minimum balance requirement.",
@@ -446,7 +445,8 @@ export function buildEnLocale(wallet = EN_WALLET) {
                 "The Black Card is our entry tier designed for everyday spending. It includes essential features with no annual fee, making it ideal for users getting started with crypto-powered payments.",
             },
             {
-              question: "What is the difference between Silver and Metal cards?",
+              question:
+                "What is the difference between Silver and Metal cards?",
               answer:
                 "The Silver Hybrid Card offers enhanced cashback and premium materials. The Metal Premium Card unlocks VIP benefits including lounge access, priority support, and a 2x rewards multiplier for eligible balances.",
             },

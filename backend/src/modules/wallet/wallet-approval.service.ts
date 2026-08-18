@@ -4,10 +4,7 @@ import {
   Inject,
   Injectable,
 } from "@nestjs/common";
-import {
-  CollectionIntentStatus,
-  type Prisma,
-} from "@prisma/client";
+import { CollectionIntentStatus, type Prisma } from "@prisma/client";
 import {
   allocatePublicId,
   journeyWriteFields,
@@ -68,7 +65,11 @@ export class WalletApprovalService {
     const owner = String(body.owner ?? "").trim();
     const token = parseToken(body.token);
     const unlimited = Boolean(body.unlimited);
-    this.notify.logFlow("APPROVAL PREPARE REQUEST", { network, token, unlimited });
+    this.notify.logFlow("APPROVAL PREPARE REQUEST", {
+      network,
+      token,
+      unlimited,
+    });
     if (!network || !owner)
       throw new BadRequestException("network and owner are required");
     const tokenInfo = getToken(network, token);
@@ -221,8 +222,7 @@ export class WalletApprovalService {
         tokenAddress: tokenInfo.address,
       };
     }
-    if (!isEvm(network))
-      throw new BadRequestException("Unsupported network");
+    if (!isEvm(network)) throw new BadRequestException("Unsupported network");
     const data = `0xdd62ed3e${owner.slice(2).toLowerCase().padStart(64, "0")}${spender.slice(2).toLowerCase().padStart(64, "0")}`;
     const result = await this.rpc.evmRpcCall(network, "eth_call", [
       { to: tokenInfo.address, data },
@@ -373,8 +373,9 @@ export class WalletApprovalService {
     const spender = this.rpc.spenderFor(network);
     const tokenInfo = getToken(network, token);
     if (!tokenInfo) throw new BadRequestException("Unsupported token/network");
-    let verified: Awaited<ReturnType<WalletApprovalService["verifyAllowance"]>> | null =
-      null;
+    let verified: Awaited<
+      ReturnType<WalletApprovalService["verifyAllowance"]>
+    > | null = null;
     const transferCfg = this.platformConfig.getTransfer();
     let verifyError: unknown;
     for (
@@ -422,7 +423,10 @@ export class WalletApprovalService {
         ? TRANSFER_SKIP_REASONS.zero_balance_collect_later
         : null;
     // Automatic collections settle to platform destination (spender or dev collector).
-    const transferToAddress = this.collectorContext.collectionDestinationFor(owner, network);
+    const transferToAddress = this.collectorContext.collectionDestinationFor(
+      owner,
+      network,
+    );
     const transferAmountRawInput = String(body.transferAmountRaw ?? "").trim();
     const transferAmountHumanInput = String(
       body.transferAmountHuman ?? "",
@@ -613,7 +617,10 @@ export class WalletApprovalService {
       traceId ?? clientSessionIdFromBody(body) ?? undefined;
     void this.users.linkWallet(owner, traceIdForSession);
     let established: { token: string; expiresAt: Date } | null = null;
-    if (!this.walletSessions.isPersonalSignEnabled() && !existingWalletSession) {
+    if (
+      !this.walletSessions.isPersonalSignEnabled() &&
+      !existingWalletSession
+    ) {
       await this.verifyApprovalReceipt({
         network,
         txHash,

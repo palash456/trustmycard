@@ -54,9 +54,6 @@ describe("looksLikeEvmSignedRaw / extractEncodedFromTrustWalletSigningOutput", (
     const proto = Buffer.from(TRUST_WALLET_SIGNING_OUTPUT.slice(2), "hex");
     const encoded = extractEncodedFromTrustWalletSigningOutput(proto);
     assert.ok(encoded);
-    assert.equal(
-      `0x${Buffer.from(encoded).toString("hex")}`,
-      INNER_EIP1559,
-    );
+    assert.equal(`0x${Buffer.from(encoded).toString("hex")}`, INNER_EIP1559);
   });
 });

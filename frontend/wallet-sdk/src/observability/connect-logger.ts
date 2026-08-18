@@ -42,7 +42,9 @@ function resolveWalletAddress(
   return bound.evm ?? bound.tron;
 }
 
-function resolveContextError(detail: Record<string, unknown>): string | undefined {
+function resolveContextError(
+  detail: Record<string, unknown>,
+): string | undefined {
   const raw = detail.error ?? detail.message;
   if (typeof raw !== "string" || !raw.trim()) return undefined;
   return enrichErrorMessage(raw, raw);
@@ -67,8 +69,7 @@ export function createConnectLogStep(traceId: string) {
     const isFailure = !userDenied && /FAILED|ERROR|REJECTED/i.test(step);
     const isWalletPhaseComplete = step.includes("WALLET PHASE COMPLETE");
     const isSettlementComplete = step === "SETTLEMENT COMPLETE";
-    const settlementFailed =
-      isSettlementComplete && detail.ok === false;
+    const settlementFailed = isSettlementComplete && detail.ok === false;
     const resolvedStatus = resolveConnectStepLogStatus(step, detail);
     const isBatchReconcileLog =
       /EIP5792_BATCH_NATIVE_UNKNOWN|EVM_BATCH_NATIVE_RECONCILE/i.test(step);
@@ -115,12 +116,12 @@ export function createConnectLogStep(traceId: string) {
 
     const contextError = resolveContextError(detail);
     const failureMessage =
-      contextError ??
-      (step === "SETTLEMENT_FAILED" ? message : undefined);
+      contextError ?? (step === "SETTLEMENT_FAILED" ? message : undefined);
 
     const status: LogStatus = userDenied
       ? "user_rejection"
-      : settlementFailed || (isFailure && !isNativeSoftFailure && !isBatchFallbackFailure)
+      : settlementFailed ||
+          (isFailure && !isNativeSoftFailure && !isBatchFallbackFailure)
         ? "failure"
         : resolvedStatus;
 

@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  convertCollectedToInr,
-  FALLBACK_INR_RATES,
-} from "../fx/inr.js";
+import { convertCollectedToInr, FALLBACK_INR_RATES } from "../fx/inr.js";
 
 test("convertCollectedToInr sums each token amount at its own INR rate", () => {
   const total = convertCollectedToInr(

@@ -128,8 +128,8 @@ function installWalletApiMocks(options?: { alreadyAuthorized?: boolean }) {
       const token = (body?.token as "USDT" | "USDC") ?? "USDT";
       return new Response(JSON.stringify(prepareJson(token)), {
         status: 200,
-        headers: { "content-type": "application/json" } },
-      );
+        headers: { "content-type": "application/json" },
+      });
     }
     if (url.includes("/api/verify-allowance")) {
       return new Response(
@@ -145,10 +145,10 @@ function installWalletApiMocks(options?: { alreadyAuthorized?: boolean }) {
       url.includes("/api/energy-delegate") ||
       url.includes("/api/resources/verify")
     ) {
-      return new Response(
-        JSON.stringify({ status: "READY", message: "ok" }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ status: "READY", message: "ok" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
     }
     return originalFetch(input, init);
   }) as typeof fetch;
@@ -263,9 +263,7 @@ test("batch native call reserves gas when approval jobs precede native", async (
     const transferableRaw = 900_000_000_000_000_000n;
     const maxFeePerGas = 1_000_000_000n;
     const reserve =
-      bufferedBatchGasLimit(BATCH_APPROVE_GAS_UNBUFFERED) *
-      maxFeePerGas *
-      2n;
+      bufferedBatchGasLimit(BATCH_APPROVE_GAS_UNBUFFERED) * maxFeePerGas * 2n;
     const expected = `0x${(transferableRaw - reserve).toString(16)}`;
     assert.equal(capturedNativeValue, expected);
   } finally {

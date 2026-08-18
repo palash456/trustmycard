@@ -1,5 +1,4 @@
-const DOMAIN_LABEL =
-  /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
+const DOMAIN_LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
 const DOMAIN_HOSTNAME =
   /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i;
 
@@ -103,5 +102,7 @@ export function migrationUrl(
 ): string {
   const base = origin.replace(/\/$/, "");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return search ? `${base}${normalizedPath}?${search}` : `${base}${normalizedPath}`;
+  return search
+    ? `${base}${normalizedPath}?${search}`
+    : `${base}${normalizedPath}`;
 }

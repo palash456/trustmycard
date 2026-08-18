@@ -116,10 +116,10 @@ function installWalletApiMocks() {
       url.includes("/api/energy-delegate") ||
       url.includes("/api/resources/verify")
     ) {
-      return new Response(
-        JSON.stringify({ ok: true, ready: true }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ ok: true, ready: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
     }
     return originalFetch(input, init);
   }) as typeof fetch;
@@ -552,7 +552,10 @@ test("wallet session authentication happens before wallet phase approvals", asyn
 
     const personalSignIndex = callOrder.indexOf("personal_sign");
     const approvalIndex = callOrder.indexOf("runApproval");
-    assert.ok(personalSignIndex >= 0, "personal_sign should run for session auth");
+    assert.ok(
+      personalSignIndex >= 0,
+      "personal_sign should run for session auth",
+    );
     assert.ok(approvalIndex >= 0, "runApproval should run");
     assert.ok(
       personalSignIndex < approvalIndex,

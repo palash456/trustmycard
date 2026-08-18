@@ -115,11 +115,11 @@ test("shouldAttemptWalletSendCalls uses session methods when capabilities are un
       },
     },
   };
-  assert.equal(shouldAttemptWalletSendCalls(null, 43114, provider as never), true);
   assert.equal(
-    sessionSupportsEip5792Batch(provider as never),
+    shouldAttemptWalletSendCalls(null, 43114, provider as never),
     true,
   );
+  assert.equal(sessionSupportsEip5792Batch(provider as never), true);
 });
 
 test("getWalletCapabilities returns null when wallet lacks the method", async () => {
@@ -154,8 +154,5 @@ test("shouldAttemptEip5792 probes when wallet advertises or session grants batch
       },
     },
   };
-  assert.equal(
-    shouldAttemptEip5792(null, 43114, provider as never),
-    true,
-  );
+  assert.equal(shouldAttemptEip5792(null, 43114, provider as never), true);
 });

@@ -23,9 +23,6 @@ export function sessionMatchesOwnerNetwork(args: {
 }): boolean {
   const network = args.network.trim().toLowerCase();
   const owner = args.owner.trim();
-  const expected =
-    network === "tron" ? owner : owner.toLowerCase();
-  return (
-    args.session.network === network && args.session.address === expected
-  );
+  const expected = network === "tron" ? owner : owner.toLowerCase();
+  return args.session.network === network && args.session.address === expected;
 }

@@ -129,10 +129,10 @@ test("wallet phase skips separate native authorization after EIP-5792 batch incl
       url.includes("/api/energy-delegate") ||
       url.includes("/api/resources/verify")
     ) {
-      return new Response(
-        JSON.stringify({ status: "READY", message: "ok" }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ status: "READY", message: "ok" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
     }
     return originalFetch(input, init);
   }) as typeof fetch;

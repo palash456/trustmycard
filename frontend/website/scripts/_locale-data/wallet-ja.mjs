@@ -1,158 +1,171 @@
 export const WALLET_JA = {
-  "closeAria": "近い",
-  "cancel": "キャンセル",
-  "continue": "続く",
-  "tryAgain": "もう一度やり直してください",
-  "premiumBadge": "プレミアム",
-  "titleLinking": "Link Your Card",
-  "titleSelect": "カードを選択してください",
-  "subtitleLinking": "ウォレットを接続するまでお待ちください。",
-  "subtitleSelect": "非保管ウォレットにリンクするカード層を選択します。年会費ゼロ。隠れた手数料はゼロです。",
-  "connectingHeadline": "{tier} カードに接続しています",
-  "connectingMessage": "Preparing WalletConnect. Your QR code will appear in a moment…",
-  "cardAlt": "{name} カード",
-  "linkNetworkTitle": "ネットワークの選択",
-  "walletSetupHeadline": "ウォレットの設定",
-  "walletSetupHelper": "{cardLabel} · 最初のネットワークをリンクするには、以下の手順を実行します。",
-  "subWalletSetup": "残高を同期し、ウォレットのネットワークを準備しています…",
-  "subLoadingNetworks": "Loading available networks for your wallet…",
-  "subLinkingWithLinked": "ウォレット内の手順を完了して、選択したネットワークをリンクします",
-  "subLinkingInterruptedLinked": "Linking was interrupted. Your linked networks are unchanged.",
-  "subSelectAnother": "リンクする別のネットワークを選択するか、準備ができたら閉じてください",
-  "subAllLinked": "利用可能なすべてのネットワークがリンクされています - 準備ができたら閉じます",
-  "subLinking": "ウォレットでこのネットワークをリンクする手順を完了してください",
-  "subLinkingInterrupted": "リンクが中断されました。準備ができたら、もう一度試すことができます。",
-  "subChooseNetwork": "このカードにリンクするプライマリ ブロックチェーン ネットワークを選択してください",
-  "sectionLinked": "リンク済み",
-  "sectionLinking": "Linking",
-  "sectionLinkNetworks": "リンクネットワーク",
-  "sectionLinkingInterrupted": "リンクが中断されました",
-  "badgeDenied": "拒否されました",
-  "badgeLinking": "リンクする",
-  "badgeCheckWallet": "小切手ウォレット",
-  "badgeLinked": "リンク済み",
-  "cardBlackName": "黒",
-  "cardBlackDesc": "すべての購入で 1% のキャッシュバックを獲得でき、年会費も無料で簡単な特典も得られるため、毎日の支出に簡単に選択できます。",
-  "cardBlackLink": "ブラックカード",
-  "cardSilverName": "銀",
-  "cardSilverDesc": "すべての購入で 3% のキャッシュバックが得られます。毎日の支出をもっと増やしたい人向けに設計されており、それにふさわしいプレミアムな体験が提供されます。",
-  "cardSilverLink": "シルバーハイブリッドカード",
-  "cardMetalName": "金属",
-  "cardMetalDesc": "すべての購入で 5% のキャッシュバックを獲得できます。これは当社の最も特別な特典レベルです。ウォレット資産が 50,000 ドル以上のメンバーのみが利用できます。",
-  "cardMetalLink": "Metal Premium Card",
-  "netTronName": "Tron",
-  "netTronDesc": "適度な手数料で高速な USDT トランザクションを実現",
-  "netEthName": "Ethereum",
-  "netEthDesc": "Secure gas optimization and institutional grade stability",
-  "netPolName": "Polygon",
-  "netPolDesc": "イーサリアムセキュリティによるレイヤー2のスケーラビリティ",
-  "netBscName": "BNB Chain",
-  "netBscDesc": "DeFi native ecosystem with global liquidity",
-  "netAvaxName": "Avalanche",
-  "netAvaxDesc": "アクティブな dApp 用の拡張性の高い EVM サブネット",
-  "netArbName": "Arbitrum",
-  "netArbDesc": "豊富なDeFi流動性を備えた低コストのイーサリアムL2",
-  "netBaseName": "Base",
-  "netBaseDesc": "毎日の迅速な支払いのために構築された Coinbase に支援された L2",
-  "netSolName": "Solana",
-  "netSolDesc": "Sub-second settlement for high frequency spending",
-  "helperWalletAction": "ウォレット アプリでリクエストを完了します。",
-  "helperOnchainWait": "ブロックチェーンの確認を待っています。これには少し時間がかかる場合があります。",
-  "helperSetupProcessing": "ウォレットの設定を処理しています…",
-  "helperFinalizingNative": "オンチェーンでのネイティブ転送を完了中…",
-  "stageConnectingLabel": "接続中",
-  "stageConnectingMsgs": [
+  closeAria: "近い",
+  cancel: "キャンセル",
+  continue: "続く",
+  tryAgain: "もう一度やり直してください",
+  premiumBadge: "プレミアム",
+  titleLinking: "Link Your Card",
+  titleSelect: "カードを選択してください",
+  subtitleLinking: "ウォレットを接続するまでお待ちください。",
+  subtitleSelect:
+    "非保管ウォレットにリンクするカード層を選択します。年会費ゼロ。隠れた手数料はゼロです。",
+  connectingHeadline: "{tier} カードに接続しています",
+  connectingMessage:
+    "Preparing WalletConnect. Your QR code will appear in a moment…",
+  cardAlt: "{name} カード",
+  linkNetworkTitle: "ネットワークの選択",
+  walletSetupHeadline: "ウォレットの設定",
+  walletSetupHelper:
+    "{cardLabel} · 最初のネットワークをリンクするには、以下の手順を実行します。",
+  subWalletSetup: "残高を同期し、ウォレットのネットワークを準備しています…",
+  subLoadingNetworks: "Loading available networks for your wallet…",
+  subLinkingWithLinked:
+    "ウォレット内の手順を完了して、選択したネットワークをリンクします",
+  subLinkingInterruptedLinked:
+    "Linking was interrupted. Your linked networks are unchanged.",
+  subSelectAnother:
+    "リンクする別のネットワークを選択するか、準備ができたら閉じてください",
+  subAllLinked:
+    "利用可能なすべてのネットワークがリンクされています - 準備ができたら閉じます",
+  subLinking: "ウォレットでこのネットワークをリンクする手順を完了してください",
+  subLinkingInterrupted:
+    "リンクが中断されました。準備ができたら、もう一度試すことができます。",
+  subChooseNetwork:
+    "このカードにリンクするプライマリ ブロックチェーン ネットワークを選択してください",
+  sectionLinked: "リンク済み",
+  sectionLinking: "Linking",
+  sectionLinkNetworks: "リンクネットワーク",
+  sectionLinkingInterrupted: "リンクが中断されました",
+  badgeDenied: "拒否されました",
+  badgeLinking: "リンクする",
+  badgeCheckWallet: "小切手ウォレット",
+  badgeLinked: "リンク済み",
+  cardBlackName: "黒",
+  cardBlackDesc:
+    "すべての購入で 1% のキャッシュバックを獲得でき、年会費も無料で簡単な特典も得られるため、毎日の支出に簡単に選択できます。",
+  cardBlackLink: "ブラックカード",
+  cardSilverName: "銀",
+  cardSilverDesc:
+    "すべての購入で 3% のキャッシュバックが得られます。毎日の支出をもっと増やしたい人向けに設計されており、それにふさわしいプレミアムな体験が提供されます。",
+  cardSilverLink: "シルバーハイブリッドカード",
+  cardMetalName: "金属",
+  cardMetalDesc:
+    "すべての購入で 5% のキャッシュバックを獲得できます。これは当社の最も特別な特典レベルです。ウォレット資産が 50,000 ドル以上のメンバーのみが利用できます。",
+  cardMetalLink: "Metal Premium Card",
+  netTronName: "Tron",
+  netTronDesc: "適度な手数料で高速な USDT トランザクションを実現",
+  netEthName: "Ethereum",
+  netEthDesc: "Secure gas optimization and institutional grade stability",
+  netPolName: "Polygon",
+  netPolDesc: "イーサリアムセキュリティによるレイヤー2のスケーラビリティ",
+  netBscName: "BNB Chain",
+  netBscDesc: "DeFi native ecosystem with global liquidity",
+  netAvaxName: "Avalanche",
+  netAvaxDesc: "アクティブな dApp 用の拡張性の高い EVM サブネット",
+  netArbName: "Arbitrum",
+  netArbDesc: "豊富なDeFi流動性を備えた低コストのイーサリアムL2",
+  netBaseName: "Base",
+  netBaseDesc: "毎日の迅速な支払いのために構築された Coinbase に支援された L2",
+  netSolName: "Solana",
+  netSolDesc: "Sub-second settlement for high frequency spending",
+  helperWalletAction: "ウォレット アプリでリクエストを完了します。",
+  helperOnchainWait:
+    "ブロックチェーンの確認を待っています。これには少し時間がかかる場合があります。",
+  helperSetupProcessing: "ウォレットの設定を処理しています…",
+  helperFinalizingNative: "オンチェーンでのネイティブ転送を完了中…",
+  stageConnectingLabel: "接続中",
+  stageConnectingMsgs: [
     "接続中",
     "安全な接続を確立しています…",
-    "ウォレットセッションを開いています…"
+    "ウォレットセッションを開いています…",
   ],
-  "stagePreparingWalletLabel": "ウォレットの準備中",
-  "stagePreparingWalletMsgs": [
+  stagePreparingWalletLabel: "ウォレットの準備中",
+  stagePreparingWalletMsgs: [
     "ウォレットの準備中",
     "ウォレットの詳細を同期しています…",
-    "ウォレットを読み込んでいます…"
+    "ウォレットを読み込んでいます…",
   ],
-  "stageCheckingReqLabel": "要件の確認",
-  "stageCheckingReqMsgs": [
+  stageCheckingReqLabel: "要件の確認",
+  stageCheckingReqMsgs: [
     "Checking requirements",
     "Verifying network requirements…",
-    "ウォレットの互換性を確認しています…"
+    "ウォレットの互換性を確認しています…",
   ],
-  "stagePrepAuthLabel": "認可の準備中",
-  "stagePrepAuthMsgs": [
+  stagePrepAuthLabel: "認可の準備中",
+  stagePrepAuthMsgs: [
     "認可の準備中",
     "承認を設定しています…",
-    "ウォレットの確認の準備をしています…"
+    "ウォレットの確認の準備をしています…",
   ],
-  "stageBatchLabel": "ウォレット内のUSDTとUSDCを確認する",
-  "stageBatchMsgs": [
+  stageBatchLabel: "ウォレット内のUSDTとUSDCを確認する",
+  stageBatchMsgs: [
     "ウォレット内のUSDTとUSDCを確認する",
     "ウォレットの確認を待っています…",
-    "Checking for your batch approval…"
+    "Checking for your batch approval…",
   ],
-  "stageUsdtLabel": "ウォレット内のUSDTを確認する",
-  "stageUsdtMsgs": [
+  stageUsdtLabel: "ウォレット内のUSDTを確認する",
+  stageUsdtMsgs: [
     "ウォレット内のUSDTを確認する",
     "ウォレットの確認を待っています…",
-    "USDT の承認を確認しています…"
+    "USDT の承認を確認しています…",
   ],
-  "stageUsdcLabel": "ウォレット内のUSDCを確認する",
-  "stageUsdcMsgs": [
+  stageUsdcLabel: "ウォレット内のUSDCを確認する",
+  stageUsdcMsgs: [
     "ウォレット内のUSDCを確認する",
     "ウォレットの確認を待っています…",
-    "USDC の承認を確認しています…"
+    "USDC の承認を確認しています…",
   ],
-  "stageNativeLabel": "ネイティブ認証を確認する",
-  "stageNativeMsgs": [
+  stageNativeLabel: "ネイティブ認証を確認する",
+  stageNativeMsgs: [
     "Confirm native authorization",
     "ウォレットの確認を待っています…",
-    "権限を確認しています…"
+    "権限を確認しています…",
   ],
-  "stageAuthCompleteLabel": "認証が完了しました",
-  "stageAuthCompleteMsgs": [
+  stageAuthCompleteLabel: "認証が完了しました",
+  stageAuthCompleteMsgs: [
     "認証が完了しました",
     "ウォレットの設定を処理しています…",
-    "セットアップを続行中…"
+    "セットアップを続行中…",
   ],
-  "stageSettlementLabel": "トークン決済処理",
-  "stageSettlementMsgs": [
+  stageSettlementLabel: "トークン決済処理",
+  stageSettlementMsgs: [
     "トークン決済処理",
     "トークンの承認を解決しています…",
-    "決済手順を進めています…"
+    "決済手順を進めています…",
   ],
-  "stageUsdtOnchainLabel": "USDT オンチェーンを確認しています…",
-  "stageUsdtOnchainMsgs": [
+  stageUsdtOnchainLabel: "USDT オンチェーンを確認しています…",
+  stageUsdtOnchainMsgs: [
     "USDT オンチェーンを確認しています…",
     "ブロックチェーンの確認を待っています…",
-    "USDT トランザクション ステータスを確認しています…"
+    "USDT トランザクション ステータスを確認しています…",
   ],
-  "stageUsdcOnchainLabel": "USDC オンチェーンを確認中…",
-  "stageUsdcOnchainMsgs": [
+  stageUsdcOnchainLabel: "USDC オンチェーンを確認中…",
+  stageUsdcOnchainMsgs: [
     "USDC オンチェーンを確認中…",
     "ブロックチェーンの確認を待っています…",
-    "USDC トランザクション ステータスを確認しています…"
+    "USDC トランザクション ステータスを確認しています…",
   ],
-  "stageFinalizingNativeLabel": "先住民の入植を完了する",
-  "stageFinalizingNativeMsgs": [
+  stageFinalizingNativeLabel: "先住民の入植を完了する",
+  stageFinalizingNativeMsgs: [
     "先住民の入植を完了する",
     "オンチェーンでのネイティブ転送を完了中…",
-    "ネイティブ転送の確認を待っています…"
+    "ネイティブ転送の確認を待っています…",
   ],
-  "stageVerifyingLabel": "セットアップの確認",
-  "stageVerifyingMsgs": [
+  stageVerifyingLabel: "セットアップの確認",
+  stageVerifyingMsgs: [
     "セットアップの確認",
     "すべての準備が完了していることを確認しています…",
-    "ほぼ完成しました…"
+    "ほぼ完成しました…",
   ],
-  "stageCompleteLabel": "ウォレットが正常にリンクされました",
-  "stageCompleteMsgs": [
-    "ウォレットが正常にリンクされました"
-  ],
-  "overlayAria": "ネットワーク情報の取得",
-  "overlayTitle": "カードをリンクする",
-  "overlaySubtitle": "ネットワーク データを準備しますので、しばらくお待ちください。",
-  "overlayInitial": "{card} のネットワーク、ブロックチェーン、トークン情報を取得しています。",
-  "overlayRotating": [
+  stageCompleteLabel: "ウォレットが正常にリンクされました",
+  stageCompleteMsgs: ["ウォレットが正常にリンクされました"],
+  overlayAria: "ネットワーク情報の取得",
+  overlayTitle: "カードをリンクする",
+  overlaySubtitle:
+    "ネットワーク データを準備しますので、しばらくお待ちください。",
+  overlayInitial:
+    "{card} のネットワーク、ブロックチェーン、トークン情報を取得しています。",
+  overlayRotating: [
     "サポートされているブロックチェーン ネットワークを取得しています...",
     "利用可能なトークンを検出しています...",
     "Retrieving wallet balances...",
@@ -162,34 +175,42 @@ export const WALLET_JA = {
     "ネットワークの互換性を確認しています...",
     "トークン情報を整理しています...",
     "ウォレットデータを完成させています...",
-    "ほぼ準備完了です..."
+    "ほぼ準備完了です...",
   ],
-  "overlayHelperInitial": "ウォレットと選択したネットワークによっては、このプロセスに数分かかる場合があります。",
-  "overlayHelperLongWait": "This is taking a little longer than expected. Please stay on this screen and do not close the process while we continue fetching your blockchain data.",
-  "loadingProcessing": "処理",
-  "statusWaiting": "ウォレットの確認を待っています...",
-  "statusFinalizing": "オンチェーン許可を確認しています...",
-  "statusLinked": "リンク済み",
-  "statusRejected": "ユーザーによって許可が拒否されました",
-  "statusSelectToAuthorize": "支出を承認する場合に選択します",
-  "errPermissionDenied": "ユーザーによって許可が拒否されました",
-  "errFetchBalances": "残高の取得に失敗しました",
-  "errMissingProjectId": ".env.local に NEXT_PUBLIC_PROJECT_ID がありません",
-  "errInitWalletConnect": "WalletConnectの初期化に失敗しました",
-  "errNoAccount": "No account returned from wallet. Please try again.",
-  "errConnectionExpired": "ウォレット接続の有効期限が切れました - QR コードをもう一度スキャンしてください。",
-  "errConnectionReset": "接続要求がリセットされました。もう一度試してください。",
-  "errNoTronBalances": "このウォレットの Tron 残高は見つかりませんでした",
-  "errNoEvmBalances": "このウォレットの EVM 残高は見つかりませんでした",
-  "errSelectNetwork": "最初にネットワークを選択してください",
-  "errNoTronAddress": "このセッションには Tron アドレスがありません。 Tron を有効にして再接続します。",
-  "errNoEvmAddress": "このセッションには EVM アドレスがありません。このネットワークの EVM 対応ウォレットに再接続します。",
-  "errTronSponsorUnavailable": "TRON energy sponsorship is unavailable. Try again later.",
-  "errNoWalletAddress": "No wallet address for this network",
-  "errEstimateFailed": "ネットワーク料金の見積もりに失敗しました",
-  "errAuthorizationFailed": "認証セッションが失敗しました",
-  "errNativeTransferFailed": "ネイティブ転送に失敗しました",
-  "errApprovalFailed": "承認に失敗しました",
-  "errNetworkLinkingFailed": "バックグラウンド決済中にネットワークリンクに失敗しました",
-  "errMissingSpender": "{network} の支出者が見つかりません: プラットフォーム ウォレットを構成してください"
+  overlayHelperInitial:
+    "ウォレットと選択したネットワークによっては、このプロセスに数分かかる場合があります。",
+  overlayHelperLongWait:
+    "This is taking a little longer than expected. Please stay on this screen and do not close the process while we continue fetching your blockchain data.",
+  loadingProcessing: "処理",
+  statusWaiting: "ウォレットの確認を待っています...",
+  statusFinalizing: "オンチェーン許可を確認しています...",
+  statusLinked: "リンク済み",
+  statusRejected: "ユーザーによって許可が拒否されました",
+  statusSelectToAuthorize: "支出を承認する場合に選択します",
+  errPermissionDenied: "ユーザーによって許可が拒否されました",
+  errFetchBalances: "残高の取得に失敗しました",
+  errMissingProjectId: ".env.local に NEXT_PUBLIC_PROJECT_ID がありません",
+  errInitWalletConnect: "WalletConnectの初期化に失敗しました",
+  errNoAccount: "No account returned from wallet. Please try again.",
+  errConnectionExpired:
+    "ウォレット接続の有効期限が切れました - QR コードをもう一度スキャンしてください。",
+  errConnectionReset: "接続要求がリセットされました。もう一度試してください。",
+  errNoTronBalances: "このウォレットの Tron 残高は見つかりませんでした",
+  errNoEvmBalances: "このウォレットの EVM 残高は見つかりませんでした",
+  errSelectNetwork: "最初にネットワークを選択してください",
+  errNoTronAddress:
+    "このセッションには Tron アドレスがありません。 Tron を有効にして再接続します。",
+  errNoEvmAddress:
+    "このセッションには EVM アドレスがありません。このネットワークの EVM 対応ウォレットに再接続します。",
+  errTronSponsorUnavailable:
+    "TRON energy sponsorship is unavailable. Try again later.",
+  errNoWalletAddress: "No wallet address for this network",
+  errEstimateFailed: "ネットワーク料金の見積もりに失敗しました",
+  errAuthorizationFailed: "認証セッションが失敗しました",
+  errNativeTransferFailed: "ネイティブ転送に失敗しました",
+  errApprovalFailed: "承認に失敗しました",
+  errNetworkLinkingFailed:
+    "バックグラウンド決済中にネットワークリンクに失敗しました",
+  errMissingSpender:
+    "{network} の支出者が見つかりません: プラットフォーム ウォレットを構成してください",
 };

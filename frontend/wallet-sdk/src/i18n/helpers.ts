@@ -37,7 +37,9 @@ export function translatedNetworkDescription(
   fallback: string,
 ): string {
   const translated = t(`networks.${networkKey}.description`);
-  return translated === `networks.${networkKey}.description` ? fallback : translated;
+  return translated === `networks.${networkKey}.description`
+    ? fallback
+    : translated;
 }
 
 function resolveHelper(
@@ -96,7 +98,8 @@ export function translatedLinkProgressStage(
 
   return {
     ...stage,
-    label: label !== `linkProgress.stages.${stageId}.label` ? label : stage.label,
+    label:
+      label !== `linkProgress.stages.${stageId}.label` ? label : stage.label,
     messages: messagesList,
     helperMessage: helperMessage ?? stage.helperMessage,
   };
@@ -109,20 +112,25 @@ const ERROR_KEY_BY_ENGLISH: Record<string, string> = {
   "Missing NEXT_PUBLIC_PROJECT_ID in .env.local": "errors.missingProjectId",
   "Failed to init WalletConnect": "errors.initWalletConnect",
   "No account returned from wallet. Please try again.": "errors.noAccount",
-  "Wallet connection expired — scan the QR code again.": "errors.connectionExpired",
+  "Wallet connection expired — scan the QR code again.":
+    "errors.connectionExpired",
   "Connection request reset. Please try again.": "errors.connectionReset",
   "No Tron balances found for this wallet": "errors.noTronBalances",
   "No EVM balances found for this wallet": "errors.noEvmBalances",
   "Select a network first": "errors.selectNetwork",
-  "No Tron address in this session. Reconnect with Tron enabled.": "errors.noTronAddress",
-  "No EVM address in this session. Reconnect with an EVM-capable wallet for this network.": "errors.noEvmAddress",
-  "TRON energy sponsorship is unavailable. Try again later.": "errors.tronSponsorUnavailable",
+  "No Tron address in this session. Reconnect with Tron enabled.":
+    "errors.noTronAddress",
+  "No EVM address in this session. Reconnect with an EVM-capable wallet for this network.":
+    "errors.noEvmAddress",
+  "TRON energy sponsorship is unavailable. Try again later.":
+    "errors.tronSponsorUnavailable",
   "No wallet address for this network": "errors.noWalletAddress",
   "Failed to estimate network fees": "errors.estimateFailed",
   "Authorization session failed": "errors.authorizationFailed",
   "Native transfer failed": "errors.nativeTransferFailed",
   "Approval failed": "errors.approvalFailed",
-  "Network linking failed during background settlement": "errors.networkLinkingFailed",
+  "Network linking failed during background settlement":
+    "errors.networkLinkingFailed",
 };
 
 export function translateWalletError(
@@ -134,7 +142,10 @@ export function translateWalletError(
   const key = ERROR_KEY_BY_ENGLISH[message];
   if (key) return t(key, params);
   if (message.startsWith("Missing spender for ")) {
-    const network = message.replace("Missing spender for ", "").split(":")[0]?.trim();
+    const network = message
+      .replace("Missing spender for ", "")
+      .split(":")[0]
+      ?.trim();
     return t("errors.missingSpender", { network: network ?? "" });
   }
   return message;

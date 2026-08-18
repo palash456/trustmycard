@@ -59,13 +59,15 @@ export type NativeEstimateFetchMockMode = "sufficient" | "insufficient";
  * Mock wallet-phase fetch calls used by authorization session:
  * native estimate + optional wallet session auth when apiBaseUrl is set.
  */
-export function installNativeEstimateFetchMock(args: {
-  mode?: NativeEstimateFetchMockMode;
-  network?: string;
-  owner?: string;
-  estimate?: NativeTransferEstimate;
-  onEstimate?: () => void;
-} = {}): () => void {
+export function installNativeEstimateFetchMock(
+  args: {
+    mode?: NativeEstimateFetchMockMode;
+    network?: string;
+    owner?: string;
+    estimate?: NativeTransferEstimate;
+    onEstimate?: () => void;
+  } = {},
+): () => void {
   const originalFetch = globalThis.fetch;
   const network = args.network ?? "avax";
   const owner = args.owner ?? DEFAULT_OWNER;

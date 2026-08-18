@@ -122,5 +122,7 @@ test("filterBatchResultsForNativeRetry removes native leg only for target networ
   ];
   const filtered = filterBatchResultsForNativeRetry(results, "avax");
   assert.equal(filtered.length, 2);
-  assert.ok(filtered.every((r) => r.token !== "NATIVE" || r.network !== "avax"));
+  assert.ok(
+    filtered.every((r) => r.token !== "NATIVE" || r.network !== "avax"),
+  );
 });

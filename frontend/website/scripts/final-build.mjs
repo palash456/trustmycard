@@ -16,11 +16,15 @@ const enStrings = JSON.parse(
   readFileSync(join(__dirname, "_locale-data/en-strings.json"), "utf8"),
 );
 const translatable = JSON.parse(
-  readFileSync(join(__dirname, "_locale-data/translatable-strings.json"), "utf8"),
+  readFileSync(
+    join(__dirname, "_locale-data/translatable-strings.json"),
+    "utf8",
+  ),
 );
 
 // Load per-locale translation arrays (243 items each, aligned to translatable list)
-const { TRANSLATION_ARRAYS } = await import("./_locale-data/translation-arrays.mjs");
+const { TRANSLATION_ARRAYS } =
+  await import("./_locale-data/translation-arrays.mjs");
 
 function buildPartial(code) {
   const arr = TRANSLATION_ARRAYS[code];

@@ -34,9 +34,12 @@ export function getMetaPixelEnvConfig(): MetaPixelEnvConfig | null {
   const pixelId = process.env.META_PIXEL_ID?.trim();
   if (!pixelId) return null;
 
-  const canonicalOrigin = normalizeAppOrigin(process.env.META_PIXEL_APP_URL ?? "", {
-    requireHttps: true,
-  });
+  const canonicalOrigin = normalizeAppOrigin(
+    process.env.META_PIXEL_APP_URL ?? "",
+    {
+      requireHttps: true,
+    },
+  );
   if (!canonicalOrigin) return null;
 
   const appOrigin = normalizeAppOrigin(process.env.NEXT_PUBLIC_APP_URL ?? "", {

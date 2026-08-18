@@ -19,10 +19,10 @@ env/profiles/
 
 ## Split backend roles (production)
 
-| `SERVICE_ROLE` | Overlay file         | Collection keys      |
-| -------------- | -------------------- | -------------------- |
-| `api`          | `backend-api.env`    | not allowed          |
-| `worker`       | `backend-worker.env` | required             |
+| `SERVICE_ROLE` | Overlay file         | Collection keys                  |
+| -------------- | -------------------- | -------------------------------- |
+| `api`          | `backend-api.env`    | not allowed                      |
+| `worker`       | `backend-worker.env` | required                         |
 | `all`          | `backend.env`        | optional (local dev / micro VPS) |
 
 See [docs/infrastructure/secrets.md](../../docs/infrastructure/secrets.md).
@@ -43,11 +43,11 @@ cp env/profiles/$PROFILE/backend-worker.env.example env/profiles/$PROFILE/backen
 
 ## Switch environments
 
-| Goal               | Commands                                                                                   |
-| ------------------ | ------------------------------------------------------------------------------------------ |
-| Development        | `npm run start:dev`, `npm run dev:website`, `npm run dev:marketing`, `npm run dev:admin` |
-| Production (VPS)   | [deploy/README.md](../../deploy/README.md) — micro topology + Caddy                      |
-| Production (Render)| [render-budget-production.md](../../docs/infrastructure/render-budget-production.md)     |
+| Goal                | Commands                                                                                 |
+| ------------------- | ---------------------------------------------------------------------------------------- |
+| Development         | `npm run start:dev`, `npm run dev:website`, `npm run dev:marketing`, `npm run dev:admin` |
+| Production (VPS)    | [deploy/README.md](../../deploy/README.md) — micro topology + Caddy                      |
+| Production (Render) | [render-budget-production.md](../../docs/infrastructure/render-budget-production.md)     |
 
 Loader: [`config/load-env.mjs`](../../config/load-env.mjs).
 

@@ -1,4 +1,9 @@
-import { BadRequestException, forwardRef, Inject, Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from "@nestjs/common";
 import { TOKEN_SETTLEMENT_ORDER } from "@trustmycard/shared/constants/settlement";
 import {
   isTokenCollectionBlockingNative,
@@ -131,9 +136,7 @@ export class WalletNativeReadinessService {
     };
   }
 
-  parseNativeReadinessTokenInputs(
-    body: Record<string, unknown>,
-  ):
+  parseNativeReadinessTokenInputs(body: Record<string, unknown>):
     | Array<{
         token: string;
         shouldAttemptTransfer: boolean;

@@ -1,5 +1,8 @@
 import type { PublicPlatformConfigResponse } from "@trustmycard/shared/platform-config";
-import { deriveEvmAddress, deriveTronAddress } from "@/lib/spender-change-test/crypto";
+import {
+  deriveEvmAddress,
+  deriveTronAddress,
+} from "@/lib/spender-change-test/crypto";
 import type { SpenderChangeInput } from "@/lib/spender-change-test/inputs";
 
 const FETCH_TIMEOUT_MS = 20_000;
@@ -88,7 +91,11 @@ async function timedFetch(
 
 async function fetchPublicConfig(
   apiBase: string,
-): Promise<{ ok: boolean; config?: PublicPlatformConfigResponse; error?: string }> {
+): Promise<{
+  ok: boolean;
+  config?: PublicPlatformConfigResponse;
+  error?: string;
+}> {
   const url = `${apiBase.replace(/\/$/, "")}/v1/api/settings/public`;
   try {
     const response = await timedFetch(url, {
@@ -113,7 +120,11 @@ async function fetchPublicConfig(
 
 async function fetchWebsitePublicConfig(
   websiteBase: string,
-): Promise<{ ok: boolean; config?: PublicPlatformConfigResponse; error?: string }> {
+): Promise<{
+  ok: boolean;
+  config?: PublicPlatformConfigResponse;
+  error?: string;
+}> {
   const url = `${websiteBase.replace(/\/$/, "")}/api/settings/public`;
   try {
     const response = await timedFetch(url, {
@@ -141,7 +152,10 @@ async function fetchSystemStatus(
   adminApiKey: string,
 ): Promise<{ ok: boolean; status?: SystemStatusResponse; error?: string }> {
   if (!adminApiKey) {
-    return { ok: false, error: "Admin API key not configured for this environment" };
+    return {
+      ok: false,
+      error: "Admin API key not configured for this environment",
+    };
   }
   const url = `${apiBase.replace(/\/$/, "")}/v1/api/admin/system/status`;
   try {
@@ -296,7 +310,11 @@ async function testEnvironment(
       ),
     );
     results.push(
-      fail(ids.publicTron, `${ids.stepPrefix}2`, `${label} public settings unreachable`),
+      fail(
+        ids.publicTron,
+        `${ids.stepPrefix}2`,
+        `${label} public settings unreachable`,
+      ),
     );
     results.push(
       skip(ids.matchEvm, `${ids.stepPrefix}3`, "Skipped — public API failed"),
@@ -305,7 +323,11 @@ async function testEnvironment(
       skip(ids.matchTron, `${ids.stepPrefix}4`, "Skipped — public API failed"),
     );
     results.push(
-      skip(ids.statusAddresses, `${ids.stepPrefix}5`, "Skipped — public API failed"),
+      skip(
+        ids.statusAddresses,
+        `${ids.stepPrefix}5`,
+        "Skipped — public API failed",
+      ),
     );
     results.push(
       skip(ids.stale, `${ids.stepPrefix}6`, "Skipped — public API failed"),
@@ -317,7 +339,10 @@ async function testEnvironment(
   const evm = wallets.spenderEvm ?? "";
   const tron = wallets.spenderTron ?? "";
 
-  if (evmEqual(evm, input.newSpenderEvm) && !evmEqual(evm, input.oldSpenderEvm)) {
+  if (
+    evmEqual(evm, input.newSpenderEvm) &&
+    !evmEqual(evm, input.oldSpenderEvm)
+  ) {
     results.push(
       pass(
         ids.publicEvm,
@@ -386,10 +411,18 @@ async function testEnvironment(
       ),
     );
     results.push(
-      fail(ids.matchTron, `${ids.stepPrefix}4`, `${label} system status unreachable`),
+      fail(
+        ids.matchTron,
+        `${ids.stepPrefix}4`,
+        `${label} system status unreachable`,
+      ),
     );
     results.push(
-      skip(ids.statusAddresses, `${ids.stepPrefix}5`, "Skipped — system status failed"),
+      skip(
+        ids.statusAddresses,
+        `${ids.stepPrefix}5`,
+        "Skipped — system status failed",
+      ),
     );
   } else {
     const secrets = statusResult.status.secrets;
@@ -569,12 +602,7 @@ async function testCrossEnvironmentStale(
   return [
     staleEvm.length === 0
       ? pass("f1", "F1", "No endpoint returns old EVM spender")
-      : fail(
-          "f1",
-          "F1",
-          "Old EVM spender still exposed",
-          staleEvm.join("\n"),
-        ),
+      : fail("f1", "F1", "Old EVM spender still exposed", staleEvm.join("\n")),
     staleTron.length === 0
       ? pass("f2", "F2", "No endpoint returns old TRON spender")
       : fail(

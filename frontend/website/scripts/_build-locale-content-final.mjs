@@ -32,10 +32,9 @@ const wallets = {
 
 const LOCALE_CONTENT = { en };
 for (const code of Object.keys(wallets)) {
-  LOCALE_CONTENT[code] = deepMerge(
-    deepMerge(en, siteOverrides[code]),
-    { wallet: wallets[code] },
-  );
+  LOCALE_CONTENT[code] = deepMerge(deepMerge(en, siteOverrides[code]), {
+    wallet: wallets[code],
+  });
 }
 
 const outPath = join(__dirname, "locale-content.mjs");

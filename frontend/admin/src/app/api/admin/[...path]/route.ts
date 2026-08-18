@@ -58,10 +58,7 @@ async function getDemoInrRatesPayload() {
   }
 }
 
-function serveDemoFixture(
-  path: string[],
-  query: string,
-): NextResponse | null {
+function serveDemoFixture(path: string[], query: string): NextResponse | null {
   try {
     const data = getDemoFixture(demoAdminPath(path, query));
     return NextResponse.json(data);

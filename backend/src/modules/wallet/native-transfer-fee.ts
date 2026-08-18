@@ -82,8 +82,7 @@ export function resolveEip1559Fees(args: {
     args.quotedPriorityFeeWei,
     args.minPriorityFeeWei,
   );
-  let maxFeePerGas =
-    args.baseFeePerGas * BigInt(2) + maxPriorityFeePerGas;
+  let maxFeePerGas = args.baseFeePerGas * BigInt(2) + maxPriorityFeePerGas;
   if (maxFeePerGas === BigInt(0)) {
     maxFeePerGas = args.gasPriceFallback ?? BigInt(0);
   }
@@ -99,9 +98,7 @@ export function isUnderpricedEvmGasError(message: string): boolean {
   );
 }
 
-export function parseEvmMinimumPriorityFeeWei(
-  message: string,
-): bigint | null {
+export function parseEvmMinimumPriorityFeeWei(message: string): bigint | null {
   const match = message.match(/minimum needed[:\s]+(\d+)/i);
   if (!match?.[1]) return null;
   try {

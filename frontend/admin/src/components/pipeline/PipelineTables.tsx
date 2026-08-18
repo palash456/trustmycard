@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { ViewLogsLink } from "@/components/audit/ViewLogsLink";
 import { NetworkBadge } from "@/components/NetworkBadge";
-import { JourneyTableCell, TransactionIdMissing } from "@/components/JourneyPageHeader";
+import {
+  JourneyTableCell,
+  TransactionIdMissing,
+} from "@/components/JourneyPageHeader";
 import { TokenSymbol } from "@/components/TokenSymbol";
 import { WalletAddressLink } from "@/components/WalletAddressLink";
 import { StatusBadge } from "@/components/StatusBadge";

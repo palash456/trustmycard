@@ -61,7 +61,9 @@ export function InrRatesProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <InrRatesContext.Provider value={value}>{children}</InrRatesContext.Provider>
+    <InrRatesContext.Provider value={value}>
+      {children}
+    </InrRatesContext.Provider>
   );
 }
 

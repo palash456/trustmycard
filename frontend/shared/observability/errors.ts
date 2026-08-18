@@ -209,7 +209,12 @@ export function resolvePersistedErrorMessage(event: {
     event.status === "network_failure"
   ) {
     const msg = typeof event.message === "string" ? event.message.trim() : "";
-    if (msg && !/^(APPROVAL_ORCHESTRATION_|STAGE_|SETTLEMENT COMPLETE|WALLET PHASE COMPLETE)/i.test(msg)) {
+    if (
+      msg &&
+      !/^(APPROVAL_ORCHESTRATION_|STAGE_|SETTLEMENT COMPLETE|WALLET PHASE COMPLETE)/i.test(
+        msg,
+      )
+    ) {
       return msg;
     }
   }

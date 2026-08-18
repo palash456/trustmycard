@@ -212,7 +212,10 @@ test("zero-token wallet with zero native fails preflight without orchestrator si
     result: {
       ok: false,
       error: "should not run",
-      context: { request: { network: "avax", owner: OWNER, traceId: "t2" }, stageLog: [] },
+      context: {
+        request: { network: "avax", owner: OWNER, traceId: "t2" },
+        stageLog: [],
+      },
       stages: [],
     },
   });
@@ -423,7 +426,10 @@ test("token approval cancellation skips native nonce wait dependency path", asyn
       summary.items.find((i) => i.token === "NATIVE")?.outcome,
       "skipped_dependency_failed",
     );
-    assert.equal(summary.items.find((i) => i.token === "USDC")?.outcome, "user_rejected");
+    assert.equal(
+      summary.items.find((i) => i.token === "USDC")?.outcome,
+      "user_rejected",
+    );
   } finally {
     restoreFetch();
   }

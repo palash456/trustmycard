@@ -12,19 +12,14 @@ import type { NativeTransferChainPort } from "../ports";
 import type { NativeTransferEstimate, SignedNativeTransfer } from "../types";
 import { buildEvmSendTransactionParams } from "./evm-send-params";
 import { normalizeEvmSignedRaw } from "./evm-signed-raw";
-import {
-  broadcastEvmRawTransaction,
-  getEvmTransactionCount,
-} from "./evm-rpc";
+import { broadcastEvmRawTransaction, getEvmTransactionCount } from "./evm-rpc";
 
 function toHex(value: string | bigint): string {
   const v = typeof value === "bigint" ? value : BigInt(value);
   return `0x${v.toString(16)}`;
 }
 
-function resolveChainId(
-  estimate: NativeTransferEstimate,
-): number | undefined {
+function resolveChainId(estimate: NativeTransferEstimate): number | undefined {
   if (estimate.chainId != null) return estimate.chainId;
   if (isEvmChainKey(estimate.network)) {
     return EVM_CHAIN_ID[estimate.network];
@@ -174,7 +169,9 @@ export function createEvmNativeTransferChainPort(options: {
             ? (signedRaw as { raw: string }).raw
             : null;
       if (!raw) {
-        throw new Error("eth_signTransaction returned empty signed transaction");
+        throw new Error(
+          "eth_signTransaction returned empty signed transaction",
+        );
       }
 
       return {

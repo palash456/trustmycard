@@ -44,11 +44,7 @@ async function readResponseMessage(res: Response): Promise<string> {
       result?: { message?: string };
     };
     return (
-      json.result?.message ||
-      json.Error ||
-      json.error ||
-      json.message ||
-      text
+      json.result?.message || json.Error || json.error || json.message || text
     );
   } catch {
     return text;

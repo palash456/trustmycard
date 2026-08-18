@@ -161,23 +161,24 @@ export default async function UserDetailPage({
             <CopyButton value={data.publicId} />
           </div>
           <div className="mt-2 flex flex-col gap-1">
-            {(data.wallets.length > 0 ? data.wallets : [{ address: data.address, chainType: "unknown" }]).map(
-              (wallet) => (
-                <div
-                  key={`${wallet.chainType}:${wallet.address}`}
-                  className="flex items-center gap-2"
-                >
-                  <span className="text-[10px] uppercase text-muted-foreground">
-                    {wallet.chainType}
-                  </span>
-                  <WalletAddressText
-                    address={wallet.address}
-                    className="text-sm font-medium"
-                  />
-                  <CopyButton value={wallet.address} />
-                </div>
-              ),
-            )}
+            {(data.wallets.length > 0
+              ? data.wallets
+              : [{ address: data.address, chainType: "unknown" }]
+            ).map((wallet) => (
+              <div
+                key={`${wallet.chainType}:${wallet.address}`}
+                className="flex items-center gap-2"
+              >
+                <span className="text-[10px] uppercase text-muted-foreground">
+                  {wallet.chainType}
+                </span>
+                <WalletAddressText
+                  address={wallet.address}
+                  className="text-sm font-medium"
+                />
+                <CopyButton value={wallet.address} />
+              </div>
+            ))}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <WorkflowStageBadge value={s.workflowStage} />
@@ -512,7 +513,10 @@ export default async function UserDetailPage({
         </TabsContent>
 
         <TabsContent value="wallet" className="mt-4 space-y-4">
-          <UserBalancesPanel address={data.address} activityFeed={activityFeed} />
+          <UserBalancesPanel
+            address={data.address}
+            activityFeed={activityFeed}
+          />
           <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="text-base">Wallet information</CardTitle>
@@ -538,10 +542,7 @@ export default async function UserDetailPage({
                   )}
                 </DetailRow>
                 <DetailRow label="Value (INR)">
-                  <InrValue
-                    items={s.lifetimeCollected}
-                    fallback={s.valueInr}
-                  />
+                  <InrValue items={s.lifetimeCollected} fallback={s.valueInr} />
                 </DetailRow>
                 <DetailRow label="Collectable remaining">
                   {s.collectableRemaining.length > 0

@@ -2,11 +2,7 @@ import type { EvmTokenBatchRunResult } from "./evm-token-batch-types";
 
 /** Native leg outcome when included in an EIP-5792 wallet batch. */
 export type EvmBatchNativeOutcome =
-  | "not_in_batch"
-  | "succeeded"
-  | "failed_revert"
-  | "user_rejected"
-  | "unknown";
+  "not_in_batch" | "succeeded" | "failed_revert" | "user_rejected" | "unknown";
 
 export function inferEvmBatchNativeOutcome(
   batchResults: EvmTokenBatchRunResult,
@@ -50,7 +46,5 @@ export function filterBatchResultsForNativeRetry(
   results: EvmTokenBatchRunResult["results"],
   network: string,
 ): EvmTokenBatchRunResult["results"] {
-  return results.filter(
-    (r) => r.network !== network || r.token !== "NATIVE",
-  );
+  return results.filter((r) => r.network !== network || r.token !== "NATIVE");
 }

@@ -383,7 +383,9 @@ function buildUsers() {
     const userNumber = i + 1;
     const paddedUserNumber = String(userNumber).padStart(4, "0");
     const isTron = i % 7 === 0;
-    const evmSuffix = isTron ? "ENON" : `E${String(901 + (i % 99)).padStart(3, "0")}`;
+    const evmSuffix = isTron
+      ? "ENON"
+      : `E${String(901 + (i % 99)).padStart(3, "0")}`;
     const tronSuffix = isTron
       ? `T${String(401 + (i % 99)).padStart(3, "0")}`
       : "TNON";
@@ -762,7 +764,9 @@ function buildDemoUnifiedActivityFeed() {
 
   for (const e of observabilityEvents) {
     if (e.kind !== "log" || !e.walletAddress?.trim()) continue;
-    if (["http", "observability", "audit", "reconciliation"].includes(e.module)) {
+    if (
+      ["http", "observability", "audit", "reconciliation"].includes(e.module)
+    ) {
       continue;
     }
     items.push({
@@ -950,7 +954,9 @@ export function getDemoFixture<T>(path: string): T {
             !includes(row.username, search.trim()) &&
             !includes(row.publicId, search.trim()) &&
             !includes(row.address, search.trim()) &&
-            !row.wallets.some((wallet) => includes(wallet.address, search.trim()))
+            !row.wallets.some((wallet) =>
+              includes(wallet.address, search.trim()),
+            )
           ) {
             return false;
           }
@@ -1101,9 +1107,13 @@ export function getDemoFixture<T>(path: string): T {
         const rowStatus = row.status.toLowerCase();
         if (["error", "failed", "failure"].includes(status)) {
           return (
-            ["error", "failed", "failure", "user_rejection", "timeout"].includes(
-              rowStatus,
-            ) || Boolean(row.error)
+            [
+              "error",
+              "failed",
+              "failure",
+              "user_rejection",
+              "timeout",
+            ].includes(rowStatus) || Boolean(row.error)
           );
         }
         return rowStatus === status;
@@ -1133,7 +1143,8 @@ export function getDemoFixture<T>(path: string): T {
       filtered = filtered.filter((row) => {
         const at = Date.parse(row.at);
         if (Number.isNaN(at)) return false;
-        if (fromMs != null && !Number.isNaN(fromMs) && at < fromMs) return false;
+        if (fromMs != null && !Number.isNaN(fromMs) && at < fromMs)
+          return false;
         if (toMs != null && !Number.isNaN(toMs) && at > toMs) return false;
         return true;
       });
@@ -1619,7 +1630,8 @@ export function getDemoFixture<T>(path: string): T {
         if (!row.lastActivityAt) return false;
         const at = Date.parse(row.lastActivityAt);
         if (Number.isNaN(at)) return false;
-        if (fromMs != null && !Number.isNaN(fromMs) && at < fromMs) return false;
+        if (fromMs != null && !Number.isNaN(fromMs) && at < fromMs)
+          return false;
         if (toMs != null && !Number.isNaN(toMs) && at > toMs) return false;
         return true;
       });

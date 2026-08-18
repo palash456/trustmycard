@@ -134,8 +134,7 @@ export async function waitForEvmPendingNonceAdvance(args: {
 
   const pollMs = args.pollMs ?? DEFAULT_POLL_MS;
   const deadline =
-    Date.now() +
-    (args.timeoutMs ?? resolveEvmNonceWaitTimeoutMs(args.network));
+    Date.now() + (args.timeoutMs ?? resolveEvmNonceWaitTimeoutMs(args.network));
 
   while (Date.now() < deadline) {
     if (args.signal?.aborted) {

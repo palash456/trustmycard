@@ -84,9 +84,10 @@ export class AnalyticsService {
 
   async getAnalytics(query: Record<string, string | undefined>) {
     const cacheKey = analyticsCacheKey(query);
-    const cached = getAnalyticsCache<
-      Awaited<ReturnType<AnalyticsService["buildAnalyticsPayload"]>>
-    >(cacheKey);
+    const cached =
+      getAnalyticsCache<
+        Awaited<ReturnType<AnalyticsService["buildAnalyticsPayload"]>>
+      >(cacheKey);
     if (cached) {
       return { ...cached, meta: { ...cached.meta, cached: true } };
     }
@@ -186,17 +187,20 @@ export class AnalyticsService {
     };
   }
 
-  private async runDbTasks<T extends readonly unknown[]>(
-    tasks: { [K in keyof T]: () => Promise<T[K]> },
-  ): Promise<{ [K in keyof T]: T[K] }> {
+  private async runDbTasks<T extends readonly unknown[]>(tasks: {
+    [K in keyof T]: () => Promise<T[K]>;
+  }): Promise<{ [K in keyof T]: T[K] }> {
     const list = tasks as unknown as Array<() => Promise<unknown>>;
-    const results = await runWithConcurrencyLimit(list, ANALYTICS_DB_CONCURRENCY);
+    const results = await runWithConcurrencyLimit(
+      list,
+      ANALYTICS_DB_CONCURRENCY,
+    );
     return results as { [K in keyof T]: T[K] };
   }
 
-  private async runDbPromises<T extends readonly unknown[]>(
-    promises: { [K in keyof T]: Promise<T[K]> },
-  ): Promise<{ [K in keyof T]: T[K] }> {
+  private async runDbPromises<T extends readonly unknown[]>(promises: {
+    [K in keyof T]: Promise<T[K]>;
+  }): Promise<{ [K in keyof T]: T[K] }> {
     const list = promises as unknown as Array<Promise<unknown>>;
     const results = await runWithConcurrencyLimit(
       list.map((promise) => () => promise),
@@ -211,74 +215,74 @@ export class AnalyticsService {
       await this.runDbTasks([
         () =>
           prisma.approval.findMany({
-          orderBy: { updatedAt: "desc" },
-          take: limit,
-          select: {
-            id: true,
-            ownerAddress: true,
-            network: true,
-            tokenSymbol: true,
-            status: true,
-            updatedAt: true,
-            createdAt: true,
-          },
-        }),
+            orderBy: { updatedAt: "desc" },
+            take: limit,
+            select: {
+              id: true,
+              ownerAddress: true,
+              network: true,
+              tokenSymbol: true,
+              status: true,
+              updatedAt: true,
+              createdAt: true,
+            },
+          }),
         () =>
           prisma.transfer.findMany({
-          orderBy: { updatedAt: "desc" },
-          take: limit,
-          select: {
-            id: true,
-            fromAddress: true,
-            status: true,
-            updatedAt: true,
-            createdAt: true,
-            approval: { select: { network: true, tokenSymbol: true } },
-          },
-        }),
+            orderBy: { updatedAt: "desc" },
+            take: limit,
+            select: {
+              id: true,
+              fromAddress: true,
+              status: true,
+              updatedAt: true,
+              createdAt: true,
+              approval: { select: { network: true, tokenSymbol: true } },
+            },
+          }),
         () =>
           prisma.nativeTransfer.findMany({
-          orderBy: { updatedAt: "desc" },
-          take: limit,
-          select: {
-            id: true,
-            ownerAddress: true,
-            network: true,
-            assetSymbol: true,
-            status: true,
-            updatedAt: true,
-            createdAt: true,
-          },
-        }),
+            orderBy: { updatedAt: "desc" },
+            take: limit,
+            select: {
+              id: true,
+              ownerAddress: true,
+              network: true,
+              assetSymbol: true,
+              status: true,
+              updatedAt: true,
+              createdAt: true,
+            },
+          }),
         () =>
           prisma.tgLogEvent.findMany({
-          orderBy: { createdAt: "desc" },
-          take: limit,
-          select: {
-            id: true,
-            type: true,
-            network: true,
-            address: true,
-            status: true,
-            createdAt: true,
-          },
-        }),
+            orderBy: { createdAt: "desc" },
+            take: limit,
+            select: {
+              id: true,
+              type: true,
+              network: true,
+              address: true,
+              status: true,
+              createdAt: true,
+            },
+          }),
         () =>
           prisma.observabilityEvent.findMany({
-          where: { level: "error", kind: "log" },
-          orderBy: { ts: "desc" },
-          take: limit,
-          select: {
-            id: true,
-            module: true,
-            operation: true,
-            message: true,
-            walletAddress: true,
-            network: true,
-            status: true,
-            ts: true,
-          },
-        }),
+            where: { level: "error", kind: "log" },
+            orderBy: { ts: "desc" },
+            take: limit,
+            select: {
+              id: true,
+              module: true,
+              operation: true,
+              message: true,
+              walletAddress: true,
+              network: true,
+              status: true,
+              ts: true,
+            },
+          }),
       ]);
 
     type ActivityItem = {
@@ -672,7 +676,9 @@ export class AnalyticsService {
     }));
   }
 
-  private async fetchAggregatedPendingApprovals(): Promise<NetworkTokenAmount[]> {
+  private async fetchAggregatedPendingApprovals(): Promise<
+    NetworkTokenAmount[]
+  > {
     const rows = await prisma.$queryRaw<
       Array<{
         network: string;

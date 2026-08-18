@@ -115,7 +115,9 @@ export function TestRunTimer({
         )}
       >
         {progressLabel ? (
-          <span className="font-medium text-foreground/80">{progressLabel}</span>
+          <span className="font-medium text-foreground/80">
+            {progressLabel}
+          </span>
         ) : null}
         {elapsedText}
         <span className="text-muted-foreground/50">·</span>

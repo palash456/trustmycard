@@ -88,14 +88,15 @@ export function estimateSuiteDurationMs(
   if (known != null) return known;
 
   const layerBase = LAYER_BASE_MS[suite.layer] ?? 8_000;
-  const perCase =
-    PACKAGE_PER_CASE_MS[suite.packageId] ?? 500;
+  const perCase = PACKAGE_PER_CASE_MS[suite.packageId] ?? 500;
   const estimate = layerBase + suite.caseCount * perCase;
   return Math.min(Math.max(estimate, 3_000), 180_000);
 }
 
 export function estimateSuitesDurationMs(
-  suites: Array<Pick<TestSuiteMeta, "id" | "packageId" | "layer" | "caseCount">>,
+  suites: Array<
+    Pick<TestSuiteMeta, "id" | "packageId" | "layer" | "caseCount">
+  >,
 ): number {
   return suites.reduce((sum, suite) => sum + estimateSuiteDurationMs(suite), 0);
 }

@@ -276,9 +276,7 @@
         {
           "id": "how-we-use-information",
           "title": "Cómo usamos tu información",
-          "paragraphs": [
-            "Usamos la información recopilada para:"
-          ],
+          "paragraphs": ["Usamos la información recopilada para:"],
           "list": [
             "Proporcionar, operar y mantener los servicios de Trust Card.",
             "Procesar conexiones de billetera, emisión de tarjetas y flujos de liquidación.",
@@ -382,9 +380,7 @@
         {
           "id": "prohibited",
           "title": "Uso prohibido",
-          "paragraphs": [
-            "Aceptas no usar los servicios de Trust Card para:"
-          ],
+          "paragraphs": ["Aceptas no usar los servicios de Trust Card para:"],
           "list": [
             "Violar leyes aplicables, sanciones o controles de exportación.",
             "Participar en fraude, lavado de dinero o financiación del terrorismo.",
@@ -885,9 +881,7 @@
         },
         "complete": {
           "label": "Billetera vinculada correctamente",
-          "messages": [
-            "Billetera vinculada correctamente"
-          ]
+          "messages": ["Billetera vinculada correctamente"]
         }
       }
     },

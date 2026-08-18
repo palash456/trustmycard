@@ -5,10 +5,7 @@ export function buildUrlQueryParams(
   updates: Record<string, string | undefined | null>,
   options?: { omitKeys?: string[] },
 ): URLSearchParams {
-  const omit = new Set([
-    ...URL_QUERY_RESERVED,
-    ...(options?.omitKeys ?? []),
-  ]);
+  const omit = new Set([...URL_QUERY_RESERVED, ...(options?.omitKeys ?? [])]);
   const params = new URLSearchParams();
 
   for (const [key, value] of Object.entries(query)) {

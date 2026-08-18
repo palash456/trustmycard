@@ -67,9 +67,7 @@ export function LanguageSelector({ className }: { className?: string }) {
         <span className="text-sm leading-none lg:text-base" aria-hidden>
           {currentDef.flag}
         </span>
-        <span className="hidden lg:inline">
-          {languageLabel(t, locale)}
-        </span>
+        <span className="hidden lg:inline">{languageLabel(t, locale)}</span>
         <svg
           className={`h-3 w-3 shrink-0 text-zinc-500 transition-transform lg:h-3.5 lg:w-3.5 ${open ? "rotate-180" : ""}`}
           fill="none"

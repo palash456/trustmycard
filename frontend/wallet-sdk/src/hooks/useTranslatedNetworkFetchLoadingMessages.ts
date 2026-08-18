@@ -5,10 +5,7 @@ import {
   NETWORK_FETCH_LONG_WAIT_MS,
   networkFetchProgressPercent,
 } from "../core/network-fetch-loading-messages";
-import {
-  useWalletSdkMessagesArray,
-  useWalletSdkT,
-} from "../i18n/context";
+import { useWalletSdkMessagesArray, useWalletSdkT } from "../i18n/context";
 import { cardTierI18nKey } from "../i18n/helpers";
 
 export type NetworkFetchLoadingState = {
@@ -62,7 +59,7 @@ export function useTranslatedNetworkFetchLoadingMessages(args: {
     messageIndex === 0
       ? t("overlay.fetch.initial", { card: cardName })
       : rotatingMessages[
-          ((messageIndex - 1) % rotatingMessages.length +
+          (((messageIndex - 1) % rotatingMessages.length) +
             rotatingMessages.length) %
             rotatingMessages.length
         ];

@@ -1,10 +1,10 @@
 # Platform config templates
 
-| Location                           | Purpose                                    |
-| ---------------------------------- | ------------------------------------------ |
-| `config/platform.env`              | **Single source** for platform-wide config (wallets, collector, chains, Meta Pixel) |
-| `env/profiles/$TMC_ENV/`           | Per-app infra only (`backend`, `website`, `admin`) |
-| `config/load-env.mjs`              | Shared loader (reads `config/platform.env` + profile app env) |
+| Location                 | Purpose                                                                             |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| `config/platform.env`    | **Single source** for platform-wide config (wallets, collector, chains, Meta Pixel) |
+| `env/profiles/$TMC_ENV/` | Per-app infra only (`backend`, `website`, `admin`)                                  |
+| `config/load-env.mjs`    | Shared loader (reads `config/platform.env` + profile app env)                       |
 
 Copy `config/platform.env.example` → `config/platform.env` and fill secrets. Never commit live `config/platform.env`.
 

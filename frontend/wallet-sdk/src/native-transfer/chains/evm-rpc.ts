@@ -1,7 +1,4 @@
-import {
-  evmRpcUrls,
-  type EvmChainKey,
-} from "../../core/native-chains";
+import { evmRpcUrls, type EvmChainKey } from "../../core/native-chains";
 import { normalizeEvmSignedRaw } from "./evm-signed-raw";
 
 async function evmRpcCall<T>(

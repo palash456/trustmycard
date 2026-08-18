@@ -22,11 +22,15 @@ function parseArgs(argv) {
     else if (arg === "--skip-build") options.skipBuild = true;
     else if (arg === "--skip-images") options.skipImages = true;
     else if (arg === "--skip-migrate") options.skipMigrate = true;
-    else if (arg === "--confirm-external-data") options.confirmExternalData = true;
-    else if (arg === "--confirm-recreate-data") options.confirmRecreateData = true;
+    else if (arg === "--confirm-external-data")
+      options.confirmExternalData = true;
+    else if (arg === "--confirm-recreate-data")
+      options.confirmRecreateData = true;
     else if (arg === "--i-accept-data-loss") options.iAcceptDataLoss = true;
-    else if (arg.startsWith("--provider=")) options.provider = arg.split("=")[1];
-    else if (arg.startsWith("--topology=")) options.topology = arg.split("=")[1];
+    else if (arg.startsWith("--provider="))
+      options.provider = arg.split("=")[1];
+    else if (arg.startsWith("--topology="))
+      options.topology = arg.split("=")[1];
     else if (arg === "--dry-run") options.dryRun = true;
     else if (!arg.startsWith("-")) positionals.push(arg);
   }

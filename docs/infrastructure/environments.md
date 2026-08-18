@@ -5,7 +5,7 @@ Trust My Card uses one codebase and two configuration profiles. The active profi
 | `TMC_ENV`     | Purpose            | How to run                                                                                         |
 | ------------- | ------------------ | -------------------------------------------------------------------------------------------------- |
 | `development` | Daily feature work | `npm run start:dev` (backend), `npm run dev:website`, `npm run dev:marketing`, `npm run dev:admin` |
-| `production`  | Live stack         | VPS micro (`deploy.sh`) or Render budget blueprint |
+| `production`  | Live stack         | VPS micro (`deploy.sh`) or Render budget blueprint                                                 |
 
 ## How loading works
 
@@ -36,13 +36,13 @@ cp env/profiles/$PROFILE/backend-worker.env.example env/profiles/$PROFILE/backen
 
 ## Resource isolation
 
-| Resource             | development         | production              |
-| -------------------- | ------------------- | ----------------------- |
-| PostgreSQL           | local `trustmycard` | Neon (external)         |
-| Redis                | `127.0.0.1:6379/0`  | Upstash (external)      |
-| Wallet keys          | Dev/test            | Worker service only     |
-| `ALLOW_SELF_SPENDER` | optional `true`     | `false`                 |
-| Admin data           | Dev DB              | Production DB           |
+| Resource             | development         | production          |
+| -------------------- | ------------------- | ------------------- |
+| PostgreSQL           | local `trustmycard` | Neon (external)     |
+| Redis                | `127.0.0.1:6379/0`  | Upstash (external)  |
+| Wallet keys          | Dev/test            | Worker service only |
+| `ALLOW_SELF_SPENDER` | optional `true`     | `false`             |
+| Admin data           | Dev DB              | Production DB       |
 
 Admin always reads from the backend pointed to by `BACKEND_API_URL` in its profile — no in-app environment switch.
 

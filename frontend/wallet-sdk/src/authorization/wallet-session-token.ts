@@ -1,6 +1,10 @@
 import { NATIVE_CHAIN_REGISTRY } from "../core/native-chains";
 import { resolveApiUrl } from "../core/api-url";
-import { getErrorMessage, isUserRejection, withSilentWalletCancellation } from "../core/errors";
+import {
+  getErrorMessage,
+  isUserRejection,
+  withSilentWalletCancellation,
+} from "../core/errors";
 import type { UniversalProvider } from "../types";
 import {
   clearCachedWalletSessionToken,

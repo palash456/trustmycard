@@ -47,7 +47,10 @@ describe("eligibility-config", () => {
   });
 
   it("throws for unknown network keys", () => {
-    assert.throws(() => getMinimumBalance("unknown", "native"), /Unknown network key/);
+    assert.throws(
+      () => getMinimumBalance("unknown", "native"),
+      /Unknown network key/,
+    );
   });
 
   it("throws and names missing env vars", () => {
@@ -67,14 +70,25 @@ describe("eligibility-config", () => {
   });
 
   it("resolves all supported networks without cross-chain contamination", () => {
-    const networks = ["eth", "bsc", "pol", "avax", "arb", "base", "tron"] as const;
+    const networks = [
+      "eth",
+      "bsc",
+      "pol",
+      "avax",
+      "arb",
+      "base",
+      "tron",
+    ] as const;
     const assets = ["native", "usdt", "usdc"] as const;
 
     for (const network of networks) {
       for (const asset of assets) {
         const value = getMinimumBalance(network, asset);
         assert.match(value, /^\d+(\.\d+)?$/);
-        assert.match(getMinimumBalanceEnvVarName(network, asset), /^NEXT_PUBLIC_/);
+        assert.match(
+          getMinimumBalanceEnvVarName(network, asset),
+          /^NEXT_PUBLIC_/,
+        );
       }
     }
   });

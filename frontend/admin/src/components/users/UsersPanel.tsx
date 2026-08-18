@@ -186,7 +186,12 @@ function UserRow({ row }: { row: UserListRow }) {
               />
             ))
           ) : (
-            <WalletAddressLink address={row.address} head={8} tail={6} showCopy />
+            <WalletAddressLink
+              address={row.address}
+              head={8}
+              tail={6}
+              showCopy
+            />
           )}
           <Link
             href={`/transactions?walletAddress=${encodeURIComponent(row.address)}`}
@@ -216,21 +221,13 @@ function UserRow({ row }: { row: UserListRow }) {
         <NetworkBadgeList networks={row.approvedChains} />
       </TableCell>
       <TableCell>
-        {row.approvalStatus ? (
-          <StatusBadge value={row.approvalStatus} />
-        ) : (
-          "—"
-        )}
+        {row.approvalStatus ? <StatusBadge value={row.approvalStatus} /> : "—"}
       </TableCell>
       <TableCell className="max-w-[100px] truncate text-xs">
         {row.collectionStatus ?? "—"}
       </TableCell>
       <TableCell>
-        {row.transferStatus ? (
-          <StatusBadge value={row.transferStatus} />
-        ) : (
-          "—"
-        )}
+        {row.transferStatus ? <StatusBadge value={row.transferStatus} /> : "—"}
       </TableCell>
       <TableCell>
         {row.nativeFundingStatus ? (
@@ -246,10 +243,7 @@ function UserRow({ row }: { row: UserListRow }) {
         <CollectedAmounts items={row.totalLifetimeCollected} />
       </TableCell>
       <TableCell className="text-xs tabular-nums whitespace-nowrap">
-        <InrValue
-          items={row.totalLifetimeCollected}
-          fallback={row.valueInr}
-        />
+        <InrValue items={row.totalLifetimeCollected} fallback={row.valueInr} />
       </TableCell>
       <TableCell>
         {explorer ? (

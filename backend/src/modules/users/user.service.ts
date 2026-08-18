@@ -146,10 +146,7 @@ export class UserService implements OnModuleInit {
           const chain = detectWalletChainType(addr);
           if (!chain) return [];
           const normalized = normalizeWalletAddressForChain(addr, chain);
-          if (
-            normalized === excludeAddress &&
-            chain === excludeChainType
-          ) {
+          if (normalized === excludeAddress && chain === excludeChainType) {
             return [];
           }
           return [{ address: normalized, chainType: chain }];

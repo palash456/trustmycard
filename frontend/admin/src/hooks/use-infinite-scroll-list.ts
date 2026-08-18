@@ -55,9 +55,7 @@ export function useInfiniteScrollList<T>({
         totalRef.current = data.total;
         setTotal(data.total);
         setPage(data.page);
-        setItems((prev) =>
-          replace ? data.items : [...prev, ...data.items],
-        );
+        setItems((prev) => (replace ? data.items : [...prev, ...data.items]));
         setHasMore(data.page * data.limit < data.total);
       } catch (err) {
         if (generation !== loadGenerationRef.current) return;

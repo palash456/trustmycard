@@ -106,7 +106,11 @@ export default async function ActivityDetailPage({
             </DetailRow>
             <DetailRow label="Time">{formatDate(e.at)}</DetailRow>
             <DetailRow label="Wallet">
-              <WalletAddressLink address={e.address} truncate={false} showCopy />
+              <WalletAddressLink
+                address={e.address}
+                truncate={false}
+                showCopy
+              />
             </DetailRow>
             {e.network ? (
               <DetailRow label="Network">{e.network.toUpperCase()}</DetailRow>

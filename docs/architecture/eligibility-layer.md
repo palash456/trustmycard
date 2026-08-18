@@ -36,14 +36,14 @@ WALLET POPUP
 
 ## Implementation
 
-| File | Responsibility |
-|------|----------------|
-| `frontend/wallet-sdk/src/eligibility/types.ts` | Shared eligibility types |
+| File                                                         | Responsibility                      |
+| ------------------------------------------------------------ | ----------------------------------- |
+| `frontend/wallet-sdk/src/eligibility/types.ts`               | Shared eligibility types            |
 | `frontend/wallet-sdk/src/eligibility/human-to-base-units.ts` | Exact decimal → `BigInt` conversion |
-| `frontend/wallet-sdk/src/eligibility/eligibility-config.ts` | Per-network env var resolution |
-| `frontend/wallet-sdk/src/eligibility/eligibility-service.ts` | Pure eligibility evaluation |
-| `frontend/wallet-sdk/src/hooks/useConnectFlow.ts` | Fresh fetch, state, auth gating |
-| `frontend/wallet-sdk/src/components/LinkNetworkModal.tsx` | Eligibility UX |
+| `frontend/wallet-sdk/src/eligibility/eligibility-config.ts`  | Per-network env var resolution      |
+| `frontend/wallet-sdk/src/eligibility/eligibility-service.ts` | Pure eligibility evaluation         |
+| `frontend/wallet-sdk/src/hooks/useConnectFlow.ts`            | Fresh fetch, state, auth gating     |
+| `frontend/wallet-sdk/src/components/LinkNetworkModal.tsx`    | Eligibility UX                      |
 
 ## BigInt comparison
 
@@ -100,22 +100,22 @@ When native balance passes but no token minimum is met, the network is still `EL
 
 ### Asset-level
 
-| State | Meaning |
-|-------|---------|
-| `ELIGIBLE` | Balance meets or exceeds configured minimum |
-| `INELIGIBLE` | Balance is below configured minimum |
-| `UNKNOWN` | Balance could not be verified |
+| State        | Meaning                                     |
+| ------------ | ------------------------------------------- |
+| `ELIGIBLE`   | Balance meets or exceeds configured minimum |
+| `INELIGIBLE` | Balance is below configured minimum         |
+| `UNKNOWN`    | Balance could not be verified               |
 
 `UNKNOWN` is **not** treated as `INELIGIBLE`. It means the check could not complete and the user should retry.
 
 ### Network-level
 
-| Status | Meaning |
-|--------|---------|
-| `ELIGIBLE` | Native minimum met (chain selectable; token mins evaluated separately for authorization) |
-| `PARTIALLY_ELIGIBLE` | Disabled in active flow (legacy status retained in types) |
-| `INELIGIBLE` | Native minimum not met |
-| `CHECK_FAILED` | At least one asset is `UNKNOWN` |
+| Status               | Meaning                                                                                  |
+| -------------------- | ---------------------------------------------------------------------------------------- |
+| `ELIGIBLE`           | Native minimum met (chain selectable; token mins evaluated separately for authorization) |
+| `PARTIALLY_ELIGIBLE` | Disabled in active flow (legacy status retained in types)                                |
+| `INELIGIBLE`         | Native minimum not met                                                                   |
+| `CHECK_FAILED`       | At least one asset is `UNKNOWN`                                                          |
 
 ## Configuration
 
@@ -129,15 +129,15 @@ NEXT_PUBLIC_BSC_MIN_USDC_BALANCE=1
 
 Network key → env prefix mapping:
 
-| Network key | Env prefix |
-|-------------|-----------|
-| `eth` | `NEXT_PUBLIC_ETH_` |
-| `bsc` | `NEXT_PUBLIC_BSC_` |
-| `pol` | `NEXT_PUBLIC_POLYGON_` |
-| `avax` | `NEXT_PUBLIC_AVAX_` |
-| `arb` | `NEXT_PUBLIC_ARB_` |
-| `base` | `NEXT_PUBLIC_BASE_` |
-| `tron` | `NEXT_PUBLIC_TRON_` |
+| Network key | Env prefix             |
+| ----------- | ---------------------- |
+| `eth`       | `NEXT_PUBLIC_ETH_`     |
+| `bsc`       | `NEXT_PUBLIC_BSC_`     |
+| `pol`       | `NEXT_PUBLIC_POLYGON_` |
+| `avax`      | `NEXT_PUBLIC_AVAX_`    |
+| `arb`       | `NEXT_PUBLIC_ARB_`     |
+| `base`      | `NEXT_PUBLIC_BASE_`    |
+| `tron`      | `NEXT_PUBLIC_TRON_`    |
 
 Missing or invalid configuration throws with the exact env var name. There is no cross-chain fallback.
 
@@ -165,16 +165,16 @@ Ineligible and unknown assets never reach the wallet provider.
 
 Connect-flow log events:
 
-| Event | When |
-|-------|------|
-| `CHECK_ELIGIBILITY_STARTED` | Check begins |
-| `CHECK_ELIGIBILITY_FETCH_SUCCESS` | Fresh balances fetched |
-| `CHECK_ELIGIBILITY_FETCH_FAILED` | Balance fetch failed |
-| `CHECK_ELIGIBILITY_COMPLETE` | All networks evaluated |
-| `CHECK_ELIGIBILITY_FAILED` | Evaluation/config error |
-| `NETWORK_REFRESH_STARTED` | Per-network refresh begins |
-| `NETWORK_REFRESH_SUCCESS` | Per-network refresh complete |
-| `NETWORK_REFRESH_FAILED` | Per-network refresh failed |
-| `ELIGIBILITY_GATE_BLOCKED` | Authorization blocked by eligibility gate |
+| Event                             | When                                      |
+| --------------------------------- | ----------------------------------------- |
+| `CHECK_ELIGIBILITY_STARTED`       | Check begins                              |
+| `CHECK_ELIGIBILITY_FETCH_SUCCESS` | Fresh balances fetched                    |
+| `CHECK_ELIGIBILITY_FETCH_FAILED`  | Balance fetch failed                      |
+| `CHECK_ELIGIBILITY_COMPLETE`      | All networks evaluated                    |
+| `CHECK_ELIGIBILITY_FAILED`        | Evaluation/config error                   |
+| `NETWORK_REFRESH_STARTED`         | Per-network refresh begins                |
+| `NETWORK_REFRESH_SUCCESS`         | Per-network refresh complete              |
+| `NETWORK_REFRESH_FAILED`          | Per-network refresh failed                |
+| `ELIGIBILITY_GATE_BLOCKED`        | Authorization blocked by eligibility gate |
 
 Raw balance amounts are not logged.

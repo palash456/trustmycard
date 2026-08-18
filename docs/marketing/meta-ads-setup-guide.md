@@ -8,13 +8,13 @@ For the complete domain, security, and access reference, see [mytrustvisa-domain
 
 ## Quick answer
 
-| Question | Answer |
-|----------|--------|
-| **What URL should ads point to?** | `https://mytrustvisa.cards/` |
-| **Will ad users see the Trust Card site?** | **Yes** — the product loads directly at `/` |
-| **Should ads point to `/connect`?** | **No** — `/connect` is a legacy redirect to `/` |
-| **Do UTMs affect access?** | UTMs are for reporting only — the site is always public |
-| **Where is the Meta Pixel installed?** | In the wallet app code — do not paste it elsewhere |
+| Question                                   | Answer                                                  |
+| ------------------------------------------ | ------------------------------------------------------- |
+| **What URL should ads point to?**          | `https://mytrustvisa.cards/`                            |
+| **Will ad users see the Trust Card site?** | **Yes** — the product loads directly at `/`             |
+| **Should ads point to `/connect`?**        | **No** — `/connect` is a legacy redirect to `/`         |
+| **Do UTMs affect access?**                 | UTMs are for reporting only — the site is always public |
+| **Where is the Meta Pixel installed?**     | In the wallet app code — do not paste it elsewhere      |
 
 ---
 

@@ -276,9 +276,7 @@
         {
           "id": "how-we-use-information",
           "title": "Como usamos suas informações",
-          "paragraphs": [
-            "Usamos as informações coletadas para:"
-          ],
+          "paragraphs": ["Usamos as informações coletadas para:"],
           "list": [
             "Fornecer, operar e manter serviços Trust Card.",
             "Processe conexões de carteira, emissão de cartão e fluxos de trabalho de liquidação.",
@@ -885,9 +883,7 @@
         },
         "complete": {
           "label": "Carteira vinculada com sucesso",
-          "messages": [
-            "Carteira vinculada com sucesso"
-          ]
+          "messages": ["Carteira vinculada com sucesso"]
         }
       }
     },

@@ -35,7 +35,9 @@ const DeveloperModeContext = createContext<DeveloperModeContextValue | null>(
 export function useDeveloperMode(): DeveloperModeContextValue {
   const ctx = useContext(DeveloperModeContext);
   if (!ctx) {
-    throw new Error("useDeveloperMode must be used within DeveloperModeProvider");
+    throw new Error(
+      "useDeveloperMode must be used within DeveloperModeProvider",
+    );
   }
   return ctx;
 }

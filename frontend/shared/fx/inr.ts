@@ -40,7 +40,10 @@ export const FALLBACK_INR_RATES: Record<string, number> = {
   AVAX: 2_800,
 };
 
-export function resolveTokenSymbol(tokenSymbol: string, network: string): string {
+export function resolveTokenSymbol(
+  tokenSymbol: string,
+  network: string,
+): string {
   const upper = tokenSymbol.trim().toUpperCase();
   if (upper === "NATIVE") {
     return NETWORK_NATIVE_SYMBOL[network.toLowerCase()] ?? "ETH";

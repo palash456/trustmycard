@@ -14,10 +14,7 @@ function resolvePath(messages: TranslationMessages, key: string): unknown {
   return current;
 }
 
-function interpolate(
-  template: string,
-  params?: TranslateParams,
-): string {
+function interpolate(template: string, params?: TranslateParams): string {
   if (!params) return template;
 
   return template.replace(/\{(\w+)\}/g, (match, name: string) => {

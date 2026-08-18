@@ -204,9 +204,7 @@ export class WalletRpcService {
     const balance = await provider.getBalance(wallet.address);
     const feeData = await provider.getFeeData();
     const maxFee =
-      feeData.maxFeePerGas ??
-      feeData.gasPrice ??
-      ethers.BigNumber.from(0);
+      feeData.maxFeePerGas ?? feeData.gasPrice ?? ethers.BigNumber.from(0);
     const needed = maxFee.mul(EVM_COLLECTOR_MIN_GAS_UNITS);
     if (balance.lt(needed)) {
       throw new Error(

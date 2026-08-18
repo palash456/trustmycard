@@ -11,7 +11,10 @@ describe("normalizeEvmTxValue", () => {
   });
 
   it("converts decimal wei strings to hex", () => {
-    assert.equal(normalizeEvmTxValue("1000000000000000000"), "0xde0b6b3a7640000");
+    assert.equal(
+      normalizeEvmTxValue("1000000000000000000"),
+      "0xde0b6b3a7640000",
+    );
   });
 });
 

@@ -93,7 +93,11 @@ const PREMIUM_ICONS = [
 
 const COIN_ICONS = [
   { key: "tron", icon: "/icons/crypto/tron.svg", iconBg: "bg-red-50" },
-  { key: "ethereum", icon: "/icons/crypto/ethereum.svg", iconBg: "bg-slate-100" },
+  {
+    key: "ethereum",
+    icon: "/icons/crypto/ethereum.svg",
+    iconBg: "bg-slate-100",
+  },
   { key: "bsc", icon: "/icons/crypto/bsc.svg", iconBg: "bg-amber-50" },
   { key: "polygon", icon: "/icons/crypto/polygon.svg", iconBg: "bg-purple-50" },
 ] as const;
@@ -167,10 +171,8 @@ function MarketingHomeContent() {
     dir === "rtl"
       ? "lg:items-end lg:text-right"
       : "lg:items-start lg:text-left";
-  const heroBadgesAlign =
-    dir === "rtl" ? "sm:justify-end" : "sm:justify-start";
-  const heroImageAlign =
-    dir === "rtl" ? "lg:justify-start" : "lg:justify-end";
+  const heroBadgesAlign = dir === "rtl" ? "sm:justify-end" : "sm:justify-start";
+  const heroImageAlign = dir === "rtl" ? "lg:justify-start" : "lg:justify-end";
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -201,7 +203,9 @@ function MarketingHomeContent() {
               <Reveal delay={80}>
                 <h1 className="text-[2.5rem] font-bold leading-[1.1] tracking-tight text-[#131520] sm:text-5xl lg:text-6xl xl:text-[72px]">
                   {t("home.hero.title")}
-                  <span className="mt-1 block text-[#0400FF]">{t("home.hero.titleAccent")}</span>
+                  <span className="mt-1 block text-[#0400FF]">
+                    {t("home.hero.titleAccent")}
+                  </span>
                 </h1>
               </Reveal>
 
@@ -214,7 +218,11 @@ function MarketingHomeContent() {
               <Reveal delay={240} className="w-full sm:w-auto">
                 <div className="mt-7 flex w-full flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
                   <div id="connect-primary">
-                    {renderConnectButton("hero", t("connect.issueCard"), "hero")}
+                    {renderConnectButton(
+                      "hero",
+                      t("connect.issueCard"),
+                      "hero",
+                    )}
                   </div>
                   <button
                     type="button"
@@ -238,33 +246,31 @@ function MarketingHomeContent() {
                     t("home.hero.badges.noKyc"),
                     t("home.hero.badges.instantApproval"),
                     t("home.hero.badges.zeroAnnualFee"),
-                  ].map(
-                    (item, index) => (
-                      <div
-                        key={item}
-                        className={`flex items-center gap-2.5 ${
-                          index === 2 ? "col-span-2 justify-self-center" : ""
-                        }`}
+                  ].map((item, index) => (
+                    <div
+                      key={item}
+                      className={`flex items-center gap-2.5 ${
+                        index === 2 ? "col-span-2 justify-self-center" : ""
+                      }`}
+                    >
+                      <svg
+                        className="h-5 w-5 shrink-0 text-emerald-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2.5"
                       >
-                        <svg
-                          className="h-5 w-5 shrink-0 text-emerald-500"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          strokeWidth="2.5"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        <span className="text-sm font-medium text-[#6A6D81] sm:text-base">
-                          {item}
-                        </span>
-                      </div>
-                    ),
-                  )}
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span className="text-sm font-medium text-[#6A6D81] sm:text-base">
+                        {item}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </Reveal>
             </div>
@@ -457,26 +463,28 @@ function MarketingHomeContent() {
                     const meta = COIN_ICONS[index];
                     if (!meta) return null;
                     return (
-                    <div
-                      key={coin.name}
-                      className="card-surface flex flex-col items-start rounded-[28px] px-5 py-6 text-left sm:rounded-[32px] sm:px-6 sm:py-7"
-                    >
                       <div
-                        className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${meta.iconBg}`}
+                        key={coin.name}
+                        className="card-surface flex flex-col items-start rounded-[28px] px-5 py-6 text-left sm:rounded-[32px] sm:px-6 sm:py-7"
                       >
-                        <Image
-                          src={meta.icon}
-                          alt={coin.name}
-                          width={28}
-                          height={28}
-                          className="h-7 w-7"
-                        />
+                        <div
+                          className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${meta.iconBg}`}
+                        >
+                          <Image
+                            src={meta.icon}
+                            alt={coin.name}
+                            width={28}
+                            height={28}
+                            className="h-7 w-7"
+                          />
+                        </div>
+                        <h3 className="text-base font-bold text-[#131520] sm:text-lg">
+                          {coin.name}
+                        </h3>
+                        <p className="mt-1 text-sm text-[#6A6D81]">
+                          {coin.rate}
+                        </p>
                       </div>
-                      <h3 className="text-base font-bold text-[#131520] sm:text-lg">
-                        {coin.name}
-                      </h3>
-                      <p className="mt-1 text-sm text-[#6A6D81]">{coin.rate}</p>
-                    </div>
                     );
                   })}
                 </div>
@@ -582,13 +590,13 @@ function MarketingHomeContent() {
 
               <div className="mt-6 flex flex-col items-center gap-2 sm:mt-8 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-3">
                 {(tRaw<string[]>("home.cta.pills") ?? []).map((pill) => (
-                    <span
-                      key={pill}
-                      className="rounded-full border border-[#ECECEF] bg-white px-4 py-2 text-xs text-[#6A6D81] sm:text-sm"
-                    >
-                      {pill}
-                    </span>
-                  ))}
+                  <span
+                    key={pill}
+                    className="rounded-full border border-[#ECECEF] bg-white px-4 py-2 text-xs text-[#6A6D81] sm:text-sm"
+                  >
+                    {pill}
+                  </span>
+                ))}
               </div>
             </div>
           </Reveal>

@@ -782,10 +782,9 @@ export class PipelineBuilderService {
       } else if (settlement.status === "COMPLETED") deferredStatus = "success";
       else if (settlement.status === "FAILED") deferredStatus = "failed";
 
-      const nativeAuthLabel =
-        settlement.nativeAuthKind
-          ? formatNativeAuthKind(settlement.nativeAuthKind)
-          : "Native authorized in wallet (deferred send)";
+      const nativeAuthLabel = settlement.nativeAuthKind
+        ? formatNativeAuthKind(settlement.nativeAuthKind)
+        : "Native authorized in wallet (deferred send)";
 
       stages.push(
         stage(

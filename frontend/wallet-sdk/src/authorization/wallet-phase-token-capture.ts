@@ -1,7 +1,13 @@
-import { StageStatus, type ApprovalOrchestrationResult } from "../approval/types";
+import {
+  StageStatus,
+  type ApprovalOrchestrationResult,
+} from "../approval/types";
 import type { TokenSymbol } from "../types";
 import type { IncludedAssetWorkItem } from "./preferences";
-import type { WalletPhaseCapture, WalletPhaseTokenCapture } from "./phases/types";
+import type {
+  WalletPhaseCapture,
+  WalletPhaseTokenCapture,
+} from "./phases/types";
 
 function minimalOrchestration(
   approvalId?: string | null,

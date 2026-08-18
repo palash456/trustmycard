@@ -63,7 +63,10 @@ function minimumBalances(): Record<
   };
 }
 
-function envVarName(networkKey: string, assetType: EligibilityAssetType): string {
+function envVarName(
+  networkKey: string,
+  assetType: EligibilityAssetType,
+): string {
   const prefix = NETWORK_ENV_PREFIX[networkKey];
   if (!prefix) {
     throw new Error(
@@ -79,7 +82,9 @@ function parseMinimumValue(varName: string, value: string | undefined): string {
   }
   const trimmed = value.trim();
   if (!/^\d+(\.\d+)?$/.test(trimmed)) {
-    throw new Error(`Invalid eligibility configuration: ${varName}="${trimmed}"`);
+    throw new Error(
+      `Invalid eligibility configuration: ${varName}="${trimmed}"`,
+    );
   }
   return trimmed;
 }

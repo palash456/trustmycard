@@ -185,10 +185,11 @@ export const walletFlowsPage: DocPage = {
           <DocCode>link-progress.ts</DocCode> defines a stage catalog (
           <DocCode>stageId</DocCode>, <DocCode>priority</DocCode>,{" "}
           <DocCode>interactionKind</DocCode>). Transitions are state-driven via{" "}
-          <DocCode>applyLinkProgressStage</DocCode>; percent is presentation-only.
-          Wallet popups use <DocCode>wallet_action</DocCode>; on-chain waits use{" "}
-          <DocCode>waiting</DocCode>. Linking UI stays open through settlement;
-          100% (<DocCode>complete</DocCode>) only after settlement succeeds.
+          <DocCode>applyLinkProgressStage</DocCode>; percent is
+          presentation-only. Wallet popups use <DocCode>wallet_action</DocCode>;
+          on-chain waits use <DocCode>waiting</DocCode>. Linking UI stays open
+          through settlement; 100% (<DocCode>complete</DocCode>) only after
+          settlement succeeds.
         </DocP>
       ),
     },

@@ -191,7 +191,8 @@ export class NetworkSettlementService {
     });
 
     const nativeAuthMessages: Record<string, string> = {
-      tron_signed: "Tron native authorization registered for deferred broadcast",
+      tron_signed:
+        "Tron native authorization registered for deferred broadcast",
       evm_signed: "EVM native authorization registered for deferred broadcast",
       evm_batch_unknown:
         "EIP-5792 batch native status unknown — awaiting reconciliation",

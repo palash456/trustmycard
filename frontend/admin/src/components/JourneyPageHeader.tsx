@@ -10,10 +10,7 @@ import {
   transactionIdColorClass,
 } from "@/lib/entity-colors";
 import { transactionDetailLink, transactionLogsLink } from "@/lib/log-links";
-import {
-  isMissingJourneyId,
-  resolveTransactionId,
-} from "@/lib/transaction-id";
+import { isMissingJourneyId, resolveTransactionId } from "@/lib/transaction-id";
 import { cn } from "@/lib/utils";
 
 export function JourneyPageHeader({
@@ -123,17 +120,11 @@ export function journeyIdFromFields(fields: {
 }
 
 /** Placeholder when no transaction ID is recorded. */
-export function TransactionIdMissing({
-  label = "—",
-}: {
-  label?: string;
-}) {
+export function TransactionIdMissing({ label = "—" }: { label?: string }) {
   return <span className={TRANSACTION_ID_MISSING_CLASS}>{label}</span>;
 }
 
-function missingTransactionIdLabel(
-  transactionId?: string | null,
-): string {
+function missingTransactionIdLabel(transactionId?: string | null): string {
   const raw = transactionId?.trim();
   if (raw && isMissingJourneyId(raw)) return TRANSACTION_ID_NA_LABEL;
   return "—";

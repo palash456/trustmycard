@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import {
-  getMetaPixelEnvConfig,
-  normalizeAppOrigin,
-} from "./meta-pixel-env.ts";
+import { getMetaPixelEnvConfig, normalizeAppOrigin } from "./meta-pixel-env.ts";
 
 test("normalizeAppOrigin strips path and trailing slash via origin", () => {
   assert.equal(

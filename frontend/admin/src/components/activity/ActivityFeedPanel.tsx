@@ -172,17 +172,23 @@ export function ActivityFeedPanel({
                       Transaction ID
                     </TableHead>
                     <TableHead className={headClass("user")}>User</TableHead>
-                    <TableHead className={headClass("wallet")}>Wallet</TableHead>
+                    <TableHead className={headClass("wallet")}>
+                      Wallet
+                    </TableHead>
                     <TableHead className={headClass("network")}>
                       Network
                     </TableHead>
                     <TableHead className={headClass("step")}>Step</TableHead>
-                    <TableHead className={headClass("status")}>Status</TableHead>
+                    <TableHead className={headClass("status")}>
+                      Status
+                    </TableHead>
                     <TableHead className={headClass("details")}>
                       Details
                     </TableHead>
                     {showErrorCol ? (
-                      <TableHead className={headClass("error")}>Error</TableHead>
+                      <TableHead className={headClass("error")}>
+                        Error
+                      </TableHead>
                     ) : null}
                     <TableHead className={headClass("action", "text-right")}>
                       Actions

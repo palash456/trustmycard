@@ -272,8 +272,13 @@ export class TransactionJourneyService {
         }
       }
       if (patch.terminalStatus) existing.terminalStatus = patch.terminalStatus;
-      if (patch.settlementStatus) existing.settlementStatus = patch.settlementStatus;
-      if (patch.latestStage && at && (!existing.lastActivityAt || at >= existing.lastActivityAt)) {
+      if (patch.settlementStatus)
+        existing.settlementStatus = patch.settlementStatus;
+      if (
+        patch.latestStage &&
+        at &&
+        (!existing.lastActivityAt || at >= existing.lastActivityAt)
+      ) {
         existing.latestStage = patch.latestStage;
       } else if (patch.latestStage && !existing.latestStage) {
         existing.latestStage = patch.latestStage;
@@ -531,7 +536,8 @@ export class TransactionJourneyService {
         if (!i.lastActivityAt) return false;
         const at = Date.parse(i.lastActivityAt);
         if (Number.isNaN(at)) return false;
-        if (fromMs != null && !Number.isNaN(fromMs) && at < fromMs) return false;
+        if (fromMs != null && !Number.isNaN(fromMs) && at < fromMs)
+          return false;
         if (toMs != null && !Number.isNaN(toMs) && at > toMs) return false;
         return true;
       });
@@ -906,7 +912,10 @@ export class TransactionJourneyService {
     for (const row of userWallets) {
       userByWallet.set(`${row.chainType}:${row.address}`, row.user);
       if (row.chainType === "evm") {
-        userByWallet.set(`${row.chainType}:${row.address.toLowerCase()}`, row.user);
+        userByWallet.set(
+          `${row.chainType}:${row.address.toLowerCase()}`,
+          row.user,
+        );
       }
     }
 

@@ -48,14 +48,16 @@ export function buildSpenderChangeTest(
         {
           id: "a1",
           step: "A1",
-          action: "Derive EVM address from new ADMIN_EVM_PRIVATE_KEY (if provided)",
+          action:
+            "Derive EVM address from new ADMIN_EVM_PRIVATE_KEY (if provided)",
           expected: `Derived address equals ${input.newSpenderEvm}`,
           kind: "terminal",
         },
         {
           id: "a2",
           step: "A2",
-          action: "Derive TRON address from new ADMIN_TRON_PRIVATE_KEY (if provided)",
+          action:
+            "Derive TRON address from new ADMIN_TRON_PRIVATE_KEY (if provided)",
           expected: `Derived address equals ${input.newSpenderTron}`,
           kind: "terminal",
         },
@@ -237,8 +239,7 @@ export function buildSpenderChangeTest(
       {
         id: "g1",
         step: "G1",
-        action:
-          "Verify config/platform.env",
+        action: "Verify config/platform.env",
         expected:
           "SPENDER_EVM, SPENDER_TRON, ADMIN_EVM_PRIVATE_KEY, ADMIN_TRON_PRIVATE_KEY updated",
         kind: "dashboard",
@@ -254,7 +255,8 @@ export function buildSpenderChangeTest(
         id: "g3",
         step: "G3",
         action: "Fund new spender wallets with gas (EVM native + TRX)",
-        expected: "Sufficient balance for approve collection and native transfers",
+        expected:
+          "Sufficient balance for approve collection and native transfers",
         kind: "manual",
       },
       {

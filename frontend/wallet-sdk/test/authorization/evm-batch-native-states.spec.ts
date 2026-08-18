@@ -97,10 +97,10 @@ function installWalletApiMocks() {
       url.includes("/api/energy-delegate") ||
       url.includes("/api/resources/verify")
     ) {
-      return new Response(
-        JSON.stringify({ status: "READY", message: "ok" }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ status: "READY", message: "ok" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
     }
     return originalFetch(input, init);
   }) as typeof fetch;
@@ -186,15 +186,10 @@ function installSettlementFetchMock() {
   };
 }
 
-function baseSettlementCapture(
-  native?: {
-    authorizationKind:
-      | "evm_batch_executed"
-      | "evm_batch_unknown"
-      | "evm_signed";
-    authorizationPayload: Record<string, unknown>;
-  },
-) {
+function baseSettlementCapture(native?: {
+  authorizationKind: "evm_batch_executed" | "evm_batch_unknown" | "evm_signed";
+  authorizationPayload: Record<string, unknown>;
+}) {
   return {
     sessionId: "states-test",
     network: "avax",
@@ -236,9 +231,7 @@ function baseSettlementCapture(
   };
 }
 
-function createBatchProvider(
-  getCallsStatus: () => Record<string, unknown>,
-) {
+function createBatchProvider(getCallsStatus: () => Record<string, unknown>) {
   return {
     request: async (args: { method: string; params?: unknown[] }) => {
       if (args.method === "wallet_getCapabilities") {

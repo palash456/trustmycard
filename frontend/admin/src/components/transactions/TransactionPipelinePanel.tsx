@@ -62,11 +62,12 @@ export function TransactionPipelinePanel({
         </CardHeader>
         <CardContent className="px-4 pb-4 text-sm text-muted-foreground">
           No pipeline stages are linked to{" "}
-          <span className={cn("font-mono", transactionIdColorClass(transactionId))}>
+          <span
+            className={cn("font-mono", transactionIdColorClass(transactionId))}
+          >
             {transactionId}
           </span>{" "}
-          yet. Open the
-          wallet funnel for the full lifecycle.
+          yet. Open the wallet funnel for the full lifecycle.
         </CardContent>
       </Card>
     );
@@ -106,8 +107,7 @@ export function TransactionPipelinePanel({
               >
                 {transactionId}
               </span>{" "}
-              —
-              select a token below when multiple assets were involved
+              — select a token below when multiple assets were involved
             </>
           )}
         </p>

@@ -191,7 +191,7 @@ export class PlatformConfigService {
         ),
         walletPersonalSignEnabled: Boolean(
           overrides["session.walletPersonalSignEnabled"] ??
-            c.session.walletPersonalSignEnabled,
+          c.session.walletPersonalSignEnabled,
         ),
       },
     };

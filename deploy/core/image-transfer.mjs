@@ -11,7 +11,9 @@ function expandHome(path) {
 
 function runTransfer(saveArgs, loadArgs) {
   return new Promise((resolve, reject) => {
-    const save = spawn("docker", saveArgs, { stdio: ["ignore", "pipe", "inherit"] });
+    const save = spawn("docker", saveArgs, {
+      stdio: ["ignore", "pipe", "inherit"],
+    });
     const load = spawn(loadArgs[0], loadArgs.slice(1), {
       stdio: ["pipe", "inherit", "inherit"],
     });
@@ -24,7 +26,8 @@ function runTransfer(saveArgs, loadArgs) {
     const maybeDone = () => {
       if (saveCode === null || loadCode === null) return;
       if (saveCode !== 0) reject(new Error("docker save failed"));
-      else if (loadCode !== 0) reject(new Error("Image transfer to VPS failed"));
+      else if (loadCode !== 0)
+        reject(new Error("Image transfer to VPS failed"));
       else resolve();
     };
 

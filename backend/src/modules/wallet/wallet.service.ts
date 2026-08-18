@@ -80,7 +80,9 @@ export class WalletService {
         for (const rpc of rpcs) {
           try {
             native = formatUnits(
-              BigInt(await this.rpc.rpcCall(rpc, "eth_getBalance", [evm, "latest"])),
+              BigInt(
+                await this.rpc.rpcCall(rpc, "eth_getBalance", [evm, "latest"]),
+              ),
               18,
             );
             break;
@@ -202,9 +204,7 @@ export class WalletService {
     return this.nativeReadiness.evaluateNativeReadiness(args);
   }
 
-  parseNativeReadinessTokenInputs(
-    body: Record<string, unknown>,
-  ):
+  parseNativeReadinessTokenInputs(body: Record<string, unknown>):
     | Array<{
         token: string;
         shouldAttemptTransfer: boolean;

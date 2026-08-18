@@ -262,9 +262,7 @@
         {
           "id": "information-we-collect",
           "title": "Topladığımız Bilgiler",
-          "paragraphs": [
-            "Aşağıdaki bilgi kategorilerini toplayabiliriz:"
-          ],
+          "paragraphs": ["Aşağıdaki bilgi kategorilerini toplayabiliriz:"],
           "list": [
             "Genel cüzdan adresleri ve ağ yetkilendirme kayıtları dahil olmak üzere cüzdan bağlantı verileri.",
             "Sağlandığında e-posta adresi gibi hesap ve iletişim bilgileri.",
@@ -276,9 +274,7 @@
         {
           "id": "how-we-use-information",
           "title": "Bilgilerinizi Nasıl Kullanıyoruz",
-          "paragraphs": [
-            "Toplanan bilgileri aşağıdaki amaçlarla kullanırız:"
-          ],
+          "paragraphs": ["Toplanan bilgileri aşağıdaki amaçlarla kullanırız:"],
           "list": [
             "Trust Card hizmetlerini sağlayın, çalıştırın ve sürdürün.",
             "M-cüzdan bağlantılarını, kart verme ve ödeme iş akışlarını işleyin.",
@@ -885,9 +881,7 @@
         },
         "complete": {
           "label": "Wallet linked successfully",
-          "messages": [
-            "Cüzdan başarıyla bağlandı"
-          ]
+          "messages": ["Cüzdan başarıyla bağlandı"]
         }
       }
     },

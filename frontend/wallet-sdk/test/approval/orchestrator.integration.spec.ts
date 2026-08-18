@@ -97,7 +97,10 @@ describe("ApprovalOrchestrator integration", () => {
 
     assert.equal(result.ok, true);
     assert.equal(result.status, StageStatus.OK);
-    assert.equal(result.context?.lifecycleState, ApprovalLifecycleState.COMPLETED);
+    assert.equal(
+      result.context?.lifecycleState,
+      ApprovalLifecycleState.COMPLETED,
+    );
     assert.ok(api.state.verifyCalls >= 3);
     assert.equal(
       result.stages.filter(

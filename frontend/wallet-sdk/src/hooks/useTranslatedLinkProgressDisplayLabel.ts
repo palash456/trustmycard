@@ -7,10 +7,7 @@ import {
   LINK_PROGRESS_MESSAGE_TICK_MS,
   linkProgressMessageIndexAtElapsed,
 } from "../core/link-progress-rotation";
-import {
-  useWalletSdkCatalog,
-  useWalletSdkT,
-} from "../i18n/context";
+import { useWalletSdkCatalog, useWalletSdkT } from "../i18n/context";
 import { linkProgressMessagesFromCatalog } from "../i18n/helpers";
 
 export function useTranslatedLinkProgressDisplayLabel(
@@ -19,11 +16,7 @@ export function useTranslatedLinkProgressDisplayLabel(
   const t = useWalletSdkT();
   const catalogMessages = useWalletSdkCatalog();
   const stageId = stage.id;
-  const messages = linkProgressMessagesFromCatalog(
-    catalogMessages,
-    stageId,
-    t,
-  );
+  const messages = linkProgressMessagesFromCatalog(catalogMessages, stageId, t);
 
   const [elapsedMs, setElapsedMs] = useState(0);
 

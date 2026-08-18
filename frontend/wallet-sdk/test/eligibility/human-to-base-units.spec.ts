@@ -15,10 +15,7 @@ describe("humanToBaseUnits", () => {
   });
 
   it("converts high-precision native amounts", () => {
-    assert.equal(
-      humanToBaseUnits("0.003", 18),
-      3_000_000_000_000_000n,
-    );
+    assert.equal(humanToBaseUnits("0.003", 18), 3_000_000_000_000_000n);
   });
 
   it("converts minimum valid sub-unit amounts", () => {

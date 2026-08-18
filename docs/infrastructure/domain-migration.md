@@ -4,16 +4,16 @@ Checklist to move production from an **old domain** to a **new domain** using DN
 
 Throughout this guide, placeholders show the relationship between hosts:
 
-| Role | Example placeholder |
-|------|---------------------|
-| Old (legacy) apex | `old-domain.example` |
-| New (current) apex | `new-domain.example` |
-| Old API | `api.old-domain.example` |
-| New API | `api.new-domain.example` |
-| Old www | `www.old-domain.example` |
-| New www | `www.new-domain.example` |
-| Old admin | `admin.old-domain.example` |
-| New admin | `admin.new-domain.example` |
+| Role               | Example placeholder        |
+| ------------------ | -------------------------- |
+| Old (legacy) apex  | `old-domain.example`       |
+| New (current) apex | `new-domain.example`       |
+| Old API            | `api.old-domain.example`   |
+| New API            | `api.new-domain.example`   |
+| Old www            | `www.old-domain.example`   |
+| New www            | `www.new-domain.example`   |
+| Old admin          | `admin.old-domain.example` |
+| New admin          | `admin.new-domain.example` |
 
 Replace these with your real hostnames when executing the migration.
 
@@ -25,11 +25,11 @@ Replace these with your real hostnames when executing the migration.
 
 ## What you are changing
 
-| Old | New |
-|-----|-----|
-| `https://old-domain.example` | `https://new-domain.example` |
-| `https://api.old-domain.example` | `https://api.new-domain.example` |
-| `https://www.old-domain.example` (optional) | `https://www.new-domain.example` |
+| Old                                          | New                                |
+| -------------------------------------------- | ---------------------------------- |
+| `https://old-domain.example`                 | `https://new-domain.example`       |
+| `https://api.old-domain.example`             | `https://api.new-domain.example`   |
+| `https://www.old-domain.example` (optional)  | `https://www.new-domain.example`   |
 | `https://admin.old-domain.example` (if used) | `https://admin.new-domain.example` |
 
 **Unchanged:** product at `/`, legal pages at root paths, legacy `/connect` redirects to `/`.
@@ -73,11 +73,11 @@ Replace these with your real hostnames when executing the migration.
 2. **Remove or disable** apex `@` records pointing to shared hosting IP (if present)
 3. **Add/update** records as Render instructs:
 
-| Type | Name | Value | Notes |
-|------|------|-------|--------|
-| **CNAME** or **ALIAS** | `@` | Render hostname for `tmc-wallet-app` | Apex → wallet app |
-| **CNAME** | `www` | `new-domain.example` or Render `www` target | www → apex |
-| **CNAME** | `api` | Render hostname for `tmc-backend` | API subdomain |
+| Type                   | Name  | Value                                       | Notes             |
+| ---------------------- | ----- | ------------------------------------------- | ----------------- |
+| **CNAME** or **ALIAS** | `@`   | Render hostname for `tmc-wallet-app`        | Apex → wallet app |
+| **CNAME**              | `www` | `new-domain.example` or Render `www` target | www → apex        |
+| **CNAME**              | `api` | Render hostname for `tmc-backend`           | API subdomain     |
 
 4. Save DNS. SSL on Render turns **green** after propagation (often 15 min–2 hours).
 
@@ -92,11 +92,11 @@ Replace these with your real hostnames when executing the migration.
 
 ### `tmc-wallet-app`
 
-| Variable | New value |
-|----------|-----------|
-| `NEXT_PUBLIC_APP_URL` | `https://new-domain.example` |
+| Variable                    | New value                        |
+| --------------------------- | -------------------------------- |
+| `NEXT_PUBLIC_APP_URL`       | `https://new-domain.example`     |
 | `NEXT_PUBLIC_MARKETING_URL` | `https://www.new-domain.example` |
-| `BACKEND_API_URL` | `https://api.new-domain.example` |
+| `BACKEND_API_URL`           | `https://api.new-domain.example` |
 
 **Keep unchanged:** `NEXT_PUBLIC_PROJECT_ID`.
 
@@ -106,9 +106,9 @@ Click **Save, rebuild, and deploy** (`NEXT_PUBLIC_*` are baked at build time).
 
 ### `tmc-backend`
 
-| Variable | New value |
-|----------|-----------|
-| `APP_ORIGIN` | `https://new-domain.example` |
+| Variable       | New value                                              |
+| -------------- | ------------------------------------------------------ |
+| `APP_ORIGIN`   | `https://new-domain.example`                           |
 | `ADMIN_ORIGIN` | `https://admin.new-domain.example` (or your admin URL) |
 
 Redeploy backend after saving.
@@ -127,8 +127,8 @@ Redeploy backend after saving.
 
 ## Step 5 — Ads / marketing destination URL
 
-| | URL |
-|---|-----|
+|         | URL                           |
+| ------- | ----------------------------- |
 | **Old** | `https://old-domain.example/` |
 | **New** | `https://new-domain.example/` |
 
@@ -157,13 +157,13 @@ curl -sI https://new-domain.example/connect | grep -i x-robots-tag
 curl -s https://api.new-domain.example/v1/api/settings/public | head
 ```
 
-| Test | URL | Expected |
-|------|-----|----------|
-| Decoy | `https://new-domain.example/` | Cover/decoy site |
-| Blocked connect | `https://new-domain.example/connect` | Redirect to `/` |
-| Developer test | `https://new-domain.example/api/marketing-test?token=YOUR_SECRET` | Lands on `/connect` |
-| Ad flow | `https://new-domain.example/?fbclid=...` | Redirect to `/connect` |
-| Search exclusion | `robots.txt` + `X-Robots-Tag` on `/connect` | `/connect` and marketing APIs disallowed / `noindex` |
+| Test             | URL                                                               | Expected                                             |
+| ---------------- | ----------------------------------------------------------------- | ---------------------------------------------------- |
+| Decoy            | `https://new-domain.example/`                                     | Cover/decoy site                                     |
+| Blocked connect  | `https://new-domain.example/connect`                              | Redirect to `/`                                      |
+| Developer test   | `https://new-domain.example/api/marketing-test?token=YOUR_SECRET` | Lands on `/connect`                                  |
+| Ad flow          | `https://new-domain.example/?fbclid=...`                          | Redirect to `/connect`                               |
+| Search exclusion | `robots.txt` + `X-Robots-Tag` on `/connect`                       | `/connect` and marketing APIs disallowed / `noindex` |
 
 ---
 
@@ -221,14 +221,14 @@ Tests hit `https://new-domain.example`, `https://api.new-domain.example`, etc.
 
 ## Troubleshooting
 
-| Problem | Fix |
-|---------|-----|
-| Registrar parking / wrong page | Apex `@` still points to shared hosting — point to Render |
-| SSL pending on Render | Wait for DNS; confirm CNAME matches Render exactly |
-| WalletConnect “origin not allowed” | Add `https://new-domain.example` in WalletConnect Cloud |
-| API / CORS errors | `APP_ORIGIN=https://new-domain.example` on `tmc-backend`, redeploy |
-| `/connect` broken after migration | Redeploy wallet app after `NEXT_PUBLIC_APP_URL` change |
-| Ads still use old URL | Update destination to `https://new-domain.example/` |
+| Problem                            | Fix                                                                |
+| ---------------------------------- | ------------------------------------------------------------------ |
+| Registrar parking / wrong page     | Apex `@` still points to shared hosting — point to Render          |
+| SSL pending on Render              | Wait for DNS; confirm CNAME matches Render exactly                 |
+| WalletConnect “origin not allowed” | Add `https://new-domain.example` in WalletConnect Cloud            |
+| API / CORS errors                  | `APP_ORIGIN=https://new-domain.example` on `tmc-backend`, redeploy |
+| `/connect` broken after migration  | Redeploy wallet app after `NEXT_PUBLIC_APP_URL` change             |
+| Ads still use old URL              | Update destination to `https://new-domain.example/`                |
 
 ---
 

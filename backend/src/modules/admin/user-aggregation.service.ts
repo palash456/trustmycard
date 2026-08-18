@@ -124,11 +124,11 @@ export class UserAggregationService {
 
     const hasPostEnrichFilters = Boolean(
       networkFilter ||
-        workflowFilter ||
-        healthFilter ||
-        approvalStatusFilter ||
-        collectionStatusFilter ||
-        hasErrorFilter,
+      workflowFilter ||
+      healthFilter ||
+      approvalStatusFilter ||
+      collectionStatusFilter ||
+      hasErrorFilter,
     );
 
     const baseUsers = await prisma.user.findMany({
@@ -138,7 +138,10 @@ export class UserAggregationService {
     });
 
     if (!hasPostEnrichFilters && sortField === "lastActivity") {
-      const sortedUsers = await this.rankUsersByLastActivity(baseUsers, sortDir);
+      const sortedUsers = await this.rankUsersByLastActivity(
+        baseUsers,
+        sortDir,
+      );
       const total = sortedUsers.length;
       const pageUsers = sortedUsers.slice(
         params.skip,
@@ -203,7 +206,10 @@ export class UserAggregationService {
     const rates = await this.fxRates.getInrRates();
     return rows.map((row) => ({
       ...row,
-      valueInr: this.fxRates.convertWithRates(row.totalLifetimeCollected, rates),
+      valueInr: this.fxRates.convertWithRates(
+        row.totalLifetimeCollected,
+        rates,
+      ),
     }));
   }
 
@@ -430,7 +436,8 @@ export class UserAggregationService {
       wallets.find((w) => w.chainType === "evm")?.address ?? null;
     const tronAddress =
       wallets.find((w) => w.chainType === "tron")?.address ?? null;
-    const valueInr = await this.fxRates.convertCollectedToInr(lifetimeCollected);
+    const valueInr =
+      await this.fxRates.convertCollectedToInr(lifetimeCollected);
 
     return {
       userId: user.id,
@@ -559,10 +566,8 @@ export class UserAggregationService {
       (await this.userService.findUserByWalletAddress(identifier));
     if (user) {
       const wallets = await this.userService.getUserWallets(user.id);
-      const evm =
-        wallets.find((w) => w.chainType === "evm")?.address ?? "";
-      const tron =
-        wallets.find((w) => w.chainType === "tron")?.address ?? "";
+      const evm = wallets.find((w) => w.chainType === "evm")?.address ?? "";
+      const tron = wallets.find((w) => w.chainType === "tron")?.address ?? "";
       return this.walletService.getBalances(evm, tron);
     }
     const normalized = normalizeWalletAddressForLookup(identifier);
@@ -588,7 +593,9 @@ export class UserAggregationService {
     return String(v ?? "");
   }
 
-  private buildUserSearchWhere(search: string): Prisma.UserWhereInput | undefined {
+  private buildUserSearchWhere(
+    search: string,
+  ): Prisma.UserWhereInput | undefined {
     if (!search) return undefined;
     return {
       OR: [
@@ -783,7 +790,9 @@ export class UserAggregationService {
             where: { fromAddress: address },
             orderBy: { updatedAt: "desc" },
             include: {
-              approval: { select: { network: true, tokenSymbol: true, decimals: true } },
+              approval: {
+                select: { network: true, tokenSymbol: true, decimals: true },
+              },
             },
           }),
           prisma.nativeTransfer.findMany({

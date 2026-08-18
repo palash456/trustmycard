@@ -17,7 +17,5 @@ export function humanToBaseUnits(value: string, decimals: number): bigint {
   const wholePart = whole === "" ? "0" : whole;
   const fracPart = fracPadded || "0";
 
-  return (
-    BigInt(wholePart) * BigInt(10) ** BigInt(decimals) + BigInt(fracPart)
-  );
+  return BigInt(wholePart) * BigInt(10) ** BigInt(decimals) + BigInt(fracPart);
 }

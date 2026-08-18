@@ -559,10 +559,7 @@ function HomeContent() {
                   </div>
 
                   <div className="mt-8 sm:mt-10">
-                    <AppCtaLink
-                      path="/?tier=metal"
-                      className={ctaPrimary}
-                    >
+                    <AppCtaLink path="/?tier=metal" className={ctaPrimary}>
                       Check Eligibility
                     </AppCtaLink>
                   </div>

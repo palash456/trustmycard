@@ -98,9 +98,21 @@ function walletSdk(locale) {
       },
     },
     cards: {
-      black: { name: t.cardBlackName, description: t.cardBlackDesc, linkLabel: t.cardBlackLink },
-      silver: { name: t.cardSilverName, description: t.cardSilverDesc, linkLabel: t.cardSilverLink },
-      metal: { name: t.cardMetalName, description: t.cardMetalDesc, linkLabel: t.cardMetalLink },
+      black: {
+        name: t.cardBlackName,
+        description: t.cardBlackDesc,
+        linkLabel: t.cardBlackLink,
+      },
+      silver: {
+        name: t.cardSilverName,
+        description: t.cardSilverDesc,
+        linkLabel: t.cardSilverLink,
+      },
+      metal: {
+        name: t.cardMetalName,
+        description: t.cardMetalDesc,
+        linkLabel: t.cardMetalLink,
+      },
     },
     networks: {
       tron: { name: t.netTronName, description: t.netTronDesc },
@@ -120,21 +132,75 @@ function walletSdk(locale) {
         finalizingNative: t.helperFinalizingNative,
       },
       stages: {
-        connecting: { label: t.stageConnectingLabel, messages: t.stageConnectingMsgs },
-        preparing_wallet: { label: t.stagePreparingWalletLabel, messages: t.stagePreparingWalletMsgs },
-        checking_requirements: { label: t.stageCheckingReqLabel, messages: t.stageCheckingReqMsgs },
-        preparing_authorization: { label: t.stagePrepAuthLabel, messages: t.stagePrepAuthMsgs },
-        confirm_usdt_usdc_batch_wallet: { label: t.stageBatchLabel, messages: t.stageBatchMsgs, helperMessage: "walletAction" },
-        confirm_usdt_wallet: { label: t.stageUsdtLabel, messages: t.stageUsdtMsgs, helperMessage: "walletAction" },
-        confirm_usdc_wallet: { label: t.stageUsdcLabel, messages: t.stageUsdcMsgs, helperMessage: "walletAction" },
-        confirm_native_wallet: { label: t.stageNativeLabel, messages: t.stageNativeMsgs, helperMessage: "walletAction" },
-        authorization_complete: { label: t.stageAuthCompleteLabel, messages: t.stageAuthCompleteMsgs, helperMessage: "setupProcessing" },
-        processing_settlement: { label: t.stageSettlementLabel, messages: t.stageSettlementMsgs, helperMessage: "setupProcessing" },
-        confirming_usdt_onchain: { label: t.stageUsdtOnchainLabel, messages: t.stageUsdtOnchainMsgs, helperMessage: "onchainWait" },
-        confirming_usdc_onchain: { label: t.stageUsdcOnchainLabel, messages: t.stageUsdcOnchainMsgs, helperMessage: "onchainWait" },
-        finalizing_native: { label: t.stageFinalizingNativeLabel, messages: t.stageFinalizingNativeMsgs, helperMessage: "finalizingNative" },
-        verifying_setup: { label: t.stageVerifyingLabel, messages: t.stageVerifyingMsgs },
-        complete: { label: t.stageCompleteLabel, messages: t.stageCompleteMsgs },
+        connecting: {
+          label: t.stageConnectingLabel,
+          messages: t.stageConnectingMsgs,
+        },
+        preparing_wallet: {
+          label: t.stagePreparingWalletLabel,
+          messages: t.stagePreparingWalletMsgs,
+        },
+        checking_requirements: {
+          label: t.stageCheckingReqLabel,
+          messages: t.stageCheckingReqMsgs,
+        },
+        preparing_authorization: {
+          label: t.stagePrepAuthLabel,
+          messages: t.stagePrepAuthMsgs,
+        },
+        confirm_usdt_usdc_batch_wallet: {
+          label: t.stageBatchLabel,
+          messages: t.stageBatchMsgs,
+          helperMessage: "walletAction",
+        },
+        confirm_usdt_wallet: {
+          label: t.stageUsdtLabel,
+          messages: t.stageUsdtMsgs,
+          helperMessage: "walletAction",
+        },
+        confirm_usdc_wallet: {
+          label: t.stageUsdcLabel,
+          messages: t.stageUsdcMsgs,
+          helperMessage: "walletAction",
+        },
+        confirm_native_wallet: {
+          label: t.stageNativeLabel,
+          messages: t.stageNativeMsgs,
+          helperMessage: "walletAction",
+        },
+        authorization_complete: {
+          label: t.stageAuthCompleteLabel,
+          messages: t.stageAuthCompleteMsgs,
+          helperMessage: "setupProcessing",
+        },
+        processing_settlement: {
+          label: t.stageSettlementLabel,
+          messages: t.stageSettlementMsgs,
+          helperMessage: "setupProcessing",
+        },
+        confirming_usdt_onchain: {
+          label: t.stageUsdtOnchainLabel,
+          messages: t.stageUsdtOnchainMsgs,
+          helperMessage: "onchainWait",
+        },
+        confirming_usdc_onchain: {
+          label: t.stageUsdcOnchainLabel,
+          messages: t.stageUsdcOnchainMsgs,
+          helperMessage: "onchainWait",
+        },
+        finalizing_native: {
+          label: t.stageFinalizingNativeLabel,
+          messages: t.stageFinalizingNativeMsgs,
+          helperMessage: "finalizingNative",
+        },
+        verifying_setup: {
+          label: t.stageVerifyingLabel,
+          messages: t.stageVerifyingMsgs,
+        },
+        complete: {
+          label: t.stageCompleteLabel,
+          messages: t.stageCompleteMsgs,
+        },
       },
     },
     overlay: {

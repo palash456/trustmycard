@@ -7,7 +7,8 @@ import type { FaqCategory } from "@/components/site/FaqAccordion";
 
 export function FaqPageContent() {
   const { t, tRaw } = useTranslation();
-  const categories = (tRaw<FaqCategory[]>("faq.categories") ?? []) as FaqCategory[];
+  const categories = (tRaw<FaqCategory[]>("faq.categories") ??
+    []) as FaqCategory[];
 
   return (
     <div className="bg-[#F9FAFB]">

@@ -89,8 +89,8 @@ export const spenderChangePage: DocPage = {
       content: (
         <>
           <DocP>
-            Edit <DocCode>config/platform.env</DocCode> for each
-            environment you rotate:
+            Edit <DocCode>config/platform.env</DocCode> for each environment you
+            rotate:
           </DocP>
           <DocPre>{`# EVM collector
 SPENDER_EVM=0xNewSpenderAddress...
@@ -167,9 +167,9 @@ ALLOW_SELF_SPENDER=false`}</DocPre>
       content: (
         <>
           <DocP>
-            <DocCode>Approval.spenderAddress</DocCode> is set from env at confirm
-            time. On-chain allowance stays with the <strong>old</strong> spender
-            until users re-approve.
+            <DocCode>Approval.spenderAddress</DocCode> is set from env at
+            confirm time. On-chain allowance stays with the <strong>old</strong>{" "}
+            spender until users re-approve.
           </DocP>
           <DocP>
             <DocCode>collectionToAddress</DocCode> per approval (Admin →
@@ -189,8 +189,8 @@ ALLOW_SELF_SPENDER=false`}</DocPre>
       content: (
         <>
           <DocP>
-            In development, <DocCode>ALLOW_SELF_SPENDER=true</DocCode> lets owner
-            and spender be the same wallet. Set{" "}
+            In development, <DocCode>ALLOW_SELF_SPENDER=true</DocCode> lets
+            owner and spender be the same wallet. Set{" "}
             <DocCode>DEV_COLLECTION_DEST_EVM</DocCode> /{" "}
             <DocCode>DEV_COLLECTION_DEST_TRON</DocCode> so collected tokens go
             to a visible address. Must match in website env if enabled.

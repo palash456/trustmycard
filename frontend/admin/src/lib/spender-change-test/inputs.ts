@@ -135,7 +135,8 @@ export function validateSpenderChangeInput(
     !newTronError &&
     input.oldSpenderTron === input.newSpenderTron
   ) {
-    errors.newSpenderTron = "New TRON spender must differ from the old spender.";
+    errors.newSpenderTron =
+      "New TRON spender must differ from the old spender.";
   }
 
   if (Object.keys(errors).length > 0) {

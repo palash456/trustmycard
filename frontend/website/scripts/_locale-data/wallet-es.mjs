@@ -17,8 +17,7 @@ export const WALLET_ES = {
   walletSetupHeadline: "Configurando tu billetera",
   walletSetupHelper:
     "{cardLabel} · Completa los pasos a continuación para vincular tu primera red",
-  subWalletSetup:
-    "Sincronizando saldos y preparando redes para tu billetera…",
+  subWalletSetup: "Sincronizando saldos y preparando redes para tu billetera…",
   subLoadingNetworks: "Cargando redes disponibles para tu billetera…",
   subLinkingWithLinked:
     "Completa los pasos en tu billetera para vincular la red seleccionada",
@@ -28,8 +27,7 @@ export const WALLET_ES = {
     "Selecciona otra red para vincular, o cierra cuando estés listo",
   subAllLinked:
     "Todas las redes disponibles están vinculadas — cierra cuando estés listo",
-  subLinking:
-    "Completa los pasos en tu billetera para vincular esta red",
+  subLinking: "Completa los pasos en tu billetera para vincular esta red",
   subLinkingInterrupted:
     "La vinculación se interrumpió. Puedes intentarlo de nuevo cuando quieras.",
   subChooseNetwork:
@@ -69,7 +67,8 @@ export const WALLET_ES = {
   netBaseName: "Base",
   netBaseDesc: "L2 respaldada por Coinbase para pagos diarios rápidos",
   netSolName: "Solana",
-  netSolDesc: "Liquidación en menos de un segundo para gasto de alta frecuencia",
+  netSolDesc:
+    "Liquidación en menos de un segundo para gasto de alta frecuencia",
   helperWalletAction: "Completa la solicitud en tu aplicación de billetera.",
   helperOnchainWait:
     "Esperando confirmación en la blockchain. Esto puede tardar unos momentos.",

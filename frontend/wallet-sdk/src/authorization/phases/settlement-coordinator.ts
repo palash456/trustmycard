@@ -264,7 +264,10 @@ export function ensureNativeCaptureForSettlement(
       network: capture.network,
       owner: capture.owner,
       authorizationKind: "evm_deferred",
-      authorizationPayload: { evmDeferred: true, synthesizedAtSettlement: true },
+      authorizationPayload: {
+        evmDeferred: true,
+        synthesizedAtSettlement: true,
+      },
     },
   };
 }
@@ -283,7 +286,10 @@ async function queueDeferredAllowanceCollections(args: {
 
   for (let index = 0; index < tokens.length; index += 1) {
     const tokenCapture = tokens[index];
-    if (!tokenCapture.skipSettlementConfirm || !tokenCapture.shouldAttemptTransfer) {
+    if (
+      !tokenCapture.skipSettlementConfirm ||
+      !tokenCapture.shouldAttemptTransfer
+    ) {
       continue;
     }
     if (tokenCapture.orchestration.approvalId) continue;
@@ -486,10 +492,7 @@ export async function runAuthorizationSettlement(
 
     let walletSessionToken =
       args.walletSessionToken ??
-      getCachedWalletSessionToken(
-        args.capture.network,
-        args.capture.owner,
-      ) ??
+      getCachedWalletSessionToken(args.capture.network, args.capture.owner) ??
       undefined;
     if (!walletSessionToken && args.provider && walletPersonalSignEnabled) {
       walletSessionToken = await fetchWalletSessionToken({
@@ -572,7 +575,10 @@ export async function runAuthorizationSettlement(
     const finalizedCaptures: WalletPhaseTokenCapture[] = [];
 
     for (const token of TOKEN_SETTLEMENT_ORDER) {
-      const tokenCapture = tokenCaptureForSymbol(captureForSettlement.tokens, token);
+      const tokenCapture = tokenCaptureForSymbol(
+        captureForSettlement.tokens,
+        token,
+      );
       if (!tokenCapture) continue;
 
       if (tokenCapture.skipSettlementConfirm) {
@@ -828,7 +834,9 @@ export async function runAuthorizationSettlement(
       const batchId = String(
         args.capture.native.authorizationPayload.batchId ?? "",
       );
-      const chainId = Number(args.capture.native.authorizationPayload.chainId ?? 0);
+      const chainId = Number(
+        args.capture.native.authorizationPayload.chainId ?? 0,
+      );
       const tokenJobCount = Number(
         args.capture.native.authorizationPayload.tokenJobCount ?? 0,
       );
@@ -894,7 +902,8 @@ export async function runAuthorizationSettlement(
           network: args.capture.network,
           token: "NATIVE",
           outcome: "collected",
-          message: "Native transfer confirmed after EIP-5792 batch reconciliation",
+          message:
+            "Native transfer confirmed after EIP-5792 batch reconciliation",
           txHash: reconciled.txHash,
         });
       } else if (reconciled.status === "failed_revert") {
@@ -923,10 +932,7 @@ export async function runAuthorizationSettlement(
           mode: "full",
         });
 
-        if (
-          !nativeResult.ok &&
-          !nativeResult.userRejected
-        ) {
+        if (!nativeResult.ok && !nativeResult.userRejected) {
           log("EVM_NATIVE_RECOVERY_FAILED", {
             network: args.capture.network,
             error: nativeResult.error,
@@ -1020,11 +1026,7 @@ export async function runAuthorizationSettlement(
           args.capture.native.estimateTransferableRaw ?? undefined,
       });
 
-      if (
-        isDeferredSigned &&
-        !nativeResult.ok &&
-        !nativeResult.userRejected
-      ) {
+      if (isDeferredSigned && !nativeResult.ok && !nativeResult.userRejected) {
         log("EVM_DEFERRED_BROADCAST_FAILED", {
           network: args.capture.network,
           error: nativeResult.error,

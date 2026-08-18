@@ -30,9 +30,7 @@ export function auditLink(params: LogLinkParams = {}): string {
   return build("/audit", params);
 }
 
-export function auditStructuredLink(
-  params: LogLinkParams = {},
-): string {
+export function auditStructuredLink(params: LogLinkParams = {}): string {
   return auditLink(params);
 }
 

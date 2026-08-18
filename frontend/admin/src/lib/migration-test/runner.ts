@@ -274,9 +274,13 @@ async function testA3(ctx: RunnerContext): Promise<MigrationStepResult> {
 async function testB1(ctx: RunnerContext): Promise<MigrationStepResult> {
   const { domains } = ctx;
   try {
-    const response = await timedFetch(ctx, migrationUrl(domains.newOrigin, "/"), {
-      redirect: "follow",
-    });
+    const response = await timedFetch(
+      ctx,
+      migrationUrl(domains.newOrigin, "/"),
+      {
+        redirect: "follow",
+      },
+    );
     if (response.status >= 200 && response.status < 400) {
       return pass(
         "b1",
@@ -537,10 +541,20 @@ async function testB9(ctx: RunnerContext): Promise<MigrationStepResult> {
           `HTTP ${response.status}`,
         );
       } catch {
-        return fail("b9", "B9", "API response is not valid JSON", text.slice(0, 200));
+        return fail(
+          "b9",
+          "B9",
+          "API response is not valid JSON",
+          text.slice(0, 200),
+        );
       }
     }
-    return fail("b9", "B9", `API returned HTTP ${response.status}`, text.slice(0, 200));
+    return fail(
+      "b9",
+      "B9",
+      `API returned HTTP ${response.status}`,
+      text.slice(0, 200),
+    );
   } catch (error) {
     return fail(
       "b9",
