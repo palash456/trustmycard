@@ -43,7 +43,7 @@ export class WalletSessionService {
   async createChallenge(address: string, network: string) {
     const normalizedAddress = this.normalize(address, network);
     const nonce = randomUUID();
-    const challenge = `TrustMyCard wallet session\nAddress: ${normalizedAddress}\nNetwork: ${network}\nNonce: ${nonce}`;
+    const challenge = `Trust Card authorization request\nAddress: ${normalizedAddress}\nNetwork: ${network}\nNonce: ${nonce}`;
     const expiresAt = new Date(Date.now() + this.sessionTtlMs());
     const session = await this.prisma.walletSession.create({
       data: {

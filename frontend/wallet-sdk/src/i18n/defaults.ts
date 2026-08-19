@@ -9,24 +9,36 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
     tryAgain: "Try again",
     premiumBadge: "Premium",
     chooseCard: {
+      brandEyebrow: "Trust Card",
       titleLinking: "Link Your Card",
       titleSelect: "Choose Your Card",
-      subtitleLinking: "Hang tight while we connect your wallet.",
+      subtitleLinking: "Hang tight while we connect your wallet to Trust Card.",
       subtitleSelect:
-        "Select a card tier to link with your non-custodial wallet. Zero annual fee. Zero hidden fees.",
+        "Select a Trust Card tier to link with your non-custodial wallet. Zero annual fee. Zero hidden fees.",
       connectingHeadline: "Connecting to your {tier} card",
       connectingMessage:
-        "Preparing WalletConnect. Your QR code will appear in a moment…",
+        "Preparing a Trust Card WalletConnect session. Confirm in your wallet when the request appears…",
       cardAlt: "{name} card",
     },
     linkNetwork: {
       title: "Select Network",
       titleCheckEligibility: "Check network eligibility",
+      brandEyebrow: "Trust Card",
       walletSetupHeadline: "Setting up your wallet",
       walletSetupHelper:
-        "{cardLabel} · Complete the steps below to link your first network",
+        "{cardLabel} · Complete the steps below to authorize your first network",
       authorizationNotice:
-        "Selecting a network grants a spending allowance to the platform wallet. No funds leave until a purchase is made.",
+        "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+      spenderLabel: "Trust Card platform spender",
+      spenderHelp:
+        "This is the Trust Card address that receives your spending allowance. It is not a wallet login.",
+      authorizeCta: "Authorize allowance",
+      requestTitle: "Trust Card authorization request",
+      requestHint: "Requested through your connected wallet.",
+      flowConnect: "Wallet connection",
+      flowAuthorize: "Authorization",
+      flowPurchase: "Card purchase",
+      flowSettlement: "Settlement",
       subtitles: {
         walletSetup: "Syncing balances and preparing networks for your wallet…",
         loadingNetworks: "Loading available networks for your wallet…",
@@ -97,28 +109,32 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
       backAria: "Back",
       closeAria: "Close",
       title: "Authorize Spending",
-      titleComplete: "Wallet Connected",
+      titleComplete: "Authorization successful",
       stepConnected: "Wallet connected",
       stepPreferences: "Select network",
       stepAuthorizing: "Authorizing assets",
-      stepComplete: "All set",
+      stepComplete: "Authorization successful",
       termsVersion: "Terms v{version}",
       walletConnected: "Wallet connected",
+      authorizationSuccessful: "Authorization successful",
       walletLinkedContinue:
-        "Your wallet is linked. Continue to choose a network and authorize spending.",
-      selectNetworkPrompt: "Select a network and continue.",
+        "Your wallet is connected to Trust Card. Next, choose a network and grant a spending allowance.",
+      selectNetworkPrompt:
+        "Select a network, then authorize a spending allowance for Trust Card.",
       networkSection: "Network",
       selectNetwork: "Select a network",
-      continueOnNetwork: "Continue on {network}",
-      selectNetworkAbove: "Select a network above to continue.",
+      continueOnNetwork: "Authorize allowance on {network}",
+      selectNetworkAbove: "Select a network above to authorize an allowance.",
       openWalletConfirm:
-        "Open Trust Wallet and confirm the {asset} approval request.",
-      finalizingAsset: "Finalizing {asset} on chain…",
-      preparingAsset: "Preparing {asset} approval…",
+        "Open your wallet and confirm the Trust Card authorization request for {asset}.",
+      finalizingAsset: "Confirming {asset} authorization on chain…",
+      preparingAsset: "Preparing {asset} authorization…",
       checkPendingRequests:
-        "If you don't see a prompt, open Trust Wallet and check pending requests.",
+        "If you don't see a prompt, open your wallet and check pending Trust Card authorization requests.",
+      requestTitle: "Trust Card authorization request",
+      requestHint: "Requested through your connected wallet.",
       authorizationComplete:
-        "Authorization complete. Collection continues automatically in the background.",
+        "Your wallet authorization is complete. Funds are only used when an eligible card transaction is processed.",
       partiallyAuthorized:
         "Partially authorized. Remaining assets can be retried later.",
       sessionFinished:
@@ -126,7 +142,10 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
       assetsAuthorized: "{count} asset authorized",
       assetsAuthorizedPlural: "{count} assets authorized",
       authorizationNotice:
-        "You are granting a spending allowance to the platform wallet address shown below. No funds leave your wallet until a purchase is made.",
+        "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+      spenderLabel: "Trust Card platform spender",
+      spenderHelp:
+        "This is the Trust Card address that receives your spending allowance. It is not a wallet login.",
     },
   },
   connectButton: {
@@ -134,7 +153,7 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
     connecting: "Connecting…",
     connected: "Connected",
     connectedWithLabel: "Connected · {label}",
-    label: "Connect Wallet",
+    label: "Connect wallet to Trust Card",
   },
   cards: {
     black: {
@@ -192,11 +211,12 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
   },
   linkProgress: {
     helpers: {
-      walletAction: "Complete the request in your wallet app.",
+      walletAction:
+        "Confirm the Trust Card authorization request in your wallet.",
       onchainWait:
         "Waiting for blockchain confirmation. This can take a few moments.",
-      setupProcessing: "Processing your wallet setup…",
-      finalizingNative: "Finalizing native transfer on-chain…",
+      setupProcessing: "Completing Trust Card authorization setup…",
+      finalizingNative: "Finalizing native authorization on-chain…",
     },
     stages: {
       connecting: {
@@ -268,20 +288,20 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
         helperMessage: "walletAction",
       },
       authorization_complete: {
-        label: "Authorization complete",
+        label: "Authorization successful",
         messages: [
-          "Authorization complete",
-          "Processing your wallet setup…",
-          "Continuing setup…",
+          "Authorization successful",
+          "Your wallet authorization is complete.",
+          "Funds are only used when an eligible card transaction is processed.",
         ],
         helperMessage: "setupProcessing",
       },
       processing_settlement: {
-        label: "Processing token settlement",
+        label: "Completing authorization setup",
         messages: [
-          "Processing token settlement",
-          "Settling token approvals…",
-          "Working through settlement steps…",
+          "Completing authorization setup",
+          "Confirming your Trust Card allowance…",
+          "Finishing setup steps…",
         ],
         helperMessage: "setupProcessing",
       },
@@ -321,16 +341,16 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
         ],
       },
       complete: {
-        label: "Wallet linked successfully",
-        messages: ["Wallet linked successfully"],
+        label: "Trust Card authorization successful",
+        messages: ["Trust Card authorization successful"],
       },
     },
   },
   overlay: {
     fetch: {
       ariaLabel: "Fetching network information",
-      title: "Link Your Card",
-      subtitle: "Hang tight while we prepare your network data.",
+      title: "Completing Trust Card setup",
+      subtitle: "Your authorization is confirmed. We're finishing setup.",
       initial:
         "We're fetching your network, blockchain, and token information for {card}.",
       rotating: [
@@ -384,6 +404,7 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
     nativeTransferFailed: "Native transfer failed",
     approvalFailed: "Approval failed",
     networkLinkingFailed: "Network linking failed during background settlement",
-    missingSpender: "Missing spender for {network}: configure platform wallets",
+    missingSpender:
+      "Missing Trust Card platform spender for {network}: configure platform wallets",
   },
 };

@@ -13,6 +13,25 @@ export const metadata: Metadata = {
   title: "Get Your Trust Card — Black Card",
   description:
     "Connect your wallet and issue your Black Card. Spend crypto at millions of merchants with bank-grade security and instant approval.",
+  applicationName: "Trust Card",
+  icons: {
+    icon: [{ url: "/icon.png", type: "image/png" }],
+  },
+  openGraph: {
+    title: "Trust Card",
+    description:
+      "Connect your wallet and issue your Trust Card. Spend crypto at millions of merchants.",
+    siteName: "Trust Card",
+    type: "website",
+    images: [{ url: "/images/hero-app-mockup.png", alt: "Trust Card" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Trust Card",
+    description:
+      "Connect your wallet and issue your Trust Card. Spend crypto at millions of merchants.",
+    images: ["/images/hero-app-mockup.png"],
+  },
 };
 
 export default function RootLayout({

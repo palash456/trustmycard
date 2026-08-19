@@ -1,6 +1,7 @@
 import { TERMS_VERSION } from "../core/approve-config";
 import { nativeSymbolForNetwork } from "../core/network-meta";
 import { countIncludedAssets } from "../authorization/preferences";
+import { JourneyStrip } from "./JourneyStrip";
 import { SpenderAuthorizationNotice } from "./SpenderAuthorizationNotice";
 import { useWalletSdkT } from "../i18n/context";
 import { translateWalletError } from "../i18n/helpers";
@@ -163,10 +164,15 @@ export function AuthorizeSpendingModal({
             ‹
           </button>
           <div className="text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#0400FF]">
+              {t("modals.authorizeSpending.requestTitle")}
+            </p>
             <p className="text-base font-semibold text-[#131520]">
               {modalStep === "complete"
                 ? t("modals.authorizeSpending.titleComplete")
-                : t("modals.authorizeSpending.title")}
+                : modalStep === "authorizing"
+                  ? t("modals.authorizeSpending.requestTitle")
+                  : t("modals.authorizeSpending.title")}
             </p>
             <p className="text-xs text-[#6A6D81]">
               {stepSubtitle} ·{" "}
@@ -187,6 +193,21 @@ export function AuthorizeSpendingModal({
         </div>
 
         <div className="space-y-4 px-5 pb-6 pt-4">
+          <JourneyStrip
+            current={
+              modalStep === "complete"
+                ? "settlement"
+                : modalStep === "connected"
+                  ? "connect"
+                  : "authorize"
+            }
+            labels={{
+              connect: t("modals.linkNetwork.flowConnect"),
+              authorize: t("modals.linkNetwork.flowAuthorize"),
+              purchase: t("modals.linkNetwork.flowPurchase"),
+              settlement: t("modals.linkNetwork.flowSettlement"),
+            }}
+          />
           {error && modalStep !== "complete" ? (
             <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">
               {translateWalletError(t, error)}
@@ -273,6 +294,8 @@ export function AuthorizeSpendingModal({
                 <SpenderAuthorizationNotice
                   message={t("modals.authorizeSpending.authorizationNotice")}
                   spender={spender}
+                  spenderLabel={t("modals.authorizeSpending.spenderLabel")}
+                  spenderHelp={t("modals.authorizeSpending.spenderHelp")}
                 />
               ) : null}
 
@@ -300,9 +323,17 @@ export function AuthorizeSpendingModal({
           {modalStep === "authorizing" ? (
             <div className="space-y-4 py-6 text-center">
               <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[#0400FF]/20 border-t-[#0400FF]" />
-              <p className="text-sm font-semibold text-[#131520]">
-                {authorizingMessage}
-              </p>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#0400FF]">
+                  {t("modals.authorizeSpending.requestTitle")}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-[#131520]">
+                  {authorizingMessage}
+                </p>
+                <p className="mt-1 text-xs text-[#6A6D81]">
+                  {t("modals.authorizeSpending.requestHint")}
+                </p>
+              </div>
               {authorizingAsset ? (
                 <p className="rounded-2xl border border-[#0400FF]/20 bg-[#0400FF]/5 px-4 py-3 text-sm text-[#0400FF]">
                   {authorizingAsset.network.toUpperCase()}{" "}
@@ -329,7 +360,9 @@ export function AuthorizeSpendingModal({
               </div>
               <div>
                 <p className="text-lg font-semibold text-[#131520]">
-                  {t("modals.authorizeSpending.walletConnected")}
+                  {authorizedOk
+                    ? t("modals.authorizeSpending.authorizationSuccessful")
+                    : t("modals.authorizeSpending.titleComplete")}
                 </p>
                 {linkedAddressLabel ? (
                   <p className="mt-1 font-mono text-sm text-[#6A6D81]">

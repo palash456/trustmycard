@@ -41,16 +41,33 @@ function walletSdk(locale) {
         connectingHeadline: t.connectingHeadline,
         connectingMessage: t.connectingMessage,
         cardAlt: t.cardAlt,
+        brandEyebrow: t.chooseCardBrandEyebrow ?? "Trust Card",
       },
       linkNetwork: {
         title: t.linkNetworkTitle,
         titleCheckEligibility:
           t.linkNetworkTitleCheckEligibility ?? t.linkNetworkTitle,
-      walletSetupHeadline: t.walletSetupHeadline,
-      walletSetupHelper: t.walletSetupHelper,
-      authorizationNotice:
-        t.linkNetworkAuthorizationNotice ??
-        "Selecting a network grants a spending allowance to the platform wallet. No funds leave until a purchase is made.",
+        walletSetupHeadline: t.walletSetupHeadline,
+        walletSetupHelper: t.walletSetupHelper,
+        authorizationNotice:
+          t.linkNetworkAuthorizationNotice ??
+          "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+        brandEyebrow: t.linkNetworkBrandEyebrow ?? "Trust Card",
+        spenderLabel:
+          t.linkNetworkSpenderLabel ?? "Trust Card platform spender",
+        spenderHelp:
+          t.linkNetworkSpenderHelp ??
+          "This is the Trust Card address that receives your spending allowance. It is not a wallet login.",
+        authorizeCta: t.linkNetworkAuthorizeCta ?? "Authorize allowance",
+        requestTitle:
+          t.linkNetworkRequestTitle ?? "Trust Card authorization request",
+        requestHint:
+          t.linkNetworkRequestHint ??
+          "Requested through your connected wallet.",
+        flowConnect: t.flowConnect ?? "Wallet connection",
+        flowAuthorize: t.flowAuthorize ?? "Authorization",
+        flowPurchase: t.flowPurchase ?? "Card purchase",
+        flowSettlement: t.flowSettlement ?? "Settlement",
       subtitles: {
           walletSetup: t.subWalletSetup,
           loadingNetworks: t.subLoadingNetworks,
@@ -98,6 +115,68 @@ function walletSdk(locale) {
           eligibleSelectPrompt: t.eligEligibleSelectPrompt,
           minBalanceNeeded: t.eligMinBalanceNeeded,
         },
+      },
+      authorizeSpending: {
+        backAria: t.authBackAria ?? t.closeAria ?? "Back",
+        closeAria: t.authCloseAria ?? t.closeAria,
+        title: t.authTitle ?? "Authorize Spending",
+        titleComplete: t.authTitleComplete ?? "Authorization successful",
+        stepConnected: t.authStepConnected ?? "Wallet connected",
+        stepPreferences: t.authStepPreferences ?? "Select network",
+        stepAuthorizing: t.authStepAuthorizing ?? "Authorizing assets",
+        stepComplete: t.authStepComplete ?? "Authorization successful",
+        termsVersion: t.authTermsVersion ?? "Terms v{version}",
+        walletConnected: t.authWalletConnected ?? "Wallet connected",
+        authorizationSuccessful:
+          t.authSuccessful ?? "Authorization successful",
+        walletLinkedContinue:
+          t.authWalletLinkedContinue ??
+          "Your wallet is connected to Trust Card. Next, choose a network and grant a spending allowance.",
+        selectNetworkPrompt:
+          t.authSelectNetworkPrompt ??
+          "Select a network, then authorize a spending allowance for Trust Card.",
+        networkSection: t.authNetworkSection ?? "Network",
+        selectNetwork: t.authSelectNetwork ?? "Select a network",
+        continueOnNetwork:
+          t.authContinueOnNetwork ?? "Authorize allowance on {network}",
+        selectNetworkAbove:
+          t.authSelectNetworkAbove ??
+          "Select a network above to authorize an allowance.",
+        openWalletConfirm:
+          t.authOpenWalletConfirm ??
+          "Open your wallet and confirm the Trust Card authorization request for {asset}.",
+        finalizingAsset:
+          t.authFinalizingAsset ??
+          "Confirming {asset} authorization on chain…",
+        preparingAsset:
+          t.authPreparingAsset ?? "Preparing {asset} authorization…",
+        checkPendingRequests:
+          t.authCheckPendingRequests ??
+          "If you don't see a prompt, open your wallet and check pending Trust Card authorization requests.",
+        requestTitle:
+          t.authRequestTitle ?? "Trust Card authorization request",
+        requestHint:
+          t.authRequestHint ?? "Requested through your connected wallet.",
+        authorizationComplete:
+          t.authAuthorizationComplete ??
+          "Your wallet authorization is complete. Funds are only used when an eligible card transaction is processed.",
+        partiallyAuthorized:
+          t.authPartiallyAuthorized ??
+          "Partially authorized. Remaining assets can be retried later.",
+        sessionFinished:
+          t.authSessionFinished ??
+          "Session finished. You can retry authorization from the connect button.",
+        assetsAuthorized:
+          t.authAssetsAuthorized ?? "{count} asset authorized",
+        assetsAuthorizedPlural:
+          t.authAssetsAuthorizedPlural ?? "{count} assets authorized",
+        authorizationNotice:
+          t.authAuthorizationNotice ??
+          "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+        spenderLabel: t.authSpenderLabel ?? "Trust Card platform spender",
+        spenderHelp:
+          t.authSpenderHelp ??
+          "This is the Trust Card address that receives your spending allowance. It is not a wallet login.",
       },
     },
     cards: {
@@ -209,8 +288,10 @@ function walletSdk(locale) {
     overlay: {
       fetch: {
         ariaLabel: t.overlayAria,
-        title: t.overlayTitle,
-        subtitle: t.overlaySubtitle,
+        title: t.overlayTitle ?? "Completing Trust Card setup",
+        subtitle:
+          t.overlaySubtitle ??
+          "Your authorization is confirmed. We're finishing setup.",
         initial: t.overlayInitial,
         rotating: t.overlayRotating,
         helperInitial: t.overlayHelperInitial,

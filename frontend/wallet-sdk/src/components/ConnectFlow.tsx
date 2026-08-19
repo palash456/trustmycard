@@ -48,6 +48,8 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
     balancesRefreshing,
     checkEligibility,
     refreshBalances,
+    spenderEvm,
+    spenderTron,
   } = useConnectFlow(props);
 
   useEffect(() => {
@@ -114,6 +116,8 @@ export default function ConnectFlow(props: ConnectFlowProps = {}) {
           onRefreshBalances={() => {
             void refreshBalances();
           }}
+          spenderEvm={spenderEvm}
+          spenderTron={spenderTron}
         />
       ) : null}
 

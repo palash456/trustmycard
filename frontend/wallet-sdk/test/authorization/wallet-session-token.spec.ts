@@ -31,7 +31,7 @@ describe("wallet-session-token tron signing", () => {
     const signature = await signTronWalletChallenge({
       provider: provider as never,
       owner: "TJHRzp7NcRUtvcMr2sWi9i7uscQA9WGYRB",
-      challenge: "TrustMyCard wallet session\nNonce: test",
+      challenge: "Trust Card authorization request\nNonce: test",
     });
 
     assert.equal(signature, "0xtronmessage");

@@ -13,7 +13,7 @@ const brand = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: "Trust Admin",
-  description: "Trust Wallet operations console",
+  description: "Trust Card operations console",
   icons: {
     icon: [{ url: "/favicon.png", type: "image/png" }],
     apple: [{ url: "/brand/logo-mark.png" }],

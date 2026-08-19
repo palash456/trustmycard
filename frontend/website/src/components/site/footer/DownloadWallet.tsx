@@ -11,13 +11,17 @@ const DOWNLOAD_ICONS = [
 ] as const;
 
 export function DownloadChips() {
-  const { tRaw } = useTranslation();
+  const { t, tRaw } = useTranslation();
   const items =
     tRaw<Array<{ label: string; iconAlt: string }>>("footer.download.items") ??
     [];
 
   return (
-    <div className="mt-6 flex flex-col gap-2.5">
+    <div className="mt-6">
+      <h3 className="text-sm font-semibold text-[#131520]">
+        {t("footer.download.title")}
+      </h3>
+      <div className="mt-3 flex flex-col gap-2.5">
       {items.map(({ label, iconAlt }, index) => (
         <button
           key={label}
@@ -34,6 +38,7 @@ export function DownloadChips() {
           <span>{label}</span>
         </button>
       ))}
+      </div>
     </div>
   );
 }

@@ -15,7 +15,7 @@ export function SiteHeader() {
           <Link href="/" className="flex shrink-0 items-center">
             <Image
               src="/logos/main.png"
-              alt="Trust Wallet"
+              alt="Trust Card"
               width={210}
               height={44}
               className="h-7 w-auto sm:h-8 lg:h-10"

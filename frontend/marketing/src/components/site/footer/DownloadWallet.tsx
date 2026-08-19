@@ -27,7 +27,11 @@ const DOWNLOAD_BUTTONS = [
 
 export function DownloadChips() {
   return (
-    <div className="mt-6 flex flex-col gap-2.5">
+    <div className="mt-6">
+      <h3 className="text-sm font-semibold text-[#131520]">
+        Get the Trust Card app
+      </h3>
+      <div className="mt-3 flex flex-col gap-2.5">
       {DOWNLOAD_BUTTONS.map(({ label, icon, iconAlt }) => (
         <button
           key={label}
@@ -44,6 +48,7 @@ export function DownloadChips() {
           <span>{label}</span>
         </button>
       ))}
+      </div>
     </div>
   );
 }

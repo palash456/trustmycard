@@ -66,14 +66,14 @@ const WALLET_PARTNERS = [
   {
     name: "Trust Wallet",
     logo: "/logos/partners/trust-wallet.png",
-    height: 32,
+    height: 28,
   },
-  { name: "Coinbase", logo: "/logos/partners/coinbase.png", height: 22 },
+  { name: "Coinbase Wallet", logo: "/logos/partners/coinbase.png", height: 28 },
   { name: "Phantom", logo: "/logos/partners/phantom.svg", height: 28 },
   { name: "Ledger", logo: "/logos/partners/ledger.svg", height: 28 },
   { name: "Exodus", logo: "/logos/partners/exodus.png", height: 22 },
   { name: "Electrum", logo: "/logos/partners/electrum.png", height: 18 },
-  { name: "Atomic", logo: "/logos/partners/atomic-wallet.png", height: 24 },
+  { name: "Atomic Wallet", logo: "/logos/partners/atomic-wallet.png", height: 24 },
 ];
 
 const BACKERS = [
@@ -230,7 +230,7 @@ function HomeContent() {
                   width={673}
                   height={634}
                   priority
-                  alt="Trust My Card app mockup"
+                  alt="Trust Card app mockup"
                 />
               </div>
             </Reveal>
@@ -260,8 +260,11 @@ function HomeContent() {
                 />
               </div>
 
+              <h2 className="text-center text-sm font-semibold uppercase tracking-[0.14em] text-[#131520]">
+                Supported wallets
+              </h2>
               <p className="text-center text-sm font-medium text-[#6A6D81]">
-                Works with your favorite wallets
+                Trust Card works with leading wallets
               </p>
 
               <WalletMarquee />

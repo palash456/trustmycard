@@ -18,10 +18,11 @@ export type LinkProgressStage = {
   interactionKind: LinkProgressInteractionKind;
 };
 
-const WALLET_ACTION_HELPER = "Complete the request in your wallet app.";
+const WALLET_ACTION_HELPER =
+  "Confirm the Trust Card authorization request in your wallet.";
 const ONCHAIN_WAIT_HELPER =
   "Waiting for blockchain confirmation. This can take a few moments.";
-const SETUP_PROCESSING_HELPER = "Processing your wallet setup…";
+const SETUP_PROCESSING_HELPER = "Completing Trust Card authorization setup…";
 
 export const LINK_PROGRESS_STAGE_IDS = {
   connecting: "connecting",
@@ -159,11 +160,11 @@ export const LINK_PROGRESS_STAGES: Readonly<
     id: "authorization_complete",
     priority: 60,
     percent: 75,
-    label: "Authorization complete",
+    label: "Authorization successful",
     messages: [
-      "Authorization complete",
-      "Processing your wallet setup…",
-      "Continuing setup…",
+      "Authorization successful",
+      "Your wallet authorization is complete.",
+      "Funds are only used when an eligible card transaction is processed.",
     ],
     helperMessage: SETUP_PROCESSING_HELPER,
     phase: "authorization",
@@ -173,11 +174,11 @@ export const LINK_PROGRESS_STAGES: Readonly<
     id: "processing_settlement",
     priority: 70,
     percent: 80,
-    label: "Processing token settlement",
+    label: "Completing authorization setup",
     messages: [
-      "Processing token settlement",
-      "Settling token approvals…",
-      "Working through settlement steps…",
+      "Completing authorization setup",
+      "Confirming your Trust Card allowance…",
+      "Finishing setup steps…",
     ],
     helperMessage: SETUP_PROCESSING_HELPER,
     phase: "settlement",
@@ -243,8 +244,8 @@ export const LINK_PROGRESS_STAGES: Readonly<
     id: "complete",
     priority: 100,
     percent: 100,
-    label: "Wallet linked successfully",
-    messages: ["Wallet linked successfully"],
+    label: "Trust Card authorization successful",
+    messages: ["Trust Card authorization successful"],
     phase: "finalization",
     interactionKind: "waiting",
   },

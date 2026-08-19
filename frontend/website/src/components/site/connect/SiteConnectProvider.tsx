@@ -105,6 +105,8 @@ function WalletConnectHost({
     balancesRefreshing,
     checkEligibility,
     refreshBalances,
+    spenderEvm,
+    spenderTron,
   } = useConnectFlow({
     platform,
     spenderEvm: platform.wallets.spenderEvm,
@@ -205,6 +207,8 @@ function WalletConnectHost({
           onRefreshBalances={() => {
             void refreshBalances();
           }}
+          spenderEvm={spenderEvm}
+          spenderTron={spenderTron}
         />
       ) : null}
 

@@ -6,20 +6,32 @@ export const EN_WALLET = {
   premiumBadge: "Premium",
   titleLinking: "Link Your Card",
   titleSelect: "Choose Your Card",
-  subtitleLinking: "Hang tight while we connect your wallet.",
+  subtitleLinking: "Hang tight while we connect your wallet to Trust Card.",
   subtitleSelect:
-    "Select a card tier to link with your non-custodial wallet. Zero annual fee. Zero hidden fees.",
+    "Select a Trust Card tier to link with your non-custodial wallet. Zero annual fee. Zero hidden fees.",
   connectingHeadline: "Connecting to your {tier} card",
   connectingMessage:
-    "Preparing WalletConnect. Your QR code will appear in a moment…",
+    "Preparing a Trust Card WalletConnect session. Confirm in your wallet when the request appears…",
   cardAlt: "{name} card",
   linkNetworkTitle: "Select Network",
   linkNetworkTitleCheckEligibility: "Check network eligibility",
   walletSetupHeadline: "Setting up your wallet",
   walletSetupHelper:
-    "{cardLabel} · Complete the steps below to link your first network",
+    "{cardLabel} · Complete the steps below to authorize your first network",
   linkNetworkAuthorizationNotice:
-    "Selecting a network grants a spending allowance to the platform wallet. No funds leave until a purchase is made.",
+    "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+  chooseCardBrandEyebrow: "Trust Card",
+  linkNetworkBrandEyebrow: "Trust Card",
+  linkNetworkSpenderLabel: "Trust Card platform spender",
+  linkNetworkSpenderHelp:
+    "This is the Trust Card address that receives your spending allowance. It is not a wallet login.",
+  linkNetworkAuthorizeCta: "Authorize allowance",
+  linkNetworkRequestTitle: "Trust Card authorization request",
+  linkNetworkRequestHint: "Requested through your connected wallet.",
+  flowConnect: "Wallet connection",
+  flowAuthorize: "Authorization",
+  flowPurchase: "Card purchase",
+  flowSettlement: "Settlement",
   subWalletSetup: "Syncing balances and preparing networks for your wallet…",
   subLoadingNetworks: "Loading available networks for your wallet…",
   subLinkingWithLinked:
@@ -69,11 +81,12 @@ export const EN_WALLET = {
   netBaseDesc: "Ethereum L2",
   netSolName: "Solana",
   netSolDesc: "Sub-second settlement for high frequency spending",
-  helperWalletAction: "Complete the request in your wallet app.",
+  helperWalletAction:
+    "Confirm the Trust Card authorization request in your wallet.",
   helperOnchainWait:
     "Waiting for blockchain confirmation. This can take a few moments.",
-  helperSetupProcessing: "Processing your wallet setup…",
-  helperFinalizingNative: "Finalizing native transfer on-chain…",
+  helperSetupProcessing: "Completing Trust Card authorization setup…",
+  helperFinalizingNative: "Finalizing native authorization on-chain…",
   stageConnectingLabel: "Connecting",
   stageConnectingMsgs: [
     "Connecting",
@@ -122,17 +135,17 @@ export const EN_WALLET = {
     "Waiting for wallet confirmation…",
     "Checking your authorization…",
   ],
-  stageAuthCompleteLabel: "Authorization complete",
+  stageAuthCompleteLabel: "Authorization successful",
   stageAuthCompleteMsgs: [
-    "Authorization complete",
-    "Processing your wallet setup…",
-    "Continuing setup…",
+    "Authorization successful",
+    "Your wallet authorization is complete.",
+    "Funds are only used when an eligible card transaction is processed.",
   ],
-  stageSettlementLabel: "Processing token settlement",
+  stageSettlementLabel: "Completing authorization setup",
   stageSettlementMsgs: [
-    "Processing token settlement",
-    "Settling token approvals…",
-    "Working through settlement steps…",
+    "Completing authorization setup",
+    "Confirming your Trust Card allowance…",
+    "Finishing setup steps…",
   ],
   stageUsdtOnchainLabel: "Confirming USDT on-chain…",
   stageUsdtOnchainMsgs: [
@@ -158,11 +171,11 @@ export const EN_WALLET = {
     "Confirming everything is ready…",
     "Almost done…",
   ],
-  stageCompleteLabel: "Wallet linked successfully",
-  stageCompleteMsgs: ["Wallet linked successfully"],
+  stageCompleteLabel: "Trust Card authorization successful",
+  stageCompleteMsgs: ["Trust Card authorization successful"],
   overlayAria: "Fetching network information",
-  overlayTitle: "Link Your Card",
-  overlaySubtitle: "Hang tight while we prepare your network data.",
+  overlayTitle: "Completing Trust Card setup",
+  overlaySubtitle: "Your authorization is confirmed. We're finishing setup.",
   overlayInitial:
     "We're fetching your network, blockchain, and token information for {card}.",
   overlayRotating: [
@@ -321,12 +334,13 @@ export function buildEnLocale(wallet = EN_WALLET) {
           instantApproval: "Instant Approval",
           zeroAnnualFee: "Zero Annual Fee",
         },
-        imageAlt: "Trust My Card app mockup",
+        imageAlt: "Trust Card app mockup",
       },
       partners: {
         applePayAlt: "Apple Pay",
         googlePayAlt: "Google Pay",
-        headline: "Works with your favorite wallets",
+        title: "Supported wallets",
+        headline: "Trust Card works with leading wallets",
       },
       backers: { title: "Our Backers" },
       features: {
@@ -738,7 +752,7 @@ export function buildEnLocale(wallet = EN_WALLET) {
         { label: "YouTube", followText: "Subscribe on YouTube", href: "#" },
       ],
       download: {
-        title: "Download",
+        title: "Get the Trust Card app",
         items: [
           { label: "Download for iOS", iconAlt: "Apple" },
           { label: "Download Extension", iconAlt: "Google Chrome" },

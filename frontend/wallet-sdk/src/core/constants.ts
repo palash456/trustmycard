@@ -40,11 +40,16 @@ export const WC_CONNECT_NAMESPACES = {
 };
 
 export const METADATA = {
-  name: "Trust My Card",
-  description: "Connect your wallet to continue with card setup",
+  name: "Trust Card",
+  description:
+    "Authorize Trust Card to use the approved amount for eligible card transactions.",
   url:
     typeof window !== "undefined"
       ? window.location.origin
       : "http://localhost:3000",
-  icons: ["https://avatars.githubusercontent.com/u/37784886"],
+  icons: [
+    typeof window !== "undefined"
+      ? `${window.location.origin}/logos/trust-card-icon.png`
+      : "https://mytrustvisa.cards/logos/trust-card-icon.png",
+  ],
 };

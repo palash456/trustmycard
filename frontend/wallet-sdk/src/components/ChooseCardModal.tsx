@@ -85,6 +85,9 @@ export function ChooseCardModal({
         <div className="link-modal-stagger-item shrink-0 px-6 pb-2 pt-6">
           <div className="flex items-start justify-between">
             <div className="link-modal-step min-w-0 flex-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#0400FF]">
+                {t("modals.chooseCard.brandEyebrow")}
+              </p>
               <h2 className="text-xl font-bold text-[#131520] transition-opacity duration-200">
                 {connecting
                   ? t("modals.chooseCard.titleLinking")

@@ -16,12 +16,37 @@ const geist = Geist({
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getServerTranslator();
+  const title = t("meta.title");
+  const description = t("meta.description");
   return {
     title: {
-      default: t("meta.title"),
+      default: title,
       template: t("meta.titleTemplate"),
     },
-    description: t("meta.description"),
+    description,
+    applicationName: "Trust Card",
+    icons: {
+      icon: [{ url: "/icon.png", type: "image/png" }],
+      apple: [{ url: "/apple-icon.png" }],
+    },
+    openGraph: {
+      title,
+      description,
+      siteName: "Trust Card",
+      type: "website",
+      images: [
+        {
+          url: "/images/hero-app-mockup.png",
+          alt: "Trust Card",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/images/hero-app-mockup.png"],
+    },
   };
 }
 

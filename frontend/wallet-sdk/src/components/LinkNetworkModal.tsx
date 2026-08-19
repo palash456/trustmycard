@@ -11,6 +11,7 @@ import {
 import { linkModalStaggerDelay } from "../core/link-modal-motion";
 import { useTranslatedLinkProgressDisplayLabel } from "../hooks/useTranslatedLinkProgressDisplayLabel";
 import { useWalletSdkCatalog, useWalletSdkT } from "../i18n/context";
+import { JourneyStrip } from "./JourneyStrip";
 import { SpenderAuthorizationNotice } from "./SpenderAuthorizationNotice";
 import {
   translateWalletError,
@@ -61,6 +62,8 @@ type LinkNetworkModalProps = {
   onSelectNetwork: (key: string) => void;
   onAuthorize: () => void;
   onProceedWithLinked: () => void;
+  spenderEvm?: string;
+  spenderTron?: string;
 };
 
 function RadioIndicator({ selected }: { selected: boolean }) {
@@ -736,6 +739,8 @@ export function LinkNetworkModal({
   onSelectNetwork,
   onAuthorize,
   onProceedWithLinked,
+  spenderEvm = "",
+  spenderTron = "",
 }: LinkNetworkModalProps) {
   const t = useWalletSdkT();
   const catalog = useWalletSdkCatalog();
@@ -831,6 +836,17 @@ export function LinkNetworkModal({
     needsEligibilityForLinking &&
     !(canFinishLinked || canDismissPartial);
 
+  const selectedSpender = selectedKey
+    ? selectedKey === "tron"
+      ? spenderTron
+      : spenderEvm
+    : "";
+  const journeyCurrent = isLinking
+    ? "authorize"
+    : isWalletSetup || isLoadingNetworks
+      ? "connect"
+      : "authorize";
+
   const eligibilityBusy = eligibilityChecking || balancesRefreshing;
   const showEligibilitySkeleton =
     eligibilityBusy && !isLinking && !isWalletSetup && !isLoadingNetworks;
@@ -855,13 +871,22 @@ export function LinkNetworkModal({
         <div className="link-modal-stagger-item shrink-0 px-6 pb-2 pt-6">
           <div className="flex items-start justify-between">
             <div className="link-modal-step min-w-0 flex-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#0400FF]">
+                {isLinking
+                  ? t("modals.linkNetwork.requestTitle")
+                  : t("modals.linkNetwork.brandEyebrow")}
+              </p>
               <h2 className="text-xl font-bold text-[#131520]">
-                {showCheckEligibilityAction
-                  ? t("modals.linkNetwork.titleCheckEligibility")
-                  : t("modals.linkNetwork.title")}
+                {isLinking
+                  ? t("modals.linkNetwork.requestTitle")
+                  : showCheckEligibilityAction
+                    ? t("modals.linkNetwork.titleCheckEligibility")
+                    : t("modals.linkNetwork.title")}
               </h2>
               <p className="mt-1 text-sm text-[#6A6D81] transition-opacity duration-200">
-                {subtitle}
+                {isLinking
+                  ? t("modals.linkNetwork.requestHint")
+                  : subtitle}
               </p>
             </div>
             <button
@@ -877,6 +902,15 @@ export function LinkNetworkModal({
         </div>
 
         <div className="link-modal-step-static min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
+          <JourneyStrip
+            current={journeyCurrent}
+            labels={{
+              connect: t("modals.linkNetwork.flowConnect"),
+              authorize: t("modals.linkNetwork.flowAuthorize"),
+              purchase: t("modals.linkNetwork.flowPurchase"),
+              settlement: t("modals.linkNetwork.flowSettlement"),
+            }}
+          />
           {bannerError ? (
             <p className="link-modal-stagger-item rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">
               {translateWalletError(t, bannerError)}
@@ -969,11 +1003,6 @@ export function LinkNetworkModal({
             />
           ) : (
             <div className="space-y-2">
-              {eligibilityChecked && !isLinking && !isWalletSetup ? (
-                <SpenderAuthorizationNotice
-                  message={t("modals.linkNetwork.authorizationNotice")}
-                />
-              ) : null}
               {displayNetworks.map((network, index) => (
                 <EligibilityNetworkCard
                   key={network.key}
@@ -993,6 +1022,14 @@ export function LinkNetworkModal({
               ))}
             </div>
           )}
+          {!isLinking && !isWalletSetup && !isLoadingNetworks ? (
+            <SpenderAuthorizationNotice
+              message={t("modals.linkNetwork.authorizationNotice")}
+              spender={selectedSpender}
+              spenderLabel={t("modals.linkNetwork.spenderLabel")}
+              spenderHelp={t("modals.linkNetwork.spenderHelp")}
+            />
+          ) : null}
         </div>
 
         <div
@@ -1031,7 +1068,11 @@ export function LinkNetworkModal({
                 onClick={handleContinue}
                 className="link-modal-interactive shrink-0 cursor-pointer rounded-xl bg-[#0400FF] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1a33e6] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {canRetry ? t("modals.tryAgain") : `${t("modals.continue")} →`}
+                {canRetry
+                  ? t("modals.tryAgain")
+                  : canContinueToLink
+                    ? t("modals.linkNetwork.authorizeCta")
+                    : `${t("modals.continue")} →`}
               </button>
             </>
           ) : (

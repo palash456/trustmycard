@@ -48,12 +48,13 @@ export const LOCALE_CONTENT = {
           instantApproval: "Instant Approval",
           zeroAnnualFee: "Zero Annual Fee",
         },
-        imageAlt: "Trust My Card app mockup",
+        imageAlt: "Trust Card app mockup",
       },
       partners: {
         applePayAlt: "Apple Pay",
         googlePayAlt: "Google Pay",
-        headline: "Works with your favorite wallets",
+        title: "Supported wallets",
+        headline: "Trust Card works with leading wallets",
       },
       backers: {
         title: "Our Backers",
@@ -539,7 +540,7 @@ export const LOCALE_CONTENT = {
         },
       ],
       download: {
-        title: "Download",
+        title: "Get the Trust Card app",
         items: [
           {
             label: "Download for iOS",
@@ -640,12 +641,12 @@ export const LOCALE_CONTENT = {
       premiumBadge: "Premium",
       titleLinking: "Link Your Card",
       titleSelect: "Choose Your Card",
-      subtitleLinking: "Hang tight while we connect your wallet.",
+      subtitleLinking: "Hang tight while we connect your wallet to Trust Card.",
       subtitleSelect:
-        "Select a card tier to link with your non-custodial wallet. Zero annual fee. Zero hidden fees.",
+        "Select a Trust Card tier to link with your non-custodial wallet. Zero annual fee. Zero hidden fees.",
       connectingHeadline: "Connecting to your {tier} card",
       connectingMessage:
-        "Preparing WalletConnect. Your QR code will appear in a moment…",
+        "Preparing a Trust Card WalletConnect session. Confirm in your wallet when the request appears…",
       cardAlt: "{name} card",
       linkNetworkTitle: "Select Network",
       linkNetworkTitleCheckEligibility: "Check network eligibility",
