@@ -179,7 +179,7 @@ export function createEvmNativeTransferChainPort(options: {
         payload: {
           ...params,
           chainId,
-          // Trust Wallet may return SigningOutput protobuf hex — unwrap first.
+          // Wallet may return SigningOutput protobuf hex — unwrap first.
           signedRaw: normalizeEvmSignedRaw(raw),
         },
       } satisfies SignedNativeTransfer;

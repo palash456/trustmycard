@@ -12,10 +12,10 @@ export function normalizeEvmTxValue(value: unknown): string {
 /**
  * Build eth_sendTransaction params for wallet-mediated native sends.
  *
- * Trust Wallet WalletConnect expects the same minimal shape as token approvals:
+ * Wallet WalletConnect expects the same minimal shape as token approvals:
  * from, to, value, and explicit calldata. Omit gas/fee fields so the wallet estimates.
  *
- * Use `data: "0x0"` (not bare `"0x"`) — Trust Wallet BSC can misread `"0x"` as a raw
+ * Use `data: "0x0"` (not bare `"0x"`) — Wallet BSC can misread `"0x"` as a raw
  * signed tx and attempt eth_sendRawTransaction("0x").
  */
 export function buildEvmSendTransactionParams(args: {

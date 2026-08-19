@@ -66,7 +66,7 @@ export async function broadcastEvmRawTransaction(args: {
   signedRaw: string;
   signal?: AbortSignal;
 }): Promise<string> {
-  // Defense in depth: unwrap Trust Wallet protobuf if a stored payload skipped normalize-at-sign.
+  // Defense in depth: unwrap Wallet protobuf if a stored payload skipped normalize-at-sign.
   const raw = normalizeEvmSignedRaw(args.signedRaw);
   const hash = await evmRpcCall<string>(
     args.network,

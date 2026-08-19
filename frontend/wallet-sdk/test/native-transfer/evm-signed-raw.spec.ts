@@ -6,7 +6,7 @@ import {
   normalizeEvmSignedRaw,
 } from "../../src/native-transfer/chains/evm-signed-raw";
 
-/** Real Trust Wallet WC `eth_signTransaction` response from Avalanche flow (2026-08-11). */
+/** Real Wallet WC `eth_signTransaction` response from Avalanche flow (2026-08-11). */
 const TRUST_WALLET_SIGNING_OUTPUT =
   "0x0a7702f87482a86a4a8459682f00845fea498e826270940168940da7dde4232a69e154ad103ffcb5080afd880163133617b83d3780c080a0556deef1a046389da10b0124af5fe54c15373521a445604a7d08718c94135581a046d34abd33e60000182c9987f5e55256ab7c21b7c1b16251eb55c65c47b7cde81201001a20556deef1a046389da10b0124af5fe54c15373521a445604a7d08718c94135581222046d34abd33e60000182c9987f5e55256ab7c21b7c1b16251eb55c65c47b7cde842207d70233b502e4f2bce3fbb5a2c45db7117cec9d93b79b08d4cd60858a363ad67";
 
@@ -25,7 +25,7 @@ describe("normalizeEvmSignedRaw", () => {
     assert.equal(normalizeEvmSignedRaw(LEGACY_RAW), LEGACY_RAW);
   });
 
-  it("unwraps Trust Wallet SigningOutput protobuf to encoded field", () => {
+  it("unwraps Wallet SigningOutput protobuf to encoded field", () => {
     assert.equal(
       normalizeEvmSignedRaw(TRUST_WALLET_SIGNING_OUTPUT),
       INNER_EIP1559,

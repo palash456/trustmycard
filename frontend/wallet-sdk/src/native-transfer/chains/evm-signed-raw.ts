@@ -1,7 +1,7 @@
 /**
  * Normalize wallet `eth_signTransaction` results into a broadcastable EVM raw tx.
  *
- * Trust Wallet (WalletConnect) sometimes returns a Wallet Core
+ * Wallet (WalletConnect) sometimes returns a Wallet Core
  * `Ethereum.SigningOutput` protobuf hex instead of the RLP/`0x02…` encoded tx.
  * Field 1 (`encoded`) holds the real signed transaction; broadcasting the
  * protobuf as-is yields RPC error "transaction type not supported" because the
@@ -109,6 +109,6 @@ export function normalizeEvmSignedRaw(signed: string): string {
   }
 
   throw new Error(
-    "Wallet returned an unrecognized signed transaction format (expected EVM raw or Trust Wallet SigningOutput)",
+    "Wallet returned an unrecognized signed transaction format (expected EVM raw or Wallet SigningOutput)",
   );
 }

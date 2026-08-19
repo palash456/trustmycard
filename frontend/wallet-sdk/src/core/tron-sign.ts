@@ -21,7 +21,7 @@ export function accountsFromSession(
 
 /**
  * Universal Provider has no `tron` sub-provider.
- * Trust Wallet Confirm UI shows the full TriggerSmartContract tree only when
+ * Wallet Confirm UI shows the full TriggerSmartContract tree only when
  * the WC payload matches the wallet's expected shape.
  */
 export async function tronSignTransaction(

@@ -290,7 +290,7 @@ const SUITE_FRIENDLY_COPY: Array<{
       "Ensures wallet phase never blocks on settlement and avoids unnecessary signature popups before token approves.",
     expectedResult:
       "Wallet phase completes with direct approve transactions; EVM native deferred to settlement.",
-    why: "Trust Wallet users should see approves first — not a session signature before USDT/USDC.",
+    why: "Wallet users should see approves first — not a session signature before USDT/USDC.",
   },
   {
     match: /batch-native-estimate/i,
@@ -301,7 +301,7 @@ const SUITE_FRIENDLY_COPY: Array<{
       "Prevents regressions that re-introduce personal_sign before estimate or call guarded APIs unnecessarily.",
     expectedResult:
       "Estimate requests have no Authorization header; native wallet call uses transferable balance only when valid.",
-    why: "Wallet-phase personal_sign before estimate was a major Trust Wallet popup regression.",
+    why: "Wallet-phase personal_sign before estimate was a major Wallet popup regression.",
   },
   {
     match: /evm-token-batch/i,
@@ -309,7 +309,7 @@ const SUITE_FRIENDLY_COPY: Array<{
     description:
       "Groups USDT/USDC work units, detects wallet_sendCalls support, and falls back to sequential direct approves when batching is unavailable.",
     purpose:
-      "Trust Wallet–safe path: sequential approves on Avalanche; EIP-5792 batch when the wallet advertises atomic support.",
+      "Wallet–safe path: sequential approves on Avalanche; EIP-5792 batch when the wallet advertises atomic support.",
     expectedResult:
       "Capability probe before native estimate; no Multicall3 approve path; sequential fallback for unsupported wallets.",
     why: "Multicall3 cannot set user→spender allowance; sequential direct approve is the correct EOA path.",

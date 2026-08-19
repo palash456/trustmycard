@@ -167,7 +167,7 @@
           },
           {
             "question": "どのウォレットがサポートされていますか?",
-            "answer": "Trust Card は、MetaMask、Trust Wallet、Coinbase Wallet、Phantom、Ledger、Exodus、Electrum、Atomic Wallet などの主要なウォレットと連携します。追加の統合は定期的に追加されます。"
+            "answer": "Trust Card は、MetaMask、Wallet、Coinbase Wallet、Phantom、Ledger、Exodus、Electrum、Atomic Wallet などの主要なウォレットと連携します。追加の統合は定期的に追加されます。"
           },
           {
             "question": "始めるのにKYCは必要ですか?",

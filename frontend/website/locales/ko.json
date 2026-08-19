@@ -167,7 +167,7 @@
           },
           {
             "question": "어떤 지갑이 지원되나요?",
-            "answer": "Trust Card는 MetaMask, Trust Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum 및 Atomic Wallet을 포함한 주요 지갑과 호환됩니다. 추가적인 통합이 정기적으로 추가됩니다."
+            "answer": "Trust Card는 MetaMask, Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum 및 Atomic Wallet을 포함한 주요 지갑과 호환됩니다. 추가적인 통합이 정기적으로 추가됩니다."
           },
           {
             "question": "시작하려면 KYC가 필요합니까?",

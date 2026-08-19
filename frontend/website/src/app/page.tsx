@@ -63,7 +63,7 @@ function RewardBar({
 const WALLET_PARTNERS = [
   { name: "MetaMask", logo: "/logos/partners/metamask.svg", height: 28 },
   {
-    name: "Trust Wallet",
+    name: "Wallet",
     logo: "/logos/partners/trust-wallet.png",
     height: 28,
   },

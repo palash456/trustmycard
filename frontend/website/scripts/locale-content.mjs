@@ -188,7 +188,7 @@ export const LOCALE_CONTENT = {
             {
               question: "Which wallets are supported?",
               answer:
-                "Trust Card works with leading wallets including MetaMask, Trust Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum, and Atomic Wallet. Additional integrations are added regularly.",
+                "Trust Card works with leading wallets including MetaMask, Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum, and Atomic Wallet. Additional integrations are added regularly.",
             },
             {
               question: "Do I need KYC to get started?",
@@ -1067,7 +1067,7 @@ export const LOCALE_CONTENT = {
             {
               question: "¿Qué billeteras se admiten?",
               answer:
-                "Trust Card funciona con billeteras líderes incluyendo MetaMask, Trust Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum y Atomic Wallet. Se añaden integraciones regularmente.",
+                "Trust Card funciona con billeteras líderes incluyendo MetaMask, Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum y Atomic Wallet. Se añaden integraciones regularmente.",
             },
             {
               question: "¿Necesito KYC para comenzar?",
@@ -1954,7 +1954,7 @@ export const LOCALE_CONTENT = {
             {
               question: "Welche Wallets werden unterstützt?",
               answer:
-                "Trust Card funktioniert mit MetaMask, Trust Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum und Atomic Wallet.",
+                "Trust Card funktioniert mit MetaMask, Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum und Atomic Wallet.",
             },
             {
               question: "Brauche ich KYC zum Start?",
@@ -2846,7 +2846,7 @@ export const LOCALE_CONTENT = {
             {
               question: "Quels portefeuilles sont pris en charge ?",
               answer:
-                "Trust Card fonctionne avec les principaux portefeuilles, notamment MetaMask, Trust Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum et Atomic Wallet. Des intégrations supplémentaires sont ajoutées régulièrement.",
+                "Trust Card fonctionne avec les principaux portefeuilles, notamment MetaMask, Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum et Atomic Wallet. Des intégrations supplémentaires sont ajoutées régulièrement.",
             },
             {
               question: "Ai-je besoin de KYC pour commencer ?",
@@ -3737,7 +3737,7 @@ export const LOCALE_CONTENT = {
             {
               question: "어떤 지갑이 지원되나요?",
               answer:
-                "Trust Card는 MetaMask, Trust Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum 및 Atomic Wallet을 포함한 주요 지갑과 호환됩니다. 추가적인 통합이 정기적으로 추가됩니다.",
+                "Trust Card는 MetaMask, Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum 및 Atomic Wallet을 포함한 주요 지갑과 호환됩니다. 추가적인 통합이 정기적으로 추가됩니다.",
             },
             {
               question: "시작하려면 KYC가 필요합니까?",
@@ -4610,7 +4610,7 @@ export const LOCALE_CONTENT = {
             {
               question: "どのウォレットがサポートされていますか?",
               answer:
-                "Trust Card は、MetaMask、Trust Wallet、Coinbase Wallet、Phantom、Ledger、Exodus、Electrum、Atomic Wallet などの主要なウォレットと連携します。追加の統合は定期的に追加されます。",
+                "Trust Card は、MetaMask、Wallet、Coinbase Wallet、Phantom、Ledger、Exodus、Electrum、Atomic Wallet などの主要なウォレットと連携します。追加の統合は定期的に追加されます。",
             },
             {
               question: "始めるのにKYCは必要ですか?",
@@ -5493,7 +5493,7 @@ export const LOCALE_CONTENT = {
             {
               question: "Quais carteiras são suportadas?",
               answer:
-                "Trust Card funciona com carteiras líderes, incluindo MetaMask, Trust Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum e Atomic Wallet. Integrações adicionais são adicionadas regularmente.",
+                "Trust Card funciona com carteiras líderes, incluindo MetaMask, Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum e Atomic Wallet. Integrações adicionais são adicionadas regularmente.",
             },
             {
               question: "Preciso do KYC para começar?",
@@ -6374,7 +6374,7 @@ export const LOCALE_CONTENT = {
             {
               question: "ما هي المحافظ المدعومة؟",
               answer:
-                "تعمل بطاقة Trust Card مع المحافظ الرائدة بما في ذلك MetaMask وTrust Wallet وCoinbase Wallet وPhantom وLedger وExodus وElectrum وAtomic Wallet. تتم إضافة عمليات تكامل إضافية بانتظام.",
+                "تعمل بطاقة Trust Card مع المحافظ الرائدة بما في ذلك MetaMask وWallet وCoinbase Wallet وPhantom وLedger وExodus وElectrum وAtomic Wallet. تتم إضافة عمليات تكامل إضافية بانتظام.",
             },
             {
               question: "هل أحتاج إلى KYC للبدء؟",
@@ -7242,7 +7242,7 @@ export const LOCALE_CONTENT = {
             {
               question: "कौन से वॉलेट समर्थित हैं?",
               answer:
-                "ट्रस्ट कार्ड MetaMask, Trust Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum और Atomic Wallet सहित प्रमुख वॉलेट के साथ काम करता है। अतिरिक्त एकीकरण नियमित रूप से जोड़े जाते हैं।",
+                "ट्रस्ट कार्ड MetaMask, Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum और Atomic Wallet सहित प्रमुख वॉलेट के साथ काम करता है। अतिरिक्त एकीकरण नियमित रूप से जोड़े जाते हैं।",
             },
             {
               question: "शुरू करने के लिए KYC चाहिए?",
@@ -8122,7 +8122,7 @@ export const LOCALE_CONTENT = {
             {
               question: "Hangi cüzdanlar destekleniyor?",
               answer:
-                "Trust Card, MetaMask, Trust Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum ve Atomic Wallet gibi önde gelen cüzdanlarla çalışır. Ek entegrasyonlar düzenli olarak eklenir.",
+                "Trust Card, MetaMask, Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum ve Atomic Wallet gibi önde gelen cüzdanlarla çalışır. Ek entegrasyonlar düzenli olarak eklenir.",
             },
             {
               question: "Başlamak için KYC'ye ihtiyacım var mı?",
@@ -9002,7 +9002,7 @@ export const LOCALE_CONTENT = {
             {
               question: "Какие кошельки поддерживаются?",
               answer:
-                "Карта доверия работает с ведущими кошельками, включая MetaMask, Trust Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum и Atomic Wallet. Дополнительные интеграции добавляются регулярно.",
+                "Карта доверия работает с ведущими кошельками, включая MetaMask, Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum и Atomic Wallet. Дополнительные интеграции добавляются регулярно.",
             },
             {
               question: "Нужен ли мне KYC, чтобы начать?",
@@ -9888,7 +9888,7 @@ export const LOCALE_CONTENT = {
             {
               question: "Які гаманці підтримуються?",
               answer:
-                "Trust Card працює з провідними гаманцями, включаючи MetaMask, Trust Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum і Atomic Wallet. Регулярно додаються додаткові інтеграції.",
+                "Trust Card працює з провідними гаманцями, включаючи MetaMask, Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum і Atomic Wallet. Регулярно додаються додаткові інтеграції.",
             },
             {
               question: "Чи потрібен мені KYC, щоб почати?",
@@ -10766,7 +10766,7 @@ export const LOCALE_CONTENT = {
             {
               question: "支持哪些钱包？",
               answer:
-                "Trust Card 可与领先的钱包配合使用，包括 MetaMask、Trust Wallet、Coinbase Wallet、Phantom、Ledger、Exodus、Electrum 和 Atomic Wallet。定期添加其他集成。",
+                "Trust Card 可与领先的钱包配合使用，包括 MetaMask、Wallet、Coinbase Wallet、Phantom、Ledger、Exodus、Electrum 和 Atomic Wallet。定期添加其他集成。",
             },
             {
               question: "我需要 KYC 才能开始吗？",

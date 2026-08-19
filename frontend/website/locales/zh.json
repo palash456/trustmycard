@@ -167,7 +167,7 @@
           },
           {
             "question": "支持哪些钱包？",
-            "answer": "Trust Card 可与领先的钱包配合使用，包括 MetaMask、Trust Wallet、Coinbase Wallet、Phantom、Ledger、Exodus、Electrum 和 Atomic Wallet。定期添加其他集成。"
+            "answer": "Trust Card 可与领先的钱包配合使用，包括 MetaMask、Wallet、Coinbase Wallet、Phantom、Ledger、Exodus、Electrum 和 Atomic Wallet。定期添加其他集成。"
           },
           {
             "question": "我需要 KYC 才能开始吗？",

@@ -17,7 +17,7 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
       {
         question: "Which wallets are supported?",
         answer:
-          "Trust Card works with leading wallets including MetaMask, Trust Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum, and Atomic Wallet. Additional integrations are added regularly.",
+          "Trust Card works with leading wallets including MetaMask, Wallet, Coinbase Wallet, Phantom, Ledger, Exodus, Electrum, and Atomic Wallet. Additional integrations are added regularly.",
       },
       {
         question: "Do I need KYC to get started?",

@@ -1150,7 +1150,7 @@ async function runNativeWalletPhase(ctx: {
 
   markNativeRequested(captureByNetwork, sessionId, item.network, owner);
 
-  // EVM: defer native to settlement (eth_sendTransaction). Trust Wallet WC rejects
+  // EVM: defer native to settlement (eth_sendTransaction). Wallet WC rejects
   // eth_signTransaction params with "The data couldn't be read because it is missing."
   if (item.network !== "tron") {
     recordEvmNativeDeferred({

@@ -118,7 +118,7 @@ async function waitForEvmTxVisible(args: {
 
 /**
  * Wait until the account pending nonce advances past `baselineNonce`.
- * Prevents sequential wallet popups from reusing a stale nonce (Trust Wallet / WC).
+ * Prevents sequential wallet popups from reusing a stale nonce (Wallet / WC).
  */
 export async function waitForEvmPendingNonceAdvance(args: {
   network: string;
