@@ -14,6 +14,7 @@ import {
   Receipt,
   ScrollText,
   Server,
+  Settings,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -78,6 +79,11 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Administration",
     items: [
       { href: "/system", label: "System", icon: Server },
+      {
+        href: "/settings/production-config",
+        label: "Production config",
+        icon: Settings,
+      },
       { href: "/admin-actions", label: "Admin actions", icon: ClipboardList },
       { href: "/documentation", label: "Documentation", icon: BookOpen },
       { href: "/developer-test", label: "Developer Test", icon: FlaskConical },

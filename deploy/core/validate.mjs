@@ -12,6 +12,11 @@ import {
   normalizeWebsiteDomain,
   parseEnvFile,
 } from "./config-compiler.mjs";
+import {
+  runtimeStateExists,
+  readRuntimeState,
+} from "../config-engine/runtime-state.mjs";
+import { assertPlatformPlaceholdersEmpty } from "../config-engine/validators.mjs";
 
 export function validateDeployContext(ctx) {
   const errors = [];
@@ -46,8 +51,20 @@ export function validateDeployContext(ctx) {
 
   if (environment === "production" && existsSync(configPlatformPath)) {
     try {
-      const platform = parseEnvFile(configPlatformPath);
-      normalizeWebsiteDomain(platform.WEBSITE_DOMAIN);
+      if (runtimeStateExists(environment)) {
+        assertPlatformPlaceholdersEmpty(repoRoot);
+        const state = readRuntimeState(environment);
+        normalizeWebsiteDomain(state.WEBSITE_DOMAIN);
+      } else {
+        const platform = parseEnvFile(configPlatformPath);
+        if (!platform.WEBSITE_DOMAIN?.trim()) {
+          errors.push(
+            "Production runtime state is missing and WEBSITE_DOMAIN placeholder is empty. Run scripts/config-update.sh init first.",
+          );
+        } else {
+          normalizeWebsiteDomain(platform.WEBSITE_DOMAIN);
+        }
+      }
     } catch (error) {
       errors.push(`config/platform.env: ${error.message}`);
     }

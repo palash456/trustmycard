@@ -37,7 +37,10 @@ export async function middleware(req: NextRequest) {
   }
 
   if (!authed) {
-    if (pathname.startsWith("/api/admin")) {
+    if (
+      pathname.startsWith("/api/admin") ||
+      pathname.startsWith("/api/production-config")
+    ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const login = new URL("/login", req.url);

@@ -4,7 +4,7 @@ import { join } from "path";
 import { spawnSync } from "child_process";
 import { composeEnv, composeFiles } from "../core/compose.mjs";
 import { transferImagesToHost } from "../core/image-transfer.mjs";
-import { deployRoot } from "../core/types.mjs";
+import { deployRoot, repoRoot } from "../core/types.mjs";
 import { releaseComponents } from "../core/types.mjs";
 
 function loadCredentials() {
@@ -103,6 +103,21 @@ function rsyncBundle(creds, remotePath, environment) {
     `${remotePath}/deploy/compiled/${environment}/`,
   );
 
+  const configEngineDir = join(deployRoot, "config-engine");
+  if (existsSync(configEngineDir)) {
+    rsyncToRemote(creds, configEngineDir, `${remotePath}/deploy/config-engine/`);
+  }
+  const configUpdateScript = join(repoRoot, "scripts", "config-update.sh");
+  if (existsSync(configUpdateScript)) {
+    sshExec(creds, `mkdir -p ${remotePath}/scripts`);
+    rsyncFileToRemote(
+      creds,
+      configUpdateScript,
+      `${remotePath}/scripts/config-update.sh`,
+    );
+    sshExec(creds, `chmod +x ${remotePath}/scripts/config-update.sh`);
+  }
+
   const manifest = join(deployRoot, `manifest.${environment}.json`);
   if (existsSync(manifest)) {
     rsyncFileToRemote(
@@ -161,7 +176,9 @@ export const dockerVpsAdapter = {
 
   async release(ctx) {
     const creds = loadCredentials();
-    const components = releaseComponents(ctx.topology, ctx.options);
+    const components =
+      ctx.options?.configOnlyServices ??
+      releaseComponents(ctx.topology, ctx.options);
     const imageTags = components
       .filter((name) => name !== "caddy")
       .map((name) => {
@@ -186,7 +203,7 @@ export const dockerVpsAdapter = {
       remoteComposeCommand(ctx, [
         "up",
         "-d",
-        "--remove-orphans",
+        ...(ctx.options?.configOnlyServices ? [] : ["--remove-orphans"]),
         ...components,
       ]),
     );

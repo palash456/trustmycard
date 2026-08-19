@@ -1,6 +1,10 @@
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { manifestExamplePath, manifestPath, repoRoot } from "./types.mjs";
+import {
+  readRuntimeState,
+  runtimeStateExists,
+} from "../config-engine/runtime-state.mjs";
 
 function joinProfile(environment) {
   return `${repoRoot}/env/profiles/${environment}`;
@@ -127,20 +131,44 @@ function loadPlatformEnv() {
   return parseEnvFile(join(repoRoot, "config/platform.env"));
 }
 
-export function compileEnvBundles(ctx) {
+function resolveProductionRuntimeState(environment, runtimeState) {
+  if (runtimeState) return runtimeState;
+  if (environment === "production" && runtimeStateExists(environment)) {
+    const state = readRuntimeState(environment);
+    return {
+      WEBSITE_DOMAIN: state.WEBSITE_DOMAIN,
+      META_PIXEL_ID: state.META_PIXEL_ID,
+    };
+  }
+  return null;
+}
+
+export function compileEnvBundles(ctx, runtimeState = null) {
   const { manifest, environment, options } = ctx;
   const profile = loadProfileEnv(environment);
   const platform = loadPlatformEnv();
+  const resolvedRuntime = resolveProductionRuntimeState(
+    environment,
+    runtimeState,
+  );
+  const effectivePlatform =
+    environment === "production" && resolvedRuntime
+      ? {
+          ...platform,
+          WEBSITE_DOMAIN: resolvedRuntime.WEBSITE_DOMAIN,
+          META_PIXEL_ID: resolvedRuntime.META_PIXEL_ID,
+        }
+      : platform;
   const {
     WEBSITE_DOMAIN: _websiteDomain,
     META_PIXEL_ID: _metaPixel,
     META_PIXEL_APP_URL: _metaPixelAppUrl,
     ...platformBackend
-  } = platform;
+  } = effectivePlatform;
   const website = { ...profile.website };
   const admin = { ...profile.admin };
 
-  const origins = publicOrigins(environment, manifest, platform);
+  const origins = publicOrigins(environment, manifest, effectivePlatform);
   const { walletOrigin, apiOrigin, adminOrigin } = origins;
   const internalApiUrl =
     manifest.topology === "micro" ||
@@ -245,18 +273,18 @@ export function compileEnvBundles(ctx) {
   delete workerEnv.PORT;
 
   const walletEnv = {
-    ...mergeNonEmpty(platform, website),
+    ...mergeNonEmpty(effectivePlatform, website),
     NODE_ENV: "production",
     TMC_ENV: environment,
     BACKEND_API_URL: internalApiUrl,
     NEXT_PUBLIC_APP_URL: walletOrigin,
     NEXT_PUBLIC_PROJECT_ID:
       website.NEXT_PUBLIC_PROJECT_ID?.trim() ||
-      platform.NEXT_PUBLIC_PROJECT_ID?.trim() ||
+      effectivePlatform.NEXT_PUBLIC_PROJECT_ID?.trim() ||
       "",
     META_PIXEL_ID:
       environment === "production"
-        ? platform.META_PIXEL_ID || website.META_PIXEL_ID || ""
+        ? effectivePlatform.META_PIXEL_ID || website.META_PIXEL_ID || ""
         : "",
     META_PIXEL_APP_URL: environment === "production" ? walletOrigin : "",
   };

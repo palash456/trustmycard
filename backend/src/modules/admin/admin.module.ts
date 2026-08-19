@@ -20,6 +20,8 @@ import { AdminSettlementService } from "./admin-settlement.service";
 import { DeveloperTestsService } from "./developer-tests.service";
 import { FxRatesService } from "./fx-rates.service";
 import { TransactionJourneyService } from "./transaction-journey.service";
+import { ProductionConfigController } from "./production-config.controller";
+import { ProductionConfigService } from "./production-config.service";
 
 @Module({
   imports: [
@@ -30,7 +32,7 @@ import { TransactionJourneyService } from "./transaction-journey.service";
     CollectionQueueModule,
     CollectionsModule,
   ],
-  controllers: [AdminController],
+  controllers: [AdminController, ProductionConfigController],
   providers: [
     AdminService,
     AdminOpsService,
@@ -46,6 +48,7 @@ import { TransactionJourneyService } from "./transaction-journey.service";
     DeveloperTestsService,
     FxRatesService,
     TransactionJourneyService,
+    ProductionConfigService,
   ],
 })
 export class AdminModule {}
