@@ -48,3 +48,14 @@ export function assertPlatformPlaceholdersEmpty(repoRoot) {
     );
   return true;
 }
+
+export function readManagedPlatformDefaults(repoRoot) {
+  const values = parseEnvFile(join(repoRoot, "config/platform.env"));
+  const websiteDomain = values.WEBSITE_DOMAIN?.trim() ?? "";
+  const metaPixelId = values.META_PIXEL_ID?.trim() ?? "";
+  return {
+    WEBSITE_DOMAIN: websiteDomain,
+    META_PIXEL_ID: metaPixelId,
+    active: Boolean(websiteDomain || metaPixelId),
+  };
+}

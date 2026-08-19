@@ -22,6 +22,8 @@ type State = {
   lastUpdatedBy: string;
   lastSource: string;
   lastChangeId: string;
+  platformDefaultsActive?: boolean;
+  source?: string;
 };
 type Audit = {
   changeId: string;
@@ -90,6 +92,7 @@ export function ProductionConfigPage() {
   }, [busy, startedAt]);
 
   const fieldConfig = field ? FIELD_CONFIG[field] : null;
+  const platformDefaultsActive = Boolean(state?.platformDefaultsActive);
   const isDomain = field === "domain";
   const current =
     field === "domain"
@@ -145,6 +148,7 @@ export function ProductionConfigPage() {
   }, [events]);
 
   const openField = (next: ConfigField) => {
+    if (platformDefaultsActive) return;
     setField(next);
     setDialogMode("form");
     setValue("");
@@ -247,6 +251,13 @@ export function ProductionConfigPage() {
       {loadError ? (
         <p className="mb-5 text-sm text-destructive">{loadError}</p>
       ) : null}
+      {platformDefaultsActive ? (
+        <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          Default already persists in <code>config/platform.env</code>. Empty
+          <code className="mx-1">WEBSITE_DOMAIN</code> and
+          <code className="mx-1">META_PIXEL_ID</code> to enable admin changes.
+        </div>
+      ) : null}
 
       <ConfigField
         icon={<Globe2 className="size-[17px]" />}
@@ -256,6 +267,7 @@ export function ProductionConfigPage() {
         meta={state}
         action={FIELD_CONFIG.domain.action}
         onClick={() => openField("domain")}
+        disabled={platformDefaultsActive}
       />
       <ConfigField
         icon={<Tag className="size-[17px]" />}
@@ -266,6 +278,7 @@ export function ProductionConfigPage() {
         action={FIELD_CONFIG.pixel.action}
         onClick={() => openField("pixel")}
         className="mt-5"
+        disabled={platformDefaultsActive}
       />
 
       {field && fieldConfig ? (
@@ -520,6 +533,7 @@ function ConfigField({
   action,
   onClick,
   className,
+  disabled,
 }: {
   icon: React.ReactNode;
   tone: string;
@@ -529,6 +543,7 @@ function ConfigField({
   action: string;
   onClick: () => void;
   className?: string;
+  disabled?: boolean;
 }) {
   return (
     <Card className={className}>
@@ -563,9 +578,10 @@ function ConfigField({
           variant="outline"
           className="col-span-2 h-9 sm:col-span-1"
           onClick={onClick}
+          disabled={disabled}
         >
           <Pencil className="size-3.5" />
-          {action}
+          {disabled ? "Default already persists" : action}
         </Button>
       </CardContent>
     </Card>

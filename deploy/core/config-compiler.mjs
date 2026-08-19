@@ -131,6 +131,12 @@ function loadPlatformEnv() {
   return parseEnvFile(join(repoRoot, "config/platform.env"));
 }
 
+function hasManagedPlatformDefaults(platform) {
+  return Boolean(
+    platform.WEBSITE_DOMAIN?.trim() || platform.META_PIXEL_ID?.trim(),
+  );
+}
+
 function resolveProductionRuntimeState(environment, runtimeState) {
   if (runtimeState) return runtimeState;
   if (environment === "production" && runtimeStateExists(environment)) {
@@ -152,7 +158,9 @@ export function compileEnvBundles(ctx, runtimeState = null) {
     runtimeState,
   );
   const effectivePlatform =
-    environment === "production" && resolvedRuntime
+    environment === "production" &&
+    resolvedRuntime &&
+    !hasManagedPlatformDefaults(platform)
       ? {
           ...platform,
           WEBSITE_DOMAIN: resolvedRuntime.WEBSITE_DOMAIN,
