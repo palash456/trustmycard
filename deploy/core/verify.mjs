@@ -1,8 +1,25 @@
 const VERIFY_RETRIES = 15;
 const VERIFY_DELAY_MS = 2000;
+const DOMAIN_MIGRATION_VERIFY_RETRIES = 90;
+const DOMAIN_MIGRATION_VERIFY_DELAY_MS = 4000;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function verifyRetryPolicy(ctx) {
+  if (ctx?.changedKey === "WEBSITE_DOMAIN") {
+    return {
+      retries: DOMAIN_MIGRATION_VERIFY_RETRIES,
+      delayMs: DOMAIN_MIGRATION_VERIFY_DELAY_MS,
+      reason: "domain migration (waiting for Caddy TLS/ACME)",
+    };
+  }
+  return {
+    retries: VERIFY_RETRIES,
+    delayMs: VERIFY_DELAY_MS,
+    reason: null,
+  };
 }
 
 export async function verifyDeployment(ctx) {
@@ -40,9 +57,19 @@ export async function verifyDeployment(ctx) {
     });
   }
 
+  const retryPolicy = verifyRetryPolicy(ctx);
+  if (retryPolicy.reason) {
+    const maxWaitSec = Math.ceil(
+      (retryPolicy.retries - 1) * (retryPolicy.delayMs / 1000),
+    );
+    console.log(
+      `[verify] ${retryPolicy.reason}; retrying up to ~${maxWaitSec}s`,
+    );
+  }
+
   const results = [];
   for (const check of checks) {
-    const result = await fetchCheckWithRetries(check);
+    const result = await fetchCheckWithRetries(check, retryPolicy);
     results.push(result);
     const icon = result.ok ? "OK" : "FAIL";
     console.log(
@@ -61,10 +88,20 @@ export async function verifyDeployment(ctx) {
   return results;
 }
 
-async function fetchCheckWithRetries(check) {
+async function fetchCheckWithRetries(check, retryPolicy) {
   let last = await fetchCheck(check);
-  for (let attempt = 1; attempt < VERIFY_RETRIES && !last.ok; attempt++) {
-    await sleep(VERIFY_DELAY_MS);
+  for (let attempt = 1; attempt < retryPolicy.retries && !last.ok; attempt++) {
+    if (
+      retryPolicy.reason &&
+      attempt % 15 === 0 &&
+      last.status === 0 &&
+      last.error
+    ) {
+      console.log(
+        `[verify] still waiting (${attempt}/${retryPolicy.retries - 1}): ${check.name} — ${last.error}`,
+      );
+    }
+    await sleep(retryPolicy.delayMs);
     last = await fetchCheck(check);
   }
   return last;

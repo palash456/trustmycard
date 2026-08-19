@@ -207,5 +207,12 @@ export const dockerVpsAdapter = {
         ...components,
       ]),
     );
+    const forceRestart = ctx.options?.forceRestartServices ?? [];
+    if (forceRestart.length > 0) {
+      console.log(
+        `[adapter:docker-vps] restarting ${forceRestart.join(", ")} after config sync`,
+      );
+      sshExec(creds, remoteComposeCommand(ctx, ["restart", ...forceRestart]));
+    }
   },
 };

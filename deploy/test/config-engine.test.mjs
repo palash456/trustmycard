@@ -26,6 +26,7 @@ import {
   migrateInit,
   readCompiledManagedValues,
 } from "../config-engine/migrate-init.mjs";
+import { verifyRetryPolicy } from "../core/verify.mjs";
 
 function state(overrides = {}) {
   return {
@@ -295,4 +296,16 @@ test("cli status reads runtime state", () => {
     const payload = JSON.parse(result.stdout.toString().trim());
     assert.equal(payload.state.WEBSITE_DOMAIN, "example.com");
   });
+});
+
+test("domain migration verify uses extended TLS/ACME retry window", () => {
+  const defaultPolicy = verifyRetryPolicy({ changedKey: "META_PIXEL_ID" });
+  assert.equal(defaultPolicy.retries, 15);
+  assert.equal(defaultPolicy.delayMs, 2000);
+  assert.equal(defaultPolicy.reason, null);
+
+  const domainPolicy = verifyRetryPolicy({ changedKey: "WEBSITE_DOMAIN" });
+  assert.equal(domainPolicy.retries, 90);
+  assert.equal(domainPolicy.delayMs, 4000);
+  assert.match(domainPolicy.reason, /domain migration/);
 });

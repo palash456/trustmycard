@@ -12,6 +12,10 @@ export const dockerVpsConfigAdapter = {
         ctx.changedKey === "META_PIXEL_ID"
           ? ["wallet"]
           : ["caddy", "backend", "wallet"],
+      // Bind-mounted Caddyfile changes are not picked up by `compose up -d`.
+      ...(ctx.changedKey === "WEBSITE_DOMAIN"
+        ? { forceRestartServices: ["caddy"] }
+        : {}),
     };
     try {
       await dockerVpsAdapter.release(ctx);

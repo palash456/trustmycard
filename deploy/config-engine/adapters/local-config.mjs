@@ -7,5 +7,9 @@ export const localConfigAdapter = {
         : ["backend", "wallet", "caddy"];
     if (runCompose(ctx, ["up", "-d", ...services]) !== 0)
       throw new Error("docker compose config-only release failed");
+    if (ctx.changedKey === "WEBSITE_DOMAIN") {
+      if (runCompose(ctx, ["restart", "caddy"]) !== 0)
+        throw new Error("docker compose caddy restart failed after domain change");
+    }
   },
 };
