@@ -15,6 +15,7 @@ import type { AdminDataMode } from "@/lib/admin-data-mode";
 import { useDemo } from "@/components/DemoProvider";
 import { useLogEnv } from "@/components/LogEnvProvider";
 import { safeRouterRefresh } from "@/lib/safe-router-refresh";
+import { isLocalAdminDevelopment } from "@/lib/local-dev-policy";
 
 type EnvHealthResponse = {
   activeEnv: LogEnv;
@@ -120,6 +121,10 @@ export function BackendStatusProvider({ children }: { children: ReactNode }) {
     (mode: AdminDataMode) => {
       if (mode === "demo") {
         switchToDemo();
+        return;
+      }
+      if (!isLocalAdminDevelopment()) {
+        switchEnvironment("production");
         return;
       }
       switchEnvironment(mode === "production" ? "production" : "dev");

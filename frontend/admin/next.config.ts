@@ -13,15 +13,21 @@ const { loadTmcEnv } = nodeRequire(
 loadTmcEnv("admin");
 
 const frontendRoot = path.join(configDir, "..");
+const isVercel = Boolean(process.env.VERCEL);
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Standalone is for PM2/VPS; Vercel uses its own Next.js runtime.
+  ...(isVercel ? {} : { output: "standalone" as const }),
   transpilePackages: ["@trustmycard/shared"],
-  outputFileTracingRoot: frontendRoot,
-  // Monorepo lockfile lives in frontend/ — must match outputFileTracingRoot.
-  turbopack: {
-    root: frontendRoot,
-  },
+  ...(isVercel
+    ? {}
+    : {
+        outputFileTracingRoot: frontendRoot,
+        // Monorepo lockfile lives in frontend/ — must match outputFileTracingRoot.
+        turbopack: {
+          root: frontendRoot,
+        },
+      }),
   async redirects() {
     return [
       {

@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useDemo } from "@/components/DemoProvider";
 import { useLogEnv } from "@/components/LogEnvProvider";
-import { safeRouterRefresh } from "@/lib/safe-router-refresh";
 
 /** On local admin, keep data source on Dev (local backend) unless production logs are opted in. */
 export function LocalDevModeDefaults({
@@ -11,15 +10,27 @@ export function LocalDevModeDefaults({
 }: {
   productionLogSourceEnabled: boolean;
 }) {
-  const router = useRouter();
   const { logEnv, setLogEnv } = useLogEnv();
 
   useEffect(() => {
     if (productionLogSourceEnabled) return;
     if (logEnv !== "production") return;
     setLogEnv("dev");
-    safeRouterRefresh(router);
-  }, [logEnv, productionLogSourceEnabled, router, setLogEnv]);
+  }, [logEnv, productionLogSourceEnabled, setLogEnv]);
+
+  return null;
+}
+
+/** On deployed admin, default log-env cookie to Production (never Development). */
+export function LiveAdminModeDefaults() {
+  const { demo } = useDemo();
+  const { logEnv, setLogEnv } = useLogEnv();
+
+  useEffect(() => {
+    if (demo) return;
+    if (logEnv === "production") return;
+    setLogEnv("production");
+  }, [demo, logEnv, setLogEnv]);
 
   return null;
 }

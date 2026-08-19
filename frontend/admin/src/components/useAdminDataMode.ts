@@ -7,6 +7,7 @@ import {
   resolveAdminDataMode,
   type AdminDataMode,
 } from "@/lib/admin-data-mode";
+import { isLocalAdminDevelopment } from "@/lib/local-dev-policy";
 
 export function useAdminDataMode(): {
   mode: AdminDataMode;
@@ -15,6 +16,7 @@ export function useAdminDataMode(): {
 } {
   const { demo } = useDemo();
   const { logEnv, toggleEnabled: productionAvailable } = useLogEnv();
-  const mode = resolveAdminDataMode({ demo, logEnv });
+  const liveAdmin = !isLocalAdminDevelopment();
+  const mode = resolveAdminDataMode({ demo, logEnv, liveAdmin });
   return { mode, meta: getAdminDataModeMeta(mode), productionAvailable };
 }

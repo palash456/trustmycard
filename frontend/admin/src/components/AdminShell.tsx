@@ -175,7 +175,8 @@ function SidebarBrand() {
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { tryNavigate, isProtectedRoute } = useDeveloperMode();
+  const { tryNavigate, isProtectedRoute, isRouteUnlocked, lockRoute } =
+    useDeveloperMode();
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -206,19 +207,47 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     {section.items.map((item) => {
                       const active = isNavActive(pathname, item.href);
                       const Icon = item.icon;
-                      const locked = isProtectedRoute(item.href);
+                      const protectedRoute = isProtectedRoute(item.href);
+                      const unlocked = isRouteUnlocked(item.href);
                       return (
                         <SidebarMenuItem key={item.href}>
-                          {locked ? (
+                          {protectedRoute ? (
                             <SidebarMenuButton
                               isActive={active}
-                              tooltip={`${item.label} (locked)`}
+                              tooltip={
+                                unlocked
+                                  ? `${item.label} (unlocked)`
+                                  : `${item.label} (locked)`
+                              }
                               className="rounded-lg transition-colors duration-150"
                               onClick={() => tryNavigate(item.href)}
                             >
                               <Icon />
                               <span className="flex-1">{item.label}</span>
-                              <Lock className="size-3 shrink-0 opacity-50" />
+                              <button
+                                type="button"
+                                aria-label={
+                                  unlocked
+                                    ? `Lock ${item.label}`
+                                    : `${item.label} is locked`
+                                }
+                                className={cn(
+                                  "inline-flex shrink-0 rounded-sm p-0.5",
+                                  unlocked &&
+                                    "text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300",
+                                )}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  if (unlocked) lockRoute(item.href);
+                                }}
+                              >
+                                <Lock
+                                  className={cn(
+                                    "size-3",
+                                    !unlocked && "opacity-50",
+                                  )}
+                                />
+                              </button>
                             </SidebarMenuButton>
                           ) : (
                             <SidebarMenuButton

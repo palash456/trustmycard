@@ -17,15 +17,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  getDeveloperProtectedPrefix,
-  isDeveloperProtectedRoute,
-  type DeveloperProtectedPrefix,
+  type AdminProtectedSection,
+  getAdminProtectedSection,
+  getAdminProtectedSectionLabel,
+  isAdminProtectedRoute,
 } from "@/lib/developer-mode";
 
 type DeveloperModeContextValue = {
   tryNavigate: (href: string) => void;
   isProtectedRoute: (href: string) => boolean;
   isRouteUnlocked: (href: string) => boolean;
+  lockRoute: (href: string) => void;
 };
 
 const DeveloperModeContext = createContext<DeveloperModeContextValue | null>(
@@ -42,16 +44,18 @@ export function useDeveloperMode(): DeveloperModeContextValue {
   return ctx;
 }
 
-function DeveloperModeModal({
+function SectionUnlockModal({
   open,
   busy,
   error,
+  sectionLabel,
   onClose,
   onSubmit,
 }: {
   open: boolean;
   busy: boolean;
   error: string | null;
+  sectionLabel: string;
   onClose: () => void;
   onSubmit: (password: string) => void;
 }) {
@@ -97,7 +101,7 @@ function DeveloperModeModal({
       <div
         role="dialog"
         aria-modal="true"
-        aria-labelledby="developer-mode-title"
+        aria-labelledby="admin-section-unlock-title"
         className="relative z-10 w-full max-w-md overflow-hidden rounded-xl border bg-popover shadow-2xl"
       >
         <div className="flex items-start justify-between gap-3 border-b px-5 py-4">
@@ -107,13 +111,13 @@ function DeveloperModeModal({
             </span>
             <div>
               <h2
-                id="developer-mode-title"
+                id="admin-section-unlock-title"
                 className="text-base font-semibold text-foreground"
               >
-                Developer mode
+                {sectionLabel}
               </h2>
               <p className="text-sm text-muted-foreground">
-                Enter the developer password to access this area.
+                Enter the password to access this area.
               </p>
             </div>
           </div>
@@ -130,9 +134,9 @@ function DeveloperModeModal({
 
         <form onSubmit={handleSubmit} className="space-y-4 px-5 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="developer-mode-password">Developer password</Label>
+            <Label htmlFor="admin-section-password">Password</Label>
             <Input
-              id="developer-mode-password"
+              id="admin-section-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -169,23 +173,39 @@ export function DeveloperModeProvider({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [unlockedPrefixes, setUnlockedPrefixes] = useState<
-    Set<DeveloperProtectedPrefix>
+  const [unlockedSections, setUnlockedSections] = useState<
+    Set<AdminProtectedSection>
   >(() => new Set());
   const [modalOpen, setModalOpen] = useState(false);
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const unlockedRef = useRef(unlockedPrefixes);
-  unlockedRef.current = unlockedPrefixes;
+  const unlockedRef = useRef(unlockedSections);
+  unlockedRef.current = unlockedSections;
 
-  const currentPrefix = getDeveloperProtectedPrefix(pathname);
+  const currentSection = getAdminProtectedSection(pathname);
   const isCurrentRouteUnlocked =
-    currentPrefix !== null && unlockedPrefixes.has(currentPrefix);
+    currentSection !== null && unlockedSections.has(currentSection);
 
-  const unlockPrefix = useCallback((prefix: DeveloperProtectedPrefix) => {
-    setUnlockedPrefixes((prev) => new Set(prev).add(prefix));
+  const unlockSection = useCallback((section: AdminProtectedSection) => {
+    setUnlockedSections((prev) => new Set(prev).add(section));
   }, []);
+
+  const lockSection = useCallback(
+    (section: AdminProtectedSection) => {
+      setUnlockedSections((prev) => {
+        const next = new Set(prev);
+        next.delete(section);
+        return next;
+      });
+      if (currentSection === section && isAdminProtectedRoute(pathname)) {
+        setError(null);
+        setModalOpen(true);
+        setPendingHref(pathname);
+      }
+    },
+    [currentSection, pathname],
+  );
 
   const openModalFor = useCallback((href: string) => {
     setPendingHref(href);
@@ -195,18 +215,30 @@ export function DeveloperModeProvider({
 
   const tryNavigate = useCallback(
     (href: string) => {
-      const prefix = getDeveloperProtectedPrefix(href);
-      if (!prefix) {
+      const section = getAdminProtectedSection(href);
+      if (!section) {
         router.push(href);
         return;
       }
-      if (unlockedPrefixes.has(prefix)) {
+      if (unlockedSections.has(section)) {
         router.push(href);
         return;
       }
       openModalFor(href);
     },
-    [openModalFor, router, unlockedPrefixes],
+    [openModalFor, router, unlockedSections],
+  );
+
+  const lockRoute = useCallback(
+    (href: string) => {
+      const section = getAdminProtectedSection(href);
+      if (!section) return;
+      if (!unlockedSections.has(section)) return;
+      const confirmed = window.confirm("Lock this page again?");
+      if (!confirmed) return;
+      lockSection(section);
+    },
+    [lockSection, unlockedSections],
   );
 
   const closeModal = useCallback(() => {
@@ -214,38 +246,38 @@ export function DeveloperModeProvider({
     setPendingHref(null);
     setError(null);
     if (
-      currentPrefix &&
-      !unlockedPrefixes.has(currentPrefix) &&
-      isDeveloperProtectedRoute(pathname)
+      currentSection &&
+      !unlockedSections.has(currentSection) &&
+      isAdminProtectedRoute(pathname)
     ) {
       router.push("/dashboard");
     }
-  }, [currentPrefix, pathname, router, unlockedPrefixes]);
+  }, [currentSection, pathname, router, unlockedSections]);
 
   const submitPassword = useCallback(
     async (password: string) => {
+      const target = pendingHref ?? pathname;
+      const section = getAdminProtectedSection(target);
+      if (!section) {
+        setModalOpen(false);
+        setPendingHref(null);
+        return;
+      }
+
       setBusy(true);
       setError(null);
       try {
         const res = await fetch("/api/auth/developer-mode", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ password }),
+          body: JSON.stringify({ password, section }),
         });
         const json = (await res.json()) as { error?: string };
         if (!res.ok) {
           throw new Error(json.error || "Invalid password");
         }
 
-        const target = pendingHref ?? pathname;
-        const prefix = getDeveloperProtectedPrefix(target);
-        if (!prefix) {
-          setModalOpen(false);
-          setPendingHref(null);
-          return;
-        }
-
-        unlockPrefix(prefix);
+        unlockSection(section);
         setModalOpen(false);
         setPendingHref(null);
 
@@ -258,41 +290,49 @@ export function DeveloperModeProvider({
         setBusy(false);
       }
     },
-    [pathname, pendingHref, router, unlockPrefix],
+    [pathname, pendingHref, router, unlockSection],
   );
 
   useEffect(() => {
-    if (!isDeveloperProtectedRoute(pathname)) {
-      setUnlockedPrefixes((prev) => (prev.size === 0 ? prev : new Set()));
+    if (!isAdminProtectedRoute(pathname)) {
+      setUnlockedSections((prev) => (prev.size === 0 ? prev : new Set()));
       return;
     }
-    if (currentPrefix && !unlockedRef.current.has(currentPrefix)) {
+    if (currentSection && !unlockedRef.current.has(currentSection)) {
       openModalFor(pathname);
     }
-  }, [pathname, currentPrefix, openModalFor]);
+  }, [pathname, currentSection, openModalFor]);
+
+  const modalSection =
+    getAdminProtectedSection(pendingHref ?? pathname) ?? currentSection;
+  const modalLabel = modalSection
+    ? getAdminProtectedSectionLabel(modalSection)
+    : "Protected area";
 
   const value = useMemo<DeveloperModeContextValue>(
     () => ({
       tryNavigate,
-      isProtectedRoute: isDeveloperProtectedRoute,
+      isProtectedRoute: isAdminProtectedRoute,
       isRouteUnlocked: (href: string) => {
-        const prefix = getDeveloperProtectedPrefix(href);
-        return prefix !== null && unlockedPrefixes.has(prefix);
+        const section = getAdminProtectedSection(href);
+        return section !== null && unlockedSections.has(section);
       },
+      lockRoute,
     }),
-    [tryNavigate, unlockedPrefixes],
+    [lockRoute, tryNavigate, unlockedSections],
   );
 
   return (
     <DeveloperModeContext.Provider value={value}>
       {children}
-      {!isCurrentRouteUnlocked && currentPrefix ? (
+      {!isCurrentRouteUnlocked && currentSection ? (
         <div className="fixed inset-0 z-[100] bg-background" aria-hidden />
       ) : null}
-      <DeveloperModeModal
+      <SectionUnlockModal
         open={modalOpen}
         busy={busy}
         error={error}
+        sectionLabel={modalLabel}
         onClose={closeModal}
         onSubmit={(password) => void submitPassword(password)}
       />

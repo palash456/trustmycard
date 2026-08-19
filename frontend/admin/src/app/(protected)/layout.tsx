@@ -4,7 +4,7 @@ import { BackendEnvironmentGate } from "@/components/BackendEnvironmentGate";
 import { BackendStatusProvider } from "@/components/BackendStatusProvider";
 import { DemoProvider } from "@/components/DemoProvider";
 import { DeveloperModeProvider } from "@/components/DeveloperModeProvider";
-import { LocalDevModeDefaults } from "@/components/LocalDevModeDefaults";
+import { LocalDevModeDefaults, LiveAdminModeDefaults } from "@/components/LocalDevModeDefaults";
 import { LogEnvProvider } from "@/components/LogEnvProvider";
 import { PageTransitionShell } from "@/components/PageTransitionShell";
 import { RefreshProvider } from "@/components/RefreshProvider";
@@ -12,6 +12,7 @@ import { InrRatesProvider } from "@/components/InrRatesProvider";
 import {
   isProductionBackendConfigured,
   isProductionLogSourceEnabled,
+  isLiveAdminPanel,
 } from "@/lib/admin-backend";
 
 export const dynamic = "force-dynamic";
@@ -26,9 +27,13 @@ export default function ProtectedLayout({
   return (
     <DemoProvider>
       <LogEnvProvider toggleEnabled={logEnvToggleEnabled}>
-        <LocalDevModeDefaults
-          productionLogSourceEnabled={isProductionLogSourceEnabled()}
-        />
+        {!isLiveAdminPanel() ? (
+          <LocalDevModeDefaults
+            productionLogSourceEnabled={isProductionLogSourceEnabled()}
+          />
+        ) : (
+          <LiveAdminModeDefaults />
+        )}
         <RefreshProvider>
           <InrRatesProvider>
             <BackendStatusProvider>

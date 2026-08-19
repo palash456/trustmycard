@@ -40,8 +40,10 @@ const MODE_META: Record<AdminDataMode, AdminDataModeMeta> = {
 export function resolveAdminDataMode(options: {
   demo: boolean;
   logEnv: LogEnv;
+  liveAdmin?: boolean;
 }): AdminDataMode {
   if (options.demo) return "demo";
+  if (options.liveAdmin) return "production";
   return options.logEnv === "production" ? "production" : "dev";
 }
 
@@ -50,3 +52,15 @@ export function getAdminDataModeMeta(mode: AdminDataMode): AdminDataModeMeta {
 }
 
 export const ADMIN_DATA_MODES: AdminDataMode[] = ["demo", "dev", "production"];
+
+export function getSelectableAdminDataModes(options: {
+  liveAdmin: boolean;
+  productionAvailable: boolean;
+}): AdminDataMode[] {
+  if (options.liveAdmin) {
+    return options.productionAvailable ? ["production", "demo"] : ["demo"];
+  }
+  return ADMIN_DATA_MODES.filter(
+    (mode) => mode !== "production" || options.productionAvailable,
+  );
+}

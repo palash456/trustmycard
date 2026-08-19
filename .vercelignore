@@ -1,0 +1,12 @@
+# Keep admin deploy uploads small — monorepo archive still includes paths needed at build time.
+node_modules
+**/node_modules
+**/.next
+.git
+backend
+frontend/website
+frontend/marketing
+frontend/wallet-sdk
+deploy
+docs
+*.md
