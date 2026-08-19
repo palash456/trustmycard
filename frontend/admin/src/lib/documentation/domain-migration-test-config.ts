@@ -39,8 +39,9 @@ export function buildDomainMigrationTest(
     subtitle:
       "Run old-domain checks first, then new domain. Migration passes only when all automated checks pass.",
     prerequisites: [
-      "Steps 1–8 complete; wallet app and backend redeployed.",
-      `DNS + TLS active for ${newDomain} and api.${newDomain}.`,
+      "DNS A records for apex and api point to the VPS; TLS active on new hostnames.",
+      "Runtime WEBSITE_DOMAIN updated (config-update.sh or Production Configuration).",
+      "Wallet app and backend redeployed or config-only release completed.",
       "Enter old and new domains above — all test URLs are generated from those values.",
     ],
     phases: [
