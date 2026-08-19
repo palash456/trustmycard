@@ -8,7 +8,12 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { compileEnvBundles } from "../core/config-compiler.mjs";
+import {
+  compileCaddyfile,
+  compileEnvBundles,
+  normalizeWebsiteDomain,
+  publicOrigins,
+} from "../core/config-compiler.mjs";
 import { composeFiles } from "../core/compose.mjs";
 import { validateDeployContext } from "../core/validate.mjs";
 import { RELEASE_ORDER, releaseComponents } from "../core/types.mjs";
@@ -74,4 +79,53 @@ test("micro wallet uses internal backend URL on docker network", () => {
     ctx.compiled.bundles.wallet.BACKEND_API_URL,
     "http://backend:4000",
   );
+});
+
+test("production derives all public origins and Caddy hosts from WEBSITE_DOMAIN", () => {
+  const manifest = loadExample("manifest.production.micro.example.json");
+  const ctx = ctxFrom(manifest, { provider: "docker-vps", topology: "micro" });
+  ctx.compiled = compileEnvBundles(ctx);
+  const { bundles, meta } = ctx.compiled;
+
+  assert.equal(meta.origins.walletOrigin, "https://mytrustvisa.cards");
+  assert.equal(meta.origins.wwwOrigin, "https://www.mytrustvisa.cards");
+  assert.equal(meta.origins.apiOrigin, "https://api.mytrustvisa.cards");
+  assert.equal(bundles.backend.APP_ORIGIN, meta.origins.walletOrigin);
+  assert.equal(bundles.wallet.NEXT_PUBLIC_APP_URL, meta.origins.walletOrigin);
+  assert.equal(bundles.wallet.META_PIXEL_APP_URL, meta.origins.walletOrigin);
+  assert.equal(bundles.wallet.BACKEND_API_URL, "http://backend:4000");
+  assert.equal(
+    bundles.admin.PRODUCTION_BACKEND_API_URL,
+    meta.origins.apiOrigin,
+  );
+
+  const caddyfile = compileCaddyfile(meta.origins.websiteDomain);
+  assert.match(caddyfile, /api\.mytrustvisa\.cards/);
+  assert.match(caddyfile, /www\.mytrustvisa\.cards/);
+  assert.match(caddyfile, /redir https:\/\/mytrustvisa\.cards\{uri\} 308/);
+  assert.doesNotMatch(caddyfile, /\{\{/);
+});
+
+test("WEBSITE_DOMAIN accepts surrounding whitespace but rejects URLs", () => {
+  assert.equal(normalizeWebsiteDomain("  newdomain.com  "), "newdomain.com");
+  assert.throws(
+    () => normalizeWebsiteDomain("https://newdomain.com"),
+    /must be a hostname/,
+  );
+});
+
+test("a changed WEBSITE_DOMAIN drives every public production origin", () => {
+  const origins = publicOrigins(
+    "production",
+    {},
+    { WEBSITE_DOMAIN: "newdomain.com" },
+  );
+  assert.deepEqual(origins, {
+    websiteDomain: "newdomain.com",
+    walletOrigin: "https://newdomain.com",
+    wwwOrigin: "https://www.newdomain.com",
+    apiOrigin: "https://api.newdomain.com",
+    adminOrigin: "http://localhost:3002",
+  });
+  assert.match(compileCaddyfile(origins.websiteDomain), /api\.newdomain\.com/);
 });

@@ -69,6 +69,42 @@ function stripTrailingSlash(url) {
   return String(url ?? "").replace(/\/$/, "");
 }
 
+export function normalizeWebsiteDomain(value) {
+  const domain = String(value ?? "")
+    .trim()
+    .toLowerCase();
+  const hostnamePattern =
+    /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+  if (!hostnamePattern.test(domain)) {
+    throw new Error(
+      "WEBSITE_DOMAIN must be a hostname such as mytrustvisa.cards (not a URL)",
+    );
+  }
+  return domain;
+}
+
+export function publicOrigins(environment, manifest, platform) {
+  if (environment === "production") {
+    const websiteDomain = normalizeWebsiteDomain(platform.WEBSITE_DOMAIN);
+    return {
+      websiteDomain,
+      walletOrigin: `https://${websiteDomain}`,
+      wwwOrigin: `https://www.${websiteDomain}`,
+      apiOrigin: `https://api.${websiteDomain}`,
+      adminOrigin: "http://localhost:3002",
+    };
+  }
+
+  const domains = manifest.domains ?? {};
+  return {
+    websiteDomain: "",
+    walletOrigin: stripTrailingSlash(domains.wallet),
+    wwwOrigin: stripTrailingSlash(domains.marketing),
+    apiOrigin: stripTrailingSlash(domains.api),
+    adminOrigin: stripTrailingSlash(domains.admin),
+  };
+}
+
 function ensureSecret(map, key, fallback) {
   if (map[key]?.trim()) return map[key].trim();
   if (fallback) return fallback;
@@ -96,6 +132,7 @@ export function compileEnvBundles(ctx) {
   const profile = loadProfileEnv(environment);
   const platform = loadPlatformEnv();
   const {
+    WEBSITE_DOMAIN: _websiteDomain,
     META_PIXEL_ID: _metaPixel,
     META_PIXEL_APP_URL: _metaPixelAppUrl,
     ...platformBackend
@@ -103,10 +140,8 @@ export function compileEnvBundles(ctx) {
   const website = { ...profile.website };
   const admin = { ...profile.admin };
 
-  const domains = manifest.domains ?? {};
-  const walletOrigin = stripTrailingSlash(domains.wallet);
-  const apiOrigin = stripTrailingSlash(domains.api);
-  const adminOrigin = stripTrailingSlash(domains.admin);
+  const origins = publicOrigins(environment, manifest, platform);
+  const { walletOrigin, apiOrigin, adminOrigin } = origins;
   const internalApiUrl =
     manifest.topology === "micro" ||
     (options?.provider === "local" && manifest.data?.mode === "bundled")
@@ -223,8 +258,7 @@ export function compileEnvBundles(ctx) {
       environment === "production"
         ? platform.META_PIXEL_ID || website.META_PIXEL_ID || ""
         : "",
-    META_PIXEL_APP_URL:
-      environment === "production" ? platform.META_PIXEL_APP_URL || "" : "",
+    META_PIXEL_APP_URL: environment === "production" ? walletOrigin : "",
   };
 
   const adminEnv = {
@@ -232,6 +266,10 @@ export function compileEnvBundles(ctx) {
     NODE_ENV: "production",
     TMC_ENV: environment,
     BACKEND_API_URL: internalApiUrl,
+    PRODUCTION_BACKEND_API_URL:
+      environment === "production"
+        ? apiOrigin
+        : admin.PRODUCTION_BACKEND_API_URL || "",
     ADMIN_API_KEY: adminApiKey,
     ADMIN_SESSION_SECRET: adminSessionSecret,
     ADMIN_PANEL_PASSWORD: admin.ADMIN_PANEL_PASSWORD || "change-me-local-admin",
@@ -276,9 +314,27 @@ export function compileEnvBundles(ctx) {
       databaseUrl,
       redisUrl,
       dataMode: manifest.data?.mode ?? "bundled",
+      origins,
       profilePaths: Object.fromEntries(
         Object.entries(profile).map(([k, v]) => [k, v._path]),
       ),
     },
   };
+}
+
+export function compileCaddyfile(websiteDomain) {
+  const templatePath = join(repoRoot, "deploy/caddy/Caddyfile");
+  const replacements = {
+    "{{API_HOST}}": `api.${websiteDomain}`,
+    "{{WWW_HOST}}": `www.${websiteDomain}`,
+    "{{WEBSITE_DOMAIN}}": websiteDomain,
+  };
+  let caddyfile = readFileSync(templatePath, "utf8");
+  for (const [token, value] of Object.entries(replacements)) {
+    caddyfile = caddyfile.replaceAll(token, value);
+  }
+  if (caddyfile.includes("{{")) {
+    throw new Error(`Unresolved Caddyfile template token in ${templatePath}`);
+  }
+  return caddyfile;
 }

@@ -16,7 +16,7 @@ function serializeEnv(map) {
   );
 }
 
-export function writeCompiledEnv(environment, bundles) {
+export function writeCompiledEnv(environment, bundles, caddyfile) {
   const dir = compiledDir(environment);
   mkdirSync(dir, { recursive: true });
   const paths = {};
@@ -24,6 +24,11 @@ export function writeCompiledEnv(environment, bundles) {
     const file = join(dir, `${name}.env`);
     writeFileSync(file, serializeEnv(env), "utf8");
     paths[name] = file;
+  }
+  if (caddyfile) {
+    const file = join(dir, "Caddyfile");
+    writeFileSync(file, caddyfile, "utf8");
+    paths.caddy = file;
   }
   return paths;
 }

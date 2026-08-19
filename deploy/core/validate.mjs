@@ -1,4 +1,4 @@
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import {
   COMPONENTS,
@@ -7,7 +7,11 @@ import {
   TOPOLOGIES,
   repoRoot,
 } from "./types.mjs";
-import { loadProfileEnv } from "./config-compiler.mjs";
+import {
+  loadProfileEnv,
+  normalizeWebsiteDomain,
+  parseEnvFile,
+} from "./config-compiler.mjs";
 
 export function validateDeployContext(ctx) {
   const errors = [];
@@ -24,9 +28,11 @@ export function validateDeployContext(ctx) {
     errors.push(`Invalid data.mode "${manifest.data?.mode}"`);
   }
 
-  for (const key of ["wallet", "api", "admin", "marketing"]) {
-    if (!manifest.domains?.[key]) {
-      errors.push(`manifest.domains.${key} is required`);
+  if (environment !== "production") {
+    for (const key of ["wallet", "api", "admin", "marketing"]) {
+      if (!manifest.domains?.[key]) {
+        errors.push(`manifest.domains.${key} is required`);
+      }
     }
   }
 
@@ -36,6 +42,47 @@ export function validateDeployContext(ctx) {
     errors.push(
       `Missing ${configPlatformPath} — copy from config/platform.env.example`,
     );
+  }
+
+  if (environment === "production" && existsSync(configPlatformPath)) {
+    try {
+      const platform = parseEnvFile(configPlatformPath);
+      normalizeWebsiteDomain(platform.WEBSITE_DOMAIN);
+    } catch (error) {
+      errors.push(`config/platform.env: ${error.message}`);
+    }
+    const forbiddenPlatformKeys = ["APEX_DOMAIN", "META_PIXEL_APP_URL"];
+    const platformText = readFileSync(configPlatformPath, "utf8");
+    for (const key of forbiddenPlatformKeys) {
+      if (new RegExp(`^${key}=`, "m").test(platformText)) {
+        errors.push(
+          `config/platform.env: ${key} must be compiler-derived or removed`,
+        );
+      }
+    }
+    const derivedProfileKeys = {
+      backend: ["APP_ORIGIN"],
+      website: ["BACKEND_API_URL", "NEXT_PUBLIC_APP_URL"],
+      admin: ["BACKEND_API_URL", "PRODUCTION_BACKEND_API_URL"],
+    };
+    for (const [name, keys] of Object.entries(derivedProfileKeys)) {
+      for (const key of keys) {
+        if (profile[name][key]) {
+          errors.push(`${name}.env: ${key} is derived from WEBSITE_DOMAIN`);
+        }
+      }
+    }
+    const caddyTemplatePath = join(repoRoot, "deploy/caddy/Caddyfile");
+    if (existsSync(caddyTemplatePath)) {
+      const manualHost = readFileSync(caddyTemplatePath, "utf8")
+        .split("\n")
+        .find((line) => /^\s*(?!\{\{)[^#\s].*\{\s*$/.test(line));
+      if (manualHost) {
+        errors.push(
+          `deploy/caddy/Caddyfile: manually maintained hostname "${manualHost.trim()}"`,
+        );
+      }
+    }
   }
 
   if (manifest.topology === "micro") {

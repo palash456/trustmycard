@@ -6,11 +6,18 @@ function sleep(ms) {
 }
 
 export async function verifyDeployment(ctx) {
-  const { manifest } = ctx;
+  const { manifest, compiled } = ctx;
   const topology = manifest.topology ?? "budget";
-  const api = manifest.domains.api.replace(/\/$/, "");
-  const wallet = manifest.domains.wallet.replace(/\/$/, "");
-  const admin = manifest.domains.admin.replace(/\/$/, "");
+  const origins = compiled?.meta.origins;
+  const api = (origins?.apiOrigin ?? manifest.domains?.api).replace(/\/$/, "");
+  const wallet = (origins?.walletOrigin ?? manifest.domains?.wallet).replace(
+    /\/$/,
+    "",
+  );
+  const admin = (origins?.adminOrigin ?? manifest.domains?.admin).replace(
+    /\/$/,
+    "",
+  );
 
   const checks = [
     {
@@ -83,7 +90,9 @@ export function printManualChecklist(manifest, options = {}) {
   console.log("\n[manual] post-deploy checklist:");
   console.log("  - Point DNS to your host (if not local)");
   console.log("  - Attach custom domains + TLS on the provider");
-  console.log(`  - WalletConnect allowed origin: ${manifest.domains.wallet}`);
+  console.log(
+    `  - WalletConnect allowed origin: ${options.walletOrigin ?? manifest.domains?.wallet}`,
+  );
   console.log("  - Meta / Google Ads dashboards (pixel, landing URLs)");
   console.log(
     "  - Hostinger/static marketing upload if using separate marketing host",

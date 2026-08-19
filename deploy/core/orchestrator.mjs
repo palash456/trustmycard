@@ -1,6 +1,10 @@
 import { getAdapter } from "../adapters/base.mjs";
 import { buildImages } from "./build.mjs";
-import { compileEnvBundles, loadManifest } from "./config-compiler.mjs";
+import {
+  compileCaddyfile,
+  compileEnvBundles,
+  loadManifest,
+} from "./config-compiler.mjs";
 import { ensureBundledDataLayer } from "./data-layer.mjs";
 import { runMigrations } from "./migrate.mjs";
 import { assertFreshSafety, recreateBundledVolume } from "./safety.mjs";
@@ -23,7 +27,13 @@ export async function runDryRun(options) {
   };
   validateDeployContext(ctx);
   ctx.compiled = compileEnvBundles(ctx);
-  ctx.envPaths = writeCompiledEnv(environment, ctx.compiled.bundles);
+  ctx.envPaths = writeCompiledEnv(
+    environment,
+    ctx.compiled.bundles,
+    environment === "production"
+      ? compileCaddyfile(ctx.compiled.meta.origins.websiteDomain)
+      : undefined,
+  );
   assertFreshSafety(ctx);
   console.log("[dry-run] manifest:", manifestFile);
   console.log("[dry-run] compiled env:", ctx.envPaths);
@@ -59,7 +69,13 @@ export async function runDeploy(options) {
   validateDeployContext(ctx);
 
   ctx.compiled = compileEnvBundles(ctx);
-  ctx.envPaths = writeCompiledEnv(environment, ctx.compiled.bundles);
+  ctx.envPaths = writeCompiledEnv(
+    environment,
+    ctx.compiled.bundles,
+    environment === "production"
+      ? compileCaddyfile(ctx.compiled.meta.origins.websiteDomain)
+      : undefined,
+  );
 
   const safety = assertFreshSafety(ctx);
   ctx.safety = safety;
@@ -96,7 +112,10 @@ export async function runDeploy(options) {
   await adapter.release(ctx);
 
   await verifyDeployment(ctx);
-  printManualChecklist(manifest, { provider });
+  printManualChecklist(manifest, {
+    provider,
+    walletOrigin: ctx.compiled.meta.origins.walletOrigin,
+  });
 
   saveState(environment, {
     provider,

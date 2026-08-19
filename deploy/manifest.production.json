@@ -2,12 +2,6 @@
   "environment": "production",
   "topology": "micro",
   "provider": "docker-vps",
-  "domains": {
-    "wallet": "https://mytrustvisa.cards",
-    "api": "https://api.mytrustvisa.cards",
-    "admin": "http://localhost:3002",
-    "marketing": "https://www.mytrustvisa.cards"
-  },
   "data": {
     "mode": "external"
   },

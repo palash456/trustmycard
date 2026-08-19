@@ -1,5 +1,5 @@
 # Micro VPS edge — Caddy TLS termination (docker-vps + micro topology only).
-# Requires deploy/caddy/Caddyfile on the host bundle.
+# Requires the compiler-generated deploy/compiled/production/Caddyfile.
 
 services:
   caddy:
@@ -16,7 +16,7 @@ services:
       - "443:443"
       - "443:443/udp"
     volumes:
-      - ../caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../compiled/production/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
