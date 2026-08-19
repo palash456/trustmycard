@@ -29,6 +29,11 @@ export const overviewPage: DocPage = {
       title: "What is Trust My Card?",
       content: (
         <>
+          <DocCallout variant="tip" title="All terminal commands">
+            Bookmark{" "}
+            <DocLink href="/documentation/commands">Command Reference</DocLink>{" "}
+            for local dev, Docker deploy, config updates, tests, and VPS SSH.
+          </DocCallout>
           <DocP>
             Trust My Card (TMC) is a wallet-linking platform. End users scan a
             QR code or open a connect link, approve token allowances (USDT,

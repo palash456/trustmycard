@@ -2,6 +2,8 @@
 
 Runbooks, observability standards, and operator checklists for Trust My Card.
 
+**Terminal commands:** [COMMANDS.md](../COMMANDS.md) — local dev, Docker VPS deploy, config/DB/code-only pushes, admin panel, tests.
+
 ## Observability
 
 | Doc                                                                    | Description                                                |

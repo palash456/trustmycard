@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import type { BackendHealthResult } from "@/lib/backend-health";
 import type { LogEnv } from "@/lib/log-env-cookie";
+import { isLiveAdminPanel } from "@/lib/local-dev-policy";
 import { useBackendStatus } from "@/components/BackendStatusProvider";
 
 export function BackendUnavailablePanel({
@@ -24,19 +25,20 @@ export function BackendUnavailablePanel({
 }) {
   const { switchEnvironment, switchToDemo } = useBackendStatus();
   const isDev = activeEnv === "dev";
+  const liveAdmin = isLiveAdminPanel();
 
   return (
-    <Card className="mx-auto max-w-xl border-destructive/30 shadow-none">
+    <Card className="w-full min-w-0 overflow-visible border-destructive/30 shadow-none">
       <CardHeader className="space-y-3">
-        <div className="flex items-center gap-2 text-destructive">
-          <AlertCircle className="size-5 shrink-0" />
-          <CardTitle className="text-lg">
+        <div className="flex min-w-0 items-start gap-2 text-destructive">
+          <AlertCircle className="mt-0.5 size-5 shrink-0" />
+          <CardTitle className="min-w-0 text-lg leading-snug break-words">
             {isDev
               ? "Development server is not available"
               : "Production server is not available"}
           </CardTitle>
         </div>
-        <CardDescription className="text-sm leading-relaxed text-foreground/80">
+        <CardDescription className="min-w-0 text-sm leading-relaxed break-words text-foreground/80 [overflow-wrap:anywhere]">
           {active.error ??
             `The ${active.label} could not be reached at ${active.url || "the configured URL"}.`}
         </CardDescription>
@@ -48,7 +50,7 @@ export function BackendUnavailablePanel({
             Switch to production
           </Button>
         ) : null}
-        {!isDev ? (
+        {!isDev && !liveAdmin ? (
           <Button
             type="button"
             variant="secondary"

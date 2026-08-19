@@ -111,6 +111,10 @@ export const deploymentPage: DocPage = {
       title: "Micro VPS deploy (current production)",
       content: (
         <>
+          <DocP>
+            Deploy commands:{" "}
+            <DocLink href="/documentation/commands">Command Reference</DocLink>.
+          </DocP>
           <DocFlow
             steps={[
               "512 MB DigitalOcean VPS with Docker + 1 GB swap.",

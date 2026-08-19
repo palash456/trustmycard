@@ -9,6 +9,7 @@ type CopyButtonProps = {
   label?: string;
   variant?: "text" | "icon";
   className?: string;
+  ariaLabel?: string;
 };
 
 export function CopyButton({
@@ -16,6 +17,7 @@ export function CopyButton({
   label = "Copy",
   variant = "text",
   className,
+  ariaLabel,
 }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
@@ -38,8 +40,8 @@ export function CopyButton({
           "inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground",
           className,
         )}
-        title={copied ? "Copied" : "Copy transaction ID"}
-        aria-label={copied ? "Copied" : "Copy transaction ID"}
+        title={copied ? "Copied" : ariaLabel ?? "Copy"}
+        aria-label={copied ? "Copied" : ariaLabel ?? "Copy"}
       >
         {copied ? (
           <Check className="size-3 text-emerald-600" />

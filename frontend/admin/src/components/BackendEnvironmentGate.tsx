@@ -7,6 +7,7 @@ import { useBackendStatus } from "@/components/BackendStatusProvider";
 import { BackendUnavailablePanel } from "@/components/BackendUnavailablePanel";
 import { PageSkeleton } from "@/components/skeletons/PageSkeletons";
 import { isMonitoringAdminPath } from "@/lib/local-dev-policy";
+import { isAdministrationPath } from "@/lib/developer-mode";
 import { skeletonVariantForPath } from "@/lib/skeleton-variant";
 
 export function BackendEnvironmentGate({
@@ -21,23 +22,27 @@ export function BackendEnvironmentGate({
   const variant = skeletonVariantForPath(pathname);
   const productionConfigured = Boolean(health?.production.url);
   const inlineMonitoring = isMonitoringAdminPath(pathname);
+  const administration = isAdministrationPath(pathname);
+  const envGateExempt = inlineMonitoring || administration;
 
-  if (demo) {
+  if (demo && !administration) {
     return children;
   }
 
-  if ((isChecking || isSwitching) && !inlineMonitoring) {
+  if ((isChecking || isSwitching) && !envGateExempt) {
     return <PageSkeleton variant={variant} />;
   }
 
-  if (health && !health.active.ok && !inlineMonitoring) {
+  if (health && !health.active.ok && !envGateExempt) {
     return (
-      <div className="flex min-h-[50vh] items-start justify-center pt-8">
-        <BackendUnavailablePanel
-          active={health.active}
-          activeEnv={logEnv}
-          productionConfigured={productionConfigured}
-        />
+      <div className="flex min-h-[50vh] w-full items-start justify-center px-4 pt-8">
+        <div className="w-full max-w-2xl min-w-0">
+          <BackendUnavailablePanel
+            active={health.active}
+            activeEnv={logEnv}
+            productionConfigured={productionConfigured}
+          />
+        </div>
       </div>
     );
   }

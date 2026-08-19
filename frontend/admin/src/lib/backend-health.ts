@@ -6,6 +6,7 @@ import {
 } from "./admin-backend";
 import { getErrorMessage } from "./observability";
 import type { LogEnv } from "./log-env-cookie";
+import { isLiveAdminPanel } from "./local-dev-policy";
 
 export type BackendHealthResult = {
   env: LogEnv;
@@ -52,7 +53,9 @@ export async function probeBackendHealth(
     const hint =
       backend.env === "dev"
         ? " Start the local backend with: cd backend && npm run start:dev"
-        : " Check PRODUCTION_BACKEND_API_URL and PRODUCTION_ADMIN_API_KEY.";
+        : isLiveAdminPanel()
+          ? " Check BACKEND_API_URL and ADMIN_API_KEY in Vercel environment variables."
+          : " Check PRODUCTION_BACKEND_API_URL and PRODUCTION_ADMIN_API_KEY.";
     return {
       env: backend.env,
       ok: false,
@@ -74,7 +77,9 @@ export async function probeAllBackendHealth(activeEnv: LogEnv) {
           ok: false,
           url: "",
           label: "production backend",
-          error: "Production backend is not configured in admin .env.local.",
+          error: isLiveAdminPanel()
+            ? "Production backend is not configured. Set BACKEND_API_URL and ADMIN_API_KEY in Vercel."
+            : "Production backend is not configured in admin .env.local.",
         }),
   ]);
 

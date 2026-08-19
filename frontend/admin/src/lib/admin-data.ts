@@ -10,10 +10,11 @@ export { buildQuery };
 export async function adminGetData<T>(
   path: string,
   init?: RequestInit,
+  options?: { bypassDemo?: boolean },
 ): Promise<T> {
   await connection();
   const cookieStore = await cookies();
-  if (isDemoModeFromCookies(cookieStore)) {
+  if (!options?.bypassDemo && isDemoModeFromCookies(cookieStore)) {
     return getDemoFixture<T>(path);
   }
   return adminFetch<T>(path, init, resolveActiveBackend(cookieStore));

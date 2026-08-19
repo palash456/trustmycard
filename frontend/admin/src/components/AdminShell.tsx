@@ -224,8 +224,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                             >
                               <Icon />
                               <span className="flex-1">{item.label}</span>
-                              <button
-                                type="button"
+                              <span
+                                role={unlocked ? "button" : undefined}
+                                tabIndex={unlocked ? 0 : undefined}
                                 aria-label={
                                   unlocked
                                     ? `Lock ${item.label}`
@@ -234,11 +235,19 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                                 className={cn(
                                   "inline-flex shrink-0 rounded-sm p-0.5",
                                   unlocked &&
-                                    "text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300",
+                                    "cursor-pointer text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300",
                                 )}
                                 onClick={(event) => {
                                   event.stopPropagation();
                                   if (unlocked) lockRoute(item.href);
+                                }}
+                                onKeyDown={(event) => {
+                                  if (!unlocked) return;
+                                  if (event.key === "Enter" || event.key === " ") {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    lockRoute(item.href);
+                                  }
                                 }}
                               >
                                 <Lock
@@ -247,7 +256,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                                     !unlocked && "opacity-50",
                                   )}
                                 />
-                              </button>
+                              </span>
                             </SidebarMenuButton>
                           ) : (
                             <SidebarMenuButton

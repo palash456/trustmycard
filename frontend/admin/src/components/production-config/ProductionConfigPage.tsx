@@ -1,19 +1,34 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
-  Globe2,
   History,
   Pencil,
-  Tag,
+  RefreshCw,
 } from "lucide-react";
+import { useBackendStatus } from "@/components/BackendStatusProvider";
+import { useDemo } from "@/components/DemoProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { fetchJson } from "@/lib/parse-json-response";
+import {
+  allocateDemoChangeId,
+  buildDemoAuditEntry,
+  createDemoRuntime,
+  DEMO_ROLLBACK_DOMAIN,
+  DEMO_ROLLBACK_PIXEL,
+  simulateDemoConfigDeploy,
+} from "./demo-runtime";
 import { FIELD_CONFIG, type ConfigField } from "./field-config";
 import { validateDomainInput, validatePixelInput } from "./validation";
+import {
+  ConfigFieldIcon,
+  ProductionBackendStatusChip,
+  type ProductionPageStatus,
+} from "./ProductionBackendStatusChip";
 
 type State = {
   WEBSITE_DOMAIN: string;
@@ -44,11 +59,17 @@ type Event = {
   error?: string;
 };
 type DialogMode = "form" | "console" | "success" | "rollback";
+type LoadState = "idle" | "loading" | "ready" | "error";
 
 export function ProductionConfigPage() {
+  const { demo } = useDemo();
+  const { health, isChecking, recheckHealth } = useBackendStatus();
+
   const [state, setState] = useState<State | null>(null);
   const [history, setHistory] = useState<Audit[]>([]);
+  const [loadState, setLoadState] = useState<LoadState>("idle");
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadErrorCode, setLoadErrorCode] = useState<string | undefined>();
   const [logsOpen, setLogsOpen] = useState(false);
   const [field, setField] = useState<ConfigField | null>(null);
   const [dialogMode, setDialogMode] = useState<DialogMode>("form");
@@ -62,26 +83,70 @@ export function ProductionConfigPage() {
   const [previousValue, setPreviousValue] = useState("");
   const [changeId, setChangeId] = useState<string | null>(null);
 
-  const load = async () => {
-    const [configRes, historyRes] = await Promise.all([
-      fetch("/api/production-config"),
-      fetch("/api/production-config/history?limit=20"),
+  const productionHealth = health?.production;
+
+  const load = useCallback(async () => {
+    setLoadState("loading");
+    setLoadError(null);
+    setLoadErrorCode(undefined);
+
+    const [configResult, historyResult] = await Promise.all([
+      fetchJson<{ state?: State; error?: string; code?: string }>(
+        "/api/production-config",
+        { cache: "no-store" },
+      ),
+      fetchJson<Audit[] | { error?: string }>(
+        "/api/production-config/history?limit=20",
+        { cache: "no-store" },
+      ),
     ]);
-    const config = await configRes.json();
-    const audit = await historyRes.json();
-    if (!configRes.ok)
-      throw new Error(
-        config.error || "Unable to load production configuration",
-      );
-    if (config.state) setState(config.state);
-    if (Array.isArray(audit)) setHistory(audit);
-  };
+
+    if (!configResult.ok) {
+      setLoadState("error");
+      setLoadError(configResult.error);
+      setLoadErrorCode(configResult.code);
+      setState(null);
+      return;
+    }
+
+    const config = configResult.data;
+    if (!config.state) {
+      setLoadState("error");
+      setLoadError("Production configuration state is missing from the API response.");
+      setState(null);
+      return;
+    }
+
+    setState(config.state);
+    if (historyResult.ok && Array.isArray(historyResult.data)) {
+      setHistory(historyResult.data);
+    } else {
+      setHistory([]);
+    }
+    setLoadState("ready");
+  }, []);
 
   useEffect(() => {
-    void load().catch((err) =>
-      setLoadError(err instanceof Error ? err.message : "Unable to load"),
-    );
-  }, []);
+    if (demo) return;
+    if (isChecking) return;
+    if (!productionHealth?.ok) {
+      setLoadState("idle");
+      setState(null);
+      setHistory([]);
+      return;
+    }
+    void load();
+  }, [demo, isChecking, productionHealth?.ok, load]);
+
+  useEffect(() => {
+    if (!demo) return;
+    const runtime = createDemoRuntime();
+    setState(runtime.state);
+    setHistory(runtime.history);
+    setLoadState("ready");
+    setLoadError(null);
+    setLoadErrorCode(undefined);
+  }, [demo]);
 
   useEffect(() => {
     if (!busy || startedAt === null) return;
@@ -91,8 +156,87 @@ export function ProductionConfigPage() {
     return () => window.clearInterval(timer);
   }, [busy, startedAt]);
 
-  const fieldConfig = field ? FIELD_CONFIG[field] : null;
+  const pageStatus = useMemo((): {
+    status: ProductionPageStatus;
+    detail: string;
+  } => {
+    if (demo) {
+      return {
+        status: "demo_mode",
+        detail:
+          "Tutorial preview with sample configuration and activity logs. Deploys are simulated — no production files or services change. Try a success value or a rollback trigger to see both outcomes.",
+      };
+    }
+    if (isChecking || loadState === "loading") {
+      return {
+        status: "checking",
+        detail: "Checking production API connectivity and loading runtime configuration…",
+      };
+    }
+    if (!productionHealth?.ok) {
+      if (!productionHealth?.url?.trim()) {
+        return {
+          status: "not_configured",
+          detail:
+            productionHealth?.error ??
+            "Production backend URL or admin API key is not configured in this admin deployment.",
+        };
+      }
+      return {
+        status: "not_connected",
+        detail:
+          productionHealth.error ??
+          `Cannot reach production API at ${productionHealth.url}.`,
+      };
+    }
+    if (loadState === "error") {
+      if (loadErrorCode === "NOT_CONFIGURED") {
+        return {
+          status: "not_configured",
+          detail: loadError ?? "Production backend is not configured.",
+        };
+      }
+      if (loadErrorCode === "NOT_CONNECTED") {
+        return {
+          status: "not_connected",
+          detail: loadError ?? "Cannot reach the production API.",
+        };
+      }
+      const message = loadError ?? "Unable to load production configuration.";
+      const disabled =
+        message.toLowerCase().includes("disabled") ||
+        message.toLowerCase().includes("forbidden");
+      return {
+        status: disabled ? "feature_disabled" : "error",
+        detail: disabled
+          ? `${message} Set ADMIN_PRODUCTION_CONFIG_ENABLED=true and TMC_REPO_ROOT on the API host.`
+          : message,
+      };
+    }
+    if (loadState === "ready" && state) {
+      return {
+        status: "healthy",
+        detail: `Connected to ${productionHealth.url}. Runtime configuration loaded successfully.`,
+      };
+    }
+    return {
+      status: "checking",
+      detail: "Loading production configuration…",
+    };
+  }, [
+    demo,
+    isChecking,
+    loadError,
+    loadErrorCode,
+    loadState,
+    productionHealth,
+    state,
+  ]);
+
+  const pageEnabled = demo || pageStatus.status === "healthy";
   const platformDefaultsActive = Boolean(state?.platformDefaultsActive);
+
+  const fieldConfig = field ? FIELD_CONFIG[field] : null;
   const isDomain = field === "domain";
   const current =
     field === "domain"
@@ -148,7 +292,7 @@ export function ProductionConfigPage() {
   }, [events]);
 
   const openField = (next: ConfigField) => {
-    if (platformDefaultsActive) return;
+    if (!pageEnabled || platformDefaultsActive) return;
     setField(next);
     setDialogMode("form");
     setValue("");
@@ -169,7 +313,7 @@ export function ProductionConfigPage() {
   };
 
   const start = async () => {
-    if (!field || !validation) return;
+    if (!field || !validation || !state) return;
     setBusy(true);
     setError(null);
     setEvents([]);
@@ -178,20 +322,87 @@ export function ProductionConfigPage() {
     setElapsed(0);
     setDeployedValue(value.trim());
     setPreviousValue(current);
+
+    if (demo) {
+      const nextChangeId = allocateDemoChangeId();
+      setChangeId(nextChangeId);
+      try {
+        const priorValue =
+          field === "domain" ? state.WEBSITE_DOMAIN : state.META_PIXEL_ID;
+        const result = await simulateDemoConfigDeploy({
+          field,
+          rawValue: value.trim(),
+          changeId: nextChangeId,
+          onEvent: (event) =>
+            setEvents((items) => [
+              ...items,
+              {
+                phase: event.phase,
+                message: event.message,
+                at: event.at,
+                changeId: event.changeId,
+                error: event.error,
+              },
+            ]),
+        });
+        setBusy(false);
+        const audit = buildDemoAuditEntry({
+          field,
+          priorValue,
+          finalValue: result.finalValue,
+          changeId: nextChangeId,
+          result: result.result,
+        });
+        const nextHistory = [audit, ...history];
+        setHistory(nextHistory);
+
+        if (result.success) {
+          const nextState: State = {
+            ...state,
+            lastUpdatedAt: audit.completedAt,
+            lastUpdatedBy: audit.actor,
+            lastSource: audit.source,
+            lastChangeId: nextChangeId,
+          };
+          if (field === "domain") {
+            nextState.WEBSITE_DOMAIN = result.finalValue;
+          } else {
+            nextState.META_PIXEL_ID = result.finalValue;
+          }
+          setState(nextState);
+          setDialogMode("success");
+        } else {
+          setDialogMode("rollback");
+          setError(
+            "Demo rollback: verification failed and the prior value was restored.",
+          );
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Demo simulation failed");
+        setBusy(false);
+        setDialogMode("rollback");
+      }
+      return;
+    }
+
     try {
-      const response = await fetch("/api/production-config", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(
-          isDomain ? { domain: value.trim() } : { pixel: value.trim() },
-        ),
-      });
-      const started = await response.json();
-      if (!response.ok)
-        throw new Error(started.error || "Unable to start update");
-      setChangeId(started.changeId);
+      const started = await fetchJson<{ changeId?: string; error?: string }>(
+        "/api/production-config",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(
+            isDomain ? { domain: value.trim() } : { pixel: value.trim() },
+          ),
+        },
+      );
+      if (!started.ok) throw new Error(started.error || "Unable to start update");
+      if (!started.data.changeId) {
+        throw new Error("Deployment did not return a change id.");
+      }
+      setChangeId(started.data.changeId);
       const source = new EventSource(
-        `/api/production-config/stream/${started.changeId}`,
+        `/api/production-config/stream/${started.data.changeId}`,
       );
       source.onmessage = (message) => {
         const event = JSON.parse(message.data) as Event;
@@ -226,60 +437,157 @@ export function ProductionConfigPage() {
     }
   };
 
+  const refreshAll = () => {
+    if (demo) {
+      const runtime = createDemoRuntime();
+      setState(runtime.state);
+      setHistory(runtime.history);
+      setLoadState("ready");
+      setLoadError(null);
+      return;
+    }
+    void recheckHealth().then(() => {
+      void load();
+    });
+  };
+
+  const demoJourneyExamples =
+    field === "domain"
+      ? {
+          success: "https://checkout.mytrustvisa.cards",
+          rollback: DEMO_ROLLBACK_DOMAIN,
+        }
+      : field === "pixel"
+        ? {
+            success: "987654321098765",
+            rollback: DEMO_ROLLBACK_PIXEL,
+          }
+        : null;
+
   return (
     <main className="mx-auto w-full max-w-[720px] px-4 pt-16 pb-20">
       <header className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="font-brand text-2xl font-semibold tracking-tight">
-            Production Configuration
-          </h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="font-brand text-2xl font-semibold tracking-tight">
+              Production Configuration
+            </h1>
+            <ProductionBackendStatusChip
+              status={pageStatus.status}
+              detail={pageStatus.detail}
+            />
+          </div>
+          <p className="text-sm text-muted-foreground">
             Update production configuration and deploy changes without
             rebuilding images.
           </p>
         </div>
-        <Button
-          variant="outline"
-          className="shrink-0"
-          onClick={() => setLogsOpen(true)}
-        >
-          <History className="size-3.5 text-muted-foreground" />
-          Show Logs
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Refresh status"
+            onClick={refreshAll}
+            disabled={!demo && isChecking}
+          >
+            <RefreshCw
+              className={cnIconSpin(
+                (!demo && isChecking) || (!demo && loadState === "loading"),
+              )}
+            />
+          </Button>
+          <Button
+            variant="outline"
+            className="shrink-0"
+            onClick={() => setLogsOpen(true)}
+            disabled={!pageEnabled}
+          >
+            <History className="size-3.5 text-muted-foreground" />
+            Show Logs
+          </Button>
+        </div>
       </header>
 
-      {loadError ? (
-        <p className="mb-5 text-sm text-destructive">{loadError}</p>
+      {!pageEnabled ? (
+        <UnavailablePanel status={pageStatus.status} detail={pageStatus.detail} />
       ) : null}
-      {platformDefaultsActive ? (
-        <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+
+      {pageEnabled && demo ? (
+        <div className="mb-5 rounded-lg border border-violet-500/25 bg-violet-500/5 p-4 text-sm">
+          <p className="font-medium text-foreground">Production config tutorial</p>
+          <p className="mt-1.5 leading-relaxed text-muted-foreground">
+            Open <b className="text-foreground">Show Logs</b> for fixture activity
+            (success and rollback). Change domain or Meta Pixel, then deploy to walk
+            through validation, apply, verify, and completion — or rollback when
+            verification fails.
+          </p>
+          <ul className="mt-3 list-disc space-y-1 pl-4 text-muted-foreground">
+            <li>
+              <span className="text-foreground">Success:</span>{" "}
+              <span className="font-mono text-xs">
+                https://checkout.mytrustvisa.cards
+              </span>{" "}
+              or{" "}
+              <span className="font-mono text-xs">987654321098765</span>
+            </li>
+            <li>
+              <span className="text-foreground">Rollback:</span>{" "}
+              <span className="font-mono text-xs">{DEMO_ROLLBACK_DOMAIN}</span> or{" "}
+              <span className="font-mono text-xs">{DEMO_ROLLBACK_PIXEL}</span>
+            </li>
+          </ul>
+        </div>
+      ) : null}
+
+      {pageEnabled && platformDefaultsActive ? (
+        <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
           Default already persists in <code>config/platform.env</code>. Empty
           <code className="mx-1">WEBSITE_DOMAIN</code> and
           <code className="mx-1">META_PIXEL_ID</code> to enable admin changes.
         </div>
       ) : null}
 
-      <ConfigField
-        icon={<Globe2 className="size-[17px]" />}
-        tone="bg-[#fdf0f6] text-[#ea4c89]"
-        label={FIELD_CONFIG.domain.label}
-        value={state ? `https://${state.WEBSITE_DOMAIN}` : "Loading…"}
-        meta={state}
-        action={FIELD_CONFIG.domain.action}
-        onClick={() => openField("domain")}
-        disabled={platformDefaultsActive}
-      />
-      <ConfigField
-        icon={<Tag className="size-[17px]" />}
-        tone="bg-[#eef4ff] text-blue-600"
-        label={FIELD_CONFIG.pixel.label}
-        value={state?.META_PIXEL_ID ?? "Loading…"}
-        meta={state}
-        action={FIELD_CONFIG.pixel.action}
-        onClick={() => openField("pixel")}
-        className="mt-5"
-        disabled={platformDefaultsActive}
-      />
+      <div
+        className={
+          pageEnabled
+            ? undefined
+            : "pointer-events-none opacity-50 select-none"
+        }
+      >
+        {pageEnabled ? (
+          <>
+            <ConfigField
+              field="domain"
+              label={FIELD_CONFIG.domain.label}
+              value={`https://${state?.WEBSITE_DOMAIN ?? ""}`}
+              meta={state}
+              action={FIELD_CONFIG.domain.action}
+              onClick={() => openField("domain")}
+              disabled={platformDefaultsActive}
+            />
+            <ConfigField
+              field="pixel"
+              label={FIELD_CONFIG.pixel.label}
+              value={state?.META_PIXEL_ID ?? "—"}
+              meta={state}
+              action={FIELD_CONFIG.pixel.action}
+              onClick={() => openField("pixel")}
+              className="mt-5"
+              disabled={platformDefaultsActive}
+            />
+          </>
+        ) : pageStatus.status === "checking" ? (
+          <>
+            <CheckingConfigPlaceholder field="domain" />
+            <CheckingConfigPlaceholder field="pixel" className="mt-5" />
+          </>
+        ) : (
+          <>
+            <DisabledConfigPlaceholder field="domain" />
+            <DisabledConfigPlaceholder field="pixel" className="mt-5" />
+          </>
+        )}
+      </div>
 
       {field && fieldConfig ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -288,15 +596,7 @@ export function ProductionConfigPage() {
               {dialogMode === "form" ? (
                 <div className="space-y-0 p-6">
                   <div className="mb-5 flex items-center gap-2">
-                    <span
-                      className={`flex size-[22px] items-center justify-center rounded-md ${isDomain ? "bg-[#fdf0f6] text-[#ea4c89]" : "bg-[#eef4ff] text-blue-600"}`}
-                    >
-                      {isDomain ? (
-                        <Globe2 className="size-3.5" />
-                      ) : (
-                        <Tag className="size-3.5" />
-                      )}
-                    </span>
+                    <ConfigFieldIcon field={field} />
                     <h2 className="font-brand text-lg font-semibold">
                       {fieldConfig.dialogTitle}
                     </h2>
@@ -336,19 +636,45 @@ export function ProductionConfigPage() {
                       ))}
                     </ul>
                   </div>
-                  <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-                    <span className="text-muted-foreground">Try:</span>
-                    {fieldConfig.examples.map((example) => (
-                      <button
-                        key={example}
-                        type="button"
-                        className="rounded-md border bg-background px-2.5 py-1 font-mono hover:bg-muted"
-                        onClick={() => setValue(example)}
-                      >
-                        {example}
-                      </button>
-                    ))}
-                  </div>
+                  {demo && demoJourneyExamples ? (
+                    <div className="mt-4 rounded-lg border border-violet-500/25 bg-violet-500/5 p-3">
+                      <p className="text-xs font-semibold">Demo journey</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                        <span className="text-muted-foreground">Success:</span>
+                        <button
+                          type="button"
+                          className="rounded-md border bg-background px-2.5 py-1 font-mono hover:bg-muted"
+                          onClick={() => setValue(demoJourneyExamples.success)}
+                        >
+                          {demoJourneyExamples.success}
+                        </button>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                        <span className="text-muted-foreground">Rollback:</span>
+                        <button
+                          type="button"
+                          className="rounded-md border border-amber-500/40 bg-background px-2.5 py-1 font-mono hover:bg-muted"
+                          onClick={() => setValue(demoJourneyExamples.rollback)}
+                        >
+                          {demoJourneyExamples.rollback}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="text-muted-foreground">Try:</span>
+                      {fieldConfig.examples.map((example) => (
+                        <button
+                          key={example}
+                          type="button"
+                          className="rounded-md border bg-background px-2.5 py-1 font-mono hover:bg-muted"
+                          onClick={() => setValue(example)}
+                        >
+                          {example}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {error ? (
                     <p className="mt-4 text-sm text-destructive">{error}</p>
                   ) : null}
@@ -370,8 +696,9 @@ export function ProductionConfigPage() {
                       Deploying configuration change
                     </h2>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Applying the new value to production. Do not close this
-                      window.
+                      {demo
+                        ? "Simulating the production deploy pipeline. Do not close this window."
+                        : "Applying the new value to production. Do not close this window."}
                     </p>
                   </div>
                   <Stepper
@@ -400,12 +727,14 @@ export function ProductionConfigPage() {
                     Deployment successful
                   </h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    The new value is live in production.
+                    {demo
+                      ? "Demo complete — the preview state was updated. Production was not changed."
+                      : "The new value is live in production."}
                   </p>
                   <div className="my-5 rounded-lg border bg-muted/40 p-3 font-mono text-sm">
                     {previousValue}{" "}
                     <span className="mx-2 text-muted-foreground">→</span>{" "}
-                    {isDomain ? deployedValue : deployedValue}
+                    {deployedValue}
                   </div>
                   <p className="text-sm text-muted-foreground">
                     <b className="text-foreground">Deployment</b>{" "}
@@ -483,7 +812,7 @@ export function ProductionConfigPage() {
                     >
                       <div>
                         <p className="text-sm font-medium">{entry.actor}</p>
-                        <p className="mt-1 font-mono text-xs text-zinc-600">
+                        <p className="mt-1 font-mono text-xs text-muted-foreground">
                           {entry.priorValue ?? "—"} → {entry.finalValue ?? "—"}
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">
@@ -524,9 +853,105 @@ export function ProductionConfigPage() {
   );
 }
 
+function cnIconSpin(active: boolean) {
+  return active ? "size-3.5 animate-spin" : "size-3.5";
+}
+
+function UnavailablePanel({
+  status,
+  detail,
+}: {
+  status: ProductionPageStatus;
+  detail: string;
+}) {
+  const titles: Record<ProductionPageStatus, string> = {
+    checking: "Checking production backend…",
+    healthy: "",
+    not_connected: "Production backend not reachable",
+    not_configured: "Production backend not configured",
+    feature_disabled: "Production configuration is disabled",
+    demo_mode: "Demo mode active",
+    error: "Unable to load production configuration",
+  };
+
+  if (status === "healthy" || status === "checking") return null;
+
+  return (
+    <div className="mb-5 rounded-lg border border-border/80 bg-muted/30 px-4 py-3">
+      <p className="text-sm font-medium text-foreground">{titles[status]}</p>
+      <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+        {detail}
+      </p>
+    </div>
+  );
+}
+
+function CheckingConfigPlaceholder({
+  field,
+  className,
+}: {
+  field: ConfigField;
+  className?: string;
+}) {
+  const config = FIELD_CONFIG[field];
+  return (
+    <Card className={className}>
+      <CardContent className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-3 p-5 sm:grid-cols-[auto_1fr_auto] sm:px-6 sm:py-[22px]">
+        <ConfigFieldIcon field={field} />
+        <div>
+          <p className="text-[11px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">
+            {config.label}
+          </p>
+          <p className="mt-1.5 font-mono text-base font-semibold tracking-tight text-muted-foreground">
+            Checking connection…
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Verifying production API and loading runtime state.
+          </p>
+        </div>
+        <Button variant="outline" className="col-span-2 h-9 sm:col-span-1" disabled>
+          <Pencil className="size-3.5" />
+          {config.action}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DisabledConfigPlaceholder({
+  field,
+  className,
+}: {
+  field: ConfigField;
+  className?: string;
+}) {
+  const config = FIELD_CONFIG[field];
+  return (
+    <Card className={className}>
+      <CardContent className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-3 p-5 sm:grid-cols-[auto_1fr_auto] sm:px-6 sm:py-[22px]">
+        <ConfigFieldIcon field={field} />
+        <div>
+          <p className="text-[11px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">
+            {config.label}
+          </p>
+          <p className="mt-1.5 font-mono text-base font-semibold tracking-tight text-muted-foreground">
+            Unavailable
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Connect to a healthy production backend to view live values.
+          </p>
+        </div>
+        <Button variant="outline" className="col-span-2 h-9 sm:col-span-1" disabled>
+          <Pencil className="size-3.5" />
+          {config.action}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 function ConfigField({
-  icon,
-  tone,
+  field,
   label,
   value,
   meta,
@@ -535,8 +960,7 @@ function ConfigField({
   className,
   disabled,
 }: {
-  icon: React.ReactNode;
-  tone: string;
+  field: ConfigField;
   label: string;
   value: string;
   meta: State | null;
@@ -548,11 +972,7 @@ function ConfigField({
   return (
     <Card className={className}>
       <CardContent className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-3 p-5 sm:grid-cols-[auto_1fr_auto] sm:px-6 sm:py-[22px]">
-        <span
-          className={`flex size-[38px] items-center justify-center rounded-[9px] ${tone}`}
-        >
-          {icon}
-        </span>
+        <ConfigFieldIcon field={field} />
         <div>
           <p className="text-[11px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">
             {label}
@@ -570,7 +990,7 @@ function ConfigField({
                 {meta.lastSource}
               </>
             ) : (
-              "Loading runtime state…"
+              "—"
             )}
           </p>
         </div>

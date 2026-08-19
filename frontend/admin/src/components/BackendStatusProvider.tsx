@@ -55,21 +55,15 @@ export function BackendStatusProvider({ children }: { children: ReactNode }) {
   const [health, setHealth] = useState<EnvHealthResponse | null>(null);
 
   const recheckHealth = useCallback(async () => {
-    if (demo) {
-      setHealth(null);
-      return;
-    }
     try {
       const next = await fetchHealth();
       setHealth(next);
     } catch {
       setHealth(null);
     }
-  }, [demo]);
+  }, []);
 
   useEffect(() => {
-    if (demo) return;
-
     let cancelled = false;
 
     void (async () => {
@@ -87,10 +81,7 @@ export function BackendStatusProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [demo, logEnv]);
-
-  const displayedIsChecking = demo ? false : isChecking;
-  const displayedHealth = demo ? null : health;
+  }, [logEnv]);
 
   const switchEnvironment = useCallback(
     (env: LogEnv) => {
@@ -111,10 +102,10 @@ export function BackendStatusProvider({ children }: { children: ReactNode }) {
     setDemo(true);
     setIsSwitching(true);
     safeRouterRefresh(router);
-    window.setTimeout(() => {
-      setHealth(null);
-      setIsSwitching(false);
-    }, 150);
+    fetchHealth()
+      .then((next) => setHealth(next))
+      .catch(() => setHealth(null))
+      .finally(() => setIsSwitching(false));
   }, [router, setDemo]);
 
   const switchDataMode = useCallback(
@@ -135,9 +126,9 @@ export function BackendStatusProvider({ children }: { children: ReactNode }) {
   return (
     <BackendStatusContext.Provider
       value={{
-        isChecking: displayedIsChecking,
+        isChecking,
         isSwitching,
-        health: displayedHealth,
+        health,
         recheckHealth,
         switchEnvironment,
         switchToDemo,

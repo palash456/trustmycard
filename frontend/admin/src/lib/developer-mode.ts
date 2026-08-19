@@ -1,4 +1,9 @@
 export const ADMIN_PROTECTED_SECTIONS = {
+  system: {
+    prefix: "/system",
+    label: "System",
+    passwordEnv: "ADMIN_SYSTEM_PASSWORD",
+  },
   "production-config": {
     prefix: "/settings/production-config",
     label: "Production config",
@@ -55,6 +60,11 @@ export function getAdminProtectedPrefix(
 
 export function isAdminProtectedRoute(pathname: string): boolean {
   return getAdminProtectedSection(pathname) !== null;
+}
+
+/** Administration pages bypass data-mode and backend availability gates. */
+export function isAdministrationPath(pathname: string): boolean {
+  return isAdminProtectedRoute(pathname);
 }
 
 export function getAdminProtectedSectionLabel(

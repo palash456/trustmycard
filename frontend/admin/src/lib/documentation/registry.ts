@@ -1,3 +1,4 @@
+import { commandsPage } from "./pages/commands";
 import { domainMigrationPage } from "./pages/domain-migration";
 import { spenderChangePage } from "./pages/spender-change";
 import { marketingAccessPage } from "./pages/marketing-access";
@@ -25,6 +26,7 @@ import { workersPage } from "./pages/workers";
 import type { DocNavGroup, DocPage, TocEntry } from "./types";
 
 export const DOC_PAGES: DocPage[] = [
+  commandsPage,
   overviewPage,
   systemDesignPage,
   architecturePage,
@@ -56,6 +58,11 @@ export const DOC_NAV_GROUPS: DocNavGroup[] = [
     id: "getting-started",
     title: "Getting Started",
     items: [
+      {
+        slug: "commands",
+        title: "Command Reference",
+        keywords: commandsPage.keywords,
+      },
       {
         slug: "overview",
         title: "System Overview",

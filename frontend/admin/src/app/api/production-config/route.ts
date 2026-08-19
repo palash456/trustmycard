@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveAdminActor } from "@/lib/admin-identity";
-import { resolveProxyBackend } from "@/lib/admin-backend";
+import { getErrorMessage } from "@/lib/observability";
+import { productionConfigBackendOrError } from "@/lib/production-config-api";
 
 async function proxy(req: NextRequest) {
-  const backend = resolveProxyBackend(req.cookies, ["production-config"]);
-  if (!backend.apiKey.trim())
+  const resolved = productionConfigBackendOrError();
+  if ("error" in resolved) {
     return NextResponse.json(
-      { error: "Admin API key is not configured" },
-      { status: 500 },
+      { error: resolved.error, code: resolved.code },
+      { status: resolved.status },
     );
+  }
+  const { backend } = resolved;
+
   const body = req.method === "POST" ? await req.text() : undefined;
   let path = "";
   if (body) {
@@ -20,28 +24,58 @@ async function proxy(req: NextRequest) {
           : typeof value.pixel === "string"
             ? "/pixel"
             : "";
-    } catch {}
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid JSON body", code: "UPSTREAM_ERROR" },
+        { status: 400 },
+      );
+    }
   }
-  const response = await fetch(
-    `${backend.baseUrl}/v1/api/admin/production-config${path}`,
-    {
-      method: req.method,
-      headers: {
-        "content-type": "application/json",
-        "x-admin-api-key": backend.apiKey,
-        "x-admin-actor": resolveAdminActor(req),
+
+  try {
+    const response = await fetch(
+      `${backend.baseUrl}/v1/api/admin/production-config${path}`,
+      {
+        method: req.method,
+        headers: {
+          "content-type": "application/json",
+          "x-admin-api-key": backend.apiKey,
+          "x-admin-actor": resolveAdminActor(req),
+        },
+        body,
+        cache: "no-store",
       },
-      body,
-      cache: "no-store",
-    },
-  );
-  return new NextResponse(await response.text(), {
-    status: response.status,
-    headers: {
-      "content-type":
-        response.headers.get("content-type") || "application/json",
-    },
-  });
+    );
+    const text = await response.text();
+    if (!text.trim()) {
+      return NextResponse.json(
+        {
+          error: `Production API returned an empty response (${response.status})`,
+          code: response.ok ? "UPSTREAM_ERROR" : "UPSTREAM_ERROR",
+        },
+        { status: response.ok ? 502 : response.status || 502 },
+      );
+    }
+    return new NextResponse(text, {
+      status: response.status,
+      headers: {
+        "content-type":
+          response.headers.get("content-type") || "application/json",
+      },
+    });
+  } catch (err) {
+    return NextResponse.json(
+      {
+        error: getErrorMessage(
+          err,
+          "Cannot reach the production API. Check BACKEND_API_URL and network access.",
+        ),
+        code: "NOT_CONNECTED",
+      },
+      { status: 502 },
+    );
+  }
 }
+
 export const GET = proxy;
 export const POST = proxy;

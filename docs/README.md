@@ -4,6 +4,8 @@ Product monorepo documentation. Start here for architecture, deployment, and ope
 
 > **Primary developer reference:** The Admin Panel includes a comprehensive, code-verified documentation site at **Admin → Documentation** (`/documentation`). Use that as the single source of truth for KT; this `docs/` folder retains deeper operational runbooks and historical references.
 
+> **All terminal commands:** [COMMANDS.md](./COMMANDS.md) — local dev, tests, Docker VPS deploy (code / config / DB), runtime config, admin panel, VPS SSH. Mirrored in Admin → Documentation → **Command Reference**.
+
 ## Repository layout
 
 ```text
@@ -24,35 +26,15 @@ trustmycard/
 
 ## Quick start (local)
 
-### Frontend
+See **[COMMANDS.md](./COMMANDS.md)** for the full command reference. Essentials:
 
 ```bash
-cd frontend
-npm install
-npm run dev:website     # http://localhost:3000 — Trust Card product at /
-npm run dev:marketing   # http://localhost:3001 — static marketing preview
-npm run dev:admin       # http://localhost:3002
-npm run dev:sdk         # wallet-sdk watch/build
+cd frontend && npm install && npm run dev:website   # :3000
+cd backend && npm install && npm run start:dev      # :4000
+cd frontend && npm run dev:admin                    # :3002
 ```
 
-If a dev server gets stuck:
-
-```bash
-cd frontend
-npm run dev:stop
-npm run dev:website:reset
-```
-
-### Backend
-
-```bash
-cd backend
-npm install
-npx prisma generate
-npx prisma db push
-cp config/platform.env.example config/platform.env
-npm run start:dev      # http://localhost:4000
-```
+Production push: `./deploy.sh production --provider=docker-vps`
 
 ## Packages
 
@@ -118,6 +100,7 @@ Deploy guides:
 
 | Doc                                                                                 | Description                 |
 | ----------------------------------------------------------------------------------- | --------------------------- |
+| [COMMANDS.md](./COMMANDS.md)                                                         | **All terminal commands** — single source of truth |
 | [operations/README.md](./operations/README.md)                                      | Index                       |
 | [observability.md](./operations/observability.md)                                   | Logging, metrics, timelines |
 | [change-spender-collector-guide.md](./operations/change-spender-collector-guide.md) | Spender/collector rotation  |

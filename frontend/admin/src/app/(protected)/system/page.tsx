@@ -15,8 +15,12 @@ export default async function SystemPage() {
 
   try {
     const [statusResult, metricsResult] = await Promise.all([
-      adminGetData<Record<string, unknown>>("/admin/system/status"),
-      adminGetData<unknown>("/admin/metrics").catch(() => null),
+      adminGetData<Record<string, unknown>>("/admin/system/status", undefined, {
+        bypassDemo: true,
+      }),
+      adminGetData<unknown>("/admin/metrics", undefined, {
+        bypassDemo: true,
+      }).catch(() => null),
     ]);
     status = statusResult;
     metrics = metricsResult;

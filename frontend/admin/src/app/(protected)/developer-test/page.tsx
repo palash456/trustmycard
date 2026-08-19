@@ -19,6 +19,8 @@ async function loadCatalog(): Promise<LoadResult> {
   try {
     const catalog = await adminGetData<DeveloperTestsCatalog>(
       "/admin/developer-tests",
+      undefined,
+      { bypassDemo: true },
     );
     return { ok: true, catalog };
   } catch (err) {

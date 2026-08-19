@@ -1,4 +1,5 @@
 import {
+  DocLink,
   DocP,
   DocPre,
   DocTable,
@@ -91,10 +92,16 @@ export const testingPage: DocPage = {
       id: "running",
       title: "Running tests",
       content: (
-        <DocPre>{`cd backend && npm test
+        <>
+          <DocPre>{`cd backend && npm test
 cd frontend/wallet-sdk && npm test
 cd frontend/shared && npm test
 cd frontend/admin && npm run dev:admin  # manual QA via developer-test panel`}</DocPre>
+          <DocP>
+            Full command list (deploy, DB, Docker):{" "}
+            <DocLink href="/documentation/commands">Command Reference</DocLink>.
+          </DocP>
+        </>
       ),
     },
     {

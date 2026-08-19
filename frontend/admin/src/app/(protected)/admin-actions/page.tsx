@@ -46,6 +46,8 @@ export default async function AdminActionsPage({
         from: sp.from,
         to: sp.to,
       })}`,
+      undefined,
+      { bypassDemo: true },
     );
   } catch (err) {
     error = err instanceof Error ? err.message : "Failed to load";
