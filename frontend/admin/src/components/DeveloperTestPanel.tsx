@@ -218,29 +218,39 @@ function CollapsibleTestSection({
     <Card className="shadow-sm">
       <CardHeader className={cn("pb-3", expanded && headerBelow && "pb-4")}>
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <button
-            type="button"
-            className="flex min-w-0 flex-1 items-start gap-2 text-left"
-            onClick={onToggle}
-            aria-expanded={expanded}
-          >
-            {expanded ? (
-              <ChevronDown className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-            )}
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-base">{title}</CardTitle>
+          <div className="flex min-w-0 flex-1 items-start gap-2">
+            <button
+              type="button"
+              className="mt-0.5 shrink-0 text-muted-foreground"
+              onClick={onToggle}
+              aria-expanded={expanded}
+              aria-label={expanded ? `Collapse ${title}` : `Expand ${title}`}
+            >
+              {expanded ? (
+                <ChevronDown className="size-4" />
+              ) : (
+                <ChevronRight className="size-4" />
+              )}
+            </button>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-start gap-2">
+                <button
+                  type="button"
+                  className="min-w-0 flex-1 text-left"
+                  onClick={onToggle}
+                  aria-expanded={expanded}
+                >
+                  <CardTitle className="text-base">{title}</CardTitle>
+                  {description ? (
+                    <CardDescription className="mt-1">
+                      {description}
+                    </CardDescription>
+                  ) : null}
+                </button>
                 {infoTip}
               </div>
-              {description ? (
-                <CardDescription className="mt-1">
-                  {description}
-                </CardDescription>
-              ) : null}
             </div>
-          </button>
+          </div>
           {expanded && headerTrailing ? (
             <div className="flex shrink-0 flex-wrap gap-2">
               {headerTrailing}

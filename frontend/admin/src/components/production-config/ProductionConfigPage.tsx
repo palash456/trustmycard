@@ -9,7 +9,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useBackendStatus } from "@/components/BackendStatusProvider";
-import { useDemo } from "@/components/DemoProvider";
+import { useProductionConfigDemoMode } from "@/components/production-config/useProductionConfigDemoMode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -62,7 +62,7 @@ type DialogMode = "form" | "console" | "success" | "rollback";
 type LoadState = "idle" | "loading" | "ready" | "error";
 
 export function ProductionConfigPage() {
-  const { demo } = useDemo();
+  const demoMode = useProductionConfigDemoMode();
   const { health, isChecking, recheckHealth } = useBackendStatus();
 
   const [state, setState] = useState<State | null>(null);
@@ -127,7 +127,7 @@ export function ProductionConfigPage() {
   }, []);
 
   useEffect(() => {
-    if (demo) return;
+    if (demoMode) return;
     if (isChecking) return;
     if (!productionHealth?.ok) {
       setLoadState("idle");
@@ -136,17 +136,17 @@ export function ProductionConfigPage() {
       return;
     }
     void load();
-  }, [demo, isChecking, productionHealth?.ok, load]);
+  }, [demoMode, isChecking, productionHealth?.ok, load]);
 
   useEffect(() => {
-    if (!demo) return;
+    if (!demoMode) return;
     const runtime = createDemoRuntime();
     setState(runtime.state);
     setHistory(runtime.history);
     setLoadState("ready");
     setLoadError(null);
     setLoadErrorCode(undefined);
-  }, [demo]);
+  }, [demoMode]);
 
   useEffect(() => {
     if (!busy || startedAt === null) return;
@@ -160,7 +160,7 @@ export function ProductionConfigPage() {
     status: ProductionPageStatus;
     detail: string;
   } => {
-    if (demo) {
+    if (demoMode) {
       return {
         status: "demo_mode",
         detail:
@@ -224,7 +224,7 @@ export function ProductionConfigPage() {
       detail: "Loading production configuration…",
     };
   }, [
-    demo,
+    demoMode,
     isChecking,
     loadError,
     loadErrorCode,
@@ -233,7 +233,7 @@ export function ProductionConfigPage() {
     state,
   ]);
 
-  const pageEnabled = demo || pageStatus.status === "healthy";
+  const pageEnabled = demoMode || pageStatus.status === "healthy";
   const platformDefaultsActive = Boolean(state?.platformDefaultsActive);
 
   const fieldConfig = field ? FIELD_CONFIG[field] : null;
@@ -323,7 +323,7 @@ export function ProductionConfigPage() {
     setDeployedValue(value.trim());
     setPreviousValue(current);
 
-    if (demo) {
+    if (demoMode) {
       const nextChangeId = allocateDemoChangeId();
       setChangeId(nextChangeId);
       try {
@@ -438,7 +438,7 @@ export function ProductionConfigPage() {
   };
 
   const refreshAll = () => {
-    if (demo) {
+    if (demoMode) {
       const runtime = createDemoRuntime();
       setState(runtime.state);
       setHistory(runtime.history);
@@ -488,11 +488,11 @@ export function ProductionConfigPage() {
             size="icon"
             aria-label="Refresh status"
             onClick={refreshAll}
-            disabled={!demo && isChecking}
+            disabled={!demoMode && isChecking}
           >
             <RefreshCw
               className={cnIconSpin(
-                (!demo && isChecking) || (!demo && loadState === "loading"),
+                (!demoMode && isChecking) || (!demoMode && loadState === "loading"),
               )}
             />
           </Button>
@@ -512,7 +512,7 @@ export function ProductionConfigPage() {
         <UnavailablePanel status={pageStatus.status} detail={pageStatus.detail} />
       ) : null}
 
-      {pageEnabled && demo ? (
+      {pageEnabled && demoMode ? (
         <div className="mb-5 rounded-lg border border-violet-500/25 bg-violet-500/5 p-4 text-sm">
           <p className="font-medium text-foreground">Production config tutorial</p>
           <p className="mt-1.5 leading-relaxed text-muted-foreground">
@@ -636,7 +636,7 @@ export function ProductionConfigPage() {
                       ))}
                     </ul>
                   </div>
-                  {demo && demoJourneyExamples ? (
+                  {demoMode && demoJourneyExamples ? (
                     <div className="mt-4 rounded-lg border border-violet-500/25 bg-violet-500/5 p-3">
                       <p className="text-xs font-semibold">Demo journey</p>
                       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
@@ -696,7 +696,7 @@ export function ProductionConfigPage() {
                       Deploying configuration change
                     </h2>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {demo
+                      {demoMode
                         ? "Simulating the production deploy pipeline. Do not close this window."
                         : "Applying the new value to production. Do not close this window."}
                     </p>
@@ -727,7 +727,7 @@ export function ProductionConfigPage() {
                     Deployment successful
                   </h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {demo
+                    {demoMode
                       ? "Demo complete — the preview state was updated. Production was not changed."
                       : "The new value is live in production."}
                   </p>

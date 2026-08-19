@@ -22,7 +22,9 @@ export default function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const logEnvToggleEnabled = isProductionBackendConfigured();
+  const logEnvToggleEnabled = isLiveAdminPanel()
+    ? isProductionBackendConfigured()
+    : isProductionLogSourceEnabled();
 
   return (
     <DemoProvider>

@@ -10,7 +10,6 @@ import {
   Monitor,
   Moon,
   RefreshCw,
-  Settings,
   Sun,
 } from "lucide-react";
 import { AdminDataModeBadge } from "@/components/AdminDataModeBadge";
@@ -148,6 +147,7 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
               {isDark ? "Light mode" : "Dark mode"}
             </DropdownMenuItem>
 
+            {/* App settings — hidden for now
             <DropdownMenuItem
               onClick={() => router.push("/settings")}
               label="App settings"
@@ -155,6 +155,7 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
               <Settings />
               App settings
             </DropdownMenuItem>
+            */}
           </DropdownMenuGroup>
 
           <DropdownMenuSeparator />

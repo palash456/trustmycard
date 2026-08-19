@@ -81,7 +81,7 @@ export function normalizeWebsiteDomain(value) {
     /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
   if (!hostnamePattern.test(domain)) {
     throw new Error(
-      "WEBSITE_DOMAIN must be a hostname such as mytrustvisa.cards (not a URL)",
+      "WEBSITE_DOMAIN must be a hostname such as exampleDomain.com (not a URL)",
     );
   }
   return domain;

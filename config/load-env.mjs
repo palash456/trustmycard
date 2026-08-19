@@ -1,7 +1,8 @@
 import { createRequire } from "module";
 import { existsSync, readFileSync } from "fs";
-import { resolve, dirname } from "path";
+import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
+import { hydrateRuntimePlatformValues } from "./website-domain.mjs";
 
 const configDir = dirname(fileURLToPath(import.meta.url));
 export const repoRoot = resolve(configDir, "..");
@@ -132,6 +133,8 @@ export function loadTmcEnv(app) {
   if (!process.env.TMC_ENV) {
     process.env.TMC_ENV = tmcEnv;
   }
+
+  hydrateRuntimePlatformValues();
 
   return tmcEnv;
 }

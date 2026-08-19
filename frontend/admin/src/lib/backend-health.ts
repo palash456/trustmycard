@@ -55,7 +55,7 @@ export async function probeBackendHealth(
         ? " Start the local backend with: cd backend && npm run start:dev"
         : isLiveAdminPanel()
           ? " Check BACKEND_API_URL and ADMIN_API_KEY in Vercel environment variables."
-          : " Check PRODUCTION_BACKEND_API_URL and PRODUCTION_ADMIN_API_KEY.";
+          : " Check WEBSITE_DOMAIN (runtime config) and PRODUCTION_ADMIN_API_KEY.";
     return {
       env: backend.env,
       ok: false,

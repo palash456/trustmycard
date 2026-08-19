@@ -18,8 +18,7 @@ cp env/profiles/development/admin.env.example env/profiles/development/admin.env
 | ---------------------------- | ---------------------------------------------------------- |
 | `BACKEND_API_URL`            | Nest base URL (default `http://localhost:4000`)            |
 | `ADMIN_API_KEY`              | Must match backend `ADMIN_API_KEY`; server-side proxy only |
-| `PRODUCTION_BACKEND_API_URL` | Optional — production API for log toggle (local dev only)  |
-| `PRODUCTION_ADMIN_API_KEY`   | Optional — production admin key paired with above          |
+| `PRODUCTION_ADMIN_API_KEY`   | Production admin key for local Production data source toggle |
 | `ADMIN_SESSION_SECRET`       | Signs httpOnly `admin_session` cookie                      |
 | `ADMIN_PANEL_PASSWORD`       | Login screen password                                      |
 
@@ -37,7 +36,7 @@ cd frontend && npm run dev:admin   # http://localhost:3002
 - **Settings** — DB-backed runtime config with hot-reload (`/settings`, `/settings/collector`)
 - **System** — secrets metadata (no key material), worker status, dev restart (`/system`)
 - **Demo mode** — header toggle; cookie-backed fixtures for all pages (no live API writes)
-- **Dev / Prod logs** — when `ADMIN_ALLOW_PRODUCTION_LOGS=true` and production URLs are set, toggle between local and production log data on Audit & Activity pages. **By default, local admin uses `http://127.0.0.1:4000` only.**
+- **Dev / Prod logs** — when `ADMIN_ALLOW_PRODUCTION_LOGS=true`, `PRODUCTION_ADMIN_API_KEY` is set, and `WEBSITE_DOMAIN` is available (from `deploy/runtime-config/production.json`), toggle between local and production log data on Audit & Activity pages. **By default, local admin uses `http://127.0.0.1:4000` only.**
 - **Light/dark theme** — header toggle
 - **Refresh** — manual + SSE auto-refresh via `/api/admin/stream`
 - **Reload logout** — full page refresh signs you out (client session guard)
