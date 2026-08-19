@@ -53,13 +53,17 @@ If Cloudflare proxies the zone, add a matching **Redirect Rule** (308) there as 
 
 ---
 
-## DNS checklist (Hostinger)
+## DNS checklist
+
+> **Important:** Use **Cloudflare** (or another DNS provider) for production. Do not attach Hostinger shared hosting to this domain — it triggers automated phishing scans on crypto wallet sites. See [hosting-abuse-resilience.md](./hosting-abuse-resilience.md).
 
 | Type | Name  | Value                    | Notes                                                           |
 | ---- | ----- | ------------------------ | --------------------------------------------------------------- |
 | A    | `@`   | VPS IP (`159.89.170.92`) | Apex → wallet (via Caddy)                                       |
 | A    | `api` | VPS IP                   | API subdomain → backend (via Caddy)                             |
 | A    | `www` | VPS IP (same as apex)    | Caddy 308 → `https://mytrustvisa.cards` — not wallet app on www |
+
+Disconnect any Hostinger **connected website** / `public_html` for this domain.
 
 After DNS propagates:
 

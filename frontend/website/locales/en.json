@@ -458,6 +458,11 @@
       "privacy": "Privacy Policy",
       "terms": "Terms & Conditions"
     },
+    "contact": {
+      "title": "Contact",
+      "support": "Support",
+      "legalEntity": "Legal entity"
+    },
     "stayConnected": "Stay Connected",
     "social": [
       {

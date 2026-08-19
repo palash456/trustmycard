@@ -87,14 +87,17 @@ async function fetchCheck(check) {
 }
 
 export function printManualChecklist(manifest, options = {}) {
+  const walletOrigin =
+    options.walletOrigin ?? manifest.domains?.wallet ?? "https://<apex>";
   console.log("\n[manual] post-deploy checklist:");
-  console.log("  - Point DNS to your host (if not local)");
-  console.log("  - Attach custom domains + TLS on the provider");
+  console.log("  - DNS: A records @, api, www → VPS IP (not Hostinger shared hosting)");
+  console.log("  - Disconnect any Hostinger 'connected website' on this domain");
+  console.log("  - Caddy TLS active; www → apex 308 redirect");
+  console.log(`  - WalletConnect allowed origin: ${walletOrigin}`);
+  console.log("  - APP_ORIGIN / NEXT_PUBLIC_APP_URL match apex URL");
+  console.log("  - Meta ads landing URL = apex / (not /connect)");
+  console.log("  - Do NOT upload marketing to Hostinger public_html");
   console.log(
-    `  - WalletConnect allowed origin: ${options.walletOrigin ?? manifest.domains?.wallet}`,
-  );
-  console.log("  - Meta / Google Ads dashboards (pixel, landing URLs)");
-  console.log(
-    "  - Hostinger/static marketing upload if using separate marketing host",
+    "  - See docs/infrastructure/hosting-abuse-resilience.md if recovering from a ban",
   );
 }

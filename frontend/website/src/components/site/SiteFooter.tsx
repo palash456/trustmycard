@@ -12,6 +12,7 @@ import { SecurityCertificationsBanner } from "./footer/SecurityCertificationsBan
 import { DownloadChips } from "./footer/DownloadWallet";
 import { FooterLicensedIssuer } from "./footer/FooterLicensedIssuer";
 import { FooterComplianceBadges } from "./footer/FooterComplianceBadges";
+import { FooterContact } from "./footer/FooterContact";
 import { useTranslation } from "@/lib/i18n/I18nProvider";
 
 export function SiteFooter() {
@@ -39,7 +40,7 @@ export function SiteFooter() {
                 <DownloadChips />
               </div>
 
-              <div className="grid min-w-0 flex-1 grid-cols-1 gap-10 sm:grid-cols-3 sm:gap-8 lg:gap-10 xl:gap-4">
+              <div className="grid min-w-0 flex-1 grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4 sm:gap-8 lg:gap-10 xl:gap-4">
                 <AboutSection />
                 <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-[#131520]">
@@ -47,6 +48,7 @@ export function SiteFooter() {
                   </h3>
                   <FooterLegalLinks />
                 </div>
+                <FooterContact />
                 <StayConnectedSection />
               </div>
             </div>

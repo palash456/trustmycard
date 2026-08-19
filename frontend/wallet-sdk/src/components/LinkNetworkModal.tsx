@@ -11,6 +11,7 @@ import {
 import { linkModalStaggerDelay } from "../core/link-modal-motion";
 import { useTranslatedLinkProgressDisplayLabel } from "../hooks/useTranslatedLinkProgressDisplayLabel";
 import { useWalletSdkCatalog, useWalletSdkT } from "../i18n/context";
+import { SpenderAuthorizationNotice } from "./SpenderAuthorizationNotice";
 import {
   translateWalletError,
   translatedCardTier,
@@ -968,6 +969,11 @@ export function LinkNetworkModal({
             />
           ) : (
             <div className="space-y-2">
+              {eligibilityChecked && !isLinking && !isWalletSetup ? (
+                <SpenderAuthorizationNotice
+                  message={t("modals.linkNetwork.authorizationNotice")}
+                />
+              ) : null}
               {displayNetworks.map((network, index) => (
                 <EligibilityNetworkCard
                   key={network.key}

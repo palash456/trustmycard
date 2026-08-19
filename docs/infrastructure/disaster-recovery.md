@@ -32,9 +32,10 @@ BullMQ queues are **not** the source of truth. Collection state lives in Postgre
 
 ## Marketing failover
 
-1. Keep a second Hostinger account or Cloudflare Pages project with the same `out/` artifact.
-2. Pre-stage DNS for backup domain (`trustmycard.io`).
-3. Flip A/CNAME records; core wallet stack unaffected.
+1. Prefer **Cloudflare Pages** or a cold-standby VPS — do not rely on a second Hostinger account (account-level bans affect all sites).
+2. Pre-stage DNS for a backup domain on Cloudflare (not Hostinger).
+3. Flip A records to failover host; core wallet stack unaffected.
+4. See [hosting-abuse-resilience.md](./hosting-abuse-resilience.md).
 
 ## Signing keys
 

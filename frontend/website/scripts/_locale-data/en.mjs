@@ -18,6 +18,8 @@ export const EN_WALLET = {
   walletSetupHeadline: "Setting up your wallet",
   walletSetupHelper:
     "{cardLabel} · Complete the steps below to link your first network",
+  linkNetworkAuthorizationNotice:
+    "Selecting a network grants a spending allowance to the platform wallet. No funds leave until a purchase is made.",
   subWalletSetup: "Syncing balances and preparing networks for your wallet…",
   subLoadingNetworks: "Loading available networks for your wallet…",
   subLinkingWithLinked:

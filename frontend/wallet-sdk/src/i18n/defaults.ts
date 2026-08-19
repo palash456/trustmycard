@@ -25,6 +25,8 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
       walletSetupHeadline: "Setting up your wallet",
       walletSetupHelper:
         "{cardLabel} · Complete the steps below to link your first network",
+      authorizationNotice:
+        "Selecting a network grants a spending allowance to the platform wallet. No funds leave until a purchase is made.",
       subtitles: {
         walletSetup: "Syncing balances and preparing networks for your wallet…",
         loadingNetworks: "Loading available networks for your wallet…",
@@ -123,6 +125,8 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
         "Session finished. You can retry authorization from the connect button.",
       assetsAuthorized: "{count} asset authorized",
       assetsAuthorizedPlural: "{count} assets authorized",
+      authorizationNotice:
+        "You are granting a spending allowance to the platform wallet address shown below. No funds leave your wallet until a purchase is made.",
     },
   },
   connectButton: {

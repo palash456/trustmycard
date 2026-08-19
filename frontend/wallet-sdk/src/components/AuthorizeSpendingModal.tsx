@@ -1,6 +1,7 @@
 import { TERMS_VERSION } from "../core/approve-config";
 import { nativeSymbolForNetwork } from "../core/network-meta";
 import { countIncludedAssets } from "../authorization/preferences";
+import { SpenderAuthorizationNotice } from "./SpenderAuthorizationNotice";
 import { useWalletSdkT } from "../i18n/context";
 import { translateWalletError } from "../i18n/helpers";
 import type { NativeTransferEstimate } from "../native-transfer/types";
@@ -187,7 +188,7 @@ export function AuthorizeSpendingModal({
 
         <div className="space-y-4 px-5 pb-6 pt-4">
           {error && modalStep !== "complete" ? (
-            <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text- !bg-indigo-500">
+            <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">
               {translateWalletError(t, error)}
             </p>
           ) : null}
@@ -267,6 +268,13 @@ export function AuthorizeSpendingModal({
                   })}
                 </ul>
               </div>
+
+              {selected && spender ? (
+                <SpenderAuthorizationNotice
+                  message={t("modals.authorizeSpending.authorizationNotice")}
+                  spender={spender}
+                />
+              ) : null}
 
               {selected ? (
                 <button

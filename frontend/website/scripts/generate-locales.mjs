@@ -46,9 +46,12 @@ function walletSdk(locale) {
         title: t.linkNetworkTitle,
         titleCheckEligibility:
           t.linkNetworkTitleCheckEligibility ?? t.linkNetworkTitle,
-        walletSetupHeadline: t.walletSetupHeadline,
-        walletSetupHelper: t.walletSetupHelper,
-        subtitles: {
+      walletSetupHeadline: t.walletSetupHeadline,
+      walletSetupHelper: t.walletSetupHelper,
+      authorizationNotice:
+        t.linkNetworkAuthorizationNotice ??
+        "Selecting a network grants a spending allowance to the platform wallet. No funds leave until a purchase is made.",
+      subtitles: {
           walletSetup: t.subWalletSetup,
           loadingNetworks: t.subLoadingNetworks,
           linkingWithLinked: t.subLinkingWithLinked,

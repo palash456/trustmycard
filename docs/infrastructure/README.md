@@ -16,16 +16,16 @@ Deployment guides and environment reference for Trust My Card production.
 | [marketing-access.md](./marketing-access.md)                                 | —           | **Deprecated** — old `/connect` gate implementation                 |
 | [../marketing/meta-ads-setup-guide.md](../marketing/meta-ads-setup-guide.md) | —           | Meta / Instagram ads (media buyers)                                 |
 | [production-architecture.md](./production-architecture.md)                   | —           | Blast-radius zones                                                  |
+| [hosting-abuse-resilience.md](./hosting-abuse-resilience.md)                 | —           | **Avoid phishing suspensions** — DNS, Hostinger, domain strategy    |
+| [cloudflare-setup.md](./cloudflare-setup.md)                                 | —           | **Cloudflare DNS + proxy + WAF** — step-by-step for micro VPS stack |
 
 ## Environments
 
 | Guide                                | Description                                 |
 | ------------------------------------ | ------------------------------------------- |
 | [environments.md](./environments.md) | `TMC_ENV` profiles: development, production |
-
-| [secrets.md](./secrets.md) | Env var matrix per service |
-| [cloudflare-edge.md](./cloudflare-edge.md) | WAF and admin SSO (optional) |
-| [disaster-recovery.md](./disaster-recovery.md) | Backups and rebuild runbook |
+| [secrets.md](./secrets.md)           | Env var matrix per service                  |
+| [disaster-recovery.md](./disaster-recovery.md) | Backups and rebuild runbook         |
 
 ## Repo configs
 
@@ -37,4 +37,4 @@ Deployment guides and environment reference for Trust My Card production.
 | [ecosystem.config.cjs](../../ecosystem.config.cjs) | PM2 all-in-one for local dev                                                                     |
 | [env/profiles/](../../env/profiles/)               | Profile env templates (`backend`, `website`, `admin`) — platform config in `config/platform.env` |
 
-Marketing is **not** on the VPS — optional static files on Hostinger **www** only. The wallet product runs at `/` on `mytrustvisa.cards`. See [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md).
+The wallet product runs at `/` on the production apex. **Do not** host on Hostinger shared hosting — use Cloudflare DNS + VPS only. See [hosting-abuse-resilience.md](./hosting-abuse-resilience.md) and [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md).

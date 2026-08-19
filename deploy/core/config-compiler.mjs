@@ -295,6 +295,23 @@ export function compileEnvBundles(ctx, runtimeState = null) {
         ? effectivePlatform.META_PIXEL_ID || website.META_PIXEL_ID || ""
         : "",
     META_PIXEL_APP_URL: environment === "production" ? walletOrigin : "",
+    // Expose the bare domain for security.txt canonical URL (derived from walletOrigin).
+    NEXT_PUBLIC_WEBSITE_DOMAIN:
+      environment === "production" ? origins.websiteDomain : "",
+    // Site identity — shown in footer + security.txt. Read from platform.env or profile.
+    NEXT_PUBLIC_LEGAL_NAME:
+      effectivePlatform.NEXT_PUBLIC_LEGAL_NAME?.trim() ||
+      website.NEXT_PUBLIC_LEGAL_NAME?.trim() ||
+      "",
+    NEXT_PUBLIC_SUPPORT_EMAIL:
+      effectivePlatform.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() ||
+      website.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() ||
+      "",
+    // Server-only — not NEXT_PUBLIC; used by /.well-known/security.txt route.
+    PLATFORM_SECURITY_EMAIL:
+      effectivePlatform.PLATFORM_SECURITY_EMAIL?.trim() ||
+      effectivePlatform.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() ||
+      "",
   };
 
   const adminEnv = {
