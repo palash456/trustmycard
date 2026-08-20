@@ -284,8 +284,8 @@ function MarketingHomeContent() {
                 <Image
                   src="/images/hero-app-mockup.png"
                   className="animate-float h-auto w-full object-contain"
-                  width={673}
-                  height={634}
+                  width={628}
+                  height={576}
                   priority
                   alt={t("home.hero.imageAlt")}
                 />

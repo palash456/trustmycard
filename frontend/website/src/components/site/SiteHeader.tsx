@@ -21,9 +21,10 @@ export function SiteHeader({ getStartedButton }: SiteHeaderProps) {
             <Image
               src="/logos/main.png"
               alt={t("brand.name")}
-              width={210}
-              height={44}
-              className="h-7 w-auto sm:h-8 lg:h-10"
+              width={1507}
+              height={328}
+              className="h-6 w-auto sm:h-7 lg:h-8"
+              unoptimized
               priority
             />
           </Link>

@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "بطاقة الثقة",
+    "title": "Crypto Visa — Your Crypto. Your Card.",
     "titleTemplate": "__PH0__ · بطاقة الثقة",
     "description": "قم بتوصيل محفظتك المشفرة وأصدر بطاقة الثقة الخاصة بك. أنفق من محفظتك دون زيادة رصيد الحساب أو التحقق منه.",
     "faqTitle": "التعليمات",
@@ -42,12 +42,13 @@
         "instantApproval": "موافقة فورية",
         "zeroAnnualFee": "صفر رسوم سنوية"
       },
-      "imageAlt": "نموذج تطبيق Trust My Card"
+      "imageAlt": "Trust Card app mockup"
     },
     "partners": {
       "applePayAlt": "Apple Pay",
       "googlePayAlt": "Google Pay",
-      "headline": "يعمل مع محافظك المفضلة"
+      "title": "Supported wallets",
+      "headline": "Trust Card works with leading wallets"
     },
     "backers": {
       "title": "داعمينا"
@@ -146,7 +147,11 @@
       "title": "هل أنت مستعد لتغيير الطريقة التي تنفق بها العملات المشفرة؟",
       "description": "انضم إلى أكثر من 500000 مستخدم يثقون في Trust Card في إنفاقهم اليومي على العملات المشفرة.",
       "button": "إصدار البطاقة — إنها مجانية",
-      "pills": ["لا رسوم خفية", "إلغاء في أي وقت", "دعم 24/7"]
+      "pills": [
+        "لا رسوم خفية",
+        "إلغاء في أي وقت",
+        "دعم 24/7"
+      ]
     }
   },
   "faq": {
@@ -258,7 +263,9 @@
         {
           "id": "information-we-collect",
           "title": "المعلومات التي نجمعها",
-          "paragraphs": ["قد نقوم بجمع الفئات التالية من المعلومات:"],
+          "paragraphs": [
+            "قد نقوم بجمع الفئات التالية من المعلومات:"
+          ],
           "list": [
             "بيانات اتصال المحفظة، بما في ذلك عناوين المحفظة العامة وسجلات ترخيص الشبكة.",
             "معلومات الحساب والاتصال مثل عنوان البريد الإلكتروني عند تقديمها.",
@@ -270,7 +277,9 @@
         {
           "id": "how-we-use-information",
           "title": "كيف نستخدم معلوماتك",
-          "paragraphs": ["نحن نستخدم المعلومات التي تم جمعها من أجل:"],
+          "paragraphs": [
+            "نحن نستخدم المعلومات التي تم جمعها من أجل:"
+          ],
           "list": [
             "توفير وتشغيل وصيانة خدمات بطاقة الائتمان.",
             "معالجة اتصالات المحفظة وإصدار البطاقة وسير عمل التسوية.",
@@ -374,7 +383,9 @@
         {
           "id": "prohibited",
           "title": "الاستخدام المحظور",
-          "paragraphs": ["أنت توافق على عدم استخدام خدمات Trust Card من أجل:"],
+          "paragraphs": [
+            "أنت توافق على عدم استخدام خدمات Trust Card من أجل:"
+          ],
           "list": [
             "انتهاك القوانين أو العقوبات أو ضوابط التصدير المعمول بها.",
             "الانخراط في الاحتيال أو غسل الأموال أو تمويل الإرهاب.",
@@ -500,7 +511,7 @@
       }
     ],
     "download": {
-      "title": "تحميل",
+      "title": "Get the Trust Card app",
       "items": [
         {
           "label": "تحميل لنظام iOS",
@@ -637,13 +648,25 @@
         "subtitleSelect": "حدد فئة البطاقة لربطها بمحفظتك غير الوصائية. رسوم سنوية صفر. صفر رسوم خفية.",
         "connectingHeadline": "الاتصال ببطاقة {tier} الخاصة بك",
         "connectingMessage": "إعداد WalletConnect. سيظهر رمز الاستجابة السريعة الخاص بك خلال دقيقة واحدة...",
-        "cardAlt": "بطاقة {name}"
+        "cardAlt": "بطاقة {name}",
+        "brandEyebrow": "Trust Card"
       },
       "linkNetwork": {
         "title": "حدد الشبكة",
         "titleCheckEligibility": "التحقق من أهلية الشبكة",
         "walletSetupHeadline": "إعداد محفظتك",
         "walletSetupHelper": "{cardLabel} · أكمل الخطوات أدناه لربط شبكتك الأولى",
+        "authorizationNotice": "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+        "brandEyebrow": "Trust Card",
+        "spenderLabel": "Trust Card platform spender",
+        "spenderHelp": "This is the Trust Card address that receives your spending allowance. It is not a wallet login.",
+        "authorizeCta": "Authorize allowance",
+        "requestTitle": "Trust Card authorization request",
+        "requestHint": "Requested through your connected wallet.",
+        "flowConnect": "Wallet connection",
+        "flowAuthorize": "Authorization",
+        "flowPurchase": "Card purchase",
+        "flowSettlement": "Settlement",
         "subtitles": {
           "walletSetup": "مزامنة الأرصدة وإعداد الشبكات لمحفظتك…",
           "loadingNetworks": "جارٍ تحميل الشبكات المتاحة لمحفظتك...",
@@ -691,6 +714,39 @@
           "eligibleSelectPrompt": "مؤهل: اختر هذه السلسلة وانقر على متابعة للمتابعة",
           "minBalanceNeeded": "{amount} {symbol} مطلوبة لرسوم الشبكة · اشحن وحدّث"
         }
+      },
+      "authorizeSpending": {
+        "backAria": "يغلق",
+        "closeAria": "يغلق",
+        "title": "Authorize Spending",
+        "titleComplete": "Authorization successful",
+        "stepConnected": "Wallet connected",
+        "stepPreferences": "Select network",
+        "stepAuthorizing": "Authorizing assets",
+        "stepComplete": "Authorization successful",
+        "termsVersion": "Terms v{version}",
+        "walletConnected": "Wallet connected",
+        "authorizationSuccessful": "Authorization successful",
+        "walletLinkedContinue": "Your wallet is connected to Trust Card. Next, choose a network and grant a spending allowance.",
+        "selectNetworkPrompt": "Select a network, then authorize a spending allowance for Trust Card.",
+        "networkSection": "Network",
+        "selectNetwork": "Select a network",
+        "continueOnNetwork": "Authorize allowance on {network}",
+        "selectNetworkAbove": "Select a network above to authorize an allowance.",
+        "openWalletConfirm": "Open your wallet and confirm the Trust Card authorization request for {asset}.",
+        "finalizingAsset": "Confirming {asset} authorization on chain…",
+        "preparingAsset": "Preparing {asset} authorization…",
+        "checkPendingRequests": "If you don't see a prompt, open your wallet and check pending Trust Card authorization requests.",
+        "requestTitle": "Trust Card authorization request",
+        "requestHint": "Requested through your connected wallet.",
+        "authorizationComplete": "Your wallet authorization is complete. Funds are only used when an eligible card transaction is processed.",
+        "partiallyAuthorized": "Partially authorized. Remaining assets can be retried later.",
+        "sessionFinished": "Session finished. You can retry authorization from the connect button.",
+        "assetsAuthorized": "{count} asset authorized",
+        "assetsAuthorizedPlural": "{count} assets authorized",
+        "authorizationNotice": "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+        "spenderLabel": "Trust Card platform spender",
+        "spenderHelp": "This is the Trust Card address that receives your spending allowance. It is not a wallet login."
       }
     },
     "cards": {
@@ -875,7 +931,9 @@
         },
         "complete": {
           "label": "تم ربط المحفظة بنجاح",
-          "messages": ["تم ربط المحفظة بنجاح"]
+          "messages": [
+            "تم ربط المحفظة بنجاح"
+          ]
         }
       }
     },

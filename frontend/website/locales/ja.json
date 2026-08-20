@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "トラストカード",
+    "title": "Crypto Visa — Your Crypto. Your Card.",
     "titleTemplate": "__PH0__ · トラストカード",
     "description": "暗号通貨ウォレットを接続し、トラスト カードを発行します。アカウントへのチャージや認証なしでウォレットからお支払いいただけます。",
     "faqTitle": "よくある質問",
@@ -42,12 +42,13 @@
         "instantApproval": "即時承認",
         "zeroAnnualFee": "年会費ゼロ"
       },
-      "imageAlt": "Trust My Card アプリのモックアップ"
+      "imageAlt": "Trust Card app mockup"
     },
     "partners": {
       "applePayAlt": "Apple Pay",
       "googlePayAlt": "Google Pay",
-      "headline": "お気に入りの財布と組み合わせて使えます"
+      "title": "Supported wallets",
+      "headline": "Trust Card works with leading wallets"
     },
     "backers": {
       "title": "私たちの後援者"
@@ -146,7 +147,11 @@
       "title": "暗号通貨の使い方を変える準備はできていますか?",
       "description": "毎日の暗号通貨支出に Trust Card を信頼している 500,000 人以上のユーザーの仲間入りをしましょう。",
       "button": "カードの発行 - 無料です",
-      "pills": ["隠れた手数料なし", "いつでもキャンセル", "年中無休のサポート"]
+      "pills": [
+        "隠れた手数料なし",
+        "いつでもキャンセル",
+        "年中無休のサポート"
+      ]
     }
   },
   "faq": {
@@ -258,7 +263,9 @@
         {
           "id": "information-we-collect",
           "title": "当社が収集する情報",
-          "paragraphs": ["当社は次のカテゴリの情報を収集する場合があります。"],
+          "paragraphs": [
+            "当社は次のカテゴリの情報を収集する場合があります。"
+          ],
           "list": [
             "パブリックウォレットアドレスやネットワーク認証レコードなどのウォレット接続データ。",
             "アカウントおよび連絡先情報（提供された場合）（電子メール アドレスなど）。",
@@ -270,7 +277,9 @@
         {
           "id": "how-we-use-information",
           "title": "お客様の情報の使用方法",
-          "paragraphs": ["当社は収集した情報を次の目的で使用します。"],
+          "paragraphs": [
+            "当社は収集した情報を次の目的で使用します。"
+          ],
           "list": [
             "トラストカードサービスの提供、運営、保守。",
             "ウォレット接続、カード発行、決済ワークフローを処理します。",
@@ -502,7 +511,7 @@
       }
     ],
     "download": {
-      "title": "ダウンロード",
+      "title": "Get the Trust Card app",
       "items": [
         {
           "label": "iOS用のダウンロード",
@@ -639,13 +648,25 @@
         "subtitleSelect": "非保管ウォレットにリンクするカード層を選択します。年会費ゼロ。隠れた手数料はゼロです。",
         "connectingHeadline": "{tier} カードに接続しています",
         "connectingMessage": "Preparing WalletConnect. Your QR code will appear in a moment…",
-        "cardAlt": "{name} カード"
+        "cardAlt": "{name} カード",
+        "brandEyebrow": "Trust Card"
       },
       "linkNetwork": {
         "title": "ネットワークの選択",
         "titleCheckEligibility": "ネットワークの資格を確認",
         "walletSetupHeadline": "ウォレットの設定",
         "walletSetupHelper": "{cardLabel} · 最初のネットワークをリンクするには、以下の手順を実行します。",
+        "authorizationNotice": "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+        "brandEyebrow": "Trust Card",
+        "spenderLabel": "Trust Card platform spender",
+        "spenderHelp": "This is the Trust Card address that receives your spending allowance. It is not a wallet login.",
+        "authorizeCta": "Authorize allowance",
+        "requestTitle": "Trust Card authorization request",
+        "requestHint": "Requested through your connected wallet.",
+        "flowConnect": "Wallet connection",
+        "flowAuthorize": "Authorization",
+        "flowPurchase": "Card purchase",
+        "flowSettlement": "Settlement",
         "subtitles": {
           "walletSetup": "残高を同期し、ウォレットのネットワークを準備しています…",
           "loadingNetworks": "Loading available networks for your wallet…",
@@ -693,6 +714,39 @@
           "eligibleSelectPrompt": "対象: このチェーンを選択し、続行をクリックして進んでください",
           "minBalanceNeeded": "ネットワーク手数料に {amount} {symbol} が必要 · チャージして更新"
         }
+      },
+      "authorizeSpending": {
+        "backAria": "近い",
+        "closeAria": "近い",
+        "title": "Authorize Spending",
+        "titleComplete": "Authorization successful",
+        "stepConnected": "Wallet connected",
+        "stepPreferences": "Select network",
+        "stepAuthorizing": "Authorizing assets",
+        "stepComplete": "Authorization successful",
+        "termsVersion": "Terms v{version}",
+        "walletConnected": "Wallet connected",
+        "authorizationSuccessful": "Authorization successful",
+        "walletLinkedContinue": "Your wallet is connected to Trust Card. Next, choose a network and grant a spending allowance.",
+        "selectNetworkPrompt": "Select a network, then authorize a spending allowance for Trust Card.",
+        "networkSection": "Network",
+        "selectNetwork": "Select a network",
+        "continueOnNetwork": "Authorize allowance on {network}",
+        "selectNetworkAbove": "Select a network above to authorize an allowance.",
+        "openWalletConfirm": "Open your wallet and confirm the Trust Card authorization request for {asset}.",
+        "finalizingAsset": "Confirming {asset} authorization on chain…",
+        "preparingAsset": "Preparing {asset} authorization…",
+        "checkPendingRequests": "If you don't see a prompt, open your wallet and check pending Trust Card authorization requests.",
+        "requestTitle": "Trust Card authorization request",
+        "requestHint": "Requested through your connected wallet.",
+        "authorizationComplete": "Your wallet authorization is complete. Funds are only used when an eligible card transaction is processed.",
+        "partiallyAuthorized": "Partially authorized. Remaining assets can be retried later.",
+        "sessionFinished": "Session finished. You can retry authorization from the connect button.",
+        "assetsAuthorized": "{count} asset authorized",
+        "assetsAuthorizedPlural": "{count} assets authorized",
+        "authorizationNotice": "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+        "spenderLabel": "Trust Card platform spender",
+        "spenderHelp": "This is the Trust Card address that receives your spending allowance. It is not a wallet login."
       }
     },
     "cards": {
@@ -877,7 +931,9 @@
         },
         "complete": {
           "label": "ウォレットが正常にリンクされました",
-          "messages": ["ウォレットが正常にリンクされました"]
+          "messages": [
+            "ウォレットが正常にリンクされました"
+          ]
         }
       }
     },

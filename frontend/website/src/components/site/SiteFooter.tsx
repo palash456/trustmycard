@@ -30,9 +30,10 @@ export function SiteFooter() {
                 <Image
                   src="/logos/main.png"
                   alt={t("brand.name")}
-                  width={210}
-                  height={44}
-                  className="h-7 w-auto opacity-90 sm:h-12 sm:w-auto"
+                  width={1507}
+                  height={328}
+                  className="h-7 w-auto opacity-90 sm:h-10 sm:w-auto"
+                  unoptimized
                 />
                 <p className="mt-4 text-sm leading-relaxed text-[#6A6D81]">
                   {t("footer.tagline")}

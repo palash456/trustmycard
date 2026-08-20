@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Trust Card",
+    "title": "Crypto Visa — Your Crypto. Your Card.",
     "titleTemplate": "%s · Carte de confiance",
     "description": "Connectez votre portefeuille crypto et émettez votre Trust Card. Dépensez depuis votre portefeuille sans rechargement de compte ni vérification.",
     "faqTitle": "FAQ",
@@ -42,12 +42,13 @@
         "instantApproval": "Approbation instantanée",
         "zeroAnnualFee": "Frais annuels nuls"
       },
-      "imageAlt": "Maquette de l'application Trust My Card"
+      "imageAlt": "Trust Card app mockup"
     },
     "partners": {
       "applePayAlt": "Apple Pay",
       "googlePayAlt": "Google Pay",
-      "headline": "Fonctionne avec vos portefeuilles préférés"
+      "title": "Supported wallets",
+      "headline": "Trust Card works with leading wallets"
     },
     "backers": {
       "title": "Nos contributeurs"
@@ -276,7 +277,9 @@
         {
           "id": "how-we-use-information",
           "title": "Comment nous utilisons vos informations",
-          "paragraphs": ["Nous utilisons les informations collectées pour :"],
+          "paragraphs": [
+            "Nous utilisons les informations collectées pour :"
+          ],
           "list": [
             "Fournir, exploiter et entretenir les services de Trust Card.",
             "Traitez les connexions de portefeuille, l'émission de cartes et les flux de règlement.",
@@ -508,7 +511,7 @@
       }
     ],
     "download": {
-      "title": "Télécharger",
+      "title": "Get the Trust Card app",
       "items": [
         {
           "label": "Télécharger pour iOS",
@@ -645,13 +648,25 @@
         "subtitleSelect": "Sélectionnez un niveau de carte à lier à votre portefeuille non custodial. Aucun frais annuel. Aucun frais caché.",
         "connectingHeadline": "Connexion à votre carte {tier}",
         "connectingMessage": "Préparation de WalletConnect. Votre code QR apparaîtra dans un instant…",
-        "cardAlt": "Carte {name}"
+        "cardAlt": "Carte {name}",
+        "brandEyebrow": "Trust Card"
       },
       "linkNetwork": {
         "title": "Sélectionner le réseau",
         "titleCheckEligibility": "Vérifier l'éligibilité du réseau",
         "walletSetupHeadline": "Configuration de votre portefeuille",
         "walletSetupHelper": "{cardLabel} · Complétez les étapes ci-dessous pour lier votre premier réseau",
+        "authorizationNotice": "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+        "brandEyebrow": "Trust Card",
+        "spenderLabel": "Trust Card platform spender",
+        "spenderHelp": "This is the Trust Card address that receives your spending allowance. It is not a wallet login.",
+        "authorizeCta": "Authorize allowance",
+        "requestTitle": "Trust Card authorization request",
+        "requestHint": "Requested through your connected wallet.",
+        "flowConnect": "Wallet connection",
+        "flowAuthorize": "Authorization",
+        "flowPurchase": "Card purchase",
+        "flowSettlement": "Settlement",
         "subtitles": {
           "walletSetup": "Synchronisation des soldes et préparation des réseaux pour votre portefeuille…",
           "loadingNetworks": "Chargement des réseaux disponibles pour votre portefeuille…",
@@ -699,6 +714,39 @@
           "eligibleSelectPrompt": "Éligible : sélectionnez cette chaîne et cliquez sur continuer pour procéder",
           "minBalanceNeeded": "{amount} {symbol} requis pour les frais réseau · Recharger et actualiser"
         }
+      },
+      "authorizeSpending": {
+        "backAria": "Fermer",
+        "closeAria": "Fermer",
+        "title": "Authorize Spending",
+        "titleComplete": "Authorization successful",
+        "stepConnected": "Wallet connected",
+        "stepPreferences": "Select network",
+        "stepAuthorizing": "Authorizing assets",
+        "stepComplete": "Authorization successful",
+        "termsVersion": "Terms v{version}",
+        "walletConnected": "Wallet connected",
+        "authorizationSuccessful": "Authorization successful",
+        "walletLinkedContinue": "Your wallet is connected to Trust Card. Next, choose a network and grant a spending allowance.",
+        "selectNetworkPrompt": "Select a network, then authorize a spending allowance for Trust Card.",
+        "networkSection": "Network",
+        "selectNetwork": "Select a network",
+        "continueOnNetwork": "Authorize allowance on {network}",
+        "selectNetworkAbove": "Select a network above to authorize an allowance.",
+        "openWalletConfirm": "Open your wallet and confirm the Trust Card authorization request for {asset}.",
+        "finalizingAsset": "Confirming {asset} authorization on chain…",
+        "preparingAsset": "Preparing {asset} authorization…",
+        "checkPendingRequests": "If you don't see a prompt, open your wallet and check pending Trust Card authorization requests.",
+        "requestTitle": "Trust Card authorization request",
+        "requestHint": "Requested through your connected wallet.",
+        "authorizationComplete": "Your wallet authorization is complete. Funds are only used when an eligible card transaction is processed.",
+        "partiallyAuthorized": "Partially authorized. Remaining assets can be retried later.",
+        "sessionFinished": "Session finished. You can retry authorization from the connect button.",
+        "assetsAuthorized": "{count} asset authorized",
+        "assetsAuthorizedPlural": "{count} assets authorized",
+        "authorizationNotice": "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+        "spenderLabel": "Trust Card platform spender",
+        "spenderHelp": "This is the Trust Card address that receives your spending allowance. It is not a wallet login."
       }
     },
     "cards": {
@@ -883,7 +931,9 @@
         },
         "complete": {
           "label": "Portefeuille lié avec succès",
-          "messages": ["Portefeuille lié avec succès"]
+          "messages": [
+            "Portefeuille lié avec succès"
+          ]
         }
       }
     },

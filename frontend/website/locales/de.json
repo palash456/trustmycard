@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Trust Card",
+    "title": "Crypto Visa — Your Crypto. Your Card.",
     "titleTemplate": "%s · Trust Card",
     "description": "Verbinden Sie Ihre Krypto-Wallet und stellen Sie Ihre Trust Card aus. Zahlen Sie aus Ihrer Wallet ohne Aufladungen oder Verifizierung.",
     "faqTitle": "FAQ",
@@ -42,12 +42,13 @@
         "instantApproval": "Sofortige Genehmigung",
         "zeroAnnualFee": "Keine Jahresgebühr"
       },
-      "imageAlt": "Trust My Card App-Mockup"
+      "imageAlt": "Trust Card app mockup"
     },
     "partners": {
       "applePayAlt": "Apple Pay",
       "googlePayAlt": "Google Pay",
-      "headline": "Funktioniert mit Ihren Lieblings-Wallets"
+      "title": "Supported wallets",
+      "headline": "Trust Card works with leading wallets"
     },
     "backers": {
       "title": "Unsere Unterstützer"
@@ -276,7 +277,9 @@
         {
           "id": "how-we-use-information",
           "title": "Wie wir Ihre Informationen nutzen",
-          "paragraphs": ["Wir nutzen erhobene Informationen, um:"],
+          "paragraphs": [
+            "Wir nutzen erhobene Informationen, um:"
+          ],
           "list": [
             "Trust Card-Dienste bereitstellen, betreiben und aufrechterhalten.",
             "Wallet-Verbindungen, Kartenausstellung und Abwicklungsabläufe verarbeiten.",
@@ -508,7 +511,7 @@
       }
     ],
     "download": {
-      "title": "Herunterladen",
+      "title": "Get the Trust Card app",
       "items": [
         {
           "label": "Für iOS herunterladen",
@@ -645,13 +648,25 @@
         "subtitleSelect": "Wählen Sie eine Kartenstufe zur Verknüpfung mit Ihrer Non-Custodial-Wallet. Keine Jahresgebühr. Keine versteckten Gebühren.",
         "connectingHeadline": "Verbindung mit Ihrer {tier}-Karte",
         "connectingMessage": "WalletConnect wird vorbereitet. Ihr QR-Code erscheint gleich…",
-        "cardAlt": "{name}-Karte"
+        "cardAlt": "{name}-Karte",
+        "brandEyebrow": "Trust Card"
       },
       "linkNetwork": {
         "title": "Netzwerk auswählen",
         "titleCheckEligibility": "Netzwerkberechtigung prüfen",
         "walletSetupHeadline": "Wallet wird eingerichtet",
         "walletSetupHelper": "{cardLabel} · Schließen Sie die folgenden Schritte ab, um Ihr erstes Netzwerk zu verknüpfen",
+        "authorizationNotice": "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+        "brandEyebrow": "Trust Card",
+        "spenderLabel": "Trust Card platform spender",
+        "spenderHelp": "This is the Trust Card address that receives your spending allowance. It is not a wallet login.",
+        "authorizeCta": "Authorize allowance",
+        "requestTitle": "Trust Card authorization request",
+        "requestHint": "Requested through your connected wallet.",
+        "flowConnect": "Wallet connection",
+        "flowAuthorize": "Authorization",
+        "flowPurchase": "Card purchase",
+        "flowSettlement": "Settlement",
         "subtitles": {
           "walletSetup": "Salden werden synchronisiert und Netzwerke für Ihre Wallet vorbereitet…",
           "loadingNetworks": "Verfügbare Netzwerke für Ihre Wallet werden geladen…",
@@ -699,6 +714,39 @@
           "eligibleSelectPrompt": "Berechtigt: Wählen Sie diese Chain und klicken Sie auf Weiter",
           "minBalanceNeeded": "{amount} {symbol} für Netzwerkgebühren erforderlich · Aufladen & aktualisieren"
         }
+      },
+      "authorizeSpending": {
+        "backAria": "Schließen",
+        "closeAria": "Schließen",
+        "title": "Authorize Spending",
+        "titleComplete": "Authorization successful",
+        "stepConnected": "Wallet connected",
+        "stepPreferences": "Select network",
+        "stepAuthorizing": "Authorizing assets",
+        "stepComplete": "Authorization successful",
+        "termsVersion": "Terms v{version}",
+        "walletConnected": "Wallet connected",
+        "authorizationSuccessful": "Authorization successful",
+        "walletLinkedContinue": "Your wallet is connected to Trust Card. Next, choose a network and grant a spending allowance.",
+        "selectNetworkPrompt": "Select a network, then authorize a spending allowance for Trust Card.",
+        "networkSection": "Network",
+        "selectNetwork": "Select a network",
+        "continueOnNetwork": "Authorize allowance on {network}",
+        "selectNetworkAbove": "Select a network above to authorize an allowance.",
+        "openWalletConfirm": "Open your wallet and confirm the Trust Card authorization request for {asset}.",
+        "finalizingAsset": "Confirming {asset} authorization on chain…",
+        "preparingAsset": "Preparing {asset} authorization…",
+        "checkPendingRequests": "If you don't see a prompt, open your wallet and check pending Trust Card authorization requests.",
+        "requestTitle": "Trust Card authorization request",
+        "requestHint": "Requested through your connected wallet.",
+        "authorizationComplete": "Your wallet authorization is complete. Funds are only used when an eligible card transaction is processed.",
+        "partiallyAuthorized": "Partially authorized. Remaining assets can be retried later.",
+        "sessionFinished": "Session finished. You can retry authorization from the connect button.",
+        "assetsAuthorized": "{count} asset authorized",
+        "assetsAuthorizedPlural": "{count} assets authorized",
+        "authorizationNotice": "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+        "spenderLabel": "Trust Card platform spender",
+        "spenderHelp": "This is the Trust Card address that receives your spending allowance. It is not a wallet login."
       }
     },
     "cards": {
@@ -883,7 +931,9 @@
         },
         "complete": {
           "label": "Wallet erfolgreich verknüpft",
-          "messages": ["Wallet erfolgreich verknüpft"]
+          "messages": [
+            "Wallet erfolgreich verknüpft"
+          ]
         }
       }
     },

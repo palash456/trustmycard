@@ -287,7 +287,7 @@ const FOOTER_REGIONS = [
 export function buildEnLocale(wallet = EN_WALLET) {
   return {
     meta: {
-      title: "Trust Card",
+      title: "Crypto Visa — Your Crypto. Your Card.",
       titleTemplate: "%s · Trust Card",
       description:
         "Connect your crypto wallet and issue your Trust Card. Spend from your wallet without account top-ups or verification.",

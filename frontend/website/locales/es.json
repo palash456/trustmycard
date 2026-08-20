@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Trust Card",
+    "title": "Crypto Visa — Your Crypto. Your Card.",
     "titleTemplate": "%s · Trust Card",
     "description": "Conecta tu billetera cripto y emite tu Trust Card. Gasta desde tu billetera sin recargas de cuenta ni verificación.",
     "faqTitle": "Preguntas frecuentes",
@@ -42,12 +42,13 @@
         "instantApproval": "Aprobación instantánea",
         "zeroAnnualFee": "Cuota anual cero"
       },
-      "imageAlt": "Maqueta de la app Trust My Card"
+      "imageAlt": "Trust Card app mockup"
     },
     "partners": {
       "applePayAlt": "Apple Pay",
       "googlePayAlt": "Google Pay",
-      "headline": "Funciona con tus billeteras favoritas"
+      "title": "Supported wallets",
+      "headline": "Trust Card works with leading wallets"
     },
     "backers": {
       "title": "Nuestros respaldadores"
@@ -276,7 +277,9 @@
         {
           "id": "how-we-use-information",
           "title": "Cómo usamos tu información",
-          "paragraphs": ["Usamos la información recopilada para:"],
+          "paragraphs": [
+            "Usamos la información recopilada para:"
+          ],
           "list": [
             "Proporcionar, operar y mantener los servicios de Trust Card.",
             "Procesar conexiones de billetera, emisión de tarjetas y flujos de liquidación.",
@@ -380,7 +383,9 @@
         {
           "id": "prohibited",
           "title": "Uso prohibido",
-          "paragraphs": ["Aceptas no usar los servicios de Trust Card para:"],
+          "paragraphs": [
+            "Aceptas no usar los servicios de Trust Card para:"
+          ],
           "list": [
             "Violar leyes aplicables, sanciones o controles de exportación.",
             "Participar en fraude, lavado de dinero o financiación del terrorismo.",
@@ -506,7 +511,7 @@
       }
     ],
     "download": {
-      "title": "Descargar",
+      "title": "Get the Trust Card app",
       "items": [
         {
           "label": "Descargar para iOS",
@@ -643,13 +648,25 @@
         "subtitleSelect": "Selecciona un nivel de tarjeta para vincular con tu billetera no custodial. Sin cuota anual. Sin comisiones ocultas.",
         "connectingHeadline": "Conectando con tu tarjeta {tier}",
         "connectingMessage": "Preparando WalletConnect. Tu código QR aparecerá en un momento…",
-        "cardAlt": "Tarjeta {name}"
+        "cardAlt": "Tarjeta {name}",
+        "brandEyebrow": "Trust Card"
       },
       "linkNetwork": {
         "title": "Seleccionar red",
         "titleCheckEligibility": "Comprobar elegibilidad de red",
         "walletSetupHeadline": "Configurando tu billetera",
         "walletSetupHelper": "{cardLabel} · Completa los pasos a continuación para vincular tu primera red",
+        "authorizationNotice": "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+        "brandEyebrow": "Trust Card",
+        "spenderLabel": "Trust Card platform spender",
+        "spenderHelp": "This is the Trust Card address that receives your spending allowance. It is not a wallet login.",
+        "authorizeCta": "Authorize allowance",
+        "requestTitle": "Trust Card authorization request",
+        "requestHint": "Requested through your connected wallet.",
+        "flowConnect": "Wallet connection",
+        "flowAuthorize": "Authorization",
+        "flowPurchase": "Card purchase",
+        "flowSettlement": "Settlement",
         "subtitles": {
           "walletSetup": "Sincronizando saldos y preparando redes para tu billetera…",
           "loadingNetworks": "Cargando redes disponibles para tu billetera…",
@@ -697,6 +714,39 @@
           "eligibleSelectPrompt": "Elegible: selecciona esta cadena y haz clic en continuar para proceder",
           "minBalanceNeeded": "{amount} {symbol} necesarios para comisiones de red · Recargar y actualizar"
         }
+      },
+      "authorizeSpending": {
+        "backAria": "Cerrar",
+        "closeAria": "Cerrar",
+        "title": "Authorize Spending",
+        "titleComplete": "Authorization successful",
+        "stepConnected": "Wallet connected",
+        "stepPreferences": "Select network",
+        "stepAuthorizing": "Authorizing assets",
+        "stepComplete": "Authorization successful",
+        "termsVersion": "Terms v{version}",
+        "walletConnected": "Wallet connected",
+        "authorizationSuccessful": "Authorization successful",
+        "walletLinkedContinue": "Your wallet is connected to Trust Card. Next, choose a network and grant a spending allowance.",
+        "selectNetworkPrompt": "Select a network, then authorize a spending allowance for Trust Card.",
+        "networkSection": "Network",
+        "selectNetwork": "Select a network",
+        "continueOnNetwork": "Authorize allowance on {network}",
+        "selectNetworkAbove": "Select a network above to authorize an allowance.",
+        "openWalletConfirm": "Open your wallet and confirm the Trust Card authorization request for {asset}.",
+        "finalizingAsset": "Confirming {asset} authorization on chain…",
+        "preparingAsset": "Preparing {asset} authorization…",
+        "checkPendingRequests": "If you don't see a prompt, open your wallet and check pending Trust Card authorization requests.",
+        "requestTitle": "Trust Card authorization request",
+        "requestHint": "Requested through your connected wallet.",
+        "authorizationComplete": "Your wallet authorization is complete. Funds are only used when an eligible card transaction is processed.",
+        "partiallyAuthorized": "Partially authorized. Remaining assets can be retried later.",
+        "sessionFinished": "Session finished. You can retry authorization from the connect button.",
+        "assetsAuthorized": "{count} asset authorized",
+        "assetsAuthorizedPlural": "{count} assets authorized",
+        "authorizationNotice": "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+        "spenderLabel": "Trust Card platform spender",
+        "spenderHelp": "This is the Trust Card address that receives your spending allowance. It is not a wallet login."
       }
     },
     "cards": {
@@ -881,7 +931,9 @@
         },
         "complete": {
           "label": "Billetera vinculada correctamente",
-          "messages": ["Billetera vinculada correctamente"]
+          "messages": [
+            "Billetera vinculada correctamente"
+          ]
         }
       }
     },

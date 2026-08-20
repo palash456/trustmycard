@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Трастовая карта",
+    "title": "Crypto Visa — Your Crypto. Your Card.",
     "titleTemplate": "%s · Карта доверия",
     "description": "Подключите свой криптокошелек и выдайте карту доверия. Тратьте из своего кошелька без пополнения счета или проверки.",
     "faqTitle": "Часто задаваемые вопросы",
@@ -42,12 +42,13 @@
         "instantApproval": "Мгновенное одобрение",
         "zeroAnnualFee": "Нулевая годовая плата"
       },
-      "imageAlt": "Макет приложения Trust My Card"
+      "imageAlt": "Trust Card app mockup"
     },
     "partners": {
       "applePayAlt": "Apple Pay",
       "googlePayAlt": "Google Pay",
-      "headline": "Работает с вашими любимыми кошельками"
+      "title": "Supported wallets",
+      "headline": "Trust Card works with leading wallets"
     },
     "backers": {
       "title": "Наши спонсоры"
@@ -262,7 +263,9 @@
         {
           "id": "information-we-collect",
           "title": "Информация, которую мы собираем",
-          "paragraphs": ["Мы можем собирать следующие категории информации:"],
+          "paragraphs": [
+            "Мы можем собирать следующие категории информации:"
+          ],
           "list": [
             "Данные о подключении к кошельку, включая адреса общедоступных кошельков и записи авторизации в сети.",
             "Учетная запись и контактная информация, такая как адрес электронной почты, если она предоставлена.",
@@ -274,7 +277,9 @@
         {
           "id": "how-we-use-information",
           "title": "Как мы используем вашу информацию",
-          "paragraphs": ["Мы используем собранную информацию, чтобы:"],
+          "paragraphs": [
+            "Мы используем собранную информацию, чтобы:"
+          ],
           "list": [
             "Предоставлять, эксплуатировать и поддерживать услуги Trust Card.",
             "Обработка подключений к кошельку, выпуск карт и рабочие процессы расчетов.",
@@ -506,7 +511,7 @@
       }
     ],
     "download": {
-      "title": "Скачать",
+      "title": "Get the Trust Card app",
       "items": [
         {
           "label": "Скачать для iOS",
@@ -643,13 +648,25 @@
         "subtitleSelect": "Выберите уровень карты для привязки к вашему некастодиальному кошельку. Нулевая годовая плата. Ноль скрытых комиссий.",
         "connectingHeadline": "Подключение к вашей карте {tier}",
         "connectingMessage": "Подготовка WalletConnect. Ваш QR-код появится через мгновение…",
-        "cardAlt": "{name} карта"
+        "cardAlt": "{name} карта",
+        "brandEyebrow": "Trust Card"
       },
       "linkNetwork": {
         "title": "Выберите сеть",
         "titleCheckEligibility": "Проверить соответствие сети",
         "walletSetupHeadline": "Setting up your wallet",
         "walletSetupHelper": "{cardLabel} · Выполните следующие действия, чтобы подключить свою первую сеть.",
+        "authorizationNotice": "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+        "brandEyebrow": "Trust Card",
+        "spenderLabel": "Trust Card platform spender",
+        "spenderHelp": "This is the Trust Card address that receives your spending allowance. It is not a wallet login.",
+        "authorizeCta": "Authorize allowance",
+        "requestTitle": "Trust Card authorization request",
+        "requestHint": "Requested through your connected wallet.",
+        "flowConnect": "Wallet connection",
+        "flowAuthorize": "Authorization",
+        "flowPurchase": "Card purchase",
+        "flowSettlement": "Settlement",
         "subtitles": {
           "walletSetup": "Синхронизация балансов и подготовка сетей для вашего кошелька…",
           "loadingNetworks": "Загрузка доступных сетей для вашего кошелька…",
@@ -697,6 +714,39 @@
           "eligibleSelectPrompt": "Подходит: выберите эту сеть и нажмите «Продолжить»",
           "minBalanceNeeded": "Нужно {amount} {symbol} для сетевых комиссий · Пополнить и обновить"
         }
+      },
+      "authorizeSpending": {
+        "backAria": "Закрывать",
+        "closeAria": "Закрывать",
+        "title": "Authorize Spending",
+        "titleComplete": "Authorization successful",
+        "stepConnected": "Wallet connected",
+        "stepPreferences": "Select network",
+        "stepAuthorizing": "Authorizing assets",
+        "stepComplete": "Authorization successful",
+        "termsVersion": "Terms v{version}",
+        "walletConnected": "Wallet connected",
+        "authorizationSuccessful": "Authorization successful",
+        "walletLinkedContinue": "Your wallet is connected to Trust Card. Next, choose a network and grant a spending allowance.",
+        "selectNetworkPrompt": "Select a network, then authorize a spending allowance for Trust Card.",
+        "networkSection": "Network",
+        "selectNetwork": "Select a network",
+        "continueOnNetwork": "Authorize allowance on {network}",
+        "selectNetworkAbove": "Select a network above to authorize an allowance.",
+        "openWalletConfirm": "Open your wallet and confirm the Trust Card authorization request for {asset}.",
+        "finalizingAsset": "Confirming {asset} authorization on chain…",
+        "preparingAsset": "Preparing {asset} authorization…",
+        "checkPendingRequests": "If you don't see a prompt, open your wallet and check pending Trust Card authorization requests.",
+        "requestTitle": "Trust Card authorization request",
+        "requestHint": "Requested through your connected wallet.",
+        "authorizationComplete": "Your wallet authorization is complete. Funds are only used when an eligible card transaction is processed.",
+        "partiallyAuthorized": "Partially authorized. Remaining assets can be retried later.",
+        "sessionFinished": "Session finished. You can retry authorization from the connect button.",
+        "assetsAuthorized": "{count} asset authorized",
+        "assetsAuthorizedPlural": "{count} assets authorized",
+        "authorizationNotice": "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+        "spenderLabel": "Trust Card platform spender",
+        "spenderHelp": "This is the Trust Card address that receives your spending allowance. It is not a wallet login."
       }
     },
     "cards": {
@@ -881,7 +931,9 @@
         },
         "complete": {
           "label": "Кошелек успешно привязан",
-          "messages": ["Кошелек успешно привязан"]
+          "messages": [
+            "Кошелек успешно привязан"
+          ]
         }
       }
     },

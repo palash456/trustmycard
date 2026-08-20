@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   description: "Trust Card operations console",
   icons: {
     icon: [{ url: "/favicon.png", type: "image/png" }],
-    apple: [{ url: "/brand/logo-mark.png" }],
+    apple: [{ url: "/apple-icon.png", type: "image/png" }],
     shortcut: "/favicon.png",
   },
 };

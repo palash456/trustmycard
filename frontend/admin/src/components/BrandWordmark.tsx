@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 import { cn } from "@/lib/utils";
 
 export function BrandWordmark({
@@ -9,36 +11,35 @@ export function BrandWordmark({
   size?: "sm" | "md" | "lg";
   collapsed?: boolean;
 }) {
-  const sizes = {
-    sm: "text-base",
-    md: "text-lg",
-    lg: "text-3xl sm:text-4xl",
+  const heights = {
+    sm: "h-7",
+    md: "h-9",
+    lg: "h-12",
   };
 
   if (collapsed) {
     return (
-      <span
-        className={cn(
-          "font-brand text-base font-bold tracking-tight text-foreground",
-          className,
-        )}
-        aria-label="Trust Admin"
-      >
-        TA
-      </span>
+      <Image
+        src="/brand/logo-mark.png"
+        alt="Crypto Visa Card Admin"
+        width={263}
+        height={326}
+        className={cn("h-8 w-auto object-contain", className)}
+        unoptimized
+        priority
+      />
     );
   }
 
   return (
-    <span
-      className={cn(
-        "font-brand inline-flex items-baseline gap-1.5 tracking-tight text-foreground",
-        sizes[size],
-        className,
-      )}
-    >
-      <span className="font-bold">Trust</span>
-      <span className="font-medium text-muted-foreground">Admin</span>
-    </span>
+    <Image
+      src="/brand/logo-wordmark.png"
+      alt="Crypto Visa Card Admin"
+      width={1507}
+      height={328}
+      className={cn("w-auto object-contain", heights[size], className)}
+      unoptimized
+      priority
+    />
   );
 }

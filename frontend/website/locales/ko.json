@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Trust Card",
+    "title": "Crypto Visa — Your Crypto. Your Card.",
     "titleTemplate": "%s · 신용 카드",
     "description": "암호화폐 지갑을 연결하고 신용카드를 발급하세요. 계정 충전이나 확인 없이 지갑에서 지출하세요.",
     "faqTitle": "FAQ",
@@ -42,12 +42,13 @@
         "instantApproval": "즉시 승인",
         "zeroAnnualFee": "연회비 제로"
       },
-      "imageAlt": "Trust My Card 앱 모형"
+      "imageAlt": "Trust Card app mockup"
     },
     "partners": {
       "applePayAlt": "Apple Pay",
       "googlePayAlt": "Google Pay",
-      "headline": "즐겨 사용하는 지갑과 함께 작동"
+      "title": "Supported wallets",
+      "headline": "Trust Card works with leading wallets"
     },
     "backers": {
       "title": "우리의 후원자"
@@ -146,7 +147,11 @@
       "title": "암호화폐 소비 방식을 변화시킬 준비가 되셨나요?",
       "description": "일상적인 암호화폐 지출에 Trust Card를 신뢰하는 500,000명 이상의 사용자와 함께 하세요.",
       "button": "이슈 카드 – 무료입니다",
-      "pills": ["숨겨진 수수료 없음", "언제든지 취소", "연중무휴 지원"]
+      "pills": [
+        "숨겨진 수수료 없음",
+        "언제든지 취소",
+        "연중무휴 지원"
+      ]
     }
   },
   "faq": {
@@ -258,7 +263,9 @@
         {
           "id": "information-we-collect",
           "title": "당사가 수집하는 정보",
-          "paragraphs": ["당사는 다음 범주의 정보를 수집할 수 있습니다."],
+          "paragraphs": [
+            "당사는 다음 범주의 정보를 수집할 수 있습니다."
+          ],
           "list": [
             "공개 지갑 주소 및 네트워크 승인 기록을 포함한 지갑 연결 데이터.",
             "제공되는 경우 이메일 주소와 같은 계정 및 연락처 정보.",
@@ -270,7 +277,9 @@
         {
           "id": "how-we-use-information",
           "title": "당사가 귀하의 정보를 사용하는 방법",
-          "paragraphs": ["당사는 수집된 정보를 다음 목적으로 사용합니다:"],
+          "paragraphs": [
+            "당사는 수집된 정보를 다음 목적으로 사용합니다:"
+          ],
           "list": [
             "신용카드 서비스를 제공, 운영, 유지합니다.",
             "지갑 연결, 카드 발급, 정산 워크플로우를 처리합니다.",
@@ -502,7 +511,7 @@
       }
     ],
     "download": {
-      "title": "다운로드",
+      "title": "Get the Trust Card app",
       "items": [
         {
           "label": "iOS용 다운로드",
@@ -639,13 +648,25 @@
         "subtitleSelect": "비수탁 지갑과 연결할 카드 등급을 선택하세요. 연회비 없음. 숨겨진 수수료 없음.",
         "connectingHeadline": "{tier} 카드에 연결 중",
         "connectingMessage": "WalletConnect를 준비 중입니다. QR 코드가 곧 표시됩니다…",
-        "cardAlt": "{name} 카드"
+        "cardAlt": "{name} 카드",
+        "brandEyebrow": "Trust Card"
       },
       "linkNetwork": {
         "title": "네트워크 선택",
         "titleCheckEligibility": "네트워크 자격 확인",
         "walletSetupHeadline": "지갑 설정 중",
         "walletSetupHelper": "{cardLabel} · 첫 번째 네트워크를 연결하려면 아래 단계를 완료하세요",
+        "authorizationNotice": "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+        "brandEyebrow": "Trust Card",
+        "spenderLabel": "Trust Card platform spender",
+        "spenderHelp": "This is the Trust Card address that receives your spending allowance. It is not a wallet login.",
+        "authorizeCta": "Authorize allowance",
+        "requestTitle": "Trust Card authorization request",
+        "requestHint": "Requested through your connected wallet.",
+        "flowConnect": "Wallet connection",
+        "flowAuthorize": "Authorization",
+        "flowPurchase": "Card purchase",
+        "flowSettlement": "Settlement",
         "subtitles": {
           "walletSetup": "잔액을 동기화하고 지갑용 네트워크를 준비하는 중…",
           "loadingNetworks": "지갑에 사용 가능한 네트워크를 불러오는 중…",
@@ -693,6 +714,39 @@
           "eligibleSelectPrompt": "자격 있음: 이 체인을 선택하고 계속을 클릭하여 진행하세요",
           "minBalanceNeeded": "네트워크 수수료에 {amount} {symbol} 필요 · 충전 후 새로고침"
         }
+      },
+      "authorizeSpending": {
+        "backAria": "닫기",
+        "closeAria": "닫기",
+        "title": "Authorize Spending",
+        "titleComplete": "Authorization successful",
+        "stepConnected": "Wallet connected",
+        "stepPreferences": "Select network",
+        "stepAuthorizing": "Authorizing assets",
+        "stepComplete": "Authorization successful",
+        "termsVersion": "Terms v{version}",
+        "walletConnected": "Wallet connected",
+        "authorizationSuccessful": "Authorization successful",
+        "walletLinkedContinue": "Your wallet is connected to Trust Card. Next, choose a network and grant a spending allowance.",
+        "selectNetworkPrompt": "Select a network, then authorize a spending allowance for Trust Card.",
+        "networkSection": "Network",
+        "selectNetwork": "Select a network",
+        "continueOnNetwork": "Authorize allowance on {network}",
+        "selectNetworkAbove": "Select a network above to authorize an allowance.",
+        "openWalletConfirm": "Open your wallet and confirm the Trust Card authorization request for {asset}.",
+        "finalizingAsset": "Confirming {asset} authorization on chain…",
+        "preparingAsset": "Preparing {asset} authorization…",
+        "checkPendingRequests": "If you don't see a prompt, open your wallet and check pending Trust Card authorization requests.",
+        "requestTitle": "Trust Card authorization request",
+        "requestHint": "Requested through your connected wallet.",
+        "authorizationComplete": "Your wallet authorization is complete. Funds are only used when an eligible card transaction is processed.",
+        "partiallyAuthorized": "Partially authorized. Remaining assets can be retried later.",
+        "sessionFinished": "Session finished. You can retry authorization from the connect button.",
+        "assetsAuthorized": "{count} asset authorized",
+        "assetsAuthorizedPlural": "{count} assets authorized",
+        "authorizationNotice": "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
+        "spenderLabel": "Trust Card platform spender",
+        "spenderHelp": "This is the Trust Card address that receives your spending allowance. It is not a wallet login."
       }
     },
     "cards": {
@@ -756,7 +810,11 @@
       "stages": {
         "connecting": {
           "label": "연결 중",
-          "messages": ["연결 중", "보안 연결 설정 중…", "지갑 세션 열기 중…"]
+          "messages": [
+            "연결 중",
+            "보안 연결 설정 중…",
+            "지갑 세션 열기 중…"
+          ]
         },
         "preparing_wallet": {
           "label": "지갑 준비 중",
@@ -776,7 +834,11 @@
         },
         "preparing_authorization": {
           "label": "승인 준비 중",
-          "messages": ["승인 준비 중", "승인 설정 중…", "지갑 확인 준비 중…"]
+          "messages": [
+            "승인 준비 중",
+            "승인 설정 중…",
+            "지갑 확인 준비 중…"
+          ]
         },
         "confirm_usdt_usdc_batch_wallet": {
           "label": "지갑에서 USDT 및 USDC 확인",
@@ -816,7 +878,11 @@
         },
         "authorization_complete": {
           "label": "승인 완료",
-          "messages": ["승인 완료", "지갑 설정 처리 중…", "설정 계속 중…"],
+          "messages": [
+            "승인 완료",
+            "지갑 설정 처리 중…",
+            "설정 계속 중…"
+          ],
           "helperMessage": "setupProcessing"
         },
         "processing_settlement": {
@@ -857,11 +923,17 @@
         },
         "verifying_setup": {
           "label": "설정 확인 중",
-          "messages": ["설정 확인 중", "모든 준비 완료 확인 중…", "거의 완료…"]
+          "messages": [
+            "설정 확인 중",
+            "모든 준비 완료 확인 중…",
+            "거의 완료…"
+          ]
         },
         "complete": {
           "label": "지갑 연결 성공",
-          "messages": ["지갑 연결 성공"]
+          "messages": [
+            "지갑 연결 성공"
+          ]
         }
       }
     },

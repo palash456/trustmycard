@@ -14,12 +14,17 @@ OUT = ROOT / "translation-arrays"
 
 LOCALE_TARGETS = {
     "ar": "ar",
-    "ru": "ru",
-    "uk": "uk",
-    "tr": "tr",
+    "de": "de",
+    "es": "es",
+    "fr": "fr",
+    "hi": "hi",
     "ja": "ja",
-    "zh": "zh-CN",
+    "ko": "ko",
     "pt": "pt",
+    "ru": "ru",
+    "tr": "tr",
+    "uk": "uk",
+    "zh": "zh-CN",
 }
 
 PLACEHOLDER_RE = re.compile(r"(\{[a-zA-Z_]+\}|%s)")

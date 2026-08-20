@@ -27,7 +27,8 @@ export async function generateMetadata(): Promise<Metadata> {
     applicationName: "Trust Card",
     icons: {
       icon: [{ url: "/icon.png", type: "image/png" }],
-      apple: [{ url: "/apple-icon.png" }],
+      apple: [{ url: "/apple-icon.png", type: "image/png" }],
+      shortcut: "/icon.png",
     },
     openGraph: {
       title,
