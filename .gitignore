@@ -1,2 +1,68 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Builds
+dist/
+.next/
+out/
+build/
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+tsconfig.build.tsbuildinfo
+
+# Next.js generated (admin/marketing next-env.d.ts are tracked)
+frontend/website/next-env.d.ts
+
+# Testing
+coverage/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+**/.env.local
+
+# Config secrets (copy from platform.env.example)
+config/platform.env
+
+# Profile secrets (copy from *.example in each profile folder)
+env/profiles/**/backend.env
+env/profiles/**/website.env
+env/profiles/**/admin.env
+
+# Deploy artifacts
+deploy/compiled/
+deploy/state/
+deploy/manifest.production.yaml
+deploy/provider.credentials.env
+
+# Generated runtime config — never commit live WEBSITE_DOMAIN / META_PIXEL_ID values
+deploy/runtime-config/production.json
+deploy/runtime-config/audit.ndjson
+deploy/runtime-config/.update.lock
+!deploy/runtime-config/production.template.json
+
+# Vercel
 .vercel
-.env*
+
+# Logs / OS
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.DS_Store
+Thumbs.db
+*.pem
+
+# IDE
+.idea/
+.vscode/
+*.swp
