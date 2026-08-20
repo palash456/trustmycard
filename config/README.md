@@ -7,7 +7,7 @@
 | `config/load-env.mjs`    | Shared loader (reads `config/platform.env` + profile app env)                       |
 | `config/website-domain.mjs` | Resolves `WEBSITE_DOMAIN` and `https://api.<domain>` from runtime config or env |
 
-Run `npm run setup` from repo root to create `config/platform.env` from `platform.env.example`, then fill secrets. Never commit live `config/platform.env`.
+Run `npm run setup` from repo root to create `config/platform.env` from `platform.env.example` and apply secrets from `env/vault/` when present. Export/push password-protected `env/vault*.zip` for new machines — see [environments.md](../docs/infrastructure/environments.md). Never commit live `config/platform.env` or the `env/vault/` folder.
 
 Production `WEBSITE_DOMAIN` / `META_PIXEL_ID` live in `deploy/runtime-config/production.json` (see `docs/operations/runtime-config.md`). `load-env.mjs` hydrates empty env placeholders from that file.
 

@@ -20,7 +20,7 @@ Use this when you rotate the **platform wallet** that receives user approvals an
 **Edit `config/platform.env`** — the only place you change spender addresses and signing keys.
 
 ```bash
-cp config/platform.env.example config/platform.env   # first-time setup
+cp config/platform.env.example config/platform.env   # or: npm run setup
 # edit config/platform.env
 # restart backend + website
 ```

@@ -2,7 +2,7 @@
 
 ## Profile files
 
-Templates live in `env/profiles/production/`. Copy examples to live files locally; on Render, set equivalent keys in the dashboard (or sync via Doppler).
+Templates live in `env/profiles/$TMC_ENV/*.env.example`. Bootstrap with `npm run setup` from repo root. Secrets are not in git as live files — use the vault export/import flow in [environments.md](./environments.md): `npm run setup:export:all` creates a password-protected `env/vaultDDMMHHmmss.zip` (pushable); on a new machine run `npm run setup:import` then `npm run setup:all`. Zip password: `Microsoft@2025` + `HHmmss` from the filename.
 
 | File                  | Used by                                             |
 | --------------------- | --------------------------------------------------- |

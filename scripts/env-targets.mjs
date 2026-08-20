@@ -46,6 +46,29 @@ export const RUNTIME_FILES = [
 
 export const VAULT_DIR = "env/vault";
 
+/** vault2008213703 → day 20, month 08, hour 21, minute 37, second 03 (local time) */
+export function vaultZipBasename(date = new Date()) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `vault${pad(date.getDate())}${pad(date.getMonth() + 1)}${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+}
+
+export function vaultZipRel(date = new Date()) {
+  return join("env", `${vaultZipBasename(date)}.zip`);
+}
+
+/** vault2008213703 → Microsoft@2025213703 (HHmmss from zip name) */
+export function vaultZipPasswordFromBasename(basename) {
+  const base = String(basename).replace(/\.zip$/i, "");
+  const match = base.match(/^vault(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/);
+  if (!match) {
+    throw new Error(
+      `Invalid vault zip name: ${basename} (expected vaultDDMMHHmmss.zip)`,
+    );
+  }
+  const [, , , hh, mm, ss] = match;
+  return `Microsoft@2025${hh}${mm}${ss}`;
+}
+
 export function repoRoot() {
   return ROOT;
 }

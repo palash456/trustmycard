@@ -33,9 +33,15 @@ See [docs/infrastructure/secrets.md](../../docs/infrastructure/secrets.md).
 npm run setup                  # development profile
 npm run setup:production       # production + deploy files
 npm run setup:all              # both profiles + deploy
+
+npm run setup:export           # export dev secrets → env/vault/ + password-protected zip
+npm run setup:export:all       # export all profiles + deploy (zip is git-pushable)
+npm run setup:import -- vaultDDMMHHmmss.zip   # unzip on new PC (password auto-derived)
 ```
 
-See `scripts/bootstrap-env.mjs --help` for flags (`--manifest`, `--force`, etc.).
+See `scripts/bootstrap-env.mjs --help` for flags (`--from`, `--manifest`, `--force`, etc.).
+
+**New machine:** run `npm run setup:export:all`, push `env/vaultDDMMHHmmss.zip`, then on the new PC: `npm run setup:import` + `npm run setup:all`. Zip password: `Microsoft@2025` + `HHmmss` from the filename. Full guide: [environments.md](../../docs/infrastructure/environments.md).
 
 ## Switch environments
 

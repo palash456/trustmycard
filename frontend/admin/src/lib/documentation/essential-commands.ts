@@ -14,6 +14,40 @@ export type EssentialCommandGroup = {
 
 export const ESSENTIAL_COMMAND_GROUPS: EssentialCommandGroup[] = [
   {
+    id: "env-setup",
+    title: "Environment setup (new machine)",
+    hint: "Run export on your main PC before moving to a new machine.",
+    commands: [
+      {
+        id: "setup-dev",
+        title: "Bootstrap dev env files",
+        command: "npm run setup",
+        description: "Create config/platform.env + development profile from templates",
+      },
+      {
+        id: "setup-all",
+        title: "Bootstrap all env files",
+        command: "npm run setup:all",
+        description: "Development + production profiles + deploy credentials",
+      },
+      {
+        id: "setup-export-all",
+        title: "Export secrets vault + zip",
+        command: "npm run setup:export:all",
+        description:
+          "Writes env/vault/ and password-protected env/vaultDDMMHHmmss.zip (pushable). Password: Microsoft@2025 + HHmmss",
+      },
+      {
+        id: "setup-import",
+        title: "Import vault zip on new PC",
+        command:
+          "npm run setup:import -- vaultDDMMHHmmss.zip && npm run setup:all",
+        description:
+          "Unzip with auto-derived password, then bootstrap env files with secrets",
+      },
+    ],
+  },
+  {
     id: "local-dev",
     title: "Local dev (daily)",
     hint: "Start backend before admin or website.",

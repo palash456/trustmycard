@@ -26,6 +26,23 @@ npm run dev:marketing
 
 Start backend before admin or website. **Live ops:** admin on Vercel → production API. **Local ops:** `npm run dev:admin` against localhost or production API.
 
+### Environment setup (new machine)
+
+```bash
+npm run setup                  # bootstrap dev env files from templates
+npm run setup:all              # dev + production + deploy files
+
+# Main PC — export secrets before moving to another machine:
+npm run setup:export:all       # → env/vault/ + env/vaultDDMMHHmmss.zip (password-protected, pushable)
+# Password: Microsoft@2025 + HHmmss  (vault2008213703.zip → Microsoft@2025213703)
+
+# New PC (use your zip filename, or omit for latest):
+npm run setup:import -- vault2009212902.zip
+npm run setup:all
+```
+
+See `docs/infrastructure/environments.md` for vault naming, zip password, and `--from` option.
+
 ### Stuck dev servers
 
 ```bash
@@ -103,20 +120,30 @@ Root `package.json` only installs Prettier (`npm install` at repo root optional)
 
 ### Environment files
 
+From repo root (replaces manual `cp` of every `*.example` file):
+
 ```bash
-PROFILE=development   # or production
-
-cp config/platform.env.example config/platform.env
-cp env/profiles/$PROFILE/backend.env.example   env/profiles/$PROFILE/backend.env
-cp env/profiles/$PROFILE/website.env.example   env/profiles/$PROFILE/website.env
-cp env/profiles/$PROFILE/admin.env.example     env/profiles/$PROFILE/admin.env
-
-# Production split Render deploy also:
-cp env/profiles/$PROFILE/backend-api.env.example    env/profiles/$PROFILE/backend-api.env
-cp env/profiles/$PROFILE/backend-worker.env.example env/profiles/$PROFILE/backend-worker.env
+npm run setup                  # development profile
+npm run setup:production       # production + deploy credentials
+npm run setup:all              # both profiles + deploy
 ```
 
-Never commit live `config/platform.env` or profile `*.env` files with secrets.
+**New machine / second PC** — git has templates only, not secrets:
+
+```bash
+# Main machine (whenever secrets change):
+npm run setup:export:all
+# → updates env/vault/ and creates env/vaultDDMMHHmmss.zip (password-protected, pushable)
+# Password: Microsoft@2025 + HHmmss  (vault2008213703.zip → Microsoft@2025213703)
+
+# New machine (replace filename with your zip):
+npm run setup:import -- vault2009212902.zip
+npm run setup:all
+```
+
+Alternative: `npm run setup:all -- --from /path/to/main/repo` (or `TMC_SETUP_SOURCE`).
+
+Never commit live `config/platform.env`, profile `*.env`, or `env/vault/` (folder). Password-protected `env/vault*.zip` files may be committed. See `docs/infrastructure/environments.md`.
 
 ### Database (local)
 

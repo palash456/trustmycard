@@ -1,4 +1,5 @@
 import {
+  DocCallout,
   DocCode,
   DocFlow,
   DocLink,
@@ -28,6 +29,46 @@ export const configurationPage: DocPage = {
             "Public settings exposed via GET /v1/api/settings/public to frontend.",
           ]}
         />
+      ),
+    },
+    {
+      id: "env-bootstrap",
+      title: "Env bootstrap & secrets vault",
+      content: (
+        <>
+          <DocP>
+            From repo root, <DocCode>npm run setup</DocCode> creates live env
+            files from tracked <DocCode>*.example</DocCode> templates. It merges
+            missing keys into existing files and fills empty values from{" "}
+            <DocCode>env/vault/</DocCode> when that folder exists.
+          </DocP>
+          <DocPre title="Setup commands">{`npm run setup                  # development profile
+npm run setup:production       # production + deploy credentials
+npm run setup:all              # both profiles + deploy`}</DocPre>
+          <DocP>
+            <strong>New machine / second PC</strong> — git stores templates only,
+            not private keys or database URLs. On your main machine:
+          </DocP>
+          <DocPre title="Export on main PC">{`npm run setup:export:all
+# env/vault/ (gitignored) + env/vaultDDMMHHmmss.zip (password-protected, pushable)
+# Password: Microsoft@2025 + HHmmss from filename
+# Example: vault2008213703.zip → Microsoft@2025213703`}</DocPre>
+          <DocP>On the new PC — pull the zip (or copy it), then from repo root:</DocP>
+          <DocPre title="Import on new PC">{`npm run setup:import -- vault2008213703.zip
+npm run setup:all`}</DocPre>
+          <DocP>
+            Alternative:{" "}
+            <DocCode>npm run setup:all -- --from /path/to/main/checkout</DocCode>{" "}
+            or set <DocCode>TMC_SETUP_SOURCE</DocCode>. See repo{" "}
+            <DocCode>docs/infrastructure/environments.md</DocCode>.
+          </DocP>
+          <DocCallout variant="warning">
+            Never commit <DocCode>config/platform.env</DocCode>, profile{" "}
+            <DocCode>*.env</DocCode>, or the <DocCode>env/vault/</DocCode>{" "}
+            folder. Password-protected <DocCode>env/vault*.zip</DocCode> files
+            may be committed and pushed.
+          </DocCallout>
+        </>
       ),
     },
     {

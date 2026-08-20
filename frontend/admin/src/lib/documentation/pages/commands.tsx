@@ -58,16 +58,22 @@ export const commandsPage: DocPage = {
         <>
           <DocPre title="Install dependencies">{`cd frontend && npm install
 cd backend && npm install`}</DocPre>
-          <DocPre title="Environment files">{`PROFILE=development   # or production
+          <DocPre title="Environment files (repo root)">{`# Bootstrap from templates (+ secrets from env/vault/ when present)
+npm run setup                  # development
+npm run setup:production       # production + deploy
+npm run setup:all              # both profiles + deploy
 
-cp config/platform.env.example config/platform.env
-cp env/profiles/$PROFILE/backend.env.example   env/profiles/$PROFILE/backend.env
-cp env/profiles/$PROFILE/website.env.example   env/profiles/$PROFILE/website.env
-cp env/profiles/$PROFILE/admin.env.example     env/profiles/$PROFILE/admin.env
+# New machine — on main PC first:
+npm run setup:export:all
+# → env/vault/ (local) + env/vaultDDMMHHmmss.zip (password-protected, git-pushable)
+# Password: Microsoft@2025 + HHmmss  (vault2008213703.zip → Microsoft@2025213703)
 
-# Production split Render deploy also:
-cp env/profiles/$PROFILE/backend-api.env.example    env/profiles/$PROFILE/backend-api.env
-cp env/profiles/$PROFILE/backend-worker.env.example env/profiles/$PROFILE/backend-worker.env`}</DocPre>
+# On new PC:
+npm run setup:import -- vault2009212902.zip
+npm run setup:all
+
+# Or from another checkout:
+npm run setup:all -- --from /path/to/main/repo`}</DocPre>
           <DocPre title="Database (local)">{`cd backend
 npm run prisma:generate
 npm run prisma:push          # dev schema sync

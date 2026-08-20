@@ -16,8 +16,8 @@ Runs **backend + wallet only** with **external** Neon Postgres + Upstash Redis. 
 
 ```bash
 npm run setup:production
-# fill backend.env (DATABASE_URL, REDIS_URL, keys) + website.env (NEXT_PUBLIC_*)
-# edit deploy/provider.credentials.env (VPS_HOST, VPS_USER, VPS_SSH_KEY)
+# Secrets: npm run setup:export:all → push env/vaultDDMMHHmmss.zip → npm run setup:import on new PC
+# Or fill backend.env, website.env, deploy/provider.credentials.env manually
 
 ./deploy.sh production --fresh --provider docker-vps
 ./deploy.sh production --provider docker-vps   # subsequent deploys

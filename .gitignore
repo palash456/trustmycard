@@ -39,7 +39,7 @@ env/profiles/**/backend.env
 env/profiles/**/website.env
 env/profiles/**/admin.env
 
-# Local secrets vault for npm run setup on another machine (see npm run setup:export)
+# Local secrets vault folder (gitignored). Password-protected env/vault*.zip files are tracked.
 env/vault/
 
 # Deploy artifacts

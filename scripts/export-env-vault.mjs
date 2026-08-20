@@ -1,14 +1,23 @@
 #!/usr/bin/env node
 /**
  * Export live gitignored env files into env/vault/ for setup on another machine.
+ * Also writes a password-protected env/vaultDDMMHHmmss.zip (git-trackable).
  *
- * Usage:
- *   npm run setup:export
- *   npm run setup:export:all
+ * Zip password: Microsoft@2025 + HHmmss from the filename
+ * (e.g. vault2008213703 → Microsoft@2025213703)
  */
+import { spawnSync } from "child_process";
 import { copyFileSync, existsSync, mkdirSync } from "fs";
 import { dirname, resolve } from "path";
-import { collectPlannedTargets, repoRoot, vaultPathFor } from "./env-targets.mjs";
+import {
+  collectPlannedTargets,
+  repoRoot,
+  VAULT_DIR,
+  vaultPathFor,
+  vaultZipBasename,
+  vaultZipPasswordFromBasename,
+  vaultZipRel,
+} from "./env-targets.mjs";
 
 const ROOT = repoRoot();
 
@@ -43,6 +52,11 @@ function parseArgs(argv) {
       case "-h":
         console.log(`Export live env files to env/vault/ for npm run setup on another machine.
 
+Creates env/vaultDDMMHHmmss.zip (password-protected, safe to commit/push).
+
+Password rule: Microsoft@2025 + HHmmss from zip name
+  vault2008213703.zip → Microsoft@2025213703
+
 Usage:
   npm run setup:export [-- options]
 
@@ -62,6 +76,45 @@ Options:
   }
 
   return opts;
+}
+
+function zipVault({ dryRun, at = new Date() }) {
+  const vaultDir = resolve(ROOT, VAULT_DIR);
+  const zipRel = vaultZipRel(at);
+  const zipPath = resolve(ROOT, zipRel);
+  const zipName = `${vaultZipBasename(at)}.zip`;
+  const password = vaultZipPasswordFromBasename(zipName);
+
+  if (!existsSync(vaultDir)) {
+    return { ok: false, reason: "vault folder missing" };
+  }
+
+  if (dryRun) {
+    return { ok: true, zipRel, zipPath, zipName, password, label: "would create" };
+  }
+
+  const result = spawnSync(
+    "zip",
+    ["-r", "-q", "-P", password, zipName, "vault"],
+    {
+      cwd: resolve(ROOT, "env"),
+      encoding: "utf8",
+    },
+  );
+
+  if (result.status !== 0) {
+    const detail = (result.stderr || result.stdout || "").trim();
+    return {
+      ok: false,
+      reason: detail || "zip command failed (install zip or use env/vault/ directly)",
+    };
+  }
+
+  if (!existsSync(zipPath)) {
+    return { ok: false, reason: "zip file was not created" };
+  }
+
+  return { ok: true, zipRel, zipPath, zipName, password, label: "created" };
 }
 
 function main() {
@@ -109,10 +162,24 @@ function main() {
 
   if (!exported.length) {
     console.log("\nNothing exported — create live env files first, then re-run.");
-  } else if (!opts.dryRun) {
+    return;
+  }
+
+  const exportedAt = new Date();
+  const zip = zipVault({ dryRun: opts.dryRun, at: exportedAt });
+  if (zip.ok) {
+    console.log(`\nArchive: ${zip.label} ${zip.zipRel}`);
+    console.log(`Password: ${zip.password}`);
+  } else {
+    console.log(`\nArchive: skipped (${zip.reason})`);
+  }
+
+  if (!opts.dryRun && zip.ok) {
     console.log(
-      "\nCopy env/vault/ to your new machine, then run: npm run setup:all",
+      `\nTransfer ${zip.zipRel} to your new machine (safe to git push), then:`,
     );
+    console.log(`  npm run setup:import -- ${zip.zipName}`);
+    console.log(`  npm run setup:all`);
   }
 }
 

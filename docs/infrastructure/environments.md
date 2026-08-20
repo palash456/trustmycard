@@ -19,7 +19,7 @@ For Render, `SERVICE_ROLE=api` loads `backend-api.env`; `SERVICE_ROLE=worker` lo
 
 ## One-time profile setup
 
-From repo root, bootstrap local secret files from tracked `*.example` templates (skips files that already exist):
+From repo root, bootstrap local secret files from tracked `*.example` templates. Existing files are merged (missing keys added); secrets are filled from `env/vault/` when present.
 
 ```bash
 # Local development (default)
@@ -32,18 +32,49 @@ npm run setup:production
 npm run setup:all
 ```
 
-**Secrets on a new machine** — git only has templates, not live keys. On your main machine first:
+### Secrets vault (new machine / second PC)
+
+Git only stores **templates** (`*.example`), not live private keys or database URLs. Use the vault workflow:
+
+**1. On your main machine** (whenever secrets change):
 
 ```bash
 npm run setup:export:all
 ```
 
-Copy `env/vault/` to the new machine (iCloud/USB/rsync), then run `npm run setup:all`.  
-Or point at another checkout: `npm run setup:all -- --from /path/to/main/repo`.
+This updates `env/vault/` (gitignored) and creates a **password-protected** zip in `env/` (safe to commit and push):
 
-Options: `npm run setup -- --help` (e.g. `--profile production`, `--include-deploy`, `--manifest micro-local`, `--force`).
+| File | Meaning |
+| ---- | ------- |
+| `env/vault2009212902.zip` | Exported **20** Sep, **21:29:02** (local time) |
+| Name format | `vault` + `DD` + `MM` + `HH` + `mm` + `ss` |
+| Password | `Microsoft@2025` + `HHmmss` from the filename |
 
-Fill secrets in the created files before starting services. Never commit live profile secrets.
+Example: `vault2008213703.zip` → password `Microsoft@2025213703`.
+
+Each export creates a **new** zip; older archives are kept.
+
+**2. Transfer** the zip to the new PC — `git pull` works if the zip was pushed.
+
+**3. On the new machine** (from repo root):
+
+```bash
+npm run setup:import -- vault2009212902.zip   # or: npm run setup:import (latest zip)
+npm run setup:all
+```
+
+`setup:import` derives the password from the filename automatically.
+
+**Alternatives**
+
+- Copy the whole `env/vault/` folder instead of a zip (iCloud/Dropbox synced project folder works automatically after export).
+- Point at another checkout: `npm run setup:all -- --from /path/to/main/repo` (or set `TMC_SETUP_SOURCE`).
+
+### Setup options
+
+`npm run setup -- --help` — e.g. `--profile production`, `--include-deploy`, `--manifest micro-local`, `--force` (overwrite files, disables merge).
+
+Never commit live `config/platform.env`, profile `*.env`, or `env/vault/` (folder). Password-protected `env/vault*.zip` files **may** be committed and pushed.
 
 ## Resource isolation
 
