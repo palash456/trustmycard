@@ -39,6 +39,9 @@ env/profiles/**/backend.env
 env/profiles/**/website.env
 env/profiles/**/admin.env
 
+# Local secrets vault for npm run setup on another machine (see npm run setup:export)
+env/vault/
+
 # Deploy artifacts
 deploy/compiled/
 deploy/state/

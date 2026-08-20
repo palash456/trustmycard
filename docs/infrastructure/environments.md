@@ -32,6 +32,15 @@ npm run setup:production
 npm run setup:all
 ```
 
+**Secrets on a new machine** — git only has templates, not live keys. On your main machine first:
+
+```bash
+npm run setup:export:all
+```
+
+Copy `env/vault/` to the new machine (iCloud/USB/rsync), then run `npm run setup:all`.  
+Or point at another checkout: `npm run setup:all -- --from /path/to/main/repo`.
+
 Options: `npm run setup -- --help` (e.g. `--profile production`, `--include-deploy`, `--manifest micro-local`, `--force`).
 
 Fill secrets in the created files before starting services. Never commit live profile secrets.
