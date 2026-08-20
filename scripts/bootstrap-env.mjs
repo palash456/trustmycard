@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Bootstrap local secret/config files from tracked *.example templates.
- * Safe by default: skips targets that already exist unless --force.
+ * Safe by default: copies missing targets; merges missing keys into existing
+ * .env files; skips non-env targets that already exist unless --force.
  *
  * Usage:
  *   npm run setup
@@ -9,7 +10,14 @@
  *   npm run setup -- --profile all --include-deploy --manifest micro-local
  *   npm run setup -- --dry-run
  */
-import { copyFileSync, existsSync, mkdirSync, readdirSync, writeFileSync } from "fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from "fs";
 import { dirname, join, relative, resolve } from "path";
 import { fileURLToPath } from "url";
 
@@ -123,9 +131,12 @@ Options:
   --include-deploy       Copy deploy/provider.credentials.env + deploy manifest
   --include-runtime      Copy runtime-config template + empty audit log
   --manifest <kind>      micro | micro-local | budget-json | budget-yaml (default: micro)
-  --force                Overwrite existing files
+  --force                Overwrite existing files (disables merge)
   --dry-run              Show actions without writing
   -h, --help             Show this help
+
+When a target .env file already exists, setup merges any keys from the
+template that are missing locally (existing values are never overwritten).
 `);
 }
 
@@ -193,6 +204,52 @@ function shouldIncludeExample(exampleRel, opts) {
   return profileMatches(exampleRel, opts.profile);
 }
 
+function isEnvTarget(targetRel) {
+  return targetRel.endsWith(".env");
+}
+
+function envKeysInContent(content) {
+  const keys = new Set();
+  for (const line of content.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+    keys.add(trimmed.slice(0, eq).trim());
+  }
+  return keys;
+}
+
+/** Append template keys missing from an existing .env file. */
+function mergeEnvFromExample(sourceContent, targetContent) {
+  const targetKeys = envKeysInContent(targetContent);
+  const missingLines = [];
+
+  for (const line of sourceContent.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    if (!targetKeys.has(key)) {
+      missingLines.push(line);
+    }
+  }
+
+  if (!missingLines.length) return null;
+
+  const needsNewline = targetContent.length > 0 && !targetContent.endsWith("\n");
+  const banner =
+    "\n# --- added by npm run setup (missing keys from template) ---\n";
+  return (
+    targetContent +
+    (needsNewline ? "\n" : "") +
+    banner +
+    missingLines.join("\n") +
+    "\n"
+  );
+}
+
 function copyOne({ sourceRel, targetRel, empty = false, opts, actions }) {
   const source = sourceRel ? resolve(ROOT, sourceRel) : null;
   const target = resolve(ROOT, targetRel);
@@ -203,6 +260,24 @@ function copyOne({ sourceRel, targetRel, empty = false, opts, actions }) {
   }
 
   if (existsSync(target) && !opts.force) {
+    if (!empty && source && isEnvTarget(targetRel)) {
+      const sourceContent = readFileSync(source, "utf8");
+      const targetContent = readFileSync(target, "utf8");
+      const merged = mergeEnvFromExample(sourceContent, targetContent);
+
+      if (!merged) {
+        actions.skipped.push({ target: targetRel, reason: "already up to date" });
+        return;
+      }
+
+      const label = opts.dryRun ? "would merge" : "merged";
+      if (!opts.dryRun) {
+        writeFileSync(target, merged, "utf8");
+      }
+      actions.merged.push({ target: targetRel, label });
+      return;
+    }
+
     actions.skipped.push({ target: targetRel, reason: "already exists" });
     return;
   }
@@ -254,7 +329,7 @@ function collectPlannedCopies(opts) {
 
 function main() {
   const opts = parseArgs(process.argv.slice(2));
-  const actions = { created: [], skipped: [] };
+  const actions = { created: [], merged: [], skipped: [] };
 
   const copies = collectPlannedCopies(opts);
   for (const item of copies) {
@@ -274,6 +349,13 @@ function main() {
     }
   }
 
+  if (actions.merged.length) {
+    console.log("\nMerged (added missing keys):");
+    for (const { target, label } of actions.merged) {
+      console.log(`  ${label ?? "merged"} ${target}`);
+    }
+  }
+
   if (actions.skipped.length) {
     console.log("\nSkipped:");
     for (const { target, reason } of actions.skipped) {
@@ -281,12 +363,19 @@ function main() {
     }
   }
 
-  if (!actions.created.length && !actions.skipped.length) {
+  if (
+    !actions.created.length &&
+    !actions.merged.length &&
+    !actions.skipped.length
+  ) {
     console.log("\nNo templates matched the selected options.");
   }
 
   console.log(
     "\nNext: fill secrets in the created files, then start dev services.",
+  );
+  console.log(
+    "Secrets (private keys, DATABASE_URL, VPS_HOST, …) are not in git — copy those from your other machine or secret store.",
   );
   console.log("Docs: docs/infrastructure/environments.md");
 }
