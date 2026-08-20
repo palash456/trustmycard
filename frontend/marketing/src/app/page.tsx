@@ -227,8 +227,8 @@ function HomeContent() {
                 <Image
                   src="/images/hero-img-one.png"
                   className="animate-float h-auto w-full object-contain"
-                  width={1024}
-                  height={1024}
+                  width={2048}
+                  height={2048}
                   priority
                   alt="Trust Card app mockup"
                 />
