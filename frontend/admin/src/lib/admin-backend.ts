@@ -6,13 +6,10 @@ import {
 } from "./log-env-cookie";
 import {
   getLocalDevBackendUrl,
+  isProductionLogSourceEnabled,
   resolveProductionBackendUrl,
 } from "./admin-env";
-import {
-  isLocalAdminDevelopment,
-  isLiveAdminPanel,
-  isProductionLogSourceEnabled,
-} from "./local-dev-policy";
+import { isLocalAdminDevelopment, isLiveAdminPanel } from "./local-dev-policy";
 
 export type AdminBackendConfig = {
   baseUrl: string;
@@ -126,8 +123,5 @@ export function resolveProxyBackend(
   return resolveActiveBackend(getter);
 }
 
-export {
-  isLocalAdminDevelopment,
-  isLiveAdminPanel,
-  isProductionLogSourceEnabled,
-} from "./local-dev-policy";
+export { isProductionLogSourceEnabled } from "./admin-env";
+export { isLocalAdminDevelopment, isLiveAdminPanel } from "./local-dev-policy";

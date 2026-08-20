@@ -1,5 +1,3 @@
-import { resolveProductionBackendUrl } from "./admin-env";
-
 /** Local admin panel: dev backend only unless production logs are explicitly enabled. */
 
 export function isLocalAdminDevelopment(): boolean {
@@ -9,14 +7,6 @@ export function isLocalAdminDevelopment(): boolean {
 /** Deployed admin (e.g. Vercel) — never show Development data source. */
 export function isLiveAdminPanel(): boolean {
   return !isLocalAdminDevelopment();
-}
-
-/** Production data source: opt-in flag plus production API URL and admin key. */
-export function isProductionLogSourceEnabled(): boolean {
-  if (process.env.ADMIN_ALLOW_PRODUCTION_LOGS !== "true") return false;
-  const apiKey = process.env.PRODUCTION_ADMIN_API_KEY?.trim();
-  if (!apiKey) return false;
-  return Boolean(resolveProductionBackendUrl());
 }
 
 export function isMonitoringAdminPath(pathname: string): boolean {
