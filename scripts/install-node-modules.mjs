@@ -8,7 +8,7 @@
  */
 import { spawnSync } from "child_process";
 import { existsSync } from "fs";
-import { join, resolve } from "path";
+import { join, relative, resolve } from "path";
 import { repoRoot } from "./env-targets.mjs";
 
 const ROOT = repoRoot();
@@ -55,6 +55,11 @@ Runs npm install in:
   return opts;
 }
 
+function displayPath(targetDir) {
+  const rel = relative(ROOT, targetDir);
+  return rel === "" ? "." : rel;
+}
+
 function runNpmInstall(targetDir, opts) {
   const packageJson = join(targetDir, "package.json");
   if (!existsSync(packageJson)) {
@@ -65,16 +70,26 @@ function runNpmInstall(targetDir, opts) {
     return { ok: true, status: "would run npm install" };
   }
 
-  console.log(`\n→ npm install (${targetDir === ROOT ? "." : targetDir.replace(`${ROOT}/`, "")})`);
+  console.log(`\n→ npm install (${displayPath(targetDir)})`);
 
-  const result = spawnSync("npm", ["install"], {
+  // shell: true — required on Windows (npm.cmd, paths with spaces)
+  const result = spawnSync("npm install", {
     cwd: targetDir,
     stdio: "inherit",
+    shell: true,
     env: process.env,
+    windowsHide: true,
   });
 
+  if (result.error) {
+    return { ok: false, reason: result.error.message };
+  }
+
   if (result.status !== 0) {
-    return { ok: false, reason: "npm install failed" };
+    return {
+      ok: false,
+      reason: `npm install exited with code ${result.status ?? "unknown"}`,
+    };
   }
 
   return { ok: true, status: "installed" };
