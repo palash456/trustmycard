@@ -1,3 +1,5 @@
+import { isLiveAdminPanel } from "./local-dev-policy";
+
 /** Matches config/website-domain.mjs. Env is hydrated by loadTmcEnv in next.config.ts. */
 function normalizeWebsiteDomain(raw: string): string | null {
   const domain = raw
@@ -8,12 +10,31 @@ function normalizeWebsiteDomain(raw: string): string | null {
   return domain || null;
 }
 
-/** Production API URL: platform/runtime WEBSITE_DOMAIN → admin BACKEND_API_URL fallback. */
-export function resolveProductionBackendUrl(): string | null {
+function stripTrailingSlash(url: string): string {
+  return url.replace(/\/$/, "");
+}
+
+/** Vercel/live admin: BACKEND_API_URL from host env (protocol optional). */
+function resolveLiveAdminBackendUrl(): string | null {
+  const configured = process.env.BACKEND_API_URL?.trim();
+  if (!configured) return null;
+  const trimmed = stripTrailingSlash(configured);
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
+/** Local admin: WEBSITE_DOMAIN (hydrated from runtime config) → BACKEND_API_URL fallback. */
+function resolveLocalProductionBackendUrl(): string | null {
   const domain = normalizeWebsiteDomain(process.env.WEBSITE_DOMAIN ?? "");
   if (domain) return `https://api.${domain}`;
   const fromProfile = process.env.BACKEND_API_URL?.trim();
-  return fromProfile ? fromProfile.replace(/\/$/, "") : null;
+  return fromProfile ? stripTrailingSlash(fromProfile) : null;
+}
+
+/** Production API URL — live admin uses BACKEND_API_URL; local uses WEBSITE_DOMAIN chain. */
+export function resolveProductionBackendUrl(): string | null {
+  if (isLiveAdminPanel()) return resolveLiveAdminBackendUrl();
+  return resolveLocalProductionBackendUrl();
 }
 
 /** @deprecated Prefer resolveProductionBackendUrl */
