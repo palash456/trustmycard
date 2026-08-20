@@ -23,14 +23,14 @@ export const metadata: Metadata = {
       "Connect your wallet and issue your Trust Card. Spend crypto at millions of merchants.",
     siteName: "Trust Card",
     type: "website",
-    images: [{ url: "/images/hero-app-mockup.png", alt: "Trust Card" }],
+    images: [{ url: "/images/hero-img-one.png", alt: "Trust Card" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Trust Card",
     description:
       "Connect your wallet and issue your Trust Card. Spend crypto at millions of merchants.",
-    images: ["/images/hero-app-mockup.png"],
+    images: ["/images/hero-img-one.png"],
   },
 };
 

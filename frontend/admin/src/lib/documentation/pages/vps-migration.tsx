@@ -34,6 +34,7 @@ export const vpsMigrationPage: DocPage = {
     "upstash",
     "rollback",
     "deploy.sh",
+    "flokinet",
     "confirm-external-data",
   ],
   sections: [
@@ -118,7 +119,7 @@ export const vpsMigrationPage: DocPage = {
         <>
           <DocP>
             Examples: DigitalOcean → Hetzner, DigitalOcean → Hostinger VPS,
-            or any VPS → another VPS. Docker, Caddy, <DocCode>micro</DocCode>{" "}
+            DigitalOcean → FlokiNet, or any VPS → another VPS. Docker, Caddy,{" "}
             topology, and application architecture <strong>remain unchanged</strong>.
             External Neon Postgres and Upstash Redis are unchanged.
           </DocP>
@@ -276,12 +277,22 @@ export const vpsMigrationPage: DocPage = {
             80/443). No manual certificate upload for the micro stack.
           </DocP>
           <DocP>
-            For Cloudflare or other DNS providers, see{" "}
+            <strong>Cloudflare (recommended):</strong> point apex,{" "}
+            <DocCode>api</DocCode>, and <DocCode>www</DocCode> A records to the
+            VPS IP. Use grey-cloud first to verify Caddy TLS, then optional
+            orange-cloud proxy. Full guide:{" "}
+            <DocCode>docs/infrastructure/cloudflare-setup.md</DocCode> and{" "}
+            <DocLink href="/documentation/deployment#cloudflare">
+              Deployment → Cloudflare DNS &amp; proxy
+            </DocLink>
+            .
+          </DocP>
+          <DocP>
+            Hostname change (not just IP)? See{" "}
             <DocLink href="/documentation/domain-migration">
               Domain Migration
-            </DocLink>{" "}
-            DNS sections — same A-record pattern applies when only the IP
-            changes.
+            </DocLink>
+            .
           </DocP>
         </>
       ),

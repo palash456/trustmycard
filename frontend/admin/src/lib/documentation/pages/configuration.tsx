@@ -231,6 +231,38 @@ NEXT_PUBLIC_PROJECT_ID=<walletconnect project id>`}</DocPre>
       ),
     },
     {
+      id: "eligibility-vars",
+      title: "Eligibility minimum balances",
+      content: (
+        <>
+          <DocP>
+            Pre-authorization gate thresholds for the wallet connect flow. Set in{" "}
+            <DocCode>config/platform.env</DocCode> as{" "}
+            <DocCode>NEXT_PUBLIC_{"{NETWORK}"}_MIN_*_BALANCE</DocCode>{" "}
+            (actual token units, not USD). Wired in{" "}
+            <DocCode>frontend/wallet-sdk/src/eligibility/eligibility-config.ts</DocCode>
+            .
+          </DocP>
+          <DocPre>{`# Networks: ETH, BSC, POLYGON, AVAX, ARB, BASE, TRON
+# Per network: MIN_NATIVE_BALANCE, MIN_USDT_BALANCE, MIN_USDC_BALANCE
+
+# Current policy (Aug 2026): all set to 0 (no minimum enforced)
+NEXT_PUBLIC_ETH_MIN_NATIVE_BALANCE=0
+NEXT_PUBLIC_ETH_MIN_USDT_BALANCE=0
+NEXT_PUBLIC_ETH_MIN_USDC_BALANCE=0
+# … same pattern for BSC, POLYGON, AVAX, ARB, BASE, TRON`}</DocPre>
+          <DocP>
+            <DocCode>0</DocCode> disables the minimum threshold (gate still runs). Raise
+            values when you want to block authorization below a funding level. Restart
+            / rebuild the website after changes — keys are{" "}
+            <DocCode>NEXT_PUBLIC_*</DocCode>. Mirror production in{" "}
+            <DocCode>env/vault/config/platform.env</DocCode>. See repo{" "}
+            <DocCode>docs/architecture/eligibility-layer.md</DocCode>.
+          </DocP>
+        </>
+      ),
+    },
+    {
       id: "runtime-settings",
       title: "Runtime DB settings",
       content: (

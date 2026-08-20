@@ -34,10 +34,10 @@ See [deploy/README.md](../../deploy/README.md#wallet-env-websiteenv). On VPS (`d
 | Provider           | Status                                                              |
 | ------------------ | ------------------------------------------------------------------- |
 | `local`            | Docker Compose on this machine                                      |
-| `docker-vps`       | Build locally → stream images → compose up on VPS (no remote build) |
+| `docker-vps`       | Build locally → stream images → compose up on VPS (no remote build). Works on DigitalOcean, Hetzner, Hostinger VPS, FlokiNet, etc. |
 | `render`           | Stub (not implemented) — use `render-budget.yaml` / `render.yaml` instead |
 | `hostinger-static` | Stub (marketing FTP upload)                                         |
 
-VPS provider / droplet migration guide: [vps-migration.md](./vps-migration.md).
+VPS provider / droplet migration: [vps-migration.md](./vps-migration.md). DNS + WAF: [cloudflare-setup.md](./cloudflare-setup.md).
 
 See [fresh-host-recovery-test.md](./fresh-host-recovery-test.md).

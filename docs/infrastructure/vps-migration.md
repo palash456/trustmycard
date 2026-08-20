@@ -27,13 +27,17 @@ Two separate config layers — do not merge them.
 
 **Do not** put `VPS_*` or SSH keys into `config/platform.env`. They are never read by running containers and must not be synced to the VPS as application config.
 
+### Supported VPS providers
+
+Any Debian/Ubuntu VPS with SSH, ports **80/443** open, and **512 MB+** RAM works with `docker-vps`. Documented examples: DigitalOcean, Hetzner, Hostinger VPS (not shared web hosting), FlokiNet. Only `deploy/provider.credentials.env` changes between providers.
+
 `deploy/manifest.production.json` stays unchanged for VPS-to-VPS moves: `provider: docker-vps`, `topology: micro`, `data.mode: external`.
 
 ---
 
 ## VPS provider → VPS provider
 
-Examples: DigitalOcean → Hetzner, DigitalOcean → Hostinger VPS, Hetzner → another Hetzner box.
+Examples: DigitalOcean → Hetzner, DigitalOcean → Hostinger VPS, DigitalOcean → FlokiNet, Hetzner → another Hetzner box.
 
 **Unchanged:** Docker images, Caddy edge, `micro` topology, application code, Neon Postgres, Upstash Redis, `WEBSITE_DOMAIN`, `env/profiles/production/*` (except when infra URLs change).
 
@@ -43,7 +47,7 @@ Examples: DigitalOcean → Hetzner, DigitalOcean → Hostinger VPS, Hetzner → 
    - Always: `VPS_HOST` → new server IP/hostname
    - If needed: `VPS_USER`, `VPS_SSH_KEY`, `VPS_DEPLOY_PATH`
 
-2. **DNS** (registrar or Cloudflare)
+2. **DNS** (Cloudflare recommended — see [cloudflare-setup.md](./cloudflare-setup.md))
    - Apex (`@`) A record → new VPS IP
    - `api` A record → same new VPS IP
    - Optional `www` → new VPS IP or CNAME per your layout

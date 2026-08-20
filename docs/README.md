@@ -75,6 +75,7 @@ Deploy guides:
 | [settlement-and-native-execution.md](./architecture/settlement-and-native-execution.md)       | Two-phase settlement and native policy            |
 | [event-driven-collection.md](./architecture/event-driven-collection.md)                       | Collection queue modes                            |
 | [platform-configuration.md](./architecture/platform-configuration.md)                         | Platform env and spender config                   |
+| [eligibility-layer.md](./architecture/eligibility-layer.md)                                   | Connect-flow minimum balance gate                 |
 | [collection-rollout.md](./architecture/collection-rollout.md)                                 | Collection rollout stages                         |
 | [semantic-ids.md](./architecture/semantic-ids.md)                                             | Journey `flow-*` IDs and child `publicId` formats |
 | [approval-flow-three-way-comparison.md](./architecture/approval-flow-three-way-comparison.md) | Competitor vs TMC Old vs TMC Current              |
@@ -93,10 +94,11 @@ Deploy guides:
 | [secrets.md](./infrastructure/secrets.md)                                           | Env var matrix per service                            |
 | [mytrustvisa-domain-security.md](./infrastructure/mytrustvisa-domain-security.md)   | **Current production** domain & security              |
 | [domain-migration-mytrustvisa.md](./infrastructure/domain-migration-mytrustvisa.md) | exampleUrl.com migration quick ref                 |
-| [vps-migration.md](./infrastructure/vps-migration.md)                             | VPS provider / droplet moves, VPS → Render           |
+| [vps-migration.md](./infrastructure/vps-migration.md)                             | VPS moves (DO, Hetzner, FlokiNet, …), VPS → Render |
+| [cloudflare-setup.md](./infrastructure/cloudflare-setup.md)                       | **Cloudflare DNS + proxy + WAF** for micro VPS      |
 | [marketing-access.md](./infrastructure/marketing-access.md)                         | **Deprecated** — old `/connect` gate (archive linked) |
 | [meta-ads-setup-guide.md](./marketing/meta-ads-setup-guide.md)                      | Meta / Instagram ads (media buyers)                   |
-| [cloudflare-edge.md](./infrastructure/cloudflare-edge.md)                           | WAF and admin SSO                                     |
+| [cloudflare-edge.md](./infrastructure/cloudflare-edge.md)                           | Legacy — see cloudflare-setup.md                      |
 | [disaster-recovery.md](./infrastructure/disaster-recovery.md)                       | Backups and rebuild                                   |
 
 ### Operations
@@ -107,6 +109,7 @@ Deploy guides:
 | [operations/README.md](./operations/README.md)                                      | Index                       |
 | [observability.md](./operations/observability.md)                                   | Logging, metrics, timelines |
 | [change-spender-collector-guide.md](./operations/change-spender-collector-guide.md) | Spender/collector rotation  |
+| [i18n-locale-sync.md](./operations/i18n-locale-sync.md)                               | Website locale sync workflow |
 | [admin-pipeline-validation.md](./operations/admin-pipeline-validation.md)           | Post-deploy QA checklist    |
 
 ### API, database, security, testing

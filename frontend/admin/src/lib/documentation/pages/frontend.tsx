@@ -99,6 +99,52 @@ export const frontendPage: DocPage = {
       ),
     },
     {
+      id: "site-identity",
+      title: "Site identity & tab title",
+      content: (
+        <>
+          <DocP>
+            Public browser tab title comes from{" "}
+            <DocCode>meta.title</DocCode> in locale files (generated from{" "}
+            <DocCode>frontend/website/scripts/_locale-data/en.mjs</DocCode>
+            ). Current value across all languages:{" "}
+            <strong>Crypto Visa — Your Crypto. Your Card.</strong>
+          </DocP>
+          <DocP>
+            In-product branding still uses <DocCode>brand.name</DocCode> (
+            <DocCode>Trust Card</DocCode>) in headers, footer, and wallet copy.
+            Next.js layout also sets <DocCode>applicationName</DocCode> and OpenGraph{" "}
+            <DocCode>siteName</DocCode> to Trust Card — only{" "}
+            <DocCode>meta.title</DocCode> uses the Crypto Visa tagline.
+          </DocP>
+        </>
+      ),
+    },
+    {
+      id: "i18n",
+      title: "Website i18n (13 locales)",
+      content: (
+        <>
+          <DocP>
+            English source:{" "}
+            <DocCode>frontend/website/scripts/_locale-data/en.mjs</DocCode>.
+            Output: <DocCode>frontend/website/locales/*.json</DocCode>. Do not
+            hand-edit every language file — use the sync scripts.
+          </DocP>
+          <DocPre title="Locale sync (from frontend/website/scripts/_locale-data)">{`python3 auto-translate-locales.py      # site strings
+node export-en-wallet.mjs
+python3 auto-translate-wallets.py       # wallet modal strings
+python3 fix-english-leftovers.py
+cd .. && node quick-build-locales.mjs && node generate-locales.mjs`}</DocPre>
+          <DocP>
+            Full runbook:{" "}
+            <DocCode>docs/operations/i18n-locale-sync.md</DocCode>. Redeploy
+            website after locale JSON changes.
+          </DocP>
+        </>
+      ),
+    },
+    {
       id: "shared-package",
       title: "Shared package exports",
       content: (

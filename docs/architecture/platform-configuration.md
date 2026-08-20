@@ -74,7 +74,8 @@ The response includes `config` (`PublicPlatformConfig`) with wallets, approval d
 | Change                     | Action                    |
 | -------------------------- | ------------------------- |
 | `platform.env`             | Restart backend + website |
+| `NEXT_PUBLIC_*` eligibility mins | Rebuild + restart website |
 | Admin Settings save        | Hot-reload (no restart)   |
 | `backend/.env.local` infra | Restart backend only      |
 
-See also: [change-spender-collector-guide.md](../operations/change-spender-collector-guide.md)
+See also: [change-spender-collector-guide.md](../operations/change-spender-collector-guide.md), [eligibility-layer.md](./eligibility-layer.md)

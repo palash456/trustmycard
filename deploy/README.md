@@ -99,3 +99,18 @@ Moving between VPS providers (DigitalOcean → Hetzner, new droplet, etc.) while
 ```
 
 Do **not** put SSH credentials in `config/platform.env`. Full guide: [docs/infrastructure/vps-migration.md](../docs/infrastructure/vps-migration.md).
+
+## Post-deploy checklist
+
+After the stack is up, confirm **runtime config** — not only containers:
+
+| Task | Files | Notes |
+| ---- | ----- | ----- |
+| DNS + TLS | Cloudflare A records → VPS IP | [cloudflare-setup.md](../docs/infrastructure/cloudflare-setup.md) |
+| Domain / Meta Pixel | `deploy/runtime-config/production.json` | `npm run config:sync-vps` after local updates |
+| Platform policy | `config/platform.env`, `env/vault/config/platform.env` | Eligibility `NEXT_PUBLIC_*_MIN_*_BALANCE`, wallets, flags |
+| `NEXT_PUBLIC_*` changes | Rebuild wallet image | `--skip-images` is **not** enough |
+| Locales / tab title | `frontend/website/locales/*.json` | [i18n-locale-sync.md](../docs/operations/i18n-locale-sync.md) |
+| Smoke tests | curl apex + `api.` settings/public | Also WalletConnect on `/` |
+
+Automated verify at end of deploy: `deploy/core/verify.mjs`.

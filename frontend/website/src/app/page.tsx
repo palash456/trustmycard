@@ -282,10 +282,10 @@ function MarketingHomeContent() {
               <div className="relative w-full max-w-[400px] sm:max-w-[620px] lg:max-w-[560px]">
                 <div className="absolute inset-0 -z-10 scale-90 rounded-full bg-indigo-400/20 blur-3xl" />
                 <Image
-                  src="/images/hero-app-mockup.png"
+                  src="/images/hero-img-one.png"
                   className="animate-float h-auto w-full object-contain"
-                  width={628}
-                  height={576}
+                  width={1024}
+                  height={1024}
                   priority
                   alt={t("home.hero.imageAlt")}
                 />

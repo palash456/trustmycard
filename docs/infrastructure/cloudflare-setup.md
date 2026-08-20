@@ -247,6 +247,10 @@ PLATFORM_SECURITY_EMAIL="security@yourdomain.com"
 
 These are compiled into the wallet Docker image at build time.
 
+**Eligibility minimum balances** (`NEXT_PUBLIC_*_MIN_*_BALANCE` in `config/platform.env`) are also baked at wallet build time. Current policy: all `0`. Mirror in `env/vault/config/platform.env` for production vault sync. Changing them requires a **full** wallet redeploy (not `--skip-images`). See [eligibility-layer.md](../architecture/eligibility-layer.md).
+
+**Locales / browser tab title** — bundled in the wallet image. After editing `frontend/website/locales/*.json`, rebuild and redeploy. See [i18n-locale-sync.md](../operations/i18n-locale-sync.md).
+
 ---
 
 ## If Cloudflare proxy causes issues
@@ -263,6 +267,8 @@ These are compiled into the wallet Docker image at build time.
 
 ## Related docs
 
+- [i18n-locale-sync.md](../operations/i18n-locale-sync.md) — locale rebuild before deploy
+- [eligibility-layer.md](../architecture/eligibility-layer.md) — `NEXT_PUBLIC_*_MIN_*_BALANCE`
 - [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md) — URL map and env vars
 - [hosting-abuse-resilience.md](./hosting-abuse-resilience.md) — why Cloudflare replaces Hostinger
 - [deploy/README.md](../../deploy/README.md) — full micro VPS deploy guide

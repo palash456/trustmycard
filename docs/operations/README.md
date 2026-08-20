@@ -16,6 +16,7 @@ Runbooks, observability standards, and operator checklists for Trust My Card.
 | Doc                                                                      | Description                                                |
 | ------------------------------------------------------------------------ | ---------------------------------------------------------- |
 | [change-spender-collector-guide.md](./change-spender-collector-guide.md) | Rotate spender/collector wallet addresses and keys         |
+| [i18n-locale-sync.md](./i18n-locale-sync.md)                             | Sync website locales from English (`en.mjs` workflow)      |
 | [platform-constants-audit.md](./platform-constants-audit.md)             | Point-in-time audit of platform env constants (2026-07-31) |
 
 ## Validation checklists

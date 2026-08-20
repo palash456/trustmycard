@@ -194,6 +194,22 @@ export const walletFlowsPage: DocPage = {
       ),
     },
     {
+      id: "eligibility-config",
+      title: "Eligibility configuration",
+      content: (
+        <>
+          <DocP>
+            Minimum balances are configured in{" "}
+            <DocCode>config/platform.env</DocCode> (
+            <DocCode>NEXT_PUBLIC_*_MIN_*_BALANCE</DocCode>). Implementation:{" "}
+            <DocCode>wallet-sdk/src/eligibility/</DocCode>. As of Aug 2026 all
+            thresholds are <DocCode>0</DocCode> (no minimum enforced). See{" "}
+            <DocCode>docs/architecture/eligibility-layer.md</DocCode>.
+          </DocP>
+        </>
+      ),
+    },
+    {
       id: "error-handling",
       title: "Error handling",
       content: (

@@ -171,4 +171,4 @@ See [disaster-recovery.md](./disaster-recovery.md).
 - [deploy/README.md](../../deploy/README.md) — micro VPS deploy
 - [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md) — URL map and env vars
 - [domain-migration.md](./domain-migration.md) — change production domain
-- [cloudflare-edge.md](./cloudflare-edge.md) — optional WAF in front of VPS
+- [cloudflare-edge.md](./cloudflare-edge.md) — superseded by [cloudflare-setup.md](./cloudflare-setup.md)

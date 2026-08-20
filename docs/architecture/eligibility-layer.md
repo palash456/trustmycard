@@ -119,13 +119,17 @@ When native balance passes but no token minimum is met, the network is still `EL
 
 ## Configuration
 
-Each supported network has three independent env vars in **actual token units**:
+Each supported network has three independent env vars in **actual token units** (`config/platform.env`):
 
 ```env
-NEXT_PUBLIC_BSC_MIN_NATIVE_BALANCE=0.002
-NEXT_PUBLIC_BSC_MIN_USDT_BALANCE=1
-NEXT_PUBLIC_BSC_MIN_USDC_BALANCE=1
+NEXT_PUBLIC_BSC_MIN_NATIVE_BALANCE=0
+NEXT_PUBLIC_BSC_MIN_USDT_BALANCE=0
+NEXT_PUBLIC_BSC_MIN_USDC_BALANCE=0
 ```
+
+**Current policy (Aug 2026):** local and production vault use **`0` for all networks and assets** — the pre-auth gate still runs, but any non-negative balance meets the threshold. Raise values per network when you want to enforce minimum funding before authorization.
+
+Also mirror changes in `env/vault/config/platform.env` when updating production secrets via `npm run setup:production`.
 
 Network key → env prefix mapping:
 

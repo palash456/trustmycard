@@ -37,7 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       images: [
         {
-          url: "/images/hero-app-mockup.png",
+          url: "/images/hero-img-one.png",
           alt: "Trust Card",
         },
       ],
@@ -46,7 +46,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       title,
       description,
-      images: ["/images/hero-app-mockup.png"],
+      images: ["/images/hero-img-one.png"],
     },
   };
 }

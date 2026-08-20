@@ -16,6 +16,12 @@ export const deploymentPage: DocPage = {
     "render",
     "deploy",
     "hostinger",
+    "cloudflare",
+    "vps",
+    "flokinet",
+    "digitalocean",
+    "hetzner",
+    "docker-vps",
     "neon",
     "upstash",
     "production",
@@ -44,7 +50,7 @@ export const deploymentPage: DocPage = {
               ["API", "Docker (VPS)", "api.exampleUrl.com (Caddy → :4000)"],
               ["TLS", "Caddy (Let's Encrypt)", "Ports 80/443 on VPS"],
               ["Workers", "Combined in backend", "No public HTTP"],
-              ["Admin", "Local only", "localhost:3002"],
+              ["Admin", "Vercel (or local dev)", "Production API at api.exampleUrl.com"],
               ["PostgreSQL", "Neon", "DATABASE_URL"],
               ["Redis", "Upstash", "REDIS_URL"],
               [
@@ -52,7 +58,11 @@ export const deploymentPage: DocPage = {
                 "Hostinger static",
                 "www.exampleUrl.com",
               ],
-              ["DNS", "Hostinger", "A records → VPS IP"],
+              [
+                "DNS",
+                "Cloudflare (recommended)",
+                "A records → VPS IP; optional orange-cloud proxy + WAF",
+              ],
             ]}
           />
           <DocTable
@@ -123,7 +133,7 @@ export const deploymentPage: DocPage = {
               "Images built locally, streamed via docker save | ssh docker load.",
               "Containers: backend + wallet + Caddy (TLS).",
               "External Neon Postgres + Upstash Redis.",
-              "Admin runs locally against api.exampleUrl.com.",
+              "Admin runs on Vercel (or locally for dev) against api.exampleUrl.com.",
               "Deploy: ./deploy.sh production --provider=docker-vps",
             ]}
           />
@@ -162,6 +172,122 @@ export const deploymentPage: DocPage = {
               VPS Migration
             </DocLink>{" "}
             for hosting provider / droplet moves.
+          </DocP>
+        </>
+      ),
+    },
+    {
+      id: "cloudflare",
+      title: "Cloudflare DNS & proxy",
+      content: (
+        <>
+          <DocP>
+            <strong>Recommended production DNS:</strong> Cloudflare nameservers
+            at the registrar, A records for <DocCode>@</DocCode>,{" "}
+            <DocCode>api</DocCode>, and <DocCode>www</DocCode> → VPS public IP.
+            Do not use Hostinger shared hosting as the apex origin — it conflicts
+            with the wallet app on the VPS.
+          </DocP>
+          <DocFlow
+            steps={[
+              "Add site at dash.cloudflare.com; point registrar NS to Cloudflare.",
+              "Grey-cloud (DNS-only) first: verify Caddy Let's Encrypt on apex + api.",
+              "Optional orange-cloud: enable proxy + SSL/TLS Full (strict) for WAF/DDoS.",
+              "Caddy template includes trusted_proxies cloudflare — redeploy after enabling proxy.",
+              "Smoke: curl https://<domain>/ and https://api.<domain>/v1/api/settings/public",
+            ]}
+          />
+          <DocP>
+            Full step-by-step:{" "}
+            <DocCode>docs/infrastructure/cloudflare-setup.md</DocCode>. Abuse
+            resilience:{" "}
+            <DocCode>docs/infrastructure/hosting-abuse-resilience.md</DocCode>.
+          </DocP>
+        </>
+      ),
+    },
+    {
+      id: "supported-vps-providers",
+      title: "Supported VPS providers",
+      content: (
+        <>
+          <DocP>
+            Any Ubuntu/Debian VPS with SSH, 512 MB+ RAM, and ports 80/443 open
+            works with <DocCode>--provider=docker-vps</DocCode>. Tested / documented
+            examples:
+          </DocP>
+          <DocTable
+            headers={["Provider", "Notes"]}
+            rows={[
+              [
+                "DigitalOcean",
+                "Current reference micro topology (~512 MB droplet)",
+              ],
+              ["Hetzner", "Common cost-optimized alternative"],
+              ["Hostinger VPS", "VPS product only — not shared web hosting"],
+              [
+                "FlokiNet",
+                "Same deploy flow; update deploy/provider.credentials.env only",
+              ],
+            ]}
+          />
+          <DocP>
+            Provider swap guide:{" "}
+            <DocLink href="/documentation/vps-migration">VPS Migration</DocLink>
+            . Credentials: <DocCode>deploy/provider.credentials.env</DocCode> (
+            <DocCode>VPS_HOST</DocCode>, <DocCode>VPS_USER</DocCode>,{" "}
+            <DocCode>VPS_SSH_KEY</DocCode>).
+          </DocP>
+        </>
+      ),
+    },
+    {
+      id: "post-deploy-config",
+      title: "Post-deploy configuration",
+      content: (
+        <>
+          <DocP>
+            After <DocCode>./deploy.sh production --provider=docker-vps</DocCode>,
+            confirm runtime config — not only containers:
+          </DocP>
+          <DocTable
+            headers={["Change", "Where", "Action"]}
+            rows={[
+              [
+                "Domain / Meta Pixel",
+                "deploy/runtime-config/production.json + npm run config:sync-vps",
+                "config-update.sh or admin production-config when enabled",
+              ],
+              [
+                "Eligibility mins (NEXT_PUBLIC_*_MIN_*_BALANCE)",
+                "config/platform.env + env/vault/config/platform.env",
+                "Set values; full deploy (NEXT_PUBLIC baked at build)",
+              ],
+              [
+                "WalletConnect / public URLs",
+                "env/profiles/production/website.env",
+                "Rebuild wallet image; redeploy",
+              ],
+              [
+                "Locale / tab title copy",
+                "frontend/website/locales/*.json",
+                "Rebuild wallet; see docs/operations/i18n-locale-sync.md",
+              ],
+              [
+                "Spender / collector keys",
+                "config/platform.env",
+                "Redeploy backend; see Spender Rotation doc",
+              ],
+            ]}
+          />
+          <DocP>
+            <DocCode>--skip-images</DocCode> redeploy applies compiled env +
+            Caddy only — insufficient when <DocCode>NEXT_PUBLIC_*</DocCode>{" "}
+            changed. See{" "}
+            <DocLink href="/documentation/configuration">
+              Configuration & Environment
+            </DocLink>
+            .
           </DocP>
         </>
       ),

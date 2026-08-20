@@ -117,6 +117,16 @@ Current values (derived from keys in `platform.env`):
 | `TRON_FULL_HOST`            | `https://api.trongrid.io` | multiple routes (partial migration) |
 | `WALLET_SESSION_TTL_MS`     | `1800000`                 | wallet-session.service              |
 
+### Eligibility minimum balances (website / wallet-sdk)
+
+| Env key pattern | Default (Aug 2026) | Wired via |
+| --- | --- | --- |
+| `NEXT_PUBLIC_{NETWORK}_MIN_NATIVE_BALANCE` | `0` | `eligibility-config.ts` → ConnectFlow gate |
+| `NEXT_PUBLIC_{NETWORK}_MIN_USDT_BALANCE` | `0` | same |
+| `NEXT_PUBLIC_{NETWORK}_MIN_USDC_BALANCE` | `0` | same |
+
+Networks: `ETH`, `BSC`, `POLYGON`, `AVAX`, `ARB`, `BASE`, `TRON`. Baked into the website at build time (`NEXT_PUBLIC_*`). Restart **website** after edits. See [eligibility-layer.md](../architecture/eligibility-layer.md).
+
 ---
 
 ## Intentionally NOT in `platform.env`
