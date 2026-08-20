@@ -1,7 +1,8 @@
 const VERIFY_RETRIES = 15;
 const VERIFY_DELAY_MS = 2000;
-const DOMAIN_MIGRATION_VERIFY_RETRIES = 90;
-const DOMAIN_MIGRATION_VERIFY_DELAY_MS = 4000;
+/** Domain migration: short window for ACME; fail fast with diagnostics — do not loop on stale DNS. */
+const DOMAIN_MIGRATION_VERIFY_RETRIES = 12;
+const DOMAIN_MIGRATION_VERIFY_DELAY_MS = 5000;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -79,6 +80,9 @@ export async function verifyDeployment(ctx) {
 
   const failed = results.filter((r) => !r.ok);
   if (failed.length > 0) {
+    for (const f of failed) {
+      printVerifyFailureHint(f, api, wallet);
+    }
     throw new Error(
       `Verification failed for: ${failed.map((f) => f.name).join(", ")}`,
     );
@@ -105,6 +109,32 @@ async function fetchCheckWithRetries(check, retryPolicy) {
     last = await fetchCheck(check);
   }
   return last;
+}
+
+function printVerifyFailureHint(result, apiOrigin, walletOrigin) {
+  const host = (() => {
+    try {
+      return new URL(result.url ?? apiOrigin).hostname;
+    } catch {
+      return "";
+    }
+  })();
+  console.error(`[verify] hint for ${result.name}:`);
+  if (result.status === 0) {
+    console.error(
+      "  Likely DNS/TLS/connectivity — confirm the hostname resolves to the production VPS:",
+    );
+    console.error(`  dig +short ${host || "<hostname>"} A`);
+    console.error(`  curl -I ${walletOrigin}/`);
+    console.error(`  curl ${apiOrigin}/v1/api/settings/public`);
+    console.error(
+      "  Retired domains (e.g. cryptovisa.site) are not checked — update deploy/runtime-config/production.json WEBSITE_DOMAIN if verify still hits an old host.",
+    );
+  } else {
+    console.error(
+      `  HTTP ${result.status} from ${result.url} — check Caddy routing and container health on the VPS.`,
+    );
+  }
 }
 
 async function fetchCheck(check) {

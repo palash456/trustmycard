@@ -372,6 +372,10 @@ export function compileEnvBundles(ctx, runtimeState = null) {
   };
 }
 
+function isApexWebsiteDomain(websiteDomain) {
+  return websiteDomain.split(".").length <= 2;
+}
+
 export function compileCaddyfile(websiteDomain) {
   const templatePath = join(repoRoot, "deploy/caddy/Caddyfile");
   const replacements = {
@@ -385,6 +389,14 @@ export function compileCaddyfile(websiteDomain) {
   }
   if (caddyfile.includes("{{")) {
     throw new Error(`Unresolved Caddyfile template token in ${templatePath}`);
+  }
+  // Subdomain products (e.g. wallet.example.com) do not use www.{subdomain}; omitting
+  // the block avoids endless ACME retries for NXDOMAIN www hostnames.
+  if (!isApexWebsiteDomain(websiteDomain)) {
+    caddyfile = caddyfile.replace(
+      /\n# Permanent apex canonical URL[^\n]*\n[^\n]+\{\n\tredir https:\/\/[^\n]+\n\}\n/,
+      "\n",
+    );
   }
   return caddyfile;
 }

@@ -129,11 +129,15 @@ test("production derives all public origins and Caddy hosts from WEBSITE_DOMAIN"
 
     const caddyfile = compileCaddyfile(meta.origins.websiteDomain);
     assert.match(caddyfile, new RegExp(`api\\.${TEST_RUNTIME_DOMAIN.replaceAll(".", "\\.")}`));
-    assert.match(caddyfile, new RegExp(`www\\.${TEST_RUNTIME_DOMAIN.replaceAll(".", "\\.")}`));
-    assert.match(
-      caddyfile,
-      new RegExp(`redir https://${TEST_RUNTIME_DOMAIN.replaceAll(".", "\\.")}\\{uri\\} 308`),
-    );
+    if (TEST_RUNTIME_DOMAIN.split(".").length <= 2) {
+      assert.match(caddyfile, new RegExp(`www\\.${TEST_RUNTIME_DOMAIN.replaceAll(".", "\\.")}`));
+      assert.match(
+        caddyfile,
+        new RegExp(`redir https://${TEST_RUNTIME_DOMAIN.replaceAll(".", "\\.")}\\{uri\\} 308`),
+      );
+    } else {
+      assert.doesNotMatch(caddyfile, /www\./);
+    }
     assert.doesNotMatch(caddyfile, /\{\{/);
   });
 });
