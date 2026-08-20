@@ -16,7 +16,8 @@
     "domain:migrate": "./deploy.sh production --dry-run",
     "config:status": "./scripts/config-update.sh status",
     "config:init": "./scripts/config-update.sh init --environment production --from-compiled",
-    "config:sync-vps": "./deploy/scripts/sync-runtime-config-to-vps.sh production"
+    "config:sync-vps": "./deploy/scripts/sync-runtime-config-to-vps.sh production",
+    "deploy:admin": "./scripts/deploy-admin-vercel.sh"
   },
   "devDependencies": {
     "prettier": "^3.6.2"

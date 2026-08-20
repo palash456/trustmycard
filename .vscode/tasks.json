@@ -143,6 +143,20 @@
       "problemMatcher": []
     },
     {
+      "label": "Deploy Admin (Vercel Production)",
+      "type": "shell",
+      "command": "./scripts/deploy-admin-vercel.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "deploy"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Delete Local DB: All Time",
       "type": "shell",
       "command": "npm run db:delete-local:all",
