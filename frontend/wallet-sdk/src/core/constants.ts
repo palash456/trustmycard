@@ -50,6 +50,6 @@ export const METADATA = {
   icons: [
     typeof window !== "undefined"
       ? `${window.location.origin}/logos/trust-card-icon.png`
-      : "https://mytrustvisa.cards/logos/trust-card-icon.png",
+      : `${(process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "") || "http://localhost:3000")}/logos/trust-card-icon.png`,
   ],
 };

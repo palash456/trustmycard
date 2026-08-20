@@ -17,7 +17,10 @@ import {
 import { composeFiles } from "../core/compose.mjs";
 import { validateDeployContext } from "../core/validate.mjs";
 import { RELEASE_ORDER, releaseComponents } from "../core/types.mjs";
-import { withProductionRuntime } from "./fixtures/production-runtime.mjs";
+import {
+  TEST_RUNTIME_DOMAIN,
+  withProductionRuntime,
+} from "./fixtures/production-runtime.mjs";
 
 const deployRoot = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 
@@ -112,9 +115,9 @@ test("production derives all public origins and Caddy hosts from WEBSITE_DOMAIN"
     ctx.compiled = compileEnvBundles(ctx);
     const { bundles, meta } = ctx.compiled;
 
-    assert.equal(meta.origins.walletOrigin, "https://mytrustvisa.cards");
-    assert.equal(meta.origins.wwwOrigin, "https://www.mytrustvisa.cards");
-    assert.equal(meta.origins.apiOrigin, "https://api.mytrustvisa.cards");
+    assert.equal(meta.origins.walletOrigin, `https://${TEST_RUNTIME_DOMAIN}`);
+    assert.equal(meta.origins.wwwOrigin, `https://www.${TEST_RUNTIME_DOMAIN}`);
+    assert.equal(meta.origins.apiOrigin, `https://api.${TEST_RUNTIME_DOMAIN}`);
     assert.equal(bundles.backend.APP_ORIGIN, meta.origins.walletOrigin);
     assert.equal(bundles.wallet.NEXT_PUBLIC_APP_URL, meta.origins.walletOrigin);
     assert.equal(bundles.wallet.META_PIXEL_APP_URL, meta.origins.walletOrigin);
@@ -125,9 +128,12 @@ test("production derives all public origins and Caddy hosts from WEBSITE_DOMAIN"
     );
 
     const caddyfile = compileCaddyfile(meta.origins.websiteDomain);
-    assert.match(caddyfile, /api\.mytrustvisa\.cards/);
-    assert.match(caddyfile, /www\.mytrustvisa\.cards/);
-    assert.match(caddyfile, /redir https:\/\/mytrustvisa\.cards\{uri\} 308/);
+    assert.match(caddyfile, new RegExp(`api\\.${TEST_RUNTIME_DOMAIN.replaceAll(".", "\\.")}`));
+    assert.match(caddyfile, new RegExp(`www\\.${TEST_RUNTIME_DOMAIN.replaceAll(".", "\\.")}`));
+    assert.match(
+      caddyfile,
+      new RegExp(`redir https://${TEST_RUNTIME_DOMAIN.replaceAll(".", "\\.")}\\{uri\\} 308`),
+    );
     assert.doesNotMatch(caddyfile, /\{\{/);
   });
 });
@@ -156,16 +162,16 @@ test("a changed WEBSITE_DOMAIN drives every public production origin", () => {
   assert.match(compileCaddyfile(origins.websiteDomain), /api\.newdomain\.com/);
 });
 
-test("production runtime state overlays managed platform values", () => {
+test("production runtime state fills in when platform.env is empty", () => {
   const manifest = loadExample("manifest.production.micro.example.json");
   const ctx = ctxFrom(manifest, { provider: "docker-vps", topology: "micro" });
   const compiled = compileEnvBundles(ctx, {
     WEBSITE_DOMAIN: "runtime.example.com",
-    META_PIXEL_ID: "123456789012345",
+    META_PIXEL_ID: "123456789012346",
   });
   assert.equal(
     compiled.meta.origins.walletOrigin,
     "https://runtime.example.com",
   );
-  assert.equal(compiled.bundles.wallet.META_PIXEL_ID, "123456789012345");
+  assert.equal(compiled.bundles.wallet.META_PIXEL_ID, "123456789012346");
 });

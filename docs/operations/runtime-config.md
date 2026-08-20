@@ -10,7 +10,7 @@ Production runtime state and audit history live outside source control.
 
 Local development and tests use `deploy/runtime-config/` unless `TMC_RUNTIME_CONFIG_DIR` is set.
 
-`config/platform.env` must keep `WEBSITE_DOMAIN=""` and `META_PIXEL_ID=""` after migration. Non-empty placeholders block every update.
+`config/platform.env` is the **primary/default** source for `WEBSITE_DOMAIN` and `META_PIXEL_ID`. Gitignored `deploy/runtime-config/production.json` (and the VPS copy) holds **fallback** values updated by `config-update` / admin when platform.env keys are empty.
 
 ## One-time migration
 
@@ -45,7 +45,7 @@ Or pass explicit values:
 ```bash
 ./scripts/config-update.sh init \
   --environment production \
-  --domain mytrustvisa.cards \
+  --domain exampleUrl.com \
   --pixel YOUR_PIXEL_ID \
   --actor "you@machine"
 ```
@@ -72,7 +72,7 @@ Requires `deploy/provider.credentials.env` with `VPS_HOST`, `VPS_USER`, and opti
 grep -E '^(WEBSITE_DOMAIN|META_PIXEL_ID)=' config/platform.env
 ```
 
-Expect `placeholdersEmpty: true` and populated runtime state.
+Expect populated runtime state and empty managed placeholders in `config/platform.env` (or keys absent).
 
 ## Day-to-day updates
 

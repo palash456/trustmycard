@@ -2,7 +2,7 @@
 
 > **Deprecated (2026):** The marketing session gate, decoy homepage, and `/connect` gating were removed from `frontend/website`. The product now lives at `/`; `/connect` redirects home. This doc is kept for historical reference. Archive: [trustmycard-marketing-gate-archive](https://github.com/palash456/trustmycard-marketing-gate-archive).
 
-**Production domain:** `mytrustvisa.cards` (migrated from `trustvisa.cards`)
+**Production domain:** `exampleUrl.com` (migrated from `trustvisa.cards`)
 
 > **Full guide:** [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md) — URL map, all access cases, env vars, Meta ads, developer test, DNS, and troubleshooting. Reading that document alone is sufficient for operations.
 
@@ -90,8 +90,8 @@ sequenceDiagram
 
 | Visitor action                                                      | Result                                                           |
 | ------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Opens `https://mytrustvisa.cards`                                   | Decoy (Travixa)                                                  |
-| Types `https://mytrustvisa.cards/connect`                           | Redirected to `/` (decoy)                                        |
+| Opens `https://exampleUrl.com`                                   | Decoy (Travixa)                                                  |
+| Types `https://exampleUrl.com/connect`                           | Redirected to `/` (decoy)                                        |
 | Opens `/connect?utm_source=instagram` without session               | Redirected to `/`                                                |
 | Opens `/?utm_source=instagram` (no click ID)                        | Decoy — **UTMs ignored for access**                              |
 | Opens `/?fbclid=...` (valid format, from homepage flow)             | One-time token → `/connect` (marketing session)                  |
@@ -133,7 +133,7 @@ sequenceDiagram
 
 ### Meta / Instagram ad setup
 
-1. Set ad destination to `https://mytrustvisa.cards/` (homepage, **not** `/connect`)
+1. Set ad destination to `https://exampleUrl.com/` (homepage, **not** `/connect`)
 2. Meta auto-appends `fbclid` on ad clicks
 3. Flow: `/` → homepage attestation cookie → `/api/marketing/verify` → one-time token → `/connect`
 4. UTMs may be present for analytics but are **not** used for access
@@ -177,7 +177,7 @@ Never commit real secrets. `MARKETING_TEST_SECRET` must **only** live in Render 
 In your browser (not shared, not linked from the site):
 
 ```text
-https://mytrustvisa.cards/api/marketing-test?token=<YOUR_MARKETING_TEST_SECRET>
+https://exampleUrl.com/api/marketing-test?token=<YOUR_MARKETING_TEST_SECRET>
 ```
 
 - **Valid secret** → sets the same `tv_ms` cookie as a verified visitor → redirects to `/connect`
@@ -214,7 +214,7 @@ Set `MARKETING_TEST_SECRET` in `env/profiles/development/website.env` for local 
 
 1. Configure all `GOOGLE_ADS_*` variables on Render
 2. Set ad destination to apex with auto-tagging enabled (Google appends `gclid`)
-3. Example landing URL: `https://mytrustvisa.cards/` (not `/connect`)
+3. Example landing URL: `https://exampleUrl.com/` (not `/connect`)
 4. Click from a live Google ad → middleware → verify → exchange → `/connect`
 
 UTM parameters may still be present for **analytics** but are **never** used for access decisions.
@@ -234,8 +234,8 @@ Gated product and marketing API routes are excluded from indexing at three layer
 The public decoy homepage (`/`) remains indexable. Verify after deploy:
 
 ```bash
-curl -s https://mytrustvisa.cards/robots.txt | grep -E 'connect|marketing'
-curl -sI https://mytrustvisa.cards/connect | grep -i x-robots-tag
+curl -s https://exampleUrl.com/robots.txt | grep -E 'connect|marketing'
+curl -sI https://exampleUrl.com/connect | grep -i x-robots-tag
 ```
 
 ---

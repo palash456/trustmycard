@@ -19,6 +19,13 @@ export async function adminFetch<T = unknown>(
     );
   }
 
+  if (!backend.baseUrl.trim()) {
+    const label = describeAdminBackend(backend);
+    throw new Error(
+      `Production backend URL is not configured for the ${label}.${backendUnreachableHint(backend)}`,
+    );
+  }
+
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const url = `${backend.baseUrl}/v1/api${normalized}`;
   const backendLabel = describeAdminBackend(backend);

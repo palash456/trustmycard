@@ -15,7 +15,7 @@ export const marketingAccessPage: DocPage = {
   slug: "marketing-access",
   title: "Public Site & Domain",
   description:
-    "mytrustvisa.cards — URL map, Meta ads, env vars, DNS, TLS, and troubleshooting.",
+    "exampleUrl.com — URL map, Meta ads, env vars, DNS, TLS, and troubleshooting.",
   keywords: [
     "marketing",
     "mytrustvisa",
@@ -63,16 +63,16 @@ export const marketingAccessPage: DocPage = {
           headers={["URL", "What"]}
           rows={[
             [
-              "https://mytrustvisa.cards/",
+              "https://exampleUrl.com/",
               "Trust Card homepage + WalletConnect",
             ],
-            ["https://mytrustvisa.cards/frequentlyaskedquestions", "FAQ"],
-            ["https://mytrustvisa.cards/privacypolicy", "Privacy policy"],
-            ["https://mytrustvisa.cards/termsandconditions", "Terms"],
-            ["https://mytrustvisa.cards/connect", "Removed — returns 404"],
-            ["https://api.mytrustvisa.cards", "Nest API"],
+            ["https://exampleUrl.com/frequentlyaskedquestions", "FAQ"],
+            ["https://exampleUrl.com/privacypolicy", "Privacy policy"],
+            ["https://exampleUrl.com/termsandconditions", "Terms"],
+            ["https://exampleUrl.com/connect", "Removed — returns 404"],
+            ["https://api.exampleUrl.com", "Nest API"],
             [
-              "https://www.mytrustvisa.cards",
+              "https://www.exampleUrl.com",
               "Optional static marketing (Hostinger)",
             ],
           ]}
@@ -86,7 +86,7 @@ export const marketingAccessPage: DocPage = {
         <>
           <DocP>
             <strong>Ad destination:</strong>{" "}
-            <DocCode>https://mytrustvisa.cards/</DocCode> — never{" "}
+            <DocCode>https://exampleUrl.com/</DocCode> — never{" "}
             <DocCode>/connect</DocCode>.
           </DocP>
           <DocP>
@@ -103,13 +103,13 @@ export const marketingAccessPage: DocPage = {
       content: (
         <>
           <DocPre>{`# website.env (wallet app)
-NEXT_PUBLIC_APP_URL=https://mytrustvisa.cards
-BACKEND_API_URL=https://api.mytrustvisa.cards
+NEXT_PUBLIC_APP_URL=https://exampleUrl.com
+BACKEND_API_URL=https://api.exampleUrl.com
 NEXT_PUBLIC_PROJECT_ID=<walletconnect>
-NEXT_PUBLIC_MARKETING_URL=https://www.mytrustvisa.cards   # optional
+NEXT_PUBLIC_MARKETING_URL=https://www.exampleUrl.com   # optional
 
 # backend.env
-APP_ORIGIN=https://mytrustvisa.cards
+APP_ORIGIN=https://exampleUrl.com
 ADMIN_ORIGIN=http://localhost:3002   # admin local on micro/budget
 DATABASE_URL=<Neon>
 REDIS_URL=<Upstash>`}</DocPre>
@@ -135,8 +135,8 @@ REDIS_URL=<Upstash>`}</DocPre>
           <DocTable
             headers={["Record", "Points to"]}
             rows={[
-              ["mytrustvisa.cards (A)", "VPS IP → Caddy → wallet:3000"],
-              ["api.mytrustvisa.cards (A)", "VPS IP → Caddy → backend:4000"],
+              ["exampleUrl.com (A)", "VPS IP → Caddy → wallet:3000"],
+              ["api.exampleUrl.com (A)", "VPS IP → Caddy → backend:4000"],
             ]}
           />
           <DocP>
@@ -152,10 +152,10 @@ REDIS_URL=<Upstash>`}</DocPre>
       id: "smoke-tests",
       title: "Smoke tests",
       content: (
-        <DocPre>{`curl -s https://api.mytrustvisa.cards/v1/api/settings/public
-curl -s https://mytrustvisa.cards/api/settings/public
-curl -sI http://mytrustvisa.cards/                    # HTTP → HTTPS
-curl -sI https://mytrustvisa.cards/connect          # → /`}</DocPre>
+        <DocPre>{`curl -s https://api.exampleUrl.com/v1/api/settings/public
+curl -s https://exampleUrl.com/api/settings/public
+curl -sI http://exampleUrl.com/                    # HTTP → HTTPS
+curl -sI https://exampleUrl.com/connect          # → /`}</DocPre>
       ),
     },
     {

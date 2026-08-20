@@ -107,11 +107,11 @@ export const troubleshootingPage: DocPage = {
           rows={[
             [
               "502 fetch failed / wallet broken",
-              "api.mytrustvisa.cards DNS missing — add CNAME api → Render tmc-backend; set BACKEND_API_URL + APP_ORIGIN; redeploy both",
+              "api.exampleUrl.com DNS missing — add CNAME api → Render tmc-backend; set BACKEND_API_URL + APP_ORIGIN; redeploy both",
             ],
             [
               "Redirect to localhost:10000",
-              "Set NEXT_PUBLIC_APP_URL=https://mytrustvisa.cards on wallet app and redeploy",
+              "Set NEXT_PUBLIC_APP_URL=https://exampleUrl.com on wallet app and redeploy",
             ],
             [
               "Legacy /connect redirects to /",
@@ -119,11 +119,11 @@ export const troubleshootingPage: DocPage = {
             ],
             [
               "WalletConnect origin error on new domain",
-              "Add https://mytrustvisa.cards in WalletConnect Cloud; redeploy after NEXT_PUBLIC_APP_URL change",
+              "Add https://exampleUrl.com in WalletConnect Cloud; redeploy after NEXT_PUBLIC_APP_URL change",
             ],
             [
               "CORS errors from wallet app",
-              "Set APP_ORIGIN=https://mytrustvisa.cards on backend",
+              "Set APP_ORIGIN=https://exampleUrl.com on backend",
             ],
             [
               "Meta Pixel no events",

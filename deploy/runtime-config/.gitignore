@@ -1,3 +1,7 @@
-*.json
-*.ndjson
+# Generated runtime state — never commit live WEBSITE_DOMAIN / META_PIXEL_ID values.
+production.json
+audit.ndjson
 .update.lock
+
+# Tracked schema template (empty placeholders only):
+!production.template.json

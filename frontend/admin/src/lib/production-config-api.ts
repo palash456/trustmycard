@@ -24,7 +24,7 @@ export function productionConfigBackendOrError(): {
   if (!backend) {
     return {
       error:
-        "Production backend is not configured. Set BACKEND_API_URL and ADMIN_API_KEY (deployed admin) or ensure WEBSITE_DOMAIN is available (runtime config) with PRODUCTION_ADMIN_API_KEY (local).",
+        "Production backend is not configured. Resolve WEBSITE_DOMAIN from platform.env or runtime config (derive https://api.<domain>), or set BACKEND_API_URL as a final fallback, plus the admin API key.",
       code: "NOT_CONFIGURED",
       status: 503,
     };

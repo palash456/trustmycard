@@ -92,7 +92,7 @@ export const domainMigrationPage: DocPage = {
             env files. Live value:{" "}
             <DocCode>deploy/runtime-config/production.json</DocCode> (VPS:{" "}
             <DocCode>/opt/tmc/deploy/runtime-config/</DocCode>). Example
-            production apex today: <DocCode>mytrustvisa.cards</DocCode>.
+            production apex today: <DocCode>exampleUrl.com</DocCode>.
           </DocCallout>
           <DocP>
             Legal pages remain at root paths (
@@ -554,7 +554,7 @@ curl -s https://api.new-domain.example/v1/api/settings/public | head`}</DocPre>
             After DNS and runtime config are updated, use the suite below. Enter{" "}
             <strong>old domain</strong> and <strong>new domain</strong> (hostname
             only, e.g. <DocCode>trustvisa.cards</DocCode> and{" "}
-            <DocCode>mytrustvisa.cards</DocCode>), then click{" "}
+            <DocCode>exampleUrl.com</DocCode>), then click{" "}
             <strong>Run automated tests</strong>. Also available under{" "}
             <DocLink href="/developer-test">Developer Test</DocLink> → Domain
             migration.

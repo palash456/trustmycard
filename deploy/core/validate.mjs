@@ -16,7 +16,6 @@ import {
   runtimeStateExists,
   readRuntimeState,
 } from "../config-engine/runtime-state.mjs";
-import { assertPlatformPlaceholdersEmpty } from "../config-engine/validators.mjs";
 
 export function validateDeployContext(ctx) {
   const errors = [];
@@ -52,23 +51,17 @@ export function validateDeployContext(ctx) {
   if (environment === "production" && existsSync(configPlatformPath)) {
     try {
       const platform = parseEnvFile(configPlatformPath);
-      const hasPlatformDefaults = Boolean(
-        platform.WEBSITE_DOMAIN?.trim() || platform.META_PIXEL_ID?.trim(),
-      );
-      if (hasPlatformDefaults) {
-        normalizeWebsiteDomain(platform.WEBSITE_DOMAIN);
-      } else if (runtimeStateExists(environment)) {
-        assertPlatformPlaceholdersEmpty(repoRoot);
-        const state = readRuntimeState(environment);
-        normalizeWebsiteDomain(state.WEBSITE_DOMAIN);
+      const runtimeDomain = runtimeStateExists(environment)
+        ? readRuntimeState(environment).WEBSITE_DOMAIN?.trim()
+        : "";
+      const websiteDomain =
+        platform.WEBSITE_DOMAIN?.trim() || runtimeDomain || "";
+      if (!websiteDomain) {
+        errors.push(
+          "Production WEBSITE_DOMAIN is missing. Set config/platform.env or run scripts/config-update.sh init.",
+        );
       } else {
-        if (!platform.WEBSITE_DOMAIN?.trim()) {
-          errors.push(
-            "Production runtime state is missing and WEBSITE_DOMAIN placeholder is empty. Run scripts/config-update.sh init first.",
-          );
-        } else {
-          normalizeWebsiteDomain(platform.WEBSITE_DOMAIN);
-        }
+        normalizeWebsiteDomain(websiteDomain);
       }
     } catch (error) {
       errors.push(`config/platform.env: ${error.message}`);

@@ -6,7 +6,7 @@ Built with **Next.js**, **Tailwind CSS 4**, **shadcn/ui**, and **next-themes** (
 
 Runs on **port 3002** and talks to the Nest backend only.
 
-**Production (micro VPS / budget):** Admin is run **locally** against the remote API (`BACKEND_API_URL=https://api.mytrustvisa.cards`). It is not deployed to the VPS.
+**Production (micro VPS / budget):** Admin is run **locally** or on **Vercel** against the remote API. Production API URL is derived from `WEBSITE_DOMAIN` (`config/platform.env` → `deploy/runtime-config/production.json`). Optional final fallback: `BACKEND_API_URL`.
 
 ## Setup
 
@@ -16,8 +16,9 @@ cp env/profiles/development/admin.env.example env/profiles/development/admin.env
 
 | Variable                     | Purpose                                                    |
 | ---------------------------- | ---------------------------------------------------------- |
-| `BACKEND_API_URL`            | Nest base URL (default `http://localhost:4000`)            |
-| `ADMIN_API_KEY`              | Must match backend `ADMIN_API_KEY`; server-side proxy only |
+| `WEBSITE_DOMAIN`             | Primary source for production API URL (`https://api.<domain>`) via platform/runtime config |
+| `BACKEND_API_URL`            | Optional final fallback production API URL (not stored in profile env by default) |
+| `ADMIN_API_KEY`              | Must match backend `ADMIN_API_KEY` (Vercel / live admin)   |
 | `PRODUCTION_ADMIN_API_KEY`   | Production admin key for local Production data source toggle |
 | `ADMIN_SESSION_SECRET`       | Signs httpOnly `admin_session` cookie                      |
 | `ADMIN_PANEL_PASSWORD`       | Login screen password                                      |

@@ -1,6 +1,6 @@
 # Meta / Instagram Ads — Setup Guide for Media Buyers
 
-This guide is for the person running Meta (Facebook / Instagram) ads for **mytrustvisa.cards**.
+This guide is for the person running Meta (Facebook / Instagram) ads for **exampleUrl.com**.
 
 For the complete domain, security, and access reference, see [mytrustvisa-domain-security.md](../infrastructure/mytrustvisa-domain-security.md).
 
@@ -10,7 +10,7 @@ For the complete domain, security, and access reference, see [mytrustvisa-domain
 
 | Question                                   | Answer                                                  |
 | ------------------------------------------ | ------------------------------------------------------- |
-| **What URL should ads point to?**          | `https://mytrustvisa.cards/`                            |
+| **What URL should ads point to?**          | `https://exampleUrl.com/`                            |
 | **Will ad users see the Trust Card site?** | **Yes** — the product loads directly at `/`             |
 | **Should ads point to `/connect`?**        | **No** — `/connect` is a legacy redirect to `/`         |
 | **Do UTMs affect access?**                 | UTMs are for reporting only — the site is always public |
@@ -23,13 +23,13 @@ For the complete domain, security, and access reference, see [mytrustvisa-domain
 ### Use this
 
 ```text
-https://mytrustvisa.cards/
+https://exampleUrl.com/
 ```
 
 ### Optional — UTMs for your reports (recommended)
 
 ```text
-https://mytrustvisa.cards/?utm_source=instagram&utm_medium=paid&utm_campaign=YOUR_CAMPAIGN_NAME
+https://exampleUrl.com/?utm_source=instagram&utm_medium=paid&utm_campaign=YOUR_CAMPAIGN_NAME
 ```
 
 Meta will still append `fbclid` on top of this when someone clicks.
@@ -37,7 +37,7 @@ Meta will still append `fbclid` on top of this when someone clicks.
 ### Do not use
 
 ```text
-https://mytrustvisa.cards/connect
+https://exampleUrl.com/connect
 ```
 
 Legacy `/connect` URLs redirect to `/`. Use the homepage URL in all ads.
@@ -49,7 +49,7 @@ Legacy `/connect` URLs redirect to `/`. Use the homepage URL in all ads.
 ```text
 User clicks Meta/Instagram ad
         ↓
-https://mytrustvisa.cards/?fbclid=...&utm_...
+https://exampleUrl.com/?fbclid=...&utm_...
         ↓
 Trust Card product site loads at /
         ↓
@@ -88,7 +88,7 @@ The Meta Pixel is built into the wallet app and loads on public pages.
 
 ## Pre-launch checklist
 
-- [ ] Ad destination is `https://mytrustvisa.cards/` (with optional UTMs)
+- [ ] Ad destination is `https://exampleUrl.com/` (with optional UTMs)
 - [ ] Test ad preview opens the Trust Card product (not an error page)
 - [ ] Meta Pixel ID `See META_PIXEL_ID in config in platform.env` is selected in Events Manager
 - [ ] Test Events shows PageView after clicking a test ad

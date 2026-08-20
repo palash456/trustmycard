@@ -8,11 +8,9 @@ import {
   writeRuntimeState,
 } from "./runtime-state.mjs";
 import {
-  assertPlatformPlaceholdersEmpty,
   validateMetaPixelId,
   validateWebsiteDomainInput,
 } from "./validators.mjs";
-import { repoRoot } from "../core/types.mjs";
 import {
   preflightConfiguration,
   runConfigurationOnlyRelease,
@@ -63,9 +61,6 @@ export async function runConfigUpdate({
       prior = (deps.readRuntimeState ?? readRuntimeState)(environment);
       audit.priorValue = prior[key];
       event("validation", "Validating requested configuration");
-      (deps.assertPlatformPlaceholdersEmpty ?? assertPlatformPlaceholdersEmpty)(
-        deps.repoRoot ?? repoRoot,
-      );
       finalValue =
         key === "WEBSITE_DOMAIN"
           ? (deps.validateWebsiteDomainInput ?? validateWebsiteDomainInput)(

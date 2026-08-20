@@ -12,7 +12,7 @@ Deployment guides and environment reference for Trust My Card production.
 | [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md)           | —           | **Current production** — domain, access, env, troubleshooting       |
 | [trustvisa-single-domain.md](./trustvisa-single-domain.md)                   | —           | **Legacy** decoy + `/connect` layout (pre-2026)                     |
 | [domain-migration.md](./domain-migration.md)                                 | —           | Generic domain migration checklist                                  |
-| [domain-migration-mytrustvisa.md](./domain-migration-mytrustvisa.md)         | —           | mytrustvisa.cards migration quick reference                         |
+| [domain-migration-mytrustvisa.md](./domain-migration-mytrustvisa.md)         | —           | exampleUrl.com migration quick reference                         |
 | [marketing-access.md](./marketing-access.md)                                 | —           | **Deprecated** — old `/connect` gate implementation                 |
 | [../marketing/meta-ads-setup-guide.md](../marketing/meta-ads-setup-guide.md) | —           | Meta / Instagram ads (media buyers)                                 |
 | [production-architecture.md](./production-architecture.md)                   | —           | Blast-radius zones                                                  |

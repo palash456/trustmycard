@@ -5,6 +5,7 @@ import {
   readRuntimeState,
   runtimeStateExists,
 } from "../config-engine/runtime-state.mjs";
+import { resolveManagedPlatformValues } from "../config-engine/validators.mjs";
 
 function joinProfile(environment) {
   return `${repoRoot}/env/profiles/${environment}`;
@@ -131,12 +132,6 @@ function loadPlatformEnv() {
   return parseEnvFile(join(repoRoot, "config/platform.env"));
 }
 
-function hasManagedPlatformDefaults(platform) {
-  return Boolean(
-    platform.WEBSITE_DOMAIN?.trim() || platform.META_PIXEL_ID?.trim(),
-  );
-}
-
 function resolveProductionRuntimeState(environment, runtimeState) {
   if (runtimeState) return runtimeState;
   if (environment === "production" && runtimeStateExists(environment)) {
@@ -158,15 +153,17 @@ export function compileEnvBundles(ctx, runtimeState = null) {
     runtimeState,
   );
   const effectivePlatform =
-    environment === "production" &&
-    resolvedRuntime &&
-    !hasManagedPlatformDefaults(platform)
+    environment === "production" && resolvedRuntime
       ? {
           ...platform,
-          WEBSITE_DOMAIN: resolvedRuntime.WEBSITE_DOMAIN,
-          META_PIXEL_ID: resolvedRuntime.META_PIXEL_ID,
+          ...resolveManagedPlatformValues(platform, resolvedRuntime),
         }
-      : platform;
+      : environment === "production"
+        ? {
+            ...platform,
+            ...resolveManagedPlatformValues(platform, null),
+          }
+        : platform;
   const {
     WEBSITE_DOMAIN: _websiteDomain,
     META_PIXEL_ID: _metaPixel,

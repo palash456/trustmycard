@@ -78,7 +78,7 @@ NODE_ENV              standard Node env`}</DocPre>
       title: "Auth & security",
       content: (
         <DocPre>{`ADMIN_API_KEY           Admin API authentication
-APP_ORIGIN              Wallet website CORS origin (https://mytrustvisa.cards)
+APP_ORIGIN              Wallet website CORS origin (https://exampleUrl.com)
 ADMIN_ORIGIN            Admin panel CORS origin
 WALLET_SESSION_TTL_MS        Wallet session TTL (default 30 min)
 WALLET_PERSONAL_SIGN_ENABLED   true = personal_sign auth (default); false = tx-backed hybrid auth
@@ -121,9 +121,9 @@ MERCHANT_WEBHOOK_URL, MERCHANT_WEBHOOK_SECRET`}</DocPre>
       title: "Website env (wallet app)",
       content: (
         <>
-          <DocPre>{`NEXT_PUBLIC_APP_URL=https://mytrustvisa.cards
-NEXT_PUBLIC_MARKETING_URL=https://www.mytrustvisa.cards   # optional static host
-BACKEND_API_URL=https://api.mytrustvisa.cards
+          <DocPre>{`NEXT_PUBLIC_APP_URL=https://exampleUrl.com
+NEXT_PUBLIC_MARKETING_URL=https://www.exampleUrl.com   # optional static host
+BACKEND_API_URL=https://api.exampleUrl.com
 NEXT_PUBLIC_PROJECT_ID=<walletconnect project id>`}</DocPre>
           <DocP>
             <DocCode>NEXT_PUBLIC_*</DocCode> are baked at build time — redeploy

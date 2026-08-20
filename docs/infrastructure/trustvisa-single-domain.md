@@ -1,6 +1,6 @@
 # Trustvisa.cards — single-domain deploy (legacy)
 
-> **Deprecated (2026):** This document describes the old decoy + gated `/connect` layout. The product now lives at `/` on `mytrustvisa.cards`. Archive: [trustmycard-marketing-gate-archive](https://github.com/palash456/trustmycard-marketing-gate-archive). See [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md) for current production.
+> **Deprecated (2026):** This document describes the old decoy + gated `/connect` layout. The product now lives at `/` on `exampleUrl.com`. Archive: [trustmycard-marketing-gate-archive](https://github.com/palash456/trustmycard-marketing-gate-archive). See [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md) for current production.
 
 Your **old** desired setup:
 

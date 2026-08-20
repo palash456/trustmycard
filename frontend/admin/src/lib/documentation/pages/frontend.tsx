@@ -73,7 +73,7 @@ export const frontendPage: DocPage = {
           <DocCode>/termsandconditions</DocCode>. Legacy{" "}
           <DocCode>/connect</DocCode> redirects to <DocCode>/</DocCode>. API
           routes under <DocCode>app/api/</DocCode> proxy to Nest backend.
-          Production host: <DocCode>mytrustvisa.cards</DocCode> (VPS + Caddy).
+          Production host: <DocCode>exampleUrl.com</DocCode> (VPS + Caddy).
         </DocP>
       ),
     },

@@ -5,9 +5,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import {
+  readPlatformDefaults,
+  resolveManagedPlatformValues,
   validateMetaPixelId,
   validateWebsiteDomainInput,
-  assertPlatformPlaceholdersEmpty,
 } from "../config-engine/validators.mjs";
 import {
   writeRuntimeState,
@@ -200,17 +201,23 @@ test("release or verification failure rolls back prior state and verifies it", a
   });
 });
 
-test("non-empty managed platform placeholders block updates", () => {
+test("platform.env defaults do not block runtime config updates", () => {
   const root = mkdtempSync(join(tmpdir(), "tmc-repo-"));
   mkdirSync(join(root, "config"));
   writeFileSync(
     join(root, "config/platform.env"),
-    "WEBSITE_DOMAIN=live.example.com\nMETA_PIXEL_ID=\n",
+    "WEBSITE_DOMAIN=platform.test\nMETA_PIXEL_ID=123456789012345\n",
   );
   try {
-    assert.throws(
-      () => assertPlatformPlaceholdersEmpty(root),
-      /placeholders must be empty/,
+    const defaults = readPlatformDefaults(root);
+    assert.equal(defaults.WEBSITE_DOMAIN, "platform.test");
+    assert.equal(defaults.META_PIXEL_ID, "123456789012345");
+    assert.equal(
+      resolveManagedPlatformValues(defaults, {
+        WEBSITE_DOMAIN: "runtime.test",
+        META_PIXEL_ID: "999999999999999",
+      }).WEBSITE_DOMAIN,
+      "platform.test",
     );
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -241,11 +248,20 @@ test("concurrent updates are rejected while the lock is held", async () => {
   });
 });
 
-test("status reads runtime state instead of platform env", async () => {
+test("getProductionConfig prefers platform.env over runtime state", async () => {
   await withRuntimeDir(async () => {
-    writeRuntimeState("production", state({ environment: "production" }));
+    writeRuntimeState(
+      "production",
+      state({
+        environment: "production",
+        WEBSITE_DOMAIN: "runtime.test",
+        META_PIXEL_ID: "222222222222222",
+      }),
+    );
     const config = await getProductionConfig("production");
-    assert.equal(config.WEBSITE_DOMAIN, "example.com");
+    assert.equal(config.WEBSITE_DOMAIN, "runtime.test");
+    assert.equal(config.META_PIXEL_ID, "222222222222222");
+    assert.equal(config.source, "RUNTIME_CONFIG");
   });
 });
 

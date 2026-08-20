@@ -1,4 +1,4 @@
-import { deriveProductionApiUrl } from "./admin-env";
+import { resolveProductionBackendUrl } from "./admin-env";
 
 /** Local admin panel: dev backend only unless production logs are explicitly enabled. */
 
@@ -16,7 +16,7 @@ export function isProductionLogSourceEnabled(): boolean {
   if (process.env.ADMIN_ALLOW_PRODUCTION_LOGS !== "true") return false;
   const apiKey = process.env.PRODUCTION_ADMIN_API_KEY?.trim();
   if (!apiKey) return false;
-  return Boolean(deriveProductionApiUrl());
+  return Boolean(resolveProductionBackendUrl());
 }
 
 export function isMonitoringAdminPath(pathname: string): boolean {

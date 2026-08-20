@@ -5,7 +5,7 @@ import {
   updateMetaPixelId,
   updateWebsiteDomain,
 } from "./index.mjs";
-import { assertPlatformPlaceholdersEmpty } from "./validators.mjs";
+import { readPlatformDefaults } from "./validators.mjs";
 import { repoRoot } from "../core/types.mjs";
 import { migrateInit } from "./migrate-init.mjs";
 const args = process.argv.slice(2),
@@ -36,14 +36,7 @@ async function main() {
   if (command === "status")
     return print({
       state: await getProductionConfig(environment),
-      placeholdersEmpty: (() => {
-        try {
-          assertPlatformPlaceholdersEmpty(repoRoot);
-          return true;
-        } catch {
-          return false;
-        }
-      })(),
+      platformDefaults: readPlatformDefaults(repoRoot),
     });
   if (command === "history")
     return print(

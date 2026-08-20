@@ -29,7 +29,7 @@ export const deploymentPage: DocPage = {
       content: (
         <>
           <DocP>
-            <strong>Current production (micro VPS):</strong> mytrustvisa.cards
+            <strong>Current production (micro VPS):</strong> exampleUrl.com
             on a 512 MB DigitalOcean droplet with Caddy TLS. Alternative budget
             path uses Render + Neon + Upstash.
           </DocP>
@@ -39,9 +39,9 @@ export const deploymentPage: DocPage = {
               [
                 "Wallet app",
                 "Docker (VPS)",
-                "mytrustvisa.cards (Caddy → :3000)",
+                "exampleUrl.com (Caddy → :3000)",
               ],
-              ["API", "Docker (VPS)", "api.mytrustvisa.cards (Caddy → :4000)"],
+              ["API", "Docker (VPS)", "api.exampleUrl.com (Caddy → :4000)"],
               ["TLS", "Caddy (Let's Encrypt)", "Ports 80/443 on VPS"],
               ["Workers", "Combined in backend", "No public HTTP"],
               ["Admin", "Local only", "localhost:3002"],
@@ -50,7 +50,7 @@ export const deploymentPage: DocPage = {
               [
                 "Marketing (optional)",
                 "Hostinger static",
-                "www.mytrustvisa.cards",
+                "www.exampleUrl.com",
               ],
               ["DNS", "Hostinger", "A records → VPS IP"],
             ]}
@@ -121,7 +121,7 @@ export const deploymentPage: DocPage = {
               "Images built locally, streamed via docker save | ssh docker load.",
               "Containers: backend + wallet + Caddy (TLS).",
               "External Neon Postgres + Upstash Redis.",
-              "Admin runs locally against api.mytrustvisa.cards.",
+              "Admin runs locally against api.exampleUrl.com.",
               "Deploy: ./deploy.sh production --provider=docker-vps",
             ]}
           />
@@ -136,7 +136,7 @@ export const deploymentPage: DocPage = {
     },
     {
       id: "trustvisa-domain",
-      title: "mytrustvisa.cards layout",
+      title: "exampleUrl.com layout",
       content: (
         <>
           <DocP>

@@ -389,7 +389,7 @@ npm run config:init
 ./scripts/config-update.sh init --environment production --from-compiled --actor "you@machine"
 
 # Updates (config-only Docker release on docker-vps)
-./scripts/config-update.sh domain https://mytrustvisa.cards --actor "you@machine"
+./scripts/config-update.sh domain https://exampleUrl.com --actor "you@machine"
 ./scripts/config-update.sh pixel 123456789012345 --actor "you@machine"
 
 # Sync local state to VPS
@@ -405,14 +405,14 @@ npm run config:sync-vps
         <>
           <DocP>
             Live admin is on <strong>Vercel</strong> against{" "}
-            <DocCode>api.mytrustvisa.cards</DocCode>. Local dev:{" "}
+            <DocCode>api.exampleUrl.com</DocCode>. Local dev:{" "}
             <DocCode>localhost:3002</DocCode>. Not deployed on the micro VPS.
           </DocP>
           <DocPre title="Local (against localhost API)">{`cp env/profiles/development/admin.env.example env/profiles/development/admin.env
 cd backend && npm run start:dev
 cd frontend && npm run dev:admin    # http://localhost:3002`}</DocPre>
           <DocPre title="Local against production API">{`# env/profiles/production/admin.env
-BACKEND_API_URL=https://api.mytrustvisa.cards
+BACKEND_API_URL=https://api.exampleUrl.com
 ADMIN_API_KEY=<matches backend>
 
 cd frontend && TMC_ENV=production npm run dev:admin
@@ -440,7 +440,7 @@ cd frontend/admin && npm run start    # :3002`}</DocPre>
                   [
                     "BACKEND_API_URL",
                     "Yes",
-                    "e.g. https://api.mytrustvisa.cards",
+                    "e.g. https://api.exampleUrl.com",
                   ],
                   ["ADMIN_API_KEY", "Yes", "Must match backend"],
                   ["ADMIN_SESSION_SECRET", "Yes", "Session cookie signing"],

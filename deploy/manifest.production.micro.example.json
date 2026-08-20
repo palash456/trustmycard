@@ -3,10 +3,10 @@
   "topology": "micro",
   "provider": "docker-vps",
   "domains": {
-    "wallet": "https://mytrustvisa.cards",
-    "api": "https://api.mytrustvisa.cards",
+    "wallet": "https://example.com",
+    "api": "https://api.example.com",
     "admin": "http://localhost:3002",
-    "marketing": "https://www.mytrustvisa.cards"
+    "marketing": "https://www.example.com"
   },
   "data": {
     "mode": "external"

@@ -454,7 +454,7 @@ export function ProductionConfigPage() {
   const demoJourneyExamples =
     field === "domain"
       ? {
-          success: "https://checkout.mytrustvisa.cards",
+          success: "https://checkout.exampleUrl.com",
           rollback: DEMO_ROLLBACK_DOMAIN,
         }
       : field === "pixel"
@@ -525,7 +525,7 @@ export function ProductionConfigPage() {
             <li>
               <span className="text-foreground">Success:</span>{" "}
               <span className="font-mono text-xs">
-                https://checkout.mytrustvisa.cards
+                https://checkout.exampleUrl.com
               </span>{" "}
               or{" "}
               <span className="font-mono text-xs">987654321098765</span>

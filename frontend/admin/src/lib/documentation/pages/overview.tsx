@@ -66,13 +66,13 @@ export const overviewPage: DocPage = {
             [
               "Wallet app",
               <DocCode key="w">frontend/website</DocCode>,
-              "mytrustvisa.cards (VPS + Caddy TLS)",
+              "exampleUrl.com (VPS + Caddy TLS)",
               "Product at / — WalletConnect + BFF",
             ],
             [
               "API",
               <DocCode key="b">backend</DocCode>,
-              "api.mytrustvisa.cards",
+              "api.exampleUrl.com",
               "NestJS API (micro: SERVICE_ROLE=all)",
             ],
             [
@@ -108,7 +108,7 @@ export const overviewPage: DocPage = {
             ]}
           />
           <DocCallout variant="tip">
-            Meta ads must point to <DocCode>https://mytrustvisa.cards/</DocCode>
+            Meta ads must point to <DocCode>https://exampleUrl.com/</DocCode>
             . Legacy <DocCode>/connect</DocCode> redirects to{" "}
             <DocCode>/</DocCode>. See{" "}
             <DocLink href="/documentation/marketing-access">

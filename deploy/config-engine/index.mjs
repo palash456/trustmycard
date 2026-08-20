@@ -5,22 +5,36 @@ import { readRuntimeState } from "./runtime-state.mjs";
 import { runConfigUpdate } from "./update-workflow.mjs";
 import { dockerVpsConfigAdapter } from "./adapters/docker-vps-config.mjs";
 import { localConfigAdapter } from "./adapters/local-config.mjs";
-import { readManagedPlatformDefaults } from "./validators.mjs";
+import { readPlatformDefaults, resolveManagedPlatformValues } from "./validators.mjs";
 
 export async function getProductionConfig(environment = "production") {
-  const platformDefaults = readManagedPlatformDefaults(repoRoot);
-  if (platformDefaults.active) {
-    const runtime = readRuntimeState(environment);
-    return {
-      ...runtime,
-      WEBSITE_DOMAIN: platformDefaults.WEBSITE_DOMAIN || runtime.WEBSITE_DOMAIN,
-      META_PIXEL_ID: platformDefaults.META_PIXEL_ID || runtime.META_PIXEL_ID,
-      source: "PLATFORM_ENV",
-      platformDefaultsActive: true,
-      platformDefaults,
-    };
-  }
-  return readRuntimeState(environment);
+  const platformDefaults = readPlatformDefaults(repoRoot);
+  const runtime = readRuntimeState(environment);
+  const resolved = resolveManagedPlatformValues(platformDefaults, runtime);
+  const websiteDomain = resolved.WEBSITE_DOMAIN;
+  const metaPixelId = resolved.META_PIXEL_ID;
+  const usesPlatform =
+    Boolean(platformDefaults.WEBSITE_DOMAIN) ||
+    Boolean(platformDefaults.META_PIXEL_ID);
+  const usesRuntime =
+    !platformDefaults.WEBSITE_DOMAIN && Boolean(runtime.WEBSITE_DOMAIN?.trim());
+  const usesRuntimePixel =
+    !platformDefaults.META_PIXEL_ID && Boolean(runtime.META_PIXEL_ID?.trim());
+  return {
+    ...runtime,
+    WEBSITE_DOMAIN: websiteDomain,
+    META_PIXEL_ID: metaPixelId,
+    source: usesPlatform
+      ? "PLATFORM_ENV"
+      : usesRuntime || usesRuntimePixel
+        ? "RUNTIME_CONFIG"
+        : "UNRESOLVED",
+    platformDefaults,
+    runtimeState: {
+      WEBSITE_DOMAIN: runtime.WEBSITE_DOMAIN,
+      META_PIXEL_ID: runtime.META_PIXEL_ID,
+    },
+  };
 }
 export async function getConfigHistory(environment = "production", options) {
   return readAuditHistory(environment, options);
@@ -32,16 +46,6 @@ function adapterFor(provider) {
 }
 async function update(key, request) {
   const environment = request.environment ?? "production";
-  const platformDefaults = readManagedPlatformDefaults(repoRoot);
-  if (platformDefaults.active) {
-    return {
-      blocked: true,
-      reason:
-        "Default values already persist in config/platform.env. Empty WEBSITE_DOMAIN and META_PIXEL_ID to enable config-update changes.",
-      source: "PLATFORM_ENV",
-      platformDefaults,
-    };
-  }
   const { manifest } = loadManifest(environment);
   const provider = request.provider ?? manifest.provider ?? "local";
   return runConfigUpdate({

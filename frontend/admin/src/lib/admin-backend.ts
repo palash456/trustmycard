@@ -4,7 +4,10 @@ import {
   type CookieGetter,
   type LogEnv,
 } from "./log-env-cookie";
-import { deriveProductionApiUrl, getLocalDevBackendUrl } from "./admin-env";
+import {
+  getLocalDevBackendUrl,
+  resolveProductionBackendUrl,
+} from "./admin-env";
 import {
   isLocalAdminDevelopment,
   isLiveAdminPanel,
@@ -16,10 +19,6 @@ export type AdminBackendConfig = {
   apiKey: string;
   env: LogEnv;
 };
-
-function normalizeBaseUrl(url: string | undefined, fallback: string): string {
-  return url?.replace(/\/$/, "") || fallback;
-}
 
 function withEnv(
   baseUrl: string,
@@ -41,30 +40,29 @@ export function getDevBackend(): AdminBackendConfig {
   return getDefaultAdminBackend();
 }
 
+function productionAdminApiKey(): string {
+  if (isLiveAdminPanel()) {
+    return process.env.ADMIN_API_KEY?.trim() ?? "";
+  }
+  return process.env.PRODUCTION_ADMIN_API_KEY?.trim() ?? "";
+}
+
 export function getProductionBackend(): AdminBackendConfig | null {
   if (isLocalAdminDevelopment() && !isProductionLogSourceEnabled()) {
     return null;
   }
 
-  if (isLiveAdminPanel()) {
-    const baseUrl = process.env.BACKEND_API_URL?.trim();
-    const apiKey = process.env.ADMIN_API_KEY?.trim();
-    if (!baseUrl || !apiKey) return null;
-    return withEnv(normalizeBaseUrl(baseUrl, baseUrl), apiKey, "production");
-  }
-
-  const baseUrl = deriveProductionApiUrl();
-  const apiKey = process.env.PRODUCTION_ADMIN_API_KEY?.trim();
+  const baseUrl = resolveProductionBackendUrl();
+  const apiKey = productionAdminApiKey();
   if (!baseUrl || !apiKey) return null;
   return withEnv(baseUrl, apiKey, "production");
 }
 
+export function getUnconfiguredProductionBackend(): AdminBackendConfig {
+  return withEnv("", productionAdminApiKey(), "production");
+}
+
 export function isProductionBackendConfigured(): boolean {
-  if (isLiveAdminPanel()) {
-    return Boolean(
-      process.env.BACKEND_API_URL?.trim() && process.env.ADMIN_API_KEY?.trim(),
-    );
-  }
   return getProductionBackend() !== null;
 }
 
@@ -86,16 +84,19 @@ export function backendUnreachableHint(backend: AdminBackendConfig): string {
   if (backend.env === "dev") {
     return " Check BACKEND_API_URL is correct and the API is reachable.";
   }
-  return " Check that the production API is reachable and PRODUCTION_ADMIN_API_KEY is correct.";
+  if (!backend.baseUrl.trim()) {
+    return isLiveAdminPanel()
+      ? " Set WEBSITE_DOMAIN (platform.env or Vercel env) or BACKEND_API_URL as a final fallback, plus ADMIN_API_KEY."
+      : " Set WEBSITE_DOMAIN (config/platform.env or deploy/runtime-config/production.json) or BACKEND_API_URL as a final fallback, plus PRODUCTION_ADMIN_API_KEY.";
+  }
+  return " Check that the production API is reachable and the admin API key is correct.";
 }
 
 export function resolveActiveBackend(
   getter?: CookieGetter,
 ): AdminBackendConfig {
   if (isLiveAdminPanel()) {
-    const production = getProductionBackend();
-    if (production) return production;
-    return getDevBackend();
+    return getProductionBackend() ?? getUnconfiguredProductionBackend();
   }
 
   if (

@@ -115,7 +115,7 @@ export const ESSENTIAL_COMMAND_GROUPS: EssentialCommandGroup[] = [
         id: "config-domain",
         title: "Update domain",
         command:
-          './scripts/config-update.sh domain https://mytrustvisa.cards --actor "you@machine"',
+          './scripts/config-update.sh domain https://exampleUrl.com --actor "you@machine"',
         description: "Deploy new WEBSITE_DOMAIN (restarts caddy, backend, wallet)",
       },
       {

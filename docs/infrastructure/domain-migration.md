@@ -17,7 +17,7 @@ Throughout this guide, placeholders show the relationship between hosts:
 
 Replace these with your real hostnames when executing the migration.
 
-**Current production example:** `mytrustvisa.cards` — see [domain-migration-mytrustvisa.md](./domain-migration-mytrustvisa.md) and [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md).
+**Current production example:** `exampleUrl.com` — see [domain-migration-mytrustvisa.md](./domain-migration-mytrustvisa.md) and [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md).
 
 **Time needed:** ~30–60 minutes (+ DNS propagation up to 24–48 hours, often faster).
 

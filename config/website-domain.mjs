@@ -42,13 +42,20 @@ export function tryReadProductionRuntimeState() {
   }
 }
 
-/** WEBSITE_DOMAIN from env or deploy/runtime-config/production.json. */
-export function resolveWebsiteDomain() {
-  const fromEnv = normalizeWebsiteDomain(process.env.WEBSITE_DOMAIN ?? "");
-  if (fromEnv) return fromEnv;
+/** Active Meta Pixel ID — platform.env first, runtime-config fallback. */
+export function resolveMetaPixelId() {
+  const fromPlatform = process.env.META_PIXEL_ID?.trim();
+  if (fromPlatform) return fromPlatform;
+  return tryReadProductionRuntimeState()?.META_PIXEL_ID?.trim() || null;
+}
 
-  const state = tryReadProductionRuntimeState();
-  return normalizeWebsiteDomain(state?.WEBSITE_DOMAIN ?? "");
+/** Active WEBSITE_DOMAIN — platform.env first, runtime-config fallback. */
+export function resolveWebsiteDomain() {
+  const fromPlatform = normalizeWebsiteDomain(process.env.WEBSITE_DOMAIN ?? "");
+  if (fromPlatform) return fromPlatform;
+  return normalizeWebsiteDomain(
+    tryReadProductionRuntimeState()?.WEBSITE_DOMAIN ?? "",
+  );
 }
 
 /** Public production API origin — https://api.<WEBSITE_DOMAIN>. */
@@ -57,17 +64,23 @@ export function resolveProductionApiOrigin() {
   return domain ? `https://api.${domain}` : null;
 }
 
-/** Fill empty WEBSITE_DOMAIN / META_PIXEL_ID from production runtime state. */
+/**
+ * Production backend URL for admin (and other operators):
+ * 1. Derive from WEBSITE_DOMAIN (platform.env → runtime-config)
+ * 2. BACKEND_API_URL profile / host env (final fallback)
+ */
+export function resolveProductionBackendUrl() {
+  const derived = resolveProductionApiOrigin();
+  if (derived) return derived;
+  const fromProfile = process.env.BACKEND_API_URL?.trim();
+  return fromProfile ? fromProfile.replace(/\/$/, "") : null;
+}
+
+/** Apply canonical WEBSITE_DOMAIN / META_PIXEL_ID to process.env after profile load. */
 export function hydrateRuntimePlatformValues() {
-  const state = tryReadProductionRuntimeState();
-  if (!state) return;
+  const domain = resolveWebsiteDomain();
+  if (domain) process.env.WEBSITE_DOMAIN = domain;
 
-  if (!process.env.WEBSITE_DOMAIN?.trim() && state.WEBSITE_DOMAIN) {
-    const domain = normalizeWebsiteDomain(state.WEBSITE_DOMAIN);
-    if (domain) process.env.WEBSITE_DOMAIN = domain;
-  }
-
-  if (!process.env.META_PIXEL_ID?.trim() && state.META_PIXEL_ID) {
-    process.env.META_PIXEL_ID = String(state.META_PIXEL_ID).trim();
-  }
+  const pixel = resolveMetaPixelId();
+  if (pixel) process.env.META_PIXEL_ID = pixel;
 }

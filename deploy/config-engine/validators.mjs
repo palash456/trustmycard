@@ -37,25 +37,41 @@ export function validateMetaPixelId(input) {
     );
   return value;
 }
-export function assertPlatformPlaceholdersEmpty(repoRoot) {
+/** Default/primary managed values from config/platform.env. */
+export function readPlatformDefaults(repoRoot) {
   const values = parseEnvFile(join(repoRoot, "config/platform.env"));
-  const nonEmpty = ["WEBSITE_DOMAIN", "META_PIXEL_ID"].filter((key) =>
-    values[key]?.trim(),
-  );
-  if (nonEmpty.length)
-    throw new Error(
-      `config/platform.env managed placeholders must be empty: ${nonEmpty.join(", ")}`,
-    );
-  return true;
+  return {
+    WEBSITE_DOMAIN: values.WEBSITE_DOMAIN?.trim() ?? "",
+    META_PIXEL_ID: values.META_PIXEL_ID?.trim() ?? "",
+  };
 }
 
-export function readManagedPlatformDefaults(repoRoot) {
-  const values = parseEnvFile(join(repoRoot, "config/platform.env"));
-  const websiteDomain = values.WEBSITE_DOMAIN?.trim() ?? "";
-  const metaPixelId = values.META_PIXEL_ID?.trim() ?? "";
+/** @deprecated Alias for readPlatformDefaults */
+export function readPlatformFallbacks(repoRoot) {
+  return readPlatformDefaults(repoRoot);
+}
+
+/**
+ * Resolve WEBSITE_DOMAIN and META_PIXEL_ID: platform.env first, runtime state fallback.
+ * @param {{ WEBSITE_DOMAIN?: string; META_PIXEL_ID?: string }} platform
+ * @param {{ WEBSITE_DOMAIN?: string; META_PIXEL_ID?: string } | null} runtime
+ */
+export function resolveManagedPlatformValues(platform, runtime = null) {
+  const runtimeDomain = runtime?.WEBSITE_DOMAIN?.trim() ?? "";
+  const runtimePixel = runtime?.META_PIXEL_ID?.trim() ?? "";
   return {
-    WEBSITE_DOMAIN: websiteDomain,
-    META_PIXEL_ID: metaPixelId,
-    active: Boolean(websiteDomain || metaPixelId),
+    WEBSITE_DOMAIN: platform.WEBSITE_DOMAIN?.trim() || runtimeDomain,
+    META_PIXEL_ID: platform.META_PIXEL_ID?.trim() || runtimePixel,
   };
+}
+
+/** @deprecated Use readPlatformDefaults */
+export function readManagedPlatformDefaults(repoRoot) {
+  const defaults = readPlatformDefaults(repoRoot);
+  return { ...defaults, active: false };
+}
+
+/** @deprecated Platform.env may hold primary values; updates always write runtime state. */
+export function assertPlatformPlaceholdersEmpty() {
+  return true;
 }

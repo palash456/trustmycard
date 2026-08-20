@@ -51,10 +51,10 @@ Production push: `./deploy.sh production --provider=docker-vps`
 
 | Surface    | Host             | URL                                  |
 | ---------- | ---------------- | ------------------------------------ |
-| Wallet app | VPS + Caddy TLS  | `mytrustvisa.cards` (product at `/`) |
-| API        | VPS + Caddy TLS  | `api.mytrustvisa.cards`              |
+| Wallet app | VPS + Caddy TLS  | `exampleUrl.com` (product at `/`) |
+| API        | VPS + Caddy TLS  | `api.exampleUrl.com`              |
 | Data       | Neon + Upstash   | External Postgres + Redis            |
-| Marketing  | Hostinger static | `www.mytrustvisa.cards` (optional)   |
+| Marketing  | Hostinger static | `www.exampleUrl.com` (optional)   |
 | Admin      | Local machine    | `localhost:3002` against remote API  |
 
 Deploy guides:
@@ -90,7 +90,7 @@ Deploy guides:
 | [environments.md](./infrastructure/environments.md)                                 | `TMC_ENV` profiles                                    |
 | [secrets.md](./infrastructure/secrets.md)                                           | Env var matrix per service                            |
 | [mytrustvisa-domain-security.md](./infrastructure/mytrustvisa-domain-security.md)   | **Current production** domain & security              |
-| [domain-migration-mytrustvisa.md](./infrastructure/domain-migration-mytrustvisa.md) | mytrustvisa.cards migration quick ref                 |
+| [domain-migration-mytrustvisa.md](./infrastructure/domain-migration-mytrustvisa.md) | exampleUrl.com migration quick ref                 |
 | [marketing-access.md](./infrastructure/marketing-access.md)                         | **Deprecated** — old `/connect` gate (archive linked) |
 | [meta-ads-setup-guide.md](./marketing/meta-ads-setup-guide.md)                      | Meta / Instagram ads (media buyers)                   |
 | [cloudflare-edge.md](./infrastructure/cloudflare-edge.md)                           | WAF and admin SSO                                     |

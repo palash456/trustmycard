@@ -48,7 +48,7 @@ npm run dev:website:reset   # website only
 
 ```bash
 npm run config:status
-./scripts/config-update.sh domain https://mytrustvisa.cards --actor "you@machine"
+./scripts/config-update.sh domain https://exampleUrl.com --actor "you@machine"
 ./scripts/config-update.sh pixel YOUR_PIXEL_ID --actor "you@machine"
 npm run config:sync-vps          # mirror state to VPS if init ran locally
 ```
@@ -65,7 +65,7 @@ cd frontend/shared && npm test
 
 ### Live admin panel — Vercel deploy
 
-Admin ops console is deployed to **Vercel** (not the micro VPS). It talks to the production API at `api.mytrustvisa.cards`.
+Admin ops console is deployed to **Vercel** (not the micro VPS). It talks to the production API at `api.exampleUrl.com`.
 
 ```bash
 # Install CLI (once)
@@ -384,7 +384,7 @@ npm run config:init
 ./scripts/config-update.sh init --environment production --from-compiled --actor "you@machine"
 
 # Updates (config-only release on docker-vps)
-./scripts/config-update.sh domain https://mytrustvisa.cards --actor "you@machine"
+./scripts/config-update.sh domain https://exampleUrl.com --actor "you@machine"
 ./scripts/config-update.sh pixel 123456789012345 --actor "you@machine"
 
 # Sync local state file to VPS
@@ -414,7 +414,7 @@ cd frontend && npm run dev:admin    # http://localhost:3002
 
 ```bash
 # env/profiles/production/admin.env
-BACKEND_API_URL=https://api.mytrustvisa.cards
+BACKEND_API_URL=https://api.exampleUrl.com
 ADMIN_API_KEY=<matches backend>
 
 cd frontend && TMC_ENV=production npm run dev:admin
@@ -446,7 +446,7 @@ cd frontend/admin && npm run start    # :3002
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `BACKEND_API_URL` | Yes | Production API, e.g. `https://api.mytrustvisa.cards` |
+| `BACKEND_API_URL` | Yes | Production API, e.g. `https://api.exampleUrl.com` |
 | `ADMIN_API_KEY` | Yes | Must match backend `ADMIN_API_KEY` |
 | `ADMIN_SESSION_SECRET` | Yes | Signs `admin_session` cookie |
 | `ADMIN_PANEL_PASSWORD` | Yes | Login screen password |

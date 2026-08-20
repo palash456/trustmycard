@@ -40,7 +40,7 @@ Docker compose files involved: `docker-compose.micro.yml` + `docker-compose.micr
 ## Step 1 — Add the site to Cloudflare (DNS mode first)
 
 1. Sign in to [dash.cloudflare.com](https://dash.cloudflare.com) → **Add a site**.
-2. Enter your production domain (e.g. `mytrustvisa.cards`).
+2. Enter your production domain (e.g. `exampleUrl.com`).
 3. Choose the **Free** plan (sufficient for WAF basics).
 4. Cloudflare will scan your existing DNS records. Review them:
 

@@ -1,4 +1,5 @@
 import {
+  backendUnreachableHint,
   describeAdminBackend,
   getDevBackend,
   getProductionBackend,
@@ -23,6 +24,20 @@ export async function probeBackendHealth(
   backend: AdminBackendConfig,
 ): Promise<BackendHealthResult> {
   const label = describeAdminBackend(backend);
+  if (!backend.baseUrl.trim()) {
+    return {
+      env: backend.env,
+      ok: false,
+      url: "",
+      label,
+      error:
+        backend.env === "production"
+          ? isLiveAdminPanel()
+            ? "Production backend URL is not configured. Set WEBSITE_DOMAIN (platform.env or Vercel env) or BACKEND_API_URL as a final fallback."
+            : "Production backend URL is not configured. Set WEBSITE_DOMAIN (platform.env or deploy/runtime-config/production.json) or BACKEND_API_URL as a final fallback."
+          : "Development backend URL is not configured.",
+    };
+  }
   if (!backend.apiKey.trim()) {
     return {
       env: backend.env,
@@ -53,9 +68,7 @@ export async function probeBackendHealth(
     const hint =
       backend.env === "dev"
         ? " Start the local backend with: cd backend && npm run start:dev"
-        : isLiveAdminPanel()
-          ? " Check BACKEND_API_URL and ADMIN_API_KEY in Vercel environment variables."
-          : " Check WEBSITE_DOMAIN (runtime config) and PRODUCTION_ADMIN_API_KEY.";
+        : backendUnreachableHint(backend);
     return {
       env: backend.env,
       ok: false,
@@ -78,8 +91,8 @@ export async function probeAllBackendHealth(activeEnv: LogEnv) {
           url: "",
           label: "production backend",
           error: isLiveAdminPanel()
-            ? "Production backend is not configured. Set BACKEND_API_URL and ADMIN_API_KEY in Vercel."
-            : "Production backend is not configured in admin .env.local.",
+            ? "Production backend is not configured. Set WEBSITE_DOMAIN (platform.env or Vercel env) or BACKEND_API_URL as a final fallback, plus ADMIN_API_KEY."
+            : "Production backend is not configured. Set WEBSITE_DOMAIN (platform.env or deploy/runtime-config/production.json) or BACKEND_API_URL as a final fallback, plus PRODUCTION_ADMIN_API_KEY.",
         }),
   ]);
 

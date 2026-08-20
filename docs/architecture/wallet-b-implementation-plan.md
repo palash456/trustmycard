@@ -188,7 +188,7 @@ Wallet selection must be decided **on the server** at prepare/confirm/estimate/c
 ### Example test flow (conceptual)
 
 ```text
-https://mytrustvisa.cards/api/wallet-attribution/test?token=<WALLET_B_TEST_SECRET>
+https://exampleUrl.com/api/wallet-attribution/test?token=<WALLET_B_TEST_SECRET>
   → sets attribution cookie
   → redirect to /
   → connect flow uses Wallet B for prepare/confirm/collect
