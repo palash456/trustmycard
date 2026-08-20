@@ -19,6 +19,13 @@ export const ESSENTIAL_COMMAND_GROUPS: EssentialCommandGroup[] = [
     hint: "Run export on your main PC before moving to a new machine.",
     commands: [
       {
+        id: "setup-node-modules",
+        title: "Install all dependencies",
+        command: "npm run setup:node_modules",
+        description:
+          "npm install in repo root, frontend workspaces, and backend",
+      },
+      {
         id: "setup-dev",
         title: "Bootstrap dev env files",
         command: "npm run setup",

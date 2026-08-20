@@ -29,8 +29,10 @@ trustmycard/
 See **[COMMANDS.md](./COMMANDS.md)** for the full command reference. Essentials:
 
 ```bash
-cd frontend && npm install && npm run dev:website   # :3000
-cd backend && npm install && npm run start:dev      # :4000
+npm run setup:node_modules                          # from repo root — all packages
+npm run setup && npm run setup:import               # env files (see environments.md)
+cd frontend && npm run dev:website                  # :3000
+cd backend && npm run start:dev                     # :4000
 cd frontend && npm run dev:admin                    # :3002
 ```
 

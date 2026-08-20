@@ -19,6 +19,14 @@ For Render, `SERVICE_ROLE=api` loads `backend-api.env`; `SERVICE_ROLE=worker` lo
 
 ## One-time profile setup
 
+**New machine checklist** (from repo root):
+
+```bash
+npm run setup:node_modules     # install dependencies (root, frontend/, backend/)
+npm run setup:import           # optional: unzip latest vault zip (after git pull)
+npm run setup:all              # create env files + apply secrets from vault
+```
+
 From repo root, bootstrap local secret files from tracked `*.example` templates. Existing files are merged (missing keys added); secrets are filled from `env/vault/` when present.
 
 ```bash

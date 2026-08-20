@@ -56,8 +56,8 @@ export const commandsPage: DocPage = {
       title: "First-time setup",
       content: (
         <>
-          <DocPre title="Install dependencies">{`cd frontend && npm install
-cd backend && npm install`}</DocPre>
+          <DocPre title="Install dependencies (repo root)">{`npm run setup:node_modules
+# Runs npm install in: repo root, frontend/ (all workspaces), backend/`}</DocPre>
           <DocPre title="Environment files (repo root)">{`# Bootstrap from templates (+ secrets from env/vault/ when present)
 npm run setup                  # development
 npm run setup:production       # production + deploy

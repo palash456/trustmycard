@@ -13,7 +13,7 @@ frontend/
 
 ## Commands
 
-Run from **`frontend/`**:
+Run from **`frontend/`** (or from repo root: `npm run setup:node_modules` installs here + backend):
 
 ```bash
 npm install

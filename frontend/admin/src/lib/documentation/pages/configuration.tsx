@@ -40,9 +40,12 @@ export const configurationPage: DocPage = {
             From repo root, <DocCode>npm run setup</DocCode> creates live env
             files from tracked <DocCode>*.example</DocCode> templates. It merges
             missing keys into existing files and fills empty values from{" "}
-            <DocCode>env/vault/</DocCode> when that folder exists.
+            <DocCode>env/vault/</DocCode> when that folder exists. Install
+            dependencies first with{" "}
+            <DocCode>npm run setup:node_modules</DocCode>.
           </DocP>
-          <DocPre title="Setup commands">{`npm run setup                  # development profile
+          <DocPre title="Setup commands">{`npm run setup:node_modules     # npm install: root, frontend/, backend/
+npm run setup                  # development profile
 npm run setup:production       # production + deploy credentials
 npm run setup:all              # both profiles + deploy`}</DocPre>
           <DocP>

@@ -30,6 +30,7 @@ See [docs/infrastructure/secrets.md](../../docs/infrastructure/secrets.md).
 ## Setup
 
 ```bash
+npm run setup:node_modules     # from repo root — install all npm dependencies
 npm run setup                  # development profile
 npm run setup:production       # production + deploy files
 npm run setup:all              # both profiles + deploy

@@ -4,7 +4,7 @@ NestJS API — standalone npm package.
 
 ```bash
 cd backend
-npm install
+npm install            # or from repo root: npm run setup:node_modules
 npm run start:dev      # http://localhost:4000
 npx prisma generate
 npm run prisma:push

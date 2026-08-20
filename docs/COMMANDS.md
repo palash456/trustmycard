@@ -29,6 +29,7 @@ Start backend before admin or website. **Live ops:** admin on Vercel → product
 ### Environment setup (new machine)
 
 ```bash
+npm run setup:node_modules     # npm install in root, frontend/, backend/
 npm run setup                  # bootstrap dev env files from templates
 npm run setup:all              # dev + production + deploy files
 
@@ -111,12 +112,19 @@ Git-connected project: push to the linked branch triggers deploy automatically.
 
 ### Install dependencies
 
+From repo root (installs root Prettier, all frontend workspaces, and backend):
+
 ```bash
-cd frontend && npm install
-cd backend && npm install
+npm run setup:node_modules
 ```
 
-Root `package.json` only installs Prettier (`npm install` at repo root optional).
+Runs `npm install` in:
+
+1. Repo root (`prettier`)
+2. `frontend/` — npm workspaces: website, admin, marketing, wallet-sdk, shared
+3. `backend/` — NestJS API
+
+Equivalent manual commands: `npm install` at root, `cd frontend && npm install`, `cd backend && npm install`.
 
 ### Environment files
 
