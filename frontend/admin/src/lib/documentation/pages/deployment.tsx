@@ -114,6 +114,8 @@ export const deploymentPage: DocPage = {
           <DocP>
             Deploy commands:{" "}
             <DocLink href="/documentation/commands">Command Reference</DocLink>.
+            Moving VPS provider or droplet:{" "}
+            <DocLink href="/documentation/vps-migration">VPS Migration</DocLink>.
           </DocP>
           <DocFlow
             steps={[
@@ -151,11 +153,15 @@ export const deploymentPage: DocPage = {
             <DocLink href="/documentation/marketing-access">
               Public Site & Domain
             </DocLink>{" "}
-            for URL map, Meta ads, and env vars. See{" "}
+            for URL map, Meta ads, and env vars.             See{" "}
             <DocLink href="/documentation/domain-migration">
               Domain Migration
             </DocLink>{" "}
-            for the generic checklist.
+            for hostname changes and{" "}
+            <DocLink href="/documentation/vps-migration">
+              VPS Migration
+            </DocLink>{" "}
+            for hosting provider / droplet moves.
           </DocP>
         </>
       ),

@@ -31,6 +31,38 @@ export const configurationPage: DocPage = {
       ),
     },
     {
+      id: "deploy-credentials",
+      title: "Deploy credentials (not runtime)",
+      content: (
+        <>
+          <DocP>
+            VPS SSH settings live in{" "}
+            <DocCode>deploy/provider.credentials.env</DocCode> (
+            <DocCode>VPS_HOST</DocCode>, <DocCode>VPS_USER</DocCode>,{" "}
+            <DocCode>VPS_SSH_KEY</DocCode>, <DocCode>VPS_DEPLOY_PATH</DocCode>
+            ). They are read only by <DocCode>./deploy.sh</DocCode> — never by
+            backend, website, or admin at runtime.
+          </DocP>
+          <DocCallout variant="warning">
+            Do not copy <DocCode>VPS_*</DocCode> or SSH keys into{" "}
+            <DocCode>config/platform.env</DocCode>. Runtime product config and
+            deploy operator credentials are separate layers.
+          </DocCallout>
+          <DocP>
+            Hosting provider / droplet moves:{" "}
+            <DocLink href="/documentation/vps-migration">
+              VPS Migration
+            </DocLink>
+            . Hostname changes:{" "}
+            <DocLink href="/documentation/domain-migration">
+              Domain Migration
+            </DocLink>
+            .
+          </DocP>
+        </>
+      ),
+    },
+    {
       id: "profiles",
       title: "TMC_ENV profiles",
       content: (

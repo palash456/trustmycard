@@ -35,7 +35,9 @@ See [deploy/README.md](../../deploy/README.md#wallet-env-websiteenv). On VPS (`d
 | ------------------ | ------------------------------------------------------------------- |
 | `local`            | Docker Compose on this machine                                      |
 | `docker-vps`       | Build locally → stream images → compose up on VPS (no remote build) |
-| `render`           | Stub (not implemented)                                              |
+| `render`           | Stub (not implemented) — use `render-budget.yaml` / `render.yaml` instead |
 | `hostinger-static` | Stub (marketing FTP upload)                                         |
+
+VPS provider / droplet migration guide: [vps-migration.md](./vps-migration.md).
 
 See [fresh-host-recovery-test.md](./fresh-host-recovery-test.md).

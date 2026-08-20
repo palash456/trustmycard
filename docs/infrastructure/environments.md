@@ -71,6 +71,7 @@ cd frontend && npm run dev:admin      # :3002
 ### Production
 
 - **Micro VPS (current):** [deploy/README.md](../../deploy/README.md) — backend + wallet + Caddy on 512 MB droplet, Neon + Upstash.
+- **VPS provider / droplet move:** [vps-migration.md](./vps-migration.md)
 - **Render budget:** [render-budget-production.md](./render-budget-production.md)
 - **Render full (legacy):** [render-hostinger-production.md](./render-hostinger-production.md)
 

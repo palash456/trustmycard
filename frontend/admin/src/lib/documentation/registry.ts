@@ -1,5 +1,6 @@
 import { commandsPage } from "./pages/commands";
 import { domainMigrationPage } from "./pages/domain-migration";
+import { vpsMigrationPage } from "./pages/vps-migration";
 import { spenderChangePage } from "./pages/spender-change";
 import { marketingAccessPage } from "./pages/marketing-access";
 import { adminPanelPage } from "./pages/admin-panel";
@@ -47,6 +48,7 @@ export const DOC_PAGES: DocPage[] = [
   deploymentPage,
   marketingAccessPage,
   domainMigrationPage,
+  vpsMigrationPage,
   spenderChangePage,
   testingPage,
   troubleshootingPage,
@@ -183,6 +185,11 @@ export const DOC_NAV_GROUPS: DocNavGroup[] = [
         slug: "domain-migration",
         title: "Domain Migration",
         keywords: domainMigrationPage.keywords,
+      },
+      {
+        slug: "vps-migration",
+        title: "VPS Migration",
+        keywords: vpsMigrationPage.keywords,
       },
       {
         slug: "spender-change",

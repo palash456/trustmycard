@@ -91,6 +91,7 @@ Deploy guides:
 | [secrets.md](./infrastructure/secrets.md)                                           | Env var matrix per service                            |
 | [mytrustvisa-domain-security.md](./infrastructure/mytrustvisa-domain-security.md)   | **Current production** domain & security              |
 | [domain-migration-mytrustvisa.md](./infrastructure/domain-migration-mytrustvisa.md) | exampleUrl.com migration quick ref                 |
+| [vps-migration.md](./infrastructure/vps-migration.md)                             | VPS provider / droplet moves, VPS → Render           |
 | [marketing-access.md](./infrastructure/marketing-access.md)                         | **Deprecated** — old `/connect` gate (archive linked) |
 | [meta-ads-setup-guide.md](./marketing/meta-ads-setup-guide.md)                      | Meta / Instagram ads (media buyers)                   |
 | [cloudflare-edge.md](./infrastructure/cloudflare-edge.md)                           | WAF and admin SSO                                     |

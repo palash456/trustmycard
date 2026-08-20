@@ -98,7 +98,9 @@ export const domainMigrationPage: DocPage = {
             Legal pages remain at root paths (
             <DocCode>/frequentlyaskedquestions</DocCode>, etc.). Legacy{" "}
             <DocCode>/connect</DocCode> is removed (expect 404 on the new
-            domain). See{" "}
+            domain). Moving VPS provider or droplet (same domain)? See{" "}
+            <DocLink href="/documentation/vps-migration">VPS Migration</DocLink>
+            . See{" "}
             <DocLink href="/documentation/marketing-access">
               Public Site & Domain
             </DocLink>{" "}

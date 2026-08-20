@@ -88,3 +88,14 @@ deploy/
 | `--confirm-external-data`                      | Allow `--fresh` against external `DATABASE_URL` hosts                    |
 
 See [docs/infrastructure/one-step-deploy.md](../docs/infrastructure/one-step-deploy.md).
+
+## VPS provider / server migration
+
+Moving between VPS providers (DigitalOcean → Hetzner, new droplet, etc.) while keeping Docker + Caddy + `micro` topology: update `deploy/provider.credentials.env` (`VPS_HOST`, and optionally `VPS_USER` / `VPS_SSH_KEY` / `VPS_DEPLOY_PATH`), point DNS A records to the new IP, then:
+
+```bash
+./deploy.sh production --fresh --provider docker-vps --confirm-external-data   # first deploy to new box
+./deploy.sh production --provider docker-vps                                   # later deploys
+```
+
+Do **not** put SSH credentials in `config/platform.env`. Full guide: [docs/infrastructure/vps-migration.md](../docs/infrastructure/vps-migration.md).
