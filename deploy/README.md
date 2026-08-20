@@ -15,12 +15,9 @@ OCI images are the common artifact. Provider adapters only ship and start contai
 Runs **backend + wallet only** with **external** Neon Postgres + Upstash Redis. Images are built on your machine and streamed to the VPS (`docker save | ssh docker load`) — the VPS never runs `npm` or `docker build`.
 
 ```bash
-cp deploy/manifest.production.micro.example.json deploy/manifest.production.json
-cp env/profiles/production/backend.env.example env/profiles/production/backend.env
+npm run setup:production
 # fill backend.env (DATABASE_URL, REDIS_URL, keys) + website.env (NEXT_PUBLIC_*)
-
-cp deploy/provider.credentials.example.env deploy/provider.credentials.env
-# fill VPS_HOST, VPS_USER, VPS_SSH_KEY
+# edit deploy/provider.credentials.env (VPS_HOST, VPS_USER, VPS_SSH_KEY)
 
 ./deploy.sh production --fresh --provider docker-vps
 ./deploy.sh production --provider docker-vps   # subsequent deploys

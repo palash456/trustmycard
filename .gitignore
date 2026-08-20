@@ -1,3 +1,5 @@
+# Local secrets/config — bootstrap from templates: npm run setup (see scripts/bootstrap-env.mjs)
+
 # Dependencies
 node_modules/
 .pnp

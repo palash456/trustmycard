@@ -30,16 +30,12 @@ See [docs/infrastructure/secrets.md](../../docs/infrastructure/secrets.md).
 ## Setup
 
 ```bash
-PROFILE=production   # or development
-
-cp config/platform.env.example config/platform.env
-cp env/profiles/$PROFILE/backend.env.example   env/profiles/$PROFILE/backend.env
-cp env/profiles/$PROFILE/website.env.example   env/profiles/$PROFILE/website.env
-cp env/profiles/$PROFILE/admin.env.example     env/profiles/$PROFILE/admin.env
-# Production split deploy also:
-cp env/profiles/$PROFILE/backend-api.env.example env/profiles/$PROFILE/backend-api.env
-cp env/profiles/$PROFILE/backend-worker.env.example env/profiles/$PROFILE/backend-worker.env
+npm run setup                  # development profile
+npm run setup:production       # production + deploy files
+npm run setup:all              # both profiles + deploy
 ```
+
+See `scripts/bootstrap-env.mjs --help` for flags (`--manifest`, `--force`, etc.).
 
 ## Switch environments
 

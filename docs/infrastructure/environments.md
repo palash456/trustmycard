@@ -19,20 +19,22 @@ For Render, `SERVICE_ROLE=api` loads `backend-api.env`; `SERVICE_ROLE=worker` lo
 
 ## One-time profile setup
 
-For each profile you use, copy examples and fill secrets (never commit live files):
+From repo root, bootstrap local secret files from tracked `*.example` templates (skips files that already exist):
 
 ```bash
-PROFILE=development   # or production
+# Local development (default)
+npm run setup
 
-cp config/platform.env.example config/platform.env
-cp env/profiles/$PROFILE/backend.env.example   env/profiles/$PROFILE/backend.env
-cp env/profiles/$PROFILE/website.env.example   env/profiles/$PROFILE/website.env
-cp env/profiles/$PROFILE/admin.env.example     env/profiles/$PROFILE/admin.env
+# Production profile + deploy credentials + runtime config
+npm run setup:production
 
-# Production Render split (production profile only):
-cp env/profiles/$PROFILE/backend-api.env.example   env/profiles/$PROFILE/backend-api.env
-cp env/profiles/$PROFILE/backend-worker.env.example env/profiles/$PROFILE/backend-worker.env
+# Both profiles + deploy
+npm run setup:all
 ```
+
+Options: `npm run setup -- --help` (e.g. `--profile production`, `--include-deploy`, `--manifest micro-local`, `--force`).
+
+Fill secrets in the created files before starting services. Never commit live profile secrets.
 
 ## Resource isolation
 
