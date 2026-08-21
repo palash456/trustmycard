@@ -1,5 +1,3 @@
-import { isLocalDocumentationEnabled } from "@/lib/local-documentation";
-
 export const ADMIN_PROTECTED_SECTIONS = {
   system: {
     prefix: "/system",
@@ -40,8 +38,9 @@ const SECTIONS_BY_LONGEST_PREFIX = (
 ).sort((a, b) => b[1].prefix.length - a[1].prefix.length);
 
 function isSectionEnabled(section: AdminProtectedSection): boolean {
-  if (section === "documentation") {
-    return isLocalDocumentationEnabled();
+  // Production config and documentation pages are temporarily disabled in admin.
+  if (section === "production-config" || section === "documentation") {
+    return false;
   }
   return true;
 }

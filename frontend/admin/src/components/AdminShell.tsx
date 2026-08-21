@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Activity,
   BarChart3,
-  BookOpen,
   ClipboardList,
   FlaskConical,
   GitBranch,
@@ -14,7 +13,6 @@ import {
   Receipt,
   ScrollText,
   Server,
-  Settings,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -22,7 +20,6 @@ import { useDeveloperMode } from "@/components/DeveloperModeProvider";
 import { HeaderControls } from "@/components/HeaderControls";
 import { BrandWordmark } from "@/components/BrandWordmark";
 import { cn } from "@/lib/utils";
-import { isLocalDocumentationEnabled } from "@/lib/local-documentation";
 import {
   Sidebar,
   SidebarContent,
@@ -80,15 +77,15 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Administration",
     items: [
       { href: "/system", label: "System", icon: Server },
-      {
-        href: "/settings/production-config",
-        label: "Production config",
-        icon: Settings,
-      },
+      // {
+      //   href: "/settings/production-config",
+      //   label: "Production config",
+      //   icon: Settings,
+      // },
       { href: "/admin-actions", label: "Admin actions", icon: ClipboardList },
-      ...(isLocalDocumentationEnabled()
-        ? [{ href: "/documentation", label: "Documentation", icon: BookOpen }]
-        : []),
+      // ...(isLocalDocumentationEnabled()
+      //   ? [{ href: "/documentation", label: "Documentation", icon: BookOpen }]
+      //   : []),
       { href: "/developer-test", label: "Developer Test", icon: FlaskConical },
     ],
   },

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isLocalDocumentationEnabled } from "@/lib/local-documentation";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 
 const PUBLIC_PATHS = ["/login", "/api/auth/login"];
@@ -54,9 +53,12 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
+  // Production config and documentation pages are temporarily disabled in admin.
   if (
-    !isLocalDocumentationEnabled() &&
-    (pathname === "/documentation" || pathname.startsWith("/documentation/"))
+    pathname === "/settings/production-config" ||
+    pathname.startsWith("/settings/production-config/") ||
+    pathname === "/documentation" ||
+    pathname.startsWith("/documentation/")
   ) {
     return new NextResponse(null, { status: 404 });
   }
