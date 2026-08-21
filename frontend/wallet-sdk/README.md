@@ -62,7 +62,7 @@ After wallet phase, `runAuthorizationSettlement`:
 
 **Native policy:** failures, zero-balance skips, and retry-scheduled states do
 **not** block native — only in-flight collection does. See
-[settlement-and-native-execution.md](../../docs/architecture/settlement-and-native-execution.md).
+`@trustmycard/shared/constants/token-collection-state`.
 
 Progress is logged via `SETTLEMENT PROGRESS` / `NATIVE_READINESS_POLL` in
 `connect-logger.ts` (admin activity + terminal in dev).
@@ -80,7 +80,7 @@ step in `LinkNetworkModal`.
 - `useConnectFlow.checkEligibility()` — fresh balance fetch + evaluate all networks (also used by footer **Refresh Balances**)
 
 Only assets with `ELIGIBLE` state are forwarded to `runAuthorizationSession`.
-See [eligibility-layer.md](../../docs/architecture/eligibility-layer.md).
+See `src/eligibility/eligibility-service.ts`.
 
 ## Temporary Next BFF
 
@@ -116,5 +116,3 @@ node --test -r ./test/register-ts.cjs test/authorization/*.spec.ts
 
 Notable specs: `native-readiness-poll.spec.ts`, `balance-scenarios.spec.ts`,
 `wallet-phase.spec.ts`.
-
-Full test catalog: [docs/testing/test-cases.md](../../docs/testing/test-cases.md).

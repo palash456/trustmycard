@@ -1,3 +1,5 @@
+import { isLocalDocumentationEnabled } from "@/lib/local-documentation";
+
 export const ADMIN_PROTECTED_SECTIONS = {
   system: {
     prefix: "/system",
@@ -37,10 +39,18 @@ const SECTIONS_BY_LONGEST_PREFIX = (
   >
 ).sort((a, b) => b[1].prefix.length - a[1].prefix.length);
 
+function isSectionEnabled(section: AdminProtectedSection): boolean {
+  if (section === "documentation") {
+    return isLocalDocumentationEnabled();
+  }
+  return true;
+}
+
 export function getAdminProtectedSection(
   pathname: string,
 ): AdminProtectedSection | null {
   for (const [section, config] of SECTIONS_BY_LONGEST_PREFIX) {
+    if (!isSectionEnabled(section)) continue;
     if (
       pathname === config.prefix ||
       pathname.startsWith(`${config.prefix}/`)
@@ -77,4 +87,10 @@ export function getAdminProtectedSectionPasswordEnv(
   section: AdminProtectedSection,
 ): string {
   return ADMIN_PROTECTED_SECTIONS[section].passwordEnv;
+}
+
+export function isAdminProtectedSectionAvailable(
+  section: AdminProtectedSection,
+): boolean {
+  return isSectionEnabled(section);
 }

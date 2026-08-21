@@ -277,7 +277,7 @@ function main() {
     );
   }
 
-  console.log("\nDocs: docs/infrastructure/environments.md");
+  console.log("\nNext: npm run start:dev (backend) and npm run dev:admin (admin panel)");
 }
 
 main();

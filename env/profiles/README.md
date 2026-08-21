@@ -25,7 +25,7 @@ env/profiles/
 | `worker`       | `backend-worker.env` | required                         |
 | `all`          | `backend.env`        | optional (local dev / micro VPS) |
 
-See [docs/infrastructure/secrets.md](../../docs/infrastructure/secrets.md).
+See `scripts/bootstrap-env.mjs --help` for backend role overlays and secret placement.
 
 ## Setup
 
@@ -42,7 +42,7 @@ npm run setup:import -- vaultDDMMHHmmss.zip   # unzip on new PC (password auto-d
 
 See `scripts/bootstrap-env.mjs --help` for flags (`--from`, `--manifest`, `--force`, etc.).
 
-**New machine:** run `npm run setup:export:all`, push `env/vaultDDMMHHmmss.zip`, then on the new PC: `npm run setup:import` + `npm run setup:all`. Zip password: `Microsoft@2025` + `HHmmss` from the filename. Full guide: [environments.md](../../docs/infrastructure/environments.md).
+**New machine:** run `npm run setup:export:all`, push `env/vaultDDMMHHmmss.zip`, then on the new PC: `npm run setup:import` + `npm run setup:all`. Zip password: `Microsoft@2025` + `HHmmss` from the filename.
 
 ## Switch environments
 
@@ -50,8 +50,6 @@ See `scripts/bootstrap-env.mjs --help` for flags (`--from`, `--manifest`, `--for
 | ------------------- | ---------------------------------------------------------------------------------------- |
 | Development         | `npm run start:dev`, `npm run dev:website`, `npm run dev:marketing`, `npm run dev:admin` |
 | Production (VPS)    | [deploy/README.md](../../deploy/README.md) — micro topology + Caddy                      |
-| Production (Render) | [render-budget-production.md](../../docs/infrastructure/render-budget-production.md)     |
+| Production (Render) | `render-budget.yaml` at repo root                                                          |
 
 Loader: [`config/load-env.mjs`](../../config/load-env.mjs).
-
-See [docs/infrastructure/environments.md](../../docs/infrastructure/environments.md).

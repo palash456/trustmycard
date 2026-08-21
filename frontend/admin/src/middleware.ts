@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isLocalDocumentationEnabled } from "@/lib/local-documentation";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 
 const PUBLIC_PATHS = ["/login", "/api/auth/login"];
@@ -51,6 +52,13 @@ export async function middleware(req: NextRequest) {
 
   if (pathname === "/") {
     return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
+  if (
+    !isLocalDocumentationEnabled() &&
+    (pathname === "/documentation" || pathname.startsWith("/documentation/"))
+  ) {
+    return new NextResponse(null, { status: 404 });
   }
 
   return NextResponse.next();

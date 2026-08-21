@@ -8,6 +8,7 @@
 #   vercel pull --yes --environment=production
 #
 # Vercel env (Production): BACKEND_API_URL=https://api.wallet.futuretrustcards.ct.ws
+#   BACKEND_API_RESOLVE_IP=185.246.190.34  (required when API DNS uses nip.io)
 #   plus ADMIN_API_KEY, ADMIN_SESSION_SECRET, ADMIN_PANEL_PASSWORD, etc.
 set -euo pipefail
 

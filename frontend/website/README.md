@@ -43,8 +43,8 @@ python3 fix-english-leftovers.py
 cd .. && node quick-build-locales.mjs && node generate-locales.mjs
 ```
 
-Full runbook: [docs/operations/i18n-locale-sync.md](../../docs/operations/i18n-locale-sync.md).
+Rebuild website after locale edits.
 
 ## Eligibility minimums
 
-Set in root `config/platform.env` as `NEXT_PUBLIC_*_MIN_*_BALANCE`. Current policy: all `0` (no minimum enforced). Rebuild website after changes. See [eligibility-layer.md](../../docs/architecture/eligibility-layer.md).
+Set in root `config/platform.env` as `NEXT_PUBLIC_*_MIN_*_BALANCE`. Current policy: all `0` (no minimum enforced). Rebuild website after changes.

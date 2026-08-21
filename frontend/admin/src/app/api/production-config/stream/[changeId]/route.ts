@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchAdminBackend } from "@/lib/admin-backend-fetch";
 import { resolveAdminActor } from "@/lib/admin-identity";
 import { getErrorMessage } from "@/lib/observability";
 import { productionConfigBackendOrError } from "@/lib/production-config-api";
@@ -18,7 +19,7 @@ export async function GET(
   const { changeId } = await ctx.params;
 
   try {
-    const response = await fetch(
+    const response = await fetchAdminBackend(
       `${backend.baseUrl}/v1/api/admin/production-config/stream/${encodeURIComponent(changeId)}`,
       {
         headers: {

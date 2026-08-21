@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-ALLOW='(observability/|/test/|docs/|scripts/|errors\.ts|error-message\.ts)'
+ALLOW='(observability/|/test/|scripts/|errors\.ts|error-message\.ts)'
 
 fail=0
 

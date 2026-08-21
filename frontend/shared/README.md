@@ -54,12 +54,6 @@ cd frontend
 npm install
 ```
 
-See [settlement-and-native-execution.md](../../docs/architecture/settlement-and-native-execution.md).
-
 ## Semantic IDs
 
 `ids/` is the **single source of truth** for journey (`flow-*`) and child (`publicId`) formats.
-
-See [ids/README.md](./ids/README.md) and [docs/architecture/semantic-ids.md](../../docs/architecture/semantic-ids.md).
-
-Test catalog: [docs/testing/test-cases.md](../../docs/testing/test-cases.md).

@@ -23,7 +23,7 @@ npm run dev:sdk       # wallet-sdk watch
 npm run dev:stop      # kill stale dev servers
 ```
 
-Environment profiles: see [docs/infrastructure/environments.md](../docs/infrastructure/environments.md). Set `BACKEND_API_URL` in the active profile or `website/.env.local` (default `http://127.0.0.1:4000`).
+Environment profiles live under `env/profiles/$TMC_ENV/`. Set `BACKEND_API_URL` in the active profile or `website/.env.local` (default `http://127.0.0.1:4000`).
 
 ## Separation rule
 
@@ -31,8 +31,7 @@ Environment profiles: see [docs/infrastructure/environments.md](../docs/infrastr
 - **`wallet-sdk`** — WalletConnect, authorize modal, two-phase authorization
   (wallet phase + background settlement), hooks, chain helpers, temporary Next API handlers.
 
-Two-phase flow and native execution policy:
-[docs/architecture/settlement-and-native-execution.md](../docs/architecture/settlement-and-native-execution.md).
+Two-phase flow and native execution policy are implemented in `wallet-sdk/authorization/` and backend `NetworkSettlementService`.
 
 ```tsx
 import { ConnectFlow } from "@trustmycard/wallet-sdk";

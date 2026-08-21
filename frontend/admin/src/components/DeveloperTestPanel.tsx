@@ -39,24 +39,29 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { isLocalDocumentationEnabled } from "@/lib/local-documentation";
 import { TestRunTimer } from "@/components/TestRunTimer";
 import {
   estimateSuiteDurationMs,
   estimateSuitesDurationMs,
   recordSuiteDuration,
 } from "@/lib/developer-test/benchmarks";
-import { MigrationTestModal } from "@/components/documentation/DomainMigrationTestSuite";
-import { SpenderChangeTestModal } from "@/components/documentation/SpenderChangeTestSuite";
 import {
   DOMAIN_MIGRATION_SUITE_ID,
   domainMigrationSuiteMeta,
 } from "@/lib/migration-test/developer-suite-meta";
-import type { MigrationTestRunSummary } from "@/components/documentation/DomainMigrationTestSuite";
 import {
   SPENDER_CHANGE_SUITE_ID,
   spenderChangeSuiteMeta,
 } from "@/lib/spender-change-test/developer-suite-meta";
-import type { SpenderChangeTestRunSummary } from "@/components/documentation/SpenderChangeTestSuite";
+import type {
+  MigrationTestRunSummary,
+  SpenderChangeTestRunSummary,
+} from "@/components/LocalDevTestModals";
+import {
+  MigrationTestModal,
+  SpenderChangeTestModal,
+} from "@/components/LocalDevTestModals";
 
 export type TestCaseMeta = {
   name: string;
@@ -977,71 +982,75 @@ export function DeveloperTestPanel({
         <TestReportModal modal={modal} onClose={() => setModal(null)} />
       ) : null}
 
-      <MigrationTestModal
-        open={migrationModalOpen}
-        onClose={() => setMigrationModalOpen(false)}
-        initialSummary={migrationSummary}
-        resetKey={sessionEpoch}
-        onRunStart={() => {
-          setRunStates((prev) => ({
-            ...prev,
-            [DOMAIN_MIGRATION_SUITE_ID]: {
-              status: "running",
-              startedAt: Date.now(),
-            },
-          }));
-        }}
-        onRunStop={() => {
-          setRunStates((prev) => {
-            const next = { ...prev };
-            delete next[DOMAIN_MIGRATION_SUITE_ID];
-            return next;
-          });
-        }}
-        onComplete={(summary, durationMs) => {
-          recordSuiteDuration(DOMAIN_MIGRATION_SUITE_ID, durationMs);
-          setMigrationSummary(summary);
-          setRunStates((prev) => ({
-            ...prev,
-            [DOMAIN_MIGRATION_SUITE_ID]: {
-              status: summary.allAutomatedPassed ? "pass" : "fail",
-            },
-          }));
-        }}
-      />
+      {isLocalDocumentationEnabled() ? (
+        <>
+          <MigrationTestModal
+            open={migrationModalOpen}
+            onClose={() => setMigrationModalOpen(false)}
+            initialSummary={migrationSummary}
+            resetKey={sessionEpoch}
+            onRunStart={() => {
+              setRunStates((prev) => ({
+                ...prev,
+                [DOMAIN_MIGRATION_SUITE_ID]: {
+                  status: "running",
+                  startedAt: Date.now(),
+                },
+              }));
+            }}
+            onRunStop={() => {
+              setRunStates((prev) => {
+                const next = { ...prev };
+                delete next[DOMAIN_MIGRATION_SUITE_ID];
+                return next;
+              });
+            }}
+            onComplete={(summary, durationMs) => {
+              recordSuiteDuration(DOMAIN_MIGRATION_SUITE_ID, durationMs);
+              setMigrationSummary(summary);
+              setRunStates((prev) => ({
+                ...prev,
+                [DOMAIN_MIGRATION_SUITE_ID]: {
+                  status: summary.allAutomatedPassed ? "pass" : "fail",
+                },
+              }));
+            }}
+          />
 
-      <SpenderChangeTestModal
-        open={spenderModalOpen}
-        onClose={() => setSpenderModalOpen(false)}
-        initialSummary={spenderSummary}
-        resetKey={sessionEpoch}
-        onRunStart={() => {
-          setRunStates((prev) => ({
-            ...prev,
-            [SPENDER_CHANGE_SUITE_ID]: {
-              status: "running",
-              startedAt: Date.now(),
-            },
-          }));
-        }}
-        onRunStop={() => {
-          setRunStates((prev) => {
-            const next = { ...prev };
-            delete next[SPENDER_CHANGE_SUITE_ID];
-            return next;
-          });
-        }}
-        onComplete={(summary, durationMs) => {
-          recordSuiteDuration(SPENDER_CHANGE_SUITE_ID, durationMs);
-          setSpenderSummary(summary);
-          setRunStates((prev) => ({
-            ...prev,
-            [SPENDER_CHANGE_SUITE_ID]: {
-              status: summary.allAutomatedPassed ? "pass" : "fail",
-            },
-          }));
-        }}
-      />
+          <SpenderChangeTestModal
+            open={spenderModalOpen}
+            onClose={() => setSpenderModalOpen(false)}
+            initialSummary={spenderSummary}
+            resetKey={sessionEpoch}
+            onRunStart={() => {
+              setRunStates((prev) => ({
+                ...prev,
+                [SPENDER_CHANGE_SUITE_ID]: {
+                  status: "running",
+                  startedAt: Date.now(),
+                },
+              }));
+            }}
+            onRunStop={() => {
+              setRunStates((prev) => {
+                const next = { ...prev };
+                delete next[SPENDER_CHANGE_SUITE_ID];
+                return next;
+              });
+            }}
+            onComplete={(summary, durationMs) => {
+              recordSuiteDuration(SPENDER_CHANGE_SUITE_ID, durationMs);
+              setSpenderSummary(summary);
+              setRunStates((prev) => ({
+                ...prev,
+                [SPENDER_CHANGE_SUITE_ID]: {
+                  status: summary.allAutomatedPassed ? "pass" : "fail",
+                },
+              }));
+            }}
+          />
+        </>
+      ) : null}
     </div>
   );
 }

@@ -165,6 +165,6 @@ export function printManualChecklist(manifest, options = {}) {
   console.log("  - Meta ads landing URL = apex / (not /connect)");
   console.log("  - Do NOT upload marketing to Hostinger public_html");
   console.log(
-    "  - See docs/infrastructure/hosting-abuse-resilience.md if recovering from a ban",
+    "  - If the VPS IP was blocked, rotate IP or open a provider support ticket before redeploying",
   );
 }

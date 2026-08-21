@@ -1,27 +1,15 @@
-import { notFound, redirect } from "next/navigation";
-import { DocumentationShell } from "@/components/documentation/DocumentationShell";
-import { DEFAULT_DOC_SLUG, getDocPage } from "@/lib/documentation/registry";
+import { notFound } from "next/navigation";
+import { isLocalDocumentationEnabled } from "@/lib/local-documentation";
+import { renderDocumentationPage } from "@/lib/local-documentation-page";
 
 export default async function DocumentationPage({
   params,
 }: {
   params: Promise<{ slug?: string[] }>;
 }) {
-  const { slug } = await params;
-  const resolvedSlug = slug?.[0];
-
-  if (slug && slug.length > 1) {
+  if (!isLocalDocumentationEnabled()) {
     notFound();
   }
 
-  if (!resolvedSlug) {
-    redirect(`/documentation/${DEFAULT_DOC_SLUG}`);
-  }
-
-  const page = getDocPage(resolvedSlug);
-  if (!page) {
-    notFound();
-  }
-
-  return <DocumentationShell page={page} />;
+  return renderDocumentationPage(await params);
 }

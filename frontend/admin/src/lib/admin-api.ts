@@ -4,6 +4,7 @@ import {
   getDevBackend,
   type AdminBackendConfig,
 } from "./admin-backend";
+import { fetchAdminBackend } from "./admin-backend-fetch";
 import { getErrorMessage } from "./observability";
 
 export async function adminFetch<T = unknown>(
@@ -38,7 +39,7 @@ export async function adminFetch<T = unknown>(
 
   let res: Response;
   try {
-    res = await fetch(url, {
+    res = await fetchAdminBackend(url, {
       ...init,
       headers,
       cache: "no-store",

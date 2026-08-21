@@ -12,7 +12,7 @@ npm run prisma:push
 
 Default setup uses local PostgreSQL (`DATABASE_URL` pointing to `localhost:5432`).
 
-Copy `env/profiles/development/backend.env.example` to `env/profiles/development/backend.env` and fill in values. `npm run start:dev` loads profile env via `config/load-env.mjs` (see [environments.md](../docs/infrastructure/environments.md)).
+Copy `env/profiles/development/backend.env.example` to `env/profiles/development/backend.env` and fill in values. `npm run start:dev` loads profile env via `config/load-env.mjs`.
 
 ## Layout
 
@@ -46,8 +46,7 @@ Two-phase authorization uses `NetworkSettlementService` and
 | `GET /v1/api/network-settlement/:id/status`      | Session + per-token logical states        |
 
 Native estimate/register paths call `assertNativeExecutionAllowed()` on register and
-confirm (not on read-only estimate). Full behavior:
-[docs/architecture/settlement-and-native-execution.md](../docs/architecture/settlement-and-native-execution.md).
+confirm (not on read-only estimate). See `NetworkSettlementService` and `WalletService.evaluateNativeReadiness()`.
 
 Run `npx prisma migrate deploy` (or `db push` in dev) for `NetworkSettlementSession.tokenPlan`.
 

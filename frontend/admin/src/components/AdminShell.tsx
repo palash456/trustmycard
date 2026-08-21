@@ -22,6 +22,7 @@ import { useDeveloperMode } from "@/components/DeveloperModeProvider";
 import { HeaderControls } from "@/components/HeaderControls";
 import { BrandWordmark } from "@/components/BrandWordmark";
 import { cn } from "@/lib/utils";
+import { isLocalDocumentationEnabled } from "@/lib/local-documentation";
 import {
   Sidebar,
   SidebarContent,
@@ -85,7 +86,9 @@ const NAV_SECTIONS: NavSection[] = [
         icon: Settings,
       },
       { href: "/admin-actions", label: "Admin actions", icon: ClipboardList },
-      { href: "/documentation", label: "Documentation", icon: BookOpen },
+      ...(isLocalDocumentationEnabled()
+        ? [{ href: "/documentation", label: "Documentation", icon: BookOpen }]
+        : []),
       { href: "/developer-test", label: "Developer Test", icon: FlaskConical },
     ],
   },

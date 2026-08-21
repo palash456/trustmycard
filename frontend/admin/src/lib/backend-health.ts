@@ -5,6 +5,7 @@ import {
   getProductionBackend,
   type AdminBackendConfig,
 } from "./admin-backend";
+import { fetchAdminBackend } from "./admin-backend-fetch";
 import { getErrorMessage } from "./observability";
 import type { LogEnv } from "./log-env-cookie";
 import { isLiveAdminPanel } from "./local-dev-policy";
@@ -49,7 +50,7 @@ export async function probeBackendHealth(
   }
 
   try {
-    const res = await fetch(`${backend.baseUrl}${HEALTH_PATH}`, {
+    const res = await fetchAdminBackend(`${backend.baseUrl}${HEALTH_PATH}`, {
       cache: "no-store",
       signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
     });

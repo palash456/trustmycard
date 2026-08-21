@@ -21,6 +21,7 @@ import {
   getAdminProtectedSection,
   getAdminProtectedSectionLabel,
   isAdminProtectedRoute,
+  isAdminProtectedSectionAvailable,
 } from "@/lib/developer-mode";
 
 type DeveloperModeContextValue = {

@@ -1,5 +1,32 @@
 import type { TestSuiteMeta } from "@/components/DeveloperTestPanel";
-import { SPENDER_CHANGE_TEST_STEP_IDS } from "@/lib/documentation/spender-change-test-config";
+
+const SPENDER_CHANGE_TEST_STEP_IDS = [
+  "a1",
+  "a2",
+  "a3",
+  "a4",
+  "b1",
+  "b2",
+  "b3",
+  "b4",
+  "b5",
+  "b6",
+  "c1",
+  "c2",
+  "d1",
+  "d2",
+  "d3",
+  "d4",
+  "d5",
+  "d6",
+  "f1",
+  "f2",
+  "g1",
+  "g2",
+  "g3",
+  "g4",
+  "g5",
+] as const;
 
 export const SPENDER_CHANGE_SUITE_ID = "spender-change-verification";
 

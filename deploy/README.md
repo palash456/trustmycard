@@ -87,7 +87,7 @@ deploy/
 | `--confirm-recreate-data --i-accept-data-loss` | Remove **only** the named compose Postgres volume                        |
 | `--confirm-external-data`                      | Allow `--fresh` against external `DATABASE_URL` hosts                    |
 
-See [docs/infrastructure/one-step-deploy.md](../docs/infrastructure/one-step-deploy.md).
+See `deploy/core/verify.mjs` for post-deploy checks.
 
 ## VPS provider / server migration
 
@@ -98,7 +98,7 @@ Moving between VPS providers (DigitalOcean → Hetzner, new droplet, etc.) while
 ./deploy.sh production --provider docker-vps                                   # later deploys
 ```
 
-Do **not** put SSH credentials in `config/platform.env`. Full guide: [docs/infrastructure/vps-migration.md](../docs/infrastructure/vps-migration.md).
+Do **not** put SSH credentials in `config/platform.env`. Update `deploy/provider.credentials.env`, point DNS A records to the new VPS IP, then redeploy with `./deploy.sh production --provider docker-vps`.
 
 ## Post-deploy checklist
 
@@ -106,11 +106,11 @@ After the stack is up, confirm **runtime config** — not only containers:
 
 | Task | Files | Notes |
 | ---- | ----- | ----- |
-| DNS + TLS | Cloudflare A records → VPS IP | [cloudflare-setup.md](../docs/infrastructure/cloudflare-setup.md) |
+| DNS + TLS | Cloudflare A records → VPS IP | A records for apex + `api.` → VPS IP |
 | Domain / Meta Pixel | `deploy/runtime-config/production.json` | `npm run config:sync-vps` after local updates |
 | Platform policy | `config/platform.env`, `env/vault/config/platform.env` | Eligibility `NEXT_PUBLIC_*_MIN_*_BALANCE`, wallets, flags |
 | `NEXT_PUBLIC_*` changes | Rebuild wallet image | `--skip-images` is **not** enough |
-| Locales / tab title | `frontend/website/locales/*.json` | [i18n-locale-sync.md](../docs/operations/i18n-locale-sync.md) |
+| Locales / tab title | `frontend/website/locales/*.json` | Rebuild wallet after locale edits |
 | Smoke tests | curl apex + `api.` settings/public | Also WalletConnect on `/` |
 
 Automated verify at end of deploy: `deploy/core/verify.mjs`.

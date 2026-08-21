@@ -4,7 +4,6 @@
 # No Render Postgres/Redis, no separate worker service, no admin on Render.
 #
 # Deploy: Render Dashboard → New Blueprint → select this file (or symlink as render.yaml).
-# Guide: docs/infrastructure/render-budget-production.md
 
 services:
   - type: web

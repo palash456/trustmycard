@@ -9,6 +9,7 @@ import {
   describeAdminBackend,
   resolveProxyBackend,
 } from "@/lib/admin-backend";
+import { fetchAdminBackend } from "@/lib/admin-backend-fetch";
 import { getErrorMessage } from "@/lib/observability";
 import { resolveAdminActor } from "@/lib/admin-identity";
 import { isDemoModeFromCookies } from "@/lib/log-env-cookie";
@@ -129,7 +130,7 @@ async function proxy(req: NextRequest, method: string, path: string[]) {
   }
 
   try {
-    const res = await fetch(url, init);
+    const res = await fetchAdminBackend(url, init);
 
     if (isStream) {
       return new NextResponse(res.body, {
