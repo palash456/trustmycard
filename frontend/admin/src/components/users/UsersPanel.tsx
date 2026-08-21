@@ -25,7 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useInfiniteScrollList } from "@/hooks/use-infinite-scroll-list";
-import { buildQuery } from "@/lib/admin-api";
+import { buildQuery } from "@/lib/admin-query";
 import { formatAdminAmount } from "@/lib/amount-display";
 import { readAdminProxyError } from "@/lib/admin-proxy-client";
 import { blockExplorerAddress, formatDate } from "@/lib/format";

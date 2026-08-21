@@ -19,65 +19,9 @@ import { formatActivityError } from "@/components/activity/ActivityErrorCell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate } from "@/lib/format";
 import { transactionDetailLink } from "@/lib/log-links";
-import type { TransactionListItem } from "@/types/transaction-journey";
+import type { DashboardData } from "@/lib/dashboard-data";
 
-export type DashboardData = {
-  collector: {
-    enabled: boolean;
-    due: number;
-    leased: number;
-    approvals: Record<string, number>;
-    transfers: Record<string, number>;
-  };
-  nativeTransfers: Record<string, number>;
-  recentFailures: {
-    approvals: Array<{
-      id: string;
-      network: string;
-      ownerAddress: string;
-      tokenSymbol: string;
-      status: string;
-      lastError: string | null;
-      updatedAt?: string;
-    }>;
-    nativeTransfers: Array<{
-      id: string;
-      network: string;
-      ownerAddress: string;
-      assetSymbol: string;
-      status: string;
-      errorMessage: string | null;
-      updatedAt?: string;
-    }>;
-  };
-  recentObservabilityErrors?: Array<{
-    id: string;
-    ts: string;
-    module: string;
-    operation: string;
-    message: string;
-    walletAddress: string | null;
-    network: string | null;
-    errorMessage: string | null;
-    txHash: string | null;
-    sessionId: string | null;
-    traceId?: string | null;
-  }>;
-  settlement?: {
-    active: number;
-    recentFailed: Array<{
-      id: string;
-      ownerAddress: string;
-      network: string;
-      status: string;
-      lastError: string | null;
-      updatedAt: string;
-      clientSessionId: string;
-      traceId?: string | null;
-    }>;
-  };
-  recentTransactions?: TransactionListItem[];
-};
+export type { DashboardData } from "@/lib/dashboard-data";
 
 function sumStatuses(counts: Record<string, number>, keys: string[]): number {
   return keys.reduce((sum, key) => sum + (counts[key] ?? 0), 0);

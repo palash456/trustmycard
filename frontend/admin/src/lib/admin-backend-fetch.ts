@@ -1,13 +1,26 @@
-import { Agent, fetch as undiciFetch } from "undici";
+import "server-only";
 
-let pinnedAgent: Agent | null = null;
+type PinnedUndici = typeof import("undici");
+
+let pinnedAgent: InstanceType<PinnedUndici["Agent"]> | null = null;
+let undiciModule: PinnedUndici | null = null;
 
 function resolvePinnedBackendIp(): string | null {
   const configured = process.env.BACKEND_API_RESOLVE_IP?.trim();
   return configured || null;
 }
 
-function getPinnedAgent(servername: string): Agent {
+async function loadUndici(): Promise<PinnedUndici> {
+  if (!undiciModule) {
+    undiciModule = await import("undici");
+  }
+  return undiciModule;
+}
+
+async function getPinnedAgent(
+  Agent: PinnedUndici["Agent"],
+  servername: string,
+): Promise<InstanceType<PinnedUndici["Agent"]>> {
   if (!pinnedAgent) {
     pinnedAgent = new Agent({
       connect: {
@@ -18,7 +31,9 @@ function getPinnedAgent(servername: string): Agent {
   return pinnedAgent;
 }
 
-function shouldPinBackendRequest(url: string): { ip: string; hostname: string } | null {
+function shouldPinBackendRequest(
+  url: string,
+): { ip: string; hostname: string } | null {
   const pinnedIp = resolvePinnedBackendIp();
   if (!pinnedIp) return null;
 
@@ -43,16 +58,18 @@ export async function fetchAdminBackend(
     return fetch(url, init);
   }
 
+  const { Agent, fetch: undiciFetch } = await loadUndici();
   const pinnedUrl = url.replace(`://${pin.hostname}`, `://${pin.ip}`);
   const headers = new Headers(init.headers);
   if (!headers.has("host")) {
     headers.set("host", pin.hostname);
   }
 
+  const dispatcher = await getPinnedAgent(Agent, pin.hostname);
   const undiciInit = {
     ...init,
     headers,
-    dispatcher: getPinnedAgent(pin.hostname),
+    dispatcher,
   };
 
   return undiciFetch(

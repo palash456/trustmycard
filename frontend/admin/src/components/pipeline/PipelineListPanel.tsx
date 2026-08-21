@@ -22,7 +22,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useInfiniteScrollList } from "@/hooks/use-infinite-scroll-list";
-import { buildQuery } from "@/lib/admin-api";
+import { buildQuery } from "@/lib/admin-query";
 import { readAdminProxyError } from "@/lib/admin-proxy-client";
 
 const PAGE_SIZE = 30;

@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { buildQuery } from "@/lib/admin-api";
+import { buildQuery } from "@/lib/admin-query";
 import { readAdminProxyError } from "@/lib/admin-proxy-client";
 import { formatDate } from "@/lib/format";
 import {

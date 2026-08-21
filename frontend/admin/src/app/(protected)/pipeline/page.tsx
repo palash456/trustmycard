@@ -6,15 +6,14 @@ import { PageToolbar } from "@/components/PageToolbar";
 import { PipelineTabContent } from "@/components/pipeline/PipelineTabContent";
 import type { PipelineTab } from "@/components/pipeline/PipelineControls";
 import { adminGetData, buildQuery } from "@/lib/admin-data";
+import {
+  normalizeDashboardData,
+  type DashboardCollector,
+} from "@/lib/dashboard-data";
 import type { UserListResponse } from "@/types/users";
 
 type DashboardSummary = {
-  collector: {
-    enabled: boolean;
-    due: number;
-    approvals: Record<string, number>;
-    transfers: Record<string, number>;
-  };
+  collector: DashboardCollector;
   nativeTransfers: Record<string, number>;
 };
 
@@ -38,7 +37,7 @@ export default async function PipelinePage({
   let error: string | null = null;
 
   try {
-    const summaryPromise = adminGetData<DashboardSummary>("/admin/dashboard");
+    const summaryPromise = adminGetData<unknown>("/admin/dashboard");
     const userPromise = owner
       ? adminGetData<UserListResponse>(
           `/admin/users${buildQuery({ search: owner, limit: "1" })}`,
@@ -46,7 +45,11 @@ export default async function PipelinePage({
       : Promise.resolve(null);
 
     const [summary, users] = await Promise.all([summaryPromise, userPromise]);
-    dashboard = summary;
+    const normalized = normalizeDashboardData(summary);
+    dashboard = {
+      collector: normalized.collector,
+      nativeTransfers: normalized.nativeTransfers,
+    };
     userContext = users?.items[0] ?? null;
   } catch (err) {
     error = err instanceof Error ? err.message : "Failed to load pipeline";

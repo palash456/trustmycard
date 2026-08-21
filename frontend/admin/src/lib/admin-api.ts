@@ -1,3 +1,5 @@
+import "server-only";
+
 import {
   backendUnreachableHint,
   describeAdminBackend,
@@ -6,6 +8,8 @@ import {
 } from "./admin-backend";
 import { fetchAdminBackend } from "./admin-backend-fetch";
 import { getErrorMessage } from "./observability";
+
+export { buildQuery } from "./admin-query";
 
 export async function adminFetch<T = unknown>(
   path: string,
@@ -73,16 +77,4 @@ export async function adminFetch<T = unknown>(
   }
 
   return json;
-}
-
-export function buildQuery(
-  params: Record<string, string | number | boolean | undefined | null>,
-): string {
-  const q = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (value === undefined || value === null || value === "") continue;
-    q.set(key, String(value));
-  }
-  const s = q.toString();
-  return s ? `?${s}` : "";
 }

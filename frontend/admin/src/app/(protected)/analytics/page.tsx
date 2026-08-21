@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { PageRefreshButton } from "@/components/PageRefreshButton";
 import { PageToolbar } from "@/components/PageToolbar";
 import { adminGetData } from "@/lib/admin-data";
-import { buildQuery } from "@/lib/admin-api";
+import { buildQuery } from "@/lib/admin-query";
 import type { AnalyticsResponse } from "@/types/analytics";
 
 export default async function AnalyticsPage({

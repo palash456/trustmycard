@@ -1,9 +1,12 @@
+import "server-only";
+
 import { connection } from "next/server";
 import { cookies } from "next/headers";
 import { resolveActiveBackend } from "./admin-backend";
 import { isDemoModeFromCookies } from "./log-env-cookie";
 import { getDemoFixture } from "@/demo/fixtures";
-import { adminFetch, buildQuery } from "./admin-api";
+import { adminFetch } from "./admin-api";
+import { buildQuery } from "./admin-query";
 
 export { buildQuery };
 
