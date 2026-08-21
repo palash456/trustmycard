@@ -2,9 +2,12 @@
 
 FROM node:20-bookworm AS build
 WORKDIR /app
+COPY deploy/docker/npm-retry.sh /usr/local/bin/npm-retry.sh
+RUN chmod +x /usr/local/bin/npm-retry.sh
 COPY frontend/package.json frontend/package-lock.json ./frontend/
 COPY frontend/marketing/package.json ./frontend/marketing/
-RUN cd frontend && npm ci --include=dev
+RUN --mount=type=cache,target=/root/.npm \
+  npm-retry.sh sh -c 'cd frontend && npm ci --workspace=@trustmycard/marketing --include-workspace-root --include=dev'
 COPY frontend/marketing ./frontend/marketing
 COPY config ./config
 COPY env ./env

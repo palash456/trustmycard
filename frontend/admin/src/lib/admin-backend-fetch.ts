@@ -19,12 +19,15 @@ async function loadUndici(): Promise<PinnedUndici> {
 
 async function getPinnedAgent(
   Agent: PinnedUndici["Agent"],
-  servername: string,
+  pin: { ip: string; hostname: string },
 ): Promise<InstanceType<PinnedUndici["Agent"]>> {
   if (!pinnedAgent) {
+    // Keep the request URL on the real hostname; only the TCP/TLS target is pinned.
+    // Replacing the hostname in the URL makes Caddy return 200 with an empty body.
     pinnedAgent = new Agent({
       connect: {
-        servername,
+        hostname: pin.ip,
+        servername: pin.hostname,
       },
     });
   }
@@ -59,21 +62,10 @@ export async function fetchAdminBackend(
   }
 
   const { Agent, fetch: undiciFetch } = await loadUndici();
-  const pinnedUrl = url.replace(`://${pin.hostname}`, `://${pin.ip}`);
-  const headers = new Headers(init.headers);
-  if (!headers.has("host")) {
-    headers.set("host", pin.hostname);
-  }
+  const dispatcher = await getPinnedAgent(Agent, pin);
 
-  const dispatcher = await getPinnedAgent(Agent, pin.hostname);
-  const undiciInit = {
+  return undiciFetch(url, {
     ...init,
-    headers,
     dispatcher,
-  };
-
-  return undiciFetch(
-    pinnedUrl,
-    undiciInit as Parameters<typeof undiciFetch>[1],
-  ) as unknown as Promise<Response>;
+  } as Parameters<typeof undiciFetch>[1]) as unknown as Promise<Response>;
 }

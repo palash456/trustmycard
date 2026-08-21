@@ -80,7 +80,10 @@ export function buildImages(ctx) {
         ...buildArgsFor(component, ctx),
         repoRoot,
       ],
-      { stdio: "inherit" },
+      {
+        stdio: "inherit",
+        env: { ...process.env, DOCKER_BUILDKIT: "1" },
+      },
     );
     if (result.status !== 0) {
       throw new Error(`Docker build failed for ${component}`);

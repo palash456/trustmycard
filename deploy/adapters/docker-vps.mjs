@@ -39,7 +39,18 @@ function sshTarget(creds) {
 }
 
 function sshBaseArgs(creds) {
-  const args = ["-o", "StrictHostKeyChecking=accept-new"];
+  const args = [
+    "-o",
+    "StrictHostKeyChecking=accept-new",
+    "-o",
+    "ServerAliveInterval=30",
+    "-o",
+    "ServerAliveCountMax=120",
+    "-o",
+    "TCPKeepAlive=yes",
+    "-o",
+    "ConnectTimeout=30",
+  ];
   if (creds.VPS_SSH_KEY) {
     args.push("-i", expandHome(creds.VPS_SSH_KEY));
   }

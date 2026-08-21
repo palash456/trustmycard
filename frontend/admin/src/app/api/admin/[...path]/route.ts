@@ -144,6 +144,16 @@ async function proxy(req: NextRequest, method: string, path: string[]) {
     }
 
     const text = await res.text();
+    if (res.ok && !text.trim()) {
+      return NextResponse.json(
+        {
+          error: `Production API returned an empty response (${res.status})`,
+          env: backend.env,
+          url: backend.baseUrl,
+        },
+        { status: 502 },
+      );
+    }
     return new NextResponse(text, {
       status: res.status,
       headers: {

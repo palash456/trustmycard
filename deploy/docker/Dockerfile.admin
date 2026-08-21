@@ -2,10 +2,13 @@
 
 FROM node:20-bookworm AS build
 WORKDIR /app
+COPY deploy/docker/npm-retry.sh /usr/local/bin/npm-retry.sh
+RUN chmod +x /usr/local/bin/npm-retry.sh
 COPY frontend/package.json frontend/package-lock.json ./frontend/
 COPY frontend/admin/package.json ./frontend/admin/
 COPY frontend/shared/package.json ./frontend/shared/
-RUN cd frontend && npm ci --include=dev
+RUN --mount=type=cache,target=/root/.npm \
+  npm-retry.sh sh -c 'cd frontend && npm ci --workspace=@trustmycard/admin --workspace=@trustmycard/shared --include-workspace-root --include=dev'
 COPY frontend ./frontend
 COPY config ./config
 COPY env ./env
@@ -14,7 +17,8 @@ RUN cd frontend \
   && npm run build:shared \
   && npm run build -w @trustmycard/admin
 
-FROM node:20-bookworm-slim AS runtime
+FROM node:20-alpine AS runtime
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 ENV NODE_ENV=production
 ENV TMC_ENV=production
@@ -23,5 +27,8 @@ ENV HOSTNAME=0.0.0.0
 COPY --from=build /app/frontend/admin/.next/standalone ./
 COPY --from=build /app/frontend/admin/.next/static ./admin/.next/static
 COPY --from=build /app/frontend/admin/public ./admin/public
+COPY deploy/docker/trim-next-standalone.sh /usr/local/bin/trim-next-standalone.sh
+RUN chmod +x /usr/local/bin/trim-next-standalone.sh \
+  && trim-next-standalone.sh
 EXPOSE 3002
 CMD ["node", "admin/server.js"]

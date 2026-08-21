@@ -55,6 +55,11 @@ export async function adminFetch<T = unknown>(
   }
 
   const text = await res.text();
+  if (res.ok && !text.trim()) {
+    throw new Error(
+      `[${backendLabel}] Empty response (${res.status}) from ${backend.baseUrl}${normalized}. Check BACKEND_API_URL and BACKEND_API_RESOLVE_IP on Vercel.`,
+    );
+  }
   let json: T;
   try {
     json = text ? (JSON.parse(text) as T) : ({} as T);
