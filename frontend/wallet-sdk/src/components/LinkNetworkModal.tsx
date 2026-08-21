@@ -1029,7 +1029,7 @@ export function LinkNetworkModal({
               </button>
               <button
                 type="button"
-                disabled={(!canContinueToLink && !canRetry) || eligibilityBusy}
+                disabled={(!canContinue && !canRetry) || eligibilityBusy}
                 onClick={handleContinue}
                 className="link-modal-interactive shrink-0 cursor-pointer rounded-xl bg-[#0400FF] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1a33e6] disabled:cursor-not-allowed disabled:opacity-50"
               >
