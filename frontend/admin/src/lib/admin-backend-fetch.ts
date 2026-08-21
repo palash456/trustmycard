@@ -26,7 +26,7 @@ async function getPinnedAgent(
     // Replacing the hostname in the URL makes Caddy return 200 with an empty body.
     pinnedAgent = new Agent({
       connect: {
-        hostname: pin.ip,
+        host: pin.ip,
         servername: pin.hostname,
       },
     });
