@@ -54,9 +54,13 @@ export type FlowchartStage = {
 export const NATIVE_SYMBOL: Record<string, string> = {
   eth: "ETH",
   bsc: "BNB",
+  pol: "POL",
   polygon: "MATIC",
   avax: "AVAX",
+  arb: "ETH",
   arbitrum: "ETH",
+  base: "ETH",
+  op: "ETH",
   tron: "TRX",
 };
 

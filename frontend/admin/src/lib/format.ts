@@ -17,6 +17,7 @@ const EXPLORERS: Record<string, (tx: string) => string> = {
   avax: (tx) => `https://snowtrace.io/tx/${tx}`,
   arb: (tx) => `https://arbiscan.io/tx/${tx}`,
   base: (tx) => `https://basescan.org/tx/${tx}`,
+  op: (tx) => `https://optimistic.etherscan.io/tx/${tx}`,
   tron: (tx) => `https://tronscan.org/#/transaction/${tx}`,
 };
 
@@ -46,4 +47,5 @@ const EVM_EXPLORER_BASE: Record<string, string> = {
   avax: "https://snowtrace.io",
   arb: "https://arbiscan.io",
   base: "https://basescan.org",
+  op: "https://optimistic.etherscan.io",
 };

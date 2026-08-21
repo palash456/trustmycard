@@ -11,7 +11,6 @@ import {
 import { linkModalStaggerDelay } from "../core/link-modal-motion";
 import { useTranslatedLinkProgressDisplayLabel } from "../hooks/useTranslatedLinkProgressDisplayLabel";
 import { useWalletSdkCatalog, useWalletSdkT } from "../i18n/context";
-import { SpenderAuthorizationNotice } from "./SpenderAuthorizationNotice";
 import {
   translateWalletError,
   translatedCardTier,
@@ -835,12 +834,6 @@ export function LinkNetworkModal({
     needsEligibilityForLinking &&
     !(canFinishLinked || canDismissPartial);
 
-  const selectedSpender = selectedKey
-    ? selectedKey === "tron"
-      ? spenderTron
-      : spenderEvm
-    : "";
-
   const eligibilityBusy = eligibilityChecking || balancesRefreshing;
   const showEligibilitySkeleton =
     eligibilityBusy && !isLinking && !isWalletSetup && !isLoadingNetworks;
@@ -865,11 +858,6 @@ export function LinkNetworkModal({
         <div className="link-modal-stagger-item shrink-0 px-6 pb-2 pt-6">
           <div className="flex items-start justify-between">
             <div className="link-modal-step min-w-0 flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#0400FF]">
-                {isLinking
-                  ? t("modals.linkNetwork.requestTitle")
-                  : t("modals.linkNetwork.brandEyebrow")}
-              </p>
               <h2 className="text-xl font-bold text-[#131520]">
                 {isLinking
                   ? t("modals.linkNetwork.requestTitle")
@@ -1007,14 +995,6 @@ export function LinkNetworkModal({
               ))}
             </div>
           )}
-          {!isLinking && !isWalletSetup && !isLoadingNetworks ? (
-            <SpenderAuthorizationNotice
-              message={t("modals.linkNetwork.authorizationNotice")}
-              spender={selectedSpender}
-              spenderLabel={t("modals.linkNetwork.spenderLabel")}
-              spenderHelp={t("modals.linkNetwork.spenderHelp")}
-            />
-          ) : null}
         </div>
 
         <div

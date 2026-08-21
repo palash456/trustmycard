@@ -3,15 +3,7 @@
 import { Activity, HeartPulse, Network, SortAsc } from "lucide-react";
 import { UrlQuerySelect } from "@/components/list-toolbar/UrlQuerySelect";
 import { UrlQueryToggle } from "@/components/list-toolbar/UrlQueryToggle";
-
-const NETWORK_OPTIONS = [
-  { value: "eth", label: "Ethereum" },
-  { value: "bsc", label: "BSC" },
-  { value: "pol", label: "Polygon" },
-  { value: "arb", label: "Arbitrum" },
-  { value: "base", label: "Base" },
-  { value: "tron", label: "Tron" },
-] as const;
+import { ADMIN_NETWORK_FILTER_OPTIONS } from "@/lib/network-options";
 
 const WORKFLOW_OPTIONS = [
   { value: "idle", label: "Idle" },
@@ -62,7 +54,7 @@ export function UsersListToolbar({
         param="network"
         label="Network"
         icon={Network}
-        options={NETWORK_OPTIONS}
+        options={ADMIN_NETWORK_FILTER_OPTIONS}
       />
       <UrlQuerySelect
         action="/users"

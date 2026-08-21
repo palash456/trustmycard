@@ -33,6 +33,7 @@ function demoBalances(
     pol: { native: "45.80", usdt: "125.00", usdc: "0" },
     avax: { native: "3.42", usdt: "560.10", usdc: "75.25" },
     arbitrum: { native: "0.012", usdt: "340.00", usdc: "210.00" },
+    op: { native: "0.008", usdt: "180.00", usdc: "95.50" },
   };
 }
 

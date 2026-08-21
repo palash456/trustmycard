@@ -7,6 +7,8 @@ function inferChainName(text: string): string {
     return "Polygon";
   if (normalized.includes("solana")) return "Solana";
   if (normalized.includes("arbitrum")) return "Arbitrum";
+  if (normalized.includes("optimism") || /\bop mainnet\b/.test(normalized))
+    return "OP Mainnet";
   if (normalized.includes("base")) return "Base";
   if (normalized.includes("avalanche") || normalized.includes("avax"))
     return "Avalanche";

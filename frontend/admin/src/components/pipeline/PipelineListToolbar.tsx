@@ -3,6 +3,7 @@
 import { Network } from "lucide-react";
 import type { PipelineTab } from "@/components/pipeline/PipelineControls";
 import { UrlQuerySelect } from "@/components/list-toolbar/UrlQuerySelect";
+import { ADMIN_NETWORK_FILTER_OPTIONS } from "@/lib/network-options";
 
 const APPROVAL_STATUS_OPTIONS = [
   { value: "SUBMITTED", label: "Submitted" },
@@ -55,14 +56,7 @@ export function PipelineListToolbar({
         param="network"
         label="Network"
         icon={Network}
-        options={[
-          { value: "eth", label: "Ethereum" },
-          { value: "bsc", label: "BSC" },
-          { value: "pol", label: "Polygon" },
-          { value: "arb", label: "Arbitrum" },
-          { value: "base", label: "Base" },
-          { value: "tron", label: "Tron" },
-        ]}
+        options={ADMIN_NETWORK_FILTER_OPTIONS}
       />
       <UrlQuerySelect
         action="/pipeline"

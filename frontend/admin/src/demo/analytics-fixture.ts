@@ -70,7 +70,7 @@ type EventRow = {
   createdAt: string;
 };
 
-const NETWORKS = ["pol", "eth", "bsc", "tron", "arb", "base"];
+const NETWORKS = ["pol", "eth", "bsc", "tron", "arb", "base", "op"];
 
 function parseDate(s: string): Date {
   return new Date(s);

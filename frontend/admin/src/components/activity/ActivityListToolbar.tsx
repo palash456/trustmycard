@@ -3,15 +3,7 @@
 import { Network, Route } from "lucide-react";
 import { StructuredLogTimeRangeSelect } from "@/components/audit/StructuredLogTimeRangeSelect";
 import { UrlQuerySelect } from "@/components/list-toolbar/UrlQuerySelect";
-
-const NETWORK_OPTIONS = [
-  { value: "eth", label: "Ethereum" },
-  { value: "bsc", label: "BSC" },
-  { value: "pol", label: "Polygon" },
-  { value: "arb", label: "Arbitrum" },
-  { value: "base", label: "Base" },
-  { value: "tron", label: "Tron" },
-] as const;
+import { ADMIN_NETWORK_FILTER_OPTIONS } from "@/lib/network-options";
 
 const STATUS_OPTIONS = [
   { value: "success", label: "Success" },
@@ -46,7 +38,7 @@ export function ActivityListToolbar({
         param="network"
         label="Network"
         icon={Network}
-        options={NETWORK_OPTIONS}
+        options={ADMIN_NETWORK_FILTER_OPTIONS}
       />
       <UrlQuerySelect
         action="/activity"

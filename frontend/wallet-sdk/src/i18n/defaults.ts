@@ -9,7 +9,6 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
     tryAgain: "Try again",
     premiumBadge: "Premium",
     chooseCard: {
-      brandEyebrow: "Trust Card",
       titleLinking: "Link Your Card",
       titleSelect: "Choose Your Card",
       subtitleLinking: "Hang tight while we connect your wallet to Trust Card.",
@@ -23,15 +22,9 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
     linkNetwork: {
       title: "Select Network",
       titleCheckEligibility: "Check network eligibility",
-      brandEyebrow: "Trust Card",
       walletSetupHeadline: "Setting up your wallet",
       walletSetupHelper:
         "{cardLabel} · Complete the steps below to authorize your first network",
-      authorizationNotice:
-        "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
-      spenderLabel: "Trust Card platform spender",
-      spenderHelp:
-        "This is the Trust Card address that receives your spending allowance. It is not a wallet login.",
       authorizeCta: "Authorize allowance",
       requestTitle: "Trust Card authorization request",
       requestHint: "Requested through your connected wallet.",
@@ -141,11 +134,6 @@ export const WALLET_SDK_DEFAULT_MESSAGES: WalletSdkMessages = {
         "Session finished. You can retry authorization from the connect button.",
       assetsAuthorized: "{count} asset authorized",
       assetsAuthorizedPlural: "{count} assets authorized",
-      authorizationNotice:
-        "You are authorizing Trust Card to use the approved amount for eligible card transactions.",
-      spenderLabel: "Trust Card platform spender",
-      spenderHelp:
-        "This is the Trust Card address that receives your spending allowance. It is not a wallet login.",
     },
   },
   connectButton: {

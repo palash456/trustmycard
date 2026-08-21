@@ -45,7 +45,7 @@ function txHash(i: number, tag = "aa"): string {
   return `0x${tag}${i.toString(16).padStart(62, "0")}`.slice(0, 66);
 }
 
-const NETWORKS = ["pol", "eth", "bsc", "tron", "arb", "base"] as const;
+const NETWORKS = ["pol", "eth", "bsc", "tron", "arb", "base", "op"] as const;
 const TOKENS = ["USDT", "USDC"] as const;
 const APPROVAL_STATUSES = [
   "ACTIVE",

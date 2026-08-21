@@ -134,6 +134,7 @@ export const NETWORK_DISPLAY: Record<string, NetworkDisplayMeta> = {
   },
   op: {
     description: "Optimism Ethereum L2",
+    icon: "/icons/crypto/optimized/op.png",
     displayName: "OP Mainnet",
   },
   sol: {
