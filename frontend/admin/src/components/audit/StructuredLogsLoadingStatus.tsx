@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import {
+  defaultStructuredLogsFetchMs,
   formatEtaSeconds,
   hasStructuredLogsSamples,
   predictStructuredLogsFetchMs,
@@ -33,6 +34,11 @@ export function StructuredLogsLoadingStatus({
   total?: number;
 }) {
   const [now, setNow] = useState(() => performance.now());
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!active) return;
@@ -43,7 +49,10 @@ export function StructuredLogsLoadingStatus({
 
   if (!active) return null;
 
-  const predictedMs = predictStructuredLogsFetchMs(pageSize, rangeId);
+  // Session samples only exist in the browser; defer reads until after hydration.
+  const predictedMs = mounted
+    ? predictStructuredLogsFetchMs(pageSize, rangeId)
+    : defaultStructuredLogsFetchMs(pageSize, rangeId);
   const elapsedMs = Math.max(0, now - fetchStartedAt);
   const remainingMs = Math.max(0, predictedMs - elapsedMs);
   const overdue = elapsedMs > predictedMs * 1.2;
@@ -51,7 +60,7 @@ export function StructuredLogsLoadingStatus({
     overdue ? 0.94 : 0.97,
     elapsedMs / Math.max(predictedMs, 1),
   );
-  const learned = hasStructuredLogsSamples(rangeId);
+  const learned = mounted && hasStructuredLogsSamples(rangeId);
   const countdown = formatEtaSeconds(remainingMs);
 
   const headline =

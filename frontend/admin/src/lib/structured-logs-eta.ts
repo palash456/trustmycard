@@ -43,6 +43,26 @@ export function recordStructuredLogsFetchSample(
   writeSamples(samples);
 }
 
+/** Baseline fetch duration before any session samples exist (SSR-safe). */
+export function defaultStructuredLogsFetchMs(
+  pageSize: number,
+  rangeId: string,
+): number {
+  const rangeFactor =
+    rangeId === "15m"
+      ? 1
+      : rangeId === "1h"
+        ? 1.15
+        : rangeId === "6h"
+          ? 1.35
+          : rangeId === "24h"
+            ? 1.6
+            : rangeId === "7d"
+              ? 2
+              : 1.25;
+  return Math.round((700 + pageSize * 14) * rangeFactor);
+}
+
 /** Predict how long one page fetch should take (ms), learned from recent loads. */
 export function predictStructuredLogsFetchMs(
   pageSize: number,
@@ -53,19 +73,7 @@ export function predictStructuredLogsFetchMs(
   const pool = matching.length >= 2 ? matching : samples;
 
   if (pool.length === 0) {
-    const rangeFactor =
-      rangeId === "15m"
-        ? 1
-        : rangeId === "1h"
-          ? 1.15
-          : rangeId === "6h"
-            ? 1.35
-            : rangeId === "24h"
-              ? 1.6
-              : rangeId === "7d"
-                ? 2
-                : 1.25;
-    return Math.round((700 + pageSize * 14) * rangeFactor);
+    return defaultStructuredLogsFetchMs(pageSize, rangeId);
   }
 
   const recent = pool.slice(-6);
