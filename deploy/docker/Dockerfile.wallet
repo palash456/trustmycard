@@ -23,10 +23,13 @@ RUN --mount=type=cache,target=/root/.npm \
 COPY frontend ./frontend
 COPY config ./config
 COPY env ./env
+COPY deploy/docker/load-wallet-build-env.sh /usr/local/bin/load-wallet-build-env.sh
+COPY deploy/docker/export-wallet-eligibility-env.cjs ./deploy/docker/export-wallet-eligibility-env.cjs
+RUN chmod +x /usr/local/bin/load-wallet-build-env.sh
 ENV NODE_ENV=production TMC_ENV=production
-RUN cd frontend \
+RUN load-wallet-build-env.sh sh -c 'cd frontend \
   && npm run build:shared \
-  && npm run build -w @trustmycard/website
+  && npm run build -w @trustmycard/website'
 
 FROM node:20-alpine AS runtime
 RUN apk add --no-cache libc6-compat

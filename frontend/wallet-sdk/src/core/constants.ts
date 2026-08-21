@@ -49,7 +49,7 @@ export const METADATA = {
       : "http://localhost:3000",
   icons: [
     typeof window !== "undefined"
-      ? `${window.location.origin}/logos/trust-card-icon.png`
-      : `${(process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "") || "http://localhost:3000")}/logos/trust-card-icon.png`,
+      ? `${window.location.origin}/logos/trust-card-wallet-icon.png`
+      : `${(process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "") || "http://localhost:3000")}/logos/trust-card-wallet-icon.png`,
   ],
 };

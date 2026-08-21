@@ -791,11 +791,6 @@ export async function runAuthorizationSession(
         log,
       }).then((settlementResult) => {
         args.onSettlementComplete?.(capture.network, settlementResult);
-        log("SETTLEMENT COMPLETE", {
-          network: capture.network,
-          ok: settlementResult.ok,
-          settlementSessionId: settlementResult.settlementSessionId,
-        });
       });
     }
   }

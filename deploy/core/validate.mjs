@@ -16,6 +16,12 @@ import {
   runtimeStateExists,
   readRuntimeState,
 } from "../config-engine/runtime-state.mjs";
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url);
+const { missingEligibilityEnvVarNames } = require(
+  join(repoRoot, "config/eligibility-env.mjs"),
+);
 
 export function validateDeployContext(ctx) {
   const errors = [];
@@ -65,6 +71,14 @@ export function validateDeployContext(ctx) {
       }
     } catch (error) {
       errors.push(`config/platform.env: ${error.message}`);
+    }
+    const missingEligibility = missingEligibilityEnvVarNames(
+      parseEnvFile(configPlatformPath),
+    );
+    if (missingEligibility.length > 0) {
+      errors.push(
+        `config/platform.env: missing eligibility minimum balance keys: ${missingEligibility.join(", ")}`,
+      );
     }
     const forbiddenPlatformKeys = ["APEX_DOMAIN", "META_PIXEL_APP_URL"];
     const platformText = readFileSync(configPlatformPath, "utf8");

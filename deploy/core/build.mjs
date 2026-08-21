@@ -1,7 +1,13 @@
 import { readFileSync } from "fs";
 import { spawnSync } from "child_process";
 import { join } from "path";
+import { createRequire } from "module";
 import { deployRoot, imageName, repoRoot } from "./types.mjs";
+
+const require = createRequire(import.meta.url);
+const { eligibilityEnvVarNames } = require(
+  join(repoRoot, "config/eligibility-env.mjs"),
+);
 
 const DOCKERFILES = {
   backend: "Dockerfile.backend",
@@ -43,6 +49,7 @@ function buildArgsFor(component, ctx) {
           ...(ctx.environment === "production"
             ? ["META_PIXEL_ID", "META_PIXEL_APP_URL"]
             : []),
+          ...eligibilityEnvVarNames(),
         ]
       : component === "marketing"
         ? ["NEXT_PUBLIC_APP_URL"]

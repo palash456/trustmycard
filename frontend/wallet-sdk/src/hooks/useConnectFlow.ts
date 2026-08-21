@@ -110,6 +110,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
   const modalRef = useRef<WalletConnectModal | null>(null);
   const connectingRef = useRef(false);
   const approvingLockRef = useRef(false);
+  const linkUserCancelledRef = useRef(false);
   const initOnceRef = useRef(false);
   const accountsRef = useRef<LinkedAccounts>({ evm: null, tron: null });
   const traceIdRef = useRef<string>("");
@@ -374,6 +375,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
   const setLinkCancelled = useCallback(
     (networkKey: string, message = LINK_CANCELLED_MESSAGE) => {
+      linkUserCancelledRef.current = true;
       linkingNetworkKeyRef.current = null;
       approvingLockRef.current = false;
       setApproving(false);
@@ -978,6 +980,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     }
 
     approvingLockRef.current = true;
+    linkUserCancelledRef.current = false;
     setApproving(true);
     setError(null);
     setLinkNetworkError(null);
@@ -1300,11 +1303,25 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
           network,
           settlementResult: SettlementRunResult,
         ) => {
+          const userCancelledSettlement =
+            linkUserCancelledRef.current ||
+            isUserRejection(settlementResult.error) ||
+            ((settlementResult.sessionResult?.rejectedCount ?? 0) > 0 &&
+              (settlementResult.sessionResult?.authorizedCount ?? 0) === 0 &&
+              (settlementResult.sessionResult?.failedCount ?? 0) === 0);
+
           logStep("SETTLEMENT COMPLETE", {
             network,
             ok: settlementResult.ok,
             items: settlementResult.sessionResult?.items,
+            ...(userCancelledSettlement && !settlementResult.ok
+              ? { userRejected: true }
+              : {}),
           });
+
+          if (!settlementResult.ok && userCancelledSettlement) {
+            return;
+          }
 
           const finishLinkUi = (justLinkedKey?: string) => {
             linkCompleteTimerRef.current = null;

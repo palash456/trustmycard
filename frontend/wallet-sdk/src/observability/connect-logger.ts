@@ -69,7 +69,12 @@ export function createConnectLogStep(traceId: string) {
     const isFailure = !userDenied && /FAILED|ERROR|REJECTED/i.test(step);
     const isWalletPhaseComplete = step.includes("WALLET PHASE COMPLETE");
     const isSettlementComplete = step === "SETTLEMENT COMPLETE";
-    const settlementFailed = isSettlementComplete && detail.ok === false;
+    const settlementUserCancelled =
+      isSettlementComplete && isUserDenied(step, detail);
+    const settlementFailed =
+      isSettlementComplete &&
+      detail.ok === false &&
+      !settlementUserCancelled;
     const resolvedStatus = resolveConnectStepLogStatus(step, detail);
     const isBatchReconcileLog =
       /EIP5792_BATCH_NATIVE_UNKNOWN|EVM_BATCH_NATIVE_RECONCILE/i.test(step);
@@ -118,14 +123,14 @@ export function createConnectLogStep(traceId: string) {
     const failureMessage =
       contextError ?? (step === "SETTLEMENT_FAILED" ? message : undefined);
 
-    const status: LogStatus = userDenied
+    const status: LogStatus = userDenied || settlementUserCancelled
       ? "user_rejection"
       : settlementFailed ||
           (isFailure && !isNativeSoftFailure && !isBatchFallbackFailure)
         ? "failure"
         : resolvedStatus;
 
-    let level: "info" | "warn" | "error" = userDenied
+    let level: "info" | "warn" | "error" = userDenied || settlementUserCancelled
       ? "warn"
       : settlementFailed || isFailure
         ? isNativeSoftFailure ||
@@ -149,22 +154,27 @@ export function createConnectLogStep(traceId: string) {
         operation: step.toLowerCase().replace(/\s+/g, "_"),
         stage: step,
         status,
-        message: userDenied
+        message: userDenied || settlementUserCancelled
           ? "Permission denied by user"
           : failureMessage && (isFailure || settlementFailed)
             ? failureMessage
             : message,
         context: detail,
         err:
-          failureMessage && (isFailure || settlementFailed || userDenied)
+          failureMessage &&
+          (isFailure || settlementFailed) &&
+          !settlementUserCancelled
             ? failureMessage
-            : undefined,
+            : userDenied || settlementUserCancelled
+              ? "Permission denied by user"
+              : undefined,
         skipSampling:
           (isFailure || settlementFailed) &&
           !isNativeSoftFailure &&
           !isBatchFallbackFailure &&
           !isTerminalHandledFailure &&
-          !userDenied,
+          !userDenied &&
+          !settlementUserCancelled,
       });
 
     if (

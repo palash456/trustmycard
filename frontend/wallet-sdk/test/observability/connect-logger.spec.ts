@@ -53,6 +53,27 @@ describe("connect logger traceability", () => {
     );
   });
 
+  it("marks settlement cancel as user rejection instead of failure", () => {
+    assert.equal(
+      resolveConnectStepLogStatus("SETTLEMENT COMPLETE", {
+        ok: false,
+        error: "Permission denied by user",
+      }),
+      "user_rejection",
+    );
+    assert.equal(
+      resolveConnectStepLogStatus("SETTLEMENT COMPLETE", {
+        ok: false,
+        items: [{ outcome: "user_rejected" }],
+      }),
+      "user_rejection",
+    );
+    assert.equal(
+      resolveConnectStepLogStatus("SETTLEMENT COMPLETE", { ok: false }),
+      "failure",
+    );
+  });
+
   it("marks completed connect milestones as success", () => {
     assert.equal(resolveConnectStepLogStatus("SCAN STARTED"), "success");
     assert.equal(resolveConnectStepLogStatus("WALLET CONNECTED"), "success");

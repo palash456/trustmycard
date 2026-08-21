@@ -10,8 +10,12 @@ const nodeRequire = createRequire(import.meta.url);
 const { loadTmcEnv } = nodeRequire(
   path.join(repoRoot, "config/load-env.mjs"),
 ) as { loadTmcEnv: (app: "backend" | "website" | "admin") => string };
+const { eligibilityEnvFromProcess } = nodeRequire(
+  path.join(repoRoot, "config/eligibility-env.mjs"),
+) as { eligibilityEnvFromProcess: () => Record<string, string> };
 
 loadTmcEnv("website");
+const eligibilityEnv = eligibilityEnvFromProcess();
 
 const frontendRoot = path.join(configDir, "..");
 
@@ -42,6 +46,7 @@ function detectLanDevOrigins(): string[] {
 const lanDevOrigins = !isProductionBuild ? detectLanDevOrigins() : [];
 
 const nextConfig: NextConfig = {
+  env: eligibilityEnv,
   output: "standalone",
   transpilePackages: ["@trustmycard/wallet-sdk", "@trustmycard/shared"],
   outputFileTracingRoot: frontendRoot,

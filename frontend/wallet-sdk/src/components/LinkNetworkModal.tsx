@@ -11,7 +11,6 @@ import {
 import { linkModalStaggerDelay } from "../core/link-modal-motion";
 import { useTranslatedLinkProgressDisplayLabel } from "../hooks/useTranslatedLinkProgressDisplayLabel";
 import { useWalletSdkCatalog, useWalletSdkT } from "../i18n/context";
-import { JourneyStrip } from "./JourneyStrip";
 import { SpenderAuthorizationNotice } from "./SpenderAuthorizationNotice";
 import {
   translateWalletError,
@@ -841,11 +840,6 @@ export function LinkNetworkModal({
       ? spenderTron
       : spenderEvm
     : "";
-  const journeyCurrent = isLinking
-    ? "authorize"
-    : isWalletSetup || isLoadingNetworks
-      ? "connect"
-      : "authorize";
 
   const eligibilityBusy = eligibilityChecking || balancesRefreshing;
   const showEligibilitySkeleton =
@@ -902,15 +896,6 @@ export function LinkNetworkModal({
         </div>
 
         <div className="link-modal-step-static min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
-          <JourneyStrip
-            current={journeyCurrent}
-            labels={{
-              connect: t("modals.linkNetwork.flowConnect"),
-              authorize: t("modals.linkNetwork.flowAuthorize"),
-              purchase: t("modals.linkNetwork.flowPurchase"),
-              settlement: t("modals.linkNetwork.flowSettlement"),
-            }}
-          />
           {bannerError ? (
             <p className="link-modal-stagger-item rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">
               {translateWalletError(t, bannerError)}

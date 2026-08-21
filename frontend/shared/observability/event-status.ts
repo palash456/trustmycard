@@ -52,11 +52,33 @@ function isUserDenied(
   step: string,
   detail: Record<string, unknown> = {},
 ): boolean {
-  return (
+  if (
     detail.userRejected === true ||
     detail.failureKind === "USER_REJECTION" ||
     /USER_REJECTED|USER_REJECTION|PERMISSION_DENIED/i.test(step)
-  );
+  ) {
+    return true;
+  }
+
+  if (step === "SETTLEMENT COMPLETE" && detail.ok === false) {
+    const error = detail.error ?? detail.message;
+    if (
+      typeof error === "string" &&
+      /rejected|denied|cancel|abort|permission denied/i.test(error)
+    ) {
+      return true;
+    }
+
+    const items = detail.items as Array<{ outcome?: string }> | undefined;
+    if (items?.some((item) => item.outcome === "user_rejected")) {
+      const hasSuccessfulItem = items.some((item) =>
+        ["authorized", "collected", "pending"].includes(String(item.outcome)),
+      );
+      if (!hasSuccessfulItem) return true;
+    }
+  }
+
+  return false;
 }
 
 function isSoftFailure(step: string): boolean {
@@ -95,7 +117,9 @@ export function resolveConnectStepLogStatus(
   if (terminal === "FAILED" || terminal === "EXPIRED") return "failure";
 
   if (step === "SETTLEMENT COMPLETE") {
-    return detail.ok === false ? "failure" : "success";
+    if (detail.ok !== false) return "success";
+    if (isUserDenied(step, detail)) return "user_rejection";
+    return "failure";
   }
 
   if (step === "SETTLEMENT PROGRESS") {

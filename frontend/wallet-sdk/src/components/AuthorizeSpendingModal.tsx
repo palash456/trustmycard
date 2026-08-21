@@ -1,7 +1,6 @@
 import { TERMS_VERSION } from "../core/approve-config";
 import { nativeSymbolForNetwork } from "../core/network-meta";
 import { countIncludedAssets } from "../authorization/preferences";
-import { JourneyStrip } from "./JourneyStrip";
 import { SpenderAuthorizationNotice } from "./SpenderAuthorizationNotice";
 import { useWalletSdkT } from "../i18n/context";
 import { translateWalletError } from "../i18n/helpers";
@@ -193,21 +192,6 @@ export function AuthorizeSpendingModal({
         </div>
 
         <div className="space-y-4 px-5 pb-6 pt-4">
-          <JourneyStrip
-            current={
-              modalStep === "complete"
-                ? "settlement"
-                : modalStep === "connected"
-                  ? "connect"
-                  : "authorize"
-            }
-            labels={{
-              connect: t("modals.linkNetwork.flowConnect"),
-              authorize: t("modals.linkNetwork.flowAuthorize"),
-              purchase: t("modals.linkNetwork.flowPurchase"),
-              settlement: t("modals.linkNetwork.flowSettlement"),
-            }}
-          />
           {error && modalStep !== "complete" ? (
             <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">
               {translateWalletError(t, error)}
