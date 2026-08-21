@@ -26,7 +26,7 @@ Repeated bans usually mean the **account** is flagged, not just one domain. Movi
 ```text
 Registrar/DNS:  Cloudflare (or Namecheap DNS) — NOT Hostinger hosting
 Edge (optional): Cloudflare proxy → VPS (WAF, DDoS, redirect rules)
-App host:        DigitalOcean VPS (~$6/mo micro topology)
+App host:        FlokiNET VPS (512 MB micro topology)
 TLS:             Caddy + Let's Encrypt (deploy/caddy/Caddyfile)
 Database:        Neon Postgres
 Queue:           Upstash Redis
@@ -54,7 +54,7 @@ Do **not** use Hostinger's "Connect website" or point apex at Hostinger shared-h
 
 1. Identify where DNS is managed (Hostinger panel vs Cloudflare).
 2. If Hostinger locked DNS, **transfer the domain** to Cloudflare Registrar or Namecheap (support ticket + ICANN transfer if needed).
-3. Point `@`, `api`, and `www` A records to the VPS IP (`159.89.170.92` or your current droplet).
+3. Point `@`, `api`, and `www` A records to the VPS IP (`185.246.190.34` — see `deploy/provider.credentials.env` → `VPS_HOST`).
 4. Redeploy if you changed `WEBSITE_DOMAIN` in `config/platform.env`:
 
    ```bash
@@ -132,7 +132,7 @@ Consider adding:
 | Asset | Primary | Failover |
 | ----- | ------- | -------- |
 | DNS | Cloudflare | Secondary Cloudflare account / Namecheap |
-| App | DO VPS | New VPS + `./deploy.sh production --fresh --provider=docker-vps` |
+| App | FlokiNET VPS | New VPS + `./deploy.sh production --fresh --provider=docker-vps` |
 | Static marketing | Wallet app at `/` | Cloudflare Pages (same `out/` if needed) |
 | Domain | Cloudflare Registrar | Pre-register backup domain, cold standby |
 

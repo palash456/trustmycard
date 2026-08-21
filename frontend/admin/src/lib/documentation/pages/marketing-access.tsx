@@ -129,8 +129,8 @@ REDIS_URL=<Upstash>`}</DocPre>
       content: (
         <>
           <DocP>
-            Production runs on a 512 MB DigitalOcean VPS with Caddy for
-            automatic Let&apos;s Encrypt TLS. DNS at Hostinger:
+            Production runs on a 512 MB FlokiNET VPS with Caddy for
+            automatic Let&apos;s Encrypt TLS. DNS at Cloudflare (recommended):
           </DocP>
           <DocTable
             headers={["Record", "Points to"]}

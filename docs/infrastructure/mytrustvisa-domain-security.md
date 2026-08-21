@@ -59,7 +59,7 @@ If Cloudflare proxies the zone, add a matching **Redirect Rule** (308) there as 
 
 | Type | Name  | Value                    | Notes                                                           |
 | ---- | ----- | ------------------------ | --------------------------------------------------------------- |
-| A    | `@`   | VPS IP (`159.89.170.92`) | Apex → wallet (via Caddy)                                       |
+| A    | `@`   | VPS IP (`185.246.190.34`) | Apex → wallet (via Caddy)                                       |
 | A    | `api` | VPS IP                   | API subdomain → backend (via Caddy)                             |
 | A    | `www` | VPS IP (same as apex)    | Caddy 308 → `https://exampleUrl.com` — not wallet app on www |
 

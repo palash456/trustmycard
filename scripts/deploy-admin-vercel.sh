@@ -3,7 +3,9 @@
 #
 # Prerequisites (once):
 #   npm i -g vercel
-#   cd frontend/admin && vercel login && vercel link
+#   vercel login
+#   vercel link                         # from repo root (project Root Directory = frontend/admin)
+#   vercel pull --yes --environment=production
 #
 # Vercel env (Production): BACKEND_API_URL=https://api.wallet.futuretrustcards.ct.ws
 #   plus ADMIN_API_KEY, ADMIN_SESSION_SECRET, ADMIN_PANEL_PASSWORD, etc.
@@ -17,9 +19,9 @@ if ! command -v vercel >/dev/null 2>&1; then
   exit 1
 fi
 
-if [[ ! -d "$ADMIN_DIR/.vercel" ]]; then
-  echo "[deploy-admin] Project not linked. Run once:" >&2
-  echo "  cd frontend/admin && vercel login && vercel link" >&2
+if [[ ! -f "$ROOT/.vercel/project.json" ]]; then
+  echo "[deploy-admin] Project not linked. Run once from repo root:" >&2
+  echo "  vercel login && vercel link && vercel pull --yes --environment=production" >&2
   exit 1
 fi
 
@@ -32,7 +34,7 @@ else
 fi
 
 echo "[deploy-admin] deploying to Vercel production..."
-cd "$ADMIN_DIR"
+cd "$ROOT"
 vercel --prod --yes
 
 echo "[deploy-admin] complete"

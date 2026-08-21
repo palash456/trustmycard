@@ -2,7 +2,7 @@
 
 **Current production domain:** `exampleUrl.com`  
 **Previous domain:** `trustvisa.cards`  
-**Current host:** 512 MB DigitalOcean VPS (micro topology + Caddy TLS)
+**Current host:** 512 MB FlokiNET VPS (micro topology + Caddy TLS)
 
 For the generic migration checklist, see [domain-migration.md](./domain-migration.md).
 

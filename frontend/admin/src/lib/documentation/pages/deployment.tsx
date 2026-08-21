@@ -36,7 +36,7 @@ export const deploymentPage: DocPage = {
         <>
           <DocP>
             <strong>Current production (micro VPS):</strong> exampleUrl.com
-            on a 512 MB DigitalOcean droplet with Caddy TLS. Alternative budget
+            on a 512 MB FlokiNET VPS with Caddy TLS. Alternative budget
             path uses Render + Neon + Upstash.
           </DocP>
           <DocTable
@@ -129,7 +129,7 @@ export const deploymentPage: DocPage = {
           </DocP>
           <DocFlow
             steps={[
-              "512 MB DigitalOcean VPS with Docker + 1 GB swap.",
+              "512 MB FlokiNET VPS with Docker + 1 GB swap.",
               "Images built locally, streamed via docker save | ssh docker load.",
               "Containers: backend + wallet + Caddy (TLS).",
               "External Neon Postgres + Upstash Redis.",
@@ -221,13 +221,13 @@ export const deploymentPage: DocPage = {
             rows={[
               [
                 "DigitalOcean",
-                "Current reference micro topology (~512 MB droplet)",
+                "Common cost-optimized alternative",
               ],
               ["Hetzner", "Common cost-optimized alternative"],
               ["Hostinger VPS", "VPS product only — not shared web hosting"],
               [
                 "FlokiNet",
-                "Same deploy flow; update deploy/provider.credentials.env only",
+                "Current production VPS (~512 MB micro topology)",
               ],
             ]}
           />

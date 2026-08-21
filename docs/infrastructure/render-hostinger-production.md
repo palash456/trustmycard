@@ -1,6 +1,6 @@
 # Production deploy — Hostinger marketing + Render core
 
-> **Note (2026):** Current production uses the **micro VPS** topology (`exampleUrl.com` on DigitalOcean + Caddy + Neon + Upstash). Admin runs locally. This guide documents the legacy **full Render split** (~$60/mo). See [deploy/README.md](../../deploy/README.md) and [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md).
+> **Note (2026):** Current production uses the **micro VPS** topology (`exampleUrl.com` on FlokiNET + Caddy + Neon + Upstash). Admin runs locally. This guide documents the legacy **full Render split** (~$60/mo). See [deploy/README.md](../../deploy/README.md) and [mytrustvisa-domain-security.md](./mytrustvisa-domain-security.md).
 
 Step-by-step guide for the **split production** architecture: static marketing on Hostinger, wallet/API/workers/admin on Render.
 

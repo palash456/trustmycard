@@ -499,9 +499,10 @@ Template: `env/profiles/production/admin.env.example`
 ```bash
 npm i -g vercel
 
-cd frontend/admin
+cd frontend/admin   # repo root also works for link/pull; deploy script runs from repo root
 vercel login
-vercel link                    # link to existing Vercel project
+vercel link                    # link from repo root when Root Directory = frontend/admin
+vercel pull --yes --environment=production
 vercel env pull .env.local     # sync remote env locally (optional)
 vercel                         # preview deployment
 vercel --prod                  # production deployment

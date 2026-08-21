@@ -1,6 +1,6 @@
 # Cloudflare setup — micro VPS + Caddy + Docker
 
-**Current production stack:** DigitalOcean VPS (`159.89.170.92`) · Docker Compose (micro topology) · Caddy TLS · Neon Postgres · Upstash Redis.
+**Current production stack:** FlokiNET VPS (`185.246.190.34`) · Docker Compose (micro topology) · Caddy TLS · Neon Postgres · Upstash Redis.
 
 This guide replaces the old [cloudflare-edge.md](./cloudflare-edge.md) with step-by-step instructions that match the actual running system.
 
@@ -18,7 +18,7 @@ This guide replaces the old [cloudflare-edge.md](./cloudflare-edge.md) with step
                                  │ orange-cloud proxy (optional)
                                  ▼
                     ┌─────────────────────────┐
-                    │  VPS 159.89.170.92       │
+                    │  VPS 185.246.190.34      │
                     │  ports 80 + 443          │
                     │                          │
                     │  ┌─────────────────────┐ │
@@ -46,9 +46,9 @@ Docker compose files involved: `docker-compose.micro.yml` + `docker-compose.micr
 
 | Type | Name | Value | Proxy |
 | ---- | ---- | ----- | ----- |
-| A | `@` (apex) | `159.89.170.92` | Grey (DNS-only) first |
-| A | `api` | `159.89.170.92` | Grey (DNS-only) first |
-| A | `www` | `159.89.170.92` | Grey (DNS-only) first |
+| A | `@` (apex) | `185.246.190.34` | Grey (DNS-only) first |
+| A | `api` | `185.246.190.34` | Grey (DNS-only) first |
+| A | `www` | `185.246.190.34` | Grey (DNS-only) first |
 
 5. **Update your domain's nameservers** at your registrar (Namecheap, Google Domains, etc.) to the two Cloudflare nameservers shown. This is the only nameserver change needed — do NOT keep Hostinger as the DNS provider.
 

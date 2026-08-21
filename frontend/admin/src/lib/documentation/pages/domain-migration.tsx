@@ -77,7 +77,7 @@ export const domainMigrationPage: DocPage = {
           <DocP>
             <strong>Current production topology (micro VPS):</strong> Docker
             wallet + API behind <DocCode>Caddy</DocCode> on a small VPS (e.g.
-            DigitalOcean). DNS at your registrar points apex and{" "}
+            FlokiNET). DNS at your registrar points apex and{" "}
             <DocCode>api</DocCode> to the VPS IP. TLS is automatic via
             Let&apos;s Encrypt. Admin runs on{" "}
             <DocLink href="/documentation/commands">Vercel or locally</DocLink>{" "}
