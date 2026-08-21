@@ -1,3 +1,4 @@
+import { resolveWalletConnectIconUrl } from "./constants";
 import type { RowStatus } from "../types";
 
 /** Minimum time to show the card connecting screen before WalletConnect QR. */
@@ -169,8 +170,16 @@ export function preloadNetworkIcons(): void {
   }
 }
 
+/** Warm the WalletConnect dApp icon so the first connect request uses a cached asset. */
+export function preloadWalletConnectAppIcon(): void {
+  if (typeof document === "undefined") return;
+  const img = new Image();
+  img.src = resolveWalletConnectIconUrl();
+}
+
 /** Preload card + network assets for the full link flow. */
 export function preloadLinkFlowAssets(): void {
+  preloadWalletConnectAppIcon();
   preloadCardTierImages();
   preloadNetworkIcons();
 }

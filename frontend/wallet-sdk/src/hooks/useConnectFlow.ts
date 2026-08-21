@@ -80,6 +80,7 @@ import {
   preloadCardTierImages,
   preloadNetworkIcons,
   preloadLinkFlowAssets,
+  preloadWalletConnectAppIcon,
   type CardTierId,
   type LinkProgressStage,
 } from "../core/link-flow-meta";
@@ -543,6 +544,8 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     muteWalletCancellationConsoleErrors();
 
     async function init() {
+      preloadWalletConnectAppIcon();
+
       if (!projectId) {
         setError("Missing NEXT_PUBLIC_PROJECT_ID in .env.local");
         return;

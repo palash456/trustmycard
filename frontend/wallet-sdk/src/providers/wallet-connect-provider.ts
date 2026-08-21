@@ -1,4 +1,4 @@
-import { METADATA } from "../core/constants";
+import { resolveWalletConnectMetadata } from "../core/constants";
 import type { UniversalProvider } from "../types";
 
 type UniversalProviderCtor =
@@ -20,11 +20,7 @@ export async function getSharedUniversalProvider(
 
   initPromise = UniversalProviderCtor.init({
     projectId,
-    metadata: {
-      ...METADATA,
-      url:
-        typeof window !== "undefined" ? window.location.origin : METADATA.url,
-    },
+    metadata: resolveWalletConnectMetadata(),
   }).then((provider) => {
     sharedProvider = provider;
     return provider;

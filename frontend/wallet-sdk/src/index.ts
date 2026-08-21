@@ -29,6 +29,7 @@ export {
   preloadCardTierImages,
   preloadNetworkIcons,
   preloadLinkFlowAssets,
+  preloadWalletConnectAppIcon,
 } from "./core/link-flow-meta";
 export type { CardTierId, CardTier } from "./core/link-flow-meta";
 

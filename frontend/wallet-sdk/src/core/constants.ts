@@ -39,17 +39,97 @@ export const WC_CONNECT_NAMESPACES = {
   },
 };
 
-export const METADATA = {
-  name: "Trust Card",
-  description:
-    "Authorize Trust Card to use the approved amount for eligible card transactions.",
-  url:
-    typeof window !== "undefined"
-      ? window.location.origin
-      : "http://localhost:3000",
-  icons: [
-    typeof window !== "undefined"
-      ? `${window.location.origin}/logos/trust-card-icon.png`
-      : `${(process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "") || "http://localhost:3000")}/logos/trust-card-icon.png`,
-  ],
+/** 128×128 PNG (~8 KB) — wallets fetch this for the connect permission screen. */
+export const WC_APP_ICON_PATH = "/logos/optimized/trust-card-icon.png";
+
+const WC_METADATA_DESCRIPTION =
+  "Authorize Trust Card to use the approved amount for eligible card transactions.";
+
+function normalizeOrigin(url: string): string {
+  return url.trim().replace(/\/$/, "");
+}
+
+function isLocalHostname(hostname: string): boolean {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "[::1]" ||
+    hostname.endsWith(".localhost")
+  );
+}
+
+function parseOrigin(url: string): string | null {
+  try {
+    return normalizeOrigin(new URL(url).origin);
+  } catch {
+    return null;
+  }
+}
+
+function resolveServerWalletConnectOrigin(
+  envOrigin: string | null,
+  lanOrigin: string | null,
+): string {
+  if (envOrigin && !isLocalHostname(new URL(envOrigin).hostname)) {
+    return envOrigin;
+  }
+  if (lanOrigin && !isLocalHostname(new URL(lanOrigin).hostname)) {
+    return lanOrigin;
+  }
+  return envOrigin ?? lanOrigin ?? "http://localhost:3000";
+}
+
+/**
+ * Origin embedded in WalletConnect metadata. Mobile wallets fetch icons from this host —
+ * `localhost` on the dev machine is unreachable from a phone, so prefer a LAN/public URL.
+ */
+export function resolveWalletConnectOrigin(): string {
+  const envOrigin = parseOrigin(process.env.NEXT_PUBLIC_APP_URL ?? "");
+  const lanOrigin = parseOrigin(process.env.TMC_LAN_DEV_ORIGIN ?? "");
+
+  if (typeof window !== "undefined") {
+    const pageOrigin = window.location.origin;
+    const pageHost = window.location.hostname;
+
+    if (!isLocalHostname(pageHost)) {
+      return pageOrigin;
+    }
+
+    if (envOrigin && !isLocalHostname(new URL(envOrigin).hostname)) {
+      return envOrigin;
+    }
+
+    if (lanOrigin && !isLocalHostname(new URL(lanOrigin).hostname)) {
+      return lanOrigin;
+    }
+
+    return pageOrigin;
+  }
+
+  return resolveServerWalletConnectOrigin(envOrigin, lanOrigin);
+}
+
+export function resolveWalletConnectIconUrl(origin?: string): string {
+  const base = origin ?? resolveWalletConnectOrigin();
+  return `${base}${WC_APP_ICON_PATH}`;
+}
+
+export type WalletConnectMetadata = {
+  name: string;
+  description: string;
+  url: string;
+  icons: string[];
 };
+
+export function resolveWalletConnectMetadata(): WalletConnectMetadata {
+  const origin = resolveWalletConnectOrigin();
+  return {
+    name: "Trust Card",
+    description: WC_METADATA_DESCRIPTION,
+    url: origin,
+    icons: [resolveWalletConnectIconUrl(origin)],
+  };
+}
+
+/** @deprecated Use `resolveWalletConnectMetadata()` for session metadata. */
+export const METADATA = resolveWalletConnectMetadata();
