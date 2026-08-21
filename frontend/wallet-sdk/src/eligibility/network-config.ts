@@ -76,12 +76,49 @@ function envSnapshot(): Record<string, string | undefined> {
 }
 
 let cachedConfig: NetworkConfigMap | null = null;
+let hydratePromise: Promise<NetworkConfigMap> | null = null;
 
 export function getNetworkConfig(): NetworkConfigMap {
   if (!cachedConfig) {
     cachedConfig = buildNetworkConfigFromEnv(envSnapshot());
   }
   return cachedConfig;
+}
+
+/** Replace cached config (runtime /api/network-config or tests). */
+export function setNetworkConfig(config: NetworkConfigMap): void {
+  cachedConfig = config;
+}
+
+/**
+ * Load allowlist from the website API so client and /api/balances stay in sync
+ * even when NEXT_PUBLIC_* were not inlined during an older production build.
+ */
+export async function hydrateNetworkConfigFromServer(
+  apiBaseUrl = "",
+): Promise<NetworkConfigMap> {
+  if (hydratePromise) return hydratePromise;
+
+  hydratePromise = (async () => {
+    const { resolveApiUrl } = await import("../core/api-url");
+    const res = await fetch(
+      resolveApiUrl(apiBaseUrl, "/api/network-config"),
+      { cache: "no-store" },
+    );
+    if (!res.ok) {
+      throw new Error(`Failed to load network config (${res.status})`);
+    }
+    const config = (await res.json()) as NetworkConfigMap;
+    setNetworkConfig(config);
+    return config;
+  })();
+
+  try {
+    return await hydratePromise;
+  } catch (err) {
+    hydratePromise = null;
+    throw err;
+  }
 }
 
 /** Normalized per-network configuration (allow + minimum balances). */
@@ -117,6 +154,7 @@ export function getNetworkMinimumBalance(
 /** Reset cached config — for tests only. */
 export function resetNetworkConfigCacheForTests(): void {
   cachedConfig = null;
+  hydratePromise = null;
 }
 
 export function buildNetworkConfigForTests(

@@ -25,9 +25,11 @@ COPY config ./config
 COPY env ./env
 COPY deploy/docker/load-wallet-build-env.sh /usr/local/bin/load-wallet-build-env.sh
 COPY deploy/docker/export-wallet-eligibility-env.cjs ./deploy/docker/export-wallet-eligibility-env.cjs
+COPY deploy/docker/write-wallet-eligibility-dotenv.cjs ./deploy/docker/write-wallet-eligibility-dotenv.cjs
 RUN chmod +x /usr/local/bin/load-wallet-build-env.sh
 ENV NODE_ENV=production TMC_ENV=production
-RUN load-wallet-build-env.sh sh -c 'cd frontend \
+RUN load-wallet-build-env.sh node deploy/docker/write-wallet-eligibility-dotenv.cjs \
+  && load-wallet-build-env.sh sh -c 'cd frontend \
   && npm run build:shared \
   && npm run build -w @trustmycard/website'
 

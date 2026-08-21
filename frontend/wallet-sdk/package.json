@@ -9,6 +9,7 @@
     "./components/ConnectFlow": "./src/components/ConnectFlow.tsx",
     "./server": "./src/server/index.ts",
     "./server/routes/balances": "./src/server/routes/balances/route.ts",
+    "./server/routes/network-config": "./src/server/routes/network-config/route.ts",
     "./server/routes/approvals/prepare": "./src/server/routes/approvals/prepare/route.ts",
     "./server/routes/approvals/confirm": "./src/server/routes/approvals/confirm/route.ts",
     "./server/routes/approvals/queue-collection": "./src/server/routes/approvals/queue-collection/route.ts",

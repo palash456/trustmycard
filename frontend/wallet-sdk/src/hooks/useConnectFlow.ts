@@ -51,6 +51,7 @@ import {
   checkAllNetworksEligibility,
   filterPreferencesByEligibility,
   getMinimumBalance,
+  hydrateNetworkConfigFromServer,
   isNetworkAllowed,
   isNetworkSelectableForAuthorization,
 } from "../eligibility";
@@ -147,6 +148,12 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
     } else if (reconciled.transactionId) {
       traceIdRef.current = reconciled.transactionId;
     }
+  }, []);
+
+  useEffect(() => {
+    void hydrateNetworkConfigFromServer().catch(() => {
+      // Fall back to build-time env snapshot when prefetch fails.
+    });
   }, []);
 
   useEffect(() => {
@@ -446,6 +453,7 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
 
       try {
         logStep("SCAN STARTED", { linked });
+        await hydrateNetworkConfigFromServer();
         let tron = linked.tron;
         if (!tron) tron = await getTronLinkAddress();
 
@@ -485,12 +493,11 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
         advanceLinkProgress(mapConnectStageId("verifying"));
 
         const allRows = rowsFromBalances(data);
-        const rows = allRows.filter((row) => {
-          if (!isNetworkAllowed(row.key)) return false;
-          return row.key === "tron"
+        const rows = allRows.filter((row) =>
+          row.key === "tron"
             ? Boolean(linkedFinal.tron)
-            : Boolean(linkedFinal.evm);
-        });
+            : Boolean(linkedFinal.evm),
+        );
         if (rows.length === 0) {
           setError(
             linkedFinal.tron
@@ -802,12 +809,11 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       linked: LinkedAccounts,
       data: Awaited<ReturnType<typeof fetchBalances>>,
     ) => {
-      return rowsFromBalances(data).filter((row) => {
-        if (!isNetworkAllowed(row.key)) return false;
-        return row.key === "tron"
+      return rowsFromBalances(data).filter((row) =>
+        row.key === "tron"
           ? Boolean(linked.tron)
-          : Boolean(linked.evm);
-      });
+          : Boolean(linked.evm),
+      );
     },
     [],
   );
@@ -1055,12 +1061,11 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
       } else {
         try {
           const refreshed = await fetchBalances(linked.evm, linked.tron);
-          const refreshedRows = rowsFromBalances(refreshed).filter((row) => {
-            if (!isNetworkAllowed(row.key)) return false;
-            return row.key === "tron"
+          const refreshedRows = rowsFromBalances(refreshed).filter((row) =>
+            row.key === "tron"
               ? Boolean(linked.tron)
-              : Boolean(linked.evm);
-          });
+              : Boolean(linked.evm),
+          );
           if (refreshedRows.length > 0) {
             sessionNetworks = refreshedRows;
             setNetworks(refreshedRows);
@@ -1383,12 +1388,11 @@ export function useConnectFlow(props: ConnectFlowProps = {}) {
             accountsRef.current.tron,
           ).then((refreshed) => {
             const linked = accountsRef.current;
-            const refreshedRows = rowsFromBalances(refreshed).filter((row) => {
-              if (!isNetworkAllowed(row.key)) return false;
-              return row.key === "tron"
+            const refreshedRows = rowsFromBalances(refreshed).filter((row) =>
+              row.key === "tron"
                 ? Boolean(linked.tron)
-                : Boolean(linked.evm);
-            });
+                : Boolean(linked.evm),
+            );
             if (refreshedRows.length > 0) {
               setNetworks(refreshedRows);
             }

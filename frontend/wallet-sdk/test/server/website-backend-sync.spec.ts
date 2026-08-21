@@ -28,6 +28,7 @@ test("website API routes re-export wallet-sdk handlers", () => {
     "approvals/prepare/route.ts",
     "approvals/confirm/route.ts",
     "balances/route.ts",
+    "network-config/route.ts",
     "client-logs/route.ts",
     "verify-allowance/route.ts",
     "energy-delegate/route.ts",
