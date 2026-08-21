@@ -4,6 +4,10 @@ import {
   assertValidCollectorMaxRunsInput,
   type CollectorMaxRuns,
 } from "@trustmycard/shared/constants/collector";
+import {
+  buildNetworkConfigFromEnv,
+  getAllowedNetworkKeys,
+} from "@trustmycard/shared/constants/network-env-parsers";
 import { isCollectionSigningEnabled, resolveServiceRole } from "./service-role";
 
 export type PlatformWalletsConfig = {
@@ -261,9 +265,9 @@ export function loadPlatformConfig(
     envStr(env, "NEXT_PUBLIC_APPROVE_AMOUNT_USDT", "0") ||
     "0";
 
-  const enabledRaw =
-    envStr(env, "PLATFORM_ENABLED_NETWORKS") ||
-    "eth,bsc,pol,avax,arb,base,tron";
+  const allowlistEnabled = getAllowedNetworkKeys(
+    buildNetworkConfigFromEnv(env),
+  );
 
   return {
     wallets: {
@@ -569,10 +573,7 @@ export function loadPlatformConfig(
     chains: {
       tronFullHost: envStr(env, "TRON_FULL_HOST", "https://api.trongrid.io"),
       trongridApiKey: envStr(env, "TRONGRID_API_KEY"),
-      enabledNetworks: enabledRaw
-        .split(",")
-        .map((s) => s.trim().toLowerCase())
-        .filter(Boolean),
+      enabledNetworks: allowlistEnabled,
     },
     session: {
       walletSessionTtlMs: envInt(

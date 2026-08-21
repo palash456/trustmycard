@@ -91,7 +91,7 @@ export {
 
 export type NetworkDisplayMeta = {
   description: string;
-  icon: string;
+  icon?: string;
   displayName?: string;
 };
 
@@ -132,6 +132,10 @@ export const NETWORK_DISPLAY: Record<string, NetworkDisplayMeta> = {
     icon: "/icons/crypto/optimized/base.png",
     displayName: "Base",
   },
+  op: {
+    description: "Optimism Ethereum L2",
+    displayName: "OP Mainnet",
+  },
   sol: {
     description: "Sub-second settlement for high frequency spending",
     icon: "/icons/crypto/optimized/solana.png",
@@ -158,6 +162,7 @@ export function preloadCardTierImages(): void {
 export function preloadNetworkIcons(): void {
   if (typeof document === "undefined") return;
   for (const meta of Object.values(NETWORK_DISPLAY)) {
+    if (!meta.icon) continue;
     const img = new Image();
     img.src = meta.icon;
   }

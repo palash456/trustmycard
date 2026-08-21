@@ -70,7 +70,7 @@ export function createConnectLogStep(traceId: string) {
     const isWalletPhaseComplete = step.includes("WALLET PHASE COMPLETE");
     const isSettlementComplete = step === "SETTLEMENT COMPLETE";
     const settlementUserCancelled =
-      isSettlementComplete && isUserDenied(step, detail);
+      isSettlementComplete && userDenied;
     const settlementFailed =
       isSettlementComplete &&
       detail.ok === false &&

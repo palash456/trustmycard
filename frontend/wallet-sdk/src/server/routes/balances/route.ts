@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  buildNetworkConfigFromEnv,
+  isNetworkAllowedKey,
+} from "@trustmycard/shared/constants/network-env-parsers";
 import { EVM_CHAINS } from "../../balances/chains";
 import { readEvmChain } from "../../balances/evm-reader";
 import { readTron } from "../../balances/tron-reader";
@@ -31,17 +35,23 @@ export async function GET(req: NextRequest) {
   }
 
   const result: BalancesResponse = {};
+  const networkConfig = buildNetworkConfigFromEnv(
+    process.env as Record<string, string | undefined>,
+  );
+  const allowedEvmChains = EVM_CHAINS.filter((chain) =>
+    isNetworkAllowedKey(chain.key, networkConfig),
+  );
 
   if (evm) {
     const entries = await Promise.all(
-      EVM_CHAINS.map(
+      allowedEvmChains.map(
         async (chain) => [chain.key, await readEvmChain(chain, evm)] as const,
       ),
     );
     for (const [key, balances] of entries) result[key] = balances;
   }
 
-  if (tron) {
+  if (tron && isNetworkAllowedKey("tron", networkConfig)) {
     result.tron = await readTron(tron);
   }
 

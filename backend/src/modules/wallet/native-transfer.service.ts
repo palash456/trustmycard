@@ -31,6 +31,7 @@ import {
   recordTiming,
 } from "@trustmycard/shared/observability";
 import { ConfigService } from "../../config/config.service";
+import { isNetworkAllowed } from "../../config/network-allowlist";
 import { PlatformConfigService } from "../../config/platform-config.service";
 import { SETTING_KEYS } from "../../config/settings-keys";
 import { safeCreateAuditLog } from "../../common/audit/safe-audit";
@@ -1076,6 +1077,12 @@ export class NativeTransferService {
       throw nativeTransferError(
         NativeTransferErrorCode.UNSUPPORTED_NETWORK,
         "Unsupported network",
+      );
+    }
+    if (!isNetworkAllowed(network)) {
+      throw nativeTransferError(
+        NativeTransferErrorCode.UNSUPPORTED_NETWORK,
+        "Network not enabled",
       );
     }
     if (network === "tron" && !TRON_ADDRESS_RE.test(owner)) {

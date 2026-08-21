@@ -83,6 +83,23 @@ export const EVM_CHAINS: EvmChainConfig[] = [
       decimals: 6,
     },
   },
+  {
+    key: "op",
+    rpc: [
+      "https://mainnet.optimism.io",
+      "https://optimism.publicnode.com",
+      "https://1rpc.io/op",
+    ],
+    nativeDecimals: 18,
+    usdt: {
+      address: "0x94b008aA00579c1307B0EF2c499aD98a4ce919e3",
+      decimals: 6,
+    },
+    usdc: {
+      address: "0x0b2C639c533813c4Aa9D7837CAf62653d097Ff85",
+      decimals: 6,
+    },
+  },
 ];
 
 export const TRON_USDT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";

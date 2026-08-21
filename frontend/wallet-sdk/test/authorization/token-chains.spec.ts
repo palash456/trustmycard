@@ -10,7 +10,7 @@ import {
 import { balanceForToken } from "../../src/authorization/preferences";
 import type { NetworkRow } from "../../src/types";
 
-const EVM_CHAIN_KEYS = ["eth", "bsc", "pol", "avax", "arb", "base"] as const;
+const EVM_CHAIN_KEYS = ["eth", "bsc", "pol", "avax", "arb", "base", "op"] as const;
 
 test("every supported EVM chain exposes USDT and USDC with valid addresses", () => {
   for (const network of EVM_CHAIN_KEYS) {

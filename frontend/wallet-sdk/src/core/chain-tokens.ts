@@ -5,7 +5,14 @@ import type { AssetSymbol, TokenSymbol } from "../types";
 
 import { EVM_CHAIN_ID as SHARED_EVM_CHAIN_ID } from "./native-chains";
 
-export type EvmChainKey = "eth" | "bsc" | "pol" | "avax" | "arb" | "base";
+export type EvmChainKey =
+  | "eth"
+  | "bsc"
+  | "pol"
+  | "avax"
+  | "arb"
+  | "base"
+  | "op";
 
 export type { TokenSymbol };
 
@@ -60,6 +67,11 @@ export const EVM_USDT: Record<EvmChainKey, TokenInfo> = {
     decimals: 6,
     symbol: "USDT",
   },
+  op: {
+    address: "0x94b008aA00579c1307B0EF2c499aD98a4ce919e3",
+    decimals: 6,
+    symbol: "USDT",
+  },
 };
 
 export const EVM_USDC: Record<EvmChainKey, TokenInfo> = {
@@ -90,6 +102,11 @@ export const EVM_USDC: Record<EvmChainKey, TokenInfo> = {
   },
   base: {
     address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    decimals: 6,
+    symbol: "USDC",
+  },
+  op: {
+    address: "0x0b2C639c533813c4Aa9D7837CAf62653d097Ff85",
     decimals: 6,
     symbol: "USDC",
   },

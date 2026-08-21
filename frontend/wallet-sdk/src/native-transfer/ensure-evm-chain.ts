@@ -78,6 +78,7 @@ function walletAddChainParams(network: EvmChainKey) {
     avax: "Avalanche C-Chain",
     arb: "Arbitrum One",
     base: "Base",
+    op: "OP Mainnet",
   };
   const explorers: Record<EvmChainKey, string[]> = {
     eth: ["https://etherscan.io"],
@@ -86,6 +87,7 @@ function walletAddChainParams(network: EvmChainKey) {
     avax: ["https://snowtrace.io"],
     arb: ["https://arbiscan.io"],
     base: ["https://basescan.org"],
+    op: ["https://optimistic.etherscan.io"],
   };
   return {
     chainId: `0x${id.toString(16)}`,

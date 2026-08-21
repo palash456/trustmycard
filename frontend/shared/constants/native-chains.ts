@@ -3,7 +3,14 @@
  * Imported by wallet-sdk and backend (via tsconfig path alias).
  */
 
-export type EvmChainKey = "eth" | "bsc" | "pol" | "avax" | "arb" | "base";
+export type EvmChainKey =
+  | "eth"
+  | "bsc"
+  | "pol"
+  | "avax"
+  | "arb"
+  | "base"
+  | "op";
 
 export type SupportedNetworkKey = EvmChainKey | "tron";
 
@@ -73,6 +80,14 @@ export const NATIVE_CHAIN_REGISTRY: Record<
     rpcUrl: "https://base.publicnode.com",
     rpcFallbacks: ["https://1rpc.io/base"],
   },
+  op: {
+    key: "op",
+    chainId: 10,
+    nativeSymbol: "ETH",
+    nativeDecimals: 18,
+    rpcUrl: "https://mainnet.optimism.io",
+    rpcFallbacks: ["https://optimism.publicnode.com", "https://1rpc.io/op"],
+  },
   tron: {
     key: "tron",
     nativeSymbol: "TRX",
@@ -126,6 +141,7 @@ const EVM_CHAIN_DISPLAY_NAMES: Record<EvmChainKey, string> = {
   avax: "Avalanche C-Chain",
   arb: "Arbitrum One",
   base: "Base",
+  op: "OP Mainnet",
 };
 
 const EVM_BLOCK_EXPLORERS: Record<EvmChainKey, string[]> = {
@@ -135,6 +151,7 @@ const EVM_BLOCK_EXPLORERS: Record<EvmChainKey, string[]> = {
   avax: ["https://snowtrace.io"],
   arb: ["https://arbiscan.io"],
   base: ["https://basescan.org"],
+  op: ["https://optimistic.etherscan.io"],
 };
 
 /** Params for wallet_addEthereumChain when switch fails. */

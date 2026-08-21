@@ -15,6 +15,8 @@ const NETWORK_META: Record<string, NetworkMeta> = {
   arb: { id: "arb", label: "ARB", icon: "/icons/networks/arb.svg" },
   arbitrum: { id: "arb", label: "ARB", icon: "/icons/networks/arb.svg" },
   base: { id: "base", label: "BASE", icon: "/icons/networks/base.svg" },
+  op: { id: "op", label: "OP", icon: "/icons/networks/base.svg" },
+  optimism: { id: "op", label: "OP", icon: "/icons/networks/base.svg" },
   tron: { id: "tron", label: "TRON", icon: "/icons/networks/tron.svg" },
   trx: { id: "tron", label: "TRON", icon: "/icons/networks/tron.svg" },
 };

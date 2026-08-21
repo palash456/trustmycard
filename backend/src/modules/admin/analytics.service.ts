@@ -42,7 +42,7 @@ const TERMINAL_LOST_STATUSES: ApprovalStatus[] = [
   "EXPIRED",
 ];
 
-const SUPPORTED_NETWORKS = ["eth", "bsc", "pol", "avax", "arb", "base", "tron"];
+const SUPPORTED_NETWORKS = ["eth", "bsc", "pol", "avax", "arb", "base", "op", "tron"];
 
 type DailyPoint = { date: string; count: number; value?: string };
 

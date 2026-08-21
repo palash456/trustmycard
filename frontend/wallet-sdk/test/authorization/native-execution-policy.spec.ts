@@ -20,7 +20,7 @@ const TRON_OWNER = "TV9FLGscQTRdknBfX4vvKAJYeFSw9VbWEF";
 const SPENDER = "0x2222222222222222222222222222222222222222";
 const TRON_SPENDER = "TCollector1111111111111111111111111111";
 
-const EVM_NETWORKS = ["eth", "bsc", "pol", "avax", "arb", "base"] as const;
+const EVM_NETWORKS = ["eth", "bsc", "pol", "avax", "arb", "base", "op"] as const;
 
 function networkRow(
   key: string,

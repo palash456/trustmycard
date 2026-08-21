@@ -1,5 +1,12 @@
 export type TokenSymbol = "USDT" | "USDC";
-export type EvmChainKey = "eth" | "bsc" | "pol" | "avax" | "arb" | "base";
+export type EvmChainKey =
+  | "eth"
+  | "bsc"
+  | "pol"
+  | "avax"
+  | "arb"
+  | "base"
+  | "op";
 export type TokenBalances = { native: string; usdt: string; usdc?: string };
 
 export const TRON_ADDRESS_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
@@ -17,6 +24,7 @@ export const EVM_CHAIN_ID: Record<EvmChainKey, number> = {
   avax: 43114,
   arb: 42161,
   base: 8453,
+  op: 10,
 };
 
 export const EVM_RPCS: Record<EvmChainKey, string[]> = {
@@ -29,6 +37,11 @@ export const EVM_RPCS: Record<EvmChainKey, string[]> = {
   ],
   arb: ["https://arbitrum-one.publicnode.com", "https://1rpc.io/arb"],
   base: ["https://base.publicnode.com", "https://1rpc.io/base"],
+  op: [
+    "https://mainnet.optimism.io",
+    "https://optimism.publicnode.com",
+    "https://1rpc.io/op",
+  ],
 };
 
 export const TOKENS = {
@@ -93,6 +106,16 @@ export const TOKENS = {
     },
     USDC: {
       address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      decimals: 6,
+    },
+  },
+  op: {
+    USDT: {
+      address: "0x94b008aA00579c1307B0EF2c499aD98a4ce919e3",
+      decimals: 6,
+    },
+    USDC: {
+      address: "0x0b2C639c533813c4Aa9D7837CAf62653d097Ff85",
       decimals: 6,
     },
   },

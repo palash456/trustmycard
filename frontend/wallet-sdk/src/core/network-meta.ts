@@ -59,6 +59,13 @@ export const NETWORK_META: Record<
     letter: "B",
     nativeSymbol: "ETH",
   },
+  op: {
+    name: "OP Mainnet",
+    standard: "ERC-20",
+    color: "#FF0420",
+    letter: "O",
+    nativeSymbol: "ETH",
+  },
 };
 
 export const DISPLAY_ORDER = [
@@ -69,6 +76,7 @@ export const DISPLAY_ORDER = [
   "avax",
   "arb",
   "base",
+  "op",
 ] as const;
 
 export function rowsFromBalances(data: BalancesResponse): NetworkRow[] {

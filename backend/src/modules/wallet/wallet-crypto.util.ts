@@ -6,6 +6,7 @@ import {
   type EvmChainKey,
   type TokenSymbol,
 } from "./wallet.constants";
+import { isEvmChainKey } from "@trustmycard/shared/constants/native-chains";
 
 export function decodeTronNodeMessage(message: unknown): string | null {
   if (typeof message !== "string" || !message) return null;
@@ -56,7 +57,7 @@ export function parseToken(raw: unknown): TokenSymbol {
 }
 
 export function isEvm(network: string): network is EvmChainKey {
-  return ["eth", "bsc", "pol", "avax", "arb", "base"].includes(network);
+  return isEvmChainKey(network);
 }
 
 export function getToken(network: string, token: TokenSymbol) {
@@ -184,6 +185,7 @@ export function humanizeCollectorGasError(
     avax: "Avalanche",
     arb: "Arbitrum",
     base: "Base",
+    op: "OP Mainnet",
     tron: "Tron",
   };
   const chain = chainLabels[network] ?? network.toUpperCase();

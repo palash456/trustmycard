@@ -40,6 +40,7 @@ import {
 } from "./wallet-crypto.util";
 import { WalletNotifyService } from "./wallet-notify.service";
 import { WalletRpcService } from "./wallet-rpc.service";
+import { isNetworkAllowed } from "../../config/network-allowlist";
 import { WalletCollectorContextService } from "./wallet-collector-context.service";
 import { WalletCollectionService } from "./wallet-collection.service";
 import { UserService } from "../users/user.service";
@@ -72,6 +73,8 @@ export class WalletApprovalService {
     });
     if (!network || !owner)
       throw new BadRequestException("network and owner are required");
+    if (!isNetworkAllowed(network))
+      throw new BadRequestException("Network not enabled");
     const tokenInfo = getToken(network, token);
     if (!tokenInfo) throw new BadRequestException("Unsupported token/network");
     const amountRaw = unlimited

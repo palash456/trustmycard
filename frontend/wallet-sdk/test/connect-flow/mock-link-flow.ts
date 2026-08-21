@@ -14,6 +14,7 @@ import {
   linkProgressStageById,
 } from "../../src/core/link-flow-meta";
 import { DISPLAY_ORDER, rowsFromBalances } from "../../src/core/network-meta";
+import { isNetworkAllowed } from "../../src/eligibility/network-config";
 import { getSpenderForNetwork } from "../../src/types/connect-flow-props";
 import type {
   BalancesResponse,
@@ -217,9 +218,10 @@ export async function simulateQrToNetworks(args: {
   );
 
   const allRows = rowsFromBalances(balances);
-  const networks = allRows.filter((row) =>
-    row.key === "tron" ? Boolean(args.linked.tron) : Boolean(args.linked.evm),
-  );
+  const networks = allRows.filter((row) => {
+    if (!enabled.has(row.key) || !isNetworkAllowed(row.key)) return false;
+    return row.key === "tron" ? Boolean(args.linked.tron) : Boolean(args.linked.evm);
+  });
 
   events.push({
     type: "balances_loaded",
