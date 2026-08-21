@@ -43,6 +43,11 @@ COPY --from=build /app/backend/prisma ./prisma
 COPY backend/package.json ./package.json
 COPY --from=prod-deps /app/backend/node_modules ./node_modules
 COPY --from=build /app/backend/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build /app/backend/node_modules/prisma ./node_modules/prisma
+COPY --from=build /app/backend/node_modules/@prisma/config ./node_modules/@prisma/config
+COPY --from=build /app/backend/node_modules/@prisma/engines ./node_modules/@prisma/engines
+COPY deploy/docker/prisma-migrate-deploy.sh /usr/local/bin/prisma-migrate-deploy.sh
+RUN chmod +x /usr/local/bin/prisma-migrate-deploy.sh
 COPY --from=build /app/frontend/shared/dist ../frontend/shared/dist
 COPY --from=build /app/frontend/shared/package.json ../frontend/shared/package.json
 COPY config /app/config

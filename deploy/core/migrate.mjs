@@ -34,10 +34,7 @@ export function runMigrations(ctx) {
       "-e",
       "SERVICE_ROLE=api",
       image,
-      "npx",
-      "prisma",
-      "migrate",
-      "deploy",
+      "prisma-migrate-deploy.sh",
     ],
     { stdio: "inherit" },
   );

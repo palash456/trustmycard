@@ -41,7 +41,7 @@ services:
     environment:
       TMC_ENV: production
       SERVICE_ROLE: api
-    command: ["npx", "prisma", "migrate", "deploy"]
+    command: ["prisma-migrate-deploy.sh"]
     depends_on:
       postgres:
         condition: service_healthy
