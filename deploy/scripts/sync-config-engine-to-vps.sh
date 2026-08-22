@@ -37,16 +37,5 @@ rsync -az -e "${RSYNC_SSH}" \
   "${ROOT}/deploy/scripts/" \
   "${VPS_USER}@${VPS_HOST}:${REMOTE_PATH}/deploy/scripts/"
 
-echo "[sync-config-engine] ensuring full stack is on the same compose network"
-ssh "${SSH_KEY[@]}" -o StrictHostKeyChecking=accept-new \
-  "${VPS_USER}@${VPS_HOST}" \
-  "chmod +x ${REMOTE_PATH}/deploy/scripts/reload-production-wallet.sh && \
-   cd ${REMOTE_PATH} && TMC_COMPILED_ENV_BACKEND=../compiled/production/backend.env TMC_COMPILED_ENV_WALLET=../compiled/production/wallet.env \
-   docker compose -p tmc-production-micro \
-    -f deploy/compose/docker-compose.base.yml \
-    -f deploy/compose/docker-compose.micro.yml \
-    -f deploy/compose/docker-compose.external-data.yml \
-    -f deploy/compose/docker-compose.micro-edge.yml \
-    up -d"
-
 echo "[sync-config-engine] complete — retry Production config in admin"
+echo "[sync-config-engine] note: wallet healthcheck applies on next wallet recreate (config deploy or compose up)"

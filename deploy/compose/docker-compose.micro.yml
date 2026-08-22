@@ -70,6 +70,18 @@ services:
       NODE_OPTIONS: "--max-old-space-size=128"
     ports:
       - "${TMC_HOST_WALLET_PORT:-3000}:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/settings/public').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
     depends_on:
       backend:
         condition: service_healthy

@@ -8,6 +8,7 @@ import {
   History,
   Pencil,
   RefreshCw,
+  X,
 } from "lucide-react";
 import { useBackendStatus } from "@/components/BackendStatusProvider";
 import { CopyButton } from "@/components/CopyButton";
@@ -398,22 +399,41 @@ export function ProductionConfigPage() {
     setChangeId(null);
   };
 
+  const canDeployValue = useCallback(
+    (raw: string) => {
+      if (!field) return false;
+      return field === "domain"
+        ? validateDomainInput(raw)
+        : validatePixelInput(raw);
+    },
+    [field],
+  );
+
   const closeField = () => {
     if (busy) return;
     setField(null);
     setDialogMode("form");
   };
 
-  const start = async () => {
-    if (!field || !validation || !state) return;
+  const retryDeploy = () => {
+    if (!deployedValue || !canDeployValue(deployedValue)) return;
+    void start(deployedValue);
+  };
+
+  const start = async (overrideValue?: string) => {
+    const deployInput = (overrideValue ?? value).trim();
+    if (!field || !state || !canDeployValue(deployInput)) return;
     setBusy(true);
     setError(null);
     setEvents([]);
     setDialogMode("console");
     setStartedAt(Date.now());
     setElapsed(0);
-    setDeployedValue(value.trim());
+    setDeployedValue(deployInput);
     setPreviousValue(current);
+    if (overrideValue !== undefined) {
+      setValue(deployInput);
+    }
 
     if (demoMode) {
       const nextChangeId = allocateDemoChangeId();
@@ -423,7 +443,7 @@ export function ProductionConfigPage() {
           field === "domain" ? state.WEBSITE_DOMAIN : state.META_PIXEL_ID;
         const result = await simulateDemoConfigDeploy({
           field,
-          rawValue: value.trim(),
+          rawValue: deployInput,
           changeId: nextChangeId,
           onEvent: (event) =>
             setEvents((items) => [
@@ -484,7 +504,7 @@ export function ProductionConfigPage() {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(
-            isDomain ? { domain: value.trim() } : { pixel: value.trim() },
+            isDomain ? { domain: deployInput } : { pixel: deployInput },
           ),
         },
       );
@@ -716,12 +736,13 @@ export function ProductionConfigPage() {
       </div>
 
       {field && fieldConfig ? (
-        <ModalPortal>
+        <ModalPortal onBackdropClick={busy ? undefined : closeField}>
           <Card className="max-h-[90vh] w-full overflow-y-auto shadow-2xl">
-            <CardContent className="p-0">
+            <CardContent className="relative p-0">
               {dialogMode === "form" ? (
                 <div className="space-y-0 p-6">
-                  <div className="mb-5 flex items-center gap-2">
+                  <ModalCloseButton onClose={closeField} />
+                  <div className="mb-5 flex items-center gap-2 pr-8">
                     <ConfigFieldIcon field={field} />
                     <h2 className="font-brand text-lg font-semibold">
                       {fieldConfig.dialogTitle}
@@ -802,13 +823,29 @@ export function ProductionConfigPage() {
                     </div>
                   )}
                   {error ? (
-                    <p className="mt-4 text-sm text-destructive">{error}</p>
+                    <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                      <p className="text-destructive">{error}</p>
+                      {canDeployValue(value) ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-3"
+                          onClick={() => void start()}
+                        >
+                          <RefreshCw className="size-3.5" />
+                          Try again
+                        </Button>
+                      ) : null}
+                    </div>
                   ) : null}
                   <div className="mt-6 flex justify-end gap-2">
                     <Button variant="outline" onClick={closeField}>
                       Cancel
                     </Button>
-                    <Button disabled={!validation} onClick={() => void start()}>
+                    <Button
+                      disabled={!validation}
+                      onClick={() => void start()}
+                    >
                       Deploy Change
                     </Button>
                   </div>
@@ -817,7 +854,8 @@ export function ProductionConfigPage() {
 
               {dialogMode === "console" ? (
                 <div className="space-y-0 p-6">
-                  <div className="mb-5">
+                  <ModalCloseButton onClose={closeField} disabled={busy} />
+                  <div className="mb-5 pr-8">
                     <h2 className="font-brand text-lg font-semibold">
                       Deploying configuration change
                     </h2>
@@ -846,10 +884,11 @@ export function ProductionConfigPage() {
 
               {dialogMode === "success" ? (
                 <div className="space-y-0 p-6">
+                  <ModalCloseButton onClose={closeField} />
                   <div className="mb-4 flex size-10 items-center justify-center rounded-full bg-green-50 text-green-700">
                     <CheckCircle2 />
                   </div>
-                  <h2 className="font-brand text-lg font-semibold">
+                  <h2 className="pr-8 font-brand text-lg font-semibold">
                     Deployment successful
                   </h2>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -876,10 +915,11 @@ export function ProductionConfigPage() {
 
               {dialogMode === "rollback" ? (
                 <div className="space-y-0 p-6">
+                  <ModalCloseButton onClose={closeField} />
                   <div className="mb-4 flex size-10 items-center justify-center rounded-full bg-amber-50 text-amber-700">
                     <AlertTriangle />
                   </div>
-                  <h2 className="font-brand text-lg font-semibold">
+                  <h2 className="pr-8 font-brand text-lg font-semibold">
                     Deployment rolled back
                   </h2>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -913,10 +953,16 @@ export function ProductionConfigPage() {
                       />
                     </div>
                   ) : null}
-                  <div className="mt-6 flex justify-end">
-                    <Button onClick={closeField}>
+                  <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                    <Button variant="outline" onClick={closeField}>
                       Return to Configuration
                     </Button>
+                    {deployedValue && canDeployValue(deployedValue) ? (
+                      <Button onClick={retryDeploy}>
+                        <RefreshCw className="size-3.5" />
+                        Try again
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
               ) : null}
@@ -928,8 +974,9 @@ export function ProductionConfigPage() {
       {logsOpen ? (
         <ModalPortal onBackdropClick={() => setLogsOpen(false)}>
           <Card className="max-h-[80vh] w-full overflow-hidden shadow-2xl">
-            <CardContent className="p-0">
-              <div className="border-b px-6 py-5">
+            <CardContent className="relative p-0">
+              <div className="border-b px-6 py-5 pr-14">
+                <ModalCloseButton onClose={() => setLogsOpen(false)} />
                 <h2 className="font-brand text-lg font-semibold">
                   Recent Activity
                 </h2>
@@ -974,16 +1021,47 @@ export function ProductionConfigPage() {
                   </p>
                 )}
               </div>
-              <div className="flex justify-end border-t px-6 py-4">
-                <Button variant="outline" onClick={() => setLogsOpen(false)}>
-                  Close
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </ModalPortal>
       ) : null}
     </main>
+  );
+}
+
+function formatTerminalLogs(events: Event[]): string {
+  return events
+    .map((event) => {
+      const time = event.at ? new Date(event.at).toLocaleTimeString() : "—";
+      const message =
+        event.phase === "log"
+          ? event.message
+          : event.message || event.phase;
+      const error = event.error ? ` — ${event.error}` : "";
+      return `[${time}] ${message ?? ""}${error}`;
+    })
+    .join("\n");
+}
+
+function ModalCloseButton({
+  onClose,
+  disabled,
+}: {
+  onClose: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      className="absolute top-4 right-4 z-10"
+      onClick={onClose}
+      disabled={disabled}
+      aria-label="Close"
+    >
+      <X className="size-4" />
+    </Button>
   );
 }
 
@@ -1381,6 +1459,8 @@ function Terminal({
   phaseLabel: string;
   live: boolean;
 }) {
+  const logText = formatTerminalLogs(events);
+
   return (
     <div className="overflow-hidden rounded-lg border border-[#27272a] bg-[#0b0c0f]">
       <div className="flex items-center justify-between border-b border-[#27272a] px-3 py-2 text-xs text-zinc-300">
@@ -1393,7 +1473,17 @@ function Terminal({
           ) : null}
           <span className="font-medium text-zinc-100">{phaseLabel}</span>
         </div>
-        <span className="text-zinc-500">{elapsed}s</span>
+        <div className="flex items-center gap-1">
+          {events.length > 0 ? (
+            <CopyButton
+              value={logText}
+              variant="icon"
+              ariaLabel="Copy deployment logs"
+              className="text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+            />
+          ) : null}
+          <span className="px-1 text-zinc-500">{elapsed}s</span>
+        </div>
       </div>
       <div className="max-h-72 space-y-1 overflow-auto p-3 font-mono text-xs text-[#d4d4d8]">
         {events.length ? (

@@ -16,6 +16,13 @@ export function verifyRetryPolicy(ctx) {
       reason: "domain migration (waiting for Caddy TLS/ACME)",
     };
   }
+  if (ctx?.changedKey === "META_PIXEL_ID") {
+    return {
+      retries: 30,
+      delayMs: 3000,
+      reason: "wallet container restart (waiting for Next.js + Caddy)",
+    };
+  }
   return {
     retries: VERIFY_RETRIES,
     delayMs: VERIFY_DELAY_MS,
