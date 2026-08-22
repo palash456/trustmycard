@@ -16,6 +16,10 @@ import {
   runConfigurationOnlyRelease,
 } from "../core/config-only-orchestrator.mjs";
 import { verifyDeployment } from "../core/verify.mjs";
+import {
+  shouldSyncRuntimeConfigToVps,
+  syncRuntimeConfigToVps,
+} from "./sync-runtime-to-vps.mjs";
 
 export async function runConfigUpdate({
   environment = "production",
@@ -100,6 +104,13 @@ export async function runConfigUpdate({
       )(ctx);
       audit.finalValue = finalValue;
       audit.result = "SUCCESS";
+      const provider = ctx.options?.provider ?? ctx.manifest?.provider;
+      if (shouldSyncRuntimeConfigToVps(provider, environment)) {
+        event("apply", "Syncing runtime state to VPS (config:sync-vps)");
+        syncRuntimeConfigToVps(environment, {
+          onLog: (message) => event("log", message),
+        });
+      }
       event("complete", audit.result);
       return { changeId, state: candidate };
     } catch (error) {

@@ -309,7 +309,7 @@
     },
     {
       "label": "production:meta-pixel:update",
-      "detail": "PRODUCTION — interactive Meta Pixel ID update (config-only deploy)",
+      "detail": "PRODUCTION — Meta Pixel ID update + config:sync-vps (production admin stays aligned)",
       "type": "shell",
       "command": "node scripts/production-config-update.mjs --preset=pixel",
       "options": {

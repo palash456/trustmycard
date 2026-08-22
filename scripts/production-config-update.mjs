@@ -276,6 +276,11 @@ async function main() {
       }
     }
     console.log(`${logPrefix()} deployment: configuration-only release completed`);
+    if (results.length > 0) {
+      console.log(
+        `${logPrefix()} VPS runtime record synced (npm run config:sync-vps) for production admin`,
+      );
+    }
     console.log("════════════════════════════════════════════════════════════");
     console.log("");
   } finally {
