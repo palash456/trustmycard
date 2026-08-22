@@ -114,7 +114,10 @@ export async function runDeploy(options) {
   await verifyDeployment(ctx);
   printManualChecklist(manifest, {
     provider,
-    walletOrigin: ctx.compiled.meta.origins.walletOrigin,
+    origins: ctx.compiled.meta.origins,
+    skipBuild: options.skipBuild,
+    skipImages: options.skipImages,
+    skipMigrate: options.skipMigrate,
   });
 
   saveState(environment, {

@@ -157,18 +157,93 @@ async function fetchCheck(check) {
   }
 }
 
+function isApexWebsiteDomain(websiteDomain) {
+  return String(websiteDomain ?? "").split(".").length <= 2;
+}
+
+function resolveDeployMode(options = {}) {
+  if (options.skipBuild && options.skipImages) return "config-only";
+  if (options.skipMigrate) return "skip-migrate";
+  return "full";
+}
+
 export function printManualChecklist(manifest, options = {}) {
+  const origins = options.origins ?? {};
   const walletOrigin =
-    options.walletOrigin ?? manifest.domains?.wallet ?? "https://<apex>";
+    origins.walletOrigin ??
+    options.walletOrigin ??
+    manifest.domains?.wallet ??
+    "https://<WEBSITE_DOMAIN>";
+  const apiOrigin =
+    origins.apiOrigin ??
+    options.apiOrigin ??
+    manifest.domains?.api ??
+    "https://api.<WEBSITE_DOMAIN>";
+  const websiteDomain =
+    origins.websiteDomain ??
+    options.websiteDomain ??
+    (() => {
+      try {
+        return new URL(walletOrigin).hostname;
+      } catch {
+        return "<WEBSITE_DOMAIN>";
+      }
+    })();
+  const apiHost = (() => {
+    try {
+      return new URL(apiOrigin).hostname;
+    } catch {
+      return `api.${websiteDomain}`;
+    }
+  })();
+  const deployMode = options.deployMode ?? resolveDeployMode(options);
+  const apex = isApexWebsiteDomain(websiteDomain);
+
   console.log("\n[manual] post-deploy checklist:");
-  console.log("  - DNS: A records @, api, www → VPS IP (not Hostinger shared hosting)");
-  console.log("  - Disconnect any Hostinger 'connected website' on this domain");
-  console.log("  - Caddy TLS active; www → apex 308 redirect");
-  console.log(`  - WalletConnect allowed origin: ${walletOrigin}`);
-  console.log("  - APP_ORIGIN / NEXT_PUBLIC_APP_URL match apex URL");
-  console.log("  - Meta ads landing URL = apex / (not /connect)");
-  console.log("  - Do NOT upload marketing to Hostinger public_html");
   console.log(
-    "  - If the VPS IP was blocked, rotate IP or open a provider support ticket before redeploying",
+    "  - DNS: Cloudflare A records → VPS IP (deploy/provider.credentials.env → VPS_HOST)",
+  );
+  console.log(`      ${websiteDomain} (wallet)`);
+  console.log(`      ${apiHost} (API)`);
+  if (apex) {
+    console.log(`      www.${websiteDomain} (308 redirect → ${websiteDomain})`);
+    console.log(
+      `  - Caddy TLS active; www.${websiteDomain} → ${websiteDomain} (308)`,
+    );
+  } else {
+    console.log(
+      `  - Caddy TLS active for ${websiteDomain} + ${apiHost} (subdomain host — no www block)`,
+    );
+  }
+  console.log(
+    "  - Runtime config: deploy/runtime-config/production.json auto-synced on deploy",
+  );
+  console.log(
+    "    (npm run config:sync-vps only if edited offline; domain/pixel via production:domain:update / production:meta-pixel:update)",
+  );
+  console.log(
+    `  - WalletConnect allowed origin: ${walletOrigin} (NEXT_PUBLIC_APP_URL)`,
+  );
+  console.log(`  - API origin: ${apiOrigin}; APP_ORIGIN matches wallet URL`);
+  console.log(
+    "  - Meta Pixel / ads landing URL: homepage / (not /connect); META_PIXEL_ID in runtime config or config/platform.env",
+  );
+  console.log(
+    "  - Platform policy (eligibility, wallets, flags): config/platform.env — rebuild wallet after NEXT_PUBLIC_* or locale edits",
+  );
+  if (deployMode === "config-only") {
+    console.log(
+      "  - Config-only deploy: images unchanged; NEXT_PUBLIC_* / locale edits still need a full wallet rebuild",
+    );
+  } else if (deployMode === "skip-migrate") {
+    console.log(
+      "  - Skipped DB migrate this run — run full deploy when Prisma migrations are pending",
+    );
+  }
+  console.log(
+    "  - Admin panel: deploy separately (npm run deploy:admin / Prod: Deploy Admin)",
+  );
+  console.log(
+    "  - VPS creds live in deploy/provider.credentials.env only — never in config/platform.env",
   );
 }
