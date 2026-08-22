@@ -16,19 +16,31 @@ function value(name) {
   return i < 0 ? undefined : process.argv[i + 1];
 }
 export function readCompiledManagedValues(environment = "production") {
-  const walletEnv = join(compiledDir(environment), "wallet.env");
-  if (!existsSync(walletEnv))
+  const deployed = tryReadDeployedManagedValues(environment);
+  if (!deployed?.domain || !deployed.pixel) {
+    const walletEnv = join(compiledDir(environment), "wallet.env");
     throw new Error(
       `Missing ${walletEnv}. Run ./deploy.sh production --dry-run first.`,
     );
+  }
+  return { domain: deployed.domain, pixel: deployed.pixel };
+}
+
+/** Read deployed wallet.env managed keys without throwing when the file is absent. */
+export function tryReadDeployedManagedValues(environment = "production") {
+  const walletEnv = join(compiledDir(environment), "wallet.env");
+  if (!existsSync(walletEnv)) return null;
   const values = parseEnvFile(walletEnv);
-  const domain = values.WEBSITE_DOMAIN?.trim();
-  const pixel = values.META_PIXEL_ID?.trim();
-  if (!domain || !pixel)
-    throw new Error(
-      `${walletEnv} must contain WEBSITE_DOMAIN and META_PIXEL_ID from the last compile`,
-    );
-  return { domain, pixel };
+  const domain =
+    values.WEBSITE_DOMAIN?.trim() ||
+    normalizeWebsiteDomain(values.NEXT_PUBLIC_WEBSITE_DOMAIN ?? "");
+  const pixel = values.META_PIXEL_ID?.trim() ?? "";
+  return {
+    domain,
+    pixel,
+    WEBSITE_DOMAIN: domain,
+    META_PIXEL_ID: pixel,
+  };
 }
 export async function migrateInit({
   environment = value("--environment") ?? "production",

@@ -46,6 +46,8 @@ export function imageName(manifest, component) {
 }
 
 export function compiledDir(environment) {
+  const override = process.env.TMC_COMPILED_DIR?.trim();
+  if (override) return join(override, environment);
   return join(deployRoot, "compiled", environment);
 }
 

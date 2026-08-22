@@ -28,10 +28,12 @@ services:
       - ../config-engine:/opt/tmc/deploy/config-engine:ro
       - ../core:/opt/tmc/deploy/core:ro
       - ../compose:/opt/tmc/deploy/compose:ro
+      - ../caddy:/opt/tmc/deploy/caddy:ro
       - ../compiled:/opt/tmc/deploy/compiled:rw
       - ../runtime-config:/opt/tmc/deploy/runtime-config:rw
       - ../manifest.production.json:/opt/tmc/deploy/manifest.production.json:ro
       - ../../config:/opt/tmc/config:ro
+      - ../../env/profiles:/opt/tmc/env/profiles:ro
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "${TMC_HOST_API_PORT:-4000}:4000"

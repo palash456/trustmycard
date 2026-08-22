@@ -11,7 +11,9 @@ const CONFIG_ONLY_MESSAGES = [
 export function preflightConfiguration(ctx) {
   validateDeployContext(ctx);
   const compiled = compileEnvBundles(ctx, ctx.runtimeState);
-  if (ctx.environment === "production") {
+  const needsCaddy =
+    ctx.environment === "production" && ctx.changedKey !== "META_PIXEL_ID";
+  if (needsCaddy) {
     compileCaddyfile(compiled.meta.origins.websiteDomain);
   }
   ctx.compiled = compiled;

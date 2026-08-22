@@ -42,6 +42,8 @@ type State = {
   lastChangeId: string;
   platformDefaultsActive?: boolean;
   source?: string;
+  deployedValues?: { META_PIXEL_ID?: string; WEBSITE_DOMAIN?: string } | null;
+  configDrift?: { META_PIXEL_ID?: boolean; WEBSITE_DOMAIN?: boolean };
 };
 type Audit = {
   changeId: string;
@@ -64,6 +66,8 @@ type Event = {
 type ConfigApiResponse = {
   state?: State & {
     platformDefaults?: { META_PIXEL_ID?: string; WEBSITE_DOMAIN?: string };
+    deployedValues?: { META_PIXEL_ID?: string; WEBSITE_DOMAIN?: string } | null;
+    configDrift?: { META_PIXEL_ID?: boolean; WEBSITE_DOMAIN?: boolean };
   };
   platformDefaults?: { META_PIXEL_ID?: string; WEBSITE_DOMAIN?: string };
   liveWebsite?: LiveWebsiteMetaPixel;
@@ -277,6 +281,11 @@ export function ProductionConfigPage() {
 
   const pageEnabled = demoMode || pageStatus.status === "healthy";
   const platformDefaultsActive = Boolean(state?.platformDefaultsActive);
+  const configuredPixelId = state
+    ? state.configDrift?.META_PIXEL_ID && state.deployedValues?.META_PIXEL_ID
+      ? state.deployedValues.META_PIXEL_ID.trim()
+      : state.META_PIXEL_ID?.trim() ?? ""
+    : "";
 
   const fieldConfig = field ? FIELD_CONFIG[field] : null;
   const isDomain = field === "domain";
@@ -458,15 +467,14 @@ export function ProductionConfigPage() {
           setBusy(false);
           void load();
           const success = event.message === "SUCCESS";
+          const failureMessage =
+            event.error ??
+            "Deployment failed and was rolled back.";
           if (success) {
             setDialogMode("success");
           } else {
             setDialogMode("rollback");
-            setError(
-              event.error ??
-                event.message ??
-                "Deployment failed and was rolled back.",
-            );
+            setError(failureMessage);
           }
         }
       };
@@ -616,9 +624,11 @@ export function ProductionConfigPage() {
               disabled={platformDefaultsActive}
             /> */}
             <PixelConfigField
-              configuredValue={state?.META_PIXEL_ID ?? "—"}
+              configuredValue={configuredPixelId || "—"}
               liveWebsite={liveWebsite}
               meta={state}
+              configDrift={state?.configDrift}
+              runtimePixelId={state?.META_PIXEL_ID}
               action={FIELD_CONFIG.pixel.action}
               onClick={() => openField("pixel")}
               disabled={platformDefaultsActive}
@@ -1044,6 +1054,8 @@ function PixelConfigField({
   configuredValue,
   liveWebsite,
   meta,
+  configDrift,
+  runtimePixelId,
   action,
   onClick,
   disabled,
@@ -1052,6 +1064,8 @@ function PixelConfigField({
   configuredValue: string;
   liveWebsite: LiveWebsiteMetaPixel | null;
   meta: State | null;
+  configDrift?: { META_PIXEL_ID?: boolean; WEBSITE_DOMAIN?: boolean };
+  runtimePixelId?: string;
   action: string;
   onClick: () => void;
   disabled?: boolean;
@@ -1100,6 +1114,14 @@ function PixelConfigField({
                 "—"
               )}
             </p>
+            {configDrift?.META_PIXEL_ID && runtimePixelId?.trim() ? (
+              <p className="mt-2 text-xs text-amber-800 dark:text-amber-200">
+                Runtime record still lists{" "}
+                <span className="font-mono">{runtimePixelId.trim()}</span>. The
+                wallet container is serving the value above. Re-run a config update
+                or sync runtime state to align the audit record.
+              </p>
+            ) : null}
           </div>
 
           <div className="rounded-lg border bg-muted/20 p-3">

@@ -265,6 +265,40 @@ test("getProductionConfig prefers platform.env over runtime state", async () => 
   });
 });
 
+test("getProductionConfig reports drift between runtime state and deployed wallet.env", async () => {
+  const runtimeDir = mkdtempSync(join(tmpdir(), "tmc-config-runtime-"));
+  const compiledRoot = mkdtempSync(join(tmpdir(), "tmc-config-compiled-"));
+  const priorRuntime = process.env.TMC_RUNTIME_CONFIG_DIR;
+  const priorCompiled = process.env.TMC_COMPILED_DIR;
+  process.env.TMC_RUNTIME_CONFIG_DIR = runtimeDir;
+  process.env.TMC_COMPILED_DIR = compiledRoot;
+  try {
+    writeRuntimeState(
+      "production",
+      state({
+        environment: "production",
+        WEBSITE_DOMAIN: "runtime.test",
+        META_PIXEL_ID: "111111111111111",
+      }),
+    );
+    const walletDir = join(compiledRoot, "production");
+    mkdirSync(walletDir, { recursive: true });
+    writeFileSync(
+      join(walletDir, "wallet.env"),
+      "WEBSITE_DOMAIN=runtime.test\nMETA_PIXEL_ID=222222222222222\n",
+    );
+    const config = await getProductionConfig("production");
+    assert.equal(config.runtimeState.META_PIXEL_ID, "111111111111111");
+    assert.equal(config.deployedValues?.META_PIXEL_ID, "222222222222222");
+    assert.equal(config.configDrift.META_PIXEL_ID, true);
+  } finally {
+    if (priorRuntime === undefined) delete process.env.TMC_RUNTIME_CONFIG_DIR;
+    else process.env.TMC_RUNTIME_CONFIG_DIR = priorRuntime;
+    if (priorCompiled === undefined) delete process.env.TMC_COMPILED_DIR;
+    else process.env.TMC_COMPILED_DIR = priorCompiled;
+  }
+});
+
 test("migrate init can seed from compiled production wallet.env", async () => {
   const dir = mkdtempSync(join(tmpdir(), "tmc-config-"));
   const prior = process.env.TMC_RUNTIME_CONFIG_DIR;

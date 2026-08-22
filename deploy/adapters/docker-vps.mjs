@@ -4,6 +4,10 @@ import { join } from "path";
 import { spawnSync } from "child_process";
 import { composeEnv, composeFiles } from "../core/compose.mjs";
 import { transferImagesToHost } from "../core/image-transfer.mjs";
+import {
+  remoteRuntimeConfigDir,
+  runtimeConfigSyncPlan,
+} from "../core/runtime-config-sync.mjs";
 import { deployRoot, repoRoot } from "../core/types.mjs";
 import { releaseComponents } from "../core/types.mjs";
 
@@ -149,6 +153,35 @@ function rsyncBundle(creds, remotePath, environment) {
       `${remotePath}/deploy/manifest.${environment}.json`,
     );
   }
+
+  syncRuntimeConfigToRemote(creds, remotePath, environment);
+}
+
+function syncRuntimeConfigToRemote(creds, remotePath, environment) {
+  const plan = runtimeConfigSyncPlan(environment);
+  if (!plan) return;
+
+  const remoteDir = remoteRuntimeConfigDir(creds, remotePath);
+  sshExec(
+    creds,
+    `mkdir -p ${remoteDir} && chmod 700 ${remoteDir}`,
+  );
+  rsyncFileToRemote(
+    creds,
+    plan.stateFile,
+    `${remoteDir}/${plan.remoteStatePath}`,
+  );
+  if (plan.hasAudit) {
+    rsyncFileToRemote(creds, plan.auditFile, `${remoteDir}/audit.ndjson`);
+  }
+  const chmodParts = [`chmod 600 ${remoteDir}/${plan.remoteStatePath}`];
+  if (plan.hasAudit) {
+    chmodParts.push(`chmod 640 ${remoteDir}/audit.ndjson`);
+  }
+  sshExec(creds, chmodParts.join(" && "));
+  console.log(
+    `[adapter:docker-vps] synced runtime config to ${remoteDir} on ${creds.VPS_HOST}`,
+  );
 }
 
 function shellQuote(value) {

@@ -1,11 +1,30 @@
-import { loadManifest } from "../core/config-compiler.mjs";
+import {
+  loadManifest,
+  normalizeWebsiteDomain,
+} from "../core/config-compiler.mjs";
 import { repoRoot } from "../core/types.mjs";
 import { readAuditHistory } from "./audit.mjs";
+import { tryReadDeployedManagedValues } from "./migrate-init.mjs";
 import { readRuntimeState } from "./runtime-state.mjs";
 import { runConfigUpdate } from "./update-workflow.mjs";
 import { dockerVpsConfigAdapter } from "./adapters/docker-vps-config.mjs";
 import { localConfigAdapter } from "./adapters/local-config.mjs";
 import { readPlatformDefaults, resolveManagedPlatformValues } from "./validators.mjs";
+
+function managedConfigDrift(runtime, deployed) {
+  if (!deployed) return {};
+  const runtimeDomain = normalizeWebsiteDomain(runtime.WEBSITE_DOMAIN ?? "");
+  const runtimePixel = runtime.META_PIXEL_ID?.trim() ?? "";
+  const deployedDomain = deployed.WEBSITE_DOMAIN?.trim() ?? "";
+  const deployedPixel = deployed.META_PIXEL_ID?.trim() ?? "";
+  return {
+    WEBSITE_DOMAIN:
+      Boolean(runtimeDomain && deployedDomain) &&
+      runtimeDomain !== deployedDomain,
+    META_PIXEL_ID:
+      Boolean(runtimePixel && deployedPixel) && runtimePixel !== deployedPixel,
+  };
+}
 
 export async function getProductionConfig(environment = "production") {
   const platformDefaults = readPlatformDefaults(repoRoot);
@@ -13,6 +32,8 @@ export async function getProductionConfig(environment = "production") {
   const resolved = resolveManagedPlatformValues(platformDefaults, runtime);
   const websiteDomain = resolved.WEBSITE_DOMAIN;
   const metaPixelId = resolved.META_PIXEL_ID;
+  const deployedValues = tryReadDeployedManagedValues(environment);
+  const configDrift = managedConfigDrift(runtime, deployedValues);
   const usesPlatform =
     Boolean(platformDefaults.WEBSITE_DOMAIN) ||
     Boolean(platformDefaults.META_PIXEL_ID);
@@ -34,6 +55,13 @@ export async function getProductionConfig(environment = "production") {
       WEBSITE_DOMAIN: runtime.WEBSITE_DOMAIN,
       META_PIXEL_ID: runtime.META_PIXEL_ID,
     },
+    deployedValues: deployedValues
+      ? {
+          WEBSITE_DOMAIN: deployedValues.WEBSITE_DOMAIN,
+          META_PIXEL_ID: deployedValues.META_PIXEL_ID,
+        }
+      : null,
+    configDrift,
   };
 }
 export async function getConfigHistory(environment = "production", options) {

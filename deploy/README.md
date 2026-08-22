@@ -109,7 +109,7 @@ After the stack is up, confirm **runtime config** — not only containers:
 | Task | Files | Notes |
 | ---- | ----- | ----- |
 | DNS + TLS | Cloudflare A records → VPS IP | A records for apex + `api.` → VPS IP |
-| Domain / Meta Pixel | `deploy/runtime-config/production.json` | `npm run config:sync-vps` after local updates |
+| Domain / Meta Pixel | `deploy/runtime-config/production.json` | Auto-synced to VPS on every config deploy; `npm run config:sync-vps` only if you edited runtime state without deploying |
 | Platform policy | `config/platform.env`, `env/vault/config/platform.env` | Eligibility `NEXT_PUBLIC_*_MIN_*_BALANCE`, wallets, flags |
 | `NEXT_PUBLIC_*` changes | Rebuild wallet image | `--skip-images` is **not** enough |
 | Locales / tab title | `frontend/website/locales/*.json` | Rebuild wallet after locale edits |
@@ -128,6 +128,7 @@ On a **micro VPS**, the API container restarts services via the **host Docker so
 | `TMC_CONFIG_DEPLOY_LOCAL=true` | Set on backend (default in `docker-compose.micro.yml`) |
 | Docker socket | `/var/run/docker.sock` mounted into `backend` |
 | Compose + compiled env | `deploy/compose` (ro) and `deploy/compiled` (rw) mounted |
+| Profile env + Caddy template | `env/profiles` (ro) and `deploy/caddy` (ro) mounted into backend |
 | Docker CLI in backend image | Rebuild `tmc/backend:production` after Dockerfile changes |
 
 From your dev machine, config changes still use SSH via `deploy/provider.credentials.env`. Only the on-VPS API uses local socket mode.

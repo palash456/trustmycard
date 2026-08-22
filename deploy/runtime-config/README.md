@@ -12,6 +12,8 @@ These files are **gitignored**. They are created and updated by:
 - `./scripts/config-update.sh init|domain|pixel`
 - Admin → Platform Configuration (same CLI via Nest API)
 
+When you run a config update from your dev machine, `docker-vps` deploy **automatically rsyncs** `production.json` and `audit.ndjson` to the VPS together with compiled env — admin and live wallet stay aligned.
+
 On the VPS the same paths live under `/opt/tmc/deploy/runtime-config/` (or set `TMC_RUNTIME_CONFIG_DIR`).
 
 **Do not commit real production domain or Meta Pixel values into the repo.**
