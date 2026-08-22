@@ -23,7 +23,57 @@ const { missingEligibilityEnvVarNames } = require(
   join(repoRoot, "config/eligibility-env.mjs"),
 );
 
+function validateConfigOnlyDeployContext(ctx) {
+  const errors = [];
+  const { manifest, environment } = ctx;
+
+  if (!TOPOLOGIES.includes(manifest.topology)) {
+    errors.push(`Invalid topology "${manifest.topology}"`);
+  }
+
+  const configPlatformPath = join(repoRoot, "config/platform.env");
+  if (!existsSync(configPlatformPath)) {
+    errors.push(
+      `Missing ${configPlatformPath} — copy from config/platform.env.example`,
+    );
+  }
+
+  if (environment === "production" && existsSync(configPlatformPath)) {
+    try {
+      const platform = parseEnvFile(configPlatformPath);
+      const runtimeDomain = runtimeStateExists(environment)
+        ? readRuntimeState(environment).WEBSITE_DOMAIN?.trim()
+        : "";
+      const websiteDomain =
+        platform.WEBSITE_DOMAIN?.trim() || runtimeDomain || "";
+      if (!websiteDomain) {
+        errors.push(
+          "Production WEBSITE_DOMAIN is missing. Set config/platform.env or run scripts/config-update.sh init.",
+        );
+      } else {
+        normalizeWebsiteDomain(websiteDomain);
+      }
+    } catch (error) {
+      errors.push(`config/platform.env: ${error.message}`);
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Deploy validation failed:\n- ${errors.join("\n- ")}`);
+  }
+
+  return { provider: ctx.options?.provider ?? manifest.provider ?? "local" };
+}
+
 export function validateDeployContext(ctx) {
+  const configOnly =
+    ctx.options?.configOnly ||
+    ctx.options?.source === "WEB_PORTAL" ||
+    process.env.TMC_CONFIG_DEPLOY_LOCAL?.trim().toLowerCase() === "true";
+  if (configOnly) {
+    return validateConfigOnlyDeployContext(ctx);
+  }
+
   const errors = [];
   const { manifest, environment, options } = ctx;
 

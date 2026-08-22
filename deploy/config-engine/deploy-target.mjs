@@ -14,3 +14,13 @@ export function shouldUseLocalVpsConfigDeploy() {
   const credsPath = join(deployRoot, "provider.credentials.env");
   return existsSync("/var/run/docker.sock") && !existsSync(credsPath);
 }
+
+/** Admin portal / VPS API config updates — skip full deploy profile validation. */
+export function isConfigOnlyDeploy(options = {}) {
+  if (options.configOnly) return true;
+  if (process.env.TMC_CONFIG_DEPLOY_LOCAL?.trim().toLowerCase() === "true") {
+    return true;
+  }
+  if (options.source === "WEB_PORTAL") return true;
+  return shouldUseLocalVpsConfigDeploy();
+}

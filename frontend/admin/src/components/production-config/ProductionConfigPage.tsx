@@ -75,6 +75,43 @@ type ConfigApiResponse = {
   code?: string;
 };
 
+function parseDeployErrorMessage(raw: string | undefined): string | null {
+  if (!raw?.trim()) return null;
+  try {
+    const parsed = JSON.parse(raw) as { error?: string; message?: string };
+    if (typeof parsed.error === "string") {
+      return parseDeployErrorMessage(parsed.error) ?? parsed.error;
+    }
+    if (
+      typeof parsed.message === "string" &&
+      parsed.message !== "FAILED" &&
+      parsed.message !== "ROLLED_BACK"
+    ) {
+      return parsed.message;
+    }
+  } catch {
+    // plain text
+  }
+  return raw.trim();
+}
+
+function resolveDeployFailureMessage(events: Event[], event: Event): string {
+  const direct =
+    parseDeployErrorMessage(event.error) ??
+    (event.message && event.message !== "SUCCESS" ? event.message : null);
+  if (direct && direct !== "FAILED" && direct !== "ROLLED_BACK") return direct;
+
+  for (const item of [...events].reverse()) {
+    if (item.phase !== "log" || !item.message) continue;
+    const parsed = parseDeployErrorMessage(item.message);
+    if (parsed && parsed !== "FAILED" && parsed !== "ROLLED_BACK") {
+      return parsed;
+    }
+  }
+
+  return "Deployment failed and was rolled back.";
+}
+
 function platformPixelIdFromConfig(config: ConfigApiResponse): string {
   return (
     config.state?.platformDefaults?.META_PIXEL_ID?.trim() ||
@@ -461,22 +498,22 @@ export function ProductionConfigPage() {
       );
       source.onmessage = (message) => {
         const event = JSON.parse(message.data) as Event;
-        setEvents((items) => [...items, event]);
-        if (event.phase === "complete") {
-          source.close();
-          setBusy(false);
-          void load();
-          const success = event.message === "SUCCESS";
-          const failureMessage =
-            event.error ??
-            "Deployment failed and was rolled back.";
-          if (success) {
-            setDialogMode("success");
-          } else {
-            setDialogMode("rollback");
-            setError(failureMessage);
+        setEvents((items) => {
+          const next = [...items, event];
+          if (event.phase === "complete") {
+            source.close();
+            setBusy(false);
+            void load();
+            const success = event.message === "SUCCESS";
+            if (success) {
+              setDialogMode("success");
+            } else {
+              setDialogMode("rollback");
+              setError(resolveDeployFailureMessage(next, event));
+            }
           }
-        }
+          return next;
+        });
       };
       source.onerror = () => {
         source.close();

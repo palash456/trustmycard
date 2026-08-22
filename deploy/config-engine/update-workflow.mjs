@@ -55,8 +55,8 @@ export async function runConfigUpdate({
       events: [],
       error: null,
     };
-    const event = (phase, message) => {
-      const value = emit(phase, message, { changeId });
+    const event = (phase, message, extra = {}) => {
+      const value = emit(phase, message, { changeId, ...extra });
       audit.events.push(value);
       return value;
     };

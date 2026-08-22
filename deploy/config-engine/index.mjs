@@ -9,6 +9,7 @@ import { readRuntimeState } from "./runtime-state.mjs";
 import { runConfigUpdate } from "./update-workflow.mjs";
 import { dockerVpsConfigAdapter } from "./adapters/docker-vps-config.mjs";
 import { localConfigAdapter } from "./adapters/local-config.mjs";
+import { isConfigOnlyDeploy } from "./deploy-target.mjs";
 import { readPlatformDefaults, resolveManagedPlatformValues } from "./validators.mjs";
 
 function managedConfigDrift(runtime, deployed) {
@@ -87,7 +88,11 @@ async function update(key, request) {
         environment,
         manifest,
         topology: manifest.topology,
-        options: { provider },
+        options: {
+          provider,
+          source: request.source,
+          configOnly: isConfigOnlyDeploy({ source: request.source }),
+        },
         runtimeState,
         changedKey,
       }),

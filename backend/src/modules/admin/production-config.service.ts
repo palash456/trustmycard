@@ -81,6 +81,30 @@ export class ProductionConfigService {
     return this.run(["history", ...(limit ? ["--limit", limit] : [])]);
   }
 
+  private parseDeployError(raw: string): string {
+    const trimmed = raw.trim();
+    if (!trimmed) return "";
+    try {
+      const parsed = JSON.parse(trimmed) as {
+        error?: unknown;
+        message?: unknown;
+      };
+      if (typeof parsed.error === "string") {
+        return this.parseDeployError(parsed.error) || parsed.error;
+      }
+      if (
+        typeof parsed.message === "string" &&
+        parsed.message !== "FAILED" &&
+        parsed.message !== "ROLLED_BACK"
+      ) {
+        return parsed.message;
+      }
+    } catch {
+      // plain text
+    }
+    return trimmed;
+  }
+
   private emitLog(changeId: string, message: string): void {
     const trimmed = message.trim();
     if (!trimmed) return;
@@ -120,6 +144,9 @@ export class ProductionConfigService {
       let stderr = "";
       let changeId: string | undefined;
       let settled = false;
+      let completeReceived = false;
+      let lastFailureMessage = "";
+
       const consume = (line: string) => {
         const trimmed = line.trim();
         if (!trimmed) return;
@@ -130,10 +157,35 @@ export class ProductionConfigService {
           if (changeId) this.emitLog(changeId, trimmed);
           return;
         }
-        changeId ??= event.changeId;
+        if (event.changeId) changeId ??= event.changeId;
+        if (!changeId && event.phase === "complete") {
+          changeId = `CFG-${Date.now()}`;
+        }
         if (!changeId) return;
+        event.changeId ??= changeId;
         this.emit(changeId, event);
-        if (!settled && event.phase === "read") {
+        if (event.phase === "complete") {
+          completeReceived = true;
+          const parsedError = event.error
+            ? this.parseDeployError(String(event.error))
+            : "";
+          if (parsedError) lastFailureMessage = parsedError;
+          else if (event.message && event.message !== "SUCCESS") {
+            lastFailureMessage = String(event.message);
+          }
+          if (!event.error && lastFailureMessage && event.message !== "SUCCESS") {
+            event.error = lastFailureMessage;
+            this.emit(changeId, event);
+            return;
+          }
+        }
+        if (event.phase === "log" && event.message) {
+          const parsed = this.parseDeployError(String(event.message));
+          if (parsed && parsed !== "FAILED" && parsed !== "ROLLED_BACK") {
+            lastFailureMessage = parsed;
+          }
+        }
+        if (!settled && (event.phase === "read" || event.phase === "complete")) {
           settled = true;
           resolveStart({ changeId });
         }
@@ -148,9 +200,15 @@ export class ProductionConfigService {
       });
       child.stderr.on("data", (chunk: string) => {
         stderr += chunk;
-        if (!changeId) return;
         for (const line of chunk.split("\n")) {
-          this.emitLog(changeId, line);
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          try {
+            const event = JSON.parse(trimmed) as ConfigEvent;
+            consume(trimmed);
+          } catch {
+            if (changeId) this.emitLog(changeId, trimmed);
+          }
         }
       });
       child.on("error", rejectStart);
@@ -158,16 +216,24 @@ export class ProductionConfigService {
         if (buffered) consume(buffered);
         if (!changeId) {
           rejectStart(
-            new Error(stderr.trim() || `Configuration command exited ${code}`),
+            new Error(
+              lastFailureMessage ||
+                stderr.trim() ||
+                `Configuration command exited ${code}`,
+            ),
           );
           return;
         }
-        if (code !== 0) {
+        if (code !== 0 && !completeReceived) {
           this.emit(changeId, {
             changeId,
             phase: "complete",
+            message: "FAILED",
             result: "FAILED",
-            error: stderr.trim() || `Configuration command exited ${code}`,
+            error:
+              this.parseDeployError(stderr) ||
+              lastFailureMessage ||
+              `Configuration command exited ${code}`,
             at: new Date().toISOString(),
           });
         }

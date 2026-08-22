@@ -35,6 +35,7 @@ services:
       - ../../config:/opt/tmc/config:ro
       - ../../env/profiles:/opt/tmc/env/profiles:ro
       - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker:ro
     ports:
       - "${TMC_HOST_API_PORT:-4000}:4000"
     healthcheck:

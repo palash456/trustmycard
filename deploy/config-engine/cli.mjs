@@ -76,14 +76,14 @@ async function main() {
   throw new Error(`Unknown command: ${command}`);
 }
 main().catch((error) => {
-  console.error(
-    json
-      ? JSON.stringify({
-          phase: "complete",
-          result: "FAILED",
-          error: error.message,
-        })
-      : error.message,
-  );
+  const payload = {
+    phase: "complete",
+    message: "FAILED",
+    result: "FAILED",
+    error: error.message,
+    at: new Date().toISOString(),
+  };
+  if (json) console.log(JSON.stringify(payload));
+  else console.error(error.message);
   process.exit(1);
 });
