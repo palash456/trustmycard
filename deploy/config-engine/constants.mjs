@@ -8,5 +8,6 @@ export const EVENT_PHASES = [
   "restart",
   "verify",
   "rollback",
+  "log",
   "complete",
 ];

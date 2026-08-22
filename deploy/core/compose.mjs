@@ -49,23 +49,39 @@ export function composeEnv(ctx) {
   return env;
 }
 
+function emitCapturedLines(buffer, onLog) {
+  if (!buffer || typeof onLog !== "function") return;
+  for (const line of buffer.toString().split("\n")) {
+    const trimmed = line.trimEnd();
+    if (trimmed) onLog(trimmed);
+  }
+}
+
 export function runCompose(ctx, args, extra = {}) {
   const files = composeFiles(ctx);
   const fileArgs = files.flatMap((f) => ["-f", f]);
   const env = { ...process.env, ...composeEnv(ctx), ...(extra.env ?? {}) };
   const project = manifestProject(ctx);
+  const { command, prefix } = resolveComposeInvocation();
   const fullArgs = [
-    "compose",
+    ...prefix,
     "-p",
     project,
     ...fileArgs,
     ...(extra.profile ? ["--profile", extra.profile] : []),
     ...args,
   ];
-  const result = spawnSync("docker", fullArgs, {
-    stdio: "inherit",
+  const onLog = extra.onLog;
+  const captureLogs = typeof onLog === "function";
+  const result = spawnSync(command, fullArgs, {
+    stdio: captureLogs ? ["ignore", "pipe", "pipe"] : "inherit",
     env,
+    encoding: captureLogs ? "utf8" : undefined,
   });
+  if (captureLogs) {
+    emitCapturedLines(result.stdout, onLog);
+    emitCapturedLines(result.stderr, onLog);
+  }
   return result.status ?? 1;
 }
 
@@ -74,4 +90,18 @@ function manifestProject(ctx) {
     ctx.manifest.compose?.project_name ??
     `tmc-${ctx.environment ?? "production"}`
   );
+}
+
+let composeInvocation;
+function resolveComposeInvocation() {
+  if (composeInvocation) return composeInvocation;
+  const probe = spawnSync("docker", ["compose", "version"], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+  composeInvocation =
+    probe.status === 0
+      ? { command: "docker", prefix: ["compose"] }
+      : { command: "docker-compose", prefix: [] };
+  return composeInvocation;
 }

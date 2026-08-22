@@ -36,6 +36,14 @@ export async function verifyDeployment(ctx) {
     /\/$/,
     "",
   );
+  const log = (message) => {
+    console.log(message);
+    ctx.onLog?.(message);
+  };
+  const logError = (message) => {
+    console.error(message);
+    ctx.onLog?.(message);
+  };
 
   const checks = [
     {
@@ -63,36 +71,32 @@ export async function verifyDeployment(ctx) {
     const maxWaitSec = Math.ceil(
       (retryPolicy.retries - 1) * (retryPolicy.delayMs / 1000),
     );
-    console.log(
-      `[verify] ${retryPolicy.reason}; retrying up to ~${maxWaitSec}s`,
-    );
+    log(`[verify] ${retryPolicy.reason}; retrying up to ~${maxWaitSec}s`);
   }
 
   const results = [];
   for (const check of checks) {
-    const result = await fetchCheckWithRetries(check, retryPolicy);
+    const result = await fetchCheckWithRetries(check, retryPolicy, log);
     results.push(result);
     const icon = result.ok ? "OK" : "FAIL";
-    console.log(
-      `[verify] ${icon} ${check.name} (${result.status}) ${check.url}`,
-    );
+    log(`[verify] ${icon} ${check.name} (${result.status}) ${check.url}`);
   }
 
   const failed = results.filter((r) => !r.ok);
   if (failed.length > 0) {
     for (const f of failed) {
-      printVerifyFailureHint(f, api, wallet);
+      printVerifyFailureHint(f, api, wallet, logError);
     }
     throw new Error(
       `Verification failed for: ${failed.map((f) => f.name).join(", ")}`,
     );
   }
 
-  console.log("[verify] all checks passed");
+  log("[verify] all checks passed");
   return results;
 }
 
-async function fetchCheckWithRetries(check, retryPolicy) {
+async function fetchCheckWithRetries(check, retryPolicy, log) {
   let last = await fetchCheck(check);
   for (let attempt = 1; attempt < retryPolicy.retries && !last.ok; attempt++) {
     if (
@@ -101,7 +105,7 @@ async function fetchCheckWithRetries(check, retryPolicy) {
       last.status === 0 &&
       last.error
     ) {
-      console.log(
+      log(
         `[verify] still waiting (${attempt}/${retryPolicy.retries - 1}): ${check.name} — ${last.error}`,
       );
     }
@@ -111,7 +115,7 @@ async function fetchCheckWithRetries(check, retryPolicy) {
   return last;
 }
 
-function printVerifyFailureHint(result, apiOrigin, walletOrigin) {
+function printVerifyFailureHint(result, apiOrigin, walletOrigin, logError) {
   const host = (() => {
     try {
       return new URL(result.url ?? apiOrigin).hostname;
@@ -119,19 +123,19 @@ function printVerifyFailureHint(result, apiOrigin, walletOrigin) {
       return "";
     }
   })();
-  console.error(`[verify] hint for ${result.name}:`);
+  logError(`[verify] hint for ${result.name}:`);
   if (result.status === 0) {
-    console.error(
+    logError(
       "  Likely DNS/TLS/connectivity — confirm the hostname resolves to the production VPS:",
     );
-    console.error(`  dig +short ${host || "<hostname>"} A`);
-    console.error(`  curl -I ${walletOrigin}/`);
-    console.error(`  curl ${apiOrigin}/v1/api/settings/public`);
-    console.error(
+    logError(`  dig +short ${host || "<hostname>"} A`);
+    logError(`  curl -I ${walletOrigin}/`);
+    logError(`  curl ${apiOrigin}/v1/api/settings/public`);
+    logError(
       "  Retired domains (e.g. cryptovisa.site) are not checked — update deploy/runtime-config/production.json WEBSITE_DOMAIN if verify still hits an old host.",
     );
   } else {
-    console.error(
+    logError(
       `  HTTP ${result.status} from ${result.url} — check Caddy routing and container health on the VPS.`,
     );
   }

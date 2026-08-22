@@ -116,3 +116,18 @@ After the stack is up, confirm **runtime config** — not only containers:
 | Smoke tests | curl apex + `api.` settings/public | Also WalletConnect on `/` |
 
 Automated verify at end of deploy: `deploy/core/verify.mjs`.
+
+### Production config from admin portal (Meta Pixel / domain)
+
+When `ADMIN_PRODUCTION_CONFIG_ENABLED=true` on the API, the live admin **Production config** page runs the same config-only engine as `scripts/config-update.sh pixel|domain`.
+
+On a **micro VPS**, the API container restarts services via the **host Docker socket** (not SSH/rsync):
+
+| Requirement | Notes |
+| ----------- | ----- |
+| `TMC_CONFIG_DEPLOY_LOCAL=true` | Set on backend (default in `docker-compose.micro.yml`) |
+| Docker socket | `/var/run/docker.sock` mounted into `backend` |
+| Compose + compiled env | `deploy/compose` (ro) and `deploy/compiled` (rw) mounted |
+| Docker CLI in backend image | Rebuild `tmc/backend:production` after Dockerfile changes |
+
+From your dev machine, config changes still use SSH via `deploy/provider.credentials.env`. Only the on-VPS API uses local socket mode.

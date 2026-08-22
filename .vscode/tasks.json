@@ -293,6 +293,36 @@
       "problemMatcher": []
     },
     {
+      "label": "production:domain:update",
+      "detail": "PRODUCTION — interactive website domain update (config-only deploy)",
+      "type": "shell",
+      "command": "node scripts/production-config-update.mjs",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "prod-config"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "production:meta-pixel:update",
+      "detail": "PRODUCTION — interactive Meta Pixel ID update (config-only deploy)",
+      "type": "shell",
+      "command": "node scripts/production-config-update.mjs --preset=pixel",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "prod-config"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Prod: Deploy — Build",
       "detail": "PRODUCTION — build + deploy, skip migrate",
       "type": "shell",

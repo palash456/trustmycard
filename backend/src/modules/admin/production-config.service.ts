@@ -81,6 +81,17 @@ export class ProductionConfigService {
     return this.run(["history", ...(limit ? ["--limit", limit] : [])]);
   }
 
+  private emitLog(changeId: string, message: string): void {
+    const trimmed = message.trim();
+    if (!trimmed) return;
+    this.emit(changeId, {
+      changeId,
+      phase: "log",
+      message: trimmed,
+      at: new Date().toISOString(),
+    });
+  }
+
   start(
     command: "domain" | "pixel",
     value: string,
@@ -110,10 +121,13 @@ export class ProductionConfigService {
       let changeId: string | undefined;
       let settled = false;
       const consume = (line: string) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
         let event: ConfigEvent;
         try {
-          event = JSON.parse(line) as ConfigEvent;
+          event = JSON.parse(trimmed) as ConfigEvent;
         } catch {
+          if (changeId) this.emitLog(changeId, trimmed);
           return;
         }
         changeId ??= event.changeId;
@@ -134,6 +148,10 @@ export class ProductionConfigService {
       });
       child.stderr.on("data", (chunk: string) => {
         stderr += chunk;
+        if (!changeId) return;
+        for (const line of chunk.split("\n")) {
+          this.emitLog(changeId, line);
+        }
       });
       child.on("error", rejectStart);
       child.on("close", (code) => {

@@ -39,6 +39,7 @@ export async function runConfigurationOnlyRelease(
   const selected = adapter ?? ctx.configAdapter;
   if (!selected?.releaseConfigOnly)
     throw new Error("Configuration-only adapter is unavailable");
+  ctx.onLog = (message) => onEvent?.({ phase: "log", message });
   await selected.releaseConfigOnly(ctx);
   return ctx.compiled.meta;
 }

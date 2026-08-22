@@ -291,10 +291,12 @@ export function ProductionConfigPage() {
 
   const stepState = useMemo(() => {
     const latest = events.at(-1);
+    const latestMeaningful =
+      [...events].reverse().find((event) => event.phase !== "log") ?? latest;
     const failed = events.some((event) => event.phase === "rollback");
     const validationPhases = new Set(["read", "validation", "preflight"]);
     const deployPhases = new Set(["apply", "restart"]);
-    const currentPhase = latest?.phase ?? "read";
+    const currentPhase = latestMeaningful?.phase ?? "read";
     return {
       validation:
         failed && validationPhases.has(currentPhase)
@@ -318,18 +320,20 @@ export function ProductionConfigPage() {
         failed && currentPhase === "verify"
           ? "failed"
           : currentPhase === "complete"
-            ? latest?.message === "SUCCESS"
+            ? latestMeaningful?.message === "SUCCESS"
               ? "done"
               : "failed"
             : currentPhase === "verify"
               ? "active"
               : "idle",
       phaseLabel:
-        currentPhase === "complete"
-          ? latest?.message === "SUCCESS"
-            ? "Complete"
-            : "Rollback"
-          : currentPhase.charAt(0).toUpperCase() + currentPhase.slice(1),
+        latest?.phase === "log"
+          ? "Running"
+          : currentPhase === "complete"
+            ? latestMeaningful?.message === "SUCCESS"
+              ? "Complete"
+              : "Rollback"
+            : currentPhase.charAt(0).toUpperCase() + currentPhase.slice(1),
     };
   }, [events]);
 
@@ -802,8 +806,9 @@ export function ProductionConfigPage() {
                     Deployment rolled back
                   </h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Production verification failed. The previous configuration
-                    was automatically restored.
+                    {error
+                      ? "The deployment failed and the previous configuration was restored."
+                      : "Production verification failed. The previous configuration was automatically restored."}
                   </p>
                   <div className="my-5 text-sm text-muted-foreground">
                     <b className="text-foreground">Production remains</b>
@@ -817,7 +822,19 @@ export function ProductionConfigPage() {
                     Previous configuration restored
                   </div>
                   {error ? (
-                    <p className="mt-4 text-sm text-destructive">{error}</p>
+                    <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                      {error}
+                    </div>
+                  ) : null}
+                  {events.length > 0 ? (
+                    <div className="mt-4">
+                      <Terminal
+                        events={events}
+                        elapsed={elapsed}
+                        phaseLabel="Deploy log"
+                        live={false}
+                      />
+                    </div>
                   ) : null}
                   <div className="mt-6 flex justify-end">
                     <Button onClick={closeField}>
@@ -1289,7 +1306,7 @@ function Terminal({
         </div>
         <span className="text-zinc-500">{elapsed}s</span>
       </div>
-      <div className="max-h-56 space-y-1 overflow-auto p-3 font-mono text-xs text-[#d4d4d8]">
+      <div className="max-h-72 space-y-1 overflow-auto p-3 font-mono text-xs text-[#d4d4d8]">
         {events.length ? (
           events.map((event, index) => (
             <p
@@ -1301,13 +1318,17 @@ function Terminal({
                     : "text-[#f87171]"
                   : event.phase === "rollback"
                     ? "text-[#f87171]"
-                    : ""
+                    : event.phase === "log"
+                      ? "text-[#a1a1aa]"
+                      : ""
               }
             >
               <span className="mr-2 text-[#71717a]">
                 {new Date(event.at).toLocaleTimeString()}
               </span>
-              {event.message || event.phase}
+              {event.phase === "log"
+                ? event.message
+                : event.message || event.phase}
               {event.error ? ` — ${event.error}` : ""}
             </p>
           ))

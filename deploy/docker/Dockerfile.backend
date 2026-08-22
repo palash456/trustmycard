@@ -34,7 +34,7 @@ RUN --mount=type=cache,target=/root/.npm install-prod-deps.sh
 
 FROM node:20-bookworm-slim AS runtime
 RUN apt-get update -y \
-  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && apt-get install -y --no-install-recommends openssl ca-certificates docker.io docker-compose \
   && rm -rf /var/lib/apt/lists/*
 WORKDIR /app/backend
 ENV NODE_ENV=production

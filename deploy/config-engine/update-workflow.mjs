@@ -76,6 +76,7 @@ export async function runConfigUpdate({
         lastSource: source,
       };
       ctx = await deps.createContext(candidate, key);
+      ctx.onLog = (message) => event("log", message);
       event("preflight", "Compiling configuration");
       await (deps.preflight ?? preflightConfiguration)(ctx);
       event("apply", "Writing runtime state");
@@ -108,6 +109,7 @@ export async function runConfigUpdate({
           event("rollback", "Restoring prior configuration");
           (deps.writeRuntimeState ?? writeRuntimeState)(environment, prior);
           const rollbackCtx = await deps.createContext(prior, key);
+          rollbackCtx.onLog = (message) => event("log", message);
           await (
             deps.release ??
             ((value) =>
@@ -127,7 +129,7 @@ export async function runConfigUpdate({
           audit.error = `${error.message}; rollback failed: ${rollbackError.message}`;
         }
       }
-      event("complete", audit.result);
+      event("complete", audit.result, audit.error ? { error: audit.error } : {});
       throw error;
     } finally {
       audit.phase = "complete";
