@@ -449,6 +449,17 @@ export function ProductionSystemStatus() {
     void load();
   }, [scope, load]);
 
+  useEffect(() => {
+    if (!localScope) return;
+    if (health?.backend?.ok && health?.api?.ok) return;
+
+    const interval = window.setInterval(() => {
+      void load({ silent: true });
+    }, 3000);
+
+    return () => window.clearInterval(interval);
+  }, [localScope, health?.backend?.ok, health?.api?.ok, load]);
+
   const websiteChip = useMemo(
     () => resolveWebsiteChip(health?.website ?? null, checking, localScope),
     [health?.website, checking, localScope],

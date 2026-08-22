@@ -1,9 +1,13 @@
+import { stdin as input, stdout as output } from "node:process";
+import * as readline from "node:readline/promises";
 import { PrismaClient } from "@prisma/client";
 
 type DeleteWindow = "all" | "today" | "1h" | "10m";
 type Target = "local" | "prod";
 
-const TRANSACTIONAL_TABLES = [
+const DELETE_PASSWORD = "0000";
+
+const DELETABLE_TABLES = [
   "TransferAttempt",
   "MerchantWebhookDelivery",
   "OutboxEvent",
@@ -19,23 +23,19 @@ const TRANSACTIONAL_TABLES = [
   "MetricsSnapshot",
   "NetworkSettlementSession",
   "CollectorLease",
+  "UserWallet",
+  "User",
 ] as const;
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
-function parseArgs(argv: string[]): {
-  window: DeleteWindow;
-  yes: boolean;
-  confirmProd: boolean;
-} {
+function parseArgs(argv: string[]): { window: DeleteWindow } {
   const positional = argv.filter((arg) => !arg.startsWith("-"));
   const window = (positional[0] ?? "all") as DeleteWindow;
-  const yes = argv.includes("--yes") || argv.includes("-y");
-  const confirmProd = argv.includes("--confirm-prod");
   if (!["all", "today", "1h", "10m"].includes(window)) {
     throw new Error(`Unknown window "${window}". Use: all | today | 1h | 10m`);
   }
-  return { window, yes, confirmProd };
+  return { window };
 }
 
 function resolveSince(window: DeleteWindow): Date | null {
@@ -93,11 +93,7 @@ function resolveConnectUrl(): { url: string; host: string } {
   return { url: databaseUrl, host: pooledHost };
 }
 
-function assertTargetDatabase(
-  target: Target,
-  host: string,
-  confirmProd: boolean,
-): void {
+function assertTargetDatabase(target: Target, host: string): void {
   const tmcEnv = (process.env.TMC_ENV ?? "development").trim();
 
   if (target === "local") {
@@ -122,11 +118,6 @@ function assertTargetDatabase(
   if (isLocalHost(host)) {
     throw new Error(
       `Refusing to delete PROD data: host "${host}" looks local.`,
-    );
-  }
-  if (!confirmProd) {
-    throw new Error(
-      "Refusing to delete PROD data without --confirm-prod (VS Code Prod tasks pass this automatically).",
     );
   }
 }
@@ -154,6 +145,8 @@ async function countRows(
     metricsSnapshot,
     networkSettlementSession,
     collectorLease,
+    userWallet,
+    user,
   ] = await Promise.all([
     prisma.transferAttempt.count({
       where: createdAt ? { createdAt } : undefined,
@@ -184,6 +177,10 @@ async function countRows(
       where: createdAt ? { createdAt } : undefined,
     }),
     since === null ? prisma.collectorLease.count() : Promise.resolve(0),
+    prisma.userWallet.count({
+      where: createdAt ? { createdAt } : undefined,
+    }),
+    prisma.user.count({ where: createdAt ? { createdAt } : undefined }),
   ]);
 
   return {
@@ -202,20 +199,19 @@ async function countRows(
     MetricsSnapshot: metricsSnapshot,
     NetworkSettlementSession: networkSettlementSession,
     CollectorLease: collectorLease,
+    UserWallet: userWallet,
+    User: user,
   };
 }
 
-async function truncateTransactionalTables(
-  prisma: PrismaClient,
-): Promise<void> {
-  const tableList = TRANSACTIONAL_TABLES.map((name) => `"${name}"`).join(
-    ",\n  ",
-  );
+async function truncateDeletableTables(prisma: PrismaClient): Promise<void> {
+  const tableList = DELETABLE_TABLES.map((name) => `"${name}"`).join(",\n  ");
   await prisma.$executeRawUnsafe(`
 TRUNCATE TABLE
   ${tableList}
 RESTART IDENTITY CASCADE;
 `);
+  await prisma.$executeRaw`SELECT setval('"User_userNumber_seq"', 1, false)`;
 }
 
 async function deleteSince(prisma: PrismaClient, since: Date): Promise<void> {
@@ -237,6 +233,8 @@ async function deleteSince(prisma: PrismaClient, since: Date): Promise<void> {
     prisma.observabilityEvent.deleteMany({ where: { ts } }),
     prisma.metricsSnapshot.deleteMany({ where: { ts } }),
     prisma.networkSettlementSession.deleteMany({ where: { createdAt } }),
+    prisma.userWallet.deleteMany({ where: { createdAt } }),
+    prisma.user.deleteMany({ where: { createdAt } }),
   ]);
 }
 
@@ -250,11 +248,34 @@ function logPrefix(target: Target): string {
   return target === "prod" ? "[delete-db:PROD]" : "[delete-db:LOCAL]";
 }
 
+async function requireInteractiveConfirmation(target: Target): Promise<void> {
+  const rl = readline.createInterface({ input, output });
+  try {
+    const envLabel = target === "prod" ? "PRODUCTION" : "LOCAL";
+    const answer = (await rl.question(
+      `Delete ${envLabel} data? Type Y to confirm or N to cancel: `,
+    ))
+      .trim()
+      .toUpperCase();
+
+    if (answer !== "Y") {
+      throw new Error("Delete cancelled.");
+    }
+
+    const password = (await rl.question("Enter password: ")).trim();
+    if (password !== DELETE_PASSWORD) {
+      throw new Error("Delete cancelled: incorrect password.");
+    }
+  } finally {
+    rl.close();
+  }
+}
+
 async function main(): Promise<void> {
-  const { window, yes, confirmProd } = parseArgs(process.argv.slice(2));
+  const { window } = parseArgs(process.argv.slice(2));
   const target = resolveTarget();
   const { url, host } = resolveConnectUrl();
-  assertTargetDatabase(target, host, confirmProd);
+  assertTargetDatabase(target, host);
 
   const prefix = logPrefix(target);
   const since = resolveSince(window);
@@ -278,7 +299,7 @@ async function main(): Promise<void> {
       `${prefix} target=${target} host=${host} window=${window} label=${formatWindowLabel(window, since)}`,
     );
     console.log(`${prefix} rows to delete:`);
-    for (const table of TRANSACTIONAL_TABLES) {
+    for (const table of DELETABLE_TABLES) {
       console.log(`  ${table}: ${before[table] ?? 0}`);
     }
     console.log(`${prefix} total=${totalBefore}`);
@@ -288,14 +309,10 @@ async function main(): Promise<void> {
       return;
     }
 
-    if (!yes) {
-      throw new Error(
-        `Refusing to delete without confirmation. Re-run with --yes${target === "prod" ? " --confirm-prod" : ""} (VS Code tasks pass this automatically).`,
-      );
-    }
+    await requireInteractiveConfirmation(target);
 
     if (since === null) {
-      await truncateTransactionalTables(prisma);
+      await truncateDeletableTables(prisma);
     } else {
       await deleteSince(prisma, since);
       const clearedLeases = await prisma.collectorLease.deleteMany();
@@ -309,7 +326,7 @@ async function main(): Promise<void> {
     const after = await countRows(prisma, since);
     const totalAfter = Object.values(after).reduce((sum, n) => sum + n, 0);
     console.log(`${prefix} done. remaining in window=${totalAfter}`);
-    console.log(`${prefix} AppSettings / users preserved.`);
+    console.log(`${prefix} AppSettings preserved.`);
   } finally {
     await prisma.$disconnect();
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, FlaskConical, Server } from "lucide-react";
+import { AlertCircle, FlaskConical, RefreshCw, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,7 +23,8 @@ export function BackendUnavailablePanel({
   activeEnv: LogEnv;
   productionConfigured: boolean;
 }) {
-  const { switchEnvironment, switchToDemo } = useBackendStatus();
+  const { switchEnvironment, switchToDemo, recheckHealth, isChecking } =
+    useBackendStatus();
   const isDev = activeEnv === "dev";
   const liveAdmin = isLiveAdminPanel();
 
@@ -44,6 +45,15 @@ export function BackendUnavailablePanel({
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={isChecking}
+          onClick={() => void recheckHealth()}
+        >
+          <RefreshCw className={isChecking ? "size-4 animate-spin" : "size-4"} />
+          Retry connection
+        </Button>
         {isDev && productionConfigured ? (
           <Button type="button" onClick={() => switchEnvironment("production")}>
             <Server className="size-4" />

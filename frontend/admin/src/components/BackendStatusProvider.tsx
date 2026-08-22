@@ -83,6 +83,19 @@ export function BackendStatusProvider({ children }: { children: ReactNode }) {
     };
   }, [logEnv]);
 
+  // Local dev: backend often starts after admin (Start All). Re-probe until healthy.
+  useEffect(() => {
+    if (demo) return;
+    if (!isLocalAdminDevelopment()) return;
+    if (health?.active?.ok) return;
+
+    const interval = window.setInterval(() => {
+      void recheckHealth();
+    }, 3000);
+
+    return () => window.clearInterval(interval);
+  }, [demo, health?.active?.ok, recheckHealth]);
+
   const switchEnvironment = useCallback(
     (env: LogEnv) => {
       if (env === logEnv && !demo) return;

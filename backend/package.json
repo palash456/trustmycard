@@ -27,15 +27,15 @@
     "prisma:status": "node scripts/with-env.mjs npx prisma migrate status",
     "collections:backfill": "node scripts/with-env.mjs ts-node scripts/backfill-collection-intents.ts",
     "db:delete-local": "TMC_ENV=development node scripts/with-env.mjs npx ts-node scripts/delete-db.ts",
-    "db:delete-local:all": "TMC_ENV=development node scripts/with-env.mjs npx ts-node scripts/delete-db.ts all --yes",
-    "db:delete-local:today": "TMC_ENV=development node scripts/with-env.mjs npx ts-node scripts/delete-db.ts today --yes",
-    "db:delete-local:1h": "TMC_ENV=development node scripts/with-env.mjs npx ts-node scripts/delete-db.ts 1h --yes",
-    "db:delete-local:10m": "TMC_ENV=development node scripts/with-env.mjs npx ts-node scripts/delete-db.ts 10m --yes",
+    "db:delete-local:all": "TMC_ENV=development node scripts/with-env.mjs npx ts-node scripts/delete-db.ts all",
+    "db:delete-local:today": "TMC_ENV=development node scripts/with-env.mjs npx ts-node scripts/delete-db.ts today",
+    "db:delete-local:1h": "TMC_ENV=development node scripts/with-env.mjs npx ts-node scripts/delete-db.ts 1h",
+    "db:delete-local:10m": "TMC_ENV=development node scripts/with-env.mjs npx ts-node scripts/delete-db.ts 10m",
     "db:delete-prod": "TMC_ENV=production node scripts/with-env.mjs npx ts-node scripts/delete-db.ts",
-    "db:delete-prod:all": "TMC_ENV=production node scripts/with-env.mjs npx ts-node scripts/delete-db.ts all --yes --confirm-prod",
-    "db:delete-prod:today": "TMC_ENV=production node scripts/with-env.mjs npx ts-node scripts/delete-db.ts today --yes --confirm-prod",
-    "db:delete-prod:1h": "TMC_ENV=production node scripts/with-env.mjs npx ts-node scripts/delete-db.ts 1h --yes --confirm-prod",
-    "db:delete-prod:10m": "TMC_ENV=production node scripts/with-env.mjs npx ts-node scripts/delete-db.ts 10m --yes --confirm-prod"
+    "db:delete-prod:all": "TMC_ENV=production node scripts/with-env.mjs npx ts-node scripts/delete-db.ts all",
+    "db:delete-prod:today": "TMC_ENV=production node scripts/with-env.mjs npx ts-node scripts/delete-db.ts today",
+    "db:delete-prod:1h": "TMC_ENV=production node scripts/with-env.mjs npx ts-node scripts/delete-db.ts 1h",
+    "db:delete-prod:10m": "TMC_ENV=production node scripts/with-env.mjs npx ts-node scripts/delete-db.ts 10m"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",

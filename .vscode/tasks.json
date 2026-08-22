@@ -133,10 +133,9 @@
       }
     },
     {
-      "label": "Local: Start Servers",
-      "detail": "LOCAL — backend + website + admin (parallel)",
+      "label": "Local: Start Frontend",
+      "detail": "LOCAL — website (:3000) + admin (:3002) after backend is up",
       "dependsOn": [
-        "Local: Backend (after deps check)",
         "Local: Website",
         "Local: Admin"
       ],
@@ -144,8 +143,18 @@
       "problemMatcher": []
     },
     {
+      "label": "Local: Start Servers",
+      "detail": "LOCAL — backend (:4000) first, then website + admin",
+      "dependsOn": [
+        "Local: Backend (after deps check)",
+        "Local: Start Frontend"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
       "label": "Local: Start All",
-      "detail": "LOCAL — ensure Postgres + Redis, then backend (:4000) + website (:3000) + admin (:3002)",
+      "detail": "LOCAL — auto-setup native Postgres + Redis if needed, then start all servers",
       "dependsOn": [
         "Local: Ensure Dev Deps",
         "Local: Start Servers"

@@ -4,17 +4,18 @@
  *
  * Not used in production builds, Docker images, Render, or VPS deploy.
  * Hooked only via: prestart:dev, prestart:workers:dev, dev:deps.
- *
- * Production uses start:prod / container runtime (TMC_ENV=production).
- * Docker Compose in deploy/ is for production pipeline & deploy validation only.
  */
+import { spawnSync } from "child_process";
+import { existsSync } from "fs";
 import net from "net";
-import { loadTmcEnv } from "../../config/load-env.mjs";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
+import { loadTmcEnv, repoRoot } from "../../config/load-env.mjs";
+
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+const setupScript = resolve(repoRoot, "scripts/local-dev-setup.sh");
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "0.0.0.0"]);
-
-const SETUP_HINT =
-  "From repo root: ./scripts/local-dev-setup.sh — or see backend/README.md";
 
 function log(message) {
   console.log(`[trustmycard] ${message}`);
@@ -77,7 +78,7 @@ function probeTcp(host, port, timeoutMs = 2000) {
   });
 }
 
-async function waitForTcp(host, port, label, maxWaitMs = 15_000) {
+async function waitForTcp(host, port, label, maxWaitMs = 60_000) {
   const start = Date.now();
   while (Date.now() - start < maxWaitMs) {
     if (await probeTcp(host, port)) {
@@ -99,22 +100,22 @@ function isAllowedDevContext(tmcEnv) {
   return true;
 }
 
-async function checkService(label, host, port) {
-  if (await probeTcp(host, port)) {
-    log(`${label} reachable at ${host}:${port}`);
-    return true;
+function tryNativeSetup() {
+  if (process.env.TMC_SKIP_LOCAL_SETUP === "1") {
+    return false;
   }
-
-  warn(`${label} not reachable at ${host}:${port}`);
-
-  if (!isLocalEndpoint(host)) {
-    error(
-      `${label} uses remote host ${host}:${port} — start that service or point env to local hosts for native dev.`,
-    );
+  if (!existsSync(setupScript)) {
+    warn(`Setup script not found: ${setupScript}`);
     return false;
   }
 
-  return await waitForTcp(host, port, label);
+  log("Native Postgres/Redis not detected — running scripts/local-dev-setup.sh …");
+  const result = spawnSync("bash", [setupScript], {
+    cwd: repoRoot,
+    stdio: "inherit",
+    env: process.env,
+  });
+  return result.status === 0;
 }
 
 async function main() {
@@ -134,8 +135,28 @@ async function main() {
   const pg = parsePostgresEndpoint(process.env.DATABASE_URL);
   const redis = parseRedisEndpoint(process.env.REDIS_URL);
 
-  const postgresOk = await checkService("PostgreSQL", pg.host, pg.port);
-  const redisOk = await checkService("Redis", redis.host, redis.port);
+  let postgresOk = await probeTcp(pg.host, pg.port);
+  let redisOk = await probeTcp(redis.host, redis.port);
+
+  if (postgresOk) log(`PostgreSQL reachable at ${pg.host}:${pg.port}`);
+  else warn(`PostgreSQL not reachable at ${pg.host}:${pg.port}`);
+
+  if (redisOk) log(`Redis reachable at ${redis.host}:${redis.port}`);
+  else warn(`Redis not reachable at ${redis.host}:${redis.port}`);
+
+  const needsLocalSetup =
+    (!postgresOk && isLocalEndpoint(pg.host)) ||
+    (!redisOk && isLocalEndpoint(redis.host));
+
+  if (needsLocalSetup) {
+    tryNativeSetup();
+    if (!postgresOk) {
+      postgresOk = await waitForTcp(pg.host, pg.port, "PostgreSQL", 90_000);
+    }
+    if (!redisOk) {
+      redisOk = await waitForTcp(redis.host, redis.port, "Redis", 30_000);
+    }
+  }
 
   if (!postgresOk || !redisOk) {
     error("Native dev dependencies are not ready.");
@@ -147,7 +168,8 @@ async function main() {
     if (!redisOk) {
       error(`  Redis: ${redis.host}:${redis.port} (REDIS_URL)`);
     }
-    error(`  ${SETUP_HINT}`);
+    error("  From repo root: npm run setup:local-deps");
+    error("  Or see backend/README.md");
     process.exit(1);
   }
 
