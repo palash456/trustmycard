@@ -33,6 +33,7 @@ import {
   ProductionBackendStatusChip,
   type ProductionPageStatus,
 } from "./ProductionBackendStatusChip";
+import { DeployProgressHint } from "./deploy-progress-hint";
 
 type State = {
   WEBSITE_DOMAIN: string;
@@ -876,9 +877,7 @@ export function ProductionConfigPage() {
                     phaseLabel={stepState.phaseLabel}
                     live={busy}
                   />
-                  <p className="mt-4 text-sm text-muted-foreground">
-                    {busy ? "Running…" : "Waiting for completion…"}
-                  </p>
+                  <DeployProgressHint events={events} busy={busy} />
                 </div>
               ) : null}
 
@@ -1431,11 +1430,11 @@ function Step({ label, state }: { label: string; state: string }) {
       className={`flex items-center gap-1.5 ${active || done || failed ? "font-medium text-foreground" : ""}`}
     >
       <span
-        className={`flex size-4 items-center justify-center rounded-full text-[10px] ${
+        className={`flex size-4 items-center justify-center rounded-full text-[10px] font-semibold ${
           failed
             ? "bg-red-100 text-red-700"
             : done
-              ? "bg-green-100 text-green-700"
+              ? "bg-green-600 text-white"
               : active
                 ? "bg-foreground text-background"
                 : "bg-muted text-muted-foreground"

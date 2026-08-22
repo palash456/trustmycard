@@ -34,8 +34,21 @@ rsync -az -e "${RSYNC_SSH}" \
   "${ROOT}/deploy/compose/docker-compose.micro.yml" \
   "${VPS_USER}@${VPS_HOST}:${REMOTE_PATH}/deploy/compose/docker-compose.micro.yml"
 rsync -az -e "${RSYNC_SSH}" \
+  "${ROOT}/deploy/compose/docker-compose.base.yml" \
+  "${VPS_USER}@${VPS_HOST}:${REMOTE_PATH}/deploy/compose/docker-compose.base.yml"
+rsync -az -e "${RSYNC_SSH}" \
   "${ROOT}/deploy/scripts/" \
   "${VPS_USER}@${VPS_HOST}:${REMOTE_PATH}/deploy/scripts/"
+
+if [[ -d "${ROOT}/env/profiles/production" ]]; then
+  echo "[sync-config-engine] uploading env/profiles/production (infra secrets for in-VPS config compile)"
+  ssh "${SSH_KEY[@]}" -o StrictHostKeyChecking=accept-new \
+    "${VPS_USER}@${VPS_HOST}" \
+    "mkdir -p '${REMOTE_PATH}/env/profiles/production'"
+  rsync -az -e "${RSYNC_SSH}" \
+    "${ROOT}/env/profiles/production/" \
+    "${VPS_USER}@${VPS_HOST}:${REMOTE_PATH}/env/profiles/production/"
+fi
 
 echo "[sync-config-engine] complete — retry Production config in admin"
 echo "[sync-config-engine] note: wallet healthcheck applies on next wallet recreate (config deploy or compose up)"

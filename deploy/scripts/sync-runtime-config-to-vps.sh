@@ -51,6 +51,7 @@ fi
 ssh "${SSH_KEY[@]}" -o StrictHostKeyChecking=accept-new \
   "${VPS_USER}@${VPS_HOST}" \
   "chmod 600 '${REMOTE_DIR}/${ENVIRONMENT}.json' && \
-   if [[ -f '${REMOTE_DIR}/audit.ndjson' ]]; then chmod 640 '${REMOTE_DIR}/audit.ndjson'; fi"
+   if [[ -f '${REMOTE_DIR}/audit.ndjson' ]]; then chmod 640 '${REMOTE_DIR}/audit.ndjson'; fi && \
+   chown -R '${VPS_USER}:${VPS_USER}' '${REMOTE_DIR}' 2>/dev/null || true"
 
 echo "[sync-runtime-config] complete (${REMOTE_DIR} on ${VPS_HOST})"

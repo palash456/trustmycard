@@ -9,14 +9,22 @@ function walletReloadScript() {
   return join(root, "deploy/scripts/reload-production-wallet.sh");
 }
 
-function releaseViaReloadScript(onLog) {
+function releaseViaReloadScript(ctx, onLog) {
   const script = walletReloadScript();
   if (!existsSync(script)) {
     return null;
   }
+  const projectName =
+    ctx.manifest?.compose?.project_name ??
+    process.env.TMC_COMPOSE_PROJECT_NAME ??
+    "tmc-production-micro";
   onLog?.(`[reload-wallet] ${script}`);
   const result = spawnSync("bash", [script], {
-    env: { ...process.env, TMC_REPO_ROOT: process.env.TMC_REPO_ROOT?.trim() || repoRoot },
+    env: {
+      ...process.env,
+      TMC_REPO_ROOT: process.env.TMC_REPO_ROOT?.trim() || repoRoot,
+      TMC_COMPOSE_PROJECT_NAME: projectName,
+    },
     encoding: "utf8",
   });
   if (result.stdout) {
@@ -38,7 +46,7 @@ export const localConfigAdapter = {
     const logOpts = onLog ? { onLog } : {};
 
     if (ctx.changedKey === "META_PIXEL_ID") {
-      const scriptStatus = releaseViaReloadScript(onLog);
+      const scriptStatus = releaseViaReloadScript(ctx, onLog);
       if (scriptStatus !== null) {
         if (scriptStatus !== 0) {
           throw new Error("wallet reload script failed — is Docker available on the VPS?");

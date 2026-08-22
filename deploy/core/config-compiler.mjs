@@ -202,6 +202,24 @@ export function compileEnvBundles(ctx, runtimeState = null) {
       profile.backendApi.REDIS_URL ||
       profile.backendWorker.REDIS_URL ||
       "";
+    if (environment === "production") {
+      const missing = [];
+      if (!databaseUrl?.trim()) {
+        missing.push(
+          `DATABASE_URL (set in env/profiles/${environment}/backend.env and sync to VPS)`,
+        );
+      }
+      if (!redisUrl?.trim()) {
+        missing.push(
+          `REDIS_URL (set in env/profiles/${environment}/backend.env and sync to VPS)`,
+        );
+      }
+      if (missing.length > 0) {
+        throw new Error(
+          `Missing required external data env for ${environment}: ${missing.join(", ")}.`,
+        );
+      }
+    }
   }
 
   const directDatabaseUrl =

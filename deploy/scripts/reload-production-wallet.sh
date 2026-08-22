@@ -5,16 +5,18 @@ set -euo pipefail
 ROOT="${TMC_REPO_ROOT:-/opt/tmc}"
 cd "${ROOT}"
 
+PROJECT="${TMC_COMPOSE_PROJECT_NAME:-tmc-production-micro}"
+export TMC_COMPOSE_PROJECT_NAME="${PROJECT}"
+
 COMPOSE=(
   docker compose
-  -p tmc-production-micro
+  -p "${PROJECT}"
   -f deploy/compose/docker-compose.base.yml
   -f deploy/compose/docker-compose.micro.yml
   -f deploy/compose/docker-compose.external-data.yml
   -f deploy/compose/docker-compose.micro-edge.yml
 )
 
-export TMC_COMPOSE_PROJECT_NAME="${TMC_COMPOSE_PROJECT_NAME:-tmc-production-micro}"
 export TMC_COMPILED_ENV_BACKEND="${TMC_COMPILED_ENV_BACKEND:-../compiled/production/backend.env}"
 export TMC_COMPILED_ENV_WALLET="${TMC_COMPILED_ENV_WALLET:-../compiled/production/wallet.env}"
 
@@ -23,7 +25,7 @@ echo "[reload-wallet] recreating wallet with updated compiled env"
 
 echo "[reload-wallet] waiting for wallet process (up to 90s)"
 for _ in $(seq 1 45); do
-  if docker compose -p tmc-production-micro ps wallet 2>/dev/null | grep -q "(healthy)"; then
+  if docker compose -p "${PROJECT}" ps wallet 2>/dev/null | grep -q "(healthy)"; then
     break
   fi
   if curl -fsS "http://127.0.0.1:${TMC_HOST_WALLET_PORT:-3000}/api/settings/public" >/dev/null 2>&1; then

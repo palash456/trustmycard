@@ -134,6 +134,15 @@ function rsyncBundle(creds, remotePath, environment) {
   if (existsSync(platformConfigDir)) {
     rsyncToRemote(creds, platformConfigDir, `${remotePath}/config/`);
   }
+  const profileDir = join(repoRoot, "env/profiles", environment);
+  if (existsSync(profileDir)) {
+    sshExec(creds, `mkdir -p ${remotePath}/env/profiles/${environment}`);
+    rsyncToRemote(
+      creds,
+      profileDir,
+      `${remotePath}/env/profiles/${environment}/`,
+    );
+  }
   const configUpdateScript = join(repoRoot, "scripts", "config-update.sh");
   if (existsSync(configUpdateScript)) {
     sshExec(creds, `mkdir -p ${remotePath}/scripts`);
@@ -178,6 +187,10 @@ function syncRuntimeConfigToRemote(creds, remotePath, environment) {
   if (plan.hasAudit) {
     chmodParts.push(`chmod 640 ${remoteDir}/audit.ndjson`);
   }
+  const vpsUser = creds.VPS_USER || "deploy";
+  chmodParts.push(
+    `chown -R ${shellQuote(vpsUser)}:${shellQuote(vpsUser)} ${remoteDir} 2>/dev/null || true`,
+  );
   sshExec(creds, chmodParts.join(" && "));
   console.log(
     `[adapter:docker-vps] synced runtime config to ${remoteDir} on ${creds.VPS_HOST}`,
