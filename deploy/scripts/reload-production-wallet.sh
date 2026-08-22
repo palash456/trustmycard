@@ -14,6 +14,7 @@ COMPOSE=(
   -f deploy/compose/docker-compose.micro-edge.yml
 )
 
+export TMC_COMPOSE_PROJECT_NAME="${TMC_COMPOSE_PROJECT_NAME:-tmc-production-micro}"
 export TMC_COMPILED_ENV_BACKEND="${TMC_COMPILED_ENV_BACKEND:-../compiled/production/backend.env}"
 export TMC_COMPILED_ENV_WALLET="${TMC_COMPILED_ENV_WALLET:-../compiled/production/wallet.env}"
 
