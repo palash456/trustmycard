@@ -76,7 +76,7 @@ export function describeAdminBackend(backend: AdminBackendConfig): string {
 
 export function backendUnreachableHint(backend: AdminBackendConfig): string {
   if (backend.env === "dev" && isLocalAdminDevelopment()) {
-    return " Start dependencies with: cd backend && npm run dev:deps — then npm run start:dev";
+    return " Start native Postgres (:5432) and Redis (:6379) — npm run setup:local-deps from repo root, then cd backend && npm run start:dev";
   }
   if (backend.env === "dev") {
     return " Check BACKEND_API_URL is correct and the API is reachable.";

@@ -32,11 +32,11 @@ export function StayConnectedSection() {
     ) ?? [];
 
   return (
-    <div className="min-w-0 lg:pr-10 xl:pr-14">
+    <div className="min-w-0 lg:max-w-[11.5rem] xl:max-w-[12.5rem]">
       <h3 className="text-sm font-semibold text-[#131520]">
         {t("footer.stayConnected")}
       </h3>
-      <ul className="mt-4 space-y-2">
+      <ul className="mt-4 space-y-3">
         {social.map(({ label, followText, href }, index) => {
           const Icon = SOCIAL_ICONS[index];
           if (!Icon) return null;
@@ -45,12 +45,12 @@ export function StayConnectedSection() {
               <a
                 href={href}
                 aria-label={followText}
-                className="group flex items-center gap-2.5 rounded-lg py-1 transition-colors duration-200"
+                className="group flex items-start gap-3 rounded-lg py-0.5 transition-colors duration-200"
               >
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#ECECEF] bg-white text-[#6A6D81] transition-all duration-200 group-hover:border-[#0400FF]/30 group-hover:bg-[#0400FF]/5 group-hover:text-[#0400FF]">
                   <Icon className="h-[15px] w-[15px]" />
                 </span>
-                <span className="min-w-0 text-sm leading-snug text-[#6A6D81] transition-colors duration-200 group-hover:text-[#0400FF]">
+                <span className="min-w-0 max-w-[9.5rem] text-sm leading-snug text-[#6A6D81] transition-colors duration-200 group-hover:text-[#0400FF] lg:max-w-[10rem] xl:max-w-[11rem]">
                   {followText}
                 </span>
               </a>
@@ -68,7 +68,7 @@ export function AboutSection() {
     tRaw<Array<{ label: string; href: string }>>("footer.about.links") ?? [];
 
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 lg:flex-1">
       <h3 className="text-sm font-semibold text-[#131520]">
         {t("footer.about.title")}
       </h3>

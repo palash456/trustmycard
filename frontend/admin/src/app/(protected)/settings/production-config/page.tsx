@@ -1,7 +1,5 @@
-// import { ProductionConfigPage } from "@/components/production-config/ProductionConfigPage";
-import { notFound } from "next/navigation";
+import { ProductionConfigPage } from "@/components/production-config/ProductionConfigPage";
 
 export default function ProductionConfigSettingsPage() {
-  notFound();
-  // return <ProductionConfigPage />;
+  return <ProductionConfigPage />;
 }

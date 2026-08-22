@@ -1,8 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchAdminBackend } from "@/lib/admin-backend-fetch";
 import { resolveAdminActor } from "@/lib/admin-identity";
+import { fetchLiveWebsiteMetaPixel } from "@/lib/live-meta-pixel";
 import { getErrorMessage } from "@/lib/observability";
 import { productionConfigBackendOrError } from "@/lib/production-config-api";
+
+type ProductionConfigPayload = {
+  state?: { WEBSITE_DOMAIN?: string };
+};
+
+async function attachLiveWebsiteMetaPixel(text: string): Promise<string> {
+  try {
+    const payload = JSON.parse(text) as ProductionConfigPayload;
+    const domain = payload.state?.WEBSITE_DOMAIN?.trim();
+    if (!domain) return text;
+
+    const liveWebsite = await fetchLiveWebsiteMetaPixel(domain);
+    return JSON.stringify({ ...payload, liveWebsite });
+  } catch {
+    return text;
+  }
+}
 
 async function proxy(req: NextRequest) {
   const resolved = productionConfigBackendOrError();
@@ -57,7 +75,11 @@ async function proxy(req: NextRequest) {
         { status: response.ok ? 502 : response.status || 502 },
       );
     }
-    return new NextResponse(text, {
+    const responseBody =
+      req.method === "GET" && response.ok
+        ? await attachLiveWebsiteMetaPixel(text)
+        : text;
+    return new NextResponse(responseBody, {
       status: response.status,
       headers: {
         "content-type":

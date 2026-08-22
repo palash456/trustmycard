@@ -2,17 +2,34 @@
 
 NestJS API — standalone npm package.
 
+## Local development (native — no Docker)
+
+All services run on the host:
+
+| Service | URL / port |
+|---------|------------|
+| API | `http://127.0.0.1:4000` |
+| Website | `http://localhost:3000` |
+| Admin | `http://localhost:3002` |
+| PostgreSQL | `localhost:5432` (`DATABASE_URL`) |
+| Redis | `127.0.0.1:6379` (`REDIS_URL`) |
+
 ```bash
-cd backend
-npm install            # or from repo root: npm run setup:node_modules
-npm run start:dev      # http://localhost:4000
-npx prisma generate
-npm run prisma:push
+# From repo root — first time
+npm run setup
+npm run setup:local-deps    # macOS: Homebrew Postgres + Redis
+cd backend && npm run prisma:push
+
+cd backend && npm run start:dev
+cd frontend && npm run dev:website
+cd frontend && npm run dev:admin
 ```
 
-Default setup uses local PostgreSQL (`DATABASE_URL` pointing to `localhost:5432`).
+`npm run start:dev` probes native Postgres and Redis before starting (skip with `TMC_SKIP_DEV_DEPS=1`).
 
-Copy `env/profiles/development/backend.env.example` to `env/profiles/development/backend.env` and fill in values. `npm run start:dev` loads profile env via `config/load-env.mjs`.
+Copy `env/profiles/development/backend.env.example` to `env/profiles/development/backend.env`. Env is loaded via `config/load-env.mjs`.
+
+**Docker** is used only for production builds and deployment (`deploy/`, `deploy.sh`). It is not required for local development.
 
 ## Layout
 

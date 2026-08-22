@@ -13,6 +13,7 @@ import {
   Sun,
 } from "lucide-react";
 import { AdminDataModeBadge } from "@/components/AdminDataModeBadge";
+import { ProductionSystemStatus } from "@/components/ProductionSystemStatus";
 import { useBackendStatus } from "@/components/BackendStatusProvider";
 import { useAdminDataMode } from "@/components/useAdminDataMode";
 import { safeRouterRefresh } from "@/lib/safe-router-refresh";
@@ -60,8 +61,9 @@ export function HeaderControls({ onLogout }: { onLogout: () => void }) {
   });
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 items-center gap-2">
       <AdminDataModeBadge />
+      <ProductionSystemStatus />
 
       <DropdownMenu>
         <DropdownMenuTrigger

@@ -2,7 +2,52 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Dev: Backend",
+      "label": "Local: Ensure Dev Deps",
+      "detail": "LOCAL — probe native Postgres (:5432) + Redis (:6379); run npm run setup:local-deps if missing",
+      "type": "shell",
+      "command": "npm run dev:deps",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "local-servers"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Local: Backend (after deps check)",
+      "detail": "LOCAL — Nest API http://127.0.0.1:4000 (skips deps probe; use after Ensure Dev Deps)",
+      "type": "shell",
+      "command": "TMC_SKIP_DEV_DEPS=1 npm run start:dev",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "nestjs",
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "Nest application successfully started"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "local-servers"
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
+    },
+    {
+      "label": "Local: Backend",
+      "detail": "LOCAL — Nest API http://127.0.0.1:4000 (prestart probes Postgres + Redis)",
       "type": "shell",
       "command": "npm run start:dev",
       "options": {
@@ -23,14 +68,15 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "group": "dev-servers"
+        "group": "local-servers"
       },
       "runOptions": {
         "instanceLimit": 1
       }
     },
     {
-      "label": "Dev: Website",
+      "label": "Local: Website",
+      "detail": "LOCAL — wallet app http://localhost:3000",
       "type": "shell",
       "command": "npm run dev:website",
       "options": {
@@ -51,14 +97,15 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "group": "dev-servers"
+        "group": "local-servers"
       },
       "runOptions": {
         "instanceLimit": 1
       }
     },
     {
-      "label": "Dev: Admin",
+      "label": "Local: Admin",
+      "detail": "LOCAL — admin panel http://localhost:3002 → backend http://127.0.0.1:4000",
       "type": "shell",
       "command": "npm run dev:admin",
       "options": {
@@ -79,98 +126,61 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
-        "group": "dev-servers"
+        "group": "local-servers"
       },
       "runOptions": {
         "instanceLimit": 1
       }
     },
     {
-      "label": "Start All",
+      "label": "Local: Start Servers",
+      "detail": "LOCAL — backend + website + admin (parallel)",
       "dependsOn": [
-        "Dev: Backend",
-        "Dev: Website",
-        "Dev: Admin"
+        "Local: Backend (after deps check)",
+        "Local: Website",
+        "Local: Admin"
       ],
       "dependsOrder": "parallel",
       "problemMatcher": []
     },
     {
-      "label": "Kill All",
+      "label": "Local: Start All",
+      "detail": "LOCAL — ensure Postgres + Redis, then backend (:4000) + website (:3000) + admin (:3002)",
+      "dependsOn": [
+        "Local: Ensure Dev Deps",
+        "Local: Start Servers"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "Local: Kill All",
+      "detail": "Stop every running VS Code task",
       "type": "shell",
       "command": "echo ${input:terminateAllTasks}",
       "problemMatcher": []
     },
     {
-      "label": "Wait Before Restart",
+      "label": "Local: Wait Before Restart",
+      "detail": "LOCAL helper — pause before restart",
       "type": "shell",
       "command": "sleep 2",
       "problemMatcher": []
     },
     {
-      "label": "Restart All",
-      "dependsOn": ["Kill All", "Wait Before Restart", "Start All"],
+      "label": "Local: Restart All",
+      "detail": "LOCAL — kill, ensure deps, then backend + website + admin",
+      "dependsOn": [
+        "Local: Kill All",
+        "Local: Wait Before Restart",
+        "Local: Start All"
+      ],
       "dependsOrder": "sequence",
       "problemMatcher": []
     },
     {
-      "label": "Deploy Admin (Vercel Production)",
-      "type": "shell",
-      "command": "./scripts/deploy-admin-vercel.sh",
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared",
-        "group": "deploy"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Deploy Production: Full Deployment",
-      "type": "shell",
-      "command": "./deploy.sh production --provider=docker-vps",
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared",
-        "group": "deploy"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Deploy Production: Config Update Only",
-      "type": "shell",
-      "command": "./deploy.sh production --provider=docker-vps --skip-build --skip-images --skip-migrate",
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared",
-        "group": "deploy"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Deploy Production: Build Deployment",
-      "type": "shell",
-      "command": "./deploy.sh production --provider=docker-vps --skip-migrate",
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared",
-        "group": "deploy"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Delete Local DB: All Time",
+      "label": "Local: Delete DB — All Time",
+      "detail": "LOCAL Postgres (localhost) — wipe transactional tables",
       "type": "shell",
       "command": "npm run db:delete-local:all",
       "options": {
@@ -179,12 +189,13 @@
       "presentation": {
         "reveal": "always",
         "panel": "shared",
-        "group": "db-maintenance"
+        "group": "local-db"
       },
       "problemMatcher": []
     },
     {
-      "label": "Delete Local DB: Today",
+      "label": "Local: Delete DB — Today",
+      "detail": "LOCAL Postgres (localhost) — wipe today's transactional rows",
       "type": "shell",
       "command": "npm run db:delete-local:today",
       "options": {
@@ -193,12 +204,13 @@
       "presentation": {
         "reveal": "always",
         "panel": "shared",
-        "group": "db-maintenance"
+        "group": "local-db"
       },
       "problemMatcher": []
     },
     {
-      "label": "Delete Local DB: Last Hour",
+      "label": "Local: Delete DB — Last Hour",
+      "detail": "LOCAL Postgres (localhost) — wipe last 1h transactional rows",
       "type": "shell",
       "command": "npm run db:delete-local:1h",
       "options": {
@@ -207,12 +219,13 @@
       "presentation": {
         "reveal": "always",
         "panel": "shared",
-        "group": "db-maintenance"
+        "group": "local-db"
       },
       "problemMatcher": []
     },
     {
-      "label": "Delete Local DB: Last 10 Mins",
+      "label": "Local: Delete DB — Last 10 Mins",
+      "detail": "LOCAL Postgres (localhost) — wipe last 10m transactional rows",
       "type": "shell",
       "command": "npm run db:delete-local:10m",
       "options": {
@@ -221,7 +234,127 @@
       "presentation": {
         "reveal": "always",
         "panel": "shared",
-        "group": "db-maintenance"
+        "group": "local-db"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Prod: Deploy Admin (Vercel)",
+      "detail": "PRODUCTION — deploy admin panel to Vercel",
+      "type": "shell",
+      "command": "./scripts/deploy-admin-vercel.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "prod-deploy"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Prod: Deploy — Full",
+      "detail": "PRODUCTION — full Docker VPS deploy",
+      "type": "shell",
+      "command": "./deploy.sh production --provider=docker-vps",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "prod-deploy"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Prod: Deploy — Config Only",
+      "detail": "PRODUCTION — config update only (skip build/images/migrate)",
+      "type": "shell",
+      "command": "./deploy.sh production --provider=docker-vps --skip-build --skip-images --skip-migrate",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "prod-deploy"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Prod: Deploy — Build",
+      "detail": "PRODUCTION — build + deploy, skip migrate",
+      "type": "shell",
+      "command": "./deploy.sh production --provider=docker-vps --skip-migrate",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "prod-deploy"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Prod: Delete DB — All Time",
+      "detail": "PRODUCTION database — wipe transactional tables",
+      "type": "shell",
+      "command": "npm run db:delete-prod:all",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "prod-db"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Prod: Delete DB — Today",
+      "detail": "PRODUCTION database — wipe today's transactional rows",
+      "type": "shell",
+      "command": "npm run db:delete-prod:today",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "prod-db"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Prod: Delete DB — Last Hour",
+      "detail": "PRODUCTION database — wipe last 1h transactional rows",
+      "type": "shell",
+      "command": "npm run db:delete-prod:1h",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "prod-db"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Prod: Delete DB — Last 10 Mins",
+      "detail": "PRODUCTION database — wipe last 10m transactional rows",
+      "type": "shell",
+      "command": "npm run db:delete-prod:10m",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "prod-db"
       },
       "problemMatcher": []
     }

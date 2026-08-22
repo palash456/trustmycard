@@ -42,10 +42,25 @@ export function deriveProductionApiUrl(): string | null {
   return resolveProductionBackendUrl();
 }
 
-/** Local admin dev backend — separate from production URL resolution. */
+/**
+ * Local admin dev backend — terminal `npm run start:dev` only.
+ * Never BACKEND_API_URL (that key is for production / live admin resolution).
+ */
 export function getLocalDevBackendUrl(): string {
-  const configured = process.env.BACKEND_API_URL?.trim();
+  const configured = process.env.LOCAL_DEV_BACKEND_URL?.trim();
   return configured ? configured.replace(/\/$/, "") : "http://127.0.0.1:4000";
+}
+
+/** Local wallet website for dev system-health probes (npm run dev:website). */
+export function getLocalDevWebsiteUrl(): string {
+  const configured = process.env.LOCAL_DEV_WEBSITE_URL?.trim();
+  return configured ? configured.replace(/\/$/, "") : "http://localhost:3000";
+}
+
+/** Public production wallet site — https://<WEBSITE_DOMAIN>. */
+export function resolveProductionWebsiteUrl(): string | null {
+  const domain = normalizeWebsiteDomain(process.env.WEBSITE_DOMAIN ?? "");
+  return domain ? `https://${domain}` : null;
 }
 
 /** Production data source: opt-in flag plus production API URL and admin key. */

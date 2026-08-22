@@ -2,6 +2,8 @@
 
 OCI images are the common artifact. Provider adapters only ship and start containers.
 
+**Local day-to-day development** (`npm run start:dev`, `dev:website`, `dev:admin`) uses **native Postgres + Redis on the host** — no Docker. This folder is for production builds, VPS deploy, and CI smoke tests only.
+
 ## Commands
 
 ```bash

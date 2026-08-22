@@ -53,10 +53,8 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // Production config and documentation pages are temporarily disabled in admin.
+  // Documentation pages are temporarily disabled in admin.
   if (
-    pathname === "/settings/production-config" ||
-    pathname.startsWith("/settings/production-config/") ||
     pathname === "/documentation" ||
     pathname.startsWith("/documentation/")
   ) {

@@ -277,7 +277,10 @@ function main() {
     );
   }
 
-  console.log("\nNext: npm run start:dev (backend) and npm run dev:admin (admin panel)");
+  console.log(
+    "\nNext: npm run setup:local-deps (Postgres + Redis) → cd backend && npm run prisma:push && npm run start:dev",
+  );
+  console.log("       cd frontend && npm run dev:website && npm run dev:admin");
 }
 
 main();

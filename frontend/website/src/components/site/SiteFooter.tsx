@@ -25,25 +25,24 @@ export function SiteFooter() {
       <footer className="border-t border-[#ECECEF] bg-[#F9FAFB]">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <Reveal>
-            <div className="flex flex-col gap-12 py-12 sm:py-16 lg:flex-row lg:items-start lg:gap-16 xl:gap-24 lg:py-20">
-              <div className="shrink-0 lg:w-[min(100%,280px)] xl:w-[300px]">
+          <div className="flex flex-col gap-12 py-12 sm:py-16 lg:flex-row lg:items-start lg:justify-between lg:gap-14 lg:pr-12 xl:gap-20 lg:py-20">              <div className="shrink-0 lg:max-w-[min(100%,340px)]">
                 <Image
                   src="/logos/main.png"
                   alt={t("brand.name")}
                   width={1507}
                   height={328}
-                  className="h-7 w-auto opacity-90 sm:h-10 sm:w-auto"
+                  className="h-10 w-auto sm:h-8 lg:h-10"
                   unoptimized
                 />
-                <p className="mt-4 text-sm leading-relaxed text-[#6A6D81]">
+                <p className="my-6 text-sm leading-relaxed text-[#6A6D81]">
                   {t("footer.tagline")}
                 </p>
                 <DownloadChips />
               </div>
 
-              <div className="grid min-w-0 flex-1 grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4 sm:gap-8 lg:gap-10 xl:gap-4">
+              <div className="grid min-w-0 flex-1 grid-cols-1 gap-10 sm:grid-cols-2 lg:flex lg:w-full lg:flex-1 lg:justify-between lg:gap-10 xl:gap-14 2xl:gap-20">
                 <AboutSection />
-                <div className="min-w-0">
+                <div className="min-w-0 lg:flex-1">
                   <h3 className="text-sm font-semibold text-[#131520]">
                     {t("footer.legal.title")}
                   </h3>

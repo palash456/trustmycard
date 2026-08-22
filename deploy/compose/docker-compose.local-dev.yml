@@ -1,4 +1,5 @@
-# Host port bindings for npm run dev on the machine (not inside compose network).
+# Host port bindings for deploy/validate-micro-local.sh (production stack smoke test).
+# Not used by npm run start:dev — local development uses native Postgres + Redis on the host.
 
 services:
   postgres:

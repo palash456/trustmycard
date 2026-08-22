@@ -21,6 +21,14 @@ services:
       TMC_ENV: production
       PORT: "4000"
       NODE_OPTIONS: "--max-old-space-size=192"
+      TMC_REPO_ROOT: /opt/tmc
+    volumes:
+      - ../adapters:/opt/tmc/deploy/adapters:ro
+      - ../config-engine:/opt/tmc/deploy/config-engine:ro
+      - ../core:/opt/tmc/deploy/core:ro
+      - ../runtime-config:/opt/tmc/deploy/runtime-config:rw
+      - ../manifest.production.json:/opt/tmc/deploy/manifest.production.json:ro
+      - ../../config:/opt/tmc/config:ro
     ports:
       - "${TMC_HOST_API_PORT:-4000}:4000"
     healthcheck:

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -9,6 +10,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useBackendStatus } from "@/components/BackendStatusProvider";
+import { CopyButton } from "@/components/CopyButton";
 import { useProductionConfigDemoMode } from "@/components/production-config/useProductionConfigDemoMode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,6 +25,7 @@ import {
   simulateDemoConfigDeploy,
 } from "./demo-runtime";
 import { FIELD_CONFIG, type ConfigField } from "./field-config";
+import type { LiveWebsiteMetaPixel } from "@/lib/live-meta-pixel";
 import { validateDomainInput, validatePixelInput } from "./validation";
 import {
   ConfigFieldIcon,
@@ -58,6 +61,32 @@ type Event = {
   result?: string;
   error?: string;
 };
+type ConfigApiResponse = {
+  state?: State & {
+    platformDefaults?: { META_PIXEL_ID?: string; WEBSITE_DOMAIN?: string };
+  };
+  platformDefaults?: { META_PIXEL_ID?: string; WEBSITE_DOMAIN?: string };
+  liveWebsite?: LiveWebsiteMetaPixel;
+  error?: string;
+  code?: string;
+};
+
+function platformPixelIdFromConfig(config: ConfigApiResponse): string {
+  return (
+    config.state?.platformDefaults?.META_PIXEL_ID?.trim() ||
+    config.platformDefaults?.META_PIXEL_ID?.trim() ||
+    ""
+  );
+}
+
+function normalizeConfigState(config: ConfigApiResponse): State | null {
+  if (!config.state) return null;
+  const platformPixelId = platformPixelIdFromConfig(config);
+  return {
+    ...config.state,
+    platformDefaultsActive: Boolean(platformPixelId),
+  };
+}
 type DialogMode = "form" | "console" | "success" | "rollback";
 type LoadState = "idle" | "loading" | "ready" | "error";
 
@@ -82,6 +111,9 @@ export function ProductionConfigPage() {
   const [deployedValue, setDeployedValue] = useState("");
   const [previousValue, setPreviousValue] = useState("");
   const [changeId, setChangeId] = useState<string | null>(null);
+  const [liveWebsite, setLiveWebsite] = useState<LiveWebsiteMetaPixel | null>(
+    null,
+  );
 
   const productionHealth = health?.production;
 
@@ -91,10 +123,9 @@ export function ProductionConfigPage() {
     setLoadErrorCode(undefined);
 
     const [configResult, historyResult] = await Promise.all([
-      fetchJson<{ state?: State; error?: string; code?: string }>(
-        "/api/production-config",
-        { cache: "no-store" },
-      ),
+      fetchJson<ConfigApiResponse>("/api/production-config", {
+        cache: "no-store",
+      }),
       fetchJson<Audit[] | { error?: string }>(
         "/api/production-config/history?limit=20",
         { cache: "no-store" },
@@ -106,18 +137,22 @@ export function ProductionConfigPage() {
       setLoadError(configResult.error);
       setLoadErrorCode(configResult.code);
       setState(null);
+      setLiveWebsite(null);
       return;
     }
 
     const config = configResult.data;
-    if (!config.state) {
+    const nextState = normalizeConfigState(config);
+    if (!nextState) {
       setLoadState("error");
       setLoadError("Production configuration state is missing from the API response.");
       setState(null);
+      setLiveWebsite(null);
       return;
     }
 
-    setState(config.state);
+    setState(nextState);
+    setLiveWebsite(config.liveWebsite ?? null);
     if (historyResult.ok && Array.isArray(historyResult.data)) {
       setHistory(historyResult.data);
     } else {
@@ -133,6 +168,7 @@ export function ProductionConfigPage() {
       setLoadState("idle");
       setState(null);
       setHistory([]);
+      setLiveWebsite(null);
       return;
     }
     void load();
@@ -143,6 +179,12 @@ export function ProductionConfigPage() {
     const runtime = createDemoRuntime();
     setState(runtime.state);
     setHistory(runtime.history);
+    setLiveWebsite({
+      websiteUrl: `https://${runtime.state.WEBSITE_DOMAIN}`,
+      pixelId: runtime.state.META_PIXEL_ID,
+      status: "found",
+      checkedAt: new Date().toISOString(),
+    });
     setLoadState("ready");
     setLoadError(null);
     setLoadErrorCode(undefined);
@@ -442,6 +484,12 @@ export function ProductionConfigPage() {
       const runtime = createDemoRuntime();
       setState(runtime.state);
       setHistory(runtime.history);
+      setLiveWebsite({
+        websiteUrl: `https://${runtime.state.WEBSITE_DOMAIN}`,
+        pixelId: runtime.state.META_PIXEL_ID,
+        status: "found",
+        checkedAt: new Date().toISOString(),
+      });
       setLoadState("ready");
       setLoadError(null);
       return;
@@ -517,22 +565,17 @@ export function ProductionConfigPage() {
           <p className="font-medium text-foreground">Production config tutorial</p>
           <p className="mt-1.5 leading-relaxed text-muted-foreground">
             Open <b className="text-foreground">Show Logs</b> for fixture activity
-            (success and rollback). Change domain or Meta Pixel, then deploy to walk
+            (success and rollback). Change the Meta Pixel ID, then deploy to walk
             through validation, apply, verify, and completion — or rollback when
             verification fails.
           </p>
           <ul className="mt-3 list-disc space-y-1 pl-4 text-muted-foreground">
             <li>
               <span className="text-foreground">Success:</span>{" "}
-              <span className="font-mono text-xs">
-                https://checkout.exampleUrl.com
-              </span>{" "}
-              or{" "}
               <span className="font-mono text-xs">987654321098765</span>
             </li>
             <li>
               <span className="text-foreground">Rollback:</span>{" "}
-              <span className="font-mono text-xs">{DEMO_ROLLBACK_DOMAIN}</span> or{" "}
               <span className="font-mono text-xs">{DEMO_ROLLBACK_PIXEL}</span>
             </li>
           </ul>
@@ -540,10 +583,12 @@ export function ProductionConfigPage() {
       ) : null}
 
       {pageEnabled && platformDefaultsActive ? (
-        <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-          Default already persists in <code>config/platform.env</code>. Empty
-          <code className="mx-1">WEBSITE_DOMAIN</code> and
-          <code className="mx-1">META_PIXEL_ID</code> to enable admin changes.
+        <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-red-200/70 bg-red-50/50 px-3.5 py-2.5 text-sm text-red-900/80 dark:border-red-500/20 dark:bg-red-500/5 dark:text-red-200/80">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500/80 dark:text-red-400/80" />
+          <p>
+            Meta Pixel ID is not allowed to be changed. Please contact your
+            developer to update it.
+          </p>
         </div>
       ) : null}
 
@@ -556,7 +601,8 @@ export function ProductionConfigPage() {
       >
         {pageEnabled ? (
           <>
-            <ConfigField
+            {/* Website domain change is temporarily disabled — Meta Pixel ID only. */}
+            {/* <ConfigField
               field="domain"
               label={FIELD_CONFIG.domain.label}
               value={`https://${state?.WEBSITE_DOMAIN ?? ""}`}
@@ -564,34 +610,33 @@ export function ProductionConfigPage() {
               action={FIELD_CONFIG.domain.action}
               onClick={() => openField("domain")}
               disabled={platformDefaultsActive}
-            />
-            <ConfigField
-              field="pixel"
-              label={FIELD_CONFIG.pixel.label}
-              value={state?.META_PIXEL_ID ?? "—"}
+            /> */}
+            <PixelConfigField
+              configuredValue={state?.META_PIXEL_ID ?? "—"}
+              liveWebsite={liveWebsite}
               meta={state}
               action={FIELD_CONFIG.pixel.action}
               onClick={() => openField("pixel")}
-              className="mt-5"
               disabled={platformDefaultsActive}
+              disabledLabel="Contact developer"
             />
           </>
         ) : pageStatus.status === "checking" ? (
           <>
-            <CheckingConfigPlaceholder field="domain" />
-            <CheckingConfigPlaceholder field="pixel" className="mt-5" />
+            {/* <CheckingConfigPlaceholder field="domain" /> */}
+            <CheckingConfigPlaceholder field="pixel" />
           </>
         ) : (
           <>
-            <DisabledConfigPlaceholder field="domain" />
-            <DisabledConfigPlaceholder field="pixel" className="mt-5" />
+            {/* <DisabledConfigPlaceholder field="domain" /> */}
+            <DisabledConfigPlaceholder field="pixel" />
           </>
         )}
       </div>
 
       {field && fieldConfig ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <Card className="max-h-[90vh] w-full max-w-xl overflow-y-auto shadow-2xl">
+        <ModalPortal>
+          <Card className="max-h-[90vh] w-full overflow-y-auto shadow-2xl">
             <CardContent className="p-0">
               {dialogMode === "form" ? (
                 <div className="space-y-0 p-6">
@@ -783,17 +828,12 @@ export function ProductionConfigPage() {
               ) : null}
             </CardContent>
           </Card>
-        </div>
+        </ModalPortal>
       ) : null}
 
       {logsOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setLogsOpen(false);
-          }}
-        >
-          <Card className="max-h-[80vh] w-full max-w-xl overflow-hidden shadow-2xl">
+        <ModalPortal onBackdropClick={() => setLogsOpen(false)}>
+          <Card className="max-h-[80vh] w-full overflow-hidden shadow-2xl">
             <CardContent className="p-0">
               <div className="border-b px-6 py-5">
                 <h2 className="font-brand text-lg font-semibold">
@@ -805,9 +845,9 @@ export function ProductionConfigPage() {
               </div>
               <div className="max-h-[50vh] overflow-y-auto px-6 py-2">
                 {history.length ? (
-                  history.map((entry) => (
+                  history.map((entry, index) => (
                     <div
-                      key={entry.changeId}
+                      key={`${entry.changeId}-${entry.key}-${entry.completedAt}-${index}`}
                       className="flex items-start justify-between gap-4 border-b py-3.5 last:border-b-0"
                     >
                       <div>
@@ -847,9 +887,42 @@ export function ProductionConfigPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </ModalPortal>
       ) : null}
     </main>
+  );
+}
+
+function ModalPortal({
+  children,
+  onBackdropClick,
+}: {
+  children: React.ReactNode;
+  onBackdropClick?: () => void;
+}) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
+      {onBackdropClick ? (
+        <button
+          type="button"
+          className="absolute inset-0 bg-black/40"
+          aria-label="Close dialog"
+          onClick={onBackdropClick}
+        />
+      ) : (
+        <div className="absolute inset-0 bg-black/40" aria-hidden />
+      )}
+      <div className="relative z-10 w-full max-w-xl">{children}</div>
+    </div>,
+    document.body,
   );
 }
 
@@ -950,6 +1023,141 @@ function DisabledConfigPlaceholder({
   );
 }
 
+function PixelConfigField({
+  configuredValue,
+  liveWebsite,
+  meta,
+  action,
+  onClick,
+  disabled,
+  disabledLabel = "Default already persists",
+}: {
+  configuredValue: string;
+  liveWebsite: LiveWebsiteMetaPixel | null;
+  meta: State | null;
+  action: string;
+  onClick: () => void;
+  disabled?: boolean;
+  disabledLabel?: string;
+}) {
+  const livePixelId = liveWebsite?.pixelId ?? null;
+  const configuredCopyable =
+    configuredValue !== "—" && configuredValue.trim().length > 0;
+  const liveCopyable =
+    liveWebsite?.status === "found" && Boolean(livePixelId?.trim());
+  const configuredMatchesLive =
+    Boolean(livePixelId) &&
+    Boolean(configuredValue) &&
+    configuredValue !== "—" &&
+    livePixelId === configuredValue;
+
+  return (
+    <Card>
+      <CardContent className="grid grid-cols-[auto_1fr] items-start gap-x-4 gap-y-4 p-5 sm:grid-cols-[auto_1fr_auto] sm:px-6 sm:py-[22px]">
+        <ConfigFieldIcon field="pixel" />
+        <div className="space-y-4">
+          <div>
+            <p className="text-[11px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">
+              Configured Meta Pixel ID
+            </p>
+            <p className="mt-1.5 flex items-center gap-1.5 break-all font-mono text-base font-semibold tracking-tight">
+              <span>{configuredValue}</span>
+              {configuredCopyable ? (
+                <CopyButton
+                  value={configuredValue}
+                  variant="icon"
+                  ariaLabel="Copy configured Meta Pixel ID"
+                />
+              ) : null}
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              {meta ? (
+                <>
+                  Updated by {meta.lastUpdatedBy}
+                  <span className="mx-1.5 text-border">·</span>
+                  {new Date(meta.lastUpdatedAt).toLocaleString()}
+                  <span className="mx-1.5 text-border">·</span>
+                  {meta.lastSource}
+                </>
+              ) : (
+                "—"
+              )}
+            </p>
+          </div>
+
+          <div className="rounded-lg border bg-muted/20 p-3">
+            <p className="text-[11px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">
+              Live on website
+            </p>
+            {liveWebsite ? (
+              <>
+                <p className="mt-1.5 flex items-center gap-1.5 break-all font-mono text-base font-semibold tracking-tight">
+                  <span>
+                    {liveWebsite.status === "found"
+                      ? liveWebsite.pixelId
+                      : liveWebsite.status === "not_found"
+                        ? "Not detected"
+                        : "Unavailable"}
+                  </span>
+                  {liveCopyable && livePixelId ? (
+                    <CopyButton
+                      value={livePixelId}
+                      variant="icon"
+                      ariaLabel="Copy live Meta Pixel ID"
+                    />
+                  ) : null}
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  <a
+                    href={liveWebsite.websiteUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-foreground underline-offset-2 hover:underline"
+                  >
+                    {liveWebsite.websiteUrl}
+                  </a>
+                  <span className="mx-1.5 text-border">·</span>
+                  Checked {new Date(liveWebsite.checkedAt).toLocaleString()}
+                </p>
+                {liveWebsite.status === "error" && liveWebsite.error ? (
+                  <p className="mt-2 text-xs text-destructive">{liveWebsite.error}</p>
+                ) : null}
+                {liveWebsite.status === "found" &&
+                configuredValue !== "—" &&
+                !configuredMatchesLive ? (
+                  <p className="mt-2 text-xs text-amber-800 dark:text-amber-200">
+                    Configured ID does not match the pixel embedded on the live
+                    wallet site. A deploy may still be pending, or the website is
+                    serving a different value.
+                  </p>
+                ) : null}
+                {configuredMatchesLive ? (
+                  <p className="mt-2 text-xs text-green-700 dark:text-green-400">
+                    Matches the configured production value.
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                Checking live website…
+              </p>
+            )}
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          className="col-span-2 h-9 sm:col-span-1 sm:self-center"
+          onClick={onClick}
+          disabled={disabled}
+        >
+          <Pencil className="size-3.5" />
+          {disabled ? disabledLabel : action}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 function ConfigField({
   field,
   label,
@@ -959,6 +1167,7 @@ function ConfigField({
   onClick,
   className,
   disabled,
+  disabledLabel = "Default already persists",
 }: {
   field: ConfigField;
   label: string;
@@ -968,6 +1177,7 @@ function ConfigField({
   onClick: () => void;
   className?: string;
   disabled?: boolean;
+  disabledLabel?: string;
 }) {
   return (
     <Card className={className}>
@@ -1001,7 +1211,7 @@ function ConfigField({
           disabled={disabled}
         >
           <Pencil className="size-3.5" />
-          {disabled ? "Default already persists" : action}
+          {disabled ? disabledLabel : action}
         </Button>
       </CardContent>
     </Card>

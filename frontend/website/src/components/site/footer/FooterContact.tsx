@@ -17,7 +17,7 @@ export function FooterContact() {
   if (!legalName && !supportEmail) return null;
 
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 lg:flex-1">
       <h3 className="text-sm font-semibold text-[#131520]">
         {t("footer.contact.title")}
       </h3>

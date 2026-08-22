@@ -11,14 +11,14 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#ECECEF] bg-white/90 backdrop-blur-xl">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-14 items-center justify-between sm:h-16 lg:h-20">
+        <div className="flex min-h-20 items-center justify-between py-2 sm:min-h-24 sm:py-3 lg:min-h-28 lg:py-4">
           <Link href="/" className="flex shrink-0 items-center">
             <Image
               src="/logos/main.png"
               alt="Trust Card"
-              width={210}
-              height={44}
-              className="h-7 w-auto sm:h-8 lg:h-10"
+              width={480}
+              height={120}
+              className="h-16 w-auto sm:h-20 lg:h-24"
               priority
             />
           </Link>

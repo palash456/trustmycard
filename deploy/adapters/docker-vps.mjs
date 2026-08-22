@@ -118,6 +118,18 @@ function rsyncBundle(creds, remotePath, environment) {
   if (existsSync(configEngineDir)) {
     rsyncToRemote(creds, configEngineDir, `${remotePath}/deploy/config-engine/`);
   }
+  const coreDir = join(deployRoot, "core");
+  if (existsSync(coreDir)) {
+    rsyncToRemote(creds, coreDir, `${remotePath}/deploy/core/`);
+  }
+  const adaptersDir = join(deployRoot, "adapters");
+  if (existsSync(adaptersDir)) {
+    rsyncToRemote(creds, adaptersDir, `${remotePath}/deploy/adapters/`);
+  }
+  const platformConfigDir = join(repoRoot, "config");
+  if (existsSync(platformConfigDir)) {
+    rsyncToRemote(creds, platformConfigDir, `${remotePath}/config/`);
+  }
   const configUpdateScript = join(repoRoot, "scripts", "config-update.sh");
   if (existsSync(configUpdateScript)) {
     sshExec(creds, `mkdir -p ${remotePath}/scripts`);

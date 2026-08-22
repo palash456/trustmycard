@@ -70,7 +70,7 @@ export async function probeBackendHealth(
     const detail = getErrorMessage(err, "connection failed");
     const hint =
       backend.env === "dev"
-        ? " Start the local backend with: cd backend && npm run start:dev"
+        ? " Start native Postgres (:5432) and Redis (:6379) — npm run setup:local-deps from repo root, then cd backend && npm run start:dev"
         : backendUnreachableHint(backend);
     return {
       env: backend.env,

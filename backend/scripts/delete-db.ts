@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
 type DeleteWindow = "all" | "today" | "1h" | "10m";
+type Target = "local" | "prod";
 
 const TRANSACTIONAL_TABLES = [
   "TransferAttempt",
@@ -20,14 +21,21 @@ const TRANSACTIONAL_TABLES = [
   "CollectorLease",
 ] as const;
 
-function parseArgs(argv: string[]): { window: DeleteWindow; yes: boolean } {
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+
+function parseArgs(argv: string[]): {
+  window: DeleteWindow;
+  yes: boolean;
+  confirmProd: boolean;
+} {
   const positional = argv.filter((arg) => !arg.startsWith("-"));
   const window = (positional[0] ?? "all") as DeleteWindow;
   const yes = argv.includes("--yes") || argv.includes("-y");
+  const confirmProd = argv.includes("--confirm-prod");
   if (!["all", "today", "1h", "10m"].includes(window)) {
     throw new Error(`Unknown window "${window}". Use: all | today | 1h | 10m`);
   }
-  return { window, yes };
+  return { window, yes, confirmProd };
 }
 
 function resolveSince(window: DeleteWindow): Date | null {
@@ -44,26 +52,81 @@ function resolveSince(window: DeleteWindow): Date | null {
   return new Date(now.getTime() - 10 * 60 * 1000);
 }
 
-function assertLocalDevelopmentDatabase(databaseUrl: string): void {
-  let host = "";
+function parseDatabaseHost(databaseUrl: string): string {
   try {
     const normalized = databaseUrl.replace(/^postgres(ql)?:\/\//, "http://");
-    host = new URL(normalized).hostname.toLowerCase();
+    return new URL(normalized).hostname.toLowerCase();
   } catch {
     throw new Error("Invalid DATABASE_URL");
   }
+}
 
-  const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
-  if (!localHosts.has(host)) {
-    throw new Error(
-      `Refusing to delete data: DATABASE_URL host "${host}" is not local (localhost only).`,
-    );
+function isLocalHost(host: string): boolean {
+  return LOCAL_HOSTS.has(host);
+}
+
+function resolveTarget(): Target {
+  const tmcEnv = (process.env.TMC_ENV ?? "development").trim();
+  if (tmcEnv === "production") return "prod";
+  if (tmcEnv === "development") return "local";
+  throw new Error(`Refusing to delete data: TMC_ENV="${tmcEnv}" is not supported.`);
+}
+
+function resolveConnectUrl(): { url: string; host: string } {
+  const databaseUrl = process.env.DATABASE_URL?.trim();
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is not set");
   }
 
+  const pooledHost = parseDatabaseHost(databaseUrl);
+  const directUrl = process.env.DIRECT_DATABASE_URL?.trim();
+  if (directUrl) {
+    const directHost = parseDatabaseHost(directUrl);
+    if (isLocalHost(pooledHost) !== isLocalHost(directHost)) {
+      throw new Error(
+        `Refusing to delete data: DATABASE_URL host "${pooledHost}" and DIRECT_DATABASE_URL host "${directHost}" must both be local or both be remote.`,
+      );
+    }
+    return { url: directUrl, host: directHost };
+  }
+
+  return { url: databaseUrl, host: pooledHost };
+}
+
+function assertTargetDatabase(
+  target: Target,
+  host: string,
+  confirmProd: boolean,
+): void {
   const tmcEnv = (process.env.TMC_ENV ?? "development").trim();
-  if (tmcEnv !== "development") {
+
+  if (target === "local") {
+    if (!isLocalHost(host)) {
+      throw new Error(
+        `Refusing to delete LOCAL data: host "${host}" is not localhost.`,
+      );
+    }
+    if (tmcEnv !== "development") {
+      throw new Error(
+        `Refusing to delete LOCAL data: TMC_ENV="${tmcEnv}" (development only).`,
+      );
+    }
+    return;
+  }
+
+  if (tmcEnv !== "production") {
     throw new Error(
-      `Refusing to delete data: TMC_ENV="${tmcEnv}" (development only).`,
+      `Refusing to delete PROD data: TMC_ENV="${tmcEnv}" (production required).`,
+    );
+  }
+  if (isLocalHost(host)) {
+    throw new Error(
+      `Refusing to delete PROD data: host "${host}" looks local.`,
+    );
+  }
+  if (!confirmProd) {
+    throw new Error(
+      "Refusing to delete PROD data without --confirm-prod (VS Code Prod tasks pass this automatically).",
     );
   }
 }
@@ -183,39 +246,51 @@ function formatWindowLabel(window: DeleteWindow, since: Date | null): string {
   return `${window} (since ${since.toISOString()})`;
 }
 
+function logPrefix(target: Target): string {
+  return target === "prod" ? "[delete-db:PROD]" : "[delete-db:LOCAL]";
+}
+
 async function main(): Promise<void> {
-  const { window, yes } = parseArgs(process.argv.slice(2));
-  const databaseUrl = process.env.DATABASE_URL?.trim();
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL is not set");
-  }
+  const { window, yes, confirmProd } = parseArgs(process.argv.slice(2));
+  const target = resolveTarget();
+  const { url, host } = resolveConnectUrl();
+  assertTargetDatabase(target, host, confirmProd);
 
-  assertLocalDevelopmentDatabase(databaseUrl);
-
+  const prefix = logPrefix(target);
   const since = resolveSince(window);
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({
+    datasources: { db: { url } },
+  });
 
   try {
     const before = await countRows(prisma, since);
     const totalBefore = Object.values(before).reduce((sum, n) => sum + n, 0);
 
+    if (target === "prod") {
+      console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+      console.log("  PRODUCTION DATABASE DELETE");
+      console.log(`  host=${host}`);
+      console.log(`  window=${formatWindowLabel(window, since)}`);
+      console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    }
+
     console.log(
-      `[delete-local-db] window=${window} label=${formatWindowLabel(window, since)}`,
+      `${prefix} target=${target} host=${host} window=${window} label=${formatWindowLabel(window, since)}`,
     );
-    console.log("[delete-local-db] rows to delete:");
+    console.log(`${prefix} rows to delete:`);
     for (const table of TRANSACTIONAL_TABLES) {
       console.log(`  ${table}: ${before[table] ?? 0}`);
     }
-    console.log(`[delete-local-db] total=${totalBefore}`);
+    console.log(`${prefix} total=${totalBefore}`);
 
     if (totalBefore === 0) {
-      console.log("[delete-local-db] nothing to delete");
+      console.log(`${prefix} nothing to delete`);
       return;
     }
 
     if (!yes) {
       throw new Error(
-        "Refusing to delete without confirmation. Re-run with --yes (VS Code tasks pass this automatically).",
+        `Refusing to delete without confirmation. Re-run with --yes${target === "prod" ? " --confirm-prod" : ""} (VS Code tasks pass this automatically).`,
       );
     }
 
@@ -226,15 +301,15 @@ async function main(): Promise<void> {
       const clearedLeases = await prisma.collectorLease.deleteMany();
       if (clearedLeases.count > 0) {
         console.log(
-          `[delete-local-db] cleared ${clearedLeases.count} CollectorLease lock(s)`,
+          `${prefix} cleared ${clearedLeases.count} CollectorLease lock(s)`,
         );
       }
     }
 
     const after = await countRows(prisma, since);
     const totalAfter = Object.values(after).reduce((sum, n) => sum + n, 0);
-    console.log(`[delete-local-db] done. remaining in window=${totalAfter}`);
-    console.log("[delete-local-db] AppSettings preserved.");
+    console.log(`${prefix} done. remaining in window=${totalAfter}`);
+    console.log(`${prefix} AppSettings / users preserved.`);
   } finally {
     await prisma.$disconnect();
   }
@@ -242,7 +317,7 @@ async function main(): Promise<void> {
 
 void main().catch((error) => {
   console.error(
-    "[delete-local-db] failed:",
+    "[delete-db] failed:",
     error instanceof Error ? error.message : error,
   );
   process.exitCode = 1;
