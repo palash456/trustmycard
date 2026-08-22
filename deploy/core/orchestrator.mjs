@@ -1,5 +1,6 @@
 import { getAdapter } from "../adapters/base.mjs";
 import { buildImages } from "./build.mjs";
+import { ensureDockerDaemon } from "./docker.mjs";
 import {
   compileCaddyfile,
   compileEnvBundles,
@@ -84,6 +85,7 @@ export async function runDeploy(options) {
   }
 
   if (!options.skipBuild) {
+    ensureDockerDaemon();
     ctx.images = buildImages(ctx);
   } else {
     ctx.images = {
