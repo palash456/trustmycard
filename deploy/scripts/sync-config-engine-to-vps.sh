@@ -33,15 +33,20 @@ rsync -az -e "${RSYNC_SSH}" \
 rsync -az -e "${RSYNC_SSH}" \
   "${ROOT}/deploy/compose/docker-compose.micro.yml" \
   "${VPS_USER}@${VPS_HOST}:${REMOTE_PATH}/deploy/compose/docker-compose.micro.yml"
+rsync -az -e "${RSYNC_SSH}" \
+  "${ROOT}/deploy/scripts/" \
+  "${VPS_USER}@${VPS_HOST}:${REMOTE_PATH}/deploy/scripts/"
 
-echo "[sync-config-engine] recreating backend container (picks up compose volume mounts)"
+echo "[sync-config-engine] ensuring full stack is on the same compose network"
 ssh "${SSH_KEY[@]}" -o StrictHostKeyChecking=accept-new \
   "${VPS_USER}@${VPS_HOST}" \
-  "cd ${REMOTE_PATH} && TMC_ENV=production docker compose -p tmc-production-micro \
+  "chmod +x ${REMOTE_PATH}/deploy/scripts/reload-production-wallet.sh && \
+   cd ${REMOTE_PATH} && TMC_COMPILED_ENV_BACKEND=../compiled/production/backend.env TMC_COMPILED_ENV_WALLET=../compiled/production/wallet.env \
+   docker compose -p tmc-production-micro \
     -f deploy/compose/docker-compose.base.yml \
     -f deploy/compose/docker-compose.micro.yml \
     -f deploy/compose/docker-compose.external-data.yml \
     -f deploy/compose/docker-compose.micro-edge.yml \
-    up -d backend"
+    up -d"
 
 echo "[sync-config-engine] complete — retry Production config in admin"

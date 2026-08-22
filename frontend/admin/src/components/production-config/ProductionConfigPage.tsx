@@ -517,9 +517,39 @@ export function ProductionConfigPage() {
       };
       source.onerror = () => {
         source.close();
-        setBusy(false);
-        setDialogMode("rollback");
-        setError("Lost connection to the deployment stream.");
+        void (async () => {
+          const activeChangeId = started.data.changeId;
+          if (!activeChangeId) {
+            setBusy(false);
+            setDialogMode("rollback");
+            setError("Lost connection to the deployment stream.");
+            return;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 2500));
+          const audit = await fetchJson<Audit[]>(
+            "/api/production-config/history?limit=10",
+          );
+          const entry = audit.ok
+            ? audit.data.find((item) => item.changeId === activeChangeId)
+            : undefined;
+          setBusy(false);
+          if (entry?.result === "SUCCESS") {
+            void load();
+            setDialogMode("success");
+            return;
+          }
+          setDialogMode("rollback");
+          setError(
+            entry?.result
+              ? resolveDeployFailureMessage(events, {
+                  phase: "complete",
+                  message: entry.result,
+                  error: undefined,
+                  at: entry.completedAt,
+                })
+              : "Lost connection to the deployment stream. The wallet may still be restarting — check again in a minute.",
+          );
+        })();
       };
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to start update");
@@ -1383,7 +1413,9 @@ function Terminal({
               }
             >
               <span className="mr-2 text-[#71717a]">
-                {new Date(event.at).toLocaleTimeString()}
+                {event.at
+                  ? new Date(event.at).toLocaleTimeString()
+                  : "—"}
               </span>
               {event.phase === "log"
                 ? event.message

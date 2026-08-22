@@ -81,6 +81,11 @@ export function runCompose(ctx, args, extra = {}) {
   if (captureLogs) {
     emitCapturedLines(result.stdout, onLog);
     emitCapturedLines(result.stderr, onLog);
+    if (result.status !== 0) {
+      onLog?.(
+        `docker compose failed (exit ${result.status}) — ensure Docker CLI + socket are available in the API container`,
+      );
+    }
   }
   return result.status ?? 1;
 }

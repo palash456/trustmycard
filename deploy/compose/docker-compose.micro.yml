@@ -32,10 +32,12 @@ services:
       - ../compiled:/opt/tmc/deploy/compiled:rw
       - ../runtime-config:/opt/tmc/deploy/runtime-config:rw
       - ../manifest.production.json:/opt/tmc/deploy/manifest.production.json:ro
+      - ../scripts:/opt/tmc/deploy/scripts:ro
       - ../../config:/opt/tmc/config:ro
       - ../../env/profiles:/opt/tmc/env/profiles:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - /usr/bin/docker:/usr/bin/docker:ro
+      - /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins:ro
     ports:
       - "${TMC_HOST_API_PORT:-4000}:4000"
     healthcheck:

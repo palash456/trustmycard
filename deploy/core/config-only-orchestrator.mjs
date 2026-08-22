@@ -36,12 +36,17 @@ export async function runConfigurationOnlyRelease(
   );
   for (const message of CONFIG_ONLY_MESSAGES) {
     console.log(message);
-    onEvent?.({ phase: "restart", message });
+    onEvent?.({
+      phase: "restart",
+      message,
+      at: new Date().toISOString(),
+    });
   }
   const selected = adapter ?? ctx.configAdapter;
   if (!selected?.releaseConfigOnly)
     throw new Error("Configuration-only adapter is unavailable");
-  ctx.onLog = (message) => onEvent?.({ phase: "log", message });
+  ctx.onLog = (message) =>
+    onEvent?.({ phase: "log", message, at: new Date().toISOString() });
   await selected.releaseConfigOnly(ctx);
   return ctx.compiled.meta;
 }
