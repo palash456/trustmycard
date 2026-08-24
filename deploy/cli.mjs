@@ -1,5 +1,8 @@
 #!/usr/bin/env node
+import { applyNonTtyDefaults } from "./core/stdio.mjs";
 import { runDeploy, runDryRun } from "./core/orchestrator.mjs";
+
+applyNonTtyDefaults();
 
 function parseArgs(argv) {
   const options = {

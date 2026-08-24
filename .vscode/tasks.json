@@ -263,8 +263,23 @@
       "problemMatcher": []
     },
     {
+      "label": "Prod: Pull Config from VPS",
+      "detail": "PRODUCTION — pull runtime config + wallet.env FROM VPS to local (prevents stale local files overwriting admin changes on next deploy)",
+      "type": "shell",
+      "command": "npm run config:pull-vps",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "prod-config"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Prod: Deploy — Full",
-      "detail": "PRODUCTION — full Docker VPS deploy",
+      "detail": "PRODUCTION — full Docker VPS deploy. ⚠️ Run 'Prod: Pull Config from VPS' first if admin panel was used recently, to avoid overwriting VPS pixel/domain config.",
       "type": "shell",
       "command": "./deploy.sh production --provider=docker-vps",
       "options": {

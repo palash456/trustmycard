@@ -34,6 +34,25 @@ import {
   type ProductionPageStatus,
 } from "./ProductionBackendStatusChip";
 import { DeployProgressHint } from "./deploy-progress-hint";
+import { ConfigHealthBanner } from "./ConfigHealthBanner";
+
+type RuntimeStateSnapshot = {
+  META_PIXEL_ID?: string;
+  WEBSITE_DOMAIN?: string;
+  lastUpdatedAt?: string;
+  lastUpdatedBy?: string;
+  lastSource?: string;
+};
+
+type DriftSummary = {
+  hasDrift: boolean;
+  driftedKeys: string[];
+};
+
+type SyncWarning = {
+  show: boolean;
+  message: string;
+};
 
 type State = {
   WEBSITE_DOMAIN: string;
@@ -46,6 +65,9 @@ type State = {
   source?: string;
   deployedValues?: { META_PIXEL_ID?: string; WEBSITE_DOMAIN?: string } | null;
   configDrift?: { META_PIXEL_ID?: boolean; WEBSITE_DOMAIN?: boolean };
+  runtimeState?: RuntimeStateSnapshot;
+  drift?: DriftSummary;
+  syncWarning?: SyncWarning;
 };
 type Audit = {
   changeId: string;
@@ -70,6 +92,9 @@ type ConfigApiResponse = {
     platformDefaults?: { META_PIXEL_ID?: string; WEBSITE_DOMAIN?: string };
     deployedValues?: { META_PIXEL_ID?: string; WEBSITE_DOMAIN?: string } | null;
     configDrift?: { META_PIXEL_ID?: boolean; WEBSITE_DOMAIN?: boolean };
+    runtimeState?: RuntimeStateSnapshot;
+    drift?: DriftSummary;
+    syncWarning?: SyncWarning;
   };
   platformDefaults?: { META_PIXEL_ID?: string; WEBSITE_DOMAIN?: string };
   liveWebsite?: LiveWebsiteMetaPixel;
@@ -128,6 +153,9 @@ function normalizeConfigState(config: ConfigApiResponse): State | null {
   return {
     ...config.state,
     platformDefaultsActive: Boolean(platformPixelId),
+    runtimeState: config.state.runtimeState,
+    drift: config.state.drift,
+    syncWarning: config.state.syncWarning,
   };
 }
 type DialogMode = "form" | "console" | "success" | "rollback";
@@ -655,6 +683,15 @@ export function ProductionConfigPage() {
           </Button>
         </div>
       </header>
+
+      {pageEnabled && state ? (
+        <ConfigHealthBanner
+          drift={state.drift}
+          syncWarning={state.syncWarning}
+          runtimeState={state.runtimeState}
+          deployedValues={state.deployedValues}
+        />
+      ) : null}
 
       {!pageEnabled ? (
         <UnavailablePanel status={pageStatus.status} detail={pageStatus.detail} />

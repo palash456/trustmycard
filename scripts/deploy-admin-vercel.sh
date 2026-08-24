@@ -12,6 +12,11 @@
 #   plus ADMIN_API_KEY, ADMIN_SESSION_SECRET, ADMIN_PANEL_PASSWORD, etc.
 set -euo pipefail
 
+# VS Code task terminals are usually not TTYs — line-based progress avoids garbled output.
+if [[ ! -t 1 ]]; then
+  export CI=1 FORCE_COLOR=0
+fi
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ADMIN_DIR="$ROOT/frontend/admin"
 
@@ -26,6 +31,11 @@ if [[ ! -f "$ROOT/.vercel/project.json" ]]; then
   exit 1
 fi
 
+if ! vercel whoami >/dev/null 2>&1; then
+  echo "[deploy-admin] Vercel CLI not authenticated. Run: vercel login" >&2
+  exit 1
+fi
+
 if [[ "${SKIP_ADMIN_BUILD:-}" != "1" ]]; then
   echo "[deploy-admin] production build check (frontend workspace)..."
   cd "$ROOT/frontend"
@@ -36,6 +46,13 @@ fi
 
 echo "[deploy-admin] deploying to Vercel production..."
 cd "$ROOT"
-vercel --prod --yes
+vercel_log="$(mktemp)"
+trap 'rm -f "$vercel_log"' EXIT
+if ! vercel --prod --yes 2>&1 | tee "$vercel_log"; then
+  if grep -q "Not authorized" "$vercel_log"; then
+    echo "[deploy-admin] Vercel denied deploy access. Run 'vercel login' and confirm your account can deploy the linked project (see .vercel/project.json)." >&2
+  fi
+  exit 1
+fi
 
 echo "[deploy-admin] complete"

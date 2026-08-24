@@ -27,6 +27,33 @@ function managedConfigDrift(runtime, deployed) {
   };
 }
 
+const SYNC_WARNING_MESSAGE =
+  "VPS runtime config was updated via admin panel. Run 'npm run config:pull-vps' before next local deploy to avoid overwriting these changes.";
+const SYNC_WARNING_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+function buildDriftSummary(configDrift) {
+  const driftedKeys = Object.entries(configDrift ?? {})
+    .filter(([, drifted]) => drifted)
+    .map(([key]) => key);
+  return {
+    hasDrift: driftedKeys.length > 0,
+    driftedKeys,
+  };
+}
+
+function buildSyncWarning(runtime) {
+  const source = runtime.lastSource?.trim();
+  const updatedMs = Date.parse(String(runtime.lastUpdatedAt ?? ""));
+  const isRecent =
+    Number.isFinite(updatedMs) &&
+    Date.now() - updatedMs <= SYNC_WARNING_WINDOW_MS;
+  const show = source === "WEB_PORTAL" && isRecent;
+  return {
+    show,
+    message: show ? SYNC_WARNING_MESSAGE : "",
+  };
+}
+
 export async function getProductionConfig(environment = "production") {
   const platformDefaults = readPlatformDefaults(repoRoot);
   const runtime = readRuntimeState(environment);
@@ -35,6 +62,8 @@ export async function getProductionConfig(environment = "production") {
   const metaPixelId = resolved.META_PIXEL_ID;
   const deployedValues = tryReadDeployedManagedValues(environment);
   const configDrift = managedConfigDrift(runtime, deployedValues);
+  const drift = buildDriftSummary(configDrift);
+  const syncWarning = buildSyncWarning(runtime);
   const usesPlatform =
     Boolean(platformDefaults.WEBSITE_DOMAIN) ||
     Boolean(platformDefaults.META_PIXEL_ID);
@@ -55,6 +84,9 @@ export async function getProductionConfig(environment = "production") {
     runtimeState: {
       WEBSITE_DOMAIN: runtime.WEBSITE_DOMAIN,
       META_PIXEL_ID: runtime.META_PIXEL_ID,
+      lastUpdatedAt: runtime.lastUpdatedAt,
+      lastUpdatedBy: runtime.lastUpdatedBy,
+      lastSource: runtime.lastSource,
     },
     deployedValues: deployedValues
       ? {
@@ -63,6 +95,8 @@ export async function getProductionConfig(environment = "production") {
         }
       : null,
     configDrift,
+    drift,
+    syncWarning,
   };
 }
 export async function getConfigHistory(environment = "production", options) {

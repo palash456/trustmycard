@@ -5,6 +5,7 @@ import { spawnSync } from "child_process";
 import { composeEnv, composeFiles } from "../core/compose.mjs";
 import { transferImagesToHost } from "../core/image-transfer.mjs";
 import {
+  localRuntimeConfigDir,
   remoteRuntimeConfigDir,
   runtimeConfigSyncPlan,
 } from "../core/runtime-config-sync.mjs";
@@ -74,16 +75,84 @@ function sshExec(creds, remoteCommand) {
   if (result.status !== 0) throw new Error("SSH command failed");
 }
 
-function rsyncToRemote(creds, src, remoteDestPath) {
+function sshFetchText(creds, remoteCommand) {
+  const result = spawnSync(
+    "ssh",
+    [...sshBaseArgs(creds), sshTarget(creds), remoteCommand],
+    { encoding: "utf8" },
+  );
+  if (result.status !== 0) return null;
+  return result.stdout ?? "";
+}
+
+function parseRuntimeLastUpdatedAt(raw) {
+  if (!raw || typeof raw !== "object") return 0;
+  const ms = Date.parse(String(raw.lastUpdatedAt ?? ""));
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function formatRuntimeTimestamp(ms) {
+  if (!ms) return "(unknown)";
+  return new Date(ms).toISOString();
+}
+
+/**
+ * When VPS admin updated runtime state after the last local pull, skip pushing
+ * wallet.env and production.json so deploy does not overwrite admin changes.
+ */
+function remoteRuntimeStateIsNewerThanLocal(creds, remotePath, environment) {
+  const remoteDir = remoteRuntimeConfigDir(creds, remotePath);
+  const remoteStatePath = `${remoteDir}/${environment}.json`;
+  const remoteJson = sshFetchText(
+    creds,
+    `cat ${shellQuote(remoteStatePath)} 2>/dev/null || true`,
+  );
+  if (!remoteJson?.trim()) return { skip: false };
+
+  let remoteState;
+  try {
+    remoteState = JSON.parse(remoteJson);
+  } catch {
+    return { skip: false };
+  }
+
+  const remoteMs = parseRuntimeLastUpdatedAt(remoteState);
+  if (!remoteMs) return { skip: false };
+
+  const plan = runtimeConfigSyncPlan(environment, localRuntimeConfigDir());
+  if (!plan) return { skip: false };
+
+  let localState = null;
+  try {
+    localState = JSON.parse(readFileSync(plan.stateFile, "utf8"));
+  } catch {
+    return { skip: false };
+  }
+
+  const localMs = parseRuntimeLastUpdatedAt(localState);
+  if (remoteMs <= localMs) return { skip: false };
+
+  return {
+    skip: true,
+    remoteMs,
+    localMs,
+    remoteLabel: formatRuntimeTimestamp(remoteMs),
+    localLabel: formatRuntimeTimestamp(localMs),
+  };
+}
+
+function rsyncToRemote(creds, src, remoteDestPath, options = {}) {
   if (!existsSync(src)) {
     throw new Error(`Missing deploy bundle path: ${src}`);
   }
   const remote = `${sshTarget(creds)}:${remoteDestPath}`;
-  const result = spawnSync(
-    "rsync",
-    ["-az", "-e", rsyncSshCommand(creds), `${src}/`, remote],
-    { stdio: "inherit" },
-  );
+  const excludes = options.exclude ?? [];
+  const args = ["-az", "-e", rsyncSshCommand(creds)];
+  for (const pattern of excludes) {
+    args.push(`--exclude=${pattern}`);
+  }
+  args.push(`${src}/`, remote);
+  const result = spawnSync("rsync", args, { stdio: "inherit" });
   if (result.status !== 0) throw new Error(`rsync failed for ${src}`);
 }
 
@@ -103,6 +172,17 @@ function rsyncFileToRemote(creds, src, remoteDestPath) {
 function rsyncBundle(creds, remotePath, environment) {
   sshExec(creds, `mkdir -p ${remotePath}/deploy/compiled/${environment}`);
 
+  const staleGuard = remoteRuntimeStateIsNewerThanLocal(
+    creds,
+    remotePath,
+    environment,
+  );
+  if (staleGuard.skip) {
+    console.warn(
+      `⚠️  WARNING: VPS runtime config is newer than local (VPS: ${staleGuard.remoteLabel}, Local: ${staleGuard.localLabel}). Skipping wallet.env and production.json rsync to avoid overwriting admin changes. Run 'npm run config:pull-vps' first.`,
+    );
+  }
+
   rsyncToRemote(
     creds,
     join(deployRoot, "compose"),
@@ -112,10 +192,12 @@ function rsyncBundle(creds, remotePath, environment) {
   if (existsSync(caddyDir)) {
     rsyncToRemote(creds, caddyDir, `${remotePath}/deploy/caddy/`);
   }
+  const compiledExclude = staleGuard.skip ? ["wallet.env"] : [];
   rsyncToRemote(
     creds,
     join(deployRoot, "compiled", environment),
     `${remotePath}/deploy/compiled/${environment}/`,
+    { exclude: compiledExclude },
   );
 
   const configEngineDir = join(deployRoot, "config-engine");
@@ -163,7 +245,9 @@ function rsyncBundle(creds, remotePath, environment) {
     );
   }
 
-  syncRuntimeConfigToRemote(creds, remotePath, environment);
+  if (!staleGuard.skip) {
+    syncRuntimeConfigToRemote(creds, remotePath, environment);
+  }
 }
 
 function syncRuntimeConfigToRemote(creds, remotePath, environment) {

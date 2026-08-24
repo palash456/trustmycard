@@ -291,12 +291,32 @@ test("getProductionConfig reports drift between runtime state and deployed walle
     assert.equal(config.runtimeState.META_PIXEL_ID, "111111111111111");
     assert.equal(config.deployedValues?.META_PIXEL_ID, "222222222222222");
     assert.equal(config.configDrift.META_PIXEL_ID, true);
+    assert.equal(config.drift.hasDrift, true);
+    assert.deepEqual(config.drift.driftedKeys, ["META_PIXEL_ID"]);
+    assert.equal(config.syncWarning.show, false);
   } finally {
     if (priorRuntime === undefined) delete process.env.TMC_RUNTIME_CONFIG_DIR;
     else process.env.TMC_RUNTIME_CONFIG_DIR = priorRuntime;
     if (priorCompiled === undefined) delete process.env.TMC_COMPILED_DIR;
     else process.env.TMC_COMPILED_DIR = priorCompiled;
   }
+});
+
+test("getProductionConfig syncWarning when recent WEB_PORTAL update", async () => {
+  await withRuntimeDir(async () => {
+    writeRuntimeState(
+      "production",
+      state({
+        environment: "production",
+        lastSource: "WEB_PORTAL",
+        lastUpdatedAt: new Date().toISOString(),
+      }),
+    );
+    const config = await getProductionConfig("production");
+    assert.equal(config.syncWarning.show, true);
+    assert.match(config.syncWarning.message, /config:pull-vps/);
+    assert.equal(config.runtimeState.lastSource, "WEB_PORTAL");
+  });
 });
 
 test("migrate init can seed from compiled production wallet.env", async () => {
