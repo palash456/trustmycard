@@ -36,7 +36,6 @@ import {
 import { DeployProgressHint } from "./deploy-progress-hint";
 import {
   DeployPresentationRunner,
-  randomPresentationDurationMs,
   type PresentationEvent,
 } from "./simulated-deploy-presentation";
 import { ConfigHealthBanner } from "./ConfigHealthBanner";
@@ -619,7 +618,6 @@ export function ProductionConfigPage() {
       setChangeId(started.data.changeId);
 
       const presentationRunner = new DeployPresentationRunner(
-        randomPresentationDurationMs(),
         (presentationEvents: PresentationEvent[]) => {
           setEvents(presentationEvents as Event[]);
         },

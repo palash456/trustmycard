@@ -16,14 +16,14 @@ export function SiteHeader({ getStartedButton }: SiteHeaderProps) {
   return (
     <header className="sticky top-0 z-50 border-b border-[#ECECEF] bg-white/90 backdrop-blur-xl">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex min-h-16 items-center justify-between py-2 sm:min-h-20 sm:py-3 lg:min-h-24 lg:py-4">
+        <div className="flex min-h-16 items-center justify-between p-2 sm:min-h-20 sm:py-3 lg:min-h-24 lg:py-4">
           <Link href="/" className="flex shrink-0 items-center">
             <Image
               src="/logos/main.png"
               alt={t("brand.name")}
               width={1507}
               height={328}
-              className="h-10 w-auto sm:h-8 lg:h-10"
+              className="h-8 w-auto sm:h-8 lg:h-9"
               unoptimized
               priority
             />

@@ -195,7 +195,6 @@ function MarketingHomeContent() {
             >
               <Reveal>
                 <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#ECECEF] bg-white px-4 py-2 text-xs font-semibold text-[#0400FF] sm:text-sm">
-                  <SparkleIcon />
                   {t("home.hero.eyebrow")}
                 </div>
               </Reveal>

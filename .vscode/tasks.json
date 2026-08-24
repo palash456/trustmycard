@@ -264,7 +264,7 @@
     },
     {
       "label": "Prod: Pull Config from VPS",
-      "detail": "PRODUCTION — pull runtime config + wallet.env FROM VPS to local (prevents stale local files overwriting admin changes on next deploy)",
+      "detail": "PRODUCTION — pull runtime config + wallet.env FROM VPS to local (prevents stale local files overwriting admin WEBSITE_DOMAIN changes on next deploy)",
       "type": "shell",
       "command": "npm run config:pull-vps",
       "options": {
@@ -279,7 +279,7 @@
     },
     {
       "label": "Prod: Deploy — Full",
-      "detail": "PRODUCTION — full Docker VPS deploy. ⚠️ Run 'Prod: Pull Config from VPS' first if admin panel was used recently, to avoid overwriting VPS pixel/domain config.",
+      "detail": "PRODUCTION — full Docker VPS deploy. ⚠️ Run 'Prod: Pull Config from VPS' first if WEBSITE_DOMAIN was changed via admin recently. Meta Pixel is DB-driven — no pull needed for pixel-only changes.",
       "type": "shell",
       "command": "./deploy.sh production --provider=docker-vps",
       "options": {
@@ -309,11 +309,14 @@
     },
     {
       "label": "production:domain:update",
-      "detail": "PRODUCTION — interactive website domain update (config-only deploy)",
+      "detail": "PRODUCTION — interactive WEBSITE_DOMAIN update (file-based config deploy: compile + Caddy/wallet)",
       "type": "shell",
-      "command": "node scripts/production-config-update.mjs",
+      "command": "node scripts/production-config-update.mjs --preset=domain",
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "TMC_ENV": "production"
+        }
       },
       "presentation": {
         "reveal": "always",
@@ -324,11 +327,14 @@
     },
     {
       "label": "production:meta-pixel:update",
-      "detail": "PRODUCTION — Meta Pixel ID update + config:sync-vps (production admin stays aligned)",
+      "detail": "PRODUCTION — Meta Pixel ID via production API → AppSettings DB (instant, no wallet restart). Requires WEBSITE_DOMAIN in config/platform.env + PRODUCTION_ADMIN_API_KEY in env/profiles/production/admin.env",
       "type": "shell",
       "command": "node scripts/production-config-update.mjs --preset=pixel",
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "TMC_ENV": "production"
+        }
       },
       "presentation": {
         "reveal": "always",

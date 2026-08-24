@@ -4,6 +4,8 @@ import { stdin as input, stdout as output } from "node:process";
 import * as readline from "node:readline/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadTmcEnv } from "../config/load-env.mjs";
+import { resolveProductionBackendUrl } from "../config/website-domain.mjs";
 import { getProductionConfig } from "../deploy/config-engine/index.mjs";
 import {
   readPlatformDefaults,
@@ -27,13 +29,67 @@ function logPrefix() {
   return "[production-config]";
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function resolveApiCredentials() {
+  const baseUrl = resolveProductionBackendUrl();
+  const apiKey =
+    process.env.PRODUCTION_ADMIN_API_KEY?.trim() ||
+    process.env.ADMIN_API_KEY?.trim();
+  if (!baseUrl || !apiKey) {
+    throw new Error(
+      "Production API not configured. Set WEBSITE_DOMAIN in config/platform.env and PRODUCTION_ADMIN_API_KEY in env/profiles/production/admin.env (or ADMIN_API_KEY on Vercel).",
+    );
+  }
+  return { baseUrl: baseUrl.replace(/\/$/, ""), apiKey };
+}
+
+async function loadCurrentConfigFromApi() {
+  const { baseUrl, apiKey } = resolveApiCredentials();
+  const response = await fetch(`${baseUrl}/v1/api/admin/production-config`, {
+    headers: {
+      accept: "application/json",
+      "x-admin-api-key": apiKey,
+    },
+    cache: "no-store",
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `Production API status failed (${response.status}): ${text.slice(0, 200)}`,
+    );
+  }
+  const body = await response.json();
+  const state = body.state ?? body;
+  return {
+    WEBSITE_DOMAIN: String(state.WEBSITE_DOMAIN ?? "").trim(),
+    META_PIXEL_ID: String(state.META_PIXEL_ID ?? "").trim(),
+    source: state.source ?? "DATABASE",
+  };
+}
+
 async function loadCurrentConfig() {
   try {
-    return await getProductionConfig("production");
-  } catch (error) {
-    throw new Error(
-      `${error.message}\nRun: ./scripts/config-update.sh init --from-compiled`,
+    return await loadCurrentConfigFromApi();
+  } catch (apiError) {
+    console.warn(
+      `${logPrefix()} API status unavailable (${apiError instanceof Error ? apiError.message : apiError}); falling back to runtime files.`,
     );
+    try {
+      const fileState = await getProductionConfig("production");
+      return {
+        WEBSITE_DOMAIN: fileState.WEBSITE_DOMAIN?.trim() ?? "",
+        META_PIXEL_ID: fileState.META_PIXEL_ID?.trim() ?? "",
+        source: fileState.source ?? "RUNTIME_CONFIG",
+      };
+    } catch (fileError) {
+      throw new Error(
+        `${apiError instanceof Error ? apiError.message : apiError}\n${fileError instanceof Error ? fileError.message : fileError}\nRun: ./scripts/config-update.sh init --from-compiled`,
+      );
+    }
   }
 }
 
@@ -92,6 +148,11 @@ function printCurrentValues(config, livePixel) {
     }
   }
   console.log(`${prefix} resolved source: ${source}`);
+  if (source === "DATABASE") {
+    console.log(
+      `${prefix} note: Meta Pixel is stored in AppSettings (admin API). No wallet restart required.`,
+    );
+  }
   console.log("════════════════════════════════════════════════════════════");
   console.log("");
 }
@@ -199,30 +260,116 @@ async function requirePassword(rl) {
   }
 }
 
-function runConfigUpdate(command, value) {
+function runDomainConfigUpdate(value, actor) {
   const script = join(repoRoot, "scripts", "config-update.sh");
-  const args =
-    command === "domain"
-      ? ["domain", `https://${value}`]
-      : ["pixel", value];
-  const actor = `${process.env.USER ?? "unknown"}@vscode-task`;
-
   console.log("");
-  console.log(`${logPrefix()} running: ./scripts/config-update.sh ${args.join(" ")}`);
+  console.log(
+    `${logPrefix()} running domain config deploy: ./scripts/config-update.sh domain https://${value}`,
+  );
   console.log("");
 
-  const result = spawnSync(script, [...args, "--actor", actor, "--source", "VSCODE_TASK"], {
-    cwd: repoRoot,
-    stdio: "inherit",
-    env: { ...process.env },
-  });
+  const result = spawnSync(
+    script,
+    ["domain", `https://${value}`, "--actor", actor, "--source", "VSCODE_TASK"],
+    {
+      cwd: repoRoot,
+      stdio: "inherit",
+      env: { ...process.env, TMC_ENV: "production" },
+    },
+  );
 
   if (result.status !== 0) {
-    throw new Error(`config-update ${command} failed (exit ${result.status ?? "unknown"})`);
+    throw new Error(`config-update domain failed (exit ${result.status ?? "unknown"})`);
   }
 }
 
+async function waitForApiChange(changeId, actor) {
+  const { baseUrl, apiKey } = resolveApiCredentials();
+  const deadline = Date.now() + 120_000;
+  while (Date.now() < deadline) {
+    const response = await fetch(
+      `${baseUrl}/v1/api/admin/production-config/history?limit=30`,
+      {
+        headers: {
+          accept: "application/json",
+          "x-admin-api-key": apiKey,
+        },
+        cache: "no-store",
+        signal: AbortSignal.timeout(30_000),
+      },
+    );
+    if (!response.ok) {
+      await sleep(800);
+      continue;
+    }
+    const history = await response.json();
+    if (!Array.isArray(history)) {
+      await sleep(800);
+      continue;
+    }
+    const entry = history.find((row) => row.changeId === changeId);
+    if (!entry) {
+      await sleep(800);
+      continue;
+    }
+    if (entry.result === "SUCCESS") return entry;
+    if (entry.result === "FAILED" || entry.result === "ROLLED_BACK") {
+      throw new Error(entry.error || `Pixel update failed (${entry.result})`);
+    }
+    await sleep(800);
+  }
+  throw new Error(
+    "Timed out waiting for production API to confirm the Meta Pixel update.",
+  );
+}
+
+async function runPixelApiUpdate(pixelId, actor) {
+  const { baseUrl, apiKey } = resolveApiCredentials();
+  console.log("");
+  console.log(
+    `${logPrefix()} updating Meta Pixel via production API (AppSettings database)`,
+  );
+  console.log(`${logPrefix()} POST ${baseUrl}/v1/api/admin/production-config/pixel`);
+  console.log("");
+
+  const response = await fetch(`${baseUrl}/v1/api/admin/production-config/pixel`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
+      "x-admin-api-key": apiKey,
+      "x-admin-actor": actor,
+    },
+    body: JSON.stringify({ pixel: pixelId }),
+    signal: AbortSignal.timeout(30_000),
+  });
+
+  const text = await response.text();
+  if (!response.ok) {
+    throw new Error(
+      `Pixel API update failed (${response.status}): ${text.slice(0, 300)}`,
+    );
+  }
+
+  let changeId;
+  try {
+    const body = JSON.parse(text);
+    changeId = body.changeId;
+  } catch {
+    throw new Error("Pixel API did not return a valid JSON response.");
+  }
+  if (!changeId) {
+    throw new Error("Pixel API did not return a change id.");
+  }
+
+  console.log(`${logPrefix()} change id: ${changeId} — waiting for confirmation…`);
+  await waitForApiChange(changeId, actor);
+}
+
 async function main() {
+  process.env.TMC_ENV = process.env.TMC_ENV || "production";
+  loadTmcEnv("admin");
+
   const { preset } = parseArgs(process.argv.slice(2));
   const config = await loadCurrentConfig();
   const platformDefaults = readPlatformDefaults(repoRoot);
@@ -235,28 +382,31 @@ async function main() {
   printCurrentValues(config, livePixel);
 
   const rl = readline.createInterface({ input, output });
+  const actor = `${process.env.USER ?? "unknown"}@vscode-task`;
   try {
     const scope = await askScope(rl, preset);
     await requireConfirmation(rl, scope);
 
-    const updates = [];
+    const domainUpdates = [];
+    const pixelUpdates = [];
+
     if (scope === "domain" || scope === "both") {
       warnPlatformOverride("WEBSITE_DOMAIN", platformDefaults);
       const nextDomain = await promptDomain(rl, currentDomain);
-      updates.push({ command: "domain", value: nextDomain });
+      domainUpdates.push(nextDomain);
     }
     if (scope === "pixel" || scope === "both") {
-      warnPlatformOverride("META_PIXEL_ID", platformDefaults);
       const nextPixel = await promptPixel(rl, currentPixel);
-      updates.push({ command: "pixel", value: nextPixel });
+      pixelUpdates.push(nextPixel);
     }
 
     await requirePassword(rl);
 
-    const results = [];
-    for (const update of updates) {
-      runConfigUpdate(update.command, update.value);
-      results.push(update);
+    for (const nextDomain of domainUpdates) {
+      runDomainConfigUpdate(nextDomain, actor);
+    }
+    for (const nextPixel of pixelUpdates) {
+      await runPixelApiUpdate(nextPixel, actor);
     }
 
     const refreshed = await loadCurrentConfig();
@@ -264,21 +414,20 @@ async function main() {
     console.log("════════════════════════════════════════════════════════════");
     console.log("  UPDATE SUCCEEDED");
     console.log("════════════════════════════════════════════════════════════");
-    for (const update of results) {
-      if (update.command === "domain") {
-        console.log(
-          `${logPrefix()} production domain: ${currentDomain || "(none)"} → ${refreshed.WEBSITE_DOMAIN}`,
-        );
-      } else {
-        console.log(
-          `${logPrefix()} Meta Pixel ID: ${currentPixel || "(none)"} → ${refreshed.META_PIXEL_ID}`,
-        );
-      }
-    }
-    console.log(`${logPrefix()} deployment: configuration-only release completed`);
-    if (results.length > 0) {
+    for (const nextDomain of domainUpdates) {
       console.log(
-        `${logPrefix()} VPS runtime record synced (npm run config:sync-vps) for production admin`,
+        `${logPrefix()} production domain: ${currentDomain || "(none)"} → ${refreshed.WEBSITE_DOMAIN}`,
+      );
+      console.log(
+        `${logPrefix()} domain change: configuration-only deploy completed (Caddy/wallet may restart).`,
+      );
+    }
+    for (const nextPixel of pixelUpdates) {
+      console.log(
+        `${logPrefix()} Meta Pixel ID: ${currentPixel || "(none)"} → ${refreshed.META_PIXEL_ID}`,
+      );
+      console.log(
+        `${logPrefix()} pixel change: saved to AppSettings — live on next website page load (no wallet restart).`,
       );
     }
     console.log("════════════════════════════════════════════════════════════");
