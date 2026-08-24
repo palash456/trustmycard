@@ -60,5 +60,10 @@ export type PublicPlatformConfigResponse = {
   ok: boolean;
   config: PublicPlatformConfig;
   settings: Record<string, unknown>;
+  /** Database-driven production runtime values (Meta Pixel, website domain). */
+  runtime: {
+    metaPixelId: string | null;
+    websiteDomain: string | null;
+  };
   timestamp: string;
 };

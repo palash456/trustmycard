@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Recreate wallet after config-only META_PIXEL_ID update (VPS host or backend container with docker.sock).
+# Recreate wallet after config-only WEBSITE_DOMAIN update (VPS host or backend container with docker.sock).
 set -euo pipefail
 
 ROOT="${TMC_REPO_ROOT:-/opt/tmc}"
@@ -36,5 +36,13 @@ done
 
 echo "[reload-wallet] restarting caddy so upstream picks up the new wallet container"
 "${COMPOSE[@]}" restart caddy >/dev/null 2>&1 || true
+
+echo "[reload-wallet] waiting for wallet BFF after caddy restart (up to 60s)"
+for _ in $(seq 1 30); do
+  if curl -fsS "http://127.0.0.1:${TMC_HOST_WALLET_PORT:-3000}/api/settings/public" >/dev/null 2>&1; then
+    break
+  fi
+  sleep 2
+done
 
 echo "[reload-wallet] done"

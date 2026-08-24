@@ -133,13 +133,12 @@ function loadPlatformEnv() {
 }
 
 function resolveProductionRuntimeState(environment, runtimeState) {
-  if (runtimeState) return runtimeState;
+  if (runtimeState) {
+    return { WEBSITE_DOMAIN: runtimeState.WEBSITE_DOMAIN };
+  }
   if (environment === "production" && runtimeStateExists(environment)) {
     const state = readRuntimeState(environment);
-    return {
-      WEBSITE_DOMAIN: state.WEBSITE_DOMAIN,
-      META_PIXEL_ID: state.META_PIXEL_ID,
-    };
+    return { WEBSITE_DOMAIN: state.WEBSITE_DOMAIN };
   }
   return null;
 }
@@ -171,6 +170,8 @@ export function compileEnvBundles(ctx, runtimeState = null) {
     ...platformBackend
   } = effectivePlatform;
   const website = { ...profile.website };
+  delete website.META_PIXEL_ID;
+  delete website.META_PIXEL_APP_URL;
   const admin = { ...profile.admin };
 
   const origins = publicOrigins(environment, manifest, effectivePlatform);
@@ -295,8 +296,14 @@ export function compileEnvBundles(ctx, runtimeState = null) {
   };
   delete workerEnv.PORT;
 
+  const {
+    META_PIXEL_ID: _walletMetaPixel,
+    META_PIXEL_APP_URL: _walletMetaPixelAppUrl,
+    ...platformForWallet
+  } = effectivePlatform;
+
   const walletEnv = {
-    ...mergeNonEmpty(effectivePlatform, website),
+    ...mergeNonEmpty(platformForWallet, website),
     NODE_ENV: "production",
     TMC_ENV: environment,
     BACKEND_API_URL: internalApiUrl,
@@ -305,11 +312,6 @@ export function compileEnvBundles(ctx, runtimeState = null) {
       website.NEXT_PUBLIC_PROJECT_ID?.trim() ||
       effectivePlatform.NEXT_PUBLIC_PROJECT_ID?.trim() ||
       "",
-    META_PIXEL_ID:
-      environment === "production"
-        ? effectivePlatform.META_PIXEL_ID || website.META_PIXEL_ID || ""
-        : "",
-    META_PIXEL_APP_URL: environment === "production" ? walletOrigin : "",
     // Expose the bare domain for security.txt canonical URL (derived from walletOrigin).
     NEXT_PUBLIC_WEBSITE_DOMAIN:
       environment === "production" ? origins.websiteDomain : "",

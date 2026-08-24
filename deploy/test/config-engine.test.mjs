@@ -27,7 +27,7 @@ import {
   migrateInit,
   readCompiledManagedValues,
 } from "../config-engine/migrate-init.mjs";
-import { verifyRetryPolicy } from "../core/verify.mjs";
+import { verifyRetryPolicy, resolveVerifyOrigins } from "../core/verify.mjs";
 
 function state(overrides = {}) {
   return {
@@ -326,15 +326,14 @@ test("migrate init can seed from compiled production wallet.env", async () => {
   try {
     const compiled = readCompiledManagedValues("production");
     assert.ok(compiled.domain);
-    assert.match(compiled.pixel, /^\d{15,16}$/);
     const state = await migrateInit({
       environment: "test",
       domain: compiled.domain,
-      pixel: compiled.pixel,
+      pixel: "123456789012345",
       actor: "tester@host",
     });
     assert.equal(state.WEBSITE_DOMAIN, compiled.domain);
-    assert.equal(state.META_PIXEL_ID, compiled.pixel);
+    assert.equal(state.META_PIXEL_ID, "123456789012345");
   } finally {
     if (prior === undefined) delete process.env.TMC_RUNTIME_CONFIG_DIR;
     else process.env.TMC_RUNTIME_CONFIG_DIR = prior;
@@ -369,13 +368,50 @@ test("cli status reads runtime state", () => {
 });
 
 test("domain migration verify uses extended TLS/ACME retry window", () => {
-  const defaultPolicy = verifyRetryPolicy({ changedKey: "META_PIXEL_ID" });
-  assert.equal(defaultPolicy.retries, 15);
-  assert.equal(defaultPolicy.delayMs, 2000);
-  assert.equal(defaultPolicy.reason, null);
+  const pixelPolicy = verifyRetryPolicy({ changedKey: "META_PIXEL_ID" });
+  assert.equal(pixelPolicy.retries, 30);
+  assert.equal(pixelPolicy.delayMs, 3000);
+  assert.match(pixelPolicy.reason, /wallet container restart/);
 
   const domainPolicy = verifyRetryPolicy({ changedKey: "WEBSITE_DOMAIN" });
-  assert.equal(domainPolicy.retries, 90);
-  assert.equal(domainPolicy.delayMs, 4000);
+  assert.equal(domainPolicy.retries, 12);
+  assert.equal(domainPolicy.delayMs, 5000);
   assert.match(domainPolicy.reason, /domain migration/);
+});
+
+test("resolveVerifyOrigins uses Docker network for config-only micro deploy", () => {
+  const origins = resolveVerifyOrigins(
+    { options: { configOnly: true } },
+    { topology: "micro", domains: { api: "https://api.example.com" } },
+    {
+      meta: {
+        origins: {
+          apiOrigin: "https://api.example.com",
+          walletOrigin: "https://wallet.example.com",
+        },
+      },
+    },
+  );
+  assert.equal(origins.mode, "internal");
+  assert.equal(origins.api, "http://backend:4000");
+  assert.equal(origins.wallet, "http://wallet:3000");
+  assert.equal(origins.publicWallet, "https://wallet.example.com");
+});
+
+test("resolveVerifyOrigins uses public URLs for full deploy", () => {
+  const origins = resolveVerifyOrigins(
+    { options: { configOnly: false } },
+    { topology: "micro" },
+    {
+      meta: {
+        origins: {
+          apiOrigin: "https://api.example.com",
+          walletOrigin: "https://wallet.example.com",
+        },
+      },
+    },
+  );
+  assert.equal(origins.mode, "public");
+  assert.equal(origins.api, "https://api.example.com");
+  assert.equal(origins.wallet, "https://wallet.example.com");
 });

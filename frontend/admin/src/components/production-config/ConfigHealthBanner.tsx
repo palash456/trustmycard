@@ -1,5 +1,11 @@
 import { AlertTriangle } from "lucide-react";
 
+function formatConfigTimestamp(value?: string | null): string | null {
+  if (!value?.trim()) return null;
+  const ms = Date.parse(value);
+  return Number.isFinite(ms) ? new Date(ms).toLocaleString() : null;
+}
+
 export type ConfigDriftSummary = {
   hasDrift: boolean;
   driftedKeys: string[];
@@ -71,7 +77,7 @@ export function ConfigHealthBanner({
   if (!showDrift && !showSyncWarning) return null;
 
   const adminUpdatedAt = runtimeState?.lastUpdatedAt
-    ? new Date(runtimeState.lastUpdatedAt).toLocaleString()
+    ? formatConfigTimestamp(runtimeState.lastUpdatedAt)
     : null;
 
   return (

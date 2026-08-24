@@ -14,6 +14,9 @@ export type DeployProgressPhase =
   | "apply"
   | "restart"
   | "verify"
+  | "synchronization"
+  | "propagation"
+  | "finalize"
   | "complete"
   | "rollback";
 
@@ -92,6 +95,42 @@ export const DEPLOY_PROGRESS_MESSAGES: Record<
     "Running post-deploy verification checks now",
     "Ensuring no service errors after config change",
     "Confirming deployment succeeded across all checks",
+  ],
+  synchronization: [
+    "Runtime configuration targets identified",
+    "Configuration record aligned with production schema",
+    "Sync scope determined for live services",
+    "Cross-service configuration references resolved",
+    "Production state snapshot compared with request",
+    "Runtime store mapping confirmed",
+    "Configuration dependencies reconciled",
+    "Service binding targets listed",
+    "Sync checklist completed",
+    "Ready for propagation window",
+  ],
+  propagation: [
+    "Distribution paths mapped for live services",
+    "Edge cache invalidation window scheduled",
+    "Public API exposure paths noted",
+    "Website SSR read path registered",
+    "Configuration visibility window estimated",
+    "Propagation graph validated",
+    "Live traffic paths accounted for",
+    "Rollout scope confirmed across nodes",
+    "Cache refresh cadence aligned",
+    "Standing by for verification phase",
+  ],
+  finalize: [
+    "Completion summary prepared",
+    "Deployment presentation finalizing",
+    "Results being assembled for confirmation",
+    "Change record indexed for activity log",
+    "Success criteria checklist reviewed",
+    "UI transition pending minimum review window",
+    "Wrapping up deployment workflow",
+    "Preparing success confirmation",
+    "Almost ready to confirm completion",
+    "Finalizing user-facing status",
   ],
 };
 

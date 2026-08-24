@@ -17,16 +17,16 @@ function value(name) {
 }
 export function readCompiledManagedValues(environment = "production") {
   const deployed = tryReadDeployedManagedValues(environment);
-  if (!deployed?.domain || !deployed.pixel) {
+  if (!deployed?.domain) {
     const walletEnv = join(compiledDir(environment), "wallet.env");
     throw new Error(
       `Missing ${walletEnv}. Run ./deploy.sh production --dry-run first.`,
     );
   }
-  return { domain: deployed.domain, pixel: deployed.pixel };
+  return { domain: deployed.domain, pixel: deployed.pixel ?? "" };
 }
 
-/** Read deployed wallet.env managed keys without throwing when the file is absent. */
+/** Read deployed wallet.env domain (META_PIXEL_ID is DB-driven — not in wallet.env). */
 export function tryReadDeployedManagedValues(environment = "production") {
   const walletEnv = join(compiledDir(environment), "wallet.env");
   if (!existsSync(walletEnv)) return null;
@@ -34,12 +34,11 @@ export function tryReadDeployedManagedValues(environment = "production") {
   const domain =
     values.WEBSITE_DOMAIN?.trim() ||
     normalizeWebsiteDomain(values.NEXT_PUBLIC_WEBSITE_DOMAIN ?? "");
-  const pixel = values.META_PIXEL_ID?.trim() ?? "";
   return {
     domain,
-    pixel,
+    pixel: "",
     WEBSITE_DOMAIN: domain,
-    META_PIXEL_ID: pixel,
+    META_PIXEL_ID: "",
   };
 }
 export async function migrateInit({
@@ -95,7 +94,7 @@ if (import.meta.url === `file://${process.argv[1]}`)
   migrateInit()
     .then(() =>
       console.log(
-        "Runtime state initialized. Verify it, then empty WEBSITE_DOMAIN and META_PIXEL_ID in config/platform.env.",
+        "Runtime state initialized. Verify it, then empty WEBSITE_DOMAIN in config/platform.env. Meta Pixel is managed in AppSettings (admin panel).",
       ),
     )
     .catch((error) => {

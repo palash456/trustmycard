@@ -46,9 +46,6 @@ function buildArgsFor(component, ctx) {
       ? [
           "NEXT_PUBLIC_APP_URL",
           "NEXT_PUBLIC_PROJECT_ID",
-          ...(ctx.environment === "production"
-            ? ["META_PIXEL_ID", "META_PIXEL_APP_URL"]
-            : []),
           ...eligibilityEnvVarNames(),
         ]
       : component === "marketing"

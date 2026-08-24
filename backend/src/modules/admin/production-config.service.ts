@@ -1,13 +1,39 @@
 import { Injectable } from "@nestjs/common";
-import { spawn } from "node:child_process";
-import { resolve } from "node:path";
 import { Observable } from "rxjs";
+import { ConfigService } from "../../config/config.service";
+import { SETTING_KEYS } from "../../config/settings-keys";
+import {
+  validateMetaPixelId,
+  validateWebsiteDomainInput,
+} from "../../config/runtime-config.validation";
+import {
+  appendProductionConfigAudit,
+  readProductionConfigAudit,
+} from "./production-config-audit";
 
 type ConfigEvent = Record<string, unknown> & {
   changeId?: string;
   phase?: string;
   result?: string;
   error?: string;
+  message?: string;
+  at?: string;
+};
+
+type AuditRecord = {
+  changeId: string;
+  key: string;
+  priorValue: string | null;
+  requestedValue: string | null;
+  finalValue: string | null;
+  actor: string;
+  source: string;
+  startedAt: string;
+  completedAt: string;
+  phase: string;
+  result: string;
+  events: ConfigEvent[];
+  error: string | null;
 };
 
 @Injectable()
@@ -18,9 +44,7 @@ export class ProductionConfigService {
     Set<(event: ConfigEvent) => void>
   >();
 
-  private repoRoot(): string {
-    return process.env.TMC_REPO_ROOT?.trim() || resolve(process.cwd(), "..");
-  }
+  constructor(private readonly config: ConfigService) {}
 
   private emit(changeId: string, event: ConfigEvent): void {
     const entries = this.events.get(changeId) ?? [];
@@ -29,91 +53,79 @@ export class ProductionConfigService {
     for (const listener of this.listeners.get(changeId) ?? []) listener(event);
   }
 
-  private run(args: string[]): Promise<unknown> {
-    return new Promise((resolveResult, reject) => {
-      const child = spawn(
-        process.execPath,
-        ["deploy/config-engine/cli.mjs", ...args, "--json"],
-        {
-          cwd: this.repoRoot(),
-          env: process.env,
-          stdio: ["ignore", "pipe", "pipe"],
-        },
-      );
-      let output = "";
-      let error = "";
-      child.stdout.setEncoding("utf8");
-      child.stderr.setEncoding("utf8");
-      child.stdout.on("data", (chunk: string) => {
-        output += chunk;
-      });
-      child.stderr.on("data", (chunk: string) => {
-        error += chunk;
-      });
-      child.on("error", reject);
-      child.on("close", (code) => {
-        const records = output
-          .split("\n")
-          .filter(Boolean)
-          .map((line) => JSON.parse(line) as ConfigEvent);
-        if (code !== 0) {
-          return reject(
-            new Error(
-              String(
-                records.at(-1)?.error ??
-                  records.at(-1)?.message ??
-                  error.trim() ??
-                  "Configuration command failed",
-              ),
-            ),
-          );
-        }
-        resolveResult(records.at(-1) ?? records[0]);
-      });
-    });
+  private allocateChangeId(): string {
+    const now = new Date();
+    const stamp = now.toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
+    return `CFG-${stamp}`;
   }
 
-  status(): Promise<unknown> {
-    return this.run(["status"]);
+  private dbSettingValue(key: string): string | null {
+    const raw = this.config.get<string>(key);
+    if (typeof raw === "string" && raw.trim()) return raw.trim();
+    if (raw != null && String(raw).trim()) return String(raw).trim();
+    return null;
+  }
+
+  async status(): Promise<unknown> {
+    const pixelMeta = await this.config.getRuntimeSettingMeta(
+      SETTING_KEYS.META_PIXEL_ID,
+    );
+    const domainMeta = await this.config.getRuntimeSettingMeta(
+      SETTING_KEYS.WEBSITE_DOMAIN,
+    );
+    const dbPixel = this.dbSettingValue(SETTING_KEYS.META_PIXEL_ID);
+    const dbDomain = this.dbSettingValue(SETTING_KEYS.WEBSITE_DOMAIN);
+
+    const metaPixelId =
+      dbPixel ?? this.config.getMetaPixelId() ?? "";
+    const websiteDomain =
+      dbDomain ?? this.config.getWebsiteDomain() ?? "";
+
+    const latestMeta =
+      !pixelMeta && !domainMeta
+        ? null
+        : !domainMeta || (pixelMeta && pixelMeta.updatedAt >= domainMeta.updatedAt)
+          ? pixelMeta
+          : domainMeta;
+
+    const lastSource = latestMeta ? "WEB_PORTAL" : pixelMeta || domainMeta ? "WEB_PORTAL" : "ENV_FALLBACK";
+
+    return {
+      state: {
+        schemaVersion: 1,
+        environment: "production",
+        WEBSITE_DOMAIN: websiteDomain,
+        META_PIXEL_ID: metaPixelId,
+        lastChangeId: latestMeta
+          ? `DB-${latestMeta.updatedAt.toISOString()}`
+          : "",
+        lastUpdatedAt: latestMeta?.updatedAt.toISOString() ?? null,
+        lastUpdatedBy: latestMeta?.updatedBy ?? "",
+        lastSource,
+        source: pixelMeta || domainMeta ? "DATABASE" : "ENV_FALLBACK",
+        runtimeState: {
+          WEBSITE_DOMAIN: websiteDomain,
+          META_PIXEL_ID: metaPixelId,
+          lastUpdatedAt: latestMeta?.updatedAt.toISOString() ?? null,
+          lastUpdatedBy: latestMeta?.updatedBy ?? "",
+          lastSource,
+        },
+        deployedValues: null,
+        configDrift: { WEBSITE_DOMAIN: false, META_PIXEL_ID: false },
+        drift: { hasDrift: false, driftedKeys: [] },
+        syncWarning: { show: false, message: "" },
+      },
+      platformDefaults: {
+        // Meta Pixel is DB-only — never report platform.env pixel (would block admin UI).
+        META_PIXEL_ID: "",
+        WEBSITE_DOMAIN: process.env.WEBSITE_DOMAIN?.trim() ?? "",
+      },
+    };
   }
 
   history(limit?: string): Promise<unknown> {
-    return this.run(["history", ...(limit ? ["--limit", limit] : [])]);
-  }
-
-  private parseDeployError(raw: string): string {
-    const trimmed = raw.trim();
-    if (!trimmed) return "";
-    try {
-      const parsed = JSON.parse(trimmed) as {
-        error?: unknown;
-        message?: unknown;
-      };
-      if (typeof parsed.error === "string") {
-        return this.parseDeployError(parsed.error) || parsed.error;
-      }
-      if (
-        typeof parsed.message === "string" &&
-        parsed.message !== "FAILED" &&
-        parsed.message !== "ROLLED_BACK"
-      ) {
-        return parsed.message;
-      }
-    } catch {
-      // plain text
-    }
-    return trimmed;
-  }
-
-  private emitLog(changeId: string, message: string): void {
-    const trimmed = message.trim();
-    if (!trimmed) return;
-    this.emit(changeId, {
-      changeId,
-      phase: "log",
-      message: trimmed,
-      at: new Date().toISOString(),
-    });
+    const n = Math.max(1, Math.min(100, Number(limit) || 50));
+    return Promise.resolve(readProductionConfigAudit(n));
   }
 
   start(
@@ -121,124 +133,95 @@ export class ProductionConfigService {
     value: string,
     actor: string,
   ): Promise<{ changeId: string }> {
-    return new Promise((resolveStart, rejectStart) => {
-      const child = spawn(
-        process.execPath,
-        [
-          "deploy/config-engine/cli.mjs",
-          command,
-          value,
-          "--actor",
-          actor,
-          "--source",
-          "WEB_PORTAL",
-          "--json",
-        ],
-        {
-          cwd: this.repoRoot(),
-          env: process.env,
-          stdio: ["ignore", "pipe", "pipe"],
-        },
-      );
-      let buffered = "";
-      let stderr = "";
-      let changeId: string | undefined;
-      let settled = false;
-      let completeReceived = false;
-      let lastFailureMessage = "";
-
-      const consume = (line: string) => {
-        const trimmed = line.trim();
-        if (!trimmed) return;
-        let event: ConfigEvent;
-        try {
-          event = JSON.parse(trimmed) as ConfigEvent;
-        } catch {
-          if (changeId) this.emitLog(changeId, trimmed);
-          return;
-        }
-        if (event.changeId) changeId ??= event.changeId;
-        if (!changeId && event.phase === "complete") {
-          changeId = `CFG-${Date.now()}`;
-        }
-        if (!changeId) return;
-        event.changeId ??= changeId;
-        this.emit(changeId, event);
-        if (event.phase === "complete") {
-          completeReceived = true;
-          const parsedError = event.error
-            ? this.parseDeployError(String(event.error))
-            : "";
-          if (parsedError) lastFailureMessage = parsedError;
-          else if (event.message && event.message !== "SUCCESS") {
-            lastFailureMessage = String(event.message);
-          }
-          if (!event.error && lastFailureMessage && event.message !== "SUCCESS") {
-            event.error = lastFailureMessage;
-            this.emit(changeId, event);
-            return;
-          }
-        }
-        if (event.phase === "log" && event.message) {
-          const parsed = this.parseDeployError(String(event.message));
-          if (parsed && parsed !== "FAILED" && parsed !== "ROLLED_BACK") {
-            lastFailureMessage = parsed;
-          }
-        }
-        if (!settled && (event.phase === "read" || event.phase === "complete")) {
-          settled = true;
-          resolveStart({ changeId });
-        }
-      };
-      child.stdout.setEncoding("utf8");
-      child.stderr.setEncoding("utf8");
-      child.stdout.on("data", (chunk: string) => {
-        buffered += chunk;
-        const lines = buffered.split("\n");
-        buffered = lines.pop() ?? "";
-        lines.forEach(consume);
-      });
-      child.stderr.on("data", (chunk: string) => {
-        stderr += chunk;
-        for (const line of chunk.split("\n")) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
-          try {
-            const event = JSON.parse(trimmed) as ConfigEvent;
-            consume(trimmed);
-          } catch {
-            if (changeId) this.emitLog(changeId, trimmed);
-          }
-        }
-      });
-      child.on("error", rejectStart);
-      child.on("close", (code) => {
-        if (buffered) consume(buffered);
-        if (!changeId) {
-          rejectStart(
-            new Error(
-              lastFailureMessage ||
-                stderr.trim() ||
-                `Configuration command exited ${code}`,
-            ),
-          );
-          return;
-        }
-        if (code !== 0 && !completeReceived) {
-          this.emit(changeId, {
-            changeId,
-            phase: "complete",
-            message: "FAILED",
-            result: "FAILED",
-            error:
-              this.parseDeployError(stderr) ||
-              lastFailureMessage ||
-              `Configuration command exited ${code}`,
-            at: new Date().toISOString(),
-          });
-        }
-      });
+    const changeId = this.allocateChangeId();
+    this.emit(changeId, {
+      changeId,
+      phase: "read",
+      message: "Loading runtime configuration from database",
+      at: new Date().toISOString(),
     });
+
+    void this.runDatabaseUpdate(changeId, command, value, actor);
+
+    return Promise.resolve({ changeId });
+  }
+
+  private async runDatabaseUpdate(
+    changeId: string,
+    command: "domain" | "pixel",
+    value: string,
+    actor: string,
+  ): Promise<void> {
+    const startedAt = new Date().toISOString();
+    const key =
+      command === "pixel"
+        ? SETTING_KEYS.META_PIXEL_ID
+        : SETTING_KEYS.WEBSITE_DOMAIN;
+    const priorValue =
+      command === "pixel"
+        ? this.config.getMetaPixelId()
+        : this.config.getWebsiteDomain();
+    const audit: AuditRecord = {
+      changeId,
+      key,
+      priorValue: priorValue ?? null,
+      requestedValue: value,
+      finalValue: null,
+      actor,
+      source: "WEB_PORTAL",
+      startedAt,
+      completedAt: "",
+      phase: "complete",
+      result: "FAILED",
+      events: [],
+      error: null,
+    };
+
+    const event = (
+      phase: string,
+      message: string,
+      extra: Record<string, unknown> = {},
+    ) => {
+      const entry: ConfigEvent = {
+        changeId,
+        phase,
+        message,
+        at: new Date().toISOString(),
+        ...extra,
+      };
+      audit.events.push(entry);
+      this.emit(changeId, entry);
+    };
+
+    try {
+      event("validation", "Validating requested configuration");
+      const finalValue =
+        command === "pixel"
+          ? validateMetaPixelId(value)
+          : validateWebsiteDomainInput(value);
+
+      event("apply", "Writing to AppSettings (database)");
+      await this.config.setRuntimeValue(key, finalValue, actor);
+
+      audit.finalValue = finalValue;
+      audit.result = "SUCCESS";
+      event("complete", "SUCCESS");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Configuration update failed";
+      audit.error = message;
+      audit.result = "FAILED";
+      event("complete", "FAILED", { error: message });
+    } finally {
+      audit.completedAt = new Date().toISOString();
+      try {
+        appendProductionConfigAudit(audit as unknown as Record<string, unknown>);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to persist audit log";
+        event("log", message);
+      }
+    }
   }
 
   stream(changeId: string): Observable<{ data: string }> {
@@ -251,7 +234,17 @@ export class ProductionConfigService {
       const listeners = this.listeners.get(changeId) ?? new Set();
       listeners.add(listener);
       this.listeners.set(changeId, listeners);
+      const heartbeat = setInterval(() => {
+        subscriber.next({
+          data: JSON.stringify({
+            changeId,
+            phase: "heartbeat",
+            at: new Date().toISOString(),
+          }),
+        });
+      }, 20_000);
       return () => {
+        clearInterval(heartbeat);
         listeners.delete(listener);
         if (!listeners.size) this.listeners.delete(changeId);
       };

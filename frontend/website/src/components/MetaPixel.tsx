@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { getMetaPixelEnvConfig } from "@/lib/meta-pixel-env";
+import { fetchMetaPixelIdFromApi } from "@/lib/meta-pixel-runtime";
 
 function metaPixelScript(pixelId: string) {
   return `
@@ -17,12 +18,11 @@ fbq('track', 'PageView');
 }
 
 export async function MetaPixel() {
-  // Read META_PIXEL_* from the runtime container env (wallet.env), not build-time SSG cache.
+  // Primary: database runtime config via backend API (no container restart).
   await connection();
-  const config = getMetaPixelEnvConfig();
-  if (!config) return null;
-
-  const { pixelId } = config;
+  const pixelId =
+    (await fetchMetaPixelIdFromApi()) ?? getMetaPixelEnvConfig()?.pixelId;
+  if (!pixelId) return null;
 
   return (
     <>

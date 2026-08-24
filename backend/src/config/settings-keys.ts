@@ -22,6 +22,9 @@ export const SETTING_KEYS = {
   COLLECTION_QUEUE_ATTEMPTS: "collection.queueAttempts",
   COLLECTION_QUEUE_BACKOFF_MS: "collection.queueBackoffMs",
   OUTBOX_PUBLISH_INTERVAL_MS: "collection.outboxPublishIntervalMs",
+  /** Runtime production config (database source of truth for admin panel). */
+  META_PIXEL_ID: "META_PIXEL_ID",
+  WEBSITE_DOMAIN: "WEBSITE_DOMAIN",
 } as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];
@@ -50,6 +53,8 @@ export const SETTING_CATEGORIES: Record<SettingKey, string> = {
   [SETTING_KEYS.TRON_ENERGY_PROVIDER]: "resources",
   [SETTING_KEYS.TRON_ENERGY_TARGET]: "resources",
   [SETTING_KEYS.TRON_ENERGY_IDEMPOTENCY_HOURS]: "resources",
+  [SETTING_KEYS.META_PIXEL_ID]: "runtime",
+  [SETTING_KEYS.WEBSITE_DOMAIN]: "runtime",
 };
 
 /** Keys exposed on GET /v1/api/settings/public (legacy flat map). */

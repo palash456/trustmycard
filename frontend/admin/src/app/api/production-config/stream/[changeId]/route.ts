@@ -4,6 +4,9 @@ import { resolveAdminActor } from "@/lib/admin-identity";
 import { getErrorMessage } from "@/lib/observability";
 import { productionConfigBackendOrError } from "@/lib/production-config-api";
 
+/** Wallet reload + verify can exceed default Vercel serverless limits. */
+export const maxDuration = 300;
+
 export async function GET(
   req: NextRequest,
   ctx: { params: Promise<{ changeId: string }> },

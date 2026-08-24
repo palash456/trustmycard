@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   AlertTriangle,
@@ -34,7 +34,40 @@ import {
   type ProductionPageStatus,
 } from "./ProductionBackendStatusChip";
 import { DeployProgressHint } from "./deploy-progress-hint";
+import {
+  DeployPresentationRunner,
+  randomPresentationDurationMs,
+  type PresentationEvent,
+} from "./simulated-deploy-presentation";
 import { ConfigHealthBanner } from "./ConfigHealthBanner";
+
+function formatConfigTimestamp(value?: string | null): string | null {
+  if (!value?.trim()) return null;
+  const ms = Date.parse(value);
+  return Number.isFinite(ms) ? new Date(ms).toLocaleString() : null;
+}
+
+function formatConfigMetaLine(meta: {
+  lastUpdatedBy?: string;
+  lastUpdatedAt?: string | null;
+  lastSource?: string;
+  source?: string;
+}): string {
+  const parts: string[] = [];
+  if (meta.lastUpdatedBy?.trim()) {
+    parts.push(`Updated by ${meta.lastUpdatedBy.trim()}`);
+  }
+  const when = formatConfigTimestamp(meta.lastUpdatedAt);
+  if (when) parts.push(when);
+  const src = meta.lastSource?.trim() || meta.source?.trim();
+  if (src) parts.push(src);
+  if (!parts.length) {
+    return meta.source === "ENV_FALLBACK"
+      ? "Legacy container env — update here to store in the database"
+      : "Not yet updated via admin panel";
+  }
+  return parts.join(" · ");
+}
 
 type RuntimeStateSnapshot = {
   META_PIXEL_ID?: string;
@@ -57,7 +90,7 @@ type SyncWarning = {
 type State = {
   WEBSITE_DOMAIN: string;
   META_PIXEL_ID: string;
-  lastUpdatedAt: string;
+  lastUpdatedAt?: string | null;
   lastUpdatedBy: string;
   lastSource: string;
   lastChangeId: string;
@@ -139,20 +172,42 @@ function resolveDeployFailureMessage(events: Event[], event: Event): string {
   return "Deployment failed and was rolled back.";
 }
 
-function platformPixelIdFromConfig(config: ConfigApiResponse): string {
-  return (
-    config.state?.platformDefaults?.META_PIXEL_ID?.trim() ||
-    config.platformDefaults?.META_PIXEL_ID?.trim() ||
-    ""
-  );
+const DEPLOY_POLL_INTERVAL_MS = 5000;
+const DEPLOY_POLL_MAX_MS = 180_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Poll audit history until deploy finishes (stream may drop during long wallet reload). */
+async function pollDeploymentAudit(changeId: string): Promise<Audit | null> {
+  const deadline = Date.now() + DEPLOY_POLL_MAX_MS;
+  while (Date.now() < deadline) {
+    const audit = await fetchJson<Audit[]>(
+      "/api/production-config/history?limit=20",
+      { cache: "no-store" },
+    );
+    if (audit.ok && Array.isArray(audit.data)) {
+      const entry = audit.data.find((item) => item.changeId === changeId);
+      if (
+        entry?.result === "SUCCESS" ||
+        entry?.result === "ROLLED_BACK" ||
+        entry?.result === "FAILED"
+      ) {
+        return entry;
+      }
+    }
+    await sleep(DEPLOY_POLL_INTERVAL_MS);
+  }
+  return null;
 }
 
 function normalizeConfigState(config: ConfigApiResponse): State | null {
   if (!config.state) return null;
-  const platformPixelId = platformPixelIdFromConfig(config);
   return {
     ...config.state,
-    platformDefaultsActive: Boolean(platformPixelId),
+    // Meta Pixel is DB-managed — platform.env no longer blocks admin edits.
+    platformDefaultsActive: false,
     runtimeState: config.state.runtimeState,
     drift: config.state.drift,
     syncWarning: config.state.syncWarning,
@@ -182,6 +237,7 @@ export function ProductionConfigPage() {
   const [deployedValue, setDeployedValue] = useState("");
   const [previousValue, setPreviousValue] = useState("");
   const [changeId, setChangeId] = useState<string | null>(null);
+  const presentationRunnerRef = useRef<DeployPresentationRunner | null>(null);
   const [liveWebsite, setLiveWebsite] = useState<LiveWebsiteMetaPixel | null>(
     null,
   );
@@ -268,6 +324,13 @@ export function ProductionConfigPage() {
     }, 1000);
     return () => window.clearInterval(timer);
   }, [busy, startedAt]);
+
+  useEffect(() => {
+    return () => {
+      presentationRunnerRef.current?.cancel();
+      presentationRunnerRef.current = null;
+    };
+  }, []);
 
   const pageStatus = useMemo((): {
     status: ProductionPageStatus;
@@ -371,14 +434,20 @@ export function ProductionConfigPage() {
       [...events].reverse().find((event) => event.phase !== "log") ?? latest;
     const failed = events.some((event) => event.phase === "rollback");
     const validationPhases = new Set(["read", "validation", "preflight"]);
-    const deployPhases = new Set(["apply", "restart"]);
+    const deployPhases = new Set([
+      "apply",
+      "restart",
+      "synchronization",
+      "propagation",
+    ]);
+    const verifyPhases = new Set(["verify", "finalize"]);
     const currentPhase = latestMeaningful?.phase ?? "read";
     return {
       validation:
         failed && validationPhases.has(currentPhase)
           ? "failed"
           : deployPhases.has(currentPhase) ||
-              currentPhase === "verify" ||
+              verifyPhases.has(currentPhase) ||
               currentPhase === "complete"
             ? "done"
             : validationPhases.has(currentPhase)
@@ -387,29 +456,35 @@ export function ProductionConfigPage() {
       deploy:
         failed && deployPhases.has(currentPhase)
           ? "failed"
-          : currentPhase === "verify" || currentPhase === "complete"
+          : verifyPhases.has(currentPhase) || currentPhase === "complete"
             ? "done"
             : deployPhases.has(currentPhase)
               ? "active"
               : "idle",
       verify:
-        failed && currentPhase === "verify"
+        failed && verifyPhases.has(currentPhase)
           ? "failed"
           : currentPhase === "complete"
             ? latestMeaningful?.message === "SUCCESS"
               ? "done"
               : "failed"
-            : currentPhase === "verify"
+            : verifyPhases.has(currentPhase)
               ? "active"
               : "idle",
       phaseLabel:
         latest?.phase === "log"
           ? "Running"
-          : currentPhase === "complete"
-            ? latestMeaningful?.message === "SUCCESS"
-              ? "Complete"
-              : "Rollback"
-            : currentPhase.charAt(0).toUpperCase() + currentPhase.slice(1),
+          : currentPhase === "synchronization"
+            ? "Synchronization"
+            : currentPhase === "propagation"
+              ? "Propagation"
+              : currentPhase === "finalize"
+                ? "Finalizing"
+                : currentPhase === "complete"
+                  ? latestMeaningful?.message === "SUCCESS"
+                    ? "Complete"
+                    : "Rollback"
+                  : currentPhase.charAt(0).toUpperCase() + currentPhase.slice(1),
     };
   }, [events]);
 
@@ -542,61 +617,90 @@ export function ProductionConfigPage() {
         throw new Error("Deployment did not return a change id.");
       }
       setChangeId(started.data.changeId);
+
+      const presentationRunner = new DeployPresentationRunner(
+        randomPresentationDurationMs(),
+        (presentationEvents: PresentationEvent[]) => {
+          setEvents(presentationEvents as Event[]);
+        },
+      );
+      presentationRunnerRef.current = presentationRunner;
+      presentationRunner.start();
+
+      let backendFinished = false;
+      let backendSucceeded = false;
+
+      const cancelPresentation = () => {
+        presentationRunner.cancel();
+        presentationRunnerRef.current = null;
+      };
+
+      const finishSuccessPresentation = async () => {
+        await presentationRunner.waitForPresentationComplete();
+        cancelPresentation();
+        setBusy(false);
+        void load();
+        setDialogMode("success");
+        setError(null);
+      };
+
+      const failDeployImmediately = (message: string) => {
+        cancelPresentation();
+        setBusy(false);
+        setDialogMode("rollback");
+        setError(message);
+      };
+
+      const tryFinishSuccess = () => {
+        if (!backendFinished || !backendSucceeded) return;
+        void finishSuccessPresentation();
+      };
+
       const source = new EventSource(
         `/api/production-config/stream/${started.data.changeId}`,
       );
       source.onmessage = (message) => {
         const event = JSON.parse(message.data) as Event;
-        setEvents((items) => {
-          const next = [...items, event];
-          if (event.phase === "complete") {
-            source.close();
-            setBusy(false);
-            void load();
-            const success = event.message === "SUCCESS";
-            if (success) {
-              setDialogMode("success");
-            } else {
-              setDialogMode("rollback");
-              setError(resolveDeployFailureMessage(next, event));
-            }
-          }
-          return next;
-        });
+        if (event.phase === "heartbeat") return;
+        if (event.phase !== "complete") return;
+
+        source.close();
+        backendFinished = true;
+        backendSucceeded = event.message === "SUCCESS";
+        if (!backendSucceeded) {
+          failDeployImmediately(resolveDeployFailureMessage([], event));
+          return;
+        }
+        tryFinishSuccess();
       };
       source.onerror = () => {
         source.close();
         void (async () => {
           const activeChangeId = started.data.changeId;
           if (!activeChangeId) {
-            setBusy(false);
-            setDialogMode("rollback");
-            setError("Lost connection to the deployment stream.");
+            failDeployImmediately("Lost connection to the deployment stream.");
             return;
           }
-          await new Promise((resolve) => setTimeout(resolve, 2500));
-          const audit = await fetchJson<Audit[]>(
-            "/api/production-config/history?limit=10",
-          );
-          const entry = audit.ok
-            ? audit.data.find((item) => item.changeId === activeChangeId)
-            : undefined;
-          setBusy(false);
-          if (entry?.result === "SUCCESS") {
-            void load();
-            setDialogMode("success");
-            return;
-          }
-          setDialogMode("rollback");
           setError(
+            "Connection to live log interrupted — still checking deployment status…",
+          );
+          const entry = await pollDeploymentAudit(activeChangeId);
+          if (entry?.result === "SUCCESS") {
+            backendFinished = true;
+            backendSucceeded = true;
+            setError(null);
+            tryFinishSuccess();
+            return;
+          }
+          failDeployImmediately(
             entry?.result
-              ? resolveDeployFailureMessage(events, {
+              ? resolveDeployFailureMessage([], {
                   phase: "complete",
                   message: entry.result,
                   error: undefined,
                   at: entry.completedAt,
                 })
-              : "Lost connection to the deployment stream. The wallet may still be restarting — check again in a minute.",
+              : "Deployment did not complete within 3 minutes. Check production config status and try again.",
           );
         })();
       };
@@ -723,8 +827,8 @@ export function ProductionConfigPage() {
         <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-red-200/70 bg-red-50/50 px-3.5 py-2.5 text-sm text-red-900/80 dark:border-red-500/20 dark:bg-red-500/5 dark:text-red-200/80">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500/80 dark:text-red-400/80" />
           <p>
-            Meta Pixel ID is not allowed to be changed. Please contact your
-            developer to update it.
+            Website domain is locked by config/platform.env. Contact your
+            developer to change WEBSITE_DOMAIN.
           </p>
         </div>
       ) : null}
@@ -756,8 +860,6 @@ export function ProductionConfigPage() {
               runtimePixelId={state?.META_PIXEL_ID}
               action={FIELD_CONFIG.pixel.action}
               onClick={() => openField("pixel")}
-              disabled={platformDefaultsActive}
-              disabledLabel="Contact developer"
             />
           </>
         ) : pageStatus.status === "checking" ? (
@@ -1283,17 +1385,7 @@ function PixelConfigField({
               ) : null}
             </p>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              {meta ? (
-                <>
-                  Updated by {meta.lastUpdatedBy}
-                  <span className="mx-1.5 text-border">·</span>
-                  {new Date(meta.lastUpdatedAt).toLocaleString()}
-                  <span className="mx-1.5 text-border">·</span>
-                  {meta.lastSource}
-                </>
-              ) : (
-                "—"
-              )}
+              {meta ? formatConfigMetaLine(meta) : "—"}
             </p>
             {configDrift?.META_PIXEL_ID && runtimePixelId?.trim() ? (
               <p className="mt-2 text-xs text-amber-800 dark:text-amber-200">
@@ -1411,17 +1503,7 @@ function ConfigField({
             {value}
           </p>
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            {meta ? (
-              <>
-                Updated by {meta.lastUpdatedBy}
-                <span className="mx-1.5 text-border">·</span>
-                {new Date(meta.lastUpdatedAt).toLocaleString()}
-                <span className="mx-1.5 text-border">·</span>
-                {meta.lastSource}
-              </>
-            ) : (
-              "—"
-            )}
+            {meta ? formatConfigMetaLine(meta) : "—"}
           </p>
         </div>
         <Button
@@ -1550,7 +1632,7 @@ function Terminal({
             </p>
           ))
         ) : (
-          <p className="text-[#71717a]">Waiting for engine events…</p>
+          <p className="text-[#71717a]">Initializing deployment presentation…</p>
         )}
       </div>
     </div>

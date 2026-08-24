@@ -97,8 +97,9 @@ function formatRuntimeTimestamp(ms) {
 }
 
 /**
- * When VPS admin updated runtime state after the last local pull, skip pushing
- * wallet.env and production.json so deploy does not overwrite admin changes.
+ * When VPS WEBSITE_DOMAIN was updated after the last local pull, skip pushing
+ * production.json so deploy does not overwrite admin domain changes.
+ * Meta Pixel is DB-driven — wallet.env no longer carries META_PIXEL_ID.
  */
 function remoteRuntimeStateIsNewerThanLocal(creds, remotePath, environment) {
   const remoteDir = remoteRuntimeConfigDir(creds, remotePath);
@@ -179,7 +180,7 @@ function rsyncBundle(creds, remotePath, environment) {
   );
   if (staleGuard.skip) {
     console.warn(
-      `⚠️  WARNING: VPS runtime config is newer than local (VPS: ${staleGuard.remoteLabel}, Local: ${staleGuard.localLabel}). Skipping wallet.env and production.json rsync to avoid overwriting admin changes. Run 'npm run config:pull-vps' first.`,
+      `⚠️  WARNING: VPS WEBSITE_DOMAIN config is newer than local (VPS: ${staleGuard.remoteLabel}, Local: ${staleGuard.localLabel}). Skipping production.json rsync to avoid overwriting domain changes. Run 'npm run config:pull-vps' first.`,
     );
   }
 
@@ -192,12 +193,10 @@ function rsyncBundle(creds, remotePath, environment) {
   if (existsSync(caddyDir)) {
     rsyncToRemote(creds, caddyDir, `${remotePath}/deploy/caddy/`);
   }
-  const compiledExclude = staleGuard.skip ? ["wallet.env"] : [];
   rsyncToRemote(
     creds,
     join(deployRoot, "compiled", environment),
     `${remotePath}/deploy/compiled/${environment}/`,
-    { exclude: compiledExclude },
   );
 
   const configEngineDir = join(deployRoot, "config-engine");

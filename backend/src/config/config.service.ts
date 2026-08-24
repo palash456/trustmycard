@@ -83,6 +83,54 @@ export class ConfigService implements OnModuleInit {
     return this.platformConfig.toPublicConfig(this.getAll());
   }
 
+  getMetaPixelId(): string | null {
+    const raw = this.get<string>(SETTING_KEYS.META_PIXEL_ID);
+    if (typeof raw === "string" && raw.trim()) return raw.trim();
+    const env = process.env.META_PIXEL_ID?.trim();
+    return env || null;
+  }
+
+  getWebsiteDomain(): string | null {
+    const raw = this.get<string>(SETTING_KEYS.WEBSITE_DOMAIN);
+    if (typeof raw === "string" && raw.trim()) return raw.trim();
+    const env = process.env.WEBSITE_DOMAIN?.trim();
+    return env || null;
+  }
+
+  async getRuntimeSettingMeta(
+    key: typeof SETTING_KEYS.META_PIXEL_ID | typeof SETTING_KEYS.WEBSITE_DOMAIN,
+  ): Promise<{ updatedAt: Date; updatedBy: string } | null> {
+    try {
+      const row = await prisma.appSettings.findUnique({ where: { key } });
+      if (!row) return null;
+      return { updatedAt: row.updatedAt, updatedBy: row.updatedBy };
+    } catch {
+      return null;
+    }
+  }
+
+  async setRuntimeValue(
+    key: typeof SETTING_KEYS.META_PIXEL_ID | typeof SETTING_KEYS.WEBSITE_DOMAIN,
+    value: string,
+    actor = "admin",
+  ): Promise<void> {
+    await prisma.appSettings.upsert({
+      where: { key },
+      create: {
+        key,
+        value: value,
+        category: SETTING_CATEGORIES[key],
+        updatedBy: actor,
+      },
+      update: {
+        value: value,
+        updatedBy: actor,
+      },
+    });
+    this.cache.set(key, value);
+    this.events.emit("settings.updated", { keys: [key] });
+  }
+
   getCollectorConfig() {
     const intervalMs = Number(this.get(SETTING_KEYS.COLLECTOR_INTERVAL_MS));
     const platformCollector = this.platformConfig.getCollector();

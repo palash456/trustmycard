@@ -16,6 +16,10 @@ export class SettingsController {
       ok: true,
       config: this.configService.getPublicPlatformConfig(),
       settings: this.configService.getPublicSettings(),
+      runtime: {
+        metaPixelId: this.configService.getMetaPixelId(),
+        websiteDomain: this.configService.getWebsiteDomain(),
+      },
       timestamp: new Date().toISOString(),
     };
   }

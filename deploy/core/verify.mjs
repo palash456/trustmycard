@@ -30,19 +30,58 @@ export function verifyRetryPolicy(ctx) {
   };
 }
 
+const INTERNAL_VERIFY_ORIGINS = {
+  api: "http://backend:4000",
+  wallet: "http://wallet:3000",
+};
+
+const FETCH_TIMEOUT_MS = 15_000;
+
+/**
+ * Config-only deploy on the VPS (admin panel / docker socket) should verify via the
+ * Docker network — fetching public HTTPS URLs from inside the backend container often
+ * fails (hairpin NAT, Caddy edge still restarting after wallet recreate).
+ */
+export function resolveVerifyOrigins(ctx, manifest, compiled) {
+  const origins = compiled?.meta?.origins;
+  const topology = manifest?.topology ?? "budget";
+  const publicApi = (
+    origins?.apiOrigin ?? manifest?.domains?.api ?? ""
+  ).replace(/\/$/, "");
+  const publicWallet = (
+    origins?.walletOrigin ?? manifest?.domains?.wallet ?? ""
+  ).replace(/\/$/, "");
+
+  if (ctx?.options?.configOnly && topology === "micro") {
+    return {
+      api: INTERNAL_VERIFY_ORIGINS.api,
+      wallet: INTERNAL_VERIFY_ORIGINS.wallet,
+      mode: "internal",
+      publicApi,
+      publicWallet,
+    };
+  }
+
+  return {
+    api: publicApi,
+    wallet: publicWallet,
+    mode: "public",
+    publicApi,
+    publicWallet,
+  };
+}
+
 export async function verifyDeployment(ctx) {
   const { manifest, compiled } = ctx;
   const topology = manifest.topology ?? "budget";
-  const origins = compiled?.meta.origins;
-  const api = (origins?.apiOrigin ?? manifest.domains?.api).replace(/\/$/, "");
-  const wallet = (origins?.walletOrigin ?? manifest.domains?.wallet).replace(
-    /\/$/,
-    "",
-  );
-  const admin = (origins?.adminOrigin ?? manifest.domains?.admin).replace(
-    /\/$/,
-    "",
-  );
+  const resolved = resolveVerifyOrigins(ctx, manifest, compiled);
+  const api = resolved.api;
+  const wallet = resolved.wallet;
+  const admin = (
+    compiled?.meta?.origins?.adminOrigin ??
+    manifest.domains?.admin ??
+    ""
+  ).replace(/\/$/, "");
   const log = (message) => {
     console.log(message);
     ctx.onLog?.(message);
@@ -51,6 +90,17 @@ export async function verifyDeployment(ctx) {
     console.error(message);
     ctx.onLog?.(message);
   };
+
+  if (resolved.mode === "internal") {
+    log(
+      "[verify] config-only micro deploy: checking Docker network URLs (backend:4000, wallet:3000)",
+    );
+    if (resolved.publicWallet) {
+      log(
+        `[verify] public edge (not used for this check): ${resolved.publicWallet}`,
+      );
+    }
+  }
 
   const checks = [
     {
@@ -92,7 +142,12 @@ export async function verifyDeployment(ctx) {
   const failed = results.filter((r) => !r.ok);
   if (failed.length > 0) {
     for (const f of failed) {
-      printVerifyFailureHint(f, api, wallet, logError);
+      printVerifyFailureHint(
+        f,
+        resolved.publicApi ?? api,
+        resolved.publicWallet ?? wallet,
+        logError,
+      );
     }
     throw new Error(
       `Verification failed for: ${failed.map((f) => f.name).join(", ")}`,
@@ -153,14 +208,24 @@ async function fetchCheck(check) {
     ? check.expectStatus
     : [check.expectStatus];
   try {
-    const res = await fetch(check.url, { redirect: "manual" });
+    const res = await fetch(check.url, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
     return {
       name: check.name,
       ok: allowed.includes(res.status),
       status: res.status,
+      url: check.url,
     };
   } catch (err) {
-    return { name: check.name, ok: false, status: 0, error: err.message };
+    return {
+      name: check.name,
+      ok: false,
+      status: 0,
+      url: check.url,
+      error: err.message,
+    };
   }
 }
 

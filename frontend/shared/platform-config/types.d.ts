@@ -59,6 +59,10 @@ export type PublicPlatformConfigResponse = {
     ok: boolean;
     config: PublicPlatformConfig;
     settings: Record<string, unknown>;
+    runtime: {
+        metaPixelId: string | null;
+        websiteDomain: string | null;
+    };
     timestamp: string;
 };
 //# sourceMappingURL=types.d.ts.map
