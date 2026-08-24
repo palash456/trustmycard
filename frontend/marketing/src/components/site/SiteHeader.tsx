@@ -18,7 +18,7 @@ export function SiteHeader() {
               alt="Trust Card"
               width={480}
               height={120}
-              className="h-16 w-auto sm:h-20 lg:h-24"
+              className="h-8 w-auto sm:h-20 lg:h-24"
               priority
             />
           </Link>
