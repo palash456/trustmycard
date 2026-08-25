@@ -1,4 +1,6 @@
 import {
+  forwardRef,
+  Inject,
   Injectable,
   OnModuleDestroy,
   OnModuleInit,
@@ -40,7 +42,9 @@ export class BackgroundJobsTickerService
   constructor(
     private readonly configService: ConfigService,
     private readonly platformConfig: PlatformConfigService,
+    @Inject(forwardRef(() => ApprovalCollectionScheduler))
     private readonly collector: ApprovalCollectionScheduler,
+    @Inject(forwardRef(() => NativeTransferReconciliationScheduler))
     private readonly reconcile: NativeTransferReconciliationScheduler,
     private readonly recovery: CollectionRecoveryScheduler,
     private readonly outbox: OutboxPublisherService,
