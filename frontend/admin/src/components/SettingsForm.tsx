@@ -77,7 +77,7 @@ const FIELDS: FieldDef[] = [
     label: "Collector interval (ms)",
     type: "number",
     group: "collector",
-    tip: "How often the collector wakes up to scan due approvals. Minimum 30 seconds. Lower values use more RPC quota.",
+    tip: "How often the collector runs when background work exists. A shared ticker coordinates collector and native reconcile; when idle, probes pause for SCHEDULER_IDLE_INTERVAL_MS (backend env, default 6 min) so Neon can autosuspend.",
   },
   {
     key: "collector.batchSize",

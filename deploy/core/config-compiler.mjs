@@ -255,6 +255,7 @@ export function compileEnvBundles(ctx, runtimeState = null) {
     APP_ORIGIN: walletOrigin,
     ADMIN_ORIGIN: adminOrigin,
     SWAGGER_ENABLED: "false",
+    SCHEDULER_IDLE_INTERVAL_MS: "360000",
   };
 
   const budgetBackend = {

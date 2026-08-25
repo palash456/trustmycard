@@ -47,7 +47,15 @@ export function CollectorPanel({
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
         <pre className="overflow-auto rounded-md border bg-muted/40 p-3 text-xs text-foreground">
-          {JSON.stringify({ collector, collection }, null, 2)}
+          {JSON.stringify(
+            {
+              backgroundJobs: status.backgroundJobs,
+              collector,
+              collection,
+            },
+            null,
+            2,
+          )}
         </pre>
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={() => void post("collections/recover")}>

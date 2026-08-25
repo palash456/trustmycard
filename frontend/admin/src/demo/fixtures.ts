@@ -611,6 +611,7 @@ export const demoFixtures: Record<string, unknown> = {
     },
     collector: {
       running: true,
+      coordinated: true,
       runtimeEnabled: true,
       configEnabled: true,
       effectiveEnabled: true,
@@ -620,10 +621,19 @@ export const demoFixtures: Record<string, unknown> = {
     },
     nativeReconcile: {
       running: true,
+      coordinated: true,
       effectiveEnabled: true,
       intervalMs: 60000,
       batchSize: 10,
       lastTickAt: daysAgo(0, 11),
+    },
+    backgroundJobs: {
+      mode: "idle",
+      idleIntervalMs: 360000,
+      activeIntervalMs: 60000,
+      lastProbeAt: daysAgo(0, 11),
+      lastWorkAt: daysAgo(0, 12),
+      nextTickAt: daysAgo(0, 10),
     },
     configLastReloadAt: daysAgo(0, 8),
     devOpsEnabled: true,

@@ -2127,6 +2127,7 @@ export class AnalyticsService {
         intervalMs: systemStatus.collector.intervalMs,
       },
       schedulerHealth: {
+        backgroundJobs: systemStatus.backgroundJobs,
         collector: systemStatus.collector,
         nativeReconcile: systemStatus.nativeReconcile,
       },

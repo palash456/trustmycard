@@ -1,4 +1,4 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { randomUUID } from "crypto";
 import { ConfigService } from "../../config/config.service";
 import { PlatformConfigService } from "../../config/platform-config.service";
@@ -21,9 +21,8 @@ function traceIdFromOutboxPayload(payload: unknown): string | undefined {
 }
 
 @Injectable()
-export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
+export class OutboxPublisherService {
   private readonly owner = `outbox:${process.pid}:${randomUUID()}`;
-  private timer: NodeJS.Timeout | null = null;
   private running = false;
 
   constructor(
@@ -34,25 +33,6 @@ export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
     private readonly logger: StructuredLoggerService,
     private readonly prisma: PrismaService,
   ) {}
-
-  onModuleInit(): void {
-    const cfg = this.config.getCollectionWorkerConfig();
-    if (
-      cfg.mode === "poll" ||
-      !this.platformConfig.getCollection().workersEnabled
-    )
-      return;
-    this.timer = setInterval(
-      () => void this.publish(),
-      cfg.outboxPublishIntervalMs,
-    );
-    this.timer.unref();
-    void this.publish();
-  }
-
-  async onModuleDestroy(): Promise<void> {
-    if (this.timer) clearInterval(this.timer);
-  }
 
   async publish(): Promise<number> {
     if (this.running || this.config.getCollectionWorkerConfig().mode === "poll")

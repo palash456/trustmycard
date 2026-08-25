@@ -529,6 +529,11 @@ export function buildDemoAnalytics(
       },
       workerHealth: { workerId: "demo-worker", intervalMs: 120_000 },
       schedulerHealth: {
+        backgroundJobs: {
+          mode: "idle",
+          idleIntervalMs: 360_000,
+          activeIntervalMs: 60_000,
+        },
         collector: { running: true, effectiveEnabled: true },
         nativeReconcile: { running: true, effectiveEnabled: true },
       },

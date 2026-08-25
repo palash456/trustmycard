@@ -45,13 +45,14 @@ export function SystemPanel({ status }: { status: Record<string, unknown> }) {
         <CardHeader>
           <div className="flex items-center gap-2">
             <CardTitle className="text-base">Workers</CardTitle>
-            <InfoTip text="Health of the approval collector and native reconcile schedulers after the last config reload." />
+            <InfoTip text="Coordinated background schedulers (collector, native reconcile, outbox recovery). When no DB work exists, the ticker idles for SCHEDULER_IDLE_INTERVAL_MS (default 6 min) so Neon can autosuspend. Render/Docker health checks do not touch the database." />
           </div>
         </CardHeader>
         <CardContent>
           <pre className="overflow-auto rounded-md border bg-muted/40 p-3 text-xs text-foreground">
             {JSON.stringify(
               {
+                backgroundJobs: status.backgroundJobs,
                 collector: status.collector,
                 nativeReconcile: status.nativeReconcile,
               },

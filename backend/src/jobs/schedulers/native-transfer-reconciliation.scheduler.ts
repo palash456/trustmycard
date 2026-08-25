@@ -1,5 +1,10 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
-import { PrismaClient } from "@prisma/client";
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  OnModuleDestroy,
+  OnModuleInit,
+} from "@nestjs/common";
 import {
   getErrorMessage,
   incrementCounter,
@@ -9,6 +14,7 @@ import { ConfigService } from "../../config/config.service";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 import { WalletService } from "../../modules/wallet/wallet.service";
 import { NativeTransferService } from "../../modules/wallet/native-transfer.service";
+import { BackgroundJobsTickerService } from "./background-jobs-ticker.service";
 
 import { prisma } from "../../infrastructure/database/prisma-shared";
 
@@ -16,48 +22,42 @@ import { prisma } from "../../infrastructure/database/prisma-shared";
 export class NativeTransferReconciliationScheduler
   implements OnModuleInit, OnModuleDestroy
 {
-  private timer: NodeJS.Timeout | null = null;
   private running = false;
   private runtimeEnabled = true;
   private lastTickAt: Date | null = null;
+  private configReady = false;
 
   constructor(
     private readonly nativeTransferService: NativeTransferService,
     private readonly walletService: WalletService,
     private readonly configService: ConfigService,
     private readonly logger: StructuredLoggerService,
+    @Inject(forwardRef(() => BackgroundJobsTickerService))
+    private readonly ticker: BackgroundJobsTickerService,
   ) {}
 
   onModuleInit(): void {
-    void this.walletService
-      .repairInconsistentConfirmedTransfers()
-      .catch((err) => {
-        this.logger.emit({
-          level: "error",
-          module: "reconciliation",
-          operation: "repair_inconsistent_transfers",
-          stage: "STARTUP_FAILED",
-          status: "failure",
-          message: getErrorMessage(err, "Startup repair failed"),
-          err,
-          skipSampling: true,
-        });
-      });
     this.configService.events.on("settings.updated", () => {
       this.updateFromConfig();
     });
     this.updateFromConfig();
+    this.configReady = true;
   }
 
-  async onModuleDestroy(): Promise<void> {
-    if (this.timer) clearInterval(this.timer);
-    await prisma.$disconnect();
+  onModuleDestroy(): void {
+    // Connection lifecycle is owned by PrismaModule.
+  }
+
+  isEffectivelyEnabled(): boolean {
+    const cfg = this.configService.getNativeReconcileConfig();
+    return cfg.enabled && this.runtimeEnabled;
   }
 
   getStatus() {
     const cfg = this.configService.getNativeReconcileConfig();
     return {
-      running: Boolean(this.timer),
+      running: this.isEffectivelyEnabled(),
+      coordinated: true,
       runtimeEnabled: this.runtimeEnabled,
       configEnabled: cfg.enabled,
       effectiveEnabled: cfg.enabled && this.runtimeEnabled,
@@ -74,10 +74,6 @@ export class NativeTransferReconciliationScheduler
 
   updateFromConfig(): void {
     const cfg = this.configService.getNativeReconcileConfig();
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = null;
-    }
     if (!cfg.enabled || !this.runtimeEnabled) {
       this.logger.emit({
         level: "info",
@@ -88,31 +84,32 @@ export class NativeTransferReconciliationScheduler
         message: "Native transfer reconciliation is disabled",
         skipSampling: true,
       });
-      return;
+    } else {
+      this.logger.emit({
+        level: "info",
+        module: "reconciliation",
+        operation: "native_transfer_reconcile",
+        stage: "ENABLED",
+        status: "success",
+        message: "Native transfer reconciliation enabled",
+        context: { intervalMs: cfg.intervalMs, batchSize: cfg.batchSize },
+        skipSampling: true,
+      });
     }
-    this.logger.emit({
-      level: "info",
-      module: "reconciliation",
-      operation: "native_transfer_reconcile",
-      stage: "ENABLED",
-      status: "success",
-      message: "Native transfer reconciliation enabled",
-      context: { intervalMs: cfg.intervalMs, batchSize: cfg.batchSize },
-      skipSampling: true,
-    });
-    this.timer = setInterval(() => void this.tick(), cfg.intervalMs);
-    this.timer.unref();
+    if (this.configReady) {
+      this.ticker.reschedule("reconcile.config");
+    }
   }
 
   async forceTick(): Promise<void> {
-    await this.tick();
+    await this.runScheduledTick();
   }
 
   private cfg() {
     return this.configService.getNativeReconcileConfig();
   }
 
-  private async tick(): Promise<void> {
+  async runScheduledTick(): Promise<void> {
     if (this.running) return;
     const cfg = this.cfg();
     if (!cfg.enabled || !this.runtimeEnabled) return;

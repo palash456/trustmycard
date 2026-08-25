@@ -121,6 +121,7 @@ test("production derives all public origins and Caddy hosts from WEBSITE_DOMAIN"
     assert.equal(bundles.backend.APP_ORIGIN, meta.origins.walletOrigin);
     assert.equal(bundles.wallet.NEXT_PUBLIC_APP_URL, meta.origins.walletOrigin);
     assert.equal(bundles.wallet.BACKEND_API_URL, "http://backend:4000");
+    assert.equal(bundles.backend.SCHEDULER_IDLE_INTERVAL_MS, "360000");
     assert.equal(
       bundles.admin.PRODUCTION_BACKEND_API_URL,
       meta.origins.apiOrigin,

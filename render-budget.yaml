@@ -30,6 +30,8 @@ services:
         value: "true"
       - key: SWAGGER_ENABLED
         value: "false"
+      - key: SCHEDULER_IDLE_INTERVAL_MS
+        value: "360000"
       - key: DATABASE_URL
         sync: false
       - key: REDIS_URL

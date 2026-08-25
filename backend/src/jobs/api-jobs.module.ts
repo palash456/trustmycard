@@ -1,26 +1,9 @@
 import { Module } from "@nestjs/common";
-import { WalletModule } from "../modules/wallet/wallet.module";
-import { CollectionsModule } from "../modules/collections/collections.module";
-import { ApprovalCollectionScheduler } from "./schedulers/approval-collection.scheduler";
-import { NativeTransferReconciliationScheduler } from "./schedulers/native-transfer-reconciliation.scheduler";
-import { CollectionRecoveryScheduler } from "./schedulers/collection-recovery.scheduler";
-import { CollectionQueueModule } from "./queues/collection-queue.module";
-import { OutboxPublisherService } from "./workers/outbox-publisher.service";
+import { BackgroundJobsModule } from "./background-jobs.module";
 
-/** API-safe jobs: outbox publish and reconciliation — no collection signing. */
+/** API-safe jobs: coordinated schedulers — no BullMQ collection signing workers. */
 @Module({
-  imports: [WalletModule, CollectionsModule, CollectionQueueModule],
-  providers: [
-    ApprovalCollectionScheduler,
-    NativeTransferReconciliationScheduler,
-    OutboxPublisherService,
-    CollectionRecoveryScheduler,
-  ],
-  exports: [
-    ApprovalCollectionScheduler,
-    NativeTransferReconciliationScheduler,
-    CollectionRecoveryScheduler,
-    OutboxPublisherService,
-  ],
+  imports: [BackgroundJobsModule],
+  exports: [BackgroundJobsModule],
 })
 export class ApiJobsModule {}

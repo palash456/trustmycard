@@ -250,6 +250,7 @@ export type AnalyticsResponse = {
     };
     workerHealth: { workerId: string | null; intervalMs: number };
     schedulerHealth: {
+      backgroundJobs: Record<string, unknown>;
       collector: Record<string, unknown>;
       nativeReconcile: Record<string, unknown>;
     };

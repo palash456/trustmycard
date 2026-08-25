@@ -3,17 +3,12 @@ import {
   Injectable,
   Module,
   OnModuleDestroy,
-  OnModuleInit,
 } from "@nestjs/common";
 import { prisma } from "./prisma-shared";
 import { PrismaService } from "./prisma.service";
 
 @Injectable()
-class PrismaLifecycle implements OnModuleInit, OnModuleDestroy {
-  async onModuleInit(): Promise<void> {
-    await prisma.$connect();
-  }
-
+class PrismaLifecycle implements OnModuleDestroy {
   async onModuleDestroy(): Promise<void> {
     await prisma.$disconnect();
   }

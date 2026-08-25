@@ -13,6 +13,7 @@ import { StructuredLoggerService } from "../../infrastructure/logger/structured-
 import { SETTING_KEYS } from "../../config/settings-keys";
 import { ApprovalCollectionScheduler } from "../../jobs/schedulers/approval-collection.scheduler";
 import { NativeTransferReconciliationScheduler } from "../../jobs/schedulers/native-transfer-reconciliation.scheduler";
+import { BackgroundJobsTickerService } from "../../jobs/schedulers/background-jobs-ticker.service";
 import { AdminDevOpsService } from "./admin-devops.service";
 import { AdminStreamService } from "./admin-stream.service";
 import { WalletService } from "../wallet/wallet.service";
@@ -27,6 +28,7 @@ export class AdminOpsService {
     private readonly walletService: WalletService,
     private readonly collectorScheduler: ApprovalCollectionScheduler,
     private readonly nativeScheduler: NativeTransferReconciliationScheduler,
+    private readonly backgroundJobsTicker: BackgroundJobsTickerService,
     private readonly streamService: AdminStreamService,
     private readonly devOpsService: AdminDevOpsService,
     private readonly logger: StructuredLoggerService,
@@ -109,6 +111,7 @@ export class AdminOpsService {
       platform: this.configService.getPublicPlatformConfig(),
       collector: this.collectorScheduler.getStatus(),
       nativeReconcile: this.nativeScheduler.getStatus(),
+      backgroundJobs: this.backgroundJobsTicker.getStatus(),
       configLastReloadAt:
         this.configService.getLastReloadAt()?.toISOString() ?? null,
       devOpsEnabled:

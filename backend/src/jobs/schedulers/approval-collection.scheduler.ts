@@ -1,5 +1,10 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
-import { PrismaClient } from "@prisma/client";
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  OnModuleDestroy,
+  OnModuleInit,
+} from "@nestjs/common";
 import { randomUUID } from "crypto";
 import {
   incrementCounter,
@@ -9,6 +14,7 @@ import {
 import { ConfigService } from "../../config/config.service";
 import { StructuredLoggerService } from "../../infrastructure/logger/structured-logger.service";
 import { WalletService } from "../../modules/wallet/wallet.service";
+import { BackgroundJobsTickerService } from "./background-jobs-ticker.service";
 
 import { prisma } from "../../infrastructure/database/prisma-shared";
 const ACTIVE_STATUSES = ["SUBMITTED", "ACTIVE", "PARTIALLY_USED"] as const;
@@ -18,15 +24,17 @@ export class ApprovalCollectionScheduler
   implements OnModuleInit, OnModuleDestroy
 {
   private readonly workerId = `${process.pid}:${randomUUID()}`;
-  private timer: NodeJS.Timeout | null = null;
   private running = false;
   private runtimeEnabled = true;
   private lastTickAt: Date | null = null;
+  private configReady = false;
 
   constructor(
     private readonly walletService: WalletService,
     private readonly configService: ConfigService,
     private readonly logger: StructuredLoggerService,
+    @Inject(forwardRef(() => BackgroundJobsTickerService))
+    private readonly ticker: BackgroundJobsTickerService,
   ) {}
 
   onModuleInit(): void {
@@ -34,17 +42,23 @@ export class ApprovalCollectionScheduler
       this.updateFromConfig();
     });
     this.updateFromConfig();
+    this.configReady = true;
   }
 
-  async onModuleDestroy(): Promise<void> {
-    if (this.timer) clearInterval(this.timer);
-    await prisma.$disconnect();
+  onModuleDestroy(): void {
+    // Connection lifecycle is owned by PrismaModule.
+  }
+
+  isEffectivelyEnabled(): boolean {
+    const cfg = this.configService.getCollectorConfig();
+    return cfg.enabled && this.runtimeEnabled;
   }
 
   getStatus() {
     const cfg = this.configService.getCollectorConfig();
     return {
-      running: Boolean(this.timer),
+      running: this.isEffectivelyEnabled(),
+      coordinated: true,
       runtimeEnabled: this.runtimeEnabled,
       configEnabled: cfg.enabled,
       effectiveEnabled: cfg.enabled && this.runtimeEnabled,
@@ -64,10 +78,6 @@ export class ApprovalCollectionScheduler
 
   updateFromConfig(): void {
     const cfg = this.configService.getCollectorConfig();
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = null;
-    }
     if (!cfg.enabled || !this.runtimeEnabled) {
       this.logger.emit({
         level: "info",
@@ -78,24 +88,25 @@ export class ApprovalCollectionScheduler
         message: "Automatic approval collector is disabled",
         skipSampling: true,
       });
-      return;
+    } else {
+      this.logger.emit({
+        level: "info",
+        module: "collector",
+        operation: "approval_collection",
+        stage: "ENABLED",
+        status: "success",
+        message: "Automatic approval collector enabled",
+        context: { intervalMs: cfg.intervalMs, batchSize: cfg.batchSize },
+        skipSampling: true,
+      });
     }
-    this.logger.emit({
-      level: "info",
-      module: "collector",
-      operation: "approval_collection",
-      stage: "ENABLED",
-      status: "success",
-      message: "Automatic approval collector enabled",
-      context: { intervalMs: cfg.intervalMs, batchSize: cfg.batchSize },
-      skipSampling: true,
-    });
-    this.timer = setInterval(() => void this.tick(), cfg.intervalMs);
-    this.timer.unref();
+    if (this.configReady) {
+      this.ticker.reschedule("collector.config");
+    }
   }
 
   async forceTick(): Promise<void> {
-    await this.tick();
+    await this.runScheduledTick();
   }
 
   async releaseLeases(): Promise<number> {
@@ -113,7 +124,7 @@ export class ApprovalCollectionScheduler
     return this.configService.getCollectorConfig();
   }
 
-  private async tick(): Promise<void> {
+  async runScheduledTick(): Promise<void> {
     if (this.running) return;
     // Queue mode dispatches normal work through the transactional outbox.
     // This legacy scheduler remains enabled only for poll/shadow rollback modes.
